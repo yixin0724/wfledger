@@ -1,0 +1,126 @@
+{
+  "schema": "workflowsim-network-ledger-v1",
+  "flowUnit": "V1_PARENT_OR_EXTERNAL_GROUP",
+  "numericProfile": "BINARY64_SCALAR_MAXMIN_8ULP_CAPPED_1E_MINUS12_V1",
+  "accountingVersion": "EXACT_BINARY64_INPUT_DECIMAL_V1",
+  "units": {
+    "time": "SIMULATION_SECONDS",
+    "bytes": "MODELED_BYTES",
+    "rate": "BYTES_PER_SECOND"
+  },
+  "evidence": {
+    "config": {
+      "mode": "FLUID_GROUP_LEDGER_V1",
+      "maxTraceRecords": 10000
+    },
+    "modelKind": "PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1",
+    "traceSnapshot": {
+      "status": "COMPLETE",
+      "events": [
+        {
+          "sequence": 1,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "VM:7",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 2,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "VM:42",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        }
+      ],
+      "droppedCount": 0,
+      "engineTime": 0.21000000000000002
+    },
+    "bindings": [],
+    "engineCreated": true,
+    "inputDemand": {
+      "scope": "V1_GROUP_INPUT_REFERENCES",
+      "referenceCount": 0,
+      "localReferenceCount": 0,
+      "requiredReferenceBytes": 0,
+      "localReferenceBytes": 0,
+      "transferableReferenceBytes": 0
+    }
+  },
+  "metrics": {
+    "localityScope": "V1_GROUP_INPUT_REFERENCES",
+    "transferMetrics": {
+      "accountingVersion": "EXACT_BINARY64_INPUT_DECIMAL_V1",
+      "validation": {
+        "captureStatus": "COMPLETE",
+        "recordCount": 2,
+        "admissionCount": 0,
+        "completionCount": 0,
+        "openFlowCount": 0,
+        "certifiedThroughSequence": 2,
+        "tailPhase": "READY",
+        "minimumMissingRecords": 0
+      },
+      "droppedRecordCount": 0,
+      "engineTime": 0.21000000000000002,
+      "admittedPayloadBytes": 0,
+      "completedDemandBytes": 0,
+      "servicedBalanceDeltaBytes": 0,
+      "modeledRateAreaBytes": 0,
+      "completionResidualBytes": 0,
+      "remainingLedgerBytes": 0,
+      "rateAreaMinusBalanceDeltaBytes": 0,
+      "integrationEpochCount": 0,
+      "completedFctSampleCount": 0,
+      "meanEffectiveFctSeconds": null,
+      "p95EffectiveFctSeconds": null,
+      "maxEffectiveFctSeconds": null,
+      "meanNotificationLagSeconds": null,
+      "flows": [],
+      "resources": [
+        {
+          "resourceKey": "VM:7",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 0,
+          "integrationEpochUtilization": null
+        },
+        {
+          "resourceKey": "VM:42",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 0,
+          "integrationEpochUtilization": null
+        }
+      ]
+    },
+    "localityStatus": "AVAILABLE",
+    "inputReferenceCount": 0,
+    "localInputReferenceCount": 0,
+    "requiredInputReferenceBytes": 0,
+    "localInputReferenceBytes": 0,
+    "transferableInputReferenceBytes": 0,
+    "admittedMinusTransferableReferenceBytes": 0,
+    "localByteFraction": null,
+    "localReferenceFraction": null
+  }
+}

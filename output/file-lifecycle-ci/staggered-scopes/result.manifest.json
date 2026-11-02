@@ -1,0 +1,802 @@
+{
+  "schema": "workflowsim-experiment-manifest-v4",
+  "configuration": {
+    "vmCount": 2,
+    "executionSemantics": "WORK_CONSERVING_TASK_EXECUTION_V2",
+    "workflowPaths": [
+      "/Users/yixin/project/WorkflowSim-yixin/output/file-lifecycle-ci/inputs/flow.dax",
+      "/Users/yixin/project/WorkflowSim-yixin/output/file-lifecycle-ci/inputs/later.dax"
+    ],
+    "workflowArrivalSeconds": [
+      0.0,
+      20.0
+    ],
+    "workflowArrivalSemantics": "PREDECLARED_AT_TIME_ZERO;SECONDS_FROM_SIMULATION_ZERO",
+    "taskCostMatrix": null,
+    "schedulingAlgorithm": "STATIC",
+    "registeredSchedulingAlgorithm": null,
+    "planningAlgorithm": "RANDOM",
+    "algorithmContract": {
+      "scheduler": {
+        "id": "STATIC",
+        "decisionLayer": "STATIC_MAPPING_DISPATCH",
+        "inputDomain": "MAPPED_JOBS_ONLY",
+        "decisionRule": "Dispatches a Job to the VM assigned by the planning layer",
+        "verification": "REGRESSION_COVERED_WITH_STATIC_MCT",
+        "limitations": [
+          "A SimulationConfig requires a non-INVALID planner; model-generated stage-in Jobsuse the legacy fallback mapping."
+        ]
+      },
+      "planner": {
+        "id": "RANDOM",
+        "decisionLayer": "STATIC_DAG_VM_MAPPING",
+        "inputDomain": "VALID_DAG",
+        "decisionRule": "Seeded random Task-to-compatible-VM mapping before clustering",
+        "requiredScheduler": "STATIC",
+        "verification": "DETERMINISTIC_MAPPING_REGRESSION_COVERED",
+        "limitations": [
+          "Runtime dependencies remain engine-enforced; this is not an offline timing schedule."
+        ]
+      },
+      "scopeStatement": "Algorithm labels describe this WorkflowSim implementation and its declared abstract-model scope; standard SimulationRunner evidence uses SPACE_SHARED VMs and no task clustering, and does not establish real-platform calibration.",
+      "reproductionStandard": "CORE_DECISION_SEMANTICS_UNDER_DECLARED_MODEL"
+    },
+    "reduceMethod": null,
+    "deadline": 0,
+    "deadlineSemantics": "OBSERVATION_ONLY_FROM_SIMULATION_TIME_ZERO_AGAINST_SIMULATION_END_SECONDS_NO_SCHEDULING_EFFECT",
+    "fileSystem": "LOCAL",
+    "rootSeed": 1,
+    "runtimeScale": 1.0,
+    "runtimeReferenceMips": 1000.0,
+    "cloudSimMinEventIntervalSeconds": 0.1,
+    "costModel": "DATACENTER",
+    "modeledProcessingCostScope": "ABSTRACT_COST_UNITS;CPU_ENVELOPE_MAY_INCLUDE_MODELED_STAGE_IN;DECLARED_FILE_BYTES_ALL_JOB_FILE_ITEMS;DECIMAL_MB_1_000_000_BYTES;NO_INTERNAL_BILLING_ROUNDING;MEMORY_AND_STORAGE_PRICES_ARE_DECLARED_BUT_NOT_CHARGED_BY_THIS_MODEL",
+    "dataMovementModel": {
+      "kind": "COHERENT_FILE_DATAFLOW_V2",
+      "accessLinkBandwidthMbPerSecond": 0.0,
+      "accessLinkLatencySeconds": 0.0,
+      "sourceEndpointBandwidthMbPerSecond": 0.0,
+      "contentionSemantics": "COHERENT_FILES_CHECKED_SHARED_MAX_MIN_V2",
+      "transferStartSemantics": "DEPENDENCY_READY_AT_OBSERVATION_V2;PER_FILE_SETTLEMENT_OBSERVATION_V2;COALESCED_FILE_DESTINATION",
+      "bandwidthUnit": "DECIMAL_MB_PER_SECOND"
+    },
+    "networkEvidence": {
+      "mode": "FILE_LIFECYCLE_V2",
+      "maxTraceRecords": 20000
+    },
+    "overheadModel": {
+      "workflowEngineDelayInterval": 0,
+      "bandwidth": 0.0,
+      "workflowEngineDelays": {},
+      "queueDelays": {},
+      "postDelays": {},
+      "clusteringDelays": {}
+    },
+    "clustering": {
+      "method": "NONE",
+      "clustersNum": 0,
+      "clustersSize": 0,
+      "code": null
+    },
+    "failureModel": {
+      "clusteringAlgorithm": "FTCLUSTERING_NOOP",
+      "monitorMode": "MONITOR_NONE",
+      "generatorMode": "FAILURE_NONE",
+      "distributionFamily": "WEIBULL",
+      "maxTotalRetryJobs": 0,
+      "generatorAddressing": "DENSE_VM_ID_MATRIX",
+      "generators": [],
+      "generatorsByVmId": {}
+    }
+  },
+  "platform": {
+    "name": "file-lifecycle-corpus",
+    "hostCount": 2,
+    "vmCount": 2,
+    "hosts": [
+      {
+        "id": 10,
+        "pes": 2,
+        "mipsPerPe": 2000.0,
+        "ramMb": 4096,
+        "bandwidth": 10000,
+        "storageMb": 1000000
+      },
+      {
+        "id": 20,
+        "pes": 2,
+        "mipsPerPe": 2000.0,
+        "ramMb": 4096,
+        "bandwidth": 10000,
+        "storageMb": 1000000
+      }
+    ],
+    "vms": [
+      {
+        "id": 7,
+        "mips": 1000.0,
+        "pes": 1,
+        "ramMb": 512,
+        "bandwidth": 1,
+        "imageSizeMb": 10000,
+        "vmm": "Xen",
+        "schedulerMode": "SPACE_SHARED",
+        "idlePowerWatts": 0.0,
+        "maxPowerWatts": 0.0,
+        "pinnedHostId": 10,
+        "preflightHostId": 10,
+        "costs": null
+      },
+      {
+        "id": 42,
+        "mips": 1000.0,
+        "pes": 1,
+        "ramMb": 512,
+        "bandwidth": 1,
+        "imageSizeMb": 10000,
+        "vmm": "Xen",
+        "schedulerMode": "SPACE_SHARED",
+        "idlePowerWatts": 0.0,
+        "maxPowerWatts": 0.0,
+        "pinnedHostId": 20,
+        "preflightHostId": 20,
+        "costs": null
+      }
+    ],
+    "storage": {
+      "capacityMb": 1000000000000,
+      "maxTransferRateMbPerSecond": 15
+    },
+    "costs": {
+      "cpuPerSecond": 3.0,
+      "memory": 0.05,
+      "storage": 0.1,
+      "bandwidth": 0.1
+    },
+    "networkTopology": {
+      "kind": "FAT_TREE",
+      "k": 4,
+      "linkBandwidthMbPerSecond": 1.0,
+      "coreSwitchCount": null,
+      "hostEdgePlacements": null,
+      "defaultPlacementPolicy": "HOST_ID_ASCENDING_ROUND_ROBIN_OVER_EDGES",
+      "routingPolicy": "DETERMINISTIC_AL_FARES_FAT_TREE_V1",
+      "linkDirectionality": "INDEPENDENT_DIRECTED_LINKS",
+      "externalSourceRouting": "BYPASS_TOPOLOGY_DESTINATION_ENDPOINT_ONLY"
+    }
+  },
+  "inputs": [
+    {
+      "path": "/Users/yixin/project/WorkflowSim-yixin/output/file-lifecycle-ci/inputs/flow.dax",
+      "sha256": "19d11c508a445c73f4742b38163763acc83a9845cdffcb479e609bd235a8af9d",
+      "sizeBytes": 393,
+      "format": "DAX_XML",
+      "declaredVersion": null,
+      "taskCount": 2,
+      "normalizations": []
+    },
+    {
+      "path": "/Users/yixin/project/WorkflowSim-yixin/output/file-lifecycle-ci/inputs/later.dax",
+      "sha256": "19d11c508a445c73f4742b38163763acc83a9845cdffcb479e609bd235a8af9d",
+      "sizeBytes": 393,
+      "format": "DAX_XML",
+      "declaredVersion": null,
+      "taskCount": 2,
+      "normalizations": []
+    }
+  ],
+  "workflowProfile": {
+    "taskCount": 4,
+    "edgeCount": 2,
+    "rootTaskCount": 2,
+    "leafTaskCount": 2,
+    "maximumDepthEdges": 1,
+    "maximumWidthTasks": 2,
+    "totalTaskLengthMi": 4000,
+    "meanTaskLengthMi": 1000.0,
+    "taskLengthCoefficientOfVariation": 0.0,
+    "fileReferenceCount": 12,
+    "distinctFileCount": 8,
+    "totalDistinctFileBytes": 1.0000001E7,
+    "externalInputReferenceCount": 4,
+    "distinctExternalInputFileCount": 4,
+    "totalDistinctExternalInputBytes": 1.0
+  },
+  "workflowGraph": [
+    {
+      "taskId": 1,
+      "type": "",
+      "depth": 1,
+      "parentIds": [],
+      "childIds": [
+        2
+      ]
+    },
+    {
+      "taskId": 2,
+      "type": "",
+      "depth": 2,
+      "parentIds": [
+        1
+      ],
+      "childIds": []
+    },
+    {
+      "taskId": 3,
+      "type": "",
+      "depth": 1,
+      "parentIds": [],
+      "childIds": [
+        4
+      ]
+    },
+    {
+      "taskId": 4,
+      "type": "",
+      "depth": 2,
+      "parentIds": [
+        3
+      ],
+      "childIds": []
+    }
+  ],
+  "dataflowPlan": {
+    "contractVersion": "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2",
+    "tasks": [
+      {
+        "taskId": 1,
+        "workflowInputIndex": 0,
+        "parents": [],
+        "inputs": [
+          {
+            "fileId": {
+              "workflowInputIndex": 0,
+              "name": "workflow-0/external-a"
+            },
+            "referenceCount": 1
+          },
+          {
+            "fileId": {
+              "workflowInputIndex": 0,
+              "name": "workflow-0/external-b"
+            },
+            "referenceCount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "workflowInputIndex": 0,
+            "name": "workflow-0/a"
+          },
+          {
+            "workflowInputIndex": 0,
+            "name": "workflow-0/b"
+          }
+        ]
+      },
+      {
+        "taskId": 2,
+        "workflowInputIndex": 0,
+        "parents": [
+          1
+        ],
+        "inputs": [
+          {
+            "fileId": {
+              "workflowInputIndex": 0,
+              "name": "workflow-0/a"
+            },
+            "referenceCount": 1
+          },
+          {
+            "fileId": {
+              "workflowInputIndex": 0,
+              "name": "workflow-0/b"
+            },
+            "referenceCount": 1
+          }
+        ],
+        "outputs": []
+      },
+      {
+        "taskId": 3,
+        "workflowInputIndex": 1,
+        "parents": [],
+        "inputs": [
+          {
+            "fileId": {
+              "workflowInputIndex": 1,
+              "name": "workflow-1/external-a"
+            },
+            "referenceCount": 1
+          },
+          {
+            "fileId": {
+              "workflowInputIndex": 1,
+              "name": "workflow-1/external-b"
+            },
+            "referenceCount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "workflowInputIndex": 1,
+            "name": "workflow-1/a"
+          },
+          {
+            "workflowInputIndex": 1,
+            "name": "workflow-1/b"
+          }
+        ]
+      },
+      {
+        "taskId": 4,
+        "workflowInputIndex": 1,
+        "parents": [
+          3
+        ],
+        "inputs": [
+          {
+            "fileId": {
+              "workflowInputIndex": 1,
+              "name": "workflow-1/a"
+            },
+            "referenceCount": 1
+          },
+          {
+            "fileId": {
+              "workflowInputIndex": 1,
+              "name": "workflow-1/b"
+            },
+            "referenceCount": 1
+          }
+        ],
+        "outputs": []
+      }
+    ],
+    "files": [
+      {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "workflow-0/a"
+        },
+        "bytes": 2000000.0,
+        "producerTaskId": 1
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "workflow-0/b"
+        },
+        "bytes": 3000000.0,
+        "producerTaskId": 1
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "workflow-0/external-a"
+        },
+        "bytes": 0.125,
+        "producerTaskId": null
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "workflow-0/external-b"
+        },
+        "bytes": 0.375,
+        "producerTaskId": null
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 1,
+          "name": "workflow-1/a"
+        },
+        "bytes": 2000000.0,
+        "producerTaskId": 3
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 1,
+          "name": "workflow-1/b"
+        },
+        "bytes": 3000000.0,
+        "producerTaskId": 3
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 1,
+          "name": "workflow-1/external-a"
+        },
+        "bytes": 0.125,
+        "producerTaskId": null
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 1,
+          "name": "workflow-1/external-b"
+        },
+        "bytes": 0.375,
+        "producerTaskId": null
+      }
+    ]
+  },
+  "result": {
+    "makespan": 27.1,
+    "simulationEndSeconds": 27.1,
+    "logicalTaskCompletionStatus": "COMPLETED_SUCCESSFULLY",
+    "logicalTaskCompletionSeconds": 27.1,
+    "terminalLifecycleTailSeconds": 0.0,
+    "workflowCompletedSuccessfully": true,
+    "totalJobs": 5,
+    "successfulJobs": 5,
+    "failedJobs": 0,
+    "vmSummaries": [
+      {
+        "vmId": 7,
+        "jobs": 3,
+        "successfulJobs": 3,
+        "failedJobs": 0,
+        "totalCpuTime": 2.1100000000000003,
+        "lastFinishTime": 21.1
+      },
+      {
+        "vmId": 42,
+        "jobs": 2,
+        "successfulJobs": 2,
+        "failedJobs": 0,
+        "totalCpuTime": 2.0,
+        "lastFinishTime": 27.1
+      }
+    ],
+    "jobs": [
+      {
+        "jobId": 4,
+        "vmId": 7,
+        "status": 4,
+        "classType": 1,
+        "submissionTime": 0.1,
+        "startTime": 0.1,
+        "finishTime": 0.21000000000000002,
+        "waitingTime": 0.0,
+        "executionTime": 0.11000000000000001,
+        "responseTime": 0.11000000000000001,
+        "cpuTime": 0.11000000000000001,
+        "modeledCpuEnvelopeCost": 0.33000000000000007,
+        "modeledDeclaredFileBandwidthCost": 1.0000000000000001E-7,
+        "modeledDeclaredFileBytes": 1.0,
+        "modeledProcessingCost": 0.3300001000000001,
+        "taskCount": 0,
+        "taskIds": []
+      },
+      {
+        "jobId": 0,
+        "vmId": 7,
+        "status": 4,
+        "classType": 2,
+        "submissionTime": 0.31000000000000005,
+        "startTime": 0.31000000000000005,
+        "finishTime": 1.31,
+        "waitingTime": 0.0,
+        "executionTime": 1.0,
+        "responseTime": 1.0,
+        "cpuTime": 1.0,
+        "modeledCpuEnvelopeCost": 3.0,
+        "modeledDeclaredFileBandwidthCost": 0.50000005,
+        "modeledDeclaredFileBytes": 5000000.5,
+        "modeledProcessingCost": 3.50000005,
+        "taskCount": 1,
+        "taskIds": [
+          1
+        ]
+      },
+      {
+        "jobId": 1,
+        "vmId": 42,
+        "status": 4,
+        "classType": 2,
+        "submissionTime": 6.3100000000000005,
+        "startTime": 6.3100000000000005,
+        "finishTime": 7.3100000000000005,
+        "waitingTime": 0.0,
+        "executionTime": 1.0,
+        "responseTime": 1.0,
+        "cpuTime": 1.0,
+        "modeledCpuEnvelopeCost": 3.0,
+        "modeledDeclaredFileBandwidthCost": 0.5,
+        "modeledDeclaredFileBytes": 5000000.0,
+        "modeledProcessingCost": 3.5,
+        "taskCount": 1,
+        "taskIds": [
+          2
+        ]
+      },
+      {
+        "jobId": 2,
+        "vmId": 7,
+        "status": 4,
+        "classType": 2,
+        "submissionTime": 20.1,
+        "startTime": 20.1,
+        "finishTime": 21.1,
+        "waitingTime": 0.0,
+        "executionTime": 1.0,
+        "responseTime": 1.0,
+        "cpuTime": 1.0,
+        "modeledCpuEnvelopeCost": 3.0,
+        "modeledDeclaredFileBandwidthCost": 0.50000005,
+        "modeledDeclaredFileBytes": 5000000.5,
+        "modeledProcessingCost": 3.50000005,
+        "taskCount": 1,
+        "taskIds": [
+          3
+        ]
+      },
+      {
+        "jobId": 3,
+        "vmId": 42,
+        "status": 4,
+        "classType": 2,
+        "submissionTime": 26.1,
+        "startTime": 26.1,
+        "finishTime": 27.1,
+        "waitingTime": 0.0,
+        "executionTime": 1.0,
+        "responseTime": 1.0,
+        "cpuTime": 1.0,
+        "modeledCpuEnvelopeCost": 3.0,
+        "modeledDeclaredFileBandwidthCost": 0.5,
+        "modeledDeclaredFileBytes": 5000000.0,
+        "modeledProcessingCost": 3.5,
+        "taskCount": 1,
+        "taskIds": [
+          4
+        ]
+      }
+    ],
+    "tasks": [
+      {
+        "taskId": 1,
+        "jobId": 0,
+        "vmId": 7,
+        "jobStatus": 4,
+        "taskStatus": 4,
+        "depth": 1,
+        "lengthMi": 1000,
+        "effectiveExecutionLengthMi": 1000,
+        "startTime": 0.31000000000000005,
+        "finishTime": 1.31,
+        "exactJobTiming": true
+      },
+      {
+        "taskId": 2,
+        "jobId": 1,
+        "vmId": 42,
+        "jobStatus": 4,
+        "taskStatus": 4,
+        "depth": 2,
+        "lengthMi": 1000,
+        "effectiveExecutionLengthMi": 1000,
+        "startTime": 6.3100000000000005,
+        "finishTime": 7.3100000000000005,
+        "exactJobTiming": true
+      },
+      {
+        "taskId": 3,
+        "jobId": 2,
+        "vmId": 7,
+        "jobStatus": 4,
+        "taskStatus": 4,
+        "depth": 1,
+        "lengthMi": 1000,
+        "effectiveExecutionLengthMi": 1000,
+        "startTime": 20.1,
+        "finishTime": 21.1,
+        "exactJobTiming": true
+      },
+      {
+        "taskId": 4,
+        "jobId": 3,
+        "vmId": 42,
+        "jobStatus": 4,
+        "taskStatus": 4,
+        "depth": 2,
+        "lengthMi": 1000,
+        "effectiveExecutionLengthMi": 1000,
+        "startTime": 26.1,
+        "finishTime": 27.1,
+        "exactJobTiming": true
+      }
+    ],
+    "actualVmHostAssignments": {
+      "7": 10,
+      "42": 20
+    },
+    "workflowOutcomes": [
+      {
+        "index": 0,
+        "path": "/Users/yixin/project/WorkflowSim-yixin/output/file-lifecycle-ci/inputs/flow.dax",
+        "arrivalSecond": 0.0,
+        "firstTaskId": 1,
+        "lastTaskId": 2,
+        "taskCount": 2,
+        "lastSuccessFinishSecond": 7.3100000000000005,
+        "flowTimeSeconds": 7.3100000000000005
+      },
+      {
+        "index": 1,
+        "path": "/Users/yixin/project/WorkflowSim-yixin/output/file-lifecycle-ci/inputs/later.dax",
+        "arrivalSecond": 20.0,
+        "firstTaskId": 3,
+        "lastTaskId": 4,
+        "taskCount": 2,
+        "lastSuccessFinishSecond": 27.1,
+        "flowTimeSeconds": 7.100000000000001
+      }
+    ],
+    "sharedStorageDagPlanTrace": null
+  },
+  "metrics": {
+    "makespanSeconds": 27.1,
+    "logicalTaskCompletionSeconds": 27.1,
+    "logicalTaskCompletionStatus": "COMPLETED_SUCCESSFULLY",
+    "terminalLifecycleTailSeconds": 0.0,
+    "jobOutcomeCount": 5,
+    "computeJobOutcomeCount": 4,
+    "stageInJobOutcomeCount": 1,
+    "successfulJobOutcomeCount": 5,
+    "failedJobOutcomeCount": 0,
+    "successfulComputeJobOutcomeCount": 4,
+    "failedComputeJobOutcomeCount": 0,
+    "successfulComputeJobOutcomeRate": 1.0,
+    "logicalTaskCount": 4,
+    "successfullyCompletedLogicalTaskCount": 4,
+    "logicalTasksNotYetSuccessfullyCompletedCount": 0,
+    "successfulLogicalTaskCompletionRate": 1.0,
+    "allLogicalTasksCompletedSuccessfully": true,
+    "initialComputeJobOutcomeCount": 4,
+    "retryJobCreatedCount": 0,
+    "completedRetryComputeJobOutcomeCount": 0,
+    "logicalTaskAttemptCount": 4,
+    "retriedLogicalTaskCount": 0,
+    "failedComputeAttemptEnvelopeSeconds": 0.0,
+    "failedComputeAttemptModeledProcessingCost": 0.0,
+    "retryComputeAttemptModeledProcessingCost": 0.0,
+    "computeJobOutcomeThroughputPerSecond": 0.14760147601476015,
+    "meanComputeJobRunTimeSeconds": 1.0,
+    "meanJobVmQueueWaitingTimeSeconds": 0.0,
+    "meanJobResponseTimeSeconds": 1.0,
+    "meanJobVmLevelSlowdown": 1.0,
+    "vmLevelSlowdownObservationCount": 4,
+    "meanComputeTotalWaitingTimeSeconds": 2.5500000000000003,
+    "meanComputeTrueSlowdown": 1.0,
+    "trueSlowdownObservationCount": 4,
+    "totalWaitingTimeObservationCount": 4,
+    "medianComputeTotalWaitingTimeSeconds": 0.10000000000000142,
+    "p95ComputeTotalWaitingTimeSeconds": 5.0,
+    "maxComputeTotalWaitingTimeSeconds": 5.0,
+    "medianComputeTrueSlowdown": 1.0,
+    "p95ComputeTrueSlowdown": 1.0,
+    "maxComputeTrueSlowdown": 1.0,
+    "successOnlyMeanComputeTotalWaitingTimeSeconds": 2.5500000000000003,
+    "successOnlyMeanComputeTrueSlowdown": 1.0,
+    "successOnlyWaitingObservationCount": 4,
+    "retryAmplificationRatio": 1.0,
+    "meanComputeReadyToDecisionDelaySeconds": 2.5500000000000003,
+    "meanComputeDecisionToStartDelaySeconds": 0.0,
+    "readyToDecisionObservationCount": 4,
+    "decisionToStartObservationCount": 4,
+    "schedulingCycleCount": 5,
+    "totalSchedulingDecisionWallClockNanos": 29207,
+    "explicitPlannerDecisionObservationCount": 1,
+    "totalPlanningDecisionWallClockNanos": 16000,
+    "dataStageInModelObservationCount": 4,
+    "modeledDataTransferFileCount": 8,
+    "totalModeledDataTransferSeconds": 10.000001,
+    "totalModeledRequiredInputBytes": 1.0000001E7,
+    "meanModeledDataTransferSeconds": 2.50000025,
+    "totalModeledProcessingCost": 14.3300002,
+    "totalModeledCpuEnvelopeCost": 12.33,
+    "totalModeledDeclaredFileBandwidthCost": 2.0000002,
+    "totalModeledDeclaredFileBytes": 2.0000002E7,
+    "vmMetrics": {
+      "7": {
+        "vmId": 7,
+        "jobOutcomeCount": 3,
+        "reportedCpuTimeSeconds": 2.1100000000000003,
+        "modeledBusyIntervalSeconds": 2.1100000000000003,
+        "modeledIntervalUtilization": 0.07785977859778599,
+        "reportedCpuTimeOverMakespan": 0.07785977859778599
+      },
+      "42": {
+        "vmId": 42,
+        "jobOutcomeCount": 2,
+        "reportedCpuTimeSeconds": 2.0,
+        "modeledBusyIntervalSeconds": 2.0,
+        "modeledIntervalUtilization": 0.07380073800738007,
+        "reportedCpuTimeOverMakespan": 0.07380073800738007
+      }
+    },
+    "totalVmModeledBusyIntervalSeconds": 4.11,
+    "meanVmModeledIntervalUtilization": 0.07583025830258303,
+    "vmModeledBusyTimeCoefficientOfVariation": 0.026763990267639978,
+    "vmUtilizationJainFairnessIndex": 0.9992842015593756,
+    "controlledSharedStorageCriticalPathReferenceAvailable": false,
+    "controlledSharedStorageCriticalPathReferenceScope": "UNAVAILABLE_OUTSIDE_CONTROLLED_SHARED_STORAGE_SCOPE",
+    "controlledSharedStorageCriticalPathLowerBoundSeconds": 0.0,
+    "controlledSharedStorageScheduleLengthRatio": 0.0,
+    "deadlineObservationEnabled": false,
+    "deadlineObservationTimeBasis": "SIMULATION_END_SECONDS",
+    "deadlineObservationOutcome": "NOT_REQUESTED",
+    "deadlineMet": false,
+    "deadlineSlackSeconds": 0.0,
+    "deadlineTardinessSeconds": 0.0,
+    "exactTaskTimingObservationCount": 4,
+    "modeledApproximateTaskTimingObservationCount": 0
+  },
+  "energyMetrics": {
+    "totalEnergyJoules": 0.0,
+    "meanVmEnergyJoules": 0.0,
+    "peakPowerWatts": 0.0,
+    "energyMakespanProductJouleSeconds": 0.0,
+    "vmEnergyJoules": {
+      "7": 0.0,
+      "42": 0.0
+    }
+  },
+  "events": {
+    "schema": "workflowsim-simulation-events-v1",
+    "eventCount": 45,
+    "firstSequence": 0,
+    "lastSequence": 44
+  },
+  "artifacts": [
+    {
+      "role": "metrics",
+      "path": "result.metrics.json",
+      "sha256": "7c94107bbea030fa273acf18c3e68539d99783823ad6d8a63b8944f05a69f7bb",
+      "sizeBytes": 4303
+    },
+    {
+      "role": "events",
+      "path": "result.events.jsonl",
+      "sha256": "0a11b9415c7c48ffaf2ef265fc75f9678c7665e15073d44f62abcd3754e34c0d",
+      "sizeBytes": 9825
+    },
+    {
+      "role": "file-lifecycle",
+      "path": "result.file-lifecycle.json",
+      "sha256": "f47047aad0d65474301a25125789284a58d7830eb8e48ba8456ace1de4983dc7",
+      "sizeBytes": 32175
+    }
+  ],
+  "provenance": {
+    "schema": "workflowsim-provenance-v3",
+    "core": {
+      "groupId": "org.workflowsim",
+      "artifactId": "workflowsim",
+      "version": "1.0",
+      "anchorClass": "org.workflowsim.experiment.SimulationRunner",
+      "codeSource": "file:/Users/yixin/project/WorkflowSim-yixin/simulator/target/classes/",
+      "binarySha256": null,
+      "modulePomSha256": "b343c1f51c8049d7abeb9f6f7e55731840c0870666b855349874b22fab502fae",
+      "sourceTreeSha256": "0ce70c6719ad76aa2b4995595519e9a8a96bca77b51be94aea7917680c83fde5",
+      "sourceFileCount": 270,
+      "sourceTreeScope": "src/main/java/**/*.java"
+    },
+    "study": null,
+    "execution": {
+      "javaClassPathSha256": "ef29cc8e9153b48e48173e62c25081fec9c04e058d481d0078dd265c1d4c7b9b",
+      "workingDirectory": "/Users/yixin/project/WorkflowSim-yixin",
+      "reactorPomSha256": "fdb677b2ed19536f92eb5468691562ccfa6c85f50d1be9523588a0bba271e1e4"
+    }
+  },
+  "runtime": {
+    "javaVersion": "17.0.19",
+    "javaRuntimeVersion": "17.0.19+0",
+    "javaVendor": "Homebrew",
+    "javaVmName": "OpenJDK 64-Bit Server VM",
+    "osName": "Mac OS X",
+    "osArch": "aarch64"
+  }
+}

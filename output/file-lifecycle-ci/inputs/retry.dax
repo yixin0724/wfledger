@@ -1,0 +1,1 @@
+<adag><job id="p" runtime="1"><uses file="external" link="input" size="20000000"/><uses file="out" link="output" size="1000000"/></job><job id="c" runtime="1"><uses file="out" link="input" size="1000000"/></job><child ref="c"><parent ref="p"/></child></adag>

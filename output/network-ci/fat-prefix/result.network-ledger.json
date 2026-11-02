@@ -1,0 +1,93 @@
+{
+  "schema": "workflowsim-network-ledger-v1",
+  "flowUnit": "V1_PARENT_OR_EXTERNAL_GROUP",
+  "numericProfile": "BINARY64_SCALAR_MAXMIN_8ULP_CAPPED_1E_MINUS12_V1",
+  "accountingVersion": "EXACT_BINARY64_INPUT_DECIMAL_V1",
+  "units": {
+    "time": "SIMULATION_SECONDS",
+    "bytes": "MODELED_BYTES",
+    "rate": "BYTES_PER_SECOND"
+  },
+  "evidence": {
+    "config": {
+      "mode": "FLUID_GROUP_LEDGER_V1",
+      "maxTraceRecords": 1
+    },
+    "modelKind": "PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1",
+    "traceSnapshot": {
+      "status": "TRUNCATED",
+      "events": [
+        {
+          "sequence": 1,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "VM:7",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        }
+      ],
+      "droppedCount": 75,
+      "engineTime": 2.31
+    },
+    "bindings": [],
+    "engineCreated": true,
+    "inputDemand": {
+      "scope": "V1_GROUP_INPUT_REFERENCES",
+      "referenceCount": 2,
+      "localReferenceCount": 0,
+      "requiredReferenceBytes": 5000000.5,
+      "localReferenceBytes": 0,
+      "transferableReferenceBytes": 5000000.5
+    }
+  },
+  "metrics": {
+    "localityScope": "V1_GROUP_INPUT_REFERENCES",
+    "transferMetrics": {
+      "accountingVersion": "EXACT_BINARY64_INPUT_DECIMAL_V1",
+      "validation": {
+        "captureStatus": "TRUNCATED",
+        "recordCount": 1,
+        "admissionCount": 0,
+        "completionCount": 0,
+        "openFlowCount": 0,
+        "certifiedThroughSequence": 1,
+        "tailPhase": "PREFIX_AT_BOUNDARY",
+        "minimumMissingRecords": 0
+      },
+      "droppedRecordCount": 75,
+      "engineTime": 2.31,
+      "admittedPayloadBytes": null,
+      "completedDemandBytes": null,
+      "servicedBalanceDeltaBytes": null,
+      "modeledRateAreaBytes": null,
+      "completionResidualBytes": null,
+      "remainingLedgerBytes": null,
+      "rateAreaMinusBalanceDeltaBytes": null,
+      "integrationEpochCount": null,
+      "completedFctSampleCount": null,
+      "meanEffectiveFctSeconds": null,
+      "p95EffectiveFctSeconds": null,
+      "maxEffectiveFctSeconds": null,
+      "meanNotificationLagSeconds": null,
+      "flows": [],
+      "resources": []
+    },
+    "localityStatus": "TRUNCATED_TRACE",
+    "inputReferenceCount": null,
+    "localInputReferenceCount": null,
+    "requiredInputReferenceBytes": null,
+    "localInputReferenceBytes": null,
+    "transferableInputReferenceBytes": null,
+    "admittedMinusTransferableReferenceBytes": null,
+    "localByteFraction": null,
+    "localReferenceFraction": null
+  }
+}

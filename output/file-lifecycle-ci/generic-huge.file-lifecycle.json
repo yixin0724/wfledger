@@ -1,0 +1,329 @@
+{
+  "schema": "workflowsim-file-lifecycle-v2",
+  "modelKind": "COHERENT_FILE_DATAFLOW_V2",
+  "recording": {
+    "mode": "FILE_LIFECYCLE_V2",
+    "maxTraceRecords": 20000
+  },
+  "certificateScope": "FILE_LIFECYCLE_NOT_FLUID_SERVICE_ACCOUNTING_V2",
+  "policies": {
+    "fileIdentity": "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2",
+    "release": "DEPENDENCY_READY_AT_OBSERVATION_V2",
+    "visibility": "PER_FILE_SETTLEMENT_OBSERVATION_V2",
+    "selection": "VISIBLE_LOCAL_OR_MAX_ISOLATED_RATE_STABLE_LOCATION_V2",
+    "sourceAccess": "UNBOUNDED_OFF_FABRIC_SOURCE_INPUT_V2",
+    "sharing": "SHARED_MAX_MIN"
+  },
+  "capture": {
+    "status": "COMPLETE",
+    "observedThrough": 1.0,
+    "retainedRecords": 12,
+    "droppedRecords": 0
+  },
+  "filePlan": {
+    "contractVersion": "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2",
+    "tasks": [
+      {
+        "taskId": 1,
+        "workflowInputIndex": 0,
+        "parents": [],
+        "inputs": [
+          {
+            "fileId": {
+              "workflowInputIndex": 0,
+              "name": "a"
+            },
+            "referenceCount": 1
+          }
+        ],
+        "outputs": []
+      },
+      {
+        "taskId": 2,
+        "workflowInputIndex": 0,
+        "parents": [],
+        "inputs": [
+          {
+            "fileId": {
+              "workflowInputIndex": 0,
+              "name": "b"
+            },
+            "referenceCount": 1
+          }
+        ],
+        "outputs": []
+      }
+    ],
+    "files": [
+      {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "a"
+        },
+        "bytes": 1.7976931348623157E308,
+        "producerTaskId": null
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "b"
+        },
+        "bytes": 1.7976931348623157E308,
+        "producerTaskId": null
+      }
+    ]
+  },
+  "fabric": {
+    "locations": [
+      {
+        "kind": "VM",
+        "vmId": 7,
+        "sourceId": null
+      },
+      {
+        "kind": "VM",
+        "vmId": 42,
+        "sourceId": null
+      },
+      {
+        "kind": "SOURCE",
+        "vmId": null,
+        "sourceId": "source"
+      }
+    ],
+    "resources": [
+      {
+        "key": "VM:42",
+        "capacityBytesPerSecond": 1.7976931348623157E308
+      },
+      {
+        "key": "VM:7",
+        "capacityBytesPerSecond": 1.7976931348623157E308
+      }
+    ],
+    "vmHostAssignments": [],
+    "topology": null
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "observedTime": 0.0,
+      "type": "EXTERNAL_SEEDED",
+      "payload": {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "a"
+        },
+        "location": {
+          "kind": "SOURCE",
+          "vmId": null,
+          "sourceId": "source"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "observedTime": 0.0,
+      "type": "EXTERNAL_SEEDED",
+      "payload": {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "b"
+        },
+        "location": {
+          "kind": "SOURCE",
+          "vmId": null,
+          "sourceId": "source"
+        }
+      }
+    },
+    {
+      "sequence": 3,
+      "observedTime": 0.0,
+      "type": "JOB_INPUT_REQUESTED",
+      "payload": {
+        "jobId": 0,
+        "taskIds": [
+          1
+        ],
+        "destinationVmId": 7
+      }
+    },
+    {
+      "sequence": 4,
+      "observedTime": 0.0,
+      "type": "COPY_ADMITTED",
+      "payload": {
+        "copyOrdinal": 1,
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "a"
+        },
+        "bytes": 1.7976931348623157E308,
+        "sourceReplica": {
+          "fileId": {
+            "workflowInputIndex": 0,
+            "name": "a"
+          },
+          "location": {
+            "kind": "SOURCE",
+            "vmId": null,
+            "sourceId": "source"
+          },
+          "visibleAt": 0.0,
+          "acquisition": "EXTERNAL_SEED",
+          "origin": {
+            "producerTaskId": null,
+            "jobAttemptId": null,
+            "location": {
+              "kind": "SOURCE",
+              "vmId": null,
+              "sourceId": "source"
+            },
+            "observedAt": 0.0
+          },
+          "copiedFrom": null,
+          "copyOrdinal": null
+        },
+        "destinationVmId": 7,
+        "resources": [
+          "VM:7"
+        ],
+        "standaloneRate": 1.7976931348623157E308,
+        "isolatedSeconds": 1.0
+      }
+    },
+    {
+      "sequence": 5,
+      "observedTime": 0.0,
+      "type": "INPUT_RESOLVED",
+      "payload": {
+        "jobId": 0,
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "a"
+        },
+        "referenceCount": 1,
+        "resolution": "NEW_COPY",
+        "copyOrdinal": 1,
+        "source": {
+          "kind": "SOURCE",
+          "vmId": null,
+          "sourceId": "source"
+        }
+      }
+    },
+    {
+      "sequence": 6,
+      "observedTime": 0.0,
+      "type": "JOB_INPUT_REQUESTED",
+      "payload": {
+        "jobId": 1,
+        "taskIds": [
+          2
+        ],
+        "destinationVmId": 42
+      }
+    },
+    {
+      "sequence": 7,
+      "observedTime": 0.0,
+      "type": "COPY_ADMITTED",
+      "payload": {
+        "copyOrdinal": 2,
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "b"
+        },
+        "bytes": 1.7976931348623157E308,
+        "sourceReplica": {
+          "fileId": {
+            "workflowInputIndex": 0,
+            "name": "b"
+          },
+          "location": {
+            "kind": "SOURCE",
+            "vmId": null,
+            "sourceId": "source"
+          },
+          "visibleAt": 0.0,
+          "acquisition": "EXTERNAL_SEED",
+          "origin": {
+            "producerTaskId": null,
+            "jobAttemptId": null,
+            "location": {
+              "kind": "SOURCE",
+              "vmId": null,
+              "sourceId": "source"
+            },
+            "observedAt": 0.0
+          },
+          "copiedFrom": null,
+          "copyOrdinal": null
+        },
+        "destinationVmId": 42,
+        "resources": [
+          "VM:42"
+        ],
+        "standaloneRate": 1.7976931348623157E308,
+        "isolatedSeconds": 1.0
+      }
+    },
+    {
+      "sequence": 8,
+      "observedTime": 0.0,
+      "type": "INPUT_RESOLVED",
+      "payload": {
+        "jobId": 1,
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "b"
+        },
+        "referenceCount": 1,
+        "resolution": "NEW_COPY",
+        "copyOrdinal": 2,
+        "source": {
+          "kind": "SOURCE",
+          "vmId": null,
+          "sourceId": "source"
+        }
+      }
+    },
+    {
+      "sequence": 9,
+      "observedTime": 1.0,
+      "type": "COPY_SETTLED",
+      "payload": {
+        "copyOrdinal": 1,
+        "effectiveTime": 1.0,
+        "remainingAfterService": 0.0
+      }
+    },
+    {
+      "sequence": 10,
+      "observedTime": 1.0,
+      "type": "JOB_DATA_READY",
+      "payload": {
+        "jobId": 0
+      }
+    },
+    {
+      "sequence": 11,
+      "observedTime": 1.0,
+      "type": "COPY_SETTLED",
+      "payload": {
+        "copyOrdinal": 2,
+        "effectiveTime": 1.0,
+        "remainingAfterService": 0.0
+      }
+    },
+    {
+      "sequence": 12,
+      "observedTime": 1.0,
+      "type": "JOB_DATA_READY",
+      "payload": {
+        "jobId": 1
+      }
+    }
+  ]
+}

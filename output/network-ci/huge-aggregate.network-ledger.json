@@ -1,0 +1,238 @@
+{
+  "schema": "workflowsim-network-ledger-v1",
+  "flowUnit": "V1_PARENT_OR_EXTERNAL_GROUP",
+  "numericProfile": "BINARY64_SCALAR_MAXMIN_8ULP_CAPPED_1E_MINUS12_V1",
+  "accountingVersion": "EXACT_BINARY64_INPUT_DECIMAL_V1",
+  "units": {
+    "time": "SIMULATION_SECONDS",
+    "bytes": "MODELED_BYTES",
+    "rate": "BYTES_PER_SECOND"
+  },
+  "evidence": {
+    "config": {
+      "mode": "FLUID_GROUP_LEDGER_V1",
+      "maxTraceRecords": 10000
+    },
+    "modelKind": "PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1",
+    "traceSnapshot": {
+      "status": "COMPLETE",
+      "events": [
+        {
+          "sequence": 1,
+          "type": "START",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": 1,
+          "admissionOrdinal": 1,
+          "capacity": null,
+          "start": {
+            "bytes": 1.7976931348623157E308,
+            "occupiedResources": [],
+            "nominalRateBytesPerSecond": 1.0,
+            "initialRateBytesPerSecond": 1.0
+          },
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 2,
+          "type": "START",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": 2,
+          "admissionOrdinal": 2,
+          "capacity": null,
+          "start": {
+            "bytes": 1.7976931348623157E308,
+            "occupiedResources": [],
+            "nominalRateBytesPerSecond": 1.0,
+            "initialRateBytesPerSecond": 1.0
+          },
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 3,
+          "type": "SERVICE_SEGMENT",
+          "effectiveTime": 1.7976931348623157E308,
+          "observedTime": 1.7976931348623157E308,
+          "transferId": 1,
+          "admissionOrdinal": 1,
+          "capacity": null,
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": {
+            "intervalStart": 0.0,
+            "intervalEnd": 1.7976931348623157E308,
+            "elapsed": 1.7976931348623157E308,
+            "rateBytesPerSecond": 1.0,
+            "remainingBefore": 1.7976931348623157E308,
+            "remainingAfter": 0.0
+          },
+          "complete": null
+        },
+        {
+          "sequence": 4,
+          "type": "SERVICE_SEGMENT",
+          "effectiveTime": 1.7976931348623157E308,
+          "observedTime": 1.7976931348623157E308,
+          "transferId": 2,
+          "admissionOrdinal": 2,
+          "capacity": null,
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": {
+            "intervalStart": 0.0,
+            "intervalEnd": 1.7976931348623157E308,
+            "elapsed": 1.7976931348623157E308,
+            "rateBytesPerSecond": 1.0,
+            "remainingBefore": 1.7976931348623157E308,
+            "remainingAfter": 0.0
+          },
+          "complete": null
+        },
+        {
+          "sequence": 5,
+          "type": "COMPLETE",
+          "effectiveTime": 1.7976931348623157E308,
+          "observedTime": 1.7976931348623157E308,
+          "transferId": 1,
+          "admissionOrdinal": 1,
+          "capacity": null,
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": {
+            "remainingAfterService": 0.0
+          }
+        },
+        {
+          "sequence": 6,
+          "type": "COMPLETE",
+          "effectiveTime": 1.7976931348623157E308,
+          "observedTime": 1.7976931348623157E308,
+          "transferId": 2,
+          "admissionOrdinal": 2,
+          "capacity": null,
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": {
+            "remainingAfterService": 0.0
+          }
+        }
+      ],
+      "droppedCount": 0,
+      "engineTime": 1.7976931348623157E308
+    },
+    "bindings": [
+      {
+        "externalTransferId": 1,
+        "admissionOrdinal": 1,
+        "jobId": 1,
+        "taskIds": [
+          1
+        ],
+        "parentJobId": null,
+        "groupKind": "EXTERNAL_GROUP_V1",
+        "sourceScope": "MODELED_CONSTRAINED_SOURCE",
+        "sourceEndpoint": "source",
+        "destinationEndpoint": "VM:fixture",
+        "occupiedResources": []
+      },
+      {
+        "externalTransferId": 2,
+        "admissionOrdinal": 2,
+        "jobId": 1,
+        "taskIds": [
+          1
+        ],
+        "parentJobId": null,
+        "groupKind": "EXTERNAL_GROUP_V1",
+        "sourceScope": "MODELED_CONSTRAINED_SOURCE",
+        "sourceEndpoint": "source",
+        "destinationEndpoint": "VM:fixture",
+        "occupiedResources": []
+      }
+    ],
+    "engineCreated": true,
+    "inputDemand": null
+  },
+  "metrics": {
+    "localityScope": "V1_GROUP_INPUT_REFERENCES",
+    "transferMetrics": {
+      "accountingVersion": "EXACT_BINARY64_INPUT_DECIMAL_V1",
+      "validation": {
+        "captureStatus": "COMPLETE",
+        "recordCount": 6,
+        "admissionCount": 2,
+        "completionCount": 2,
+        "openFlowCount": 0,
+        "certifiedThroughSequence": 6,
+        "tailPhase": "READY",
+        "minimumMissingRecords": 0
+      },
+      "droppedRecordCount": 0,
+      "engineTime": 1.7976931348623157E308,
+      "admittedPayloadBytes": 359538626972463141629054847463408713596141135051689993197834953606314521560057077521179117265533756343080917907028764928468642653778928365536935093407075033972099821153102564152490980180778657888151737016910267884609166473806445896331617118664246696549595652408289446337476354361838599762500808052368249716736,
+      "completedDemandBytes": 359538626972463141629054847463408713596141135051689993197834953606314521560057077521179117265533756343080917907028764928468642653778928365536935093407075033972099821153102564152490980180778657888151737016910267884609166473806445896331617118664246696549595652408289446337476354361838599762500808052368249716736,
+      "servicedBalanceDeltaBytes": 359538626972463141629054847463408713596141135051689993197834953606314521560057077521179117265533756343080917907028764928468642653778928365536935093407075033972099821153102564152490980180778657888151737016910267884609166473806445896331617118664246696549595652408289446337476354361838599762500808052368249716736,
+      "modeledRateAreaBytes": 359538626972463141629054847463408713596141135051689993197834953606314521560057077521179117265533756343080917907028764928468642653778928365536935093407075033972099821153102564152490980180778657888151737016910267884609166473806445896331617118664246696549595652408289446337476354361838599762500808052368249716736,
+      "completionResidualBytes": 0,
+      "remainingLedgerBytes": 0,
+      "rateAreaMinusBalanceDeltaBytes": 0,
+      "integrationEpochCount": 1,
+      "completedFctSampleCount": 2,
+      "meanEffectiveFctSeconds": 1.7976931348623157E308,
+      "p95EffectiveFctSeconds": 1.7976931348623157E308,
+      "maxEffectiveFctSeconds": 1.7976931348623157E308,
+      "meanNotificationLagSeconds": 0.0,
+      "flows": [
+        {
+          "externalTransferId": 1,
+          "admissionOrdinal": 1,
+          "complete": true,
+          "admissionTime": 0.0,
+          "completionEffectiveTime": 1.7976931348623157E308,
+          "completionObservedTime": 1.7976931348623157E308,
+          "effectiveFctSeconds": 1.7976931348623157E308,
+          "observedFctSeconds": 1.7976931348623157E308,
+          "notificationLagSeconds": 0.0,
+          "demandBytes": 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368,
+          "servicedBalanceDeltaBytes": 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368,
+          "modeledRateAreaBytes": 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368,
+          "completionResidualBytes": 0,
+          "remainingBytes": 0
+        },
+        {
+          "externalTransferId": 2,
+          "admissionOrdinal": 2,
+          "complete": true,
+          "admissionTime": 0.0,
+          "completionEffectiveTime": 1.7976931348623157E308,
+          "completionObservedTime": 1.7976931348623157E308,
+          "effectiveFctSeconds": 1.7976931348623157E308,
+          "observedFctSeconds": 1.7976931348623157E308,
+          "notificationLagSeconds": 0.0,
+          "demandBytes": 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368,
+          "servicedBalanceDeltaBytes": 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368,
+          "modeledRateAreaBytes": 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368,
+          "completionResidualBytes": 0,
+          "remainingBytes": 0
+        }
+      ],
+      "resources": []
+    },
+    "localityStatus": "INPUT_COUNTERS_UNAVAILABLE",
+    "inputReferenceCount": null,
+    "localInputReferenceCount": null,
+    "requiredInputReferenceBytes": null,
+    "localInputReferenceBytes": null,
+    "transferableInputReferenceBytes": null,
+    "admittedMinusTransferableReferenceBytes": null,
+    "localByteFraction": null,
+    "localReferenceFraction": null
+  }
+}

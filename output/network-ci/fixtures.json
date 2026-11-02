@@ -1,0 +1,23 @@
+{
+  "schema": "workflowsim-network-check-fixtures-v1",
+  "inputs": [
+    "endpoint-full/result.manifest.json",
+    "endpoint-prefix/result.manifest.json",
+    "endpoint-zero/result.manifest.json",
+    "fat-full/result.manifest.json",
+    "fat-prefix/result.manifest.json",
+    "fat-zero/result.manifest.json",
+    "fat-cross-core1/result.manifest.json",
+    "fat-cross-core3/result.manifest.json",
+    "fat-same-edge/result.manifest.json",
+    "fat-k2/result.manifest.json",
+    "late.network-ledger.json",
+    "weighted.network-ledger.json",
+    "zero-step.network-ledger.json",
+    "large-clock.network-ledger.json",
+    "huge-aggregate.network-ledger.json",
+    "below-binary64-area.network-ledger.json",
+    "infinite-derived-duration.network-ledger.json",
+    "late-capacity.network-ledger.json"
+  ]
+}

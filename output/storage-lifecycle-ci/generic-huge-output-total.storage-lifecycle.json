@@ -1,0 +1,376 @@
+{
+  "schema": "workflowsim-storage-lifecycle-v3",
+  "modelKind": "COHERENT_STORAGE_DATAFLOW_V3",
+  "recording": {
+    "mode": "FILE_STORAGE_LIFECYCLE_V3",
+    "maxTraceRecords": 20000
+  },
+  "certificateScope": "STORAGE_LIFECYCLE_NOT_FLUID_SERVICE_ACCOUNTING_V3",
+  "policies": {
+    "fileIdentity": "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2",
+    "release": "DEPENDENCY_READY_AT_OBSERVATION_V2",
+    "visibility": "PER_FILE_SETTLEMENT_OBSERVATION_V2",
+    "selection": "VISIBLE_LOCAL_OR_MAX_ISOLATED_RATE_STABLE_LOCATION_V2",
+    "sourceAccess": "BOUNDED_STORE_READ_WRITE_NIC_HOST_ATTACHMENT_V3",
+    "sharing": "SHARED_MAX_MIN",
+    "inputAccess": "LOCAL_VISIBLE_REPLICA_V3",
+    "outputCommit": "ALL_SUCCESSFUL_OUTPUTS_TO_SOURCE_V3"
+  },
+  "capture": {
+    "status": "COMPLETE",
+    "observedThrough": 5.0E307,
+    "retainedRecords": 14,
+    "droppedRecords": 0
+  },
+  "filePlan": {
+    "contractVersion": "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2",
+    "tasks": [
+      {
+        "taskId": 1,
+        "workflowInputIndex": 0,
+        "parents": [],
+        "inputs": [],
+        "outputs": [
+          {
+            "workflowInputIndex": 0,
+            "name": "a"
+          }
+        ]
+      },
+      {
+        "taskId": 2,
+        "workflowInputIndex": 0,
+        "parents": [],
+        "inputs": [],
+        "outputs": [
+          {
+            "workflowInputIndex": 0,
+            "name": "b"
+          }
+        ]
+      }
+    ],
+    "files": [
+      {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "a"
+        },
+        "bytes": 1.0E308,
+        "producerTaskId": 1
+      },
+      {
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "b"
+        },
+        "bytes": 1.0E308,
+        "producerTaskId": 2
+      }
+    ]
+  },
+  "fabric": {
+    "locations": [
+      {
+        "kind": "VM",
+        "vmId": 7,
+        "sourceId": null
+      },
+      {
+        "kind": "VM",
+        "vmId": 42,
+        "sourceId": null
+      },
+      {
+        "kind": "SOURCE",
+        "vmId": null,
+        "sourceId": "source"
+      }
+    ],
+    "resources": [
+      {
+        "key": "STORE:source:NIC",
+        "capacityBytesPerSecond": 4.0
+      },
+      {
+        "key": "STORE:source:READ",
+        "capacityBytesPerSecond": 4.0
+      },
+      {
+        "key": "STORE:source:WRITE",
+        "capacityBytesPerSecond": 4.0
+      },
+      {
+        "key": "VM:42",
+        "capacityBytesPerSecond": 4.0
+      },
+      {
+        "key": "VM:7",
+        "capacityBytesPerSecond": 4.0
+      }
+    ],
+    "vmHostAssignments": [
+      {
+        "vmId": 7,
+        "hostId": 10
+      },
+      {
+        "vmId": 42,
+        "hostId": 20
+      }
+    ],
+    "topology": null,
+    "sourceStorage": {
+      "attachmentHostId": 30,
+      "readBandwidthMbPerSecond": 4.0E-6,
+      "writeBandwidthMbPerSecond": 4.0E-6,
+      "networkBandwidthMbPerSecond": 4.0E-6
+    }
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "observedTime": 0.0,
+      "type": "JOB_INPUT_REQUESTED",
+      "payload": {
+        "jobId": 0,
+        "taskIds": [
+          1
+        ],
+        "destinationVmId": 7
+      }
+    },
+    {
+      "sequence": 2,
+      "observedTime": 0.0,
+      "type": "JOB_DATA_READY",
+      "payload": {
+        "jobId": 0
+      }
+    },
+    {
+      "sequence": 3,
+      "observedTime": 0.0,
+      "type": "JOB_CPU_STARTED",
+      "payload": {
+        "jobId": 0,
+        "vmId": 7
+      }
+    },
+    {
+      "sequence": 4,
+      "observedTime": 0.0,
+      "type": "JOB_INPUT_REQUESTED",
+      "payload": {
+        "jobId": 1,
+        "taskIds": [
+          2
+        ],
+        "destinationVmId": 42
+      }
+    },
+    {
+      "sequence": 5,
+      "observedTime": 0.0,
+      "type": "JOB_DATA_READY",
+      "payload": {
+        "jobId": 1
+      }
+    },
+    {
+      "sequence": 6,
+      "observedTime": 0.0,
+      "type": "JOB_CPU_STARTED",
+      "payload": {
+        "jobId": 1,
+        "vmId": 42
+      }
+    },
+    {
+      "sequence": 7,
+      "observedTime": 1.0,
+      "type": "TASK_FINISHED",
+      "payload": {
+        "taskId": 1,
+        "jobId": 0,
+        "vmId": 7,
+        "success": true
+      }
+    },
+    {
+      "sequence": 8,
+      "observedTime": 1.0,
+      "type": "COPY_ADMITTED",
+      "payload": {
+        "copyOrdinal": 1,
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "a"
+        },
+        "bytes": 1.0E308,
+        "sourceReplica": {
+          "fileId": {
+            "workflowInputIndex": 0,
+            "name": "a"
+          },
+          "location": {
+            "kind": "VM",
+            "vmId": 7,
+            "sourceId": null
+          },
+          "visibleAt": 1.0,
+          "acquisition": "TASK_OUTPUT",
+          "origin": {
+            "producerTaskId": 1,
+            "jobAttemptId": 0,
+            "location": {
+              "kind": "VM",
+              "vmId": 7,
+              "sourceId": null
+            },
+            "observedAt": 1.0
+          },
+          "copiedFrom": null,
+          "copyOrdinal": null
+        },
+        "destination": {
+          "kind": "SOURCE",
+          "vmId": null,
+          "sourceId": "source"
+        },
+        "purpose": "OUTPUT",
+        "ownerJobId": 0,
+        "resources": [
+          "VM:7",
+          "STORE:source:NIC",
+          "STORE:source:WRITE"
+        ],
+        "standaloneRate": 4.0,
+        "isolatedSeconds": 2.5E307
+      }
+    },
+    {
+      "sequence": 9,
+      "observedTime": 1.0,
+      "type": "OUTPUT_RESOLVED",
+      "payload": {
+        "jobId": 0,
+        "taskId": 1,
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "a"
+        },
+        "resolution": "NEW_COPY",
+        "copyOrdinal": 1,
+        "source": {
+          "kind": "VM",
+          "vmId": 7,
+          "sourceId": null
+        }
+      }
+    },
+    {
+      "sequence": 10,
+      "observedTime": 1.0,
+      "type": "TASK_FINISHED",
+      "payload": {
+        "taskId": 2,
+        "jobId": 1,
+        "vmId": 42,
+        "success": true
+      }
+    },
+    {
+      "sequence": 11,
+      "observedTime": 1.0,
+      "type": "COPY_ADMITTED",
+      "payload": {
+        "copyOrdinal": 2,
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "b"
+        },
+        "bytes": 1.0E308,
+        "sourceReplica": {
+          "fileId": {
+            "workflowInputIndex": 0,
+            "name": "b"
+          },
+          "location": {
+            "kind": "VM",
+            "vmId": 42,
+            "sourceId": null
+          },
+          "visibleAt": 1.0,
+          "acquisition": "TASK_OUTPUT",
+          "origin": {
+            "producerTaskId": 2,
+            "jobAttemptId": 1,
+            "location": {
+              "kind": "VM",
+              "vmId": 42,
+              "sourceId": null
+            },
+            "observedAt": 1.0
+          },
+          "copiedFrom": null,
+          "copyOrdinal": null
+        },
+        "destination": {
+          "kind": "SOURCE",
+          "vmId": null,
+          "sourceId": "source"
+        },
+        "purpose": "OUTPUT",
+        "ownerJobId": 1,
+        "resources": [
+          "VM:42",
+          "STORE:source:NIC",
+          "STORE:source:WRITE"
+        ],
+        "standaloneRate": 4.0,
+        "isolatedSeconds": 2.5E307
+      }
+    },
+    {
+      "sequence": 12,
+      "observedTime": 1.0,
+      "type": "OUTPUT_RESOLVED",
+      "payload": {
+        "jobId": 1,
+        "taskId": 2,
+        "fileId": {
+          "workflowInputIndex": 0,
+          "name": "b"
+        },
+        "resolution": "NEW_COPY",
+        "copyOrdinal": 2,
+        "source": {
+          "kind": "VM",
+          "vmId": 42,
+          "sourceId": null
+        }
+      }
+    },
+    {
+      "sequence": 13,
+      "observedTime": 5.0E307,
+      "type": "COPY_SETTLED",
+      "payload": {
+        "copyOrdinal": 1,
+        "effectiveTime": 5.0E307,
+        "remainingAfterService": 0.0
+      }
+    },
+    {
+      "sequence": 14,
+      "observedTime": 5.0E307,
+      "type": "COPY_SETTLED",
+      "payload": {
+        "copyOrdinal": 2,
+        "effectiveTime": 5.0E307,
+        "remainingAfterService": 0.0
+      }
+    }
+  ]
+}

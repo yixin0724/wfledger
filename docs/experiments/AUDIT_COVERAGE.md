@@ -64,6 +64,24 @@ copy the events sidecar; a manifest-only copy makes every case "fail" vacuously.
   envelope's `taskIds` (empty by construction) and `platform.vms[].pes` (enters no audited formula
   for single-PE workloads). See the reproducibility contract's "Declaration-only fields" note.
 
+### Sidecar sweep (2026-11-02)
+
+The three evidence sidecars were fuzzed the same way, through their own auditors
+(`_network_audit.inspect_path` dispatches V2/V3 as well): mutate one field, copy the whole run
+directory, require a rejection.
+
+| Sidecar | Mutations | Result |
+|---|---|---|
+| Network ledger | admitted payload, serviced balance, modeled rate area, trace-snapshot event drop, engine time, empty bindings, schema, accounting version | all rejected (`CheckError`) |
+| File lifecycle V2 | retained-record count, event drop, certificate scope, observation watermark | all rejected |
+| Storage lifecycle V3 | retained-record count, event drop, certificate scope, missing `sourceStorage` | all rejected |
+| Manifest/events (network bundle) | event drop, `networkEvidence.mode` flip, ledger artifact hash | all rejected — the hash case by the main auditor (`artifact-sha256`) and by the network auditor |
+
+Note for anyone repeating this: the artifact role string in this manifest is `network-ledger`
+(camel-case `networkLedger` matches nothing, so the "tamper" is a no-op and every auditor rightly
+passes). Two other false positives in this sweep had the same shape — a mutation that changed
+nothing (`events.count` instead of `eventCount`, a stage-in envelope's already-empty `taskIds`).
+
 ## 5. Deliberate boundaries (not defects)
 
 - Budget windows are excluded from the v1 Workbench surface, so `CARBON_WINDOW_DEFER` is rejected at

@@ -1,0 +1,1364 @@
+{
+  "schema": "workflowsim-network-ledger-v1",
+  "flowUnit": "V1_PARENT_OR_EXTERNAL_GROUP",
+  "numericProfile": "BINARY64_SCALAR_MAXMIN_8ULP_CAPPED_1E_MINUS12_V1",
+  "accountingVersion": "EXACT_BINARY64_INPUT_DECIMAL_V1",
+  "units": {
+    "time": "SIMULATION_SECONDS",
+    "bytes": "MODELED_BYTES",
+    "rate": "BYTES_PER_SECOND"
+  },
+  "evidence": {
+    "config": {
+      "mode": "FLUID_GROUP_LEDGER_V1",
+      "maxTraceRecords": 10000
+    },
+    "modelKind": "PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1",
+    "traceSnapshot": {
+      "status": "COMPLETE",
+      "events": [
+        {
+          "sequence": 1,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "VM:7",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 2,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "VM:42",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 3,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:ACC:10-\u003eEDGE:0:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 4,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:0:0-\u003eACC:10",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 5,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:ACC:20-\u003eEDGE:0:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 6,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:0:0-\u003eACC:20",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 7,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:0:0-\u003eAGG:0:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 8,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:0:0-\u003eEDGE:0:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 9,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:0:0-\u003eAGG:0:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 10,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:0:1-\u003eEDGE:0:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 11,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:0:1-\u003eAGG:0:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 12,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:0:0-\u003eEDGE:0:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 13,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:0:1-\u003eAGG:0:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 14,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:0:1-\u003eEDGE:0:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 15,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:0:0-\u003eCORE:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 16,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:CORE:0-\u003eAGG:0:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 17,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:1:0-\u003eAGG:1:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 18,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:1:0-\u003eEDGE:1:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 19,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:1:0-\u003eAGG:1:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 20,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:1:1-\u003eEDGE:1:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 21,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:1:1-\u003eAGG:1:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 22,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:1:0-\u003eEDGE:1:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 23,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:1:1-\u003eAGG:1:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 24,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:1:1-\u003eEDGE:1:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 25,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:1:0-\u003eCORE:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 26,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:CORE:0-\u003eAGG:1:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 27,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:2:0-\u003eAGG:2:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 28,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:2:0-\u003eEDGE:2:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 29,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:2:0-\u003eAGG:2:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 30,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:2:1-\u003eEDGE:2:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 31,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:2:1-\u003eAGG:2:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 32,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:2:0-\u003eEDGE:2:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 33,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:2:1-\u003eAGG:2:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 34,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:2:1-\u003eEDGE:2:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 35,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:2:0-\u003eCORE:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 36,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:CORE:0-\u003eAGG:2:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 37,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:3:0-\u003eAGG:3:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 38,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:3:0-\u003eEDGE:3:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 39,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:3:0-\u003eAGG:3:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 40,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:3:1-\u003eEDGE:3:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 41,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:3:1-\u003eAGG:3:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 42,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:3:0-\u003eEDGE:3:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 43,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:EDGE:3:1-\u003eAGG:3:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 44,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:3:1-\u003eEDGE:3:1",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 45,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:AGG:3:0-\u003eCORE:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 46,
+          "type": "CAPACITY",
+          "effectiveTime": 0.0,
+          "observedTime": 0.0,
+          "transferId": null,
+          "admissionOrdinal": null,
+          "capacity": {
+            "resourceKey": "LINK:CORE:0-\u003eAGG:3:0",
+            "capacityBytesPerSecond": 5000000.0
+          },
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 47,
+          "type": "START",
+          "effectiveTime": 0.21000000000000002,
+          "observedTime": 0.21000000000000002,
+          "transferId": 1,
+          "admissionOrdinal": 1,
+          "capacity": null,
+          "start": {
+            "bytes": 0.5,
+            "occupiedResources": [
+              "VM:7"
+            ],
+            "nominalRateBytesPerSecond": 5000000.0,
+            "initialRateBytesPerSecond": 5000000.0
+          },
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 48,
+          "type": "SERVICE_SEGMENT",
+          "effectiveTime": 0.21000010000000002,
+          "observedTime": 0.31000000000000005,
+          "transferId": 1,
+          "admissionOrdinal": 1,
+          "capacity": null,
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": {
+            "intervalStart": 0.21000000000000002,
+            "intervalEnd": 0.21000010000000002,
+            "elapsed": 1.0E-7,
+            "rateBytesPerSecond": 5000000.0,
+            "remainingBefore": 0.5,
+            "remainingAfter": 0.0
+          },
+          "complete": null
+        },
+        {
+          "sequence": 49,
+          "type": "COMPLETE",
+          "effectiveTime": 0.21000010000000002,
+          "observedTime": 0.31000000000000005,
+          "transferId": 1,
+          "admissionOrdinal": 1,
+          "capacity": null,
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": {
+            "remainingAfterService": 0.0
+          }
+        },
+        {
+          "sequence": 50,
+          "type": "START",
+          "effectiveTime": 1.31,
+          "observedTime": 1.31,
+          "transferId": 2,
+          "admissionOrdinal": 2,
+          "capacity": null,
+          "start": {
+            "bytes": 5000000.0,
+            "occupiedResources": [
+              "VM:7",
+              "VM:42",
+              "LINK:ACC:10-\u003eEDGE:0:0",
+              "LINK:EDGE:0:0-\u003eACC:20"
+            ],
+            "nominalRateBytesPerSecond": 5000000.0,
+            "initialRateBytesPerSecond": 5000000.0
+          },
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": null
+        },
+        {
+          "sequence": 51,
+          "type": "SERVICE_SEGMENT",
+          "effectiveTime": 2.31,
+          "observedTime": 2.31,
+          "transferId": 2,
+          "admissionOrdinal": 2,
+          "capacity": null,
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": {
+            "intervalStart": 1.31,
+            "intervalEnd": 2.31,
+            "elapsed": 1.0,
+            "rateBytesPerSecond": 5000000.0,
+            "remainingBefore": 5000000.0,
+            "remainingAfter": 0.0
+          },
+          "complete": null
+        },
+        {
+          "sequence": 52,
+          "type": "COMPLETE",
+          "effectiveTime": 2.31,
+          "observedTime": 2.31,
+          "transferId": 2,
+          "admissionOrdinal": 2,
+          "capacity": null,
+          "start": null,
+          "rateChange": null,
+          "serviceSegment": null,
+          "complete": {
+            "remainingAfterService": 0.0
+          }
+        }
+      ],
+      "droppedCount": 0,
+      "engineTime": 2.31
+    },
+    "bindings": [
+      {
+        "externalTransferId": 1,
+        "admissionOrdinal": 1,
+        "jobId": 0,
+        "taskIds": [
+          1
+        ],
+        "parentJobId": null,
+        "groupKind": "EXTERNAL_GROUP_V1",
+        "sourceScope": "MODELED_CONSTRAINED_SOURCE",
+        "sourceEndpoint": "source",
+        "destinationEndpoint": "VM:7",
+        "occupiedResources": [
+          "VM:7"
+        ]
+      },
+      {
+        "externalTransferId": 2,
+        "admissionOrdinal": 2,
+        "jobId": 1,
+        "taskIds": [
+          2
+        ],
+        "parentJobId": 0,
+        "groupKind": "PARENT_GROUP_V1",
+        "sourceScope": "MODELED_CONSTRAINED_SOURCE",
+        "sourceEndpoint": "VM:7",
+        "destinationEndpoint": "VM:42",
+        "occupiedResources": [
+          "VM:7",
+          "VM:42",
+          "LINK:ACC:10-\u003eEDGE:0:0",
+          "LINK:EDGE:0:0-\u003eACC:20"
+        ]
+      }
+    ],
+    "engineCreated": true,
+    "inputDemand": {
+      "scope": "V1_GROUP_INPUT_REFERENCES",
+      "referenceCount": 2,
+      "localReferenceCount": 0,
+      "requiredReferenceBytes": 5000000.5,
+      "localReferenceBytes": 0,
+      "transferableReferenceBytes": 5000000.5
+    }
+  },
+  "metrics": {
+    "localityScope": "V1_GROUP_INPUT_REFERENCES",
+    "transferMetrics": {
+      "accountingVersion": "EXACT_BINARY64_INPUT_DECIMAL_V1",
+      "validation": {
+        "captureStatus": "COMPLETE",
+        "recordCount": 52,
+        "admissionCount": 2,
+        "completionCount": 2,
+        "openFlowCount": 0,
+        "certifiedThroughSequence": 52,
+        "tailPhase": "READY",
+        "minimumMissingRecords": 0
+      },
+      "droppedRecordCount": 0,
+      "engineTime": 2.31,
+      "admittedPayloadBytes": 5000000.5,
+      "completedDemandBytes": 5000000.5,
+      "servicedBalanceDeltaBytes": 5000000.5,
+      "modeledRateAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+      "completionResidualBytes": 0,
+      "remainingLedgerBytes": 0,
+      "rateAreaMinusBalanceDeltaBytes": -2.26259440870568706571930306381545960903167724609375000000E-17,
+      "integrationEpochCount": 2,
+      "completedFctSampleCount": 2,
+      "meanEffectiveFctSeconds": 0.50000005,
+      "p95EffectiveFctSeconds": 1.0,
+      "maxEffectiveFctSeconds": 1.0,
+      "meanNotificationLagSeconds": 0.049999950000000015,
+      "flows": [
+        {
+          "externalTransferId": 1,
+          "admissionOrdinal": 1,
+          "complete": true,
+          "admissionTime": 0.21000000000000002,
+          "completionEffectiveTime": 0.21000010000000002,
+          "completionObservedTime": 0.31000000000000005,
+          "effectiveFctSeconds": 1.0000000000287557E-7,
+          "observedFctSeconds": 0.10000000000000003,
+          "notificationLagSeconds": 0.09999990000000003,
+          "demandBytes": 0.5,
+          "servicedBalanceDeltaBytes": 0.5,
+          "modeledRateAreaBytes": 0.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "completionResidualBytes": 0,
+          "remainingBytes": 0
+        },
+        {
+          "externalTransferId": 2,
+          "admissionOrdinal": 2,
+          "complete": true,
+          "admissionTime": 1.31,
+          "completionEffectiveTime": 2.31,
+          "completionObservedTime": 2.31,
+          "effectiveFctSeconds": 1.0,
+          "observedFctSeconds": 1.0,
+          "notificationLagSeconds": 0.0,
+          "demandBytes": 5000000,
+          "servicedBalanceDeltaBytes": 5000000,
+          "modeledRateAreaBytes": 5000000,
+          "completionResidualBytes": 0,
+          "remainingBytes": 0
+        }
+      ],
+      "resources": [
+        {
+          "resourceKey": "VM:7",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "boundedRateAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 1.0
+        },
+        {
+          "resourceKey": "VM:42",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 5000000,
+          "boundedRateAreaBytes": 5000000,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.99999990000001
+        },
+        {
+          "resourceKey": "LINK:ACC:10-\u003eEDGE:0:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 5000000,
+          "boundedRateAreaBytes": 5000000,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.99999990000001
+        },
+        {
+          "resourceKey": "LINK:EDGE:0:0-\u003eACC:10",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:ACC:20-\u003eEDGE:0:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:0:0-\u003eACC:20",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 5000000,
+          "boundedRateAreaBytes": 5000000,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.99999990000001
+        },
+        {
+          "resourceKey": "LINK:EDGE:0:0-\u003eAGG:0:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:0:0-\u003eEDGE:0:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:0:0-\u003eAGG:0:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:0:1-\u003eEDGE:0:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:0:1-\u003eAGG:0:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:0:0-\u003eEDGE:0:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:0:1-\u003eAGG:0:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:0:1-\u003eEDGE:0:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:0:0-\u003eCORE:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:CORE:0-\u003eAGG:0:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:1:0-\u003eAGG:1:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:1:0-\u003eEDGE:1:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:1:0-\u003eAGG:1:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:1:1-\u003eEDGE:1:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:1:1-\u003eAGG:1:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:1:0-\u003eEDGE:1:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:1:1-\u003eAGG:1:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:1:1-\u003eEDGE:1:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:1:0-\u003eCORE:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:CORE:0-\u003eAGG:1:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:2:0-\u003eAGG:2:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:2:0-\u003eEDGE:2:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:2:0-\u003eAGG:2:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:2:1-\u003eEDGE:2:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:2:1-\u003eAGG:2:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:2:0-\u003eEDGE:2:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:2:1-\u003eAGG:2:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:2:1-\u003eEDGE:2:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:2:0-\u003eCORE:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:CORE:0-\u003eAGG:2:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:3:0-\u003eAGG:3:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:3:0-\u003eEDGE:3:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:3:0-\u003eAGG:3:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:3:1-\u003eEDGE:3:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:3:1-\u003eAGG:3:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:3:0-\u003eEDGE:3:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:EDGE:3:1-\u003eAGG:3:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:3:1-\u003eEDGE:3:1",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:AGG:3:0-\u003eCORE:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        },
+        {
+          "resourceKey": "LINK:CORE:0-\u003eAGG:3:0",
+          "lastDeclaredCapacityBytesPerSecond": 5000000.0,
+          "rateAreaBytes": 0,
+          "boundedRateAreaBytes": 0,
+          "capacityAreaBytes": 5000000.4999999999999999773740559129431293428069693618454039096832275390625000000,
+          "integrationEpochUtilization": 0.0
+        }
+      ]
+    },
+    "localityStatus": "AVAILABLE",
+    "inputReferenceCount": 2,
+    "localInputReferenceCount": 0,
+    "requiredInputReferenceBytes": 5000000.5,
+    "localInputReferenceBytes": 0,
+    "transferableInputReferenceBytes": 5000000.5,
+    "admittedMinusTransferableReferenceBytes": 0.0,
+    "localByteFraction": 0.0,
+    "localReferenceFraction": 0.0
+  }
+}

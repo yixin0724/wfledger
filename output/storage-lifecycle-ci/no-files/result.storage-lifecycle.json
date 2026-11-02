@@ -1,0 +1,414 @@
+{
+  "schema": "workflowsim-storage-lifecycle-v3",
+  "modelKind": "COHERENT_STORAGE_DATAFLOW_NO_CONTENTION_V3",
+  "recording": {
+    "mode": "FILE_STORAGE_LIFECYCLE_V3",
+    "maxTraceRecords": 20000
+  },
+  "certificateScope": "STORAGE_LIFECYCLE_NOT_FLUID_SERVICE_ACCOUNTING_V3",
+  "policies": {
+    "fileIdentity": "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2",
+    "release": "DEPENDENCY_READY_AT_OBSERVATION_V2",
+    "visibility": "PER_FILE_SETTLEMENT_OBSERVATION_V2",
+    "selection": "VISIBLE_LOCAL_OR_MAX_ISOLATED_RATE_STABLE_LOCATION_V2",
+    "sourceAccess": "BOUNDED_STORE_READ_WRITE_NIC_HOST_ATTACHMENT_V3",
+    "sharing": "ISOLATED_PATH_BOTTLENECK",
+    "inputAccess": "LOCAL_VISIBLE_REPLICA_V3",
+    "outputCommit": "ALL_SUCCESSFUL_OUTPUTS_TO_SOURCE_V3"
+  },
+  "capture": {
+    "status": "COMPLETE",
+    "observedThrough": 1.21,
+    "retainedRecords": 4,
+    "droppedRecords": 0
+  },
+  "filePlan": {
+    "contractVersion": "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2",
+    "tasks": [
+      {
+        "taskId": 1,
+        "workflowInputIndex": 0,
+        "parents": [],
+        "inputs": [],
+        "outputs": []
+      }
+    ],
+    "files": []
+  },
+  "fabric": {
+    "locations": [
+      {
+        "kind": "VM",
+        "vmId": 7,
+        "sourceId": null
+      },
+      {
+        "kind": "SOURCE",
+        "vmId": null,
+        "sourceId": "source"
+      }
+    ],
+    "resources": [
+      {
+        "key": "LINK:ACC:10-\u003eEDGE:0:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:ACC:30-\u003eEDGE:0:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:0:0-\u003eCORE:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:0:0-\u003eCORE:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:0:0-\u003eEDGE:0:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:0:0-\u003eEDGE:0:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:0:1-\u003eCORE:2",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:0:1-\u003eCORE:3",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:0:1-\u003eEDGE:0:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:0:1-\u003eEDGE:0:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:1:0-\u003eCORE:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:1:0-\u003eCORE:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:1:0-\u003eEDGE:1:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:1:0-\u003eEDGE:1:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:1:1-\u003eCORE:2",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:1:1-\u003eCORE:3",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:1:1-\u003eEDGE:1:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:1:1-\u003eEDGE:1:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:2:0-\u003eCORE:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:2:0-\u003eCORE:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:2:0-\u003eEDGE:2:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:2:0-\u003eEDGE:2:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:2:1-\u003eCORE:2",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:2:1-\u003eCORE:3",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:2:1-\u003eEDGE:2:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:2:1-\u003eEDGE:2:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:3:0-\u003eCORE:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:3:0-\u003eCORE:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:3:0-\u003eEDGE:3:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:3:0-\u003eEDGE:3:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:3:1-\u003eCORE:2",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:3:1-\u003eCORE:3",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:3:1-\u003eEDGE:3:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:AGG:3:1-\u003eEDGE:3:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:0-\u003eAGG:0:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:0-\u003eAGG:1:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:0-\u003eAGG:2:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:0-\u003eAGG:3:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:1-\u003eAGG:0:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:1-\u003eAGG:1:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:1-\u003eAGG:2:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:1-\u003eAGG:3:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:2-\u003eAGG:0:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:2-\u003eAGG:1:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:2-\u003eAGG:2:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:2-\u003eAGG:3:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:3-\u003eAGG:0:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:3-\u003eAGG:1:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:3-\u003eAGG:2:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:CORE:3-\u003eAGG:3:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:0:0-\u003eACC:10",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:0:0-\u003eAGG:0:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:0:0-\u003eAGG:0:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:0:1-\u003eACC:30",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:0:1-\u003eAGG:0:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:0:1-\u003eAGG:0:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:1:0-\u003eAGG:1:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:1:0-\u003eAGG:1:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:1:1-\u003eAGG:1:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:1:1-\u003eAGG:1:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:2:0-\u003eAGG:2:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:2:0-\u003eAGG:2:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:2:1-\u003eAGG:2:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:2:1-\u003eAGG:2:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:3:0-\u003eAGG:3:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:3:0-\u003eAGG:3:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:3:1-\u003eAGG:3:0",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "LINK:EDGE:3:1-\u003eAGG:3:1",
+        "capacityBytesPerSecond": 5000000.0
+      },
+      {
+        "key": "STORE:source:NIC",
+        "capacityBytesPerSecond": 2000000.0
+      },
+      {
+        "key": "STORE:source:READ",
+        "capacityBytesPerSecond": 1000000.0
+      },
+      {
+        "key": "STORE:source:WRITE",
+        "capacityBytesPerSecond": 500000.0
+      },
+      {
+        "key": "VM:7",
+        "capacityBytesPerSecond": 1.0E7
+      }
+    ],
+    "vmHostAssignments": [
+      {
+        "vmId": 7,
+        "hostId": 10
+      }
+    ],
+    "topology": {
+      "kind": "FAT_TREE",
+      "k": 4,
+      "coreSwitchCount": 4,
+      "linkBandwidthBytesPerSecond": 5000000.0,
+      "hostPlacements": [
+        {
+          "hostId": 10,
+          "pod": 0,
+          "edge": 0
+        },
+        {
+          "hostId": 30,
+          "pod": 0,
+          "edge": 1
+        }
+      ]
+    },
+    "sourceStorage": {
+      "attachmentHostId": 30,
+      "readBandwidthMbPerSecond": 1.0,
+      "writeBandwidthMbPerSecond": 0.5,
+      "networkBandwidthMbPerSecond": 2.0
+    }
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "observedTime": 0.21000000000000002,
+      "type": "JOB_INPUT_REQUESTED",
+      "payload": {
+        "jobId": 0,
+        "taskIds": [
+          1
+        ],
+        "destinationVmId": 7
+      }
+    },
+    {
+      "sequence": 2,
+      "observedTime": 0.21000000000000002,
+      "type": "JOB_DATA_READY",
+      "payload": {
+        "jobId": 0
+      }
+    },
+    {
+      "sequence": 3,
+      "observedTime": 0.21000000000000002,
+      "type": "JOB_CPU_STARTED",
+      "payload": {
+        "jobId": 0,
+        "vmId": 7
+      }
+    },
+    {
+      "sequence": 4,
+      "observedTime": 1.21,
+      "type": "TASK_FINISHED",
+      "payload": {
+        "taskId": 1,
+        "jobId": 0,
+        "vmId": 7,
+        "success": true
+      }
+    }
+  ]
+}
