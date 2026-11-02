@@ -1,0 +1,35 @@
+experiments/src/main/java/org/workflowsim/experiments/fattree/FatTreeSchedulingCampaignExecutor.java
+  s_dfd76f683cfd2c::t_198720e4d1af39 155-157,166,173-176,298,329-331,334,337,480,690,693,695-696,698,700,702,707,739,742,744-749,771,783,803-805,809-811,820-821,846-849
+experiments/src/main/java/org/workflowsim/experiments/network/NetworkStudyExecutor.java
+  s_dfd76f683cfd2c::t_23825aaf308d68 182-187,189,191,193,195-196,198-200,203-219,221-238,241-246,277-284,286-300,305
+experiments/src/main/java/org/workflowsim/experiments/rerun/RerunDiffExecutor.java
+  s_dfd76f683cfd2c::t_fd4159bfeb0d16 19,124-126,146-148,174,176-177
+experiments/src/main/java/org/workflowsim/experiments/rerun/RerunReport.java
+  s_dfd76f683cfd2c::t_87c669d0fee06e 146,149,151-153,156-158,160,162,165,168-170,175-176,181,184,192,194,196,209,215-220,232,382-384
+experiments/src/test/java/org/workflowsim/experiments/fattree/FatTreeSchedulingCampaignExecutorTest.java
+  s_dfd76f683cfd2c::t_903aa2376248fb 183,286-294,298-300
+experiments/src/test/java/org/workflowsim/experiments/network/NetworkStudyIntegrationTest.java
+  s_dfd76f683cfd2c::t_83c39aa6a1160b 94-95,146-147
+experiments/src/test/java/org/workflowsim/experiments/rerun/NetworkRerunIntegrationTest.java
+  s_dfd76f683cfd2c::t_d94a808b191460 103,106,288
+experiments/src/test/java/org/workflowsim/experiments/rerun/RerunDiffExecutorTest.java
+  s_dfd76f683cfd2c::t_a430cbe0847f80 113,119-120,293
+experiments/studies/fattree-scheduling-campaign/campaign-results.md
+  s_dfd76f683cfd2c::t_b451e02a286b05 1,3-4,6,21,23,25,33,39,54,56,80,82,95,97,120,122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ac7070e0b57316f94a7327a025d5de001da12f93",
+  "prompts": {},
+  "sessions": {
+    "s_dfd76f683cfd2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18a73-43db-7ad2-a5c7-a77ef2d51736",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
