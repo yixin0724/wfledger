@@ -1,0 +1,408 @@
+output/file-lifecycle-ci/isolated-endpoint/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/file-lifecycle-ci/retry-17/result.manifest.json
+  h_adc77830afcf4d 1-568
+output/network-ci/fat-cross-core3/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/retry-17/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/file-lifecycle-ci/retry-17/result.file-lifecycle.json
+  h_adc77830afcf4d 1-357
+output/file-lifecycle-ci/inputs/retry.dax
+  h_adc77830afcf4d 1
+output/storage-lifecycle-ci/off-true/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/off-true/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/retry-5/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/network-ci/endpoint-prefix/result.manifest.json
+  h_adc77830afcf4d 1-504
+output/storage-lifecycle-ci/inputs/flow.dax
+  h_adc77830afcf4d 1
+output/storage-lifecycle-ci/retry-5/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/local-shared-fat/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/deferred-joined-read/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-570
+output/storage-lifecycle-ci/shared-input-isolated-fat/result.manifest.json
+  h_adc77830afcf4d 1-619
+output/file-lifecycle-ci/retry-22/result.file-lifecycle.json
+  h_adc77830afcf4d 1-477
+output/file-lifecycle-ci/staggered-scopes/result.file-lifecycle.json
+  h_adc77830afcf4d 1-1371
+output/network-ci/fat-full/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/inputs/later.dax
+  h_adc77830afcf4d 1
+output/storage-lifecycle-ci/no-files/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-414
+output/file-lifecycle-ci/no-input/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/shared-input-isolated-fat/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-983
+output/file-lifecycle-ci/retry-22/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/storage-lifecycle-ci/deferred-joined-read/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/file-lifecycle-ci/no-input/result.manifest.json
+  h_adc77830afcf4d 1-472
+output/network-ci/late-capacity.network-ledger.json
+  h_adc77830afcf4d 1-271
+output/storage-lifecycle-ci/shared-input-shared-endpoint/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/fat-zero/result.network-ledger.json
+  h_adc77830afcf4d 1-1758
+output/storage-lifecycle-ci/shared-input-isolated-endpoint/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/file-lifecycle-ci/zero-reference/result.file-lifecycle.json
+  h_adc77830afcf4d 1-162
+output/storage-lifecycle-ci/generic-huge-output-total.storage-lifecycle.json
+  h_adc77830afcf4d 1-376
+output/network-ci/data.dax
+  h_adc77830afcf4d 1
+output/storage-lifecycle-ci/shared-input-isolated-endpoint/result.manifest.json
+  h_adc77830afcf4d 1-609
+output/storage-lifecycle-ci/same-vm-gate/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/file-lifecycle-ci/off-shared/result.manifest.json
+  h_adc77830afcf4d 1-588
+output/storage-lifecycle-ci/zero-output/result.manifest.json
+  h_adc77830afcf4d 1-459
+output/file-lifecycle-ci/off-isolated/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/local-shared-endpoint/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/shared-input-shared-endpoint/result.manifest.json
+  h_adc77830afcf4d 1-609
+output/network-ci/endpoint-full/result.manifest.json
+  h_adc77830afcf4d 1-504
+output/file-lifecycle-ci/retry-17/result.events.jsonl
+  h_adc77830afcf4d 1-37
+output/storage-lifecycle-ci/shared-input-shared-endpoint/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-657
+output/network-ci/endpoint-full/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/retry-22/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-638
+output/file-lifecycle-ci/inputs/no-input.dax
+  h_adc77830afcf4d 1
+output/network-ci/fat-cross-core1/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/file-lifecycle-ci/retry-22/result.events.jsonl
+  h_adc77830afcf4d 1-57
+output/file-lifecycle-ci/shared-fat/result.manifest.json
+  h_adc77830afcf4d 1-608
+output/network-ci/weighted.network-ledger.json
+  h_adc77830afcf4d 1-273
+output/network-ci/fat-cross-core1/result.manifest.json
+  h_adc77830afcf4d 1-517
+output/storage-lifecycle-ci/inputs/empty.dax
+  h_adc77830afcf4d 1
+output/storage-lifecycle-ci/retry-17/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-658
+output/network-ci/fat-prefix/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/off-false/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/fat-k2/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/fat-k2/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/network-ci/fat-zero/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/local-isolated-fat/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/retry-1/result.manifest.json
+  h_adc77830afcf4d 1-579
+output/file-lifecycle-ci/retry-17/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/storage-lifecycle-ci/local-isolated-fat/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-963
+output/file-lifecycle-ci/isolated-endpoint/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/network-ci/fat-cross-core1/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/fixtures.json
+  h_adc77830afcf4d 1-23
+output/storage-lifecycle-ci/shared-input-shared-fat/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-983
+output/network-ci/fat-full/result.network-ledger.json
+  h_adc77830afcf4d 1-1944
+output/network-ci/fat-full/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/network-ci/endpoint-full/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/file-lifecycle-ci/off-isolated/result.manifest.json
+  h_adc77830afcf4d 1-598
+output/storage-lifecycle-ci/retry-5/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-578
+output/storage-lifecycle-ci/retry-22/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/storage-lifecycle-ci/shared-input-isolated-endpoint/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/zero.dax
+  h_adc77830afcf4d 1
+output/network-ci/fat-same-edge/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/file-lifecycle-ci/no-input/result.file-lifecycle.json
+  h_adc77830afcf4d 1-109
+output/storage-lifecycle-ci/staggered-scopes/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-1572
+output/storage-lifecycle-ci/retry-5/result.manifest.json
+  h_adc77830afcf4d 1-579
+output/network-ci/endpoint-zero/result.events.jsonl
+  h_adc77830afcf4d 1-19
+output/storage-lifecycle-ci/inputs/zero.dax
+  h_adc77830afcf4d 1
+output/storage-lifecycle-ci/off-false/result.manifest.json
+  h_adc77830afcf4d 1-609
+output/file-lifecycle-ci/retry-1/result.file-lifecycle.json
+  h_adc77830afcf4d 1-297
+output/file-lifecycle-ci/staggered-scopes/result.events.jsonl
+  h_adc77830afcf4d 1-45
+output/network-ci/endpoint-zero/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/shared-input-isolated-endpoint/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-657
+output/storage-lifecycle-ci/staggered-scopes/result.events.jsonl
+  h_adc77830afcf4d 1-45
+output/file-lifecycle-ci/zero-reference/result.manifest.json
+  h_adc77830afcf4d 1-489
+output/file-lifecycle-ci/off-shared/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/network-ci/fat-prefix/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/file-lifecycle-ci/no-input/result.events.jsonl
+  h_adc77830afcf4d 1-19
+output/storage-lifecycle-ci/local-isolated-endpoint/result.manifest.json
+  h_adc77830afcf4d 1-609
+output/file-lifecycle-ci/shared-endpoint/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/shared-input-shared-fat/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/fat-cross-core1/result.network-ledger.json
+  h_adc77830afcf4d 1-1372
+output/network-ci/zero-step.network-ledger.json
+  h_adc77830afcf4d 1-238
+output/network-ci/fat-same-edge/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/network-ci/fat-k2/result.manifest.json
+  h_adc77830afcf4d 1-514
+output/storage-lifecycle-ci/same-vm-gate/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-578
+output/network-ci/large-clock.network-ledger.json
+  h_adc77830afcf4d 1-155
+output/file-lifecycle-ci/retry-1/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/file-lifecycle-ci/off-isolated/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/retry-1/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/shared-input-shared-endpoint/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/inputs/join.dax
+  h_adc77830afcf4d 1
+output/file-lifecycle-ci/inputs/flow.dax
+  h_adc77830afcf4d 1
+output/file-lifecycle-ci/off-shared/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/shared-input-shared-fat/result.manifest.json
+  h_adc77830afcf4d 1-619
+output/file-lifecycle-ci/retry-5/result.manifest.json
+  h_adc77830afcf4d 1-602
+output/file-lifecycle-ci/shared-endpoint/result.manifest.json
+  h_adc77830afcf4d 1-598
+output/storage-lifecycle-ci/retry-17/result.events.jsonl
+  h_adc77830afcf4d 1-37
+output/file-lifecycle-ci/retry-5/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/file-lifecycle-ci/isolated-fat/result.file-lifecycle.json
+  h_adc77830afcf4d 1-866
+output/network-ci/fat-cross-core3/result.network-ledger.json
+  h_adc77830afcf4d 1-1756
+output/storage-lifecycle-ci/generic-deferred-number-order.storage-lifecycle.json
+  h_adc77830afcf4d 1-596
+output/file-lifecycle-ci/zero-reference/result.events.jsonl
+  h_adc77830afcf4d 1-19
+output/network-ci/infinite-derived-duration.network-ledger.json
+  h_adc77830afcf4d 1-189
+output/network-ci/fat-full/result.manifest.json
+  h_adc77830afcf4d 1-514
+output/file-lifecycle-ci/staggered-scopes/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/fat-prefix/result.network-ledger.json
+  h_adc77830afcf4d 1-93
+output/network-ci/endpoint-full/result.network-ledger.json
+  h_adc77830afcf4d 1-314
+output/file-lifecycle-ci/isolated-endpoint/result.file-lifecycle.json
+  h_adc77830afcf4d 1-560
+output/network-ci/endpoint-zero/result.network-ledger.json
+  h_adc77830afcf4d 1-126
+output/storage-lifecycle-ci/off-false/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/file-lifecycle-ci/isolated-fat/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/file-lifecycle-ci/retry-1/result.manifest.json
+  h_adc77830afcf4d 1-534
+output/storage-lifecycle-ci/local-isolated-fat/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/file-lifecycle-ci/retry-5/result.file-lifecycle.json
+  h_adc77830afcf4d 1-417
+output/storage-lifecycle-ci/local-shared-endpoint/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/network-ci/fat-zero/result.events.jsonl
+  h_adc77830afcf4d 1-19
+output/file-lifecycle-ci/inputs/later.dax
+  h_adc77830afcf4d 1
+output/storage-lifecycle-ci/same-vm-gate/result.manifest.json
+  h_adc77830afcf4d 1-568
+output/file-lifecycle-ci/shared-endpoint/result.file-lifecycle.json
+  h_adc77830afcf4d 1-560
+output/storage-lifecycle-ci/shared-input-isolated-fat/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/endpoint-zero/result.manifest.json
+  h_adc77830afcf4d 1-459
+output/network-ci/huge-aggregate.network-ledger.json
+  h_adc77830afcf4d 1-238
+output/file-lifecycle-ci/isolated-endpoint/result.manifest.json
+  h_adc77830afcf4d 1-598
+output/file-lifecycle-ci/shared-fat/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/zero-output/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-159
+output/storage-lifecycle-ci/zero-output/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/file-lifecycle-ci/shared-endpoint/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/no-files/result.manifest.json
+  h_adc77830afcf4d 1-455
+output/storage-lifecycle-ci/local-shared-fat/result.manifest.json
+  h_adc77830afcf4d 1-619
+output/storage-lifecycle-ci/retry-1/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/network-ci/fat-zero/result.manifest.json
+  h_adc77830afcf4d 1-469
+output/file-lifecycle-ci/retry-22/result.manifest.json
+  h_adc77830afcf4d 1-636
+output/network-ci/fat-cross-core3/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/retry-22/result.manifest.json
+  h_adc77830afcf4d 1-613
+output/file-lifecycle-ci/retry-1/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/retry-17/result.manifest.json
+  h_adc77830afcf4d 1-613
+output/storage-lifecycle-ci/staggered-scopes/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/deferred-joined-read/result.events.jsonl
+  h_adc77830afcf4d 1-43
+output/file-lifecycle-ci/isolated-fat/result.manifest.json
+  h_adc77830afcf4d 1-608
+output/file-lifecycle-ci/shared-fat/result.file-lifecycle.json
+  h_adc77830afcf4d 1-866
+output/network-ci/below-binary64-area.network-ledger.json
+  h_adc77830afcf4d 1-169
+output/storage-lifecycle-ci/retry-1/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-578
+output/file-lifecycle-ci/generic-active.file-lifecycle.json
+  h_adc77830afcf4d 1-178
+output/network-ci/endpoint-prefix/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/shared-input-shared-fat/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/file-lifecycle-ci/retry-5/result.events.jsonl
+  h_adc77830afcf4d 1-47
+output/storage-lifecycle-ci/fixtures.json
+  h_adc77830afcf4d 1-49
+output/storage-lifecycle-ci/local-isolated-endpoint/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-639
+output/storage-lifecycle-ci/staggered-scopes/result.manifest.json
+  h_adc77830afcf4d 1-810
+output/storage-lifecycle-ci/no-files/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/file-lifecycle-ci/inputs/zero.dax
+  h_adc77830afcf4d 1
+output/file-lifecycle-ci/generic-huge.file-lifecycle.json
+  h_adc77830afcf4d 1-329
+output/storage-lifecycle-ci/generic-ready-not-started.storage-lifecycle.json
+  h_adc77830afcf4d 1-370
+output/storage-lifecycle-ci/retry-22/result.events.jsonl
+  h_adc77830afcf4d 1-37
+output/storage-lifecycle-ci/no-files/result.events.jsonl
+  h_adc77830afcf4d 1-19
+output/storage-lifecycle-ci/local-isolated-endpoint/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/network-ci/fat-same-edge/result.manifest.json
+  h_adc77830afcf4d 1-517
+output/storage-lifecycle-ci/zero-output/result.events.jsonl
+  h_adc77830afcf4d 1-19
+output/storage-lifecycle-ci/generic-tiny-clock.storage-lifecycle.json
+  h_adc77830afcf4d 1-233
+output/storage-lifecycle-ci/off-true/result.manifest.json
+  h_adc77830afcf4d 1-609
+output/storage-lifecycle-ci/local-isolated-fat/result.manifest.json
+  h_adc77830afcf4d 1-619
+output/file-lifecycle-ci/zero-reference/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/file-lifecycle-ci/generic-cache-source.file-lifecycle.json
+  h_adc77830afcf4d 1-436
+output/network-ci/fat-prefix/result.manifest.json
+  h_adc77830afcf4d 1-514
+output/storage-lifecycle-ci/local-shared-endpoint/result.manifest.json
+  h_adc77830afcf4d 1-609
+output/network-ci/fat-same-edge/result.network-ledger.json
+  h_adc77830afcf4d 1-1364
+output/file-lifecycle-ci/isolated-fat/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/storage-lifecycle-ci/local-shared-fat/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-963
+output/storage-lifecycle-ci/same-vm-gate/result.metrics.json
+  h_adc77830afcf4d 1-93
+output/storage-lifecycle-ci/generic-source-wait.storage-lifecycle.json
+  h_adc77830afcf4d 1-266
+output/network-ci/fat-k2/result.network-ledger.json
+  h_adc77830afcf4d 1-604
+docs/experiments/AUDIT_COVERAGE.md
+  h_adc77830afcf4d 67-84
+output/network-ci/endpoint-prefix/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/file-lifecycle-ci/shared-fat/result.metrics.json
+  h_adc77830afcf4d 1-101
+output/file-lifecycle-ci/generic-tiny.file-lifecycle.json
+  h_adc77830afcf4d 1-196
+output/file-lifecycle-ci/staggered-scopes/result.manifest.json
+  h_adc77830afcf4d 1-802
+output/storage-lifecycle-ci/deferred-joined-read/result.manifest.json
+  h_adc77830afcf4d 1-684
+output/storage-lifecycle-ci/generic-target-wait.storage-lifecycle.json
+  h_adc77830afcf4d 1-352
+output/network-ci/endpoint-prefix/result.network-ledger.json
+  h_adc77830afcf4d 1-93
+output/file-lifecycle-ci/fixtures.json
+  h_adc77830afcf4d 1-35
+output/storage-lifecycle-ci/shared-input-isolated-fat/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/network-ci/late.network-ledger.json
+  h_adc77830afcf4d 1-323
+output/storage-lifecycle-ci/local-shared-endpoint/result.storage-lifecycle.json
+  h_adc77830afcf4d 1-639
+output/storage-lifecycle-ci/local-shared-fat/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/storage-lifecycle-ci/local-isolated-endpoint/result.events.jsonl
+  h_adc77830afcf4d 1-27
+output/network-ci/fat-cross-core3/result.manifest.json
+  h_adc77830afcf4d 1-517
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8e74969ac3b1e20d0121c3c451fa2ced38613ed8",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
