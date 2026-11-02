@@ -154,8 +154,8 @@ class WorkbenchIntegrationTest {
         assertFalse(html.contains("@@TITLE@@"));
         assertFalse(html.contains("@@DATA@@"));
         assertFalse(html.contains("<script src="), "report must work offline without external scripts");
-        assertTrue(html.contains("任务执行时间线"));
-        assertTrue(html.contains("资源利用率"));
+        assertTrue(html.contains("Task execution timeline"));
+        assertTrue(html.contains("Resource utilization"));
         JsonObject history = onlyHistoryRecord(root);
         assertEquals(
                 experiment.getFileName().toString(), history.get("directory").getAsString());

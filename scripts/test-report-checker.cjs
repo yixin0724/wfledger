@@ -181,7 +181,7 @@ try {
       'function spoilAssignmentCandidates(){const t=document.getElementById("dataflow-assignment-candidate-table");if(t.firstElementChild)while(t.children.length<=12)t.appendChild(t.firstElementChild.cloneNode(true));}spoilAssignmentCandidates();document.getElementById("run-select").addEventListener("change",spoilAssignmentCandidates);document.getElementById("dataflow-assignment-select").addEventListener("change",spoilAssignmentCandidates);'),
       /Assignment candidates row count/, assignment);
     rejected('assignment-false-complete-progress-proof', inject(content,
-      'function spoilAssignmentScope(){document.getElementById("dataflow-assignment-note").textContent="全部实时进度与全局最优结果均已证明";}spoilAssignmentScope();document.getElementById("run-select").addEventListener("change",spoilAssignmentScope);'),
+      'function spoilAssignmentScope(){document.getElementById("dataflow-assignment-note").textContent="All live progress and the global optimum result have been proven";}spoilAssignmentScope();document.getElementById("run-select").addEventListener("change",spoilAssignmentScope);'),
       /Assignment scope must not imply a fluid replay/, assignment);
     const local = path.join(temporary, 'forbidden-assignment.json');fs.writeFileSync(local, '{}');
     rejected('assignment-secondary-fetch', inject(content,

@@ -297,10 +297,10 @@ class IndependentAuditorTests(unittest.TestCase):
 
 
     def test_deadline_family_recompute_matches_java_semantics(self):
-        # 链 E：构造请求 deadline 的 bundle，验证 6 字段的 Python 精确复算。
+        # Chain E: build a bundle that requests a deadline and verify exact Python recomputation of the 6 fields.
         manifest = make_bundle(self.root / "deadline", 1.0, 1000, False)
         doc = json.loads(manifest.read_text())
-        doc["configuration"]["deadline"] = 200  # 2× 100 就位（阈值数输入）
+        doc["configuration"]["deadline"] = 200  # 200 = 2x 100 in place (the threshold value input)
         m = doc["metrics"]
         m.update(deadlineObservationEnabled=True, deadlineObservationOutcome="MET",
                  deadlineObservationTimeBasis="SIMULATION_END_SECONDS", deadlineMet=True,
@@ -309,12 +309,12 @@ class IndependentAuditorTests(unittest.TestCase):
         audit = Audit()
         result = evidence.inspect_manifest(manifest, audit)
         self.assertEqual(0, audit.issue_count, audit.report())
-        # 第二轮：MISSED_LATE 分支
+        # Second round: the MISSED_LATE branch
         manifest2 = make_bundle(self.root / "deadline-late", 1.0, 1000, False)
         doc2 = json.loads(manifest2.read_text())
-        doc2["configuration"]["deadline"] = 1  # 1 < makespan(1.21) → 迟到
+        doc2["configuration"]["deadline"] = 1  # 1 < makespan(1.21) -> late
         m2 = doc2["metrics"]
-        slack2 = 1 - m2["makespanSeconds"]  # 负值 −0.21
+        slack2 = 1 - m2["makespanSeconds"]  # negative value -0.21
         m2.update(deadlineObservationEnabled=True, deadlineObservationOutcome="MISSED_LATE",
                   deadlineObservationTimeBasis="SIMULATION_END_SECONDS", deadlineMet=False,
                   deadlineSlackSeconds=slack2, deadlineTardinessSeconds=-slack2)  # +0.21
@@ -333,14 +333,14 @@ class IndependentAuditorTests(unittest.TestCase):
         doc = json.loads(manifest.read_text())
         events_path = manifest.parent / "run.events.jsonl"
         events = [json.loads(line) for line in events_path.read_text().splitlines()]
-        # 1) 数值截断：250.75 纳秒按 Java Number.longValue() 截为 250。
+        # 1) Numeric truncation: 250.75 nanoseconds truncates to 250 under Java Number.longValue().
         end = float(doc["result"]["simulationEndSeconds"])
         events.append({"sequence": len(events), "simulationTime": end, "type": "SCHEDULING_CYCLE",
                        "jobId": None, "taskIds": [], "attributes": {"decisionElapsedNanos": 250.75}})
-        # 2) 非数值（字符串）按 instanceof Number 语义跳过，不判失败。
+        # 2) A non-numeric value (a string) is skipped under instanceof Number semantics, not judged a failure.
         events.append({"sequence": len(events), "simulationTime": end, "type": "SCHEDULING_CYCLE",
                        "jobId": None, "taskIds": [], "attributes": {"decisionElapsedNanos": "not-a-number"}})
-        # 3) 显式规划事件计 7 纳秒；4) 非显式事件携带 99 纳秒必须被排除（Java 同口径）。
+        # 3) An explicit planning event contributes 7 nanoseconds; 4) a non-explicit event carrying 99 nanoseconds must be excluded (same rule as Java).
         events.append({"sequence": len(events), "simulationTime": end, "type": "PLANNING_COMPLETED",
                        "jobId": None, "taskIds": [], "attributes": {"explicitPlannerDecision": True,
                                                                     "planningDecisionElapsedNanos": 7}})
@@ -362,16 +362,17 @@ class IndependentAuditorTests(unittest.TestCase):
             self.assertIn(key, result["coverage"]["checkedMetrics"])
 
     def test_energy_conservation_recompute_and_corruption_catch(self):
-        """BAT-E2（2026-10-27）：能耗守恒复算：正例（带功率平台）通过；篡改总能耗被击杀。
+        """BAT-E2 (2026-10-27): energy-conservation recompute: the positive case (powered platform) passes;
+        tampered total energy is killed.
 
-        数学（Beloglazov Eq.(2) 二元特化，单一 VM idle=100W max=400W）：
-        E = 100×T_sim + (400−100)×T_busy = 121 + 333 = 454 J（默认时距）。
+        Math (Beloglazov Eq.(2) binary specialization, single VM idle=100W max=400W):
+        E = 100*T_sim + (400-100)*T_busy = 121 + 333 = 454 J (default horizon).
         """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "powered"
             make_bundle(root)
             manifest = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
-            # 平台补功率字段
+            # Add the platform power fields
             manifest["platform"]["vms"][0]["idlePowerWatts"] = 100.0
             manifest["platform"]["vms"][0]["maxPowerWatts"] = 400.0
             end = manifest["metrics"]["makespanSeconds"]
@@ -388,7 +389,7 @@ class IndependentAuditorTests(unittest.TestCase):
             report_path = Path(tmp) / "energy-report.json"
             evidence.main(["--output", str(report_path), str(root / "run.manifest.json")])
             self.assertEqual(json.loads(report_path.read_text(encoding="utf-8"))["status"], "PASS")
-            # 反例：篡改总能耗 → 守恒律击杀
+            # Counterexample: tampered total energy -> the conservation law kills it
             manifest["energyMetrics"]["totalEnergyJoules"] = expected_total + 500.0
             (root / "run.manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             bad_report = Path(tmp) / "energy-bad.json"
@@ -399,10 +400,11 @@ class IndependentAuditorTests(unittest.TestCase):
                             "corrupted total energy must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_event_stream_order_sequence_and_blank_lines_are_killed(self):
-        """复核轮：事件流的顺序/序号/空行检查此前没有负例钉住（实现了但无人验证）。
+        """Review round: the event-stream order/sequence/blank-line checks had no negative case pinning them
+        (implemented but never verified).
 
-        三类形态各取一个：时间倒退（event-clock-order）、重复序号（event-sequence）、
-        空行（blank line）。判定以审计器子进程的退出码为准（硬错误与 FAIL 都必须非零）。
+        One case per shape: clock regression (event-clock-order), duplicate sequence (event-sequence),
+        blank line (blank line). The verdict is the auditor subprocess exit code (hard errors and FAIL must both be nonzero).
         """
         def run_case(mutate):
             root = Path(self.root / f"stream-{len(list(self.root.iterdir()))}")
@@ -437,10 +439,11 @@ class IndependentAuditorTests(unittest.TestCase):
                 self.assertIn(needle, body, name + " must be reported with its contract code")
 
     def test_event_sequence_bounds_must_match_the_stream(self):
-        """复核轮（跨语言模糊测试发现）：清单自报的 first/lastSequence 必须绑定事件流。
+        """Review round (found by cross-language fuzzing): the manifest's self-reported first/lastSequence must bind
+        to the event stream.
 
-        此前两侧（Java 校验器与 Python 审计器）都只核对 eventCount，篡改序号边界可以
-        整份通过——声明的上下文与证据不一致却无人发现。
+        Previously both sides (the Java validator and the Python auditor) only checked eventCount, so tampered
+        sequence bounds could pass the whole bundle -- declared context disagreed with the evidence and nobody noticed.
         """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "sequence"
@@ -641,10 +644,11 @@ class ContractEventAuditTests(unittest.TestCase):
 
 
 class CarbonDimensionAuditTests(unittest.TestCase):
-    """BAT-C2（2026-10-28）：碳维度复算自测——期望值全部来自量纲定律（E[J]/3.6e6 × I[g/kWh]）
-    与预算超额积分（Σ max(0, P_fleet(t)−green)×dt），即 CARBON_DIMENSION_DESIGN.md §1 的
-    两族模型契约；手推导演，绝不用实现输出当期望值。声明→必查（declared→required）镜像
-    energyMetrics 的 powered→required 规则（corruption 必须被击杀）。"""
+    """BAT-C2 (2026-10-28): carbon-dimension recompute self-test -- expected values come only from the
+    dimensional law (E[J]/3.6e6 * I[g/kWh]) and the budget-excess integral (sum max(0, P_fleet(t)-green)*dt),
+    i.e. the two model families contracted in CARBON_DIMENSION_DESIGN.md §1; hand-derived, never the
+    implementation output. declared->required mirrors the energyMetrics powered->required rule
+    (corruption must be killed)."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -658,20 +662,20 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                               capture_output=True, text=True)
 
     def audit_status(self, manifest, report_name):
-        """跑一次独立审计 CLI，返回报告 dict。"""
+        """Run the independent audit CLI once and return the report dict."""
         report = Path(self.temp.name) / (report_name + ".json")
         evidence.main(["--output", str(report), str(manifest)])
         return json.loads(report.read_text(encoding="utf-8"))
 
     @staticmethod
     def elementary_energy(manifest):
-        """初级量：E = 100×end + 300×busy（fixture 平台 idle=100W max=400W）。"""
+        """Elementary quantity: E = 100*end + 300*busy (fixture platform idle=100W max=400W)."""
         end = float(manifest["metrics"]["makespanSeconds"])
         busy = float(manifest["metrics"]["vmMetrics"]["0"]["modeledBusyIntervalSeconds"])
         return 100.0 * end + 300.0 * busy, end, busy
 
     def test_carbon_intensity_recompute_and_corruption(self):
-        """正例：强度 380 g/kWh → grams = E/3.6e6 × 380 通过审计；篡改 +5g 必须被捕杀。"""
+        """Positive case: intensity 380 g/kWh -> grams = E/3.6e6 * 380 passes the audit; tampering +5g must be killed."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "carbon-intensity"
             make_bundle(root)
@@ -680,12 +684,12 @@ class CarbonDimensionAuditTests(unittest.TestCase):
             manifest["platform"]["vms"][0]["maxPowerWatts"] = 400.0
             manifest["platform"]["vms"][0]["carbonIntensityGramsPerKWh"] = 380.0
             energy, end, _busy = self.elementary_energy(manifest)
-            # energyMetrics 也是声明的（powered→required，已有规则）。
+            # energyMetrics is declared too (powered->required, an existing rule).
             manifest["energyMetrics"] = {
                 "totalEnergyJoules": energy, "meanVmEnergyJoules": energy, "peakPowerWatts": 400.0,
                 "energyMakespanProductJouleSeconds": energy * end, "vmEnergyJoules": {"0": energy},
             }
-            grams = energy / 3.6e6 * 380.0  # 单位律：J → kWh 除 3.6e6，× g/kWh
+            grams = energy / 3.6e6 * 380.0  # unit law: J -> kWh divides by 3.6e6, then times g/kWh
             manifest["carbonMetrics"] = {
                 "totalCarbonGrams": grams, "meanVmCarbonGrams": grams / 1,
                 "carbonMakespanProductGramSeconds": grams * end, "perVmCarbonGrams": {"0": grams},
@@ -695,7 +699,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             good = self.audit_status(bundle, "carbon-good")
             self.assertEqual("PASS", good["status"], json.dumps(good["issues"][:3]))
-            # 反例：篡改总克数 → 复算差异 > 容差 → 审计失败且命中 totalCarbonGrams
+            # Counterexample: tampered total grams -> recompute delta > tolerance -> audit fails, citing totalCarbonGrams
             manifest["carbonMetrics"]["totalCarbonGrams"] = grams + 5.0
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             bad = self.audit_status(bundle, "carbon-bad")
@@ -704,7 +708,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                             "corrupted total carbon must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_carbon_missing_when_intensities_declared(self):
-        """BAT-C2 declared→required：声明了碳强度但缺 carbonMetrics 节 → 审计必须失败。"""
+        """BAT-C2 declared->required: carbon intensity declared but the carbonMetrics section missing -> the audit must fail."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "carbon-missing"
             make_bundle(root)
@@ -717,7 +721,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                 "totalEnergyJoules": energy, "meanVmEnergyJoules": energy, "peakPowerWatts": 400.0,
                 "energyMakespanProductJouleSeconds": energy * end, "vmEnergyJoules": {"0": energy},
             }
-            # 不写 carbonMetrics（ oxidative：声明→必查）
+            # Do not write carbonMetrics (deliberate: declared -> required)
             bundle = root / "run.manifest.json"
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             report = self.audit_status(bundle, "carbon-missing")
@@ -727,11 +731,13 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                             "failure must cite the carbonMetrics section: " + json.dumps(report["issues"][:3]))
 
     def test_carbon_budget_window_recompute_and_corruption(self):
-        """预算模型：手推导演 fleet 时间线（计算 Job 区间 +Σidle/并发×ΔP）与逐窗口超额。
+        """Budget model: hand-derived fleet timeline (compute Job intervals plus the sum of idle/concurrency*deltaP) and
+        per-window excess.
 
-        数学（fixture 单 VM idle=100W max=400W；计算 Job 区间 [0.21, 1.21)）：
-        P(t)=400W 于 [0.21,1.21)，100W 其余；窗口 [0,1.5) 绿 250W → 超额 (400−250)×1.0=150 W·s；
-        窗口 [2,5) 绿 250W → 覆盖区间外不叠加 → 0。总量 150 与窗口子图 {"0":150} 一致。
+        Math (fixture single VM idle=100W max=400W; compute Job interval [0.21, 1.21)):
+        P(t)=400W on [0.21,1.21), 100W elsewhere; window [0,1.5) green 250W -> excess (400-250)*1.0=150 W*s;
+        window [2,5) green 250W -> outside the covered interval, nothing accumulates -> 0. Total 150 agrees with
+        the window sub-map {"0":150}.
         """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "carbon-budget"
@@ -757,14 +763,14 @@ class CarbonDimensionAuditTests(unittest.TestCase):
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             good = self.audit_status(bundle, "budget-good")
             self.assertEqual("PASS", good["status"], json.dumps(good["issues"][:3]))
-            # 反例一：总量超额被篡改 → 击杀
+            # Counterexample 1: tampered total excess -> killed
             manifest["carbonMetrics"]["totalCarbonExcessWattSeconds"] = 155.0
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             bad1 = self.audit_status(bundle, "budget-bad-total")
             self.assertEqual("FAIL", bad1["status"])
             self.assertTrue(any("totalCarbonExcessWattSeconds" in str(i.get("location", "")) for i in bad1["issues"]),
                             "corrupted total excess must be caught: " + json.dumps(bad1["issues"][:2]))
-            # 反例二：窗口子图与总量不一致（子图 ≠ 复算的逐窗值）→ 击杀
+            # Counterexample 2: window sub-map inconsistent with the total (sub-map != recomputed per-window values) -> killed
             manifest["carbonMetrics"]["totalCarbonExcessWattSeconds"] = 150.0
             manifest["carbonMetrics"]["windowExcessWattSeconds"] = {"0": 100.0}
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
@@ -772,7 +778,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
             self.assertEqual("FAIL", bad2["status"])
             self.assertTrue(any("windowExcess" in str(i) for i in bad2["issues"]),
                             "corrupted window sub-map must be caught: " + json.dumps(bad2["issues"][:2]))
-            # 反例三：两模型同声明（per-VM 强度 + 平台窗口）→ 契约互斥条款击杀
+            # Counterexample 3: both models declared (per-VM intensity + platform windows) -> the contract's mutual-exclusion clause kills it
             manifest["platform"]["vms"][0]["carbonIntensityGramsPerKWh"] = 380.0
             manifest["carbonMetrics"]["windowExcessWattSeconds"] = {"0": 150.0}
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
@@ -783,7 +789,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                             + json.dumps(both["issues"][:2]))
 
     def test_carbon_windows_must_be_sorted_non_overlapping(self):
-        """窗口重排序校验：乱序/重叠 → 契约条款击杀（镜像 Java builder 校验）。"""
+        """Window ordering check: out-of-order/overlap -> the contract clause kills it (mirrors the Java builder validation)."""
         for where, windows in (
             ("overlap", [{"startSeconds": 0.0, "endSeconds": 2.0, "greenWatts": 250.0},
                          {"startSeconds": 1.0, "endSeconds": 5.0, "greenWatts": 100.0}]),
@@ -816,11 +822,13 @@ class CarbonDimensionAuditTests(unittest.TestCase):
 
 
 class DvfsTierAuditTests(unittest.TestCase):
-    """BAT-D3（2026-10-29）：DVFS 逐档能量/碳复算自测——期望值全部来自扩展守恒律手推
-    （DVFS_DIMENSION_DESIGN.md §2.3：E_vm = P_idle(默认档)×T_sim + Σ档[(P_max(档)−
-    P_idle(默认档))×busy(档)]）与逐档舰队功率超额积分，手推数字写在断言旁注释；
-    绝不用实现输出当期望值。正例通过、逐档归因/能耗/档表篡改各自被击杀、v1 惰性
-    语义位不变（tierless 平台 + 平面功率 → D1 能量律原值通过）。"""
+    """BAT-D3 (2026-10-29): DVFS per-tier energy/carbon recompute self-test -- expected values come only
+    from the hand-derived extended conservation law
+    (DVFS_DIMENSION_DESIGN.md §2.3: E_vm = P_idle(default tier)*T_sim + sum over tiers
+    [(P_max(tier)-P_idle(default tier))*busy(tier)]) plus the per-tier fleet power excess integral; the
+    hand-derived numbers sit in comments next to the assertions, never the implementation output.
+    The positive case passes, per-tier attribution/energy/tier-table tampering is killed one by one, and the
+    v1 inert semantic bit is unchanged (tierless platform + flat power -> D1 energy law passes at its original value)."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -830,44 +838,46 @@ class DvfsTierAuditTests(unittest.TestCase):
         self.temp.cleanup()
 
     def audit_status(self, manifest_path, report_name):
-        """跑一次独立审计 CLI，返回报告 dict。"""
+        """Run the independent audit CLI once and return the report dict."""
         report = Path(self.temp.name) / (report_name + ".json")
         evidence.main(["--output", str(report), str(manifest_path)])
         return json.loads(report.read_text(encoding="utf-8"))
 
-    # ── fixture：2 档平台（2000 默认档 100/400W；1000 档 90/200W），VM 基速 1000 ──
-    # 计算 Job（1000 MI，基速 1000 → 1.0s）挂 1000 档（== 基速 → 时间面与 make_bundle
-    # 逐位同构，频档证据面叠加其上）；stage-in 簿记信封（0.11s）缺档 → 归默认档。
+    # -- fixture: 2-tier platform (2000 default tier 100/400W; 1000 tier 90/200W), VM base speed 1000 --
+    # The compute Job (1000 MI, base speed 1000 -> 1.0s) rides the 1000 tier (== base speed -> the time
+    # surface is bit-for-bit isomorphic to make_bundle, with the tier evidence surface layered on top); the
+    # stage-in bookkeeping envelope (0.11s) carries no tier -> attributed to the default tier.
     TWO_TIERS = [{"mips": 2000.0, "idlePowerWatts": 100.0, "maxPowerWatts": 400.0},
                  {"mips": 1000.0, "idlePowerWatts": 90.0, "maxPowerWatts": 200.0}]
 
     def make_tier_manifest(self, name="dvfs"):
-        """带频档平台的合成 manifest 路径；调用方按需写入 energyMetrics 等。"""
+        """Synthetic manifest path with a tiered platform; the caller writes energyMetrics and friends as needed."""
         root = self.root / name
         make_bundle(root, 1.0, 1000, False)
         doc = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
         doc["platform"]["vms"][0]["frequencyTiers"] = [dict(t) for t in self.TWO_TIERS]
         compute = next(j for j in doc["result"]["jobs"] if j["classType"] == 2)
-        compute["tierMips"] = 1000.0  # 非默认档（默认档 = 表首 2000）
+        compute["tierMips"] = 1000.0  # non-default tier (the default tier is the first table entry, 2000)
         return root / "run.manifest.json", doc
 
     def store_energy(self, doc, total):
-        """手推四元组：单 VM 总能量 total → 均值/峰值/EDP 同源手算。"""
+        """Hand-derived quadruple: single-VM total energy total -> mean/peak/EDP computed from the same source."""
         end = float(doc["metrics"]["makespanSeconds"])
         doc["energyMetrics"] = {
             "totalEnergyJoules": total,
-            "meanVmEnergyJoules": total,  # 单 VM 均值 = 总量
-            "peakPowerWatts": 400.0,      # 默认档（表首）P_max —— Java 侧 fleet peak 口径
+            "meanVmEnergyJoules": total,  # single-VM mean = total
+            "peakPowerWatts": 400.0,      # default tier (first table entry) P_max -- the Java-side fleet peak convention
             "energyMakespanProductJouleSeconds": total * end,
             "vmEnergyJoules": {"0": total},
         }
 
     def test_tiered_energy_recompute_matches_hand_law(self):
-        """正例：E = 100×1.21 + 0.11×(400−100) + 1.0×(200−100) = 121+33+100 = 254 J。
+        """Positive case: E = 100*1.21 + 0.11*(400-100) + 1.0*(200-100) = 121+33+100 = 254 J.
 
-        逐档归因：stage-in 簿记 [0.1,0.21) 缺档→默认档 0.11s；计算 Job [0.21,1.21)
-        携带 1000 档 1.0s（非默认档——D1 全默认档口径 = 121+300×1.11 = 454 J，两者
-        必须被区分：本用例存 254 通过、备注记录 honest 观察值 454。）
+        Per-tier attribution: stage-in bookkeeping [0.1,0.21) has no tier -> default tier for 0.11s; the
+        compute Job [0.21,1.21) carries the 1000 tier for 1.0s (a non-default tier -- the D1 all-at-default
+        view gives 121+300*1.11 = 454 J, and the two must be told apart: this case stores 254 and passes,
+        while the note records the honest observed value 454.)
         """
         bundle, doc = self.make_tier_manifest("dvfs-good")
         self.store_energy(doc, 254.0)
@@ -875,20 +885,22 @@ class DvfsTierAuditTests(unittest.TestCase):
         report = self.audit_status(bundle, "tier-good")
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
         note = next((n for n in report["notes"] if n["code"] == "dvfs-tier-accounting-observation"), None)
-        self.assertIsNotNone(note, "DVFS 观察备注必须存在")
-        # 观察值非断言口径：手推值带浮点容差对（453.99999999999994 级末位噪声合法）。
+        self.assertIsNotNone(note, "the DVFS observation note must exist")
+        # The observed values are not assertion inputs: the hand-derived values carry a floating tolerance pair (last-digit noise at the 453.99999999999994 level is legal).
         self.assertAlmostEqual(254.0, note["perTierTotalEnergyJoules"], delta=1e-9)
         self.assertAlmostEqual(454.0, note["allAtDefaultEnergyJoules"], delta=1e-9)
         self.assertTrue(note["nonDefaultTierBusyObserved"])
 
     def test_tiered_energy_discriminates_all_at_default_forgery(self):
-        """反例一（口径判别）：清单记录 D1 全默认档值 454 J（逐档真实归因仍在）→ 击杀。
+        """Counterexample 1 (convention discrimination): the manifest records the D1 all-at-default value 454 J
+        while the real per-tier attribution is still present -> killed.
 
-        若审计器退回 D1 口径（或 v1 平面功率口径 0 J），454 都不该被判 PASS——
-        与上一用例（254 通过）成对，唯一可同时满足两者的复算律即逐档扩展律。
+        If the auditor fell back to the D1 convention (or the v1 flat-power convention of 0 J), 454 must not
+        be judged PASS -- paired with the previous case (254 passes), the only recomputation law that satisfies
+        both is the per-tier extension.
         """
         bundle, doc = self.make_tier_manifest("dvfs-454")
-        self.store_energy(doc, 454.0)  # 伪造：能量按"全默认档"口径报关，归因证据却是 split
+        self.store_energy(doc, 454.0)  # forged: energy declared under the "all-at-default" convention while the attribution evidence is split
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         report = self.audit_status(bundle, "tier-454")
         self.assertEqual("FAIL", report["status"])
@@ -896,11 +908,12 @@ class DvfsTierAuditTests(unittest.TestCase):
                         "forged all-at-default energy must be caught: " + json.dumps(report["issues"][:2]))
 
     def test_tier_attribution_corruption_is_killed(self):
-        """反例二（"改动一个档的 busy"）：计算 Job 的档归因改挂默认档 → 档 busy 重排
-        （1000 档 0s / 默认档 1.11s）→ 复算能量 454 ≠ 存档 254 → 击杀。"""
+        """Counterexample 2 ("change one tier's busy seconds"): the compute Job's tier attribution is moved to
+        the default tier -> tier busy times reshuffle (1000 tier 0s / default tier 1.11s) -> recomputed energy
+        454 != stored 254 -> killed."""
         bundle, doc = self.make_tier_manifest("dvfs-retier")
         compute = next(j for j in doc["result"]["jobs"] if j["classType"] == 2)
-        compute["tierMips"] = 2000.0  # 篡改归因（仍为已声明档——档身份合法、能量证据断裂）
+        compute["tierMips"] = 2000.0  # tampered attribution (still a declared tier -- tier identity legal, energy evidence broken)
         self.store_energy(doc, 254.0)
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         report = self.audit_status(bundle, "tier-retier")
@@ -910,7 +923,7 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:2]))
 
     def test_undeclared_tier_mips_is_chain_broken(self):
-        """反例三：档 mips=1500 不在声明表内 → 镜像 Java tierByMips 的证据链条款击杀。"""
+        """Counterexample 3: tier mips=1500 is not in the declared table -> the evidence-chain clause mirroring Java tierByMips kills it."""
         bundle, doc = self.make_tier_manifest("dvfs-undeclared")
         compute = next(j for j in doc["result"]["jobs"] if j["classType"] == 2)
         compute["tierMips"] = 1500.0
@@ -923,7 +936,7 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:2]))
 
     def test_tier_table_ordering_is_validated(self):
-        """反例四：档表非严格降序（1000 在 2000 前）→ 表序契约（BAT-D1）击杀。"""
+        """Counterexample 4: the tier table is not strictly descending (1000 before 2000) -> the table-order contract (BAT-D1) kills it."""
         bundle, doc = self.make_tier_manifest("dvfs-unsorted")
         doc["platform"]["vms"][0]["frequencyTiers"] = [dict(t) for t in reversed(self.TWO_TIERS)]
         self.store_energy(doc, 254.0)
@@ -933,7 +946,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         self.assertTrue(any("descending" in str(i) for i in report["issues"]),
                         "non-descending tier table must be rejected: " + json.dumps(report["issues"][:2]))
 
-    # ── BAT-D6（2026-10-29）：任务窗期望秒数 = work/指派档速（Java/Python 同律缝）──
+    # -- BAT-D6 (2026-10-29): expected task-window seconds = work/assigned tier speed (the Java/Python shared-law seam) --
 
     THREE_TIERS = [
         {"mips": 2000.0, "idlePowerWatts": 100.0, "maxPowerWatts": 400.0},
@@ -942,12 +955,13 @@ class DvfsTierAuditTests(unittest.TestCase):
     ]
 
     def test_tier_speed_drives_task_window_recompute(self):
-        """正例：1000 MI 任务挂 500 档 → 期望窗 = 1000/500 = 2.0s（非 VM 基速的 1.0s）。
+        """Positive case: a 1000 MI task on the 500 tier -> expected window = 1000/500 = 2.0s (not the VM base
+        speed's 1.0s).
 
-        手推（make_bundle(duration=2.0)）：任务/Job 窗 [0.21, 2.21)，end=2.21，
-        busy=0.11+2.0=2.11；逐档能量
-        E = 100×2.21 + (400−100)×0.11(簿记默认档) + (150−100)×2.0(计算 500 档)
-          = 221 + 33 + 100 = 354 J；全默认口径观察值 = 221 + 300×2.11 = 854 J。
+        Hand-derived (make_bundle(duration=2.0)): task/Job window [0.21, 2.21), end=2.21,
+        busy=0.11+2.0=2.11; per-tier energy
+        E = 100*2.21 + (400-100)*0.11 (bookkeeping, default tier) + (150-100)*2.0 (compute, 500 tier)
+          = 221 + 33 + 100 = 354 J; the all-at-default observed value = 221 + 300*2.11 = 854 J.
         """
         root = self.root / "tier-speed"
         make_bundle(root, 2.0, 1000)
@@ -961,19 +975,21 @@ class DvfsTierAuditTests(unittest.TestCase):
         report = self.audit_status(bundle, "tier-speed-good")
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
         note = next((n for n in report["notes"] if n["code"] == "dvfs-tier-accounting-observation"), None)
-        self.assertIsNotNone(note, "DVFS 观察备注必须存在")
+        self.assertIsNotNone(note, "the DVFS observation note must exist")
         self.assertAlmostEqual(354.0, note["perTierTotalEnergyJoules"], delta=1e-9)
         self.assertAlmostEqual(854.0, note["allAtDefaultEnergyJoules"], delta=1e-9)
         self.assertTrue(note["nonDefaultTierBusyObserved"])
 
     def test_v1_speed_task_window_with_slow_tier_claim_is_killed(self):
-        """反例五（缝击杀）：时长仍按 VM 基速（1.0s）却申报 500 档 → 期望 2.0s 不符。
+        """Counterexample 5 (seam kill): the duration still follows the VM base speed (1.0s) while the manifest
+        claims the 500 tier -> the expected 2.0s does not match.
 
-        旧口径（任务窗恒按 VM 声明速）在该清单上"通过"；档速口径必须以
-        effective-task-window / cpu-lower-bound 逐项击杀——这是 BAT-D6 Java/Python
-        同律缝（WorkflowDatacenter.updateTaskExecTime 取指派档速）的回归钉。
-        能量（手推：100×1.21 + 300×0.11 + 50×1.0 = 204 J）按逐档律填写，失败必须
-        来自时间窗而非能量噪声。
+        The old convention (task windows always at the VM declared speed) "passes" on this manifest; the
+        tier-speed convention must kill it item by item through effective-task-window / cpu-lower-bound --
+        this is the regression pin for the BAT-D6 Java/Python shared-law seam
+        (WorkflowDatacenter.updateTaskExecTime takes the assigned tier speed). The energy is filled in under
+        the per-tier law (hand-derived: 100*1.21 + 300*0.11 + 50*1.0 = 204 J), so the failure must come from
+        the time window, not from energy noise.
         """
         root = self.root / "tier-speed-stale"
         make_bundle(root, 1.0, 1000)
@@ -987,20 +1003,21 @@ class DvfsTierAuditTests(unittest.TestCase):
         report = self.audit_status(bundle, "tier-speed-stale")
         self.assertEqual("FAIL", report["status"])
         codes = {i["code"] for i in report["issues"]}
-        self.assertIn("effective-task-window", codes, "时长/档速不符必须命中窗复算: "
+        self.assertIn("effective-task-window", codes, "duration/tier-speed mismatch must hit the window recompute: "
                         + json.dumps(report["issues"][:3]))
-        self.assertIn("cpu-lower-bound", codes, "Job 信封不得小于档速工作量: "
+        self.assertIn("cpu-lower-bound", codes, "the Job envelope must not be smaller than the tier-speed work: "
                         + json.dumps(report["issues"][:3]))
 
     def test_tiered_carbon_budget_uses_per_tier_fleet_power(self):
-        """预算模型逐档舰队功率：手推时间线（计算 Job [0.21,1.21) @1000 档）。
+        """Budget model with per-tier fleet power: hand-derived timeline (compute Job [0.21,1.21) @1000 tier).
 
-        P(t) = P_idle(默认档)=100（静态）+ 100（1000 档 dyn=200−100）= 200W 于
-        [0.21,1.21)；窗口 [0,1.5) 绿 150W → 超额 (200−150)×1.0 = 50 W·s，窗口
-        [2,5) 同绿 → 区间外 0；总量 50 = 窗口子图 {"0":50}。若沿用 v1 均一 ΔP
-        （tiered VM 平面功率=0 → ΔP=0 → 全程 0W）期望超额将恒为 0 ≠ 50——本用例
-        以 50 通过唯一裁定逐档口径生效（Java 侧预算模型的频档化是后续批次，
-        D3 前向口径见 DVFS_DIMENSION_DESIGN.md §1.5）。
+        P(t) = P_idle(default tier)=100 (static) + 100 (1000 tier dyn=200-100) = 200W on
+        [0.21,1.21); window [0,1.5) green 150W -> excess (200-150)*1.0 = 50 W*s; window
+        [2,5) with the same green -> 0 outside the interval; total 50 = window sub-map {"0":50}. Reusing the v1 uniform
+        deltaP (tiered VM flat power=0 -> deltaP=0 -> 0W throughout) would make the expected excess always
+        0 != 50 -- this case passing at 50 is the sole ruling that the per-tier convention is in force
+        (tier-ifying the Java-side budget model is a later batch; the D3 forward convention is
+        DVFS_DIMENSION_DESIGN.md §1.5).
         """
         bundle, doc = self.make_tier_manifest("dvfs-budget")
         doc["platform"]["carbonWindows"] = [
@@ -1016,7 +1033,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         good = self.audit_status(bundle, "tier-budget-good")
         self.assertEqual("PASS", good["status"], json.dumps(good["issues"][:3]))
-        # 反例：总量超额篡改 +1 → 击杀
+        # Counterexample: total excess tampered by +1 -> killed
         doc["carbonMetrics"]["totalCarbonExcessWattSeconds"] = 51.0
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         bad = self.audit_status(bundle, "tier-budget-bad")
@@ -1025,15 +1042,16 @@ class DvfsTierAuditTests(unittest.TestCase):
                         "corrupted per-tier fleet excess must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_tiered_carbon_intensity_rides_per_tier_energy(self):
-        """强度模型 ride-through：grams = E/3.6e6 × I（E = 逐档律 254 J，强度 380 g/kWh）。
+        """Intensity model ride-through: grams = E/3.6e6 * I (E = the per-tier law's 254 J, intensity 380 g/kWh).
 
-        该用例同时锚定 powered 判据的频档扩展（平面字段全 0 的 tiered VM 被 v1 判据
-        误判为 unpowered → 半声明击杀；逐档功率闸幂（平面或频档任一）后按量纲律通过）。
+        This case also pins the tier extension of the powered predicate (a tiered VM whose flat fields are
+        all 0 would be misread as unpowered by the v1 predicate -> half-declaration kill; once the tier power
+        gate is idempotent over (flat or tier) it passes under the dimensional law).
         """
         bundle, doc = self.make_tier_manifest("dvfs-intensity")
         doc["platform"]["vms"][0]["carbonIntensityGramsPerKWh"] = 380.0
         self.store_energy(doc, 254.0)
-        grams = 254.0 / 3.6e6 * 380.0  # 单位律：J → kWh 除 3.6e6，× g/kWh
+        grams = 254.0 / 3.6e6 * 380.0  # unit law: J -> kWh divides by 3.6e6, then times g/kWh
         doc["carbonMetrics"] = {
             "totalCarbonGrams": grams, "meanVmCarbonGrams": grams,
             "carbonMakespanProductGramSeconds": grams * float(doc["metrics"]["makespanSeconds"]),
@@ -1043,7 +1061,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         good = self.audit_status(bundle, "tier-intensity-good")
         self.assertEqual("PASS", good["status"], json.dumps(good["issues"][:3]))
-        # 反例：篡改 +5g → 击杀
+        # Counterexample: tampered by +5g -> killed
         doc["carbonMetrics"]["totalCarbonGrams"] = grams + 5.0
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         bad = self.audit_status(bundle, "tier-intensity-bad")
@@ -1052,8 +1070,9 @@ class DvfsTierAuditTests(unittest.TestCase):
                         "corrupted per-tier ridden grams must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_plain_v1_fixture_stays_on_the_v1_law(self):
-        """v1 惰性位锚：无 frequencyTiers、平面功率 100/400 的同一 fixture →
-        D1 能量律原值（121+300×1.11=454 J）通过；审计行为与 D3 前逐位一致。"""
+        """v1 inert-bit anchor: the same fixture without frequencyTiers and with flat power 100/400 ->
+        passes at the D1 energy law's original value (121+300*1.11=454 J); audit behavior is bit-for-bit
+        identical to pre-D3."""
         root = self.root / "v1-plain"
         make_bundle(root)
         manifest = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
@@ -1061,7 +1080,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         manifest["platform"]["vms"][0]["maxPowerWatts"] = 400.0
         end = manifest["metrics"]["makespanSeconds"]
         busy = manifest["metrics"]["vmMetrics"]["0"]["modeledBusyIntervalSeconds"]
-        expected = 100.0 * end + 300.0 * busy  # = 121 + 333 = 454 J（D1 律手推）
+        expected = 100.0 * end + 300.0 * busy  # = 121 + 333 = 454 J (hand-derived under the D1 law)
         manifest["energyMetrics"] = {
             "totalEnergyJoules": expected, "meanVmEnergyJoules": expected,
             "peakPowerWatts": 400.0, "energyMakespanProductJouleSeconds": expected * end,
@@ -1070,16 +1089,17 @@ class DvfsTierAuditTests(unittest.TestCase):
         (root / "run.manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
         report = self.audit_status(root / "run.manifest.json", "v1-plain-good")
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
-        # v1 平台不携带任何 DVFS 观察备注（短路位）。
+        # The v1 platform carries no DVFS observation note (the short-circuit bit).
         self.assertFalse([n for n in report["notes"] if n["code"] == "dvfs-tier-accounting-observation"],
                          str(report["notes"]))
 
-    # ── BAT-V1/V3（2026-10-29 测试工程师对抗轮 / DVFS 第五轮）── manifest 面补充锚 ──
+    # -- BAT-V1/V3 (2026-10-29 test-engineer adversarial round / DVFS round five) -- extra manifest-surface anchors --
 
     def test_declared_but_empty_tier_list_is_killed(self):
-        """BAT-V1 manifest 面：frequencyTiers 声明为空表 → BAT-D3 条款击杀
-        （declared-but-empty；镜像 workbench JSON 面的"非空数组"拒绝——
-        编程面 null/List 空表是 D1 的 v1 退化，manifest 发射器从不产出空表）。"""
+        """BAT-V1 manifest surface: frequencyTiers declared as an empty table -> the BAT-D3 clause kills it
+        (declared-but-empty; mirrors the workbench JSON surface's non-empty-array rejection -- on the
+        programming surface a null/empty List is the v1 degradation of D1, and the manifest emitter never
+        produces an empty table)."""
         bundle, doc = self.make_tier_manifest("dvfs-empty-tiers")
         self.store_energy(doc, 254.0)
         doc["platform"]["vms"][0]["frequencyTiers"] = []
@@ -1091,10 +1111,11 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:2]))
 
     def test_platform_default_tier_idle_corruption_is_killed(self):
-        """BAT-V3(c)（真实冻结 bundle 上的探针数字同步到合成回归锚）：平台首档（默认档）
-        idlePowerWatts 100→110（10W 静息虚增）→ 守恒律的怠速系数被篡改 → 复算能量
-        全族失配 → 击杀。手推：E = 110×1.21 + (400−110)×0.11 + (200−110)×1.0
-        = 133.1+31.9+90 = 255 J ≠ 存档 254 J。"""
+        """BAT-V3(c) (the probe number from the real frozen bundle, ported to a synthetic regression anchor):
+        the platform's first tier (the default tier) has idlePowerWatts 100->110 (a 10W idle inflation) ->
+        the conservation law's idle coefficient is tampered with -> the recomputed energy mismatches across
+        the whole family -> killed. Hand-derived: E = 110*1.21 + (400-110)*0.11 + (200-110)*1.0
+        = 133.1+31.9+90 = 255 J != stored 254 J."""
         bundle, doc = self.make_tier_manifest("dvfs-idle-corrupt")
         self.store_energy(doc, 254.0)
         doc["platform"]["vms"][0]["frequencyTiers"][0]["idlePowerWatts"] = 110.0
@@ -1106,17 +1127,21 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:2]))
 
     def test_law_inert_nondefault_tier_corruption_is_honest_observation(self):
-        """BAT-V3 诚实边界（守卫缝披露，非修复）：改一个<b>无忙秒归因</b>的非默认档
-        idlePowerWatts（域内合法：≤max）→ 逐档守恒律只消费默认档 idle 与各被归因档
-        max；无第二事实源可比对 → 审计行为不变。这是单源证据的固有边界：束内任何
-        常量都与平台节自洽（冻结 tar 的 manifest 哈希才是存档级防篡改面）；锁本行为
-        防未来回归误报（把"协调自洽"误当伪造）。"""
+        """BAT-V3 honest boundary (a guard-seam disclosure, not a fix): change a non-default tier's
+        idlePowerWatts that has <b>no busy-second attribution</b> (in-domain legal: <=max) -> the per-tier
+        conservation law consumes only the default tier's idle and each attributed tier's max; there is no
+        second source of truth to compare against -> audit behavior is unchanged. This is the inherent
+        boundary of single-source evidence: any constant inside the bundle is self-consistent with the
+        platform section (the frozen tar's manifest hash is the archive-level tamper surface); pinning this
+        behavior keeps future regressions from raising false alarms (so that "coordination
+        self-consistency" is not mistaken for forgery)."""
         bundle, doc = self.make_tier_manifest("dvfs-inert-corrupt")
         self.store_energy(doc, 254.0)
-        # 1000 档（有归因 1.0s）不动；2000 档是默认档——两档都律内。本 fixture 只有
-        # 两档，故把非默认+有归因档改 max 才会击杀；为构造"无归因+非默认"需要第三档：
+        # The 1000 tier (attributed 1.0s) stays untouched; the 2000 tier is the default tier -- both are
+        # within the law. This fixture has only two tiers, so only changing the max of a non-default
+        # attributed tier would kill it; constructing "no attribution + non-default" needs a third tier:
         doc["platform"]["vms"][0]["frequencyTiers"] = [dict(t) for t in self.THREE_TIERS]
-        doc["platform"]["vms"][0]["frequencyTiers"][2]["idlePowerWatts"] = 85.5  # 500 档：无归因
+        doc["platform"]["vms"][0]["frequencyTiers"][2]["idlePowerWatts"] = 85.5  # 500 tier: no attribution
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         report = self.audit_status(bundle, "tier-inert-corrupt")
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))

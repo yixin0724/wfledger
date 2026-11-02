@@ -29,7 +29,7 @@ def tolerant_wallclock_nanos(events, event_type, attribute):
         if event["type"] != event_type:
             continue
         value = events_attribute(event, attribute)
-        # JSON 数值经 decode_json 解析为 int/Decimal；bool 与字符串不属 Java Number。
+        # decode_json parses JSON numbers as int/Decimal; bool and str are not Java Numbers.
         if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
             continue
         total += int(value)
@@ -46,12 +46,14 @@ CS_OUTSIDE = "UNAVAILABLE_OUTSIDE_CONTROLLED_SHARED_STORAGE_SCOPE"
 
 
 def critical_path_reference(config, platform, raw_tasks):
-    """链 E（2026-10-20）：controlledSharedStorage 关键路径下界的独立复算。
+    """Chain E (2026-10-20): independent recomputation of the controlledSharedStorage
+    critical-path lower bound.
 
-    Java WorkflowModelReference.calculate 的 Python 等价：受控范围六条件 →
-    最快 MIPS → stage-in（110 MI，含 SimulationTiming 保护）→ 拓扑遍历
-    （每任务取全部 PE 兼容 VM 的最小信封秒数）→ lowerBound。全部
-    UNAVAILABLE 分支语义与 Java 字面一致。
+    Python equivalent of Java WorkflowModelReference.calculate: the six controlled-scope
+    conditions -> fastest MIPS -> stage-in (110 MI, with the SimulationTiming guard) ->
+    topological traversal (each task takes the minimum envelope seconds over all
+    PE-compatible VMs) -> lowerBound. Every UNAVAILABLE branch keeps the Java literal
+    semantics.
     """
     import math
 
@@ -98,7 +100,7 @@ def critical_path_reference(config, platform, raw_tasks):
 
     min_interval = number(config.get("cloudSimMinEventIntervalSeconds", 0.1), "min interval")
     # SimulationTiming.earliestCloudletCompletionTime(0, 110/mips, minInterval)
-    # = max(predicted, 0 + minInterval + 0.01)（Java 保护值 0.01），随后引擎再加 minInterval。
+    # = max(predicted, 0 + minInterval + 0.01) (Java guard value 0.01), then the engine adds minInterval again.
     stage_raw = 110.0 / fastest_mips
     stage_secs = max(stage_raw, min_interval + 0.01) + min_interval
 
@@ -119,7 +121,7 @@ def critical_path_reference(config, platform, raw_tasks):
         task = raw_tasks[tid]
         ready_time = stage_secs if not task["parents"] else max(
             finish_times[parent] for parent in task["parents"])
-        # Java transferSeconds：任务文件表中真实外部输入（同任务同名输出不计）
+        # Java transferSeconds: genuine external inputs in the task file table (same-name outputs of the same task excluded)
         external_seconds = 0.0
         for name, kind, size in task["files"]:
             if kind != "input":
@@ -134,7 +136,7 @@ def critical_path_reference(config, platform, raw_tasks):
         for vm in vms:
             vm_id = integer(vm.get("id"), "vm id")
             mips = number(vm.get("mips"), "vm mips")
-            # Java TaskExecutionModel.executionLengthMi：矩阵权威；缺坐标显式不可表示。
+            # Java TaskExecutionModel.executionLengthMi: the matrix is authoritative; a missing coordinate is explicitly unrepresentable.
             if matrix:
                 key = (tid, vm_id)
                 if key not in matrix:
@@ -274,9 +276,11 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         event_summary = needed(doc, "events")
         audit.ensure(len(events) == integer(needed(event_summary, "eventCount"), "event count", True),
                      "event-count", prefix, len(events), event_summary.get("eventCount"))
-        # 2026-11-02 复核轮（跨语言模糊测试发现）：清单自报的事件序号边界此前无人核对——
-        # 篡改 firstSequence/lastSequence 可以整份通过。边界属于"声明的上下文"，必须与
-        # 事件流本身绑定；键缺省（空流的历史形态）保持兼容，不新增强制字段。
+        # 2026-11-02 review round (found by cross-language fuzzing): the event sequence
+        # bounds declared by the manifest were previously unchecked — tampering with
+        # firstSequence/lastSequence passed the whole bundle. Bounds are declared context
+        # and must be bound to the event stream itself; a missing key (the historical shape
+        # of an empty stream) stays compatible, and no mandatory field is added.
         if events:
             for key, bound in (("firstSequence", events[0]["sequence"]), ("lastSequence", events[-1]["sequence"])):
                 if key in event_summary:
@@ -366,12 +370,15 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                          "raw-profile-task-count", prefix)
         logical_ids = set(raw_tasks) if parsed_complete else set(graph)
 
-        # ── BAT-D6（2026-10-29）：功率/频档平台面置前解析（任务窗与能量两路复用）──
-        # 平面功率字段（BAT-E2）与频档表（BAT-D3）都在 Job 循环前就位：①逐 Job 频档
-        # 身份的采集随 Job 循环进行（缺档=默认档/表首档；表外档=证据链断裂）；②任务窗
-        # 复算的期望秒数改用本 Job 的指派档速（工作不变，时长 = work/档速——与 Java
-        # WorkflowDatacenter.updateTaskExecTime 的 BAT-D6 口径严格同源；无档 VM 上的
-        # Job 沿用 VM 声明速 = v1 逐位不变）。能量块沿用此处已建的三张表。
+        # ── BAT-D6 (2026-10-29): power/tier platform surface parsed up front (shared by the
+        # task-window and energy paths) ──
+        # The flat power fields (BAT-E2) and the tier table (BAT-D3) are both in place before the
+        # Job loop: (1) per-Job tier identity is collected as the Job loop runs (missing tier =
+        # default/first tier; a tier outside the table = broken evidence chain); (2) the expected
+        # seconds of the task-window recomputation use this Job's assigned tier speed (work
+        # unchanged, duration = work/tier speed — strictly the same source as the BAT-D6 rule in
+        # Java WorkflowDatacenter.updateTaskExecTime; a Job on a tierless VM keeps the VM-declared
+        # speed, bit-for-bit v1 unchanged). The energy block reuses the three tables built here.
         vm_power = {}
         for vmid, vm in vms.items():
             idle = number(vm.get("idlePowerWatts", 0.0), "VM idlePowerWatts", nonnegative=True)
@@ -379,8 +386,8 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             if peak < idle:
                 raise CheckError("maxPowerWatts below idlePowerWatts on VM " + str(vmid))
             vm_power[vmid] = (idle, peak)
-        vm_tiers = {}            # vmid → [(mips, idle, max), ...]（声明降序）
-        tier_max_by_vm = {}      # vmid → {档 mips → P_max}（档按 MIPS 唯一的身份索引）
+        vm_tiers = {}            # vmid → [(mips, idle, max), ...] (declared descending)
+        tier_max_by_vm = {}      # vmid → {tier mips → P_max} (tiers indexed by their unique MIPS identity)
         for vmid, vm in vms.items():
             raw_tiers = vm.get("frequencyTiers")
             if raw_tiers is None:
@@ -399,7 +406,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 if tiers and tier_mips >= tiers[-1][0]:
                     raise CheckError(
                         "frequencyTiers must be strictly descending by mips on VM " + str(vmid)
-                        + " (BAT-D1 表序契约)")
+                        + " (BAT-D1 tier-order contract)")
                 tiers.append((tier_mips, tier_idle, tier_max))
             if vm_power[vmid][0] > 0.0 or vm_power[vmid][1] > 0.0:
                 raise CheckError("VM " + str(vmid)
@@ -407,8 +414,8 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                                  + " truth required (BAT-D1)")
             vm_tiers[vmid] = tiers
             tier_max_by_vm[vmid] = {t[0]: t[2] for t in tiers}
-        tier_of_job = {}          # jobId → 档 MIPS（频档平台上的全部 Job——含簿记信封）
-        tier_intervals_by_vm = {}  # vmid → {档 mips → [(start, finish), ...]}
+        tier_of_job = {}          # jobId → tier MIPS (every Job on a tiered platform, bookkeeping envelopes included)
+        tier_intervals_by_vm = {}  # vmid → {tier mips → [(start, finish), ...]}
         jobs, task_outcomes = needed(result, "jobs"), needed(result, "tasks")
         jobs_by_id, jobs_by_task, vm_intervals = {}, collections.defaultdict(list), collections.defaultdict(list)
         first_success = {}
@@ -427,11 +434,13 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             audit.ensure(submission <= start + tolerance(submission, start) and start <= finish + tolerance(start, finish)
                          and finish <= end + tolerance(finish, end), "job-interval", prefix, {"jobId": jid, "submission": submission, "start": start, "finish": finish, "end": end})
             vm_intervals[vmid].append((start, finish))
-            # BAT-D6（2026-10-29）：逐 Job 频档身份采集（原 BAT-D3 能量块内的重建规则
-            # 原样上移）：无档 VM 上的 Job 不得携带 tierMips；有档 VM 上的 Job 缺档归
-            # 默认档（表首档）——簿记信封/v1 兼容同口径；表外档 = 证据链断裂。
+            # BAT-D6 (2026-10-29): per-Job tier identity collection (the reconstruction rule
+            # formerly inside the BAT-D3 energy block, moved up verbatim): a Job on a tierless VM
+            # must not carry tierMips; a Job on a tiered VM without a tier falls back to the default
+            # tier (first row) — the same rule for bookkeeping envelopes/v1 compatibility; a tier
+            # outside the table = broken evidence chain.
             tiers = vm_tiers.get(vmid)
-            raw = job.get("tierMips")  # 可选键；null/缺键 = v1 兼容/簿记信封
+            raw = job.get("tierMips")  # optional key; null/missing = v1 compatibility/bookkeeping envelope
             if tiers is None:
                 if raw is not None:
                     raise CheckError("job " + str(jid) + " on non-tiered VM " + str(vmid)
@@ -439,7 +448,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                                      " broken (BAT-D3)")
             else:
                 if raw is None:
-                    tier_mips = tiers[0][0]  # 缺档归默认档（表首档）——Java 台账同口径
+                    tier_mips = tiers[0][0]  # missing tier -> default tier (first row) — same rule as the Java ledger
                 else:
                     tier_mips = number(raw, "job tierMips", positive=True)
                     if tier_mips not in tier_max_by_vm[vmid]:
@@ -511,11 +520,12 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                     audit.ensure(integer(task["effectiveExecutionLengthMi"], "effective MI", True) == effective, "effective-mi-declaration", prefix, [tid, task["effectiveExecutionLengthMi"]], effective)
             start, finish = number(needed(task, "startTime"), nonnegative=True), number(needed(task, "finishTime"), nonnegative=True)
             jstart, jfinish = number(job["startTime"]), number(job["finishTime"])
-            # BAT-D6（2026-10-29）：期望窗秒数用执行速 = 本 Job 的指派档速（有档 VM 上
-            # 的 Job 必有 tier_of_job 记录；无档 Job/v1 沿用 VM 声明速）——与 Java 侧
-            # 任务窗模型（updateTaskExecTime 取 job.getTierMips()）及 Job 云let 长度的
-            # 档速缩放（时长 = work/档速）同律。量化容差口径（1/VM MIPS）不变：Job
-            # 云let 仍在 VM 声明速上执行（缩放后的长度）。
+            # BAT-D6 (2026-10-29): the expected window seconds use the execution speed = this Job's
+            # assigned tier speed (a Job on a tiered VM always has a tier_of_job record; a tierless
+            # Job/v1 keeps the VM-declared speed) — the same law as the Java task window model
+            # (updateTaskExecTime reads job.getTierMips()) and the tier-speed scaling of the Job
+            # cloudlet length (duration = work/tier speed). The quantization allowance (1/VM MIPS)
+            # is unchanged: the Job cloudlet still executes at the VM-declared speed (scaled length).
             expected_seconds = effective / (tier_of_job[jid] if jid in tier_of_job else mips)
             allowance = 1.0 / mips + tolerance(start, finish, jstart, jfinish)
             audit.ensure(start + tolerance(start, jstart) >= jstart and finish <= jfinish + allowance and finish + tolerance(start, finish) >= start,
@@ -688,11 +698,12 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         avg_busy = mean(busy_values)
         cv = math.sqrt(mean([(x - avg_busy) ** 2 for x in busy_values])) / avg_busy if avg_busy > 0 else 0.0
         fairness = math.fsum(busy_values) ** 2 / (len(busy_values) * math.fsum(x*x for x in busy_values)) if any(busy_values) else 1.0
-        # BAT-E2（2026-10-27）：能耗守恒律复算（Beloglazov FGCS 2012 Eq.(2) 二元 SPACE_SHARED
-        # 特化：E_vm = P_idle×T_sim + (P_max−P_idle)×T_busy；无功率字段的 VM 贡献为 0；
-        # 旧 manifest 无 energyMetrics 键 → 每台 VM 全零 → 总耗能必须为 0。
-        # BAT-D6（2026-10-29）：vm_power/vm_tiers/tier_of_job 已在 Job 循环前置解析（任务
-        # 窗与能量两路同源），此处直接消费。
+        # BAT-E2 (2026-10-27): energy conservation-law recomputation (Beloglazov FGCS 2012 Eq.(2)
+        # specialized to binary SPACE_SHARED: E_vm = P_idle×T_sim + (P_max−P_idle)×T_busy; a VM
+        # without power fields contributes 0; an old manifest without an energyMetrics key → every
+        # VM is zero → total energy must be 0.
+        # BAT-D6 (2026-10-29): vm_power/vm_tiers/tier_of_job are already parsed before the Job
+        # loop (one source for the task-window and energy paths); this block consumes them as-is.
         expected_vm_energy = {}
         expected_total_energy = 0.0
         expected_peak_power = 0.0
@@ -702,25 +713,32 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             expected_total_energy += e
             expected_peak_power += peak
         powered = any(p[0] > 0.0 or p[1] > 0.0 for p in vm_power.values())
-        # ── BAT-D3（2026-10-29）：DVFS 逐档能量复算（DVFS_DIMENSION_DESIGN.md §2.3/§2.4）──
-        # 平台节的可选键 platform.vms[].frequencyTiers（{mips,idlePowerWatts,maxPowerWatts}
-        # 表序降序；缺键/空表 = v1 单档平台 = 未声明）。任一 VM 声明频档 → DVFS 模式：
-        # 声明 VM 改用扩展守恒律
-        #   E_vm = P_idle(默认档/表首档)×T_sim + Σ档[(P_max(档)−P_idle(默认档))×busy(档)]
-        # （代数恒等于 idle(默认)×T_idle + Σ档 P_max(档)×busy(档)——逐 Job 一个恒功率
-        # 矩形，与 Java EnergyAccounting 的 BAT-D2 扩展分支同律）。逐档忙秒由审计自身
-        # 的 [start,finish) Job 区间按 Job 携带的 tierMips 分组重建：缺档（v1 兼容运行/
-        # stage-in 簿记信封）归默认档；每 VM 逐档取该档区间的并集（SPACE_SHARED 串行
-        # 下与 Java 台账逐档 executionTime 之和同值）；逐档之和必须覆盖该 VM 总忙并集
-        #（1e-9 秒容差，镜像 Java TIER_SUM_SLACK_SECONDS 的证据链条款）。
-        # 无任何频档声明 → 本块整体短路，审计行为与 D3 前逐位一致（v1 合法缺省）。
-        # BAT-D6（2026-10-29）：vm_tiers/tier_max_by_vm/tier_of_job/tier_intervals_by_vm
-        # 已在 Job 循环前置解析/采集（任务窗复算同用），此处原样消费，不再重复构建。
+        # ── BAT-D3 (2026-10-29): per-tier DVFS energy recomputation (DVFS_DIMENSION_DESIGN.md §2.3/§2.4) ──
+        # Optional platform key platform.vms[].frequencyTiers ({mips,idlePowerWatts,maxPowerWatts},
+        # rows in descending order; missing key/empty table = v1 single-tier platform = undeclared).
+        # Any VM declaring tiers → DVFS mode: declaring VMs switch to the extended conservation law
+        #   E_vm = P_idle(default/first tier)×T_sim + Σ_tiers[(P_max(tier)−P_idle(default))×busy(tier)]
+        # (algebraically identical to idle(default)×T_idle + Σ_tiers P_max(tier)×busy(tier) — one
+        # constant-power rectangle per Job, the same law as the BAT-D2 extended branch of Java
+        # EnergyAccounting). Per-tier busy seconds are rebuilt by the audit itself from its own
+        # [start,finish) Job intervals, grouped by the tierMips each Job carries: a missing tier
+        # (v1-compatible run / stage-in bookkeeping envelope) falls back to the default tier; per VM
+        # and per tier it takes the union of that tier's intervals (identical to the sum of per-tier
+        # executionTime in the Java ledger under serial SPACE_SHARED); the per-tier sum must cover
+        # the VM's total busy union (1e-9 second tolerance, mirroring the Java TIER_SUM_SLACK_SECONDS
+        # evidence-chain clause).
+        # With no tier declaration at all → this block short-circuits entirely, keeping audit
+        # behaviour bit-identical to pre-D3 (a legitimate v1 default).
+        # BAT-D6 (2026-10-29): vm_tiers/tier_max_by_vm/tier_of_job/tier_intervals_by_vm are already
+        # parsed/collected before the Job loop (also used by the task-window recomputation); this
+        # block consumes them as-is and builds nothing again.
         if vm_tiers:
-            # 频档声明 = 功率声明（镜像 Java BAT-D2 对 D1 死闸的修复：平面字段或频档表
-            # 任一声明即 powered——tiered VM 的平面功率字段恒 0，单一真源互斥）。
+            # A tier declaration = a power declaration (mirroring the Java BAT-D2 fix for the D1
+            # dead gate: either the flat fields or a tier table means powered — a tiered VM's flat
+            # power fields are always 0, and the single source is mutually exclusive).
             powered = True
-            # 逐档守恒律复算：整体替换 v1 复算值（flat VM 保持同式同算——两路真源互斥）。
+            # Per-tier conservation-law recomputation: replaces the v1 values wholesale (a flat VM
+            # keeps the same formula and the same arithmetic — the two sources are exclusive).
             expected_vm_energy = {}
             expected_total_energy = 0.0
             expected_peak_power = 0.0
@@ -734,7 +752,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                     all_at_default_total += e
                 else:
                     default_mips, default_idle, default_max = tiers[0]
-                    # MIPS 升序 = 确定性求和序（镜像 Java TreeMap；AGENTS #9）。
+                    # MIPS ascending = deterministic summation order (mirroring Java TreeMap; AGENTS #9).
                     ordered_tiers = sorted(
                         (m, union_length(w)) for m, w in tier_intervals_by_vm.get(vmid, {}).items())
                     attributed = ordered_sum([busy for _, busy in ordered_tiers])
@@ -754,9 +772,12 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                                              + (default_max - default_idle) * busy_by_vm[vmid])
                 expected_vm_energy[vmid] = e
                 expected_total_energy += e
-            # 诚实观察（非断言，D3 任务契约）：任何落在非默认档的忙秒都使逐档律偏离
-            # D1"整段默认档"口径；全默认档运行（DEFAULT 策略/缺档归因）两律恒等——
-            # 两条都是台账可证的性质，审计不把"存在分档"升级为断言（守恒律断言兜底）。
+            # Honest observation (not an assertion; D3 task contract): any busy second on a
+            # non-default tier makes the per-tier law diverge from the D1 "whole run on the default
+            # tier" rule; a run entirely on the default tier (DEFAULT policy / missing tier
+            # attribution) makes both laws identical — both are ledger-provable properties, and the
+            # audit does not upgrade "tiers are in use" into an assertion (the conservation-law
+            # assertion is the backstop).
             audit.notes.append({
                 "code": "dvfs-tier-accounting-observation",
                 "perTierTotalEnergyJoules": expected_total_energy,
@@ -775,16 +796,21 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             stored_per_vm = needed(energy_doc, "vmEnergyJoules")
             for vmid, expected in expected_vm_energy.items():
                 audit.metric(stored_per_vm, str(vmid), expected, prefix + ":energyMetrics:VM:" + str(vmid))
-        # ── BAT-C2（2026-10-28）：碳维度复算（CARBON_DIMENSION_DESIGN.md §2.2 两族模型）──
-        # 声明→必查、未声明→跳过（legacy manifest 不受影响）；两种模型互斥（BAT-C1 条款）。
-        # 两族都骑在“已过能耗守恒律”的量上：强度模型直接乘 audited E（expected_vm_energy），
-        # 预算模型由同一批计算 Job 区间重建舰队功率时间线 —— 物理同源，无独立漂移面。
-        # 范围诚实说明：强度分支复算 grams 族字段、预算分支复算 excess 族字段；另一族在
-        # 写端恒为零（ExperimentManifestWriter 仅在 accounting 非空时导出碳节），不逐字段
-        # 复算常量零 —— 护漂移的锚点在 C5 注册演示器的集成测试与量纲恒等式。
+        # ── BAT-C2 (2026-10-28): carbon dimension recomputation (CARBON_DIMENSION_DESIGN.md §2.2, two model families) ──
+        # Declared → mandatory, undeclared → skipped (legacy manifests unaffected); the two models
+        # are mutually exclusive (BAT-C1 clause).
+        # Both families ride on quantities that already passed the energy conservation law: the
+        # intensity model multiplies the audited E directly (expected_vm_energy), and the budget
+        # model rebuilds the fleet power timeline from the same set of compute Job intervals —
+        # same physics, no independent drift surface.
+        # Scope stated honestly: the intensity branch recomputes the grams family and the budget
+        # branch the excess family; the other family is always zero on the writer side
+        # (ExperimentManifestWriter exports a carbon section only when accounting is non-empty), so
+        # constant zeros are not recomputed field by field — the anti-drift anchors are the C5
+        # registered-demonstrator integration tests and the dimensional identities.
         vm_intensities = {}
         for vmid, vm in vms.items():
-            raw = vm.get("carbonIntensityGramsPerKWh")  # 可选键；null/缺键=未声明（legacy 语义）
+            raw = vm.get("carbonIntensityGramsPerKWh")  # optional key; null/missing = undeclared (legacy semantics)
             if raw is not None:
                 vm_intensities[vmid] = number(raw, "VM carbonIntensityGramsPerKWh", nonnegative=True)
         raw_windows = platform.get("carbonWindows")
@@ -801,26 +827,30 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 raise CheckError("carbon window endSeconds must exceed startSeconds: " + str(window))
             carbon_windows.append((wstart, wend, green))
         for earlier, later in zip(carbon_windows, carbon_windows[1:]):
-            # 镜像 Java PlatformProfile.carbonWindow 构建时校验（排序、不重叠）。
+            # Mirrors the Java PlatformProfile.carbonWindow build-time validation (sorted, non-overlapping).
             if later[0] < earlier[1]:
                 raise CheckError("carbonWindows must be sorted and non-overlapping: window start "
                                  + str(later[0]) + " overlaps previous end " + str(earlier[1]))
         if vm_intensities and carbon_windows:
-            # BAT-C1 互斥条款：Java SimulationReport 构造期同语义拒绝（低强度电网与绿电预算
-            # 平台会给出相互矛盾的“更绿”调度，模型不可互换 —— 设计文档 §1.3）。
+            # BAT-C1 mutual-exclusion clause: Java SimulationReport rejects this with the same
+            # semantics at construction time (a low-intensity grid and a green-energy budget platform
+            # would hand out contradictory "greener" schedules, and the models are not interchangeable
+            # — design doc §1.3).
             raise CheckError("Both carbon models declared (per-VM carbonIntensityGramsPerKWh AND"
                              " carbonWindows) — the two accountings are mutually exclusive by contract (BAT-C1)")
         carbon_doc = doc.get("carbonMetrics")
         if not vm_intensities and not carbon_windows:
-            # 未声明任何碳模型却携带 carbonMetrics 节 → 伪造面（Java 写出器只在声明时导出）。
+            # No carbon model declared yet a carbonMetrics section is present → forged surface (the Java writer exports it only when declared).
             audit.ensure(carbon_doc is None, "carbon-metrics-without-declared-carbon-model",
                         prefix + ":carbonMetrics")
         if vm_intensities:
-            # 强度模型（CASPER 族）：grams_vm = E_vm[J] / 3.6e6 × I_vm[g/kWh]（kWh = J/3.6e6）。
-            # 半声明即 fail-fast：镜像 Java CarbonAccounting.intensityModel 的每 VM 完整
-            # 声明要求（每台 VM 都要功率+强度），契约破坏而非零贡献。
-            # BAT-D3：频档 VM 视为已声明功率（其能量已按逐档律复算进 expected_vm_energy，
-            # 强度模型直接乘同一能量数——物理同源"ride-through"，无独立复算面）。
+            # Intensity model (CASPER family): grams_vm = E_vm[J] / 3.6e6 × I_vm[g/kWh] (kWh = J/3.6e6).
+            # A half declaration fails fast: mirrors the per-VM complete-declaration requirement of
+            # Java CarbonAccounting.intensityModel (every VM needs power + intensity) — a contract
+            # violation, not a zero contribution.
+            # BAT-D3: a tiered VM counts as having declared power (its energy already went through the
+            # per-tier law into expected_vm_energy, and the intensity model multiplies that same
+            # energy number — same physics, a "ride-through" with no independent recomputation surface).
             unpowered = [vmid for vmid, (idle, peak) in vm_power.items()
                          if not (idle > 0.0 or peak > 0.0) and vmid not in vm_tiers]
             half_declared = [vmid for vmid in vms if vmid not in vm_intensities]
@@ -846,10 +876,12 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 audit.metric(stored_carbon_vm, str(vmid), expected,
                              prefix + ":carbonMetrics:VM:" + str(vmid))
         elif carbon_windows:
-            # 预算模型（CWM/CaWoSched 族）：从计算 Job（classType 2）区间端点折叠舰队并发
-            # 时间线 —— 与 Java CarbonAccounting.budgetModel 逐句同口径（端点合并 +1/−1，
-            # 段内并发数恒定）；P(t) = Σ idle + concurrent × ΔP，ΔP 取首台 VM 的 max−idle
-            # （v1 舰队动态功率均一假设，设计文档 §2.1 诚实边界 —— 归因见该文档 §3）。
+            # Budget model (CWM/CaWoSched family): folds the fleet concurrency timeline from the
+            # endpoints of the compute Job (classType 2) intervals — clause-for-clause the same rule
+            # as Java CarbonAccounting.budgetModel (endpoints merged as +1/−1, concurrency constant
+            # within a segment); P(t) = Σ idle + concurrent × ΔP, with ΔP taken from the first VM's
+            # max−idle (the v1 assumption of uniform fleet dynamic power, an honest boundary in
+            # design doc §2.1 — attribution in §3 of that document).
             if not powered:
                 raise CheckError("carbonWindows declarations require platform power fields"
                                  " (idlePowerWatts/maxPowerWatts); the fleet-power curve cannot be"
@@ -859,27 +891,30 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                                  " section (BAT-C2 declared->required)")
             idle_sum = 0.0
             if vm_tiers:
-                # BAT-D3：频档平台的舰队功率时间线。每台 VM 的静态分量 = P_idle(默认档)
-                #（卡顿频率的怠速功率，与守恒律同源）；活跃 Job 以其档的动态分量
-                #(P_max(其档) − P_idle(默认档)) 叠加——端点折叠的 ±1 计数改为 ±该 Job
-                # 动态瓦特，段内总功率 = Σ idle(默认档) + Σ(活跃档动态) 逐时刻恒等于
-                # Σ卡顿 VM P_max(其档) + Σ闲置 VM P_idle(默认档)（DVFS_DIMENSION_
-                # DESIGN.md §1.5 "per-tier fleet-power curve"）。档身份 = 逐档守恒块
-                # 已校验过的 tierMips 归因（同一归因，一次校验）；flat VM 保持
-                # max−idle 的 v1 贡献（混合舰队合法）。Java 端（CarbonAccounting
-                # .budgetModel）v1 只认平面功率字段、频档平台在报告构造期即被拒绝
-                # ——本分支是 D3 前向口径，真机 manifest 尚不能同时携带两者（Java
-                # 侧对齐落在后续批次；自测以手推台账锚定本分支）。
-                for vmid, (idle, _peak) in vm_power.items():  # platform 序列化序：镜像 Java profile 求和序
+                # BAT-D3: fleet power timeline for a tiered platform. Each VM's static component =
+                # P_idle(default tier) (the idle power at stall frequency, same source as the
+                # conservation law); an active Job adds its tier's dynamic component
+                # (P_max(its tier) − P_idle(default tier)) — the ±1 endpoint-fold count becomes ±that
+                # Job's dynamic watts, so the total power within a segment = Σ idle(default tier) +
+                # Σ(active-tier dynamic) is identically Σ busy VM P_max(its tier) + Σ idle VM
+                # P_idle(default tier) at every instant (DVFS_DIMENSION_DESIGN.md §1.5 "per-tier
+                # fleet-power curve"). Tier identity = the tierMips attribution already validated by
+                # the per-tier conservation block (one attribution, checked once); a flat VM keeps the
+                # max−idle v1 contribution (a mixed fleet is legal). On the Java side
+                # (CarbonAccounting.budgetModel) v1 recognizes only the flat power fields and a tiered
+                # platform is rejected at report construction — this branch is the D3 forward
+                # contract, and a real manifest cannot yet carry both (the Java-side alignment lands
+                # in a later batch; the self-test anchors this branch on hand-derived ledgers).
+                for vmid, (idle, _peak) in vm_power.items():  # platform serialization order: mirrors the Java profile summation order
                     idle_sum += vm_tiers[vmid][0][1] if vmid in vm_tiers else idle
                 fleet = {}
-                for job in computes:  # computes = classType 2 的全部 Job（忙区间只由计算 Job 定义）
+                for job in computes:  # computes = every classType 2 Job (busy intervals are defined by compute Jobs only)
                     a = number(job["startTime"], "job start", nonnegative=True)
                     b = number(job["finishTime"], "job finish", nonnegative=True)
                     if b > a:
                         vmid = integer(job["vmId"], "job vmId", True)
                         if vmid in vm_tiers:
-                            job_tier = tier_of_job[job["jobId"]]  # 逐档守恒块已完成归因与校验
+                            job_tier = tier_of_job[job["jobId"]]  # the per-tier conservation block already attributed and validated this
                             dyn = tier_max_by_vm[vmid][job_tier] - vm_tiers[vmid][0][1]
                         else:
                             dyn = vm_power[vmid][1] - vm_power[vmid][0]
@@ -896,14 +931,15 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 if prev < end:
                     segments.append((prev, end, idle_sum + dynamic))
             else:
-                for idle, _peak in vm_power.values():  # platform 序列化序：镜像 Java profile 求和序
+                for idle, _peak in vm_power.values():  # platform serialization order: mirrors the Java profile summation order
                     idle_sum += idle
-                # ΔP 取首台 VM 的 max−idle（BAT-C2 与 Java 对齐口径）：v1 假设舰队动态功率均一
-                # （设计文档 §2.1 诚实边界）；异质舰队下取首/末台会漂移，两侧统一取首台。
+                # ΔP comes from the first VM's max−idle (BAT-C2's Java-aligned rule): v1 assumes
+                # uniform fleet dynamic power (an honest boundary in design doc §2.1); with a
+                # heterogeneous fleet first/last would drift, so both sides take the first VM.
                 first_idle, first_peak = next(iter(vm_power.values()))
                 dynamic_per_vm = first_peak - first_idle
                 fleet = {}
-                for job in computes:  # computes = classType 2 的全部 Job（忙区间只由计算 Job 定义）
+                for job in computes:  # computes = every classType 2 Job (busy intervals are defined by compute Jobs only)
                     a = number(job["startTime"], "job start", nonnegative=True)
                     b = number(job["finishTime"], "job finish", nonnegative=True)
                     if b > a:
@@ -929,7 +965,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                     if b > a:
                         excess += max(0.0, power - green) * (b - a)
                 per_window_excess.append(excess)
-                if excess > 0.0:  # Java 只在正超额时累计（max(0,·) 保证非负）
+                if excess > 0.0:  # Java accumulates only positive excess (max(0,·) keeps it non-negative)
                     total_excess += excess
             audit.metric(carbon_doc, "totalCarbonExcessWattSeconds", total_excess,
                          prefix + ":carbonMetrics")
@@ -937,7 +973,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             for index, excess in enumerate(per_window_excess):
                 key = str(index)
                 if excess > 0.0 or key in stored_windows:
-                    # Java 只落正超额窗口；>0 的必须精确对上，单独出现的 0 值键也要对上 0。
+                    # Java stores only positive-excess windows; >0 values must match exactly, and a lone zero key must match 0 too.
                     audit.metric(stored_windows, key, excess,
                                  prefix + ":carbonMetrics:window:" + key)
             for key in stored_windows:
@@ -954,9 +990,10 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                        vmModeledBusyTimeCoefficientOfVariation=cv, vmUtilizationJainFairnessIndex=fairness,
                        exactTaskTimingObservationCount=sum(t.get("exactJobTiming") is True for t in task_outcomes),
                        modeledApproximateTaskTimingObservationCount=sum(t.get("exactJobTiming") is not True for t in task_outcomes))
-        # 审查工程链 E（2026-10-20）：deadline 六字段独立复算（Java Metrics L486-498
-        # 精确语义：BigDecimal.valueOf(long) − new BigDecimal(makespan)；Python 用
-        # Fraction 的等价闭环，含正负号分支与 NOT_REQUESTED/MISSED_INCOMPLETE_WORKFLOW）。
+        # Review-engineering chain E (2026-10-20): independent recomputation of the six deadline
+        # fields (exact Java Metrics L486-498 semantics: BigDecimal.valueOf(long) − new
+        # BigDecimal(makespan); Python closes the loop equivalently with Fraction, including the
+        # sign branches and NOT_REQUESTED/MISSED_INCOMPLETE_WORKFLOW).
         deadline_seconds = config.get("deadline")
         deadline_threshold = 0 if deadline_seconds is None else int(deadline_seconds)
         if deadline_threshold > 0:
@@ -980,10 +1017,10 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                        deadlineMet=deadline_outcome == "MET",
                        deadlineSlackSeconds=slack_double,
                        deadlineTardinessSeconds=max(0.0, -slack_double))
-        # ── 链 E 尾项（2026-10-20）：controlledSharedStorage 4 项独立复算 ──
-        # Java WorkflowModelReference.calculate 的 Python 等价：受控范围检查 →
-        # 最快 MIPS → 110 MI stage-in → 拓扑遍历（与 raw_tasks lengthMi 一致的
-        # 明细模型），全部 UNAVAILABLE 分支语义对齐。
+        # ── Chain E tail (2026-10-20): independent recomputation of the 4 controlledSharedStorage items ──
+        # Python equivalent of Java WorkflowModelReference.calculate: controlled-scope check ->
+        # fastest MIPS -> 110 MI stage-in -> topological traversal (a detail model consistent with
+        # raw_tasks lengthMi), with every UNAVAILABLE branch semantic aligned.
         cp = critical_path_reference(config, platform, raw_tasks)
         derived.update(controlledSharedStorageCriticalPathReferenceAvailable=cp["available"],
                        controlledSharedStorageCriticalPathReferenceScope=cp["scope"])
@@ -1000,7 +1037,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         coverage["checkedMetrics"] = sorted(derived)
         coverage["outsideMetricScope"] = sorted(set(metrics) - set(derived) - {"vmMetrics"})
         coverage["outsideMetricScopeNote"] = ("Decision wall-clock nanos + deadline family are recomputed "
-                                              "(审查工程 C10 + 链 E, 2026-10-19/20); "
+                                              "(review-engineering C10 + chain E, 2026-10-19/20); "
                                               "critical-path references and fields not listed above remain uncertified.")
     except (CheckError, OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
         audit.problem("invalid-or-unsupported-bundle", prefix, str(error))

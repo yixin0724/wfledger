@@ -78,7 +78,7 @@ class DocumentTests(unittest.TestCase):
 
     def test_heading_slugs_have_fixed_unicode_number_and_code_oracles(self):
         self.put("headings.md",
-                 "# 1. 快速开始（中文）\n"
+                 "# 1. Быстрый старт\n"
                  "## **2.** `CloudSimTags.CLOUDLET_SUBMIT_ACK`\n"
                  "## Café &amp; Déjà Vu!\n"
                  "## _Italic_ __Bold__ snake_case `__CODE_ENUM__`\n"
@@ -89,7 +89,7 @@ class DocumentTests(unittest.TestCase):
                  "## `&amp;`\n"
                  "## E\u0301cole\n")
         self.assert_clean(
-            "[a](headings.md#1-快速开始中文)\n"
+            "[a](headings.md#1-быстрый-старт)\n"
             "[b](headings.md#2-cloudsimtagscloudlet_submit_ack)\n"
             "[c](headings.md#café--déjà-vu)\n"
             "[d](headings.md#italic-bold-snake_case-__code_enum__)\n"
@@ -111,18 +111,18 @@ class DocumentTests(unittest.TestCase):
         self.assertIn("anchor '#repeat-4' does not exist", issues[0].reason)
 
     def test_setext_and_container_headings(self):
-        self.put("headings.md", "Setext Title\n============\n\nSecond 标题\n---\n\n"
+        self.put("headings.md", "Setext Title\n============\n\nSecond Заголовок\n---\n\n"
                  "> ## Quote\n\n- ### List Heading\n")
-        self.assert_clean("[a](headings.md#setext-title) [b](headings.md#second-标题) "
+        self.assert_clean("[a](headings.md#setext-title) [b](headings.md#second-заголовок) "
                           "[c](headings.md#quote) [d](headings.md#list-heading)\n", 4)
 
     def test_explicit_html_ids_and_names_are_case_sensitive(self):
         self.put("anchors.md", '<a id="Custom-ID"></a>\n<a name=legacy></a>\n'
-                 "<span id='中文&amp;ID'>text</span>\n<input id='self-closing'/>\n")
+                 "<span id='Übersicht&amp;ID'>text</span>\n<input id='self-closing'/>\n")
         self.put("page.html", '<html><a name="Section"></a><div id="Main"></div></html>')
         self.assert_clean(
             "[a](anchors.md#Custom-ID) [b](anchors.md#legacy) "
-            "[c](anchors.md#中文%26ID) [d](anchors.md#self-closing) "
+            "[c](anchors.md#%C3%9Cbersicht%26ID) [d](anchors.md#self-closing) "
             "[e](page.html#Section) [f](page.html#Main)\n", 6)
         issues, _ = self.check("[wrong](anchors.md#custom-id)\n")
         self.assertEqual(1, len(issues))
@@ -132,13 +132,13 @@ class DocumentTests(unittest.TestCase):
         self.put("Space File.md", "# Hello World\n")
         self.put("nested(a(b)).md", "# Nested\n")
         self.put("a(b).md", "# Escaped\n")
-        self.put("中文.md", "# 标题\n")
+        self.put("Übersicht.md", "# Übersicht\n")
         self.assert_clean(
             '[a](Space%20File.md#hello-world "double title")\n'
             "[b](<Space File.md#hello-world> 'single title')\n"
             '[c](nested(a(b)).md#nested (parenthesized title))\n'
             r'[d](a\(b\).md#escaped "title with \"quote\"")' + "\n"
-            '[e](%E4%B8%AD%E6%96%87.md#%E6%A0%87%E9%A2%98)\n'
+            '[e](%C3%9Cbersicht.md#%C3%BCbersicht)\n'
             '[f](Space%20File.md?view=1#hello-world)\n', 6)
 
     def test_fragment_separator_is_decoded_after_url_splitting(self):
@@ -336,8 +336,8 @@ class DocumentTests(unittest.TestCase):
         self.assertIn("cannot inspect fragments", issues[1].reason)
 
     def test_source_utf8_bom_crlf_and_non_ascii_paths(self):
-        self.put("中文/目标.MD", "# 标题\n")
-        self.assert_clean("\ufeff# 首页\r\n\r\n[目标](中文/目标.MD#标题)\r\n[本页](#首页)\r\n", 2)
+        self.put("Übersicht/Ziel.MD", "# Titel\n")
+        self.assert_clean("\ufeff# Start\r\n\r\n[Ziel](Übersicht/Ziel.MD#titel)\r\n[diese Seite](#start)\r\n", 2)
         issues, _ = self.check(b"# Valid\n\xff\n")
         self.assertEqual(1, len(issues))
         self.assertEqual(1, issues[0].line)
@@ -384,11 +384,11 @@ class DocumentTests(unittest.TestCase):
         self.assertEqual(3, forward[1]["links"])
 
     def test_git_discovery_is_names_only_and_nul_safe(self):
-        output = "document.MD\0space name.md\0中文.md\0deleted.md\0output/bad.md\0".encode("utf-8")
+        output = "document.MD\0space name.md\0Übersicht.md\0deleted.md\0output/bad.md\0".encode("utf-8")
         result = subprocess.CompletedProcess([], 0, stdout=output, stderr=b"")
         with mock.patch.object(CHECKER.subprocess, "run", return_value=result) as run:
             names = CHECKER.discover_documents(self.root)
-        self.assertEqual(["document.MD", "space name.md", "中文.md", "deleted.md", "output/bad.md"], names)
+        self.assertEqual(["document.MD", "space name.md", "Übersicht.md", "deleted.md", "output/bad.md"], names)
         run.assert_called_once_with(
             ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "*.md", "*.MD"],
             cwd=str(self.root), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)

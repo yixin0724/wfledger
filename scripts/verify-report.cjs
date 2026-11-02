@@ -44,7 +44,7 @@ async function checkNetwork(page, run, expected, hasPanel) {
   if (state === 'OFF' || state === 'NO_RESULT') {
     for (const table of Object.values(NETWORK_TABLES)) assert.equal(await page.locator(`${table} tr`).count(), 0, 'Unavailable run must clear stale network rows');
     assert.equal((await page.locator('#network-admitted').textContent()).trim(), '—');
-    assert.ok(note.includes(state === 'OFF' ? '不等于零' : '没有已验证'), 'OFF/no-result must not be presented as zero traffic');
+    assert.ok(note.includes(state === 'OFF' ? 'does not mean zero' : 'no verified result'), 'OFF/no-result must not be presented as zero traffic');
     return;
   }
   const view = run.networkEvidence;
@@ -52,7 +52,7 @@ async function checkNetwork(page, run, expected, hasPanel) {
   assertNetworkTypes(view);
   for (const field of ['traceSnapshot', 'bindings', 'evidence']) assert.equal(Object.hasOwn(view, field), false, 'No unbounded raw ledger may be embedded beside previews');
   if (expected) assert.equal(view.contextValidated, expected.contextValidated);
-  if (!view.contextValidated) assert.ok(note.includes('仅验证账本内部一致性'), 'Typed projection must not claim run-context validation');
+  if (!view.contextValidated) assert.ok(note.includes('only internal ledger consistency is verified'), 'Typed projection must not claim run-context validation');
   for (const [kind, limit] of Object.entries(NETWORK_LIMITS)) {
     const preview = view[kind];
     assert.ok(Array.isArray(preview.rows));assert.equal(preview.limit, String(limit));
@@ -79,10 +79,10 @@ async function checkNetwork(page, run, expected, hasPanel) {
   assert.deepEqual(await page.locator('#network-resource-table tr td:first-child').allTextContents(), view.resources.rows.map(r => r.resourceKey));
   assert.deepEqual(await page.locator('#network-event-table tr td:nth-child(3)').allTextContents(), view.events.rows.map(e => exact(e.externalTransferId) + ' / ' + exact(e.admissionOrdinal)));
   assert.deepEqual(await page.locator('#network-event-table tr td:last-child').allTextContents(), view.events.rows.map(e => e.detail));
-  const coverage = await page.locator('#network-coverage').textContent();assert.ok(coverage.includes(`实际丢弃 ${view.droppedRecords} 条`));
-  if (state === 'TRUNCATED') { assert.ok(note.includes('截断'));assert.equal(view.metricsAvailable, false);assert.ok((await page.locator('#network-flow-note').textContent()).includes('不可用')); }
-  else { assert.equal(view.metricsAvailable, true);assert.ok((await page.locator('#network-flow-note').textContent()).includes(`预览省略 ${view.flows.omitted} 项`)); }
-  if (state === 'ZERO') { assert.ok(note.includes('记录已开启'));assert.equal(view.totals.admittedPayloadBytes, '0'); }
+  const coverage = await page.locator('#network-coverage').textContent();assert.ok(coverage.includes(`records actually dropped ${view.droppedRecords}`));
+  if (state === 'TRUNCATED') { assert.ok(note.includes('is truncated'));assert.equal(view.metricsAvailable, false);assert.ok((await page.locator('#network-flow-note').textContent()).includes('unavailable')); }
+  else { assert.equal(view.metricsAvailable, true);assert.ok((await page.locator('#network-flow-note').textContent()).includes(`preview omits ${view.flows.omitted} of them`)); }
+  if (state === 'ZERO') { assert.ok(note.includes('Recording is enabled'));assert.equal(view.totals.admittedPayloadBytes, '0'); }
 }
 
 function fileLifecyclePanel(run) {
@@ -115,8 +115,8 @@ async function checkEnergy(page, run) {
   const exactTotal = String(metrics.totalEnergyJoules);
   assert.equal(await page.locator('#energy-total').textContent(), exactTotal, 'Exact energy text differs at energy-total');
 }
-// 2026-11-02 碳面板：清单 carbonMetrics 是唯一真源。强度模型给克数，预算模型给
-// 超额瓦秒；两者都缺（或与平台声明自相矛盾）时面板必须显式表态，绝不显示 0。
+// 2026-11-02 carbon panel: manifest carbonMetrics is the single source of truth. The intensity model yields grams; the budget
+// model yields excess watt-seconds. When both are missing (or contradict the platform declaration) the panel must say so explicitly and never show 0.
 function carbonModel(run) {
   const manifest = run.manifest;
   if (!manifest || !manifest.carbonMetrics) return 'NONE';
@@ -149,9 +149,9 @@ async function checkCarbon(page, run) {
   assert.equal(await page.locator('#carbon-excess').textContent(), shares.excess ? String(carbon.totalCarbonExcessWattSeconds) : absent, 'Exact carbon text differs at totalCarbonExcessWattSeconds');
   assert.equal(await page.locator('#carbon-vm-table tr').count(), Object.keys(carbon.perVmCarbonGrams || {}).length, 'Carbon per-VM rows differ from perVmCarbonGrams');
 }
-// 2026-11-02 DVFS 面板：逐档忙秒不在清单里（metrics 侧台账是 transient），面板由作业
-// 区间重导出。本检查用扫描线独立复算（面板用区间归并），两法必须同值；同时用清单自带的
-// vmMetrics.modeledBusyIntervalSeconds 兜底——面板亮 MISMATCH 即代表证据链断裂。
+// 2026-11-02 DVFS panel: per-tier busy seconds are not in the manifest (the metrics-side ledger is transient), so the panel
+// re-derives them from job intervals. This check recomputes independently with a sweep line (the panel merges intervals); the two
+// methods must agree. The manifest's own vmMetrics.modeledBusyIntervalSeconds is the backstop -- a MISMATCH badge means the evidence chain is broken.
 function unionSeconds(intervals) {
   if (!intervals.length) return 0;
   const events = [];
@@ -240,15 +240,15 @@ async function checkFileLifecycle(page, run, expected, hasPanel) {
   if (['HIDDEN', 'NO_RESULT', 'OFF'].includes(state)) {
     for (const table of Object.values(tables)) assert.equal(await page.locator(`${table} tr`).count(), 0, 'Switch must clear stale file lifecycle rows');
     assert.equal(await page.locator('#file-lifecycle-admitted').textContent(), '—');
-    if (state === 'OFF') assert.ok((await page.locator('#file-lifecycle-note').textContent()).includes('不等于零'));
+    if (state === 'OFF') assert.ok((await page.locator('#file-lifecycle-note').textContent()).includes('does not mean zero'));
     return;
   }
   assert.notEqual(state, 'INVALID', 'Requested V2 evidence cannot silently disappear');
   const view = run.fileLifecycle;assert.equal(view.schema, 'workflowsim-file-lifecycle-display-v2');assert.equal(view.captureStatus, 'COMPLETE');assertNetworkTypes(view, 'fileLifecycle');
   for (const field of ['filePlan', 'fabric', 'evidence', 'traceSnapshot']) assert.equal(Object.hasOwn(view, field), false, 'Do not embed the unbounded V2 document');
-  const note = await page.locator('#file-lifecycle-note').textContent();assert.ok(note.includes('不是逐区间流体服务'), 'Lifecycle scope must not claim fluid service accounting');
-  if (!view.contextValidated) assert.ok(note.includes('未声明与本页面CPU运行上下文绑定'));
-  if (!view.quiescent) assert.ok(note.includes('完整捕获仍包含'));
+  const note = await page.locator('#file-lifecycle-note').textContent();assert.ok(note.includes('is not a per-interval fluid-service'), 'Lifecycle scope must not claim fluid service accounting');
+  if (!view.contextValidated) assert.ok(note.includes('no binding to the CPU run context of this page'));
+  if (!view.quiescent) assert.ok(note.includes('may still contain active or unfinished attempts'));
   for (const [kind, limit] of Object.entries({ copies: 64, resources: 64, events: 128 })) {
     const preview = view[kind];assert.equal(preview.limit, String(limit));assert.ok(preview.rows.length <= limit);assert.equal(preview.shown, String(preview.rows.length));assert.equal(BigInt(preview.total), BigInt(preview.shown) + BigInt(preview.omitted));
     assert.equal(await page.locator(`${tables[kind]} tr`).count(), preview.rows.length, `V2 ${kind} row count`);
@@ -265,12 +265,12 @@ async function checkFileLifecycle(page, run, expected, hasPanel) {
   assert.deepEqual(await page.locator('#file-lifecycle-copy-table tr td:first-child').allTextContents(), copies.map(copy => copy.copyOrdinal));
   assert.deepEqual(await page.locator('#file-lifecycle-copy-table tr td:nth-child(2)').allTextContents(), copies.map(copy => copy.fileId));
   assert.deepEqual(await page.locator('#file-lifecycle-copy-table tr td:nth-child(3)').allTextContents(), copies.map(copy => `${copy.source} → ${copy.destination}`));
-  assert.deepEqual(await page.locator('#file-lifecycle-copy-table tr td:nth-child(4)').allTextContents(), copies.map(copy => copy.producerTaskId === null ? `外部来源 ${copy.originLocation}` : `Task ${copy.producerTaskId} / Job ${copy.producerJobAttemptId} / ${copy.originLocation}`));
+  assert.deepEqual(await page.locator('#file-lifecycle-copy-table tr td:nth-child(4)').allTextContents(), copies.map(copy => copy.producerTaskId === null ? `External source ${copy.originLocation}` : `Task ${copy.producerTaskId} / Job ${copy.producerJobAttemptId} / ${copy.originLocation}`));
   assert.deepEqual(await page.locator('#file-lifecycle-copy-table tr td:nth-child(13)').allTextContents(), copies.map(copy => exact(copy.effectiveFctSeconds)));
   assert.deepEqual(await page.locator('#file-lifecycle-copy-table tr td:nth-child(14)').allTextContents(), copies.map(copy => exact(copy.observedFctSeconds)));
   assert.deepEqual(await page.locator('#file-lifecycle-resource-table tr td:nth-child(2)').allTextContents(), view.resources.rows.map(resource => resource.capacityBytesPerSecond));
   assert.deepEqual(await page.locator('#file-lifecycle-event-table tr td:last-child').allTextContents(), view.events.rows.map(event => event.detail));
-  assert.ok((await page.locator('#file-lifecycle-copy-note').textContent()).includes(`预览省略 ${view.copies.omitted} 项`));
+  assert.ok((await page.locator('#file-lifecycle-copy-note').textContent()).includes(`preview omits ${view.copies.omitted} of them`));
 }
 
 function storageLifecyclePanel(run) {
@@ -306,14 +306,14 @@ async function checkStorageLifecycle(page, run, expected, hasPanel) {
   if (['HIDDEN', 'NO_RESULT', 'OFF'].includes(state)) {
     for (const table of Object.values(tables)) assert.equal(await page.locator(`${table} tr`).count(), 0, 'Switch must clear stale storage rows');
     assert.equal(await page.locator('#storage-lifecycle-output-admitted').textContent(), '—');
-    if (state === 'OFF') assert.ok((await page.locator('#storage-lifecycle-note').textContent()).includes('不等于零流量'));
+    if (state === 'OFF') assert.ok((await page.locator('#storage-lifecycle-note').textContent()).includes('does not mean zero traffic'));
     return;
   }
   assert.notEqual(state, 'INVALID', 'Requested V3 evidence cannot silently disappear');const v = run.storageLifecycle;
   assert.equal(v.schema, 'workflowsim-storage-lifecycle-display-v3');assert.equal(v.captureStatus, 'COMPLETE');assertNetworkTypes(v, 'storageLifecycle');
   for (const field of ['filePlan', 'fabric', 'evidence', 'traceSnapshot']) assert.equal(Object.hasOwn(v, field), false, 'Do not embed unbounded storage evidence');
-  const note = await page.locator('#storage-lifecycle-note').textContent();assert.ok(note.includes('不是逐区间流体服务面积'), 'Storage scope must not claim fluid service accounting');
-  if (!v.contextValidated) assert.ok(note.includes('未声明与本页面CPU运行上下文绑定'));if (!v.quiescent) assert.ok(note.includes('完整捕获仍有未完成状态'));
+  const note = await page.locator('#storage-lifecycle-note').textContent();assert.ok(note.includes('is not a per-interval fluid service-area'), 'Storage scope must not claim fluid service accounting');
+  if (!v.contextValidated) assert.ok(note.includes('no binding to the CPU run context of this page'));if (!v.quiescent) assert.ok(note.includes('may still contain unfinished states'));
   for (const [kind, limit] of Object.entries({ copies: 64, resources: 64, events: 128, jobs: 64 })) {
     const preview = v[kind];assert.equal(preview.limit, String(limit));assert.ok(preview.rows.length <= limit);assert.equal(preview.shown, String(preview.rows.length));assert.equal(BigInt(preview.total), BigInt(preview.shown) + BigInt(preview.omitted));assert.equal(await page.locator(`${tables[kind]} tr`).count(), preview.rows.length, `V3 ${kind} row count`);
   }
@@ -332,14 +332,14 @@ async function checkStorageLifecycle(page, run, expected, hasPanel) {
   assert.deepEqual(await page.locator('#storage-lifecycle-copy-table tr td:nth-child(3)').allTextContents(), copies.map(c => c.ownerJobId));
   assert.deepEqual(await page.locator('#storage-lifecycle-copy-table tr td:nth-child(4)').allTextContents(), copies.map(c => c.fileId));
   assert.deepEqual(await page.locator('#storage-lifecycle-copy-table tr td:nth-child(5)').allTextContents(), copies.map(c => `${c.source} → ${c.destination}`));
-  assert.deepEqual(await page.locator('#storage-lifecycle-copy-table tr td:nth-child(6)').allTextContents(), copies.map(c => c.producerTaskId === null ? `外部来源 ${c.originLocation}` : `Task ${c.producerTaskId} / Job ${c.producerJobAttemptId} / ${c.originLocation}`));
+  assert.deepEqual(await page.locator('#storage-lifecycle-copy-table tr td:nth-child(6)').allTextContents(), copies.map(c => c.producerTaskId === null ? `External source ${c.originLocation}` : `Task ${c.producerTaskId} / Job ${c.producerJobAttemptId} / ${c.originLocation}`));
   assert.deepEqual(await page.locator('#storage-lifecycle-copy-table tr td:nth-child(15)').allTextContents(), copies.map(c => exact(c.effectiveFctSeconds)));
   assert.deepEqual(await page.locator('#storage-lifecycle-copy-table tr td:nth-child(16)').allTextContents(), copies.map(c => exact(c.observedFctSeconds)));
   for (const [column, key] of [[1, 'jobId'], [4, 'requestedAt'], [5, 'dataReadyAt'], [6, 'cpuStartedAt'], [7, 'finishedAt'], [8, 'nominalInputSeconds'], [9, 'observedPreparationSeconds'], [10, 'storeGateWaitSeconds']]) assert.deepEqual(await page.locator(`#storage-lifecycle-job-table tr td:nth-child(${column})`).allTextContents(), v.jobs.rows.map(j => exact(j[key])));
   assert.deepEqual(await page.locator('#storage-lifecycle-resource-table tr td:nth-child(2)').allTextContents(), v.resources.rows.map(r => r.capacityBytesPerSecond));
   assert.deepEqual(await page.locator('#storage-lifecycle-event-table tr td:last-child').allTextContents(), v.events.rows.map(e => e.detail));
-  assert.ok((await page.locator('#storage-lifecycle-job-note').textContent()).includes('不是可与其他时长相加的分解'));
-  assert.ok((await page.locator('#storage-lifecycle-copy-note').textContent()).includes(`预览省略 ${v.copies.omitted} 项`));
+  assert.ok((await page.locator('#storage-lifecycle-job-note').textContent()).includes('not a component that can be summed'));
+  assert.ok((await page.locator('#storage-lifecycle-copy-note').textContent()).includes(`preview omits ${v.copies.omitted} of them`));
 }
 
 function assignmentState(run) {
@@ -349,7 +349,7 @@ function assignmentState(run) {
   return v && v.schema === 'workflowsim-dataflow-assignment-display-v1' && v.contextValidated === true && v.auditScope === 'BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1' && v.liveProgressReplayed === false ? 'VALIDATED' : 'INVALID';
 }
 const ASSIGNMENT_SUMMARY_IDS = ['dataflow-assignment-total', 'dataflow-assignment-initial', 'dataflow-assignment-retries', 'dataflow-assignment-conditional', 'dataflow-assignment-joined'];
-const assignmentYes = value => value === true ? '是' : value === false ? '否' : '—';
+const assignmentYes = value => value === true ? 'Yes' : value === false ? 'No' : '—';
 const assignmentValues = v => [v.summary.assignmentCount, v.summary.initialBindingCount, v.summary.retryReuseCount, v.summary.conditionalStoreCount, v.summary.joinedInputCopyCount];
 function checkAssignmentPreview(preview, limit) {
   assert.ok(Array.isArray(preview.rows));assert.equal(preview.limit, String(limit));assert.ok(preview.rows.length <= limit, 'Assignment preview exceeds cap');assert.equal(preview.shown, String(preview.rows.length));assert.equal(BigInt(preview.total), BigInt(preview.shown) + BigInt(preview.omitted));
@@ -362,7 +362,7 @@ async function checkDataflowAssignment(page, run, expected, hasPanel) {
   if (state !== 'VALIDATED') {
     assert.equal(await page.locator('#dataflow-assignment-table tr').count(), 0, 'Unavailable assignment must clear actions');assert.equal(await page.locator('#dataflow-assignment-candidate-table tr').count(), 0, 'Unavailable assignment must clear candidates');assert.equal(await page.locator('#dataflow-assignment-select option').count(), 0, 'Unavailable assignment must clear selection');
     for (const id of ASSIGNMENT_SUMMARY_IDS) assert.equal(await page.locator('#'+id).textContent(), '—');
-    if (state === 'INVALID') assert.ok((await page.locator('#dataflow-assignment-note').textContent()).includes('不能显示成OFF'));
+    if (state === 'INVALID') assert.ok((await page.locator('#dataflow-assignment-note').textContent()).includes('must not be displayed as OFF'));
     return;
   }
   const v = run.dataflowAssignment;assertNetworkTypes(v, 'dataflowAssignment');assert.equal(v.contextValidated, true);assert.equal(v.liveProgressReplayed, false);assert.equal(v.auditScope, 'BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1');
@@ -371,8 +371,8 @@ async function checkDataflowAssignment(page, run, expected, hasPanel) {
   checkAssignmentPreview(v.actions, 64);assert.equal(await page.locator('#dataflow-assignment-table tr').count(), v.actions.rows.length, 'Assignment actions row count');assert.equal(await page.locator('#dataflow-assignment-select option').count(), v.actions.rows.length);
   const values = assignmentValues(v);if (expected) { assert.deepEqual(values, expected.values);assert.equal(v.actions.total, expected.actionCount);assert.deepEqual(v.actions.rows.map(row=>row.vmId), expected.selectedVms);assert.equal(v.assignmentPolicy, expected.policy);assert.equal(v.auditScope, expected.auditScope); }
   for (let i=0;i<values.length;i++) assert.equal(await page.locator('#'+ASSIGNMENT_SUMMARY_IDS[i]).textContent(), exact(values[i]), 'Exact assignment text differs at '+ASSIGNMENT_SUMMARY_IDS[i]);
-  const note = await page.locator('#dataflow-assignment-note').textContent();assert.ok(note.includes('精确实时余额') && note.includes('没有重放') && note.includes('不等于全局最优'), 'Assignment scope must not imply a fluid replay');assert.ok((await page.locator('#dataflow-assignment-scope').textContent()).includes(v.auditScope));
-  assert.ok((await page.locator('#dataflow-assignment-actions-note').textContent()).includes(`预览省略 ${v.actions.omitted} 项`));
+  const note = await page.locator('#dataflow-assignment-note').textContent();assert.ok(note.includes('Exact live balances') && note.includes('were not replayed') && note.includes('does not equal a global optimum'), 'Assignment scope must not imply a fluid replay');assert.ok((await page.locator('#dataflow-assignment-scope').textContent()).includes(v.auditScope));
+  assert.ok((await page.locator('#dataflow-assignment-actions-note').textContent()).includes(`preview omits ${v.actions.omitted} of them`));
   const rendered = await page.locator('#dataflow-assignment-table tr').evaluateAll(rows=>rows.map(row=>Array.from(row.cells,cell=>cell.textContent)));
   for (let i=0;i<v.actions.rows.length;i++) {
     const row=v.actions.rows[i],s=row.selected,o=row.observation,c=row.candidates;checkAssignmentPreview(c,12);
@@ -382,7 +382,7 @@ async function checkDataflowAssignment(page, run, expected, hasPanel) {
     assert.equal(await page.locator('#dataflow-assignment-candidate-table tr').count(), c.rows.length, 'Assignment candidates row count');
     const candidates=await page.locator('#dataflow-assignment-candidate-table tr').evaluateAll(rows=>rows.map(row=>Array.from(row.cells,cell=>cell.textContent)));
     assert.deepEqual(candidates,c.rows.map(x=>[x.vmId,assignmentYes(x.compatible),x.inputSeconds,x.cpuAvailableAt,x.computeSeconds,x.scoreFinishSeconds,assignmentYes(x.conditionalStoreWait),x.joinedInputCopies].map(exact)));
-    const info=await page.locator('#dataflow-assignment-candidate-note').textContent();assert.ok(info.includes('已选 VM '+row.vmId));assert.ok(info.includes(`预览省略 ${c.omitted} 项`));
+    const info=await page.locator('#dataflow-assignment-candidate-note').textContent();assert.ok(info.includes('Selected VM '+row.vmId));assert.ok(info.includes(`preview omits ${c.omitted} of them`));
     const observed=await page.locator('#dataflow-assignment-observation').textContent();for(const value of [o.observedThrough,o.serviceThrough,o.activeCopyCount,o.activeJobCount,o.pendingOutputFileCount,o.scopedFileCount]) assert.ok(observed.includes(value), 'Assignment observation exact text missing');
   }
 }
@@ -429,7 +429,7 @@ async function checkReport(browser, specification, screenshot) {
     }
     const successful = runs.filter(run => run.manifest && run.status === 'COMPLETED_SUCCESSFULLY').length;
     assert.equal(await page.locator('#comparison svg rect').count(), successful);
-    assert.equal((await page.locator('#run-count').textContent()).trim(), `${successful} / ${runCount} 次成功`);
+    assert.equal((await page.locator('#run-count').textContent()).trim(), `${successful} / ${runCount} successful`);
     let allRows = 0, vmRows = 0;
     for (let index = 0; index < runs.length; index++) {
       await page.locator('#run-select').selectOption(String(index));
@@ -464,7 +464,7 @@ async function checkReport(browser, specification, screenshot) {
         const shown = graph.filter(task => neighbours.has(task.taskId)).slice(0, 80);
         await page.locator('#graph-select').selectOption(String(focus.taskId));
         assert.deepEqual(await page.locator('#dag-chart svg g text').allTextContents(),
-          shown.map(task => `任务 ${task.taskId}`));
+          shown.map(task => `Task ${task.taskId}`));
         await page.locator('#graph-select').selectOption('all');
         assert.equal(await page.locator('#dag-chart svg rect').count(), Math.min(80, graph.length));
       }
