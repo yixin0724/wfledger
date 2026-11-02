@@ -76,8 +76,8 @@ The self-tests verify the checkers on positive and negative cases; they do not p
 The registered-mutation zero-survival gate verifies the test battery's killing power against known semantic breaks (the registry, how to run it, and the rules for extending the table are documented in [Mutation gate](<../advanced/MUTATION_GATE.md>), in English). A full run takes about 3–5 minutes, requires a clean working tree, and must run exclusively (not concurrently with other Maven builds):
 
 ```bash
-python3 -B scripts/mutation-gate.py --output <新报告.json>
-python3 -B scripts/mutation-gate.py --output <新报告.json> --dry-run
+python3 -B scripts/mutation-gate.py --output <new-report.json>
+python3 -B scripts/mutation-gate.py --output <new-report.json> --dry-run
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-mutation-gate.py
 ```
 
@@ -88,7 +88,7 @@ Exit codes: 0, all mutants killed; 1, survivors or a build failure; 2, anchor dr
 ```bash
 python3 -B scripts/test-check-docs.py
 python3 -B scripts/check-docs.py
-# 需要机器可读诊断时：
+# when machine-readable diagnostics are needed:
 python3 -B scripts/check-docs.py --json
 ```
 
@@ -101,7 +101,7 @@ The checker opens genuinely generated reports via `file://`; no server is starte
 ```bash
 npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
 
-# 已有可用 Chrome 时可省略；Linux CI 使用 install --with-deps chromium。
+# omit this when a usable Chrome is already present; Linux CI uses install --with-deps chromium.
 scripts/node_modules/.bin/playwright-core install chromium
 
 mvn -pl :workflowsim-workbench -am test-compile exec:java \
@@ -156,17 +156,17 @@ mvn -pl :workflowsim-workbench -am compile exec:java \
 The core module skips `exec:java` by default; enable `core-exec` to run the core validators:
 
 ```bash
-# 单次运行证据包
+# single-run evidence bundle
 mvn -Pcore-exec -pl :workflowsim -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiment.ExperimentArtifactValidator \
   '-Dexec.args="/absolute/output/run.manifest.json"'
 
-# 通用 campaign index
+# generic campaign index
 mvn -Pcore-exec -pl :workflowsim -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiment.ExperimentCampaignValidator \
   '-Dexec.args="/absolute/output/experiment-campaign-index.json"'
 
-# 独立检查 V1/V2/V3 证据及适用的在线绑定上下文
+# independent check of V1/V2/V3 evidence plus the applicable online-binding context
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-network-ledger.py \
   /absolute/output/run.manifest.json --json
 ```
@@ -177,7 +177,7 @@ The independent network checker is meant for evidence packages with matching net
 
 ```bash
 mvn -pl :workflowsim -Pjavadoc verify
-# macOS；其他系统在文件管理器中打开相同路径。
+# macOS; on other systems open the same path in the file manager.
 open simulator/target/reports/apidocs/index.html
 ```
 

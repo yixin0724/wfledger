@@ -42,8 +42,8 @@ Paths in the [classic input index](<dax/INDEX.json>) are relative to `datasets/d
 | `sipht` | SIPHT sRNA prediction | 30 / 60 / 100 / 1000 |
 
 ```text
-路径模式：datasets/dax/<family>/n<tasks>/<Family>_<tasks>.dax
-示例：    datasets/dax/epigenomics/n100/Epigenomics_100.dax
+path pattern: datasets/dax/<family>/n<tasks>/<Family>_<tasks>.dax
+example:      datasets/dax/epigenomics/n100/Epigenomics_100.dax
 ```
 
 The classic inputs come from the Pegasus workflow characterization and mostly use DAX 2.1; the paper example declares DAX 3.3, and each input's own declaration prevails.
@@ -83,18 +83,18 @@ The parsers consume the task graph, the file sizes, and the runtimes; the source
 Run the repository's bundled inputs from the project root:
 
 ```bash
-# WfGen 合成输入
-mvn -pl :workflowsim-experiments -am compile exec:java \
+# WfGen synthetic input
+mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.examples.wfcommons.WfCommonsSimulationExample1 \
   -Dexec.args="datasets/wfformat/montage/n100/montage-100-000.json"
 
-# WfInstances 真实执行派生输入
-mvn -pl :workflowsim-experiments -am compile exec:java \
+# WfInstances real-execution-derived input
+mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.examples.wfcommons.WfCommonsSimulationExample1 \
   -Dexec.args="datasets/wfinstances/v1.5/makeflow/blast/blast-chameleon-small-001.json"
 
-# 只检查传入目录实际存在的 JSON：解析/DAG 结构，不运行仿真
-mvn -pl :workflowsim-experiments -am compile exec:java \
+# only checks the JSON files actually present under the given directory: parsing/DAG structure, no simulation
+mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.examples.wfcommons.WfCommonsJsonParserValidationExample \
   -Dexec.args="datasets/wfinstances/v1.5"
 ```

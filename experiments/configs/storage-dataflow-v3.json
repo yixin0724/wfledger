@@ -1,6 +1,6 @@
 {
   "schema": "workflowsim-workbench-v1",
-  "name": "V3受限共享存储：读写/NIC与输出落库",
+  "name": "V3 bounded shared storage: read/write, NIC, and output write-back",
   "workflowPaths": ["inputs/coherent-file-dataflow.dax"],
   "platform": {
     "vmMips": [1000, 1000, 1000, 1000],

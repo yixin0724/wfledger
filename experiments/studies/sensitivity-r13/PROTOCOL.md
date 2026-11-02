@@ -1,56 +1,121 @@
-# 敏感性响应面研究（R13）：协议与保留说明
+# Sensitivity Response-Surface Study (R13): Protocol and Retention Notes
 
-> **历史归档：非标准 PEFT，不是当前算法指南。** 本页原地保留 `sensitivity-response-r13-v1` 的预注册、判定规则与研究条件。旧 `LOCAL_PEFT` 错把自身 `w(t,p)` 计入 OCT，出口取平均计算成本；ready-list 修复没有纠正该公式。下文“同构退化/异构激活”、验证声明和数字仅描述当时实现，不能作为标准 PEFT 优劣或机制的证据；原预注册正文不改写。
+> **Historical archive: non-standard PEFT, not a current algorithm guide.** This page retains in
+> place the preregistration, adjudication rules, and study conditions of
+> `sensitivity-response-r13-v1`. The legacy `LOCAL_PEFT` wrongly counted its own `w(t,p)` into
+> OCT and took the averaged computational cost at the exit; the ready-list fix did not correct
+> that formula. The "homogeneous degeneration / heterogeneous activation" reading below, the
+> validation claims, and the numbers describe only the implementation of that time and cannot
+> serve as evidence for or against standard PEFT or for its mechanism; the original
+> preregistered text is not rewritten.
 >
-> 标准定义见作者[公开收录页](<https://repositorio-aberto.up.pt/handle/10216/92290>)及[博士论文全文](<https://repositorio-aberto.up.pt/bitstream/10216/92290/2/129782.pdf>)第3章印刷 p.71（Eq.7：后继 `w(child,p')`、出口 `OCT=0`）和 p.73（Algorithm 1）。当前执行器生成 `sensitivity-response-r13-v2`；下方历史运行命令不恢复旧实现。当前协议及已保留的修正模型研究分别见[协议修订](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>)和[研究影响复验](<../correctness-repair/RESULTS.md>)。
+> The standard definition is given on the author's
+> [public repository record](<https://repositorio-aberto.up.pt/handle/10216/92290>) and in the
+> [full doctoral dissertation](<https://repositorio-aberto.up.pt/bitstream/10216/92290/2/129782.pdf>),
+> Chapter 3, printed p.71 (Eq.7: successor `w(child,p')`, exit `OCT=0`) and p.73 (Algorithm 1).
+> The current executor produces `sensitivity-response-r13-v2`; the historical run commands below
+> do not restore the legacy implementation. The current protocol and the retained corrected-model
+> study are in [protocol revisions](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>)
+> and [study-impact re-verification](<../correctness-repair/RESULTS.md>), respectively.
 >
-> `output/...` 是原工作区的可选证据位置，普通检出不附带；归档本页不改写原始协议 JSON、数值工件或压缩包。
+> `output/...` is an optional evidence location of the original workspace and is not provided
+> with a normal checkout; archiving this page does not rewrite the original protocol JSON,
+> numeric artifacts, or tar archive.
 
-协议ID：`sensitivity-response-r13-v1`。Java驱动复用 `org.workflowsim.experiments.network`（NetworkStudyPlan/Executor/Summary/Validator 的 sensitivity-r13 变体）。本研究是**描述性敏感性响应面**：回答"规划器相对收益如何随 VM 数量、链路带宽、VM 异构度三个轴变化"，不做参数拟合或外推。
+Protocol ID: `sensitivity-response-r13-v1`. The Java driver reuses
+`org.workflowsim.experiments.network` (the sensitivity-r13 variants of
+NetworkStudyPlan/Executor/Summary/Validator). This study is a **descriptive sensitivity response
+surface**: it asks how the planners' relative gains change along three axes (VM count, link
+bandwidth, and VM heterogeneity), and it performs no parameter fitting or extrapolation.
 
-## 与冻结证据的关系
+## Relationship to the frozen evidence
 
-本研究不改动 R10 协议 `network-limited-r10-v2`（504 次，`output/network-study-r10-final/`）与 S5 协议 `peft-comparison-r12-v1`（126 次，`output/peft-comparison-r12/`）的任何工件；扩展全部为条件性代码路径，冻结索引重验证逐字节不变（本次已复核，两者均 `NETWORK_STUDY_VALIDATION PASSED`）。
+This study modifies no artifact of the R10 protocol `network-limited-r10-v2` (504 runs,
+`output/network-study-r10-final/`) or of the S5 protocol `peft-comparison-r12-v1` (126 runs,
+`output/peft-comparison-r12/`); every extension is a conditional code path, and re-validation of
+the frozen indices is byte-for-byte unchanged (re-checked for this study; both reported
+`NETWORK_STUDY_VALIDATION PASSED`).
 
-## 矩阵
+## Matrix
 
-- 合格输入：与 R10/S5 相同的7个输入（5 个经典DAX：Epigenomics 100/997、CyberShake 100/1000、Inspiral 100；2 个确定性合成DAG：layered-32/128）。Inspiral 1000 因 CONFLICTING_FILE_SIZE 全量排除。
-- 算法：LOCAL_HEFT、LOCAL_CPOP、LOCAL_PEFT，均确定性，每条件一次（seed 11）。无故障、LOCAL、STATIC、SPACE_SHARED、一Host一VM、固定放置（id↔id）。
-- **主块（同构响应面）**：VM ∈ {4, 8, 16, 32} × 网络 ∈ {endpoint 1.0, fat-tree-constrained 0.125, fat-tree-mid 0.5, fat-tree-wide 1.25, fat-tree-fast 5.0 MB/s}，平台全部同构 1000 MIPS。共 20 条件。
-- **异构块（OCT 机制检验）**：VM ∈ {8, 16} × fat-tree-constrained × 异构度 ∈ {HET_MILD, HET_STRONG, HET_EXTREME}。MIPS 模式为确定性公式（按VM序号 i）：MILD = 1000(i偶)/500(i奇)；STRONG = `[2000,1000,500][i%3]`；EXTREME = 2000(i偶)/500(i奇)。共 6 条件。
-- 正式运行量：7输入 × 26条件 × 3算法 × 1种子 = **546次**。
-- CI smoke：论文十任务fixture + layered-16，主块 4VM×{endpoint, constrained}、异构块 4VM×constrained×3级，共 5 条件 × 3 算法 = 30 次。
+- Qualified inputs: the 7 inputs of R10/S5 (5 classic DAXs: Epigenomics 100/997, CyberShake
+  100/1000, Inspiral 100; 2 deterministic synthetic DAGs: layered-32/128). Inspiral 1000 is
+  excluded entirely because of CONFLICTING_FILE_SIZE.
+- Algorithms: LOCAL_HEFT, LOCAL_CPOP, LOCAL_PEFT, all deterministic, one run per condition
+  (seed 11). No failures, LOCAL file system, STATIC dispatch, SPACE_SHARED, one VM per Host,
+  fixed placement (id ↔ id).
+- **Main block (homogeneous response surface)**: VM ∈ {4, 8, 16, 32} × network ∈ {endpoint 1.0,
+  fat-tree-constrained 0.125, fat-tree-mid 0.5, fat-tree-wide 1.25, fat-tree-fast 5.0 MB/s};
+  all VMs homogeneous at 1000 MIPS. 20 conditions in total.
+- **Heterogeneity block (OCT mechanism check)**: VM ∈ {8, 16} × fat-tree-constrained ×
+  heterogeneity ∈ {HET_MILD, HET_STRONG, HET_EXTREME}. The MIPS pattern is a deterministic
+  formula by VM index i: MILD = 1000(i even)/500(i odd); STRONG = `[2000,1000,500][i%3]`;
+  EXTREME = 2000(i even)/500(i odd). 6 conditions in total.
+- Production run volume: 7 inputs × 26 conditions × 3 algorithms × 1 seed = **546 runs**.
+- CI smoke: paper ten-task fixture + layered-16, main block 4VM × {endpoint, constrained},
+  heterogeneity block 4VM × constrained × 3 tiers, 5 conditions × 3 algorithms = 30 runs.
 
-### fat-tree k 的 VM 数依赖（必须随结果呈现）
+### Dependence of fat-tree k on VM count (must be presented with the results)
 
-fat-tree k=4 仅承载 16 台主机；VM=32 的条件必须用 k=8（128 台主机）。因此 VM 轴的最后一档同时改变了拓扑层级与主机池大小，**VM=32 与其他档位的对比包含拓扑混杂**，只能描述、不能把差异单独归因于"VM更多"。其余网络/异构度轴不受此影响。
+A fat-tree with k=4 carries only 16 hosts; a condition with VM=32 must use k=8 (128 hosts). The
+last tier of the VM axis therefore changes both the topology level and the host-pool size at
+once, so **comparisons between VM=32 and the other tiers contain a topology confound**: they are
+descriptive only, and the difference must not be attributed to "more VMs" alone. The remaining
+network and heterogeneity axes are not affected.
 
-## 预注册机制检验（S5 发现的延伸）
+## Preregistered mechanism check (extension of the S5 finding)
 
-S5 在同构平台上发现 PEFT 相对 HEFT 无优势、大量精确平局，原因是 OCT 前瞻项对全部同构VM取相同值，前瞻退化为常数。R13 据此**预先注册**预测：
+On a homogeneous platform, S5 found no PEFT advantage over HEFT and many exact ties, because the
+OCT lookahead term takes the same value for all homogeneous VMs and the lookahead degenerates to
+a constant. R13 therefore **preregisters** the prediction:
 
-> LOCAL_PEFT 的激活（相对 LOCAL_HEFT 的中位改善%明显偏离 0）应**只**出现在异构条件下（HET_MILD/HET_STRONG/HET_EXTREME）；全部同构条件（主块 20 条件）中 PEFT 与 HEFT 的中位改善%应接近 0 且以平局为主。异构条件的同构对照取自主块中相同 VM 数与网络的 constrained 条件。
+> LOCAL_PEFT activation (median improvement % vs LOCAL_HEFT clearly deviating from 0) should
+> appear **only** under heterogeneous conditions (HET_MILD/HET_STRONG/HET_EXTREME); across all
+> homogeneous conditions (the 20 main-block conditions), the PEFT-vs-HEFT median improvement %
+> should be close to 0 and tie-dominant. The homogeneous control for a heterogeneous condition
+> is taken from the constrained condition of the main block with the same VM count and network.
 
-判定规则（与 S5 同构）：DAG 配对的中位改善%与精确符号检验 p 值、Holm 调整（每 来源/VM/网络/异构度 族，族大小 2）。平局容差为相对 1e-9。预测被认定为"激活"需同时满足：中位改善%明显偏离 0，且至少一条异构条件的 Holm 调整后 p 值给出方向一致的证据（仍按探索性解读，见下）。
+Adjudication rules (same structure as in S5): DAG-paired median improvement % with exact sign-test
+p-values and Holm adjustment (one family per source/VM/network/heterogeneity, family size 2). The
+tie tolerance is relative 1e-9. A prediction counts as "activation" only if both conditions hold:
+the median improvement % clearly deviates from 0, and at least one heterogeneous condition's
+Holm-adjusted p-value provides directionally consistent evidence (still interpreted as
+exploratory; see below).
 
-## 指标与统计
+## Metrics and statistics
 
-主指标为仿真结束时间，辅以逻辑任务完成时刻、平均/P95等待与VM利用率。每次运行必须逻辑任务全部成功；失败记录保留，验证器拒绝失败、缺项、重复项或不一致的工件。验证器按条件（含异构度）核查完整矩阵、每份证据的 VM MIPS/拓扑 k/链路带宽与声明一致，并独立重算汇总统计。
+The primary metric is simulation end time, supported by logical task completion time, mean/P95
+waiting, and VM utilization. Every run must complete all logical tasks successfully; failure
+records are retained, and the validator rejects failed, missing, duplicated, or inconsistent
+artifacts. The validator checks the complete matrix by condition (including heterogeneity),
+verifies that each artifact's VM MIPS / topology k / link bandwidth matches the declaration, and
+independently recomputes the summary statistics.
 
-确定性规划器每条件单次运行，以 DAG 为配对单位。经典（5）与合成（2）两来源**永不合并**，分别统计。
+Deterministic planners run once per condition, with the DAG as the pairing unit. The classic (5)
+and synthetic (2) sources are **never pooled** and are summarized separately.
 
-## 保留说明（必须随结果一同呈现）
+## Retention notes (must be presented together with the results)
 
-1. **描述性，非因果**：响应面只做条件内对比与跨条件描述，不拟合参数模型、不外推到未模拟的配置。
-2. **VM=32 拓扑混杂**：见上。
-3. **探索性选定语料**：7 个输入是固定选定的，不是随机抽样；p 值不支撑对生产平台或全部工作流的外推；不显著不代表算法等价。
-4. **小样本功效**：经典组 5 个 DAG 配对，符号检验功效有限；合成组仅 2 个 DAG，任何 p 值都是钝的。
-5. **无外部校准**：所有带宽/MIPS 是抽象模型声明，未与真实云网络校准。
-6. 研究未使用训练器。
+1. **Descriptive, not causal**: the response surface only makes within-condition comparisons and
+   cross-condition descriptions; it fits no parametric model and extrapolates to no unsimulated
+   configuration.
+2. **VM=32 topology confound**: see above.
+3. **Exploratory selected corpus**: the 7 inputs are fixed by selection, not randomly sampled;
+   the p-values do not support extrapolation to production platforms or to all workflows;
+   non-significance does not mean algorithm equivalence.
+4. **Small-sample power**: the classic group has 5 paired DAGs, so sign-test power is limited;
+   the synthetic group has only 2 DAGs, so any p-value is blunt.
+5. **No external calibration**: all bandwidth/MIPS values are abstract model declarations, not
+   calibrated against a real cloud network.
+6. The study used no trainer.
 
-## 工件与复现
+## Artifacts and reproduction
 
-完整证据保存在项目 `output/sensitivity-r13/`（`.gitignore` 排除，不入库；交接用压缩包 `output/sensitivity-r13-evidence.tar.gz`）。每次运行具有v4 manifest、metrics、events；研究根含 protocol、546 行运行索引、自动生成结果表、合成输入。
+The complete evidence is kept in the project at `output/sensitivity-r13/` (excluded by
+`.gitignore`, not committed; the handover archive is
+`output/sensitivity-r13-evidence.tar.gz`). Each run has a v4 manifest, metrics, and events; the
+study root contains the protocol, a 546-row run index, the auto-generated result table, and the
+synthetic inputs.
 
 ```bash
 mvn -pl :workflowsim-workbench -am compile exec:java \
@@ -61,4 +126,5 @@ mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.args="/absolute/new-output/network-study.json"
 ```
 
-输出目录必须不存在。验证器打印 `NETWORK_STUDY_VALIDATION PASSED runs=546` 即为通过。
+The output directory must not exist. The check passes when the validator prints
+`NETWORK_STUDY_VALIDATION PASSED runs=546`.

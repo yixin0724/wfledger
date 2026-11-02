@@ -72,7 +72,7 @@ workflow + SimulationConfig + PlatformProfile
 - `experiments/` — the unified entry point, examples, experiment executors, and reporting; part of the default Maven reactor.
 - `datasets/` — workflow inputs and the [dataset notes](<datasets/README.md>).
 - `scripts/` — independent evidence validation, browser acceptance, and performance comparison tooling.
-- `docs/` — current usage guides, model contracts, and maintenance notes (Chinese; a professional English translation pass is planned).
+- `docs/` — current usage guides, model contracts, and maintenance notes, in English.
 
 The core module does not depend on the experiment module.
 

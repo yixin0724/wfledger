@@ -3,126 +3,144 @@
     "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
     "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <!--
-  WorkflowSim-yixin 生产级 checkstyle 配置（代码规范化工程 Phase 1）
+  WorkflowSim-yixin production-grade checkstyle configuration (code normalization program, Phase 1)
 
-  分级原则（两档 + ratchet）：
-  ┌────────────────────────────────────────────────────────────────────────────┐
-  │ Tier-A（severity=error）零容忍：maven checkstyle:check 门禁即失败。        │
-  │   选入标准 = 一票否决的语义/正确性缺陷类 + 新增即 bug 的规则，             │
-  │   且基线审计（2026-10-21 审查工程机械扫描，报告随该临时工作区一并归档）    │
-  │   确认当前存量 = 0：第一天 100% 通过。                                    │
-  ├────────────────────────────────────────────────────────────────────────────┤
-  │ Tier-B（severity=warning）建议性：全量在册，基线存量见审计报告。          │
-  │   通过"分批修复清零 + 升级为 error"逐条晋级（晋级即规则收紧，永不回退）。  │
-  └────────────────────────────────────────────────────────────────────────────┘
+  Tier design (two tiers + ratchet):
+  +=================================================================================+
+  | Tier-A (severity=error) zero tolerance: the maven checkstyle:check gate fails.  |
+  |   Selection criterion = semantic/correctness defect classes that are a single-  |
+  |   vote veto + rules where new code is a bug by definition, and the baseline     |
+  |   audit (2026-10-21 review-engineering mechanical scan, report archived with    |
+  |   that temporary workspace) confirms the current backlog is 0: 100% green on    |
+  |   day one.                                                                      |
+  +=================================================================================+
+  | Tier-B (severity=warning) advisory: all rules registered, baseline backlog in   |
+  |   the audit report.                                                             |
+  |   Promoted one by one via "clear in batches + upgrade to error" (promotion      |
+  |   tightens the rule, never reverts).                                            |
+  +=================================================================================+
 
-  红线约束（工程目标所载）：
-  ① 规则只能增加不能减少：删除规则或放宽阈值 = 契约变更，须人工评审；
-     suppressions.xml 同理只允许缩小豁免面。
-  ② org.cloudbus.*：CloudSim 上游代码参与格式化（Phase 4 formatter），但完全
-     退出本 checkstyle 质量门禁（见下 BeforeExecutionExclusionFileFilter）。
-  ③ 测试文件的体量/复杂度/文档性豁免见 suppressions.xml；语义防护类不豁免。
-  ⑥ 本配置变更与任何 .java 修复不同 commit（性质的"格式提交与功能提交永不混合"）。
+  Red-line constraints (as recorded in the engineering objective):
+  Red line 1: Rules may only grow, never shrink: deleting a rule or loosening a
+     threshold = a contract change, requires human review; the same applies to
+     suppressions.xml, where the exemption surface may only shrink.
+  Red line 2: org.cloudbus.*: CloudSim upstream code takes part in formatting
+     (Phase 4 formatter) but exits this checkstyle quality gate entirely (see
+     BeforeExecutionExclusionFileFilter below).
+  Red line 3: test-file exemptions for size/complexity/documentation are in
+     suppressions.xml; semantic guard classes are not exempt.
+  Red line 6: this configuration change is committed separately from any .java fix
+     (in nature, "format commits and functional commits never mix").
 
-  config_loc：由 maven-checkstyle-plugin propertyExpansion 以
-  ${maven.multiModuleProjectDirectory}/config/checkstyle 注入（Phase 2 接线）。
+  config_loc: injected by maven-checkstyle-plugin propertyExpansion as
+  ${maven.multiModuleProjectDirectory}/config/checkstyle (Phase 2 wiring).
 -->
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="warning"/>
 
-    <!-- ===== 红线②：CloudSim 上游源码整体退出质量门禁 ===== -->
+    <!-- ===== Red line 2: CloudSim upstream source exits the quality gate as a whole ===== -->
     <module name="BeforeExecutionExclusionFileFilter">
         <property name="fileNamePattern" value="[\\/]org[\\/]cloudbus[\\/]"/>
     </module>
 
-    <!-- ===== 测试宽松（红线③），豁免面只许缩小不许扩大 ===== -->
+    <!-- ===== Test leniency (red line 3): the exemption surface may only shrink, never grow ===== -->
     <module name="SuppressionFilter">
         <property name="file" value="${config_loc}/suppressions.xml"/>
         <property name="optional" value="false"/>
     </module>
 
-    <!-- ===== Tier-B：纯机械项（Phase 4 formatter 归一后升 error） ===== -->
+    <!-- ===== Tier-B: purely mechanical items (promoted to error after Phase 4 formatter normalization) ===== -->
     <module name="FileTabCharacter"/>
     <module name="RegexpSingleline">
         <property name="format" value="\s+$"/>
-        <property name="message" value="行尾空白"/>
+        <property name="message" value="trailing whitespace"/>
     </module>
     <module name="LineLength">
         <property name="max" value="120"/>
         <property name="fileExtensions" value="java"/>
-        <!-- Tier-A promote（2026-10-22，二期 L1/L2/L3 批）：主代码与测试树均清零
-             （join 恒等拆分 + palantir 120 列兼容）；新超长行=拼写/文案走样即拦 -->
+        <!-- Tier-A promote (2026-10-22, phase 2 L1/L2/L3 batch): cleared in both the main
+             and the test tree (join identity splits + palantir 120-column compatibility);
+             a new over-long line means spelling/wording drift and is blocked -->
         <property name="severity" value="error"/>
     </module>
 
     <module name="TreeWalker">
-        <!-- ============ Tier-A（error，零容忍） ============ -->
-        <!-- 类型/包名错乱会破坏导入与反射约定，且当前存量为 0 -->
+        <!-- ============ Tier-A (error, zero tolerance) ============ -->
+        <!-- Type/package name confusion breaks import and reflection conventions, and the current backlog is 0 -->
         <module name="TypeName">
             <property name="severity" value="error"/>
         </module>
         <module name="PackageName">
             <property name="severity" value="error"/>
         </module>
-        <!-- import 正确性：重复导入 = 冗余代码；未用导入 = 死代码（2026-10-21 存量 11 已清零，升级 error） -->
+        <!-- import correctness: a duplicate import = redundant code; an unused import = dead code (2026-10-21 backlog of 11 cleared, promoted to error) -->
         <module name="RedundantImport">
             <property name="severity" value="error"/>
         </module>
         <module name="UnusedImports">
             <property name="severity" value="error"/>
         </module>
-        <!-- 空语句 ";" 几乎必为笔误，correctness 一票否决 -->
+        <!-- An empty statement ";" is almost certainly a typo: a correctness single-vote veto -->
         <module name="EmptyStatement">
             <property name="severity" value="error"/>
         </module>
-        <!-- equals/hashCode 契约：等价对象必须同哈希，破坏证据去重/对账语义 -->
+        <!-- equals/hashCode contract: equivalent objects must hash alike; violating it breaks evidence deduplication/reconciliation semantics -->
         <module name="EqualsHashCode">
             <property name="severity" value="error"/>
         </module>
-        <!-- 字符串 == 是引用比较，恒为证据比较错误类别 -->
+        <!-- String == is reference comparison, always an evidence-comparison error class -->
         <module name="StringLiteralEquality">
             <property name="severity" value="error"/>
         </module>
-        <!-- default 不居末会吞 case 匹配后的 tutte 分支，控制流错误 -->
+        <!-- A default that is not last swallows the branches that follow the case match: a control-flow error -->
         <module name="DefaultComesLast">
             <property name="severity" value="error"/>
         </module>
 
-        <!-- switch 落空分支必须显式（2026-10-21 存量 6 条逐条人工审计后清零，升级 error；
-             审计记录：VerticalClustering/DistributionGenerator/FailureMonitor×3/示例各一处，
-             全部走"落空→break"同一路径的显式化，无控制流变化） -->
+        <!-- The no-match (default) branch of a switch must be explicit (2026-10-21 backlog
+             of 6 cleared after case-by-case manual audit, promoted to error; audit record:
+             one each in VerticalClustering, DistributionGenerator, FailureMonitor (three
+             occurrences), and examples; all made explicit along the same "no-match -> break"
+             path, with no control-flow change) -->
         <module name="MissingSwitchDefault">
             <property name="severity" value="error"/>
         </module>
 
-        <!-- ============ Tier-B（warning，存量在册逐批清零） ============ -->
-        <!-- import 卫生：星型/顺序（17/226 条基线）。
-             groups/separated 维持基线审计口径：java, javax, org, com 四组且组间空行分隔。 -->
+        <!-- ============ Tier-B (warning, backlog registered and cleared batch by batch) ============ -->
+        <!-- import hygiene: star imports/ordering (17/226 baseline findings).
+             groups/separated keep the baseline audit definition: four groups java, javax,
+             org, com, separated by blank lines. -->
         <module name="AvoidStarImport">
             <property name="severity" value="error"/>
         </module>
-        <!-- Tier-A promote（2026-10-22，二期 IO1 批）：117 顺序/空行 + 17 星型全清零；
-             spotless importOrder 步骤与 palantir 同向固化，新违例即拦 -->
+        <!-- Tier-A promote (2026-10-22, phase 2 IO1 batch): 117 ordering/blank-line plus
+             17 star-import findings all cleared; the spotless importOrder step is frozen in
+             the same direction as palantir, so a new violation is blocked -->
         <module name="ImportOrder">
             <property name="groups" value="java,javax,org,com"/>
             <property name="ordered" value="true"/>
             <property name="separated" value="true"/>
-            <!-- option=top（2026-10-22 二期 IO1）：spotless importOrder 步骤的
-                 canonical 将 static 前置（google 风格），与默认 under 冲突；
-                 对齐为 top 后两工具单向一致。同 strict 度的方向调整，留存判例。 -->
+            <!-- option=top (2026-10-22, phase 2 IO1): the canonical of the spotless
+                 importOrder step puts static imports first (Google style), which conflicts
+                 with the default under; aligning on top makes the two tools consistent in
+                 one direction. A direction adjustment of the same strictness, kept as precedent. -->
             <property name="option" value="top"/>
             <property name="sortStaticImportsAlphabetically" value="true"/>
             <property name="severity" value="error"/>
         </module>
 
-        <!-- 空白机械项（约 2.6 万条基线，Phase 4 formatter 主力） -->
+        <!-- Mechanical whitespace items (baseline of about 26,000 findings; the bulk of the Phase 4 formatter work) -->
         <module name="WhitespaceAfter"/>
-        <!-- Tier-A promote（2026-10-23，三支柱裁决批）：158 处尾款定性为
-             `private Foo() {}` 工具类构造卫语句（79 类恰好一对）；另有 4 处空方法族。
-             Palantir 正典格式器对一切空体恒输出 `{}`——与 allowEmptyTypes 同族血统，
-             补齐 allowEmptyConstructors/allowEmptyMethods/allowEmptyLambdas 后全树清零晋级。
-             非空体的空白环绕仍零容忍，新违例即拦；空体家族再增需同步本台账。 -->
+        <!-- Tier-A promote (2026-10-23, three-pillar adjudication batch): 158 residual
+             findings classified as `private Foo() {}` utility-class constructor guard
+             statements (79 classes with exactly one pair); plus 4 in the empty-method
+             family. The Palantir canonical formatter always emits `{}` for every empty
+             body, the same family lineage as allowEmptyTypes; after adding
+             allowEmptyConstructors/allowEmptyMethods/allowEmptyLambdas the whole tree was
+             cleared and promoted. Whitespace around non-empty bodies is still zero
+             tolerance, so a new violation is blocked; adding to the empty-body family
+             requires updating this ledger. -->
         <module name="WhitespaceAround">
             <property name="severity" value="error"/>
             <property name="allowEmptyTypes" value="true"/>
@@ -133,26 +151,29 @@
         <module name="MethodParamPad"/>
         <module name="ParenPad"/>
         <module name="LeftCurly"/>
-        <!-- Tier-A promote（2026-10-22，二期 W1 批）：全仓含测试树清零；
-             palantir 默认同线产 else，新违例即拦 -->
+        <!-- Tier-A promote (2026-10-22, phase 2 W1 batch): cleared repo-wide including the
+             test tree; the palantir default emits else on the same line, so a new
+             violation is blocked -->
         <module name="RightCurly">
             <property name="severity" value="error"/>
         </module>
-        <!-- Tier-A promote（2026-10-22，二期 NB1-NB4 批）：1,718 处（当时三模块主+测试树；
-             第三模块 grouped-workflows 已于 2026-11-02 移除，基线数字仅作历史留档）
-             全量括号化清零，palantir 输出兼容；新裸体控制流即拦 -->
+        <!-- Tier-A promote (2026-10-22, phase 2 NB1-NB4 batches): 1,718 findings (the main
+             and test trees of the three modules at the time; the third module
+             grouped-workflows was removed on 2026-11-02, so the baseline number is
+             historical only) fully braced and cleared, compatible with palantir output;
+             new unbraced control flow is blocked -->
         <module name="NeedBraces">
             <property name="severity" value="error"/>
         </module>
 
-        <!-- 命名（174 条基线，重命名批处理，与 format-only 分离提交） -->
+        <!-- Naming (baseline of 174 findings; a rename batch, committed separately from format-only changes) -->
         <module name="MethodName"/>
         <module name="MemberName"/>
         <module name="ParameterName"/>
         <module name="LocalVariableName"/>
         <module name="ConstantName"/>
 
-        <!-- 结构性指标（巨方法/圈复杂度，Phase 3a 拆分后升 error 级配额） -->
+        <!-- Structural metrics (giant methods/cyclomatic complexity; promoted to error-level quotas after the Phase 3a split) -->
         <module name="MethodLength">
             <property name="max" value="80"/>
         </module>
@@ -160,7 +181,7 @@
             <property name="max" value="15"/>
         </module>
 
-        <!-- 文档性（info）：与 docs/advanced/CODE_STYLE.md 同步 -->
+        <!-- Documentation (info): kept in sync with docs/advanced/CODE_STYLE.md -->
         <module name="MissingJavadocType">
             <property name="severity" value="info"/>
         </module>

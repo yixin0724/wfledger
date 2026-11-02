@@ -30,9 +30,9 @@ The checker validates the local links and resolvable anchors of the project's Ma
 
 - `simulator/src/main/java/org/workflowsim/` and tests: the general simulation API, algorithms, models, and verification rules.
 - `experiments/src/main/java/org/workflowsim/` and tests: examples, reference matrices, research identity, input provenance, and non-generalizable scope.
-- `simulator/src/main/java/org/cloudbus/` is upstream CloudSim source; its copyright, license, authors, and origin are not rewritten for this project's Chinese localization. Other existing legal/provenance headers are likewise retained.
+- `simulator/src/main/java/org/cloudbus/` is upstream CloudSim source; its copyright, license, authors, and origin are not rewritten. Other existing legal/provenance headers are likewise retained.
 
-New maintenance notes are written primarily in clear Chinese, and existing accurate English contracts may be kept; paper titles, standard terminology, and upstream names keep their original wording. Package names, types, methods, enums, JSON fields, and machine-readable protocols stay in English and are not renamed for the sake of the documentation.
+New maintenance notes are written in professional technical English; paper titles, standard terminology, and upstream names keep their original wording. Package names, types, methods, enums, JSON fields, and machine-readable protocols stay in English and are not renamed for the sake of the documentation. Language policy revised on 2026-11-02 by user decision: the whole repository, including comments and retained study archives, is maintained in English; the only Chinese that remains is inside frozen dataset fixtures, whose bytes are part of a recorded SHA-256 identity.
 
 ## Java Source Format and Naming (Tool-Enforced)
 

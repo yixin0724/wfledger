@@ -1,91 +1,91 @@
-# 正确性修复后的研究影响复验
+# Research-impact re-check after the correctness repair
 
-状态：三套新协议矩阵已实际执行完成，生产验证器及独立数学复核均通过；指定大幅变化case的隔离控制已完成。本文是**实现修复影响复验**，不是事后补写的预注册实验，也不重新解释旧模型为当前标准算法。
+Status: all three new protocol matrices have actually been executed to completion, and both the production validator and the independent mathematical re-check pass; the isolation control for the designated large-change case is complete. This document is an **impact re-check of an implementation repair**, not a preregistered experiment written after the fact, and it does not reinterpret the old model as the current standard algorithm.
 
-## 执行身份与保护
+## Execution identity and protection
 
-- 起点：R13 合并提交 `97c66a03101d5bd6e75b67127c5a894b6e656342`。
-- 修正后 Java 实现：`8681f9c`，执行声明 `WORK_CONSERVING_TASK_EXECUTION_V2`；LOCAL_PEFT 使用 `PEFT_SUCCESSOR_COST_OCT_EXIT_ZERO_V2`。
-- 全部运行使用同样的输入哈希、条件键及原参数矩阵，仅新协议身份和修正后的实现不同。
-- 旧 R10/R12/R13 的协议、索引和压缩证据包保持原样；三个旧研究共1176份工件经当前历史完整性校验通过。这不表示旧计算或旧PEFT定义正确。
-- 新输出独立保留在 `output/workbench-correctness-repair-97c66a0/studies/`，不覆盖旧目录。完整运行协议、输入、逐运行v4三件套和机器结果表一并保留；源码中的本页仅是解读与保留说明。
+- Starting point: R13 merge commit `97c66a03101d5bd6e75b67127c5a894b6e656342`.
+- Corrected Java implementation: `8681f9c`, execution declaration `WORK_CONSERVING_TASK_EXECUTION_V2`; LOCAL_PEFT uses `PEFT_SUCCESSOR_COST_OCT_EXIT_ZERO_V2`.
+- Every run uses the same input hashes, condition keys, and original parameter matrix; only the new protocol identities and the corrected implementation differ.
+- The protocols, indices, and compressed evidence bundles of the old R10/R12/R13 studies stay exactly as they were; the 1176 artifacts of the three old studies pass the current historical-integrity check. This does not mean the old computations or the old PEFT definition were correct.
+- New output is retained independently under `output/workbench-correctness-repair-97c66a0/studies/` and does not overwrite the old directories. The complete run protocol, inputs, per-run v4 triplets, and machine result tables are retained alongside it; this page in the source tree is only the interpretation and retention note.
 
-## 矩阵完成情况
+## Matrix completion
 
-| 参数矩阵 | 历史协议 | 新协议 | 运行数 | 生产验证状态 |
+| Parameter matrix | Historical protocol | New protocol | Runs | Production validation status |
 |---|---|---|---:|---|
-| 网络受限 | network-limited-r10-v2 | network-limited-r10-v3 | 504 | COMPLETE / PASSED |
-| PEFT比较 | peft-comparison-r12-v1 | peft-comparison-r12-v2 | 126 | COMPLETE / PASSED |
-| 敏感性响应面 | sensitivity-response-r13-v1 | sensitivity-response-r13-v2 | 546 | COMPLETE / PASSED |
+| Network-limited | network-limited-r10-v2 | network-limited-r10-v3 | 504 | COMPLETE / PASSED |
+| PEFT comparison | peft-comparison-r12-v1 | peft-comparison-r12-v2 | 126 | COMPLETE / PASSED |
+| Sensitivity response surface | sensitivity-response-r13-v1 | sensitivity-response-r13-v2 | 546 | COMPLETE / PASSED |
 
-三个新研究合计1176次。每个条件内输入、资源、模型和种子保持相同；不同来源、VM数、网络和异构条件仍分层，不能把重复条件当独立DAG。
+The three new studies total 1176 runs. Inputs, resources, model, and seed stay identical within each condition; different sources, VM counts, network, and heterogeneity conditions remain stratified, and repeated conditions must not be treated as independent DAGs.
 
-## 与历史数值的逐条件对照
+## Per-condition comparison against historical values
 
-按 `(workflowId, VM数, network, heterogeneity, planner标签, seed)` 对齐，并检查输入SHA一致。下表只描述记录的变化，**不是新的正确性证明或显著性检验**；尤其旧 `LOCAL_PEFT` 标签对应的是已证实非标准递推。
+Rows are aligned on `(workflowId, VM count, network, heterogeneity, planner label, seed)` and the input SHA equality is checked. The table below only describes the recorded changes; it is **not a new correctness proof or significance test**; in particular, the old `LOCAL_PEFT` label corresponds to a recursion that has been shown to be non-standard.
 
-| 矩阵 | 对齐运行 | 仿真结束时间改变 | 五个主要字段任一改变 |
+| Matrix | Aligned runs | Simulation end time changed | Any of the five core fields changed |
 |---|---:|---:|---:|
 | R10 | 504 | 161 | 217 |
 | R12 | 126 | 97 | 101 |
 | R13 | 546 | 414 | 440 |
 
-五字段为仿真结束、逻辑完成、平均/P95等待及平均VM区间利用率。数值逐值变化不等于具有实际意义的差异，也不能把一项变化直接归因于某一个修复；本轮同时纠正了CPU进度、LOCAL数据可达估计及PEFT递推。
+The five fields are simulation end, logical completion, mean/P95 waiting, and mean VM interval utilization. A value-by-value change is not the same as a practically meaningful difference, nor can a single change be attributed directly to one particular fix; this round corrected CPU progress, the LOCAL data-reachability estimate, and the PEFT recursion at the same time.
 
-观察到部分LOCAL规划场景有较大变化。例如Cybershake100、16VM、endpoint、HEFT从41629.930933秒变为283759.323274秒；在较窄Fat-tree链路下从43362.237990秒变为312137.928208秒。不能因新门禁通过就声称更优，也不能为维持旧赢家调参数。
+Some LOCAL planning scenarios show large changes. For example Cybershake100, 16VM, endpoint, HEFT goes from 41629.930933 s to 283759.323274 s; under the narrower Fat-tree link it goes from 43362.237990 s to 312137.928208 s. A passing new gate is no reason to claim superiority, nor may parameters be tuned to preserve the old winner.
 
-### Cybershake100 / 16VM / HEFT 的隔离控制
+### Isolation control for Cybershake100 / 16VM / HEFT
 
-只在单独进程的审计类路径中替换规划基类，不修改已提交源码、带宽或原始研究：
+Only the planner base class is substituted on the audit classpath in a separate process; committed source, bandwidth, and the original study are not modified:
 
-| 控制组合 | endpoint结束秒数 |
+| Control combination | endpoint end (s) |
 |---|---:|
-| 原基线完整核心 | 41629.930933 |
-| 新执行核心＋旧规划基类 | 41629.930933 |
-| 新执行核心＋旧规划仅补根外部输入估计 | 283137.050000 |
-| 新执行核心＋完整新规划 | 283759.323274 |
+| Original baseline, full core | 41629.930933 |
+| New execution core + old planner base class | 41629.930933 |
+| New execution core + old planning with only the root external-input estimate added | 283137.050000 |
+| New execution core + full new planning | 283759.323274 |
 
-完整新规划在**无争用运行模型**下为41616.562860秒，与它自己的计划终点一致；不能把该无争用预测直接当成端点争用执行时间。证据表明这个case的大幅变化主要来自根输入就绪估计改变后的放置，而不是CPU执行修复把单任务工作量扩大了数倍。
+The full new planning gives 41616.562860 s under the **contention-free run model**, matching its own planned endpoint; that contention-free prediction must not be taken directly as the endpoint contention execution time. The evidence shows that the large change in this case comes mainly from the placement that follows the changed root-input readiness estimate, not from the CPU execution fix magnifying single-task work several-fold.
 
-该输入有8个约39–41GB外部输入的ExtractSGT根。旧规划分到8台VM；新规划将其中7个放到VM0，7组共278.145799951GB，在1MB/s入口上的服务下界即278145.799951秒。Task23的输入到达时刻从38738.009440变成271164.806080，后者精确等于 `0.21 + 7 × 38737.79944`。
+This input has 8 ExtractSGT roots with roughly 39-41 GB of external input each. Old planning spread them over 8 VMs; new planning puts 7 of them on VM0, 7 groups totaling 278.145799951 GB, so the service lower bound on the 1 MB/s ingress is 278145.799951 s. Task23's input arrival time changes from 38738.009440 to 271164.806080, the latter exactly equal to `0.21 + 7 * 38737.79944`.
 
-固定每VM顺序还产生可直接观察的队头阻塞：VM1上的Task3数据在40305.069834已就绪，事件却记录16个空闲VM、0派发；它必须等待被VM0慢根阻塞的计划前缀，直到278543.895748才执行。这238238.825914秒等待中，VM1只忙了115.56秒。因此VM内部queue waiting为0不等于没有调度等待。新旧总计算工作同为3215.75秒，未扩大数倍。完整逐任务及事件证据见`output/workbench-correctness-repair-97c66a0/impact-analysis/REPORT.md`（原工作区的可选保留输出）。
+The fixed per-VM order also produces directly observable head-of-line blocking: on VM1, Task3's data is already ready at 40305.069834, yet the event records 16 idle VMs and 0 dispatches; it must wait for the planned prefix blocked by the slow root on VM0 and only executes at 278543.895748. Of that 238238.825914 s wait, VM1 was busy for only 115.56 s. Intra-VM queue waiting of 0 therefore does not mean there is no scheduling wait. Total compute work is 3215.75 s in both the old and the new version, not magnified several-fold. The complete per-task and event evidence is in `output/workbench-correctness-repair-97c66a0/impact-analysis/REPORT.md` (an optional retained output of the original workspace).
 
-这是对指定case的控制，不是对所有变化的统一因果归因；模型修正也不保证每个启发式在每个工作负载上变快。R10中的LOCAL策略带每VM顺序，而RANDOM/PSO仅映射、运行时可选择已就绪作业，因此它比较的是完整策略流水线，不能仅解释为映射优化优劣。R12/R13三种LOCAL列表规划器使用相同的顺序执行纪律。
+This is a control for the designated case, not a unified causal attribution of every change; the model correction also does not guarantee that every heuristic gets faster on every workload. The LOCAL policy in R10 carries a per-VM order, whereas RANDOM/PSO only map and may select any ready job at run time, so it compares complete policy pipelines and cannot be explained as the merit of the mapping optimization alone. The three LOCAL list planners in R12/R13 use the same in-order execution discipline.
 
-## PEFT 的算法身份
+## Algorithmic identity of PEFT
 
-作者公开博士论文第3章明确收录 DOI `10.1109/TPDS.2013.57` 对应文章。印刷p71 Eq7使用后继成本、出口OCT=0，p73 Algorithm1使用ready-list和插入EFT；[一级来源说明](<../../../simulator/src/test/resources/dax/peft-paper-example.SOURCE.md>)记录了公开来源和转录核对方法。
+Chapter 3 of the author's publicly available doctoral thesis explicitly includes the article with DOI `10.1109/TPDS.2013.57`. Printed p71 Eq7 uses the successor cost with exit OCT=0, and p73 Algorithm1 uses a ready-list with insertion-based EFT; the [primary-source note](<../../../simulator/src/test/resources/dax/peft-paper-example.SOURCE.md>) records the public source and the transcription-verification method.
 
-真正论文夹具已验证PEFT122、HEFT133（计入110.1引导后232.1/243.1）。原HEFT-origin夹具在正确PEFT递推下为85，不是旧76。旧R12/R13关于“同构退化”“异构激活”或PEFT优劣的解释，不能被直接继承为标准PEFT结论。
+The genuine paper fixture has been verified at PEFT 122 and HEFT 133 (with the explicit 110.1 bootstrap counted, 232.1/243.1). The original HEFT-origin fixture gives 85 under the correct PEFT recursion, not the old 76. The old R12/R13 interpretations of "homogeneous degeneration", "heterogeneous activation", or PEFT's relative merit cannot be inherited directly as conclusions about standard PEFT.
 
-## 统计与模型解释边界
+## Statistical and model-interpretation boundaries
 
-- 经典来源只有5个DAG、合成来源只有2个，不合并总体。双侧精确符号检验在5对时最小原始p为0.0625，不能达到0.05门槛；不显著不表示等价。
-- 随机算法先在每个DAG内部汇总种子，再以DAG配对；相同root seed不自动成为event-keyed CRN。
-- 异构轴同时改变总MIPS；VM32还改变Fat-tree的k，跨条件不能作单因素因果归因。
-- 必须看逐DAG分布，不能由接近零的中位数推断逐DAG稳定，也不能由makespan单独证明OCT的机制。
-- 模型没有真实硬件/网络/价格校准。静态LOCAL规划仍采用无争用估计，不是完整网络事件重放。
+- The classic source has only 5 DAGs and the synthetic source only 2; the populations are not pooled. With 5 pairs the two-sided exact sign test has a minimum raw p of 0.0625 and cannot reach the 0.05 threshold; non-significance does not mean equivalence.
+- Randomized algorithms aggregate seeds within each DAG first and are then paired by DAG; identical root seed does not automatically become an event-keyed CRN.
+- The heterogeneity axis also changes total MIPS; VM32 additionally changes the Fat-tree k, so cross-condition comparison supports no single-factor causal attribution.
+- The per-DAG distribution must be examined; a near-zero median does not imply per-DAG stability, and makespan alone does not prove the OCT mechanism.
+- The model has no calibration against real hardware, network, or prices. Static LOCAL planning still uses contention-free estimates and is not a full network event replay.
 
-## 独立复核与保留位置
+## Independent re-check and retention locations
 
-[独立工具](<../../../scripts/STUDY_AUDIT.md>)不导入Java生产函数。最终实际执行结果：
+The [independent tools](<../../../scripts/STUDY_AUDIT.md>) do not import Java production functions. Final actual execution results:
 
-| 独立检查 | 规模 | 结果 |
+| Independent check | Scale | Result |
 |---|---:|---|
-| 原始输入、Job/Task/事件、CPU下界与指标 | 1176份bundle，25,772,522项规则检查 | 0问题 |
-| 规范矩阵、种子聚合、逐DAG效果、精确符号检验/Holm | 3项研究，89,848项检查 | 0问题 |
-| 同模型共享条件核心字段 | R10/R12交集84、R10/R13交集84、R12/R13交集126 | 全部一致 |
-| checker小型正/负例自测 | 11项 | 全通过 |
+| Raw inputs, Job/Task/events, CPU lower bound, and metrics | 1176 bundles, 25,772,522 rule checks | 0 issues |
+| Canonical matrix, seed aggregation, per-DAG effects, exact sign test/Holm | 3 studies, 89,848 checks | 0 issues |
+| Core fields of conditions shared by the same model | R10/R12 intersection 84, R10/R13 intersection 84, R12/R13 intersection 126 | All consistent |
+| Checker self-tests on small positive/negative cases | 11 items | All passed |
 
-检查计数不等于独立样本数。CPU物理容差为1/MIPS量化加绝对/ULP误差，不按绝对时钟比例放宽；汇总数字另用明确的相对/绝对容差。每个bundle列出实际复算的指标与范围外项，逐流网络分配不因缺少完整账本而被冒称已重放。
+Check counts do not equal independent sample counts. The CPU physical tolerance is 1/MIPS quantization plus absolute/ULP error and is not relaxed by an absolute clock ratio; aggregate numbers use separate explicit relative/absolute tolerances. Each bundle lists the metrics actually recomputed and the out-of-scope items, and per-flow network allocation is not passed off as replayed because a complete ledger is missing.
 
-以下为原工作区的可选保留位置，均相对于项目根；本地生成物不随普通Git检出提供，路径记录不保证当前机器存在：
+The following are the optional retention locations of the original workspace, all relative to the project root; locally generated artifacts are not provided with a normal Git checkout, and the recorded paths are not guaranteed to exist on the current machine:
 
-- 新R10索引：`output/workbench-correctness-repair-97c66a0/studies/network-limited-r10-v3/network-study.json`。
-- R12索引：`output/workbench-correctness-repair-97c66a0/studies/peft-comparison-r12-v2/network-study.json`。
-- R13索引：`output/workbench-correctness-repair-97c66a0/studies/sensitivity-response-r13-v2/network-study.json`。三个索引各自同目录保留原始协议JSON、输入、结果表和全部run三件套。
-- 独立证据报告：`output/workbench-correctness-repair-97c66a0/independent-evidence-new-v2.json`；独立统计与逐DAG分布：`output/workbench-correctness-repair-97c66a0/independent-statistics-new-v2.json`；新旧条件对照：`output/workbench-correctness-repair-97c66a0/research-impact-deltas.json`。
-- 大变化隔离控制：`output/workbench-correctness-repair-97c66a0/impact-analysis/REPORT.md`，以及同目录探针、命令、逐任务CSV和控制JSON。
+- New R10 index: `output/workbench-correctness-repair-97c66a0/studies/network-limited-r10-v3/network-study.json`.
+- R12 index: `output/workbench-correctness-repair-97c66a0/studies/peft-comparison-r12-v2/network-study.json`.
+- R13 index: `output/workbench-correctness-repair-97c66a0/studies/sensitivity-response-r13-v2/network-study.json`. Each of the three indices keeps the raw protocol JSON, inputs, result tables, and all run triplets in its own directory.
+- Independent evidence report: `output/workbench-correctness-repair-97c66a0/independent-evidence-new-v2.json`; independent statistics and per-DAG distributions: `output/workbench-correctness-repair-97c66a0/independent-statistics-new-v2.json`; old-versus-new condition comparison: `output/workbench-correctness-repair-97c66a0/research-impact-deltas.json`.
+- Large-change isolation control: `output/workbench-correctness-repair-97c66a0/impact-analysis/REPORT.md`, together with the probes, commands, per-task CSV, and control JSON in the same directory.
 
-生产校验器通过、独立算术一致、原文算法复现和真实硬件校准是不同证据层次。本轮完成前三者的明确范围，没有把它们当作真实网络或所有工作负载上的普遍结论。
+A passing production validator, independent arithmetic agreement, reproduction of the published algorithm, and calibration against real hardware are distinct evidence levels. This round completed the first three within their declared scope and does not treat them as general conclusions about real networks or all workloads.

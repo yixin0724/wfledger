@@ -1,80 +1,81 @@
 # WorkflowSim Makefile
-# 简化常用 Maven 构建命令
+# Shortcuts for the common Maven build commands
 
 .PHONY: all build test verify audit clean coverage install package rebuild mutation-gate help
 
-# 默认目标
+# default target
 all: build
 
-# 编译核心与实验模块
+# compile the core and experiment modules
 build:
-	@echo "编译核心与实验模块..."
+	@echo "Compiling the core and experiment modules..."
 	mvn compile
 
-# 运行两个模块的单元/语义测试
+# run the unit/semantic tests of both modules
 test:
-	@echo "运行两个模块的单元/语义测试..."
+	@echo "Running the unit/semantic tests of both modules..."
 	mvn test
 
-# 运行完整测试（核心 + 实验，~2分钟）
+# run the complete test suite (core + experiments, about 2 minutes)
 verify:
-	@echo "运行完整测试（包括实验模块）..."
+	@echo "Running the complete test suite (including the experiment module)..."
 	mvn verify
 
-# 清理后联合验收，含核心 API 文档
+# clean build plus joint acceptance, including the core API documentation
 audit:
 	mvn -Pjavadoc clean verify
 
-# 清理构建产物
+# remove the build output
 clean:
-	@echo "清理构建产物..."
+	@echo "Removing the build output..."
 	mvn clean
 
-# 生成测试覆盖率报告
+# generate the test coverage report
 coverage:
-	@echo "生成测试覆盖率报告..."
+	@echo "Generating the test coverage report..."
 	mvn verify jacoco:report
 	@echo ""
-	@echo "覆盖率报告已生成："
-	@echo "  核心模块: simulator/target/site/jacoco/index.html"
-	@echo "  实验模块: experiments/target/site/jacoco/index.html"
+	@echo "Coverage reports written:"
+	@echo "  core module:       simulator/target/site/jacoco/index.html"
+	@echo "  experiment module: experiments/target/site/jacoco/index.html"
 
-# 安装到本地 Maven 仓库
+# install into the local Maven repository
 install:
-	@echo "安装到本地 Maven 仓库..."
+	@echo "Installing into the local Maven repository..."
 	mvn install
 
-# 打包但跳过测试
+# package the JARs, skipping the tests
 package:
-	@echo "打包（跳过测试）..."
+	@echo "Packaging (tests skipped)..."
 	mvn package -DskipTests
 	@echo ""
-	@echo "产物位置："
+	@echo "Artifacts:"
 	@echo "  simulator/target/workflowsim-1.0.jar"
 	@echo "  experiments/target/workflowsim-workbench-1.0.jar"
 
-# 清理并重新构建
+# clean and rebuild
 rebuild: clean build
 
-# 注册变异零存活门禁（约 3-5 分钟；需干净工作树，报告存入 output/mutation-gate/）
+# registered zero-survival mutation gate (about 3-5 minutes; needs a clean working tree,
+# and the report is written to output/mutation-gate/)
 mutation-gate:
-	@echo "运行注册变异门禁（需干净工作树）..."
+	@echo "Running the registered mutation gate (clean working tree required)..."
 	python3 -B scripts/mutation-gate.py --output output/mutation-gate/mutation-gate-$$(date +%Y-%m-%d).json
 
-# 显示帮助信息
+# show the help text
 help:
-	@echo "WorkflowSim 构建命令："
+	@echo "WorkflowSim build commands:"
 	@echo ""
-	@echo "  make build    - 编译核心与实验模块"
-	@echo "  make test     - 两个模块的单元/语义测试"
-	@echo "  make verify   - 两个模块完整测试与覆盖率门禁"
-	@echo "  make audit    - 清理后联合验收，额外检查核心 API 文档"
-	@echo "  make clean    - 清理构建产物"
-	@echo "  make coverage - 生成测试覆盖率报告"
-	@echo "  make package  - 打包 JAR（跳过测试）"
-	@echo "  make install  - 安装到本地 Maven 仓库"
-	@echo "  make rebuild  - 清理并重新构建"
-	@echo "  make mutation-gate - 注册变异零存活门禁（需干净工作树）"
-	@echo "  make help     - 显示此帮助信息"
+	@echo "  make build    - compile the core and experiment modules"
+	@echo "  make test     - unit/semantic tests of both modules"
+	@echo "  make verify   - full tests and the coverage gate of both modules"
+	@echo "  make audit    - clean build plus joint acceptance, including the core API documentation"
+	@echo "  make clean    - remove the build output"
+	@echo "  make coverage - generate the test coverage report"
+	@echo "  make package  - package the JARs (tests skipped)"
+	@echo "  make install  - install into the local Maven repository"
+	@echo "  make rebuild  - clean and rebuild"
+	@echo "  make mutation-gate - registered zero-survival mutation gate (clean working tree required)"
+	@echo "  make help     - show this help text"
 	@echo ""
-	@echo "详细文档请参考: docs/getting-started/BUILD.md"
+	@echo "Detailed documentation: docs/getting-started/BUILD.md"

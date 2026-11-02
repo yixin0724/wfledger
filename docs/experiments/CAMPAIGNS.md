@@ -82,7 +82,7 @@ campaign-output/
     replication-0000.manifest.json
     replication-0000.metrics.json
     replication-0000.events.jsonl
-    ...匹配记录模式的可选网络或生命周期侧车
+    ...optional network or lifecycle sidecars for the matching capture mode
 ```
 
 The index stores the planned seeds, the comparison identities, the relative paths, the run summaries, and the logical workflow profiles. `ExperimentCampaignValidator` cross-checks the references, the per-run evidence, the seeds, and the primary summaries, but it does not independently recompute every campaign aggregate field; it proves neither the representativeness of the sampling nor the research significance of an algorithm combination. Commands are concentrated in [build and verification](<../getting-started/BUILD.md>); metric definitions are in the [semantic contracts](<../algorithms/CONTRACTS.md>).

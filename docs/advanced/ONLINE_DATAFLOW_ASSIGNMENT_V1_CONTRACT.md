@@ -42,8 +42,8 @@ The control loop explicitly calls `advance(now)` before reading a snapshot; the 
 [DataflowVmAssigner](<../../simulator/src/main/java/org/workflowsim/data/v2/DataflowVmAssigner.java>) holds per-run logical assignments and reservations. The VM inventory must exactly cover the actual fabric VMs, ordered by numeric ID; non-contiguous IDs are not array indices. The initial assignment scores every VM, and both Task and Job PEs must be compatible; a retry keeps only the original assigned VM as its candidate and does not reselect.
 
 ```text
-inputDelay = max(每个唯一逻辑输入文件的名义剩余延迟)
-cpuAvailable = now + sum(该 VM 仍活动的预计剩余 CPU 预留)
+inputDelay = max(nominal remaining delay over each distinct logical input file)
+cpuAvailable = now + sum(projected remaining CPU reservations still active on that VM)
 scoreFinish = max(now + inputDelay, cpuAvailable) + executableComputeSeconds
 ```
 

@@ -1,36 +1,36 @@
-# R10 历史研究来源与资格说明
+# R10 Historical Study Provenance and Eligibility Notes
 
-> 本页只说明保留的 `network-limited-r10-v2` 研究，不是当前模型协议。当前执行器生成 `network-limited-r10-v3`；运行方式及认证范围见[协议修订](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>)。旧数据不改写、不重新标记为新执行模型。
+> This page documents only the retained `network-limited-r10-v2` study; it is not the current model protocol. The current executor produces `network-limited-r10-v3`; for how to run it and the certification scope see [protocol revisions](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>). The old data is neither rewritten nor relabelled as a new execution model.
 
-## 冻结研究的来源
+## Provenance of the Frozen Study
 
-驱动为 `org.workflowsim.experiments.network.NetworkStudyExecutor`。历史研究比较端点约束、路径链路约束与资源规模变化下的静态调度方案，使用当时已修正的 CPOP 前驱秩和 max-min/分段积分，但早于后续 CPU 工作量和 LOCAL 数据可达时间修正。
+The driver is `org.workflowsim.experiments.network.NetworkStudyExecutor`. The historical study compared static scheduling policies under endpoint constraints, path-link constraints, and changes in resource scale, using the CPOP predecessor rank and the max-min/piecewise integration as corrected at the time, but predates the later corrections to CPU work and LOCAL data-availability time.
 
-| 条件 | 历史声明 |
+| Condition | Historical declaration |
 |---|---|
-| 合格输入 | Epigenomics 100/997、CyberShake 100/1000、Inspiral 100；另有四层合成 DAG 32/128 任务，每条文件边 32 MB |
-| 资源 | 4/16 VM；1000 MIPS、1 MB/s 端点；一 Host 一 VM、固定放置；Fat-tree k=4 |
-| 网络 | 端点争用；0.125 MB/s 受限 Fat-tree；1.25 MB/s 宽链路 Fat-tree；均在 Job-ready 开始传输 |
-| 算法/种子 | LOCAL_HEFT、LOCAL_CPOP 每条件一次（11）；RANDOM、PSO 各用 11/29/47/71/101 |
-| 运行条件 | LOCAL、STATIC、SPACE_SHARED；无故障、无额外开销 |
-| 完整矩阵 | `7 × 2 × 3 × (1 + 1 + 5 + 5) = 504` 个运行单元 |
+| Qualified inputs | Epigenomics 100/997, CyberShake 100/1000, Inspiral 100; plus four-layer synthetic DAGs with 32/128 tasks and 32 MB per file edge |
+| Resources | 4/16 VMs; 1000 MIPS, 1 MB/s endpoint; one VM per Host, fixed placement; Fat-tree k=4 |
+| Network | endpoint contention; 0.125 MB/s constrained Fat-tree; 1.25 MB/s wide-link Fat-tree; all start transfer at Job-ready |
+| Algorithms/seeds | LOCAL_HEFT and LOCAL_CPOP once per condition (11); RANDOM and PSO each use 11/29/47/71/101 |
+| Run conditions | LOCAL, STATIC, SPACE_SHARED; no failure, no extra overhead |
+| Full matrix | `7 x 2 x 3 x (1 + 1 + 5 + 5) = 504` run cells |
 
-主指标是仿真结束时间，辅助为逻辑完成、平均/P95 等待和 VM 利用率。随机重复先在同 DAG/资源/网络/算法内汇总，再按 DAG 配对；经典与合成来源分开，使用精确双侧符号检验和三候选比较族的 Holm 调整。样本固定且仅有 5 个经典/2 个合成 DAG，不显著不等价，不外推真实平台。LOCAL 列表规划器带每 VM 顺序，RANDOM/PSO 仅映射，比较的是完整策略流水线。
+The primary metric is simulation end time; secondary metrics are logical completion, mean/P95 waiting, and VM utilization. Random repetitions are aggregated within the same DAG/resource/network/algorithm first, then paired by DAG; the classic and synthetic sources are kept separate, using an exact two-sided sign test and a Holm adjustment for the three-candidate comparison family. The sample is fixed and comprises only 5 classic/2 synthetic DAGs; non-significance is not equivalence, and there is no extrapolation to a real platform. The LOCAL list planners carry a per-VM order, whereas RANDOM/PSO only map, so the comparison covers the complete policy pipeline.
 
-## 资格排除与失败试点
+## Eligibility Exclusion and Failed Pilot
 
-资格检查针对解析后的输入结构和文件声明，不观察算法效果后筛选。DAX 对重复 INPUT 尺寸采用“首次声明优先并警告”的兼容转换；CyberShake 含这种声明，因此不能把研究输入称为每处原始声明都无歧义。原始文件及其哈希不改动。
+Eligibility checks address the parsed input structure and the file declarations, and do not screen after observing algorithm outcomes. For duplicate INPUT sizes, the DAX handling applies a compatibility conversion that "prefers the first declaration and warns"; CyberShake contains such declarations, so the study inputs cannot be described as unambiguous in every original declaration. The original files and their hashes are not modified.
 
-Inspiral1000 的 `H1-THINCA-782406919-2048.xml` 在解析后仍有 39368/46451 字节冲突，与 LOCAL 规划器文件模型不兼容。首次 576 单元试点中，两种 LOCAL 规划器 × 2 资源 × 3 网络共 12 次失败，验证器拒绝完整比较。正式 v2 对所有规划器一致排除整个输入，也不纳入随机方法在该输入上的成功结果。
+Inspiral1000's `H1-THINCA-782406919-2048.xml` still has a 39368/46451-byte conflict after parsing, which is incompatible with the LOCAL planners' file model. In the first 576-cell pilot, two LOCAL planners x 2 resources x 3 networks produced 12 failed runs in total, and the validator refused a complete comparison. Formal v2 excludes the entire input uniformly for all planners and also excludes the random methods' successful results on that input.
 
-## 可选保留位置与交接
+## Optional Retention Locations and Handover
 
-以下路径相对于项目根，记录原工作区保留位置；**普通检出不附带这些文件，也不保证当前机器存在**：
+The paths below are relative to the project root and record the retention locations in the original workspace; **a normal checkout does not include these files, and their presence on the current machine is not guaranteed**:
 
-- 失败试点：`output/network-study-r10/`。
-- 正式研究：`output/network-study-r10-final/`，含原始 `protocol.json`、`network-study.json`、自动 `results.md`、合成输入及 504 份逐运行 v4 manifest/metrics/events。
-- 完整交接包：`output/network-study-r10-evidence.tar.gz`；原交接记录 SHA-256 为 `38d9f8bfd42743706a1719f0942fa07733a3147b739a7332ebf39142edc5a2c3`，本次文档清理未重新计算。
+- Failed pilot: `output/network-study-r10/`.
+- Formal study: `output/network-study-r10-final/`, containing the original `protocol.json`, `network-study.json`, the automatic `results.md`, the synthetic inputs, and 504 per-run v4 manifest/metrics/events.
+- Complete handover package: `output/network-study-r10-evidence.tar.gz`; the SHA-256 in the original handover record is `38d9f8bfd42743706a1719f0942fa07733a3147b739a7332ebf39142edc5a2c3`, which this documentation cleanup did not recompute.
 
-已持有原证据时，可对其索引调用 `NetworkStudyValidator`；该检查证明已注册历史声明和工件的一致性，不证明当前代码重跑相同。当前执行器命令只会生成新协议，必须使用新输出目录；不得覆盖原数据或调整参数维持旧排名。完整交接须包括原始协议字节和全部引用工件，不能只交结果表。
+Given the original evidence, `NetworkStudyValidator` can be invoked on its index; that check proves the consistency of the registered historical declaration and the artifacts, not that the current code reruns identically. The current executor command only produces the new protocol and must use a new output directory; the original data must not be overwritten and parameters must not be adjusted to preserve the old ranking. A complete handover must include the original protocol bytes and every referenced artifact; handing over the result table alone is not enough.
 
-后续修正模型的影响与保留结果见[研究影响复验](<../correctness-repair/RESULTS.md>)；其他历史证据见[研究目录](<../README.md>)。
+The impact of the later corrected model and the retained results are given in the [study impact recheck](<../correctness-repair/RESULTS.md>); other historical evidence is listed in the [studies directory](<../README.md>).

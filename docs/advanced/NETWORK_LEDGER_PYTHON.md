@@ -5,10 +5,10 @@
 [verify-network-ledger.py](<../../scripts/verify-network-ledger.py>) depends only on the Python standard library (Python 3.9+; CI runs 3.12). A check invokes no JVM, Maven, production solver, or network service, and rewrites no input files.
 
 ```bash
-# 推荐：核对完整工件及其运行上下文
+# recommended: check the complete artifacts together with their run context
 python3 -B scripts/verify-network-ledger.py path/to/result.manifest.json --json
 
-# 单独检查侧车内部契约；不冒称验证外层运行
+# check only the sidecar's internal contract; this does not attest the enclosing run
 python3 -B scripts/verify-network-ledger.py path/to/result.network-ledger.json --json
 python3 -B scripts/verify-network-ledger.py path/to/result.file-lifecycle.json --json
 python3 -B scripts/verify-network-ledger.py path/to/result.storage-lifecycle.json --json

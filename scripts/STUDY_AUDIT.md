@@ -16,12 +16,12 @@ The first two tools share [independent parsing and registration definitions](<_s
 The commands below run from the project root. You can also use absolute paths for the scripts and inputs from any directory; relative input paths resolve against the invoking working directory, without guessing the repository location.
 
 ```bash
-# 单个完整运行包
+# a single complete run bundle
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-evidence.py \
   /absolute/experiment/runs/fcfs-s42/result.manifest.json \
   --output /absolute/new-audit/evidence-single.json
 
-# 多个研究的基础证据与统计需要分别检查
+# base evidence and statistics for several studies are checked separately
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-evidence.py \
   /absolute/study-a/network-study.json /absolute/study-b/network-study.json \
   --output /absolute/new-audit/evidence.json
@@ -30,7 +30,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-statistics.py \
   /absolute/study-a/network-study.json /absolute/study-b/network-study.json \
   --output /absolute/new-audit/statistics.json
 
-# 另行检查物理生命周期及适用的在线动作；结构化结果写到标准输出
+# separately check the physical lifecycle and the applicable online actions; structured output goes to stdout
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-network-ledger.py \
   /absolute/experiment/runs/fcfs-s42/result.manifest.json --json
 ```

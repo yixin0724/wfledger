@@ -1,6 +1,6 @@
 {
   "schema": "workflowsim-workbench-v1",
-  "name": "V2逐文件生命周期：共享资源",
+  "name": "V2 per-file lifecycle: shared resources",
   "workflowPaths": ["inputs/coherent-file-dataflow.dax"],
   "platform": {
     "vmMips": [1000, 1000, 1000, 1000],

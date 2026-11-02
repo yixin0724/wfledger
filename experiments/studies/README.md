@@ -8,16 +8,12 @@ experiment module's standard source directories; general run operations are desc
 ## Currently executable protocols
 
 [Protocol revisions and certification scope](<../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>)
-is the maintained entry point for runs, registered matrices, and validation rules.
+is the single maintained register of the current protocol IDs, the accepted historical
+identities, and the full/smoke plan-unit counts; this page does not repeat that table.
 [NetworkStudyPlan](<../src/main/java/org/workflowsim/experiments/network/NetworkStudyPlan.java>)
-registers distinct identities for the three variants below; an identical parameter matrix
-does not mean an identical execution model.
-
-| CLI variant | Current protocol ID | full / smoke run units |
-|---|---|---:|
-| `r10` (default) | `network-limited-r10-v3` | 504 / 36 |
-| `peft-comparison` | `peft-comparison-r12-v2` | 126 / 18 |
-| `sensitivity-r13` | `sensitivity-response-r13-v2` | 546 / 30 |
+registers distinct identities for the three CLI variants (`r10`, `peft-comparison`,
+`sensitivity-r13`); an identical parameter matrix does not mean an identical execution
+model.
 
 Current execution uses `WORK_CONSERVING_TASK_EXECUTION_V2`; the two PEFT studies use the
 standard recurrence with successor costs and a zero exit OCT. A complete study must be
@@ -28,9 +24,10 @@ post-correction studies and impact analysis are documented in the
 re-certification of every later code change.
 
 > **Archived layer.** The rows below describe frozen historical studies (including the
-> over-numbered protocol identities such as `r13-v1`); the current executable protocols live
-> above. Archived studies are never renamed or deleted — their version suffixes are the
-> mechanism that keeps old numbers honestly bound to old identities.
+> over-numbered protocol identities such as `r13-v1`); the current executable protocols are
+> registered in the protocol-revision document above. Archived studies are never renamed or
+> deleted — their version suffixes are the mechanism that keeps old numbers honestly bound
+> to old identities.
 
 ## Historical material and optional evidence locations
 
@@ -78,13 +75,14 @@ per-run manifest/metrics/events. R12's legacy result table is at the optional pa
 retained tars and original protocol bytes stay as-is; deleting duplicate explanatory
 documents must not delete or relabel this evidence.
 
-**Language policy (added 2026-10-23):** the archive documents under
+**Language policy (revised 2026-11-02):** the archive documents under
 `network-limited-r10/`, `sensitivity-r13/`, `fattree-scheduling-campaign/`,
-`correctness-repair/`, and `peft-comparison` results are **historical originals preserved
-in Chinese and deliberately not translated** — their value is being period-accurate
-records, and translation is a rewriting act. The current-layer study (sensitivity-r13-v2)
-is maintained in English. Retention semantics and integrity checks are
-language-independent.
+`correctness-repair/`, and `peft-comparison` results were originally written in Chinese as
+period-accurate records. Every document in this repository is now maintained in English;
+the archive translations are wording-only and change no number, table, identity, ordering,
+or conclusion. The numbers, the protocol bytes, and the retention locations remain the
+authoritative record — when a translation and a retained artifact disagree, the artifact
+wins. Retention semantics and integrity checks are language-independent.
 
 ## Requirements for new studies and handover
 

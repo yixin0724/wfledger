@@ -17,8 +17,8 @@ Tests are expected to derive expected values from independent arithmetic, extern
 [TaskExecutionModel](<../../simulator/src/main/java/org/workflowsim/utils/TaskExecutionModel.java>) distinguishes the raw single-PE length from the effective computation amount of the current attempt:
 
 ```text
-L_eff(t,v) = L_raw(t)                         没有任务成本矩阵
-L_eff(t,v) = Math.round(matrixSeconds(t,v) * mips(v))  有矩阵
+L_eff(t,v) = L_raw(t)                         no task cost matrix
+L_eff(t,v) = Math.round(matrixSeconds(t,v) * mips(v))  with a matrix
 computeSeconds(t,v) = L_eff(t,v) / mips(v)
 ```
 

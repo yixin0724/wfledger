@@ -7,22 +7,22 @@ Workbench is the maintained, unified experiment entry point. It reads JSON confi
 Use JDK 17+ and Maven 3.6.3+, and run from the project root:
 
 ```bash
-# 预检：解析输入并检查配置组合，不运行仿真
+# preflight: parse the inputs and check the configuration combination; no simulation
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   -Dexec.args="validate experiments/configs/online-comparison.json"
 
-# 运行：在输出根下创建唯一实验子目录
+# run: create a unique experiment subdirectory under the output root
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   -Dexec.args="run experiments/configs/online-comparison.json output/workbench"
 
-# 扫描实验记录，重建历史索引
+# scan the experiment records and rebuild the historical index
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   -Dexec.args="history output/workbench"
 
-# 从单次运行证据生成独立报告；目标文件必须尚不存在
+# build a standalone report from single-run evidence; the target file must not exist yet
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   '-Dexec.args=report "/absolute/run/result.manifest.json" "/absolute/new-report.html"'
@@ -156,9 +156,9 @@ output-root/
       result.manifest.json
       result.metrics.json
       result.events.jsonl
-      result.network-ledger.json   # 仅 V1 组级记录
-      result.file-lifecycle.json   # 仅 V2 文件记录
-      result.storage-lifecycle.json # 仅 V3 存储记录；三种侧车互斥
+      result.network-ledger.json   # V1 group-level records only
+      result.file-lifecycle.json   # V2 file records only
+      result.storage-lifecycle.json # V3 storage records only; the three sidecars are mutually exclusive
 ```
 
 The manifest is v4, provenance is v3, metrics are v2, and events are v1. After the files are written, the evidence is validated, and the report is then generated from that same validation snapshot. A single run failure records its root cause and the other schemes continue; failures do not enter the completion-time ranking; the `run` command exits non-zero when there are failed or unfinished runs.

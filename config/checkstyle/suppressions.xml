@@ -3,28 +3,34 @@
     "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <!--
-  豁免清单：只允许针对"目录/文件维度"收紧豁免（红线：规则只能增加不能减少 →
-  豁免只能缩小，扩大任何豁免都算放宽规则，须在提交信息中说明理由并走人工评审）。
+  Exemption list: exemptions may only be tightened at the "directory/file dimension"
+  (red line: rules may only grow, never shrink -> exemptions may only shrink; widening
+  any exemption counts as loosening a rule and requires a stated rationale in the commit
+  message plus human review).
 
-  红线③：测试文件规则可宽松——测试代码只豁免"体量/复杂度/文档性"指标，
-  语义防护类（Tier-A：EqualsHashCode、StringLiteralEquality、DefaultComesLast 等）
-  对测试同样强制：测试代码里的这些缺陷和主代码一样会腐蚀证据链。
+  Red line 3: rules may be looser for test files: test code is exempt only from
+  "size/complexity/documentation" metrics; semantic guard classes (Tier-A: EqualsHashCode,
+  StringLiteralEquality, DefaultComesLast, etc.) are equally mandatory for tests: these
+  defects in test code corrode the evidence chain just as they do in main code.
 
-  2026-10-26 豁免区制度化（用户裁决批准）：examples 教学区与 clustering/reclustering
-  历史围栏区按"区域政策"整体豁免风格类规则——这片区域从不参与 Tier-B→A 晋级梯
-  （无清零预期），保留的 warning 只有审计快照意义。豁免后主维护区的 warning 直接
-  变成"真处理对象"的信噪比。语义防护类规则（Tier-A）对这两区不豁免：
-  教学示例的语义代码腐蚀同样会误导读者。
+  2026-10-26 institutionalization of the exemption zones (approved by user adjudication):
+  the examples teaching zone and the clustering/reclustering historical fence zone are
+  exempted from style rules wholesale under a "zone policy": these zones never take part
+  in the Tier-B -> A promotion ladder (no expectation of reaching zero), so the warnings
+  they retain are an audit snapshot only. After the exemption, the warnings in the main
+  maintenance zone directly become the signal-to-noise ratio of "real work items".
+  Semantic guard rules (Tier-A) are not exempted for these two zones: semantic code
+  erosion in teaching examples misleads readers just the same.
 -->
 <suppressions>
-    <!-- 测试体量与复杂度不设门槛（测试允许长 setup / 大参数矩阵） -->
+    <!-- No threshold on test size and complexity (tests may have long setups / large parameter matrices) -->
     <suppress files="[\\/]src[\\/]test[\\/]java[\\/]" checks="MethodLengthCheck"/>
     <suppress files="[\\/]src[\\/]test[\\/]java[\\/]" checks="CyclomaticComplexityCheck"/>
 
-    <!-- 测试类不要求类型级 Javadoc（实验脚手架，非公开 API 面） -->
+    <!-- Test classes need no type-level Javadoc (experiment scaffolding, not a public API surface) -->
     <suppress files="[\\/]src[\\/]test[\\/]java[\\/]" checks="MissingJavadocTypeCheck"/>
 
-    <!-- examples 教学区（文献风格保留，非产品面） -->
+    <!-- examples teaching zone (keeps the literature style, not a product surface) -->
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="LocalVariableNameCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="ParameterNameCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="MemberNameCheck"/>
@@ -33,7 +39,7 @@
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="CyclomaticComplexityCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="MissingJavadocTypeCheck"/>
 
-    <!-- clustering / reclustering 历史围栏区（根 AGENTS.md：可修 bug，不得扩用） -->
+    <!-- clustering / reclustering historical fence zone (root AGENTS.md: bugs may be fixed, the zone may not be extended) -->
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]clustering[\\/]" checks="LocalVariableNameCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]clustering[\\/]" checks="MemberNameCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]clustering[\\/]" checks="MethodNameCheck"/>

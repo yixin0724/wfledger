@@ -5,12 +5,12 @@
 The Java-side semantic validation of the V1 group-level ledger does not invoke the production-side progressive-filling solver to compute "expected rates"; the [Python checker](<NETWORK_LEDGER_PYTHON.md>) independently implements the same contract. A formal export requires the complete bundle, consisting of capture, bindings, aggregated input observations, and derived metrics; OFF produces no network roles. The format is defined in the [encoding/decoding contract](<NETWORK_LEDGER_FORMAT.md>); for display and replay see the [offline report](<NETWORK_REPORT_DISPLAY.md>) and the [rerun difference contract](<../experiments/RERUN_DIFF_CONTRACT.md>) respectively.
 
 ```java
-NetworkRunEvidence evidence = report.getNetworkEvidence(); // OFF为null
+NetworkRunEvidence evidence = report.getNetworkEvidence(); // null when OFF
 if (evidence != null) {
     NetworkRunMetrics runMetrics = NetworkRunMetrics.calculate(evidence);
     NetworkTraceMetrics metrics = runMetrics.getTransferMetrics();
-    TransferTraceValidator.Result checked = metrics.getValidation(); // 已先校验
-    if (metrics.isAvailable()) { // 仅COMPLETE capture发布完整捕获总量
+    TransferTraceValidator.Result checked = metrics.getValidation(); // validated beforehand
+    if (metrics.isAvailable()) { // only a COMPLETE capture publishes whole-capture totals
         BigDecimal service = metrics.getServicedBalanceDeltaBytes();
     }
 }

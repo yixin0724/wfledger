@@ -16,7 +16,7 @@ NetworkRunMetrics recomputed = checked.getMetrics();
 ## Formal Export and Validation
 
 ```java
-// config已选择受支持的流体模型、静态mapper/dispatch和对应平台。
+// config has already selected a supported fluid model, a static mapper/dispatch, and a matching platform.
 SimulationConfig observed = config.toBuilder()
     .networkEvidence(NetworkEvidenceConfig.fluidGroupLedger(50000)).build();
 SimulationReport report = new SimulationRunner().run(observed, platform);
@@ -24,7 +24,7 @@ ExperimentArtifactWriter.ExperimentArtifacts files =
     ExperimentArtifactWriter.write(report, outputDirectory, "run");
 ExperimentArtifactValidator.ValidationResult checked =
     ExperimentArtifactValidator.validate(files.getManifest());
-Path ledger = checked.getNetworkLedger(); // OFF为null，不凭目录中的旧文件猜测
+Path ledger = checked.getNetworkLedger(); // OFF yields null; stale files in the directory are never guessed at
 ```
 
 ON writes the original metrics/events plus the new `run.network-ledger.json`, then registers its role/hash/size in the manifest and commits last. OFF still writes the original three files, adding no networkEvidence field and no network role. When a directory is reused, old unreferenced ledgers are not arbitrarily deleted; readers trust only manifest roles.

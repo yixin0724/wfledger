@@ -1,6 +1,6 @@
 {
   "schema": "workflowsim-workbench-v1",
-  "name": "Fat-tree 网络下的调度方案比较",
+  "name": "Scheduling comparison under a Fat-tree network",
   "workflowPaths": ["../../datasets/dax/cybershake/n100/CyberShake_100.dax"],
   "platform": {
     "vmMips": [1000, 1000, 1000, 1000],

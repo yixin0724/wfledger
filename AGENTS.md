@@ -1,91 +1,159 @@
-# AGENTS.md — WorkflowSim-yixin 编码代理守则
+# AGENTS.md — WorkflowSim-yixin Coding-Agent Handbook
 
-> 本仓库是**研究工作流调度问题的仿真实验平台**（单工作流 DAG 调度 + 多工作流错峰竞争）。
-> 科学性标准：忠实实现文献算法；实验结论**可复现、可追溯、证据链完整**（内部效度；明确不追求对真实集群的保真校准）。
-> 本文件是所有代理动手前的必读件。修改它需人工评审——它是新代理的"入职第一课"。
+> This repository is a **simulation and experimentation platform for the research
+> workflow-scheduling problem** (single-workflow DAG scheduling plus multi-workflow
+> peak-shifting contention).
+> Scientific standard: the literature algorithms are implemented faithfully; experimental
+> conclusions are **reproducible, traceable, and backed by a complete evidence chain**
+> (internal validity; fidelity calibration against real clusters is explicitly not pursued).
+> This file is mandatory reading for every agent before acting. Changing it requires human
+> review — it is the "first day on the job" briefing for a new agent.
 
-## 项目事实（代理最容易搞错的五件事）
+## Project facts (the five things agents most often get wrong)
 
-1. **Maven 多模块 reactor**：`simulator`（核心，无上游依赖）→ `experiments`（Workbench + 研究驱动器）。核心模块不得反向依赖实验模块。（第三模块 `grouped-workflows` 已于 2026-11-02 经用户裁决移除：经核查平台零引用；快照存于 git 6db21f1，研究契约归外部仓库管理。）
-2. **CloudSim 3 全局状态内核**：同一 JVM 严禁并发/并行仿真。一切运行必须经 `SimulationSession`（try-with-resources）建立会话边界。
-3. 需要 JDK 17+、Maven 3.6.3+；编译目标 Java 8 字节码（`maven.compiler.release=8`）。
-4. 工作流输入三源（Pegasus DAX / WfGen 合成 / WfInstances 真实派生）证据边界不同，**禁止混为同一 workload population**（见 `datasets/README.md`）。
-5. Git 主分支工作流；审查工程临时工作区已于 2026-11-02 整体清除（快照见 git 6db21f1），其结论已并入 `docs/`——不以已删除的临时目录代表产品状态。
+1. **Maven multi-module reactor**: `simulator` (core, no upstream dependency) →
+   `experiments` (Workbench + research drivers). The core module must never depend on the
+   experiment module. (The third module `grouped-workflows` was removed on 2026-11-02 by user
+   adjudication: verified zero references in the platform; its snapshot is preserved at git
+   `6db21f1` and its research contract is managed in an external repository.)
+2. **CloudSim 3 global-state kernel**: concurrent or parallel simulation inside one JVM is
+   strictly forbidden. Every run must establish its session boundary through
+   `SimulationSession` (try-with-resources).
+3. Requires JDK 17+ and Maven 3.6.3+; the compiler targets Java 8 bytecode
+   (`maven.compiler.release=8`).
+4. The three workflow-input sources (Pegasus DAX, WfGen synthetic, WfInstances
+   real-derived) have different evidence boundaries; **mixing them into one workload
+   population is forbidden** (see `datasets/README.md`).
+5. Git main-branch workflow; the review-engineering temporary workspace was removed
+   entirely on 2026-11-02 (snapshot at git `6db21f1`) and its conclusions were folded into
+   `docs/` — a deleted temporary directory never represents product state.
 
-## 常用命令（动手前先跑通读）
+## Common commands (run these before touching anything)
 
 ```bash
-mvn -q compile                                  # 编译全部模块
-mvn -pl :workflowsim test                       # 模拟器单元测试
-mvn -Pjavadoc clean verify                      # CI 同款全门禁（测试+覆盖率+Javadoc）
-python3 -B scripts/check-docs.py                # 文档链接/锚点校验
-PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py   # Python 审计器自测
+mvn -q compile                                  # compile every module
+mvn -pl :workflowsim test                       # simulator unit tests
+mvn -Pjavadoc clean verify                      # the full CI gate (tests + coverage + Javadoc)
+python3 -B scripts/check-docs.py                # documentation link/anchor check
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py   # Python auditor self-tests
 
-# Workbench 冒烟（标准入口）
+# Workbench smoke run (the standard entry point)
 mvn -q -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   -Dexec.args="validate experiments/configs/online-comparison.json"
 ```
 
-**陷阱**：单独跑 `experiments` 模块测试必须带 `-am`——否则从 `~/.m2` 取旧 simulator jar，provenance 源码哈希域不同，rerun 测试会假红（这不是 bug，别去"修"）。
+**Trap**: running the `experiments` module tests on their own always requires `-am`.
+Without it Maven resolves a stale simulator jar from `~/.m2`, the provenance source-hash
+domain differs, and the rerun tests fail spuriously. This is not a bug; do not "fix" it.
 
-## 领域地图（30 秒版）
+## Domain map (30-second version)
 
-- 事件链：`WorkflowPlanner → ClusteringEngine → WorkflowEngine → WorkflowScheduler → WorkflowDatacenter`（`org.workflowsim` 根包）。
-- 决策分三层且**不可跨层比较**：规划（planning/，离线 Task→VM+顺序）、调度（scheduling/，在线 ready Job→VM）、coherent 在线绑定（data/v2 的 DataflowVmAssigner）。
-- 数据/网络物理模型八种（`DataMovementModel`）；证据侧车三种（网络账本 / 文件生命周期 V2 / 存储生命周期 V3），格式契约在 `docs/advanced/`。
-- **契约文档体系在 `docs/`**：改行为必同步改对应契约文档，反之亦然。进入代码深区前先读 `docs/README.md` 找到对应契约。
+- Event chain: `WorkflowPlanner → ClusteringEngine → WorkflowEngine → WorkflowScheduler →
+  WorkflowDatacenter` (root package `org.workflowsim`).
+- Decisions split into three layers that **must not be compared across layers**: planning
+  (`planning/`, offline Task → VM plus order), scheduling (`scheduling/`, online ready
+  Job → VM), and coherent online binding (`DataflowVmAssigner` in `data/v2`).
+- Eight data/network physical models (`DataMovementModel`); three evidence sidecars
+  (network ledger, file lifecycle V2, storage lifecycle V3), whose format contracts live in
+  `docs/advanced/`.
+- **The contract-document system lives in `docs/`**: a behavior change must update the
+  matching contract document and vice versa. Before entering the deep zones of the code,
+  read `docs/README.md` to find the corresponding contract.
 
-## 不可违反（Do-Not 清单——违反即科学性损坏）
+## The Do-Not list (violating it corrupts the science)
 
-1. **失败必须显式**：禁止任何静默降级、兜底回退、吞异常后继续。宁可 fail-fast 中止，不产出误导性结果。
-2. **测试期望值只有三个合法来源**：①一级文献手推（论文/教科书）②项目契约文档 ③守恒律/不变量。**严禁把实现输出抄作期望值**；唯一例外是显式标注的 golden-regression（职责是防漂移，不是证正确）。
-3. `EvidenceCoreDiffer` 白名单**不可随手扩**：新增豁免=证据契约修订，必须同步 `docs/experiments/RERUN_DIFF_CONTRACT.md` 写明理由。
-4. **events v1 事件 schema 不得擅改**：新增事件类型或关键字段需用户裁决（F-006/F-007 提案在案即此例）。
-5. 聚类遗留区（`clustering/balancing` 家族、`ReclusteringEngine` 的 DC/DR/BLOCK/VERTICAL）是**历史兼容代码**：可修真实缺陷（先写红测试）；不得改语义、不得扩用。标准 `SimulationRunner` 只接受聚类 NONE——这是设计。
-6. 已弃用调度标签（`MINMIN`/`MAXMIN`/`MCT`/`ROUNDROBIN` 等）被标准运行器**拒绝是设计行为**，不是待修 bug。
-7. 一切可变全局静态（`Parameters`/`FailureMonitor`/`ReplicaCatalog`/`NetworkTopology` 等 68 个字段，清单固化在 `SessionResetMatrixTest.AUDIT_CLASSES`）必须在 `SimulationSession` 生命周期内访问；想新增全局静态，先自问为何不用会话注入。
-8. 随机性必须走 `SimulationRandom` 命名流；禁止裸 `new Random()` 或种子字面量。
-9. **浮点决定性纪律**：证据路径上的集合遍历与求和保持确定顺序（`LinkedHashMap`/`TreeMap`/ID 升序 tie-break）；改动前想清楚是否引入迭代序漂移。
-10. Java 与 Python 审计器**语义必须对齐**：改 Java 指标/事件计算，必须同步核对 `scripts/` 对应复算口径。
+1. **Failure must be explicit**: no silent degradation, no fallback that keeps going, no
+   swallowed exception followed by continuation. Fail fast and stop rather than emit
+   misleading results.
+2. **Test expectations have only three legal sources**: (1) hand derivation from primary
+   literature (papers, textbooks); (2) the project's contract documents; (3) conservation
+   laws and invariants. **Copying implementation output as an expected value is strictly
+   forbidden**; the only exception is an explicitly labeled golden regression, whose job is
+   to detect drift, not to prove correctness.
+3. The `EvidenceCoreDiffer` whitelist **must not be widened casually**: a new exemption is
+   an evidence-contract revision and must state its rationale in
+   `docs/experiments/RERUN_DIFF_CONTRACT.md`.
+4. **The events v1 event schema must not be changed unilaterally**: new event types or key
+   fields require user adjudication (the pending F-006/F-007 proposals are exactly this
+   case).
+5. The clustering legacy zone (the `clustering/balancing` family and DC/DR/BLOCK/VERTICAL
+   in `ReclusteringEngine`) is **historical compatibility code**: genuine defects may be
+   fixed (write the red test first); its semantics must not change and it must not be
+   extended. The standard `SimulationRunner` accepts clustering NONE only — that is by
+   design.
+6. Deprecated scheduling labels (`MINMIN`/`MAXMIN`/`MCT`/`ROUNDROBIN`, etc.) being
+   **rejected by the standard runner is designed behavior**, not a bug awaiting a fix.
+7. Every mutable global static (`Parameters`/`FailureMonitor`/`ReplicaCatalog`/
+   `NetworkTopology` and 68 fields in total, with the ledger frozen in
+   `SessionResetMatrixTest.AUDIT_CLASSES`) must be accessed within a `SimulationSession`
+   lifetime; before adding a global static, ask yourself why session injection is not used.
+8. Randomness must go through the `SimulationRandom` named streams; bare `new Random()` and
+   seed literals are forbidden.
+9. **Floating-point determinism discipline**: collection traversal and summation on the
+   evidence path keep a deterministic order (`LinkedHashMap`/`TreeMap`/ascending-ID
+   tie-break); before changing anything, decide whether it introduces iteration-order
+   drift.
+10. The Java and Python auditors **must stay semantically aligned**: any change to a Java
+    metric or event computation must be checked against the matching recomputation in
+    `scripts/`.
 
-## 风格与语言
+## Style and language
 
-- 维护轨代码的 javadoc/注释/文档一律**中文**，保持既有"根因注释"风格（F-xxx / PLAT-x / R 轮次标记 + 修复日期）。
-- 数据集中英混合命名沿用现状；新文件名用 ASCII。
+- All javadoc, comments, and documentation on the maintained track are written in
+  **professional technical English**, keeping the existing "root-cause annotation" style
+  (F-xxx / PLAT-x / R-round markers plus the fix date). Language policy revised on
+  2026-11-02 by user decision: the whole repository is English.
+- Alias and mixed-language names already present inside dataset files keep their current
+  form; new file names use ASCII. Dataset fixtures are frozen bytes: translating text
+  inside a `.dax` file changes its SHA-256, which protocol identities record, so it must
+  never be done.
 
-## 仓库结构约定（2026-10-20 审查工程新增）
+## Repository structure conventions (added by the 2026-10-20 review engineering)
 
-| 目录/文件 | 定位 | 新增项规则 |
+| Directory / file | Role | Rules for additions |
 |---|---|---|
-| `simulator/` | 核心引擎（artifactId `workflowsim`，无上游依赖） | 算法/模型/证据类 |
-| `experiments/` | Workbench Maven 模块（artifactId `workflowsim-workbench`）：统一入口+研究驱动器+复现+示例 | 重组待有外部需求时再启动 |
-| `datasets/` | 工作流输入（三类含 .gitignore 反选） | 不新增全量语料；先查 `datasets/INDEX.json` |
-| `docs/` | 契约文档体系 | 每新文档须入 `docs/README.md` 索引；`check-docs.py` 0 issues |
-| `scripts/` | Python 审计器（纯 stdlib） | 不引入 Node 依赖；自测成对 |
-| `config/` | 代码工具链台账（checkstyle 分级规则等） | 规则只增不减；与 CODE_STYLE.md 同步修订 |
-| `output/` | 运行产物（gitignored） | 只存 tar 正本 + 当前活跃实验；旧堆须清理 |
-| `AGENTS.md` | 编码代理守则 | 修改需人工评审 |
-| `LICENSE` | GPL-2.0 官方全文（338 行 gnu.org 正本，逐字不改） | 不可替换为宽松许可证：上游 CloudSim 3 为 GPL（`simulator/src/main/java/org/cloudbus/`，65/66 文件带 GPL 头） |
-| `CITATION.cff` | 软件引用元数据（GitHub "Cite this repository" 读取） | 改版本/日期/作者须同步实际发布；许可证字段固定 `GPL-2.0-or-later` |
-| `Makefile` | 便捷命令 | 与 pom.xml 目标同步维护 |
+| `simulator/` | Core engine (artifactId `workflowsim`, no upstream dependency) | Algorithms, models, evidence classes |
+| `experiments/` | Workbench Maven module (artifactId `workflowsim-workbench`): unified entry point, research drivers, reproduction, examples | Reorganization starts only on external demand |
+| `datasets/` | Workflow inputs (three families, with .gitignore negation) | No new full corpora; check `datasets/INDEX.json` first |
+| `docs/` | Contract-document system | Every new document must be indexed in `docs/README.md`; `check-docs.py` 0 issues |
+| `scripts/` | Python auditors (pure stdlib) | No Node dependencies; self-tests come in pairs |
+| `config/` | Code tool-chain ledger (checkstyle tier rules, etc.) | Rules only grow; revise in step with CODE_STYLE.md |
+| `output/` | Run artifacts (gitignored) | Keep only tar originals plus currently active experiments; old heaps must be cleaned |
+| `AGENTS.md` | Coding-agent handbook | Changes require human review |
+| `LICENSE` | Official GPL-2.0 full text (338 lines from gnu.org, verbatim) | Must not be replaced with a permissive license: upstream CloudSim 3 is GPL (`simulator/src/main/java/org/cloudbus/`, 65 of 66 files carry the GPL header) |
+| `CITATION.cff` | Software citation metadata (read by GitHub "Cite this repository") | Version, date, and author changes must match an actual release; the license field is fixed to `GPL-2.0-or-later` |
+| `Makefile` | Convenience commands | Maintained in step with the pom.xml targets |
 
-**新增顶层目录/文件的纪律**：先问"为什么不放进已有 raise 的目录"；确定必须新增时同步更新本表 + `docs/README.md`（如涉及文档） + `check-docs.py` 结果。
+**Discipline for adding a top-level directory or file**: first ask "why can this not live
+in an existing directory"; if it must be added, update this table, `docs/README.md` (when
+documentation is involved), and the `check-docs.py` result in the same change.
 
-## 完成定义（Done）
+## Definition of done
 
-- 新逻辑：**先写失败测试**（期望值三源合法）→ 修复 → 全绿；回归测试与根因 javadoc 成对出现。
-- 行为变更：对应契约文档同步更新且 `check-docs.py` 0 issues。
-- 收尾：`mvn -Pjavadoc clean verify` 全绿；涉及 Python 审计域时其自测全绿。
-- 未获用户裁决的事项（事件 schema、清理执行、契约方向变更）：**停在提案态**，不先斩后奏。
+- New logic: **write the failing test first** (with an expectation from one of the three
+  legal sources) → fix → all green; the regression test and its root-cause javadoc land as
+  a pair.
+- Behavior change: the matching contract document is updated in the same change and
+  `check-docs.py` reports 0 issues.
+- Close-out: `mvn -Pjavadoc clean verify` is green; when the Python audit domain is
+  involved, its self-tests are green too.
+- Anything the user has not adjudicated (event schema, executing a cleanup, changing a
+  contract's direction): **stay in proposal state** — never act first and report later.
 
-## 遇到"反直觉"的实现时
+## When you meet a "counter-intuitive" implementation
 
-先假定它是**刻意的**：查该处 javadoc 的根因注释（F-xxx 标记）与对应契约文档；仍无法确认 → 询问用户或提 issue。**不要顺手"修复"**——本仓库大量代码的"怪"正是科学性设计本身（例如：白名单正则从常量派生、比较器用 `Long.compare`、解析器两阶段提交）。
+Assume first that it is **deliberate**: read the root-cause annotation (F-xxx) in that
+javadoc and the matching contract document; if it still cannot be resolved, ask the user or
+file an issue. **Do not "fix" it in passing** — much of what looks odd in this repository
+is the scientific design itself (for example: whitelist regexes derived from constants,
+comparators using `Long.compare`, the parser's two-phase commit).
 
-## 深挖路线（按需加载，勿一次全读）
+## Deep-dive routes (load on demand, do not read everything at once)
 
-- 契约与边界：`docs/`（入口 `docs/README.md`）
-- 算法语义/组合矩阵：`docs/algorithms/CATALOG.md` + `CONTRACTS.md`
-- 数据集规则：`datasets/README.md`
-- 历史沉淀（缺陷账/方法论）：`docs/history/`（临时审查区已清除，勿再建同名目录）
+- Contracts and boundaries: `docs/` (entry point `docs/README.md`)
+- Algorithm semantics and the combination matrix: `docs/algorithms/CATALOG.md` +
+  `CONTRACTS.md`
+- Dataset rules: `datasets/README.md`
+- Historical sediment (defect ledger, methodology): `docs/history/` (the temporary review
+  area was removed; do not recreate a directory with that name)

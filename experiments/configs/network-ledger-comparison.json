@@ -1,6 +1,6 @@
 {
   "schema": "workflowsim-workbench-v1",
-  "name": "Fat-tree 调度比较：启用可审计网络账本",
+  "name": "Fat-tree scheduling comparison: auditable network ledger enabled",
   "workflowPaths": ["../../datasets/dax/cybershake/n100/CyberShake_100.dax"],
   "platform": {
     "vmMips": [1000, 1000, 1000, 1000],

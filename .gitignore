@@ -3,7 +3,7 @@ target/
 *.class
 node_modules/
 
-# Python 字节码缓存（本地跑检查器副作用）
+# Python bytecode caches (a side effect of running the checkers locally)
 scripts/__pycache__/
 
 # IDE
@@ -16,10 +16,10 @@ scripts/__pycache__/
 
 # Large community benchmark corpora (not required by tests/experiments;
 # datasets/dax fixtures needed for paper reproduction are kept)
-# R9 常驻语料守门：三个 corpus 门禁测试实际引用的 5 个小文件（33–145 KB）入库，
-# 使 ParserCrossValidationTest / P7WfInstancesPilotMatrixTest /
-# WfCommonsCliSmokeIntegrationTest 在标准构建（含 CI 全新检出）中不再跳过。
-# 目录级 ignore 无法反选内部文件，故改用 /* + ! 逐级放行。
+# R9 resident-corpus guard: the five small files (33-145 KB) actually referenced by the three
+# corpus gate tests are committed, so ParserCrossValidationTest / P7WfInstancesPilotMatrixTest /
+# WfCommonsCliSmokeIntegrationTest no longer skip in a standard build (including a fresh CI
+# checkout). A directory-level ignore cannot re-include inner files, hence the /* + ! ladder.
 datasets/wfinstances/*
 !datasets/wfinstances/v1.5/
 datasets/wfinstances/v1.5/*
@@ -73,9 +73,9 @@ output/benchmark-standard-carbon-v1/
 # D5 frozen DVFS tri-dimensional benchmark local evidence (tar original retained).
 output/benchmark-standard-dvfs-v1/
 
-# make mutation-gate 报告（可重生成，不入库）
+# make mutation-gate reports (regenerable, not committed)
 output/mutation-gate/
-# 报告面板截图（由浏览器夹具重生成，不入库）
+# report-panel screenshots (regenerated from the browser fixtures, not committed)
 output/report-panels/
 
 # BAT-D3 DVFS tier-audit smoke bundle (one real 2-tier run; regenerable via a temporary

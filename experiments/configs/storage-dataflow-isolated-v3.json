@@ -1,6 +1,6 @@
 {
   "schema": "workflowsim-workbench-v1",
-  "name": "V3受限共享存储：独立路径瓶颈对照",
+  "name": "V3 bounded shared storage: isolated-path bottleneck comparison",
   "workflowPaths": ["inputs/coherent-file-dataflow.dax"],
   "platform": {
     "vmMips": [1000, 1000, 1000, 1000],

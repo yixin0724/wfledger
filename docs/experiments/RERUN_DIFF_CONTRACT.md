@@ -24,13 +24,13 @@ Only manifest v4 is supported. v2/v3 can be read by the corresponding integrity 
 ## Execution and Snapshot Boundaries
 
 ```text
-读取原包并校验
-  → 按输入身份定位文件
-  → 从验证后的 manifest 重建配置和平台
-  → 用当前标准运行器重新仿真
-  → 写出并校验新的证据
-  → 精确比较核心量
-  → 输出 JSON 与 Markdown 判定
+read the original bundle and validate it
+  → locate the files by input identity
+  → rebuild the configuration and platform from the validated manifest
+  → re-simulate with the current standard runner
+  → write and validate the new evidence
+  → compare the core quantities exactly
+  → emit the JSON and Markdown verdict
 ```
 
 The reader uses the manifest snapshot returned by the validator; the unvalidated pre-read tree is not taken as the basis for rebuilding. This snapshot is not a CloudSim checkpoint and not a filesystem snapshot: the manifest tree of `RerunEvidence` is used under a read-only convention, while metrics/events/sidecars are still read from their paths at comparison time. Callers must not modify the tree, and the contents of the original directory must also remain unchanged during validation and the rerun; this tool provides no concurrent-write isolation or archival attestation.
@@ -124,7 +124,7 @@ rerun-output/
     result.manifest.json
     result.metrics.json
     result.events.jsonl
-    ...已声明的匹配侧车
+    ...declared matching sidecars
 ```
 
 The report contains the `verdict`, the input resolution, JSON pointers and both-side values for the core divergences, `volatileFieldsNoted`, identity information, and applicable coverage notes. Divergences are compared on their full values; displayed values longer than 120 characters are truncated and annotated with the original length, without turning a diff into equality. Metric divergences duplicated between the manifest and the metrics sidecar are deduplicated.

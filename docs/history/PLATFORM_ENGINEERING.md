@@ -44,7 +44,7 @@ and in Git history; nothing here overrides a contract.
   able from the event stream, with Python cross-checks `terminal-clock-identity` and
   `job-start-derivation` baked into the independent auditor.
 - SHARED_STORAGE all five planners locked by a zero-tolerance planning-to-execution
-  mirror (309 integration tests); Python 78/78已被 covered.
+  mirror (309 integration tests); the Python recomputation covered 78/78 metrics.
 - R13 v2 re-certified at 546 runs and cross-checked bit-exact against the impact layer,
   directly confirming the behavior-neutrality of the style campaign.
 - The SHARED-family zero-download and events-observability initiatives closed with

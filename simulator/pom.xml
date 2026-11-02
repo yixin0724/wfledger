@@ -11,16 +11,18 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <!-- 保持既有核心 Maven 坐标，目录迁移不改变下游依赖名。 -->
+    <!-- Keep the existing core Maven coordinates; the directory move must not change downstream dependency names. -->
     <artifactId>workflowsim</artifactId>
     <packaging>jar</packaging>
     <name>WorkflowSim Simulator</name>
-    <description>可复用的 WorkflowSim 模拟器核心及通用研究运行 API。</description>
+    <description>Reusable WorkflowSim simulator core and the general research-run API.</description>
 
     <properties>
-        <!-- R3 覆盖率门禁棘轮值：略低于实测（2026-09-17 R10 平台升级轮 clean verify：
-             instruction 54.19% / branch 48.49%；R10 修正 CPOP 前驱秩与 max-min
-             网络语义并新增手算/事件结算/manifest v4 测试后实测提升），只升不降。 -->
+        <!-- R3 coverage-gate ratchet: set slightly below the measured value
+             (clean verify of the 2026-09-17 R10 platform-uplift round: instruction 54.19% /
+             branch 48.49%, measured after R10 corrected the CPOP predecessor rank and the
+             max-min network semantics and added the hand-derivation, event-settlement, and
+             manifest v4 tests). It only rises, never falls. -->
         <workflowsim.jacoco.instruction.minimum>0.54</workflowsim.jacoco.instruction.minimum>
         <workflowsim.jacoco.branch.minimum>0.48</workflowsim.jacoco.branch.minimum>
     </properties>

@@ -9,7 +9,7 @@ and superseded audit drafts are not long-term entry points.
 
 | Need | Document |
 |---|---|
-| Run an existing configuration and open its report | [Quick start (EN)](<getting-started/QUICK_START.md>) · [快速开始（中文）](<getting-started/QUICK_START.md>) |
+| Run an existing configuration and open its report | [Quick start](<getting-started/QUICK_START.md>) |
 | Configure, validate, run, and rebuild offline reports | [Workbench guide](<getting-started/WORKBENCH.md>) |
 | Build configurations, platforms, and experiments in Java | [Code-configuration guide](<getting-started/CODE_CONFIG_EXPERIMENTS.md>) |
 | Maven, Python, browser, and Javadoc checks | [Build and verification](<getting-started/BUILD.md>) |

@@ -14,12 +14,14 @@
     <artifactId>workflowsim-workbench</artifactId>
     <packaging>jar</packaging>
     <name>WorkflowSim Workbench</name>
-    <description>Workbench 统一实验入口、研究驱动器、复现工具、冻结参考基线和教学示例。</description>
+    <description>Workbench unified experiment entry point, research drivers, reproduction tooling, frozen reference baselines, and teaching examples.</description>
 
     <properties>
-        <!-- R3 覆盖率门禁棘轮值：略低于实测（2026-09-17 R10 平台升级轮 clean verify：
-             instruction 39.55% / branch 42.55%；R10 新增 Workbench 统一入口与
-             网络受限研究的 26 个配置/链路测试后实测提升），只升不降。 -->
+        <!-- R3 coverage-gate ratchet: set slightly below the measured value
+             (clean verify of the 2026-09-17 R10 platform-uplift round: instruction 39.55% /
+             branch 42.55%, measured after R10 added the unified Workbench entry point and the
+             26 configuration/pipeline tests of the network-limited study). It only rises,
+             never falls. -->
         <workflowsim.jacoco.instruction.minimum>0.39</workflowsim.jacoco.instruction.minimum>
         <workflowsim.jacoco.branch.minimum>0.42</workflowsim.jacoco.branch.minimum>
     </properties>

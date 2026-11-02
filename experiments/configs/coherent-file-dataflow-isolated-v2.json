@@ -1,6 +1,6 @@
 {
   "schema": "workflowsim-workbench-v1",
-  "name": "V2逐文件生命周期：独立路径瓶颈对照",
+  "name": "V2 per-file lifecycle: isolated-path bottleneck comparison",
   "workflowPaths": ["inputs/coherent-file-dataflow.dax"],
   "platform": {
     "vmMips": [1000, 1000, 1000, 1000],

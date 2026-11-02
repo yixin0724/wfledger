@@ -11,13 +11,14 @@
 
     <name>WorkflowSim Parent</name>
     <description>
-        WorkflowSim 的 Maven Reactor 父工程。稳定模拟器位于 simulator/；
-        教学、参考基线和研究实验位于 experiments/ 模块。
+        The Maven reactor parent of WorkflowSim. The stable simulator lives in simulator/;
+        teaching material, reference baselines, and research experiments live in the experiments module.
     </description>
 
-    <!-- 许可证与仓库根 LICENSE / CITATION.cff 保持同一事实源：上游 CloudSim 3 为 GPL
-         （simulator/src/main/java/org/cloudbus/ 65/66 文件带 GPL 头），故整体只能是
-         GPL 兼容许可证，不得改为宽松许可证。 -->
+    <!-- The license keeps a single source of truth with the repository-root LICENSE and
+         CITATION.cff: upstream CloudSim 3 is GPL (65 of 66 files under
+         simulator/src/main/java/org/cloudbus/ carry the GPL header), so the project can only be
+         GPL-compatible and must never be relicensed under a permissive license. -->
     <licenses>
         <license>
             <name>GNU General Public License v2.0 or later</name>
@@ -26,7 +27,7 @@
         </license>
     </licenses>
 
-    <!-- 默认构建模拟器和实验模块。 -->
+    <!-- Build the simulator and the experiment modules by default. -->
     <modules>
         <module>simulator</module>
         <module>experiments</module>
@@ -40,16 +41,16 @@
         <workflowsim.javadoc.skip>true</workflowsim.javadoc.skip>
         <workflowsim.simulator.exec.skip>true</workflowsim.simulator.exec.skip>
         <workflowsim.experiments.exec.skip>false</workflowsim.experiments.exec.skip>
-        <!-- JaCoCo 在生命周期中写入；默认空值使直接 Surefire/Failsafe 调用安全。 -->
+        <!-- JaCoCo writes this during the lifecycle; the empty default keeps direct Surefire/Failsafe calls safe. -->
         <argLine></argLine>
-        <!-- R3 覆盖率门禁默认阈值（0 = 不设限）；各模块在自身 pom 覆盖为实测棘轮值。 -->
+        <!-- R3 coverage-gate default thresholds (0 = no limit); each module overrides them in its own pom with ratcheted measured values. -->
         <workflowsim.jacoco.instruction.minimum>0.00</workflowsim.jacoco.instruction.minimum>
         <workflowsim.jacoco.branch.minimum>0.00</workflowsim.jacoco.branch.minimum>
     </properties>
 
     <build>
         <plugins>
-            <!-- Reactor 聚合根没有运行时类路径；显式跳过直接调用的 exec:java。 -->
+            <!-- The reactor aggregator has no runtime classpath; a directly invoked exec:java is therefore skipped. -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -58,11 +59,14 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
-            <!-- 代码规范化工程 Phase 2：checkstyle 分级门禁。
-                 规则台账与分级定义：config/checkstyle/checkstyle.xml（Tier-A error 零容忍 / Tier-B warning 在册）。
-                 只有 severity=error 的违规会失败（violationSeverity=error）；
-                 建议级规则存量由基线报告跟踪、清零后晋级为 error（规则只增不减，见配置文件头注释）。
-                 红线：org.cloudbus* 上游代码在配置内整体退出门禁；测试体量/复杂度豁免见 suppressions.xml。 -->
+            <!-- Code-regularization Phase 2: the tiered checkstyle gate.
+                 Rule ledger and tier definitions: config/checkstyle/checkstyle.xml
+                 (Tier-A errors are zero-tolerance, Tier-B warnings stay on record).
+                 Only severity=error violations fail the build (violationSeverity=error);
+                 the advisory-rule backlog is tracked by the baseline report and is promoted to
+                 error once it reaches zero (rules only grow; see the configuration file header).
+                 Red line: upstream org.cloudbus* code leaves the gate entirely in the
+                 configuration; test volume/complexity exemptions are in suppressions.xml. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
@@ -76,10 +80,10 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- 代码规范化工程 Phase 4：Spotless/Palantir 格式门禁。
-                 存量已完成 format-only 四批归一（H1-H4），本执行块把
-                 spotless:check 绑入 validate——此后格式漂移即时红，
-                 与 checkstyle-tier-gate 并列构成 mvn validate 起的质量线。 -->
+            <!-- Code-regularization Phase 4: the Spotless/Palantir format gate.
+                 The existing code was normalized in four format-only batches (H1-H4); this
+                 execution binds spotless:check into validate, so any format drift fails
+                 immediately and the two gates together form the quality line from mvn validate. -->
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
@@ -236,9 +240,10 @@
                             </configuration>
                         </execution>
                         <execution>
-                            <!-- R3 覆盖率门禁：对单元测试覆盖率（target/jacoco.exec）
-                                 强制 BUNDLE 级 instruction/branch 下限；阈值由各模块
-                                 属性给出，棘轮式只升不降（实测值向下取整留裕量）。 -->
+                            <!-- R3 coverage gate: enforces BUNDLE-level instruction/branch
+                                 floors on unit-test coverage (target/jacoco.exec); the thresholds
+                                 come from per-module properties and ratchet upward only (measured
+                                 values rounded down to keep headroom). -->
                             <id>check-unit-coverage</id>
                             <phase>verify</phase>
                             <goals>
@@ -298,17 +303,17 @@
                             <tag>
                                 <name>date</name>
                                 <placement>a</placement>
-                                <head>日期:</head>
+                                <head>Date:</head>
                             </tag>
                             <tag>
                                 <name>pre</name>
                                 <placement>a</placement>
-                                <head>前置条件:</head>
+                                <head>Preconditions:</head>
                             </tag>
                             <tag>
                                 <name>post</name>
                                 <placement>a</placement>
-                                <head>后置条件:</head>
+                                <head>Postconditions:</head>
                             </tag>
                         </tags>
                         <doclint>all,-missing</doclint>
@@ -325,11 +330,11 @@
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>3.6.0</version>
                     <configuration>
-                        <!-- 规则台账与分级定义的唯一维护点；规则只增不减（工程红线①）。 -->
+                        <!-- The single maintenance point for the rule ledger and tier definitions; rules only grow (engineering red line 1). -->
                         <configLocation>${maven.multiModuleProjectDirectory}/config/checkstyle/checkstyle.xml</configLocation>
                         <propertyExpansion>config_loc=${maven.multiModuleProjectDirectory}/config/checkstyle</propertyExpansion>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                        <!-- 分级门禁内核：只统计 severity=error（Tier-A），warning 不挂 BUILD。 -->
+                        <!-- Tier-gate core: only severity=error (Tier-A) is counted; warnings never fail the build. -->
                         <violationSeverity>error</violationSeverity>
                         <failOnViolation>true</failOnViolation>
                         <logViolationsToConsole>true</logViolationsToConsole>
@@ -342,12 +347,12 @@
                     <version>3.0.0</version>
                     <configuration>
                         <java>
-                            <!-- Palantir 风格：120 列上限与本仓 checkstyle LineLength 一致。 -->
+                            <!-- Palantir style: the 120-column limit matches this repository's checkstyle LineLength. -->
                             <palantirJavaFormat>
                                 <version>2.50.0</version>
                             </palantirJavaFormat>
-                            <!-- import 分组与 checkstyle ImportOrder(groups/separated) 同向：
-                                 java,javax,org,com 组间空行，组内字母序。 -->
+                            <!-- Import grouping matches checkstyle ImportOrder(groups/separated):
+                                 blank lines between java, javax, org, com; alphabetical inside a group. -->
                             <importOrder>
                                 <order>java,javax,org,com</order>
                             </importOrder>

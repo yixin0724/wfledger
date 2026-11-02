@@ -1,6 +1,6 @@
 {
   "schema": "workflowsim-workbench-v1",
-  "name": "在线调度方案比较",
+  "name": "Online scheduling comparison",
   "workflowPaths": ["../../datasets/dax/epigenomics/n100/Epigenomics_100.dax"],
   "platform": {
     "vmMips": [500, 1500, 500, 1500],

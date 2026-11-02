@@ -378,7 +378,7 @@ ledger:
 | Batch | Content | Est. |
 |---|---|---|
 | D1 | FrequencyTier value class + VmSpec tier list + PlatformProfile builder surface + tier validation + extended energy conservation law + red→green unit-law tests | 1.5 d |
-| D2 | Per-Job assignment storage (JobOutcome tierMips) + config-level frequencyPolicy + manifest per-Job tier identity +台账 metrics (per-tier busy seconds, per-VM energy at each tier) + conservation identity at multi-tier fixtures | 1 d |
+| D2 | Per-Job assignment storage (JobOutcome tierMips) + config-level frequencyPolicy + manifest per-Job tier identity + ledger metrics (per-tier busy seconds, per-VM energy at each tier) + conservation identity at multi-tier fixtures | 1 d |
 | D3 | Python auditor: per-tier busy reconstruction + conservation recompute + carbon both models under per-tier fleet + self-tests | 1 d |
 | D4 | Workbench JSON tiers surface + validation + policy selection + registry dvfsAware/frequencyTiersRequired fields + rejection tests | 0.5–1 d |
 | D5 | Frozen DVFS benchmark variant (multi-tier grid under DEFAULT/MIN_POWER/EDP policies) + tar + audit + docs + comparison table honestly framed | 1.5 d |
