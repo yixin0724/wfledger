@@ -152,9 +152,9 @@ public final class FatTreeSchedulingCampaignExecutor {
             outputDir = projectRoot
                     .resolve("fattree-campaign-output")
                     .resolve("run-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(new java.util.Date()));
-            System.out.println("[campaign] 未提供参数，使用默认路径：");
-            System.out.println("[campaign]   数据集根 = " + datasetsRoot);
-            System.out.println("[campaign]   输出目录 = " + outputDir);
+            System.out.println("[campaign] no arguments given; using default paths:");
+            System.out.println("[campaign]   datasets root = " + datasetsRoot);
+            System.out.println("[campaign]   output directory = " + outputDir);
         } else if (args.length == 2) {
             datasetsRoot = Paths.get(args[0]).toAbsolutePath().normalize();
             outputDir = Paths.get(args[1]).toAbsolutePath().normalize();
@@ -163,17 +163,17 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
         Log.disable();
         List<DagScenario> dags = discoverCoreDags(datasetsRoot);
-        System.out.println("[campaign] 发现 " + dags.size() + " 个核心 DAG");
+        System.out.println("[campaign] discovered " + dags.size() + " core DAGs");
         CampaignResults results = runCampaign(datasetsRoot, dags, true, true);
         Files.createDirectories(outputDir);
         Path json = outputDir.resolve(RESULTS_JSON_FILE_NAME);
         Path markdown = outputDir.resolve(RESULTS_MD_FILE_NAME);
         ExperimentArtifactWriter.writeJson(json, results.toJson());
         Files.write(markdown, results.toMarkdown().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        System.out.println("[campaign] 完成：主矩阵 " + results.mainMatrix.size()
-                + " 次运行 + 3 主机敏感性 " + results.sensitivity.size()
-                + " 次运行 + 4 主机结构敏感性 " + results.structural.size() + " 次运行");
-        System.out.println("[campaign] 工件：" + json + " , " + markdown);
+        System.out.println("[campaign] completed: main matrix " + results.mainMatrix.size()
+                + " runs + 3-host sensitivity " + results.sensitivity.size()
+                + " runs + 4-host structural sensitivity " + results.structural.size() + " runs");
+        System.out.println("[campaign] artifacts: " + json + " , " + markdown);
         System.out.println(results.toMarkdown());
     }
 
@@ -295,7 +295,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
         CampaignResults results = new CampaignResults(dags, mainMatrix, sensitivity, structural);
-        System.out.println("[campaign] 运行耗时 " + (System.nanoTime() - startedAt) / 1_000_000_000.0 + " s");
+        System.out.println("[campaign] elapsed " + (System.nanoTime() - startedAt) / 1_000_000_000.0 + " s");
         return results;
     }
 
@@ -326,14 +326,15 @@ public final class FatTreeSchedulingCampaignExecutor {
 
     private static void assertHealthy(SimulationReport report, String label) {
         if (!"COMPLETED_SUCCESSFULLY".equals(report.getMetrics().getLogicalTaskCompletionStatus())) {
-            throw new IllegalStateException(
-                    label + ": 逻辑任务完成状态异常 " + report.getMetrics().getLogicalTaskCompletionStatus());
+            throw new IllegalStateException(label
+                    + ": abnormal logical task completion status "
+                    + report.getMetrics().getLogicalTaskCompletionStatus());
         }
         if (report.getTotalJobs() != report.getSuccessfulJobs()) {
-            throw new IllegalStateException(label + ": Job 未全部成功");
+            throw new IllegalStateException(label + ": not all jobs completed successfully");
         }
         if (!(report.getMakespan() > 0.0) || !Double.isFinite(report.getMakespan())) {
-            throw new IllegalStateException(label + ": makespan 非法 " + report.getMakespan());
+            throw new IllegalStateException(label + ": invalid makespan " + report.getMakespan());
         }
     }
 
@@ -476,7 +477,7 @@ public final class FatTreeSchedulingCampaignExecutor {
         void assertWeakMonotonicity() {
             List<Map<String, Object>> violations = monotonicityDiagnostics();
             if (!violations.isEmpty()) {
-                throw new IllegalStateException("弱单调性破坏: " + violations);
+                throw new IllegalStateException("Weak-monotonicity violation: " + violations);
             }
         }
 
@@ -686,24 +687,24 @@ public final class FatTreeSchedulingCampaignExecutor {
 
         /** 报告头汇总（逐字搬运转写自 toMarkdown()）。 */
         private void appendHeader(StringBuilder md) {
-            md.append("# Fat-tree × 调度 campaign 实测结果（自动生成）\n\n");
+            md.append("# Fat-tree × Scheduling Campaign Measured Results (auto-generated)\n\n");
             md.append("- seed=")
                     .append(FIXED_SEED)
-                    .append("，3 主机同质平台，")
+                    .append(", 3-host homogeneous platform, ")
                     .append(dags.size())
-                    .append(" 个 DAG\n");
-            md.append("- 主矩阵 ")
+                    .append(" DAGs\n");
+            md.append("- Main matrix: ")
                     .append(mainMatrix.size())
-                    .append(" 次运行；3 主机敏感性 ")
+                    .append(" runs; 3-host sensitivity: ")
                     .append(sensitivity.size())
-                    .append(" 次运行；4 主机结构敏感性 ")
+                    .append(" runs; 4-host structural sensitivity: ")
                     .append(structural.size())
-                    .append(" 次运行\n\n");
+                    .append(" runs\n\n");
         }
 
         /** 主矩阵 makespan 表（逐字搬运转写）。 */
         private void appendMainMatrix(StringBuilder md) {
-            md.append("## 主矩阵 makespan（秒）\n\n");
+            md.append("## Main Matrix makespan (seconds)\n\n");
             md.append("| DAG |");
             for (DataMovementModel model : MODELS) {
                 for (Parameters.PlanningAlgorithm planner : PLANNERS) {
@@ -735,13 +736,17 @@ public final class FatTreeSchedulingCampaignExecutor {
 
         /** 弱单调性诊断表（逐字搬运转写）。 */
         private void appendMonotonicityDiagnostics(StringBuilder md) {
-            md.append("\n## 弱单调性诊断（V1 ≤ R2 ≤ R6）\n\n");
+            md.append("\n## Weak-Monotonicity Diagnostics (V1 ≤ R2 ≤ R6)\n\n");
             List<Map<String, Object>> violations = monotonicityDiagnostics();
             if (violations.isEmpty()) {
-                md.append("无违反。\n");
+                md.append("No violations.\n");
             } else {
-                md.append("存在 ").append(violations.size()).append(" 处跨模型次序交叉；以下如实报告幅度，原因需逐场景分析。跨模型单调不是一般定理：\n\n");
-                md.append("| DAG | 规划器 | V1 | R2 | R6 | 最大相对偏差 |\n");
+                md.append("Found ")
+                        .append(violations.size())
+                        .append(" cross-model order crossings; the magnitudes are reported as-is below,")
+                        .append(" and each cause needs per-scenario analysis.")
+                        .append(" Cross-model monotonicity is not a general theorem:\n\n");
+                md.append("| DAG | Planner | V1 | R2 | R6 | Max Relative Deviation |\n");
                 md.append("| --- | --- | --- | --- | --- | --- |\n");
                 for (Map<String, Object> record : violations) {
                     md.append("| ")
@@ -763,7 +768,7 @@ public final class FatTreeSchedulingCampaignExecutor {
 
         /** 平均排名段（逐字搬运转写）。 */
         private void appendAverageRankings(StringBuilder md) {
-            md.append("\n## 平均排名（makespan 升序）\n\n");
+            md.append("\n## Average Ranking (makespan ascending)\n\n");
             for (Map.Entry<String, List<String>> entry : averageRankings().entrySet()) {
                 md.append("- ")
                         .append(entry.getKey())
@@ -775,7 +780,7 @@ public final class FatTreeSchedulingCampaignExecutor {
 
         /** 逐 DAG 第一名表（逐字搬运转写）。 */
         private void appendPerDagWinners(StringBuilder md) {
-            md.append("\n## 逐 DAG 第一名\n\n| DAG |");
+            md.append("\n## Per-DAG Winner\n\n| DAG |");
             for (DataMovementModel model : MODELS) {
                 md.append(' ').append(shortModel(model)).append(" |");
             }
@@ -795,13 +800,15 @@ public final class FatTreeSchedulingCampaignExecutor {
 
         /** 配对统计段（含敏感性条件分支，逐字搬运转写）。 */
         private void appendPairedStatistics(StringBuilder md) {
-            md.append("\n## 配对 Wilcoxon（跨 DAG）\n\n");
-            md.append("| 轴 | 基线 | 候选 | n(有效) | 中位差(s) | 状态 | p | 显著 |\n");
+            md.append("\n## Paired Wilcoxon (across DAGs)\n\n");
+            md.append("| Axis | Baseline | Candidate | n (effective) | Median Diff (s)")
+                    .append(" | Status | p | Significant |\n");
             md.append("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
             appendStatRows(md, pairedStatistics());
             if (!sensitivity.isEmpty()) {
-                md.append("\n## 敏感性配对 Wilcoxon（3 主机，变体 vs 基线拓扑）\n\n");
-                md.append("| 轴 | 基线 | 候选 | n(有效) | 中位差(s) | 状态 | p | 显著 |\n");
+                md.append("\n## Sensitivity Paired Wilcoxon").append(" (3 hosts, variant vs baseline topology)\n\n");
+                md.append("| Axis | Baseline | Candidate | n (effective) | Median Diff (s)")
+                        .append(" | Status | p | Significant |\n");
                 md.append("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
                 appendStatRows(md, sensitivityStatistics());
             }
@@ -810,8 +817,8 @@ public final class FatTreeSchedulingCampaignExecutor {
         /** 4 主机结构敏感性段（含条件分支，逐字搬运转写）。 */
         private void appendStructuralSensitivity(StringBuilder md) {
             if (!structural.isEmpty()) {
-                md.append("\n## 4 主机结构敏感性 makespan（秒，R6 模型）\n\n");
-                md.append("| DAG | 规划器 |");
+                md.append("\n## 4-Host Structural-Sensitivity makespan").append(" (seconds, R6 model)\n\n");
+                md.append("| DAG | Planner |");
                 for (TopologyVariant variant : structuralVariants()) {
                     md.append(' ').append(variant.id).append(" |");
                 }
@@ -836,8 +843,10 @@ public final class FatTreeSchedulingCampaignExecutor {
                         md.append('\n');
                     }
                 }
-                md.append("\n## 结构敏感性配对 Wilcoxon（4 主机，变体 vs 基线拓扑）\n\n");
-                md.append("| 轴 | 基线 | 候选 | n(有效) | 中位差(s) | 状态 | p | 显著 |\n");
+                md.append("\n## Structural-Sensitivity Paired Wilcoxon")
+                        .append(" (4 hosts, variant vs baseline topology)\n\n");
+                md.append("| Axis | Baseline | Candidate | n (effective) | Median Diff (s)")
+                        .append(" | Status | p | Significant |\n");
                 md.append("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
                 appendStatRows(md, structuralStatistics());
             }

@@ -110,14 +110,14 @@ class RerunDiffExecutorTest {
         String rerunHash = json.get("rerunSourceTreeSha256").getAsString();
         assertFalse(originalHash.isEmpty());
         assertEquals(originalHash, rerunHash);
-        assertTrue(json.get("codeIdentityNote").getAsString().contains("一致"));
+        assertTrue(json.get("codeIdentityNote").getAsString().contains("matches the original run"));
         assertEquals(originalHash, report.getOriginalSourceTreeSha256());
         assertTrue(report.getInputResolution().get(0).isVerified());
 
         String md = read(mdPath);
         assertTrue(md.contains("IDENTICAL_CORE"));
-        assertTrue(md.contains("代码身份"));
-        assertTrue(md.contains("核心量逐位一致"));
+        assertTrue(md.contains("Code Identity"));
+        assertTrue(md.contains("bit-identical"));
     }
 
     @Test
@@ -290,7 +290,7 @@ class RerunDiffExecutorTest {
         RerunReport report = RerunDiffExecutor.execute(run, tempDir.resolve("sim-failure-out"));
 
         assertEquals(RerunVerdict.RECONSTRUCTION_REJECTED, report.getVerdict());
-        assertTrue(report.getFailureReason().contains("模拟执行阶段"), report.getFailureReason());
+        assertTrue(report.getFailureReason().contains("Simulation execution was rejected"), report.getFailureReason());
         assertFalse(Files.exists(tempDir.resolve("sim-failure-out/rerun")));
     }
 

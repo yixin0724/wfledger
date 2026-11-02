@@ -91,8 +91,8 @@ class NetworkStudyIntegrationTest {
                         .getAsJsonArray("runs")
                         .size());
         String markdown = new String(Files.readAllBytes(output.resolve("results.md")), StandardCharsets.UTF_8);
-        assertTrue(markdown.contains("敏感性响应面研究"));
-        assertTrue(markdown.contains("异构度"));
+        assertTrue(markdown.contains("Sensitivity Response-Surface Study"));
+        assertTrue(markdown.contains("Heterogeneity"));
         // 篡改异构等级会被验证器捕获（条件与运行必须一致）
         JsonObject changed = JsonParser.parseString(document).getAsJsonObject();
         changed.getAsJsonArray("runs").get(0).getAsJsonObject().addProperty("heterogeneity", "HET_EXTREME");
@@ -143,8 +143,8 @@ class NetworkStudyIntegrationTest {
         assertFalse(document.contains("\"RANDOM\""));
         assertFalse(document.contains("\"PSO\""));
         String markdown = new String(Files.readAllBytes(output.resolve("results.md")), StandardCharsets.UTF_8);
-        assertTrue(markdown.contains("PEFT 对比研究"));
-        assertTrue(markdown.contains("VM同构"));
+        assertTrue(markdown.contains("PEFT Comparison Study"));
+        assertTrue(markdown.contains("platform VMs are homogeneous"));
         JsonObject plan = JsonParser.parseString(document).getAsJsonObject().getAsJsonObject("plan");
         assertEquals(3, plan.getAsJsonArray("planners").size());
         assertEquals(18, plan.get("runCount").getAsInt());

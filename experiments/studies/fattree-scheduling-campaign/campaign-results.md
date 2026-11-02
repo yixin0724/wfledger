@@ -1,9 +1,9 @@
-# Fat-tree × 调度 campaign 实测结果（自动生成）
+# Fat-tree × Scheduling Campaign Measured Results (auto-generated)
 
-- seed=91，3 主机同质平台，10 个 DAG
-- 主矩阵 120 次运行；3 主机敏感性 120 次运行；4 主机结构敏感性 120 次运行
+- seed=91, 3-host homogeneous platform, 10 DAGs
+- Main matrix: 120 runs; 3-host sensitivity: 120 runs; 4-host structural sensitivity: 120 runs
 
-## 主矩阵 makespan（秒）
+## Main Matrix makespan (seconds)
 
 | DAG | HEFT V1 | CPOP V1 | RAND V1 | PSO V1 | HEFT R2 | CPOP R2 | RAND R2 | PSO R2 | HEFT R6 | CPOP R6 | RAND R6 | PSO R6 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -18,11 +18,11 @@
 | inspiral-n50 | 3977663.5127 | 3977664.4941 | 6832825.2870 | 5695415.3870 | 3977749.8205 | 3977749.7549 | 6832906.2599 | 5695574.8947 | 3977781.6601 | 3977782.6563 | 6832948.9594 | 5695612.1877 |
 | inspiral-n100 | 7020087.2904 | 7070648.3423 | 9769647.2663 | 7563634.3581 | 7020414.1285 | 7070971.1133 | 9770002.2739 | 7563998.1538 | 7020442.6597 | 7070982.9156 | 9770014.4881 | 7564029.9486 |
 
-## 弱单调性诊断（V1 ≤ R2 ≤ R6）
+## Weak-Monotonicity Diagnostics (V1 ≤ R2 ≤ R6)
 
-存在 5 处噪声级交叉（并发流格局漂移所致，非模型缺陷）：
+Found 5 noise-level crossings (caused by concurrent-flow pattern drift, not a model defect):
 
-| DAG | 规划器 | V1 | R2 | R6 | 最大相对偏差 |
+| DAG | Planner | V1 | R2 | R6 | Max Relative Deviation |
 | --- | --- | --- | --- | --- | --- |
 | epigenomics-n100 | PSO | 141173360.5120 | 141203920.8401 | 141193373.0699 | 0.0001 |
 | cybershake-n30 | RANDOM | 387774.9388 | 387773.5048 | 387773.5048 | 0.0000 |
@@ -30,13 +30,13 @@
 | cybershake-n50 | LOCAL_CPOP | 548831.2330 | 588230.4408 | 588227.1842 | 0.0000 |
 | cybershake-n50 | PSO | 549893.1168 | 587924.0247 | 587921.6099 | 0.0000 |
 
-## 平均排名（makespan 升序）
+## Average Ranking (makespan ascending)
 
 - PRE_EXECUTION_TRANSFER_DELAY_V1: LOCAL_HEFT < LOCAL_CPOP < PSO < RANDOM
 - PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1: LOCAL_HEFT < LOCAL_CPOP < PSO < RANDOM
 - PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1: LOCAL_HEFT < LOCAL_CPOP < PSO < RANDOM
 
-## 逐 DAG 第一名
+## Per-DAG Winner
 
 | DAG | V1 | R2 | R6 |
 | --- | --- | --- | --- |
@@ -51,9 +51,9 @@
 | inspiral-n50 | HEFT | CPOP | HEFT |
 | inspiral-n100 | HEFT | HEFT | HEFT |
 
-## 配对 Wilcoxon（跨 DAG）
+## Paired Wilcoxon (across DAGs)
 
-| 轴 | 基线 | 候选 | n(有效) | 中位差(s) | 状态 | p | 显著 |
+| Axis | Baseline | Candidate | n (effective) | Median Diff (s) | Status | p | Significant |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | planner@PRE_EXECUTION_TRANSFER_DELAY_V1 | LOCAL_HEFT | LOCAL_CPOP | 10(7) | 1.3373 | AVAILABLE_WILCOXON_SIGNED_RANK_EXACT | 0.2188 | false |
 | planner@PRE_EXECUTION_TRANSFER_DELAY_V1 | LOCAL_HEFT | RANDOM | 10(10) | 1713067.9078 | AVAILABLE_WILCOXON_SIGNED_RANK_EXACT | 0.0020 | true |
@@ -77,9 +77,9 @@
 | model-r6-vs-r2@PSO | PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1 | PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1 | 10(9) | 34.5439 | AVAILABLE_WILCOXON_SIGNED_RANK_EXACT | 0.1289 | false |
 | model-r6-vs-v1@PSO | PRE_EXECUTION_TRANSFER_DELAY_V1 | PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1 | 10(10) | 1500.8074 | AVAILABLE_WILCOXON_SIGNED_RANK_EXACT | 0.0020 | true |
 
-## 敏感性配对 Wilcoxon（3 主机，变体 vs 基线拓扑）
+## Sensitivity Paired Wilcoxon (3 hosts, variant vs baseline topology)
 
-| 轴 | 基线 | 候选 | n(有效) | 中位差(s) | 状态 | p | 显著 |
+| Axis | Baseline | Candidate | n (effective) | Median Diff (s) | Status | p | Significant |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | sensitivity@LOCAL_HEFT | baseline-k4-full | A1-k4-oversub2x | 10(0) | 0.0000 | UNAVAILABLE_ALL_PAIRED_DIFFERENCES_ARE_ZERO | n/a | false |
 | sensitivity@LOCAL_HEFT | baseline-k4-full | A2-k8-full | 10(0) | 0.0000 | UNAVAILABLE_ALL_PAIRED_DIFFERENCES_ARE_ZERO | n/a | false |
@@ -92,9 +92,9 @@
 | sensitivity@LOCAL_CPOP | baseline-k4-full | A4-k4-full-link10x | 10(9) | -104.0245 | AVAILABLE_WILCOXON_SIGNED_RANK_EXACT | 0.0078 | true |
 | sensitivity@LOCAL_CPOP | baseline-k4-full | A5-k4-full-same-edge-pair | 10(0) | 0.0000 | UNAVAILABLE_ALL_PAIRED_DIFFERENCES_ARE_ZERO | n/a | false |
 
-## 4 主机结构敏感性 makespan（秒，R6 模型）
+## 4-Host Structural-Sensitivity makespan (seconds, R6 model)
 
-| DAG | 规划器 | baseline-k4-full | A1-k4-oversub2x | A2-k8-full | A3-k8-oversub2x | A4-k4-full-link10x | A5-k4-full-same-edge-pairs |
+| DAG | Planner | baseline-k4-full | A1-k4-oversub2x | A2-k8-full | A3-k8-oversub2x | A4-k4-full-link10x | A5-k4-full-same-edge-pairs |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | heft-paper-example | HEFT | 5718.1000 | 5718.1000 | 5718.1000 | 5718.1000 | 5186.1000 | 5718.1000 |
 | heft-paper-example | CPOP | 5574.1000 | 5574.1000 | 5574.1000 | 5574.1000 | 5168.1000 | 5574.1000 |
@@ -117,9 +117,9 @@
 | inspiral-n100 | HEFT | 5264419.1904 | 5264419.1904 | 5264419.1904 | 5264419.1904 | 5264412.2976 | 5264419.1904 |
 | inspiral-n100 | CPOP | 5264981.0532 | 5264981.0532 | 5264981.0532 | 5264981.0532 | 5264981.2304 | 5264981.0532 |
 
-## 结构敏感性配对 Wilcoxon（4 主机，变体 vs 基线拓扑）
+## Structural-Sensitivity Paired Wilcoxon (4 hosts, variant vs baseline topology)
 
-| 轴 | 基线 | 候选 | n(有效) | 中位差(s) | 状态 | p | 显著 |
+| Axis | Baseline | Candidate | n (effective) | Median Diff (s) | Status | p | Significant |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | structural@LOCAL_HEFT | baseline-k4-full | A1-k4-oversub2x | 10(0) | 0.0000 | UNAVAILABLE_ALL_PAIRED_DIFFERENCES_ARE_ZERO | n/a | false |
 | structural@LOCAL_HEFT | baseline-k4-full | A2-k8-full | 10(0) | 0.0000 | UNAVAILABLE_ALL_PAIRED_DIFFERENCES_ARE_ZERO | n/a | false |

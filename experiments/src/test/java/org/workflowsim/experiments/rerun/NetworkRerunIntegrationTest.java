@@ -100,10 +100,10 @@ class NetworkRerunIntegrationTest {
         RerunReport report = RerunDiffExecutor.execute(run, temporary.resolve("prefix-output"));
         assertEquals(RerunVerdict.IDENTICAL_CORE, report.getVerdict(), report.toJson());
         assertNotNull(report.getNetworkEvidenceCoverageNote());
-        assertTrue(report.getNetworkEvidenceCoverageNote().contains("截断"));
+        assertTrue(report.getNetworkEvidenceCoverageNote().contains("truncated"));
         assertTrue(report.getNetworkEvidenceCoverageNote().contains("IDENTICAL_CORE"));
         assertTrue(JsonParser.parseString(report.toJson()).getAsJsonObject().has("networkEvidenceCoverageNote"));
-        assertTrue(report.toMarkdown().contains("网络证据覆盖"));
+        assertTrue(report.toMarkdown().contains("Network Evidence Coverage"));
     }
 
     @Test
@@ -285,7 +285,7 @@ class NetworkRerunIntegrationTest {
                         "originalAlgorithmContract",
                         "rerunAlgorithmContract")),
                 JsonParser.parseString(report.toJson()).getAsJsonObject().keySet());
-        assertFalse(report.toMarkdown().contains("网络证据覆盖"));
+        assertFalse(report.toMarkdown().contains("Network Evidence Coverage"));
     }
 
     @Test

@@ -143,41 +143,45 @@ public final class RerunReport {
     /** 人类可读 markdown 摘要。 */
     public String toMarkdown() {
         StringBuilder md = new StringBuilder();
-        md.append("# Rerun 差异比对报告\n\n");
+        md.append("# Rerun Divergence Report\n\n");
         md.append("- **verdict: `")
                 .append(verdict)
-                .append("`**（退出码 ")
+                .append("`** (exit code ")
                 .append(exitCode)
-                .append("）\n");
-        md.append("- 原始 run：`").append(runDirectory).append("`\n");
-        md.append("- 输出目录：`").append(outputDirectory).append("`\n\n");
+                .append(")\n");
+        md.append("- Original run: `").append(runDirectory).append("`\n");
+        md.append("- Output directory: `").append(outputDirectory).append("`\n\n");
 
         if (networkEvidenceCoverageNote != null) {
-            md.append("## 网络证据覆盖\n\n").append(networkEvidenceCoverageNote).append("\n\n");
+            md.append("## Network Evidence Coverage\n\n")
+                    .append(networkEvidenceCoverageNote)
+                    .append("\n\n");
         }
-        md.append("## 代码身份\n\n");
+        md.append("## Code Identity\n\n");
         if (codeIdentityNote == null) {
-            md.append("（未取得两侧源码树哈希，无法比较）\n\n");
+            md.append("(source-tree hashes are unavailable on both sides; comparison not possible)\n\n");
         } else {
             md.append(codeIdentityNote).append("\n\n");
-            md.append("- 原始 sourceTreeSha256：`")
+            md.append("- Original sourceTreeSha256: `")
                     .append(originalSourceTreeSha256)
                     .append("`\n");
-            md.append("- 当前 sourceTreeSha256：`").append(rerunSourceTreeSha256).append("`\n\n");
+            md.append("- Current sourceTreeSha256: `")
+                    .append(rerunSourceTreeSha256)
+                    .append("`\n\n");
         }
         if (originalAlgorithmContract != null || rerunAlgorithmContract != null) {
             boolean same =
                     originalAlgorithmContract != null && originalAlgorithmContract.equals(rerunAlgorithmContract);
-            md.append("- algorithmContract：")
-                    .append(same ? "两侧一致" : "两侧不同或缺失，见 JSON 报告字段")
+            md.append("- algorithmContract: ")
+                    .append(same ? "identical on both sides" : "differs or missing on one side; see JSON report fields")
                     .append("\n\n");
         }
 
         if (failureReason != null) {
-            md.append("## 失败原因\n\n");
+            md.append("## Failure Reason\n\n");
             md.append("```\n").append(failureReason).append("\n```\n\n");
             if (!failureDetails.isEmpty()) {
-                md.append("细节：\n\n");
+                md.append("Details:\n\n");
                 for (String detail : failureDetails) {
                     md.append("- `").append(detail).append("`\n");
                 }
@@ -185,11 +189,11 @@ public final class RerunReport {
             }
         }
 
-        md.append("## 输入定位（").append(inputResolution.size()).append(" 项）\n\n");
+        md.append("## Input Resolution (").append(inputResolution.size()).append(" items)\n\n");
         if (inputResolution.isEmpty()) {
-            md.append("（未进入输入定位或定位失败，见失败原因）\n\n");
+            md.append("(resolution not reached or failed; see failure reason)\n\n");
         } else {
-            md.append("| # | 记录路径 | 命中路径 | 层级 | sha256 核对 |\n");
+            md.append("| # | Recorded Path | Resolved Path | Tier | sha256 Check |\n");
             md.append("|---|---|---|---|---|\n");
             for (int i = 0; i < inputResolution.size(); i++) {
                 InputResolution entry = inputResolution.get(i);
@@ -202,16 +206,18 @@ public final class RerunReport {
                         .append("` | ")
                         .append(entry.tier)
                         .append(" | ")
-                        .append(entry.verified ? "通过" : "未通过")
+                        .append(entry.verified ? "passed" : "failed")
                         .append(" |\n");
             }
             md.append("\n");
         }
 
-        md.append("## 核心量分歧（").append(coreDivergences.size()).append(" 处）\n\n");
-        appendDivergences(md, coreDivergences, "核心量逐位一致，无任何分歧。");
-        md.append("## 易变量差异（仅记录，").append(volatileFieldsNoted.size()).append(" 处）\n\n");
-        appendDivergences(md, volatileFieldsNoted, "（白名单内字段两侧取值一致）");
+        md.append("## Core Divergences (").append(coreDivergences.size()).append(")\n\n");
+        appendDivergences(md, coreDivergences, "Core quantities are bit-identical; no divergences.");
+        md.append("## Volatile Field Differences (recorded only, ")
+                .append(volatileFieldsNoted.size())
+                .append(")\n\n");
+        appendDivergences(md, volatileFieldsNoted, "(whitelisted fields agree on both sides)");
         return md.toString();
     }
 
@@ -223,7 +229,7 @@ public final class RerunReport {
         for (DivergenceEntry entry : entries) {
             md.append("- `")
                     .append(entry.pointer)
-                    .append("`：`")
+                    .append("`: `")
                     .append(entry.original)
                     .append("` → `")
                     .append(entry.rerun)
@@ -373,7 +379,9 @@ public final class RerunReport {
                 org.workflowsim.data.TransferTraceSnapshot.Status rerun) {
             this.networkEvidenceCoverageNote = original == org.workflowsim.data.TransferTraceSnapshot.Status.TRUNCATED
                             || rerun == org.workflowsim.data.TransferTraceSnapshot.Status.TRUNCATED
-                    ? "⚠ 网络账本已截断：即使结论为 IDENTICAL_CORE，也仅表示保留的网络记录与聚合观察一致，不证明完整网络服务历史一致。"
+                    ? "⚠ The network ledger is truncated: even when the verdict is IDENTICAL_CORE, it only"
+                            + " means the retained network records agree with the aggregate observations; it"
+                            + " does not prove that the complete network service history is identical."
                     : null;
             return this;
         }

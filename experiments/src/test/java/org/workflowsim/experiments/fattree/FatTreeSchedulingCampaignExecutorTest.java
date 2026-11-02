@@ -180,7 +180,7 @@ class FatTreeSchedulingCampaignExecutorTest {
         assertTrue(deviation > 0.0 && deviation <= 1.0e-4, "交叉必须为噪声级: " + deviation);
         assertEquals(121.0, ((Double) violation.get("v1MakespanSeconds")).doubleValue(), 1e-9);
         IllegalStateException thrown = assertThrows(IllegalStateException.class, results::assertWeakMonotonicity);
-        assertTrue(thrown.getMessage().contains("弱单调性破坏"));
+        assertTrue(thrown.getMessage().contains("Weak-monotonicity violation"));
     }
 
     /** 配对统计形状：3 模型 × 3 规划器对 + 4 规划器 × 3 跨模型对比。 */
@@ -283,21 +283,21 @@ class FatTreeSchedulingCampaignExecutorTest {
     @Test
     void markdownArtifactAdaptsToBlockPresence() {
         String full = fixture(false).toMarkdown();
-        assertTrue(full.startsWith("# Fat-tree × 调度 campaign 实测结果"));
-        assertTrue(full.contains("## 主矩阵 makespan（秒）"));
-        assertTrue(full.contains("## 弱单调性诊断"));
-        assertTrue(full.contains("## 平均排名"));
-        assertTrue(full.contains("## 逐 DAG 第一名"));
-        assertTrue(full.contains("## 配对 Wilcoxon（跨 DAG）"));
-        assertTrue(full.contains("## 敏感性配对 Wilcoxon（3 主机，变体 vs 基线拓扑）"));
-        assertTrue(full.contains("## 4 主机结构敏感性 makespan（秒，R6 模型）"));
-        assertTrue(full.contains("## 结构敏感性配对 Wilcoxon（4 主机，变体 vs 基线拓扑）"));
+        assertTrue(full.startsWith("# Fat-tree × Scheduling Campaign Measured Results"));
+        assertTrue(full.contains("## Main Matrix makespan (seconds)"));
+        assertTrue(full.contains("## Weak-Monotonicity Diagnostics"));
+        assertTrue(full.contains("## Average Ranking"));
+        assertTrue(full.contains("## Per-DAG Winner"));
+        assertTrue(full.contains("## Paired Wilcoxon (across DAGs)"));
+        assertTrue(full.contains("## Sensitivity Paired Wilcoxon (3 hosts, variant vs baseline topology)"));
+        assertTrue(full.contains("## 4-Host Structural-Sensitivity makespan (seconds, R6 model)"));
+        assertTrue(full.contains("## Structural-Sensitivity Paired Wilcoxon (4 hosts, variant vs baseline topology)"));
         assertTrue(full.contains("dag-a") && full.contains("dag-b"));
 
         String mainOnly = mainOnlyFixture().toMarkdown();
-        assertTrue(mainOnly.contains("## 主矩阵 makespan（秒）"));
-        assertFalse(mainOnly.contains("## 敏感性配对 Wilcoxon"));
-        assertFalse(mainOnly.contains("## 4 主机结构敏感性"));
+        assertTrue(mainOnly.contains("## Main Matrix makespan (seconds)"));
+        assertFalse(mainOnly.contains("## Sensitivity Paired Wilcoxon"));
+        assertFalse(mainOnly.contains("## 4-Host Structural-Sensitivity"));
     }
 
     // ------------------------------------------------------------------

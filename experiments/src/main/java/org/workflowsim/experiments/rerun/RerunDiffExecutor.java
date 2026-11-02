@@ -16,7 +16,7 @@ import org.workflowsim.failure.RetryLimitExceededException;
  * D2 阶段 6：rerun 与差异比对的统一入口（契约 §命令与输入约定、§执行流程）。
  *
  * <pre>
- * mvn -pl :workflowsim-experiments -am compile exec:java \
+ * mvn -pl :workflowsim-workbench -am compile exec:java \
  *   -Dexec.mainClass=org.workflowsim.experiments.rerun.RerunDiffExecutor \
  *   -Dexec.args="&lt;run-dir&gt; &lt;output-dir&gt;"
  * </pre>
@@ -121,7 +121,9 @@ public final class RerunDiffExecutor {
                     builder,
                     evidence,
                     RerunVerdict.RECONSTRUCTION_REJECTED,
-                    "模拟执行阶段被当前代码拒绝复现（历史证据与当前语义不兼容）: " + e.getClass().getSimpleName() + ": " + e.getMessage(),
+                    "Simulation execution was rejected by the current code (historical evidence"
+                            + " is incompatible with current semantics): "
+                            + e.getClass().getSimpleName() + ": " + e.getMessage(),
                     Collections.<String>emptyList());
         } catch (IllegalArgumentException
                 | IllegalStateException
@@ -141,7 +143,9 @@ public final class RerunDiffExecutor {
                     builder,
                     evidence,
                     RerunVerdict.RECONSTRUCTION_REJECTED,
-                    "模拟执行阶段被当前代码拒绝复现（历史证据与当前语义不兼容）: " + e.getClass().getSimpleName() + ": " + e.getMessage(),
+                    "Simulation execution was rejected by the current code (historical evidence"
+                            + " is incompatible with current semantics): "
+                            + e.getClass().getSimpleName() + ": " + e.getMessage(),
                     Collections.<String>emptyList());
         }
         writeReports(absoluteOutput, report);
@@ -167,9 +171,10 @@ public final class RerunDiffExecutor {
             return null;
         }
         if (original.equals(rerun)) {
-            return "代码版本与原始运行一致（sourceTreeSha256 相同）。";
+            return "Code version matches the original run (identical sourceTreeSha256).";
         }
-        return "⚠ 代码版本与原始运行不同：核心量若有分歧，优先排查代码变更；" + "核心量一致则说明该证据对代码演化稳健。";
+        return "⚠ Code version differs from the original run: if core quantities diverge, inspect code"
+                + " changes first; if they agree, the evidence is robust to that code evolution.";
     }
 
     private static void requireEmptyOrNonexistent(Path output) throws IOException {

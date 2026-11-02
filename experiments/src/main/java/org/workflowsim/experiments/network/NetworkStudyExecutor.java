@@ -179,41 +179,71 @@ public final class NetworkStudyExecutor {
         boolean peft = NetworkStudyPlan.PEFT_COMPARISON_PROTOCOL.equals(plan.getProtocol());
         boolean sensitivity = NetworkStudyPlan.SENSITIVITY_PROTOCOL.equals(plan.getProtocol());
         StringBuilder out = new StringBuilder(
-                sensitivity ? "# 敏感性响应面研究（R13）\n\n" : peft ? "# PEFT 对比研究（S5，r10 冻结矩阵）\n\n" : "# 网络受限调度研究 R10\n\n");
-        out.append("协议：")
+                sensitivity
+                        ? "# Sensitivity Response-Surface Study (R13)\n\n"
+                        : peft
+                                ? "# PEFT Comparison Study (S5, r10 frozen matrix)\n\n"
+                                : "# Network-Constrained Scheduling Study R10\n\n");
+        out.append("Protocol: ")
                 .append(plan.getProtocol())
-                .append("；计划 ")
+                .append("; planned ")
                 .append(plan.getRunCount())
-                .append(" 次；已执行 ")
+                .append(" runs; executed ")
                 .append(summary.get("runCount"))
-                .append(" 次；状态 ")
+                .append(" runs; status ")
                 .append(summary.get("status"))
-                .append("。\n\n")
-                .append("执行模型：")
+                .append(".\n\n")
+                .append("Execution model: ")
                 .append(org.workflowsim.utils.TaskExecutionModel.EXECUTION_SEMANTICS)
-                .append("。本次是修正模型下的新执行，沿用参数矩阵而不冒认R10/R12/R13冻结结果；完整性校验不等于与旧科学量逐位相同。\n\n")
+                .append(". This is a new execution under the corrected model: it reuses the parameter"
+                        + " matrix but does not claim the frozen R10/R12/R13 results; passing the"
+                        + " integrity check does not mean bit-identical scientific quantities.\n\n")
                 .append(
                         sensitivity
-                                ? "三个列表规划器（HEFT/CPOP/PEFT）均确定性，每条件只运行一次（seed "
-                                        + "11）；基线为LOCAL_HEFT，候选为LOCAL_CPOP/LOCAL_PEFT。响应面沿VM数（4/8/16/32）×链路带宽（端点"
-                                        + "1 MB/s；fat-tree 0.125/0.5/1.25/5 MB/s）展开，异构块在fat-tree-constrained上加入M"
-                                        + "ILD/STRONG/EXTREME三种确定性VM MIPS混合。VM=32时fat-tree取k=8（k=4仅容纳16台主机），跨VM数"
-                                        + "的比较受此影响，仅作描述性解读。本轮沿用R13参数矩阵，不继承旧模型下的预登记判定；机制解释需要逐DAG映射诊断和独立消融，不能仅由完成时"
-                                        + "间证明。所有曲面均为描述性，不做参数拟合。经典DAX与合成负载分开，固定样本的探索性结论不能外推真实云。改善百分比为正表示候选比HEFT更"
-                                        + "快。\n\n"
+                                ? "All three list planners (HEFT/CPOP/PEFT) are deterministic, so each"
+                                        + " condition runs once (seed 11); the baseline is LOCAL_HEFT and the"
+                                        + " candidates are LOCAL_CPOP/LOCAL_PEFT. The response surface spans VM"
+                                        + " count (4/8/16/32) × link bandwidth (1 MB/s at the endpoint;"
+                                        + " 0.125/0.5/1.25/5 MB/s for fat-tree), and the heterogeneity block"
+                                        + " adds the MILD/STRONG/EXTREME deterministic VM MIPS mixes on"
+                                        + " fat-tree-constrained. At VM=32 the fat-tree uses k=8 (k=4 holds"
+                                        + " only 16 hosts), which affects cross-VM-count comparisons; read"
+                                        + " those descriptively only. This round reuses the R13 parameter"
+                                        + " matrix and does not inherit the pre-registered verdicts of the"
+                                        + " old model; mechanistic explanation requires per-DAG mapping"
+                                        + " diagnostics and independent ablations, and cannot be proven by"
+                                        + " completion time alone. All surfaces are descriptive; no parameter"
+                                        + " fitting is performed. Classic DAX and synthetic workloads are"
+                                        + " kept separate, and exploratory conclusions from a fixed sample"
+                                        + " do not extrapolate to real clouds. A positive improvement"
+                                        + " percentage means the candidate is faster than HEFT.\n\n"
                                 : peft
-                                        ? "三个列表规划器（HEFT/CPOP/PEFT）均确定性，每条件只运行一次（seed "
-                                                + "11）；基线为LOCAL_HEFT，候选为LOCAL_CPOP/LOCAL_PEFT。先在每个DAG内汇总种子，再按DAG"
-                                                + "配对。经典DAX与合成负载分开，固定样本的探索性结论不能外推真实云。改善百分比为正表示候选比HEFT更快。平台VM同构（1"
-                                                + "000 MIPS），PEFT的OCT前瞻项在各VM上相同，与HEFT的差异只来自任务排序。\n\n"
-                                        : "HEFT/CPOP每个条件只运行一次；RANDOM/PSO使用声明的独立种子。先在每个DAG内汇总种子，再按DAG配对。经典DAX与合成负载分开"
-                                                + "，固定样本的探索性结论不能外推真实云。改善百分比为正表示候选比HEFT更快。\n\n")
+                                        ? "All three list planners (HEFT/CPOP/PEFT) are deterministic, so each"
+                                                + " condition runs once (seed 11); the baseline is LOCAL_HEFT"
+                                                + " and the candidates are LOCAL_CPOP/LOCAL_PEFT. Seeds are"
+                                                + " aggregated within each DAG first, then paired by DAG."
+                                                + " Classic DAX and synthetic workloads are kept separate, and"
+                                                + " exploratory conclusions from a fixed sample do not"
+                                                + " extrapolate to real clouds. A positive improvement"
+                                                + " percentage means the candidate is faster than HEFT. The"
+                                                + " platform VMs are homogeneous (1000 MIPS), so the PEFT OCT"
+                                                + " lookahead term is the same on every VM and its difference"
+                                                + " from HEFT comes only from task ordering.\n\n"
+                                        : "HEFT/CPOP run once per condition; RANDOM/PSO use their declared"
+                                                + " independent seeds. Seeds are aggregated within each DAG"
+                                                + " first, then paired by DAG. Classic DAX and synthetic"
+                                                + " workloads are kept separate, and exploratory conclusions"
+                                                + " from a fixed sample do not extrapolate to real clouds. A"
+                                                + " positive improvement percentage means the candidate is"
+                                                + " faster than HEFT.\n\n")
                 .append(
                         sensitivity
-                                ? "| 来源 | VM | 网络 | 异构度 | 候选 | DAG数 | 胜/平/负 | 中位改善% | 原始p | Holm p "
-                                        + "|\n|---|---:|---|---|---|---:|---|---:|---:|---:|\n"
-                                : "| 来源 | VM | 网络 | 候选 | DAG数 | 胜/平/负 | 中位改善% | 原始p | Holm p "
-                                        + "|\n|---|---:|---|---|---:|---|---:|---:|---:|\n");
+                                ? "| Source | VM | Network | Heterogeneity | Candidate | DAG Pairs"
+                                        + " | Win/Tie/Loss | Median Improvement % | Raw p | Holm p |\n"
+                                        + "|---|---:|---|---|---|---:|---|---:|---:|---:|\n"
+                                : "| Source | VM | Network | Candidate | DAG Pairs"
+                                        + " | Win/Tie/Loss | Median Improvement % | Raw p | Holm p |\n"
+                                        + "|---|---:|---|---|---:|---|---:|---:|---:|\n");
         for (Map<String, Object> row : (List<Map<String, Object>>) summary.get("comparisons")) {
             out.append("| ")
                     .append(row.get("population"))
@@ -244,19 +274,34 @@ public final class NetworkStudyExecutor {
         }
         out.append(
                 sensitivity
-                        ? "\n精确双侧符号检验。Holm按同来源/VM/网络/异构度的两候选比较族调整。小样本显著性能力有限，应同时看效果幅度和逐DAG结果。端点1 "
-                                + "MB/s，fat-tree链路0.125/0.5/1.25/5 MB/s，同构VM 1000 "
-                                + "MIPS、异构按声明的MIPS模式，均为模型假设；所有网络变体均采用就绪时开始传输，避免混入不同传输起点。\n"
+                        ? "\nExact two-sided sign test. Holm adjustment is applied per family of two"
+                                + " candidates within the same source/VM/network/heterogeneity. Significance"
+                                + " power is limited for small samples; read the effect magnitude and the"
+                                + " per-DAG results together. The 1 MB/s endpoint, the"
+                                + " 0.125/0.5/1.25/5 MB/s fat-tree links, 1000 MIPS homogeneous VMs and the"
+                                + " declared MIPS mixes for heterogeneous blocks are model assumptions; every"
+                                + " network variant starts transfers when ready, avoiding a mixed transfer"
+                                + " start point.\n"
                         : peft
-                                ? "\n精确双侧符号检验。Holm按同来源/VM/网络的两候选比较族调整。小样本显著性能力有限，应同时看效果幅度和逐DAG结果。链路为0.125/1.25 "
-                                        + "MB/s，端点1 MB/s，VM1000 MIPS，均为模型假设；三个网络变体均采用就绪时开始传输，避免混入不同传输起点。\n"
-                                : "\n精确双侧符号检验，不把多个seed当作多个DAG。Holm按同来源/VM/网络的三候选比较族调整。小样本显著性能力有限，应同时看效果幅度和逐DAG结果。链路"
-                                        + "为0.125/1.25 MB/s，端点1 MB/s，VM1000 MIPS，均为模型假设；三个网络变体均采用就绪时开始传输，避免混入不同传"
-                                        + "输起点。\n");
+                                ? "\nExact two-sided sign test. Holm adjustment is applied per family of two"
+                                        + " candidates within the same source/VM/network. Significance power"
+                                        + " is limited for small samples; read the effect magnitude and the"
+                                        + " per-DAG results together. The 0.125/1.25 MB/s links, the 1 MB/s"
+                                        + " endpoint and 1000 MIPS VMs are model assumptions; all three"
+                                        + " network variants start transfers when ready, avoiding a mixed"
+                                        + " transfer start point.\n"
+                                : "\nExact two-sided sign test; multiple seeds are not treated as multiple"
+                                        + " DAGs. Holm adjustment is applied per family of three candidates"
+                                        + " within the same source/VM/network. Significance power is limited"
+                                        + " for small samples; read the effect magnitude and the per-DAG"
+                                        + " results together. The 0.125/1.25 MB/s links, the 1 MB/s endpoint"
+                                        + " and 1000 MIPS VMs are model assumptions; all three network"
+                                        + " variants start transfers when ready, avoiding a mixed transfer"
+                                        + " start point.\n");
         return out.toString();
     }
 
     private static String format(Object value) {
-        return value == null ? "不可用" : String.format(java.util.Locale.ROOT, "%.6f", ((Number) value).doubleValue());
+        return value == null ? "n/a" : String.format(java.util.Locale.ROOT, "%.6f", ((Number) value).doubleValue());
     }
 }
