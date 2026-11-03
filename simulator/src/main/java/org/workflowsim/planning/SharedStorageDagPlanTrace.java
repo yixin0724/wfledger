@@ -7,11 +7,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 一次维护的共享存储静态 DAG 规划的不可变审计记录。
+ * Immutable audit record of one maintained shared-storage static DAG plan.
  *
- * <p>轨迹记录的是规划器的模型级决策量。{@code plannedStartSeconds} 是数据 stage-in 前
- * Job 包络的开始时间；{@code plannedComputeStartSeconds} 是经过 CloudSim 整数 MI stage-in
- * 转换后的逻辑 Task 计算窗口开始时间。它不是生产执行 trace，也不是经网络校准的排程。</p>
+ * <p>The trace records the planner's model-level decision quantities.
+ * {@code plannedStartSeconds} is the start of the Job envelope before data
+ * stage-in; {@code plannedComputeStartSeconds} is the start of the logical Task
+ * compute window after the CloudSim integer-MI stage-in conversion. It is not a
+ * production execution trace, nor a network-calibrated schedule.</p>
  */
 public final class SharedStorageDagPlanTrace {
 
@@ -50,17 +52,23 @@ public final class SharedStorageDagPlanTrace {
         return taskPlans.get(taskId);
     }
 
-    /** HEFT、DLS、ETF、PEFT 时为空；CPOP 时按入口至出口顺序记录关键路径。 */
+    /**
+     * Empty for HEFT, DLS, ETF, and PEFT; for CPOP the critical path is
+     * recorded in entry-to-exit order.
+     */
     public List<Integer> getCriticalPathTaskIds() {
         return criticalPathTaskIds;
     }
 
-    /** HEFT、DLS、ETF、PEFT 没有 CPOP 关键处理器决策，故返回 {@code null}。 */
+    /**
+     * HEFT, DLS, ETF, and PEFT make no CPOP critical processor decision, so
+     * this returns {@code null}.
+     */
     public Integer getCriticalProcessorVmId() {
         return criticalProcessorVmId;
     }
 
-    /** 单个 Task 的不可变模型级决策记录。 */
+    /** Immutable model-level decision record for a single Task. */
     public static final class TaskPlan {
 
         private final int taskId;
@@ -127,72 +135,72 @@ public final class SharedStorageDagPlanTrace {
             return upwardRankSeconds;
         }
 
-        /** 仅 CPOP 轨迹提供；其他策略返回 {@code null}。 */
+        /** Provided only by CPOP traces; other strategies return {@code null}. */
         public Double getCpopDownwardRankSeconds() {
             return cpopDownwardRankSeconds;
         }
 
-        /** 仅 CPOP 轨迹提供；其他策略返回 {@code null}。 */
+        /** Provided only by CPOP traces; other strategies return {@code null}. */
         public Double getCpopPrioritySeconds() {
             return cpopPrioritySeconds;
         }
 
-        /** 仅 DLS 轨迹提供；其他策略返回 {@code null}。 */
+        /** Provided only by DLS traces; other strategies return {@code null}. */
         public Double getDlsDynamicLevelAtSelection() {
             return dlsDynamicLevelAtSelection;
         }
 
-        /** 从 1 开始的 DLS 选择顺序；非 DLS 策略返回 {@code null}。 */
+        /** 1-based DLS selection order; non-DLS strategies return {@code null}. */
         public Integer getDlsSelectionOrder() {
             return dlsSelectionOrder;
         }
 
-        /** 仅 ETF 轨迹提供；其他策略返回 {@code null}。 */
+        /** Provided only by ETF traces; other strategies return {@code null}. */
         public Double getEtfEarliestStartAtSelection() {
             return etfEarliestStartAtSelection;
         }
 
-        /** 从 1 开始的 ETF 选择顺序；非 ETF 策略返回 {@code null}。 */
+        /** 1-based ETF selection order; non-ETF strategies return {@code null}. */
         public Integer getEtfSelectionOrder() {
             return etfSelectionOrder;
         }
 
-        /** 兼容 VM 平均 optimistic-cost rank；仅 PEFT 轨迹提供。 */
+        /** VM-averaged optimistic-cost rank for compatibility; provided only by PEFT traces. */
         public Double getPeftRankOctSeconds() {
             return peftRankOctSeconds;
         }
 
-        /** 所选 VM 上的 OCT；仅 PEFT 轨迹提供。 */
+        /** OCT on the selected VM; provided only by PEFT traces. */
         public Double getPeftOptimisticCostAtSelectedVmSeconds() {
             return peftOptimisticCostAtSelectedVmSeconds;
         }
 
-        /** 所选 PEFT 目标值，即插入 EFT 加 OCT；仅 PEFT 轨迹提供。 */
+        /** Selected PEFT objective value, that is, inserted EFT plus OCT; provided only by PEFT traces. */
         public Double getPeftEftPlusOptimisticCostSeconds() {
             return peftEftPlusOptimisticCostSeconds;
         }
 
-        /** 从 1 开始的 PEFT 选择顺序；其他策略返回 {@code null}。 */
+        /** 1-based PEFT selection order; other strategies return {@code null}. */
         public Integer getPeftSelectionOrder() {
             return peftSelectionOrder;
         }
 
-        /** 计划 Job 包络的开始时间，位于建模数据 stage-in 之前。 */
+        /** Planned start of the Job envelope, before the modeled data stage-in. */
         public double getPlannedStartSeconds() {
             return plannedStartSeconds;
         }
 
-        /** 计划 Job 包络的结束时间，包含建模数据 stage-in 与计算。 */
+        /** Planned finish of the Job envelope, including the modeled data stage-in and computation. */
         public double getPlannedFinishSeconds() {
             return plannedFinishSeconds;
         }
 
-        /** 经 CloudSim 整数 MI 转换后的有效 stage-in 时长。 */
+        /** Effective stage-in duration after the CloudSim integer-MI conversion. */
         public double getPlannedDataStageInSeconds() {
             return plannedDataStageInSeconds;
         }
 
-        /** 有效 stage-in 完成后的逻辑 Task 计算窗口开始时间。 */
+        /** Start of the logical Task compute window after the effective stage-in completes. */
         public double getPlannedComputeStartSeconds() {
             return plannedStartSeconds + plannedDataStageInSeconds;
         }

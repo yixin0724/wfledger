@@ -20,10 +20,12 @@ package org.workflowsim.utils;
 import org.apache.commons.math3.distribution.RealDistribution;
 
 /**
- * 按 {@link PeriodicalSignal} 在周期内切换参数的分布生成器。
+ * Distribution generator that switches its parameters within a period according to a
+ * {@link PeriodicalSignal}.
  *
- * <p>它继承 {@link DistributionGenerator} 的预采样机制，并在每个样本位置根据周期信号
- * 选择上界或下界对应的分布。该机制是周期性开销的简化抽象。</p>
+ * <p>It inherits the pre-sampling mechanism of {@link DistributionGenerator} and selects, at each
+ * sample position, the distribution that corresponds to the upper or the lower bound chosen by the
+ * periodical signal. This mechanism is a simplified abstraction of periodic overhead.</p>
  *
  * @since WorkflowSim Toolkit 1.0
  * @date Apr 11, 2014
@@ -31,22 +33,23 @@ import org.apache.commons.math3.distribution.RealDistribution;
  */
 public class PeriodicalDistributionGenerator extends DistributionGenerator {
 
-    /** 控制分布参数切换的周期性信号。 */
+    /** Periodical signal that controls the switching of the distribution parameters. */
     protected PeriodicalSignal signal;
 
     /**
-     * 创建不带先验知识的周期性分布生成器。
+     * Create a periodical distribution generator without prior knowledge.
      *
-     * @param dist 分布族
-     * @param scale 尺度参数
-     * @param shape 形状参数
-     * @param signal 周期性信号
+     * @param dist distribution family
+     * @param scale scale parameter
+     * @param shape shape parameter
+     * @param signal periodical signal
      */
     public PeriodicalDistributionGenerator(
             DistributionFamily dist, double scale, double shape, PeriodicalSignal signal) {
         super(dist, scale, shape);
         this.signal = requireSignal(signal);
-        // 初始样本必须按周期信号选择分布，而不是沿用父类的固定分布抽样。
+        // Initial samples must be drawn from the distribution selected by the periodical signal,
+        // not from the fixed-distribution sampling of the parent class.
         double currentTime = 0.0;
         samples = generatePeriodicalSamples(currentTime);
 
@@ -55,15 +58,15 @@ public class PeriodicalDistributionGenerator extends DistributionGenerator {
     }
 
     /**
-     * 创建带先验知识的周期性分布生成器。
+     * Create a periodical distribution generator with prior knowledge.
      *
-     * @param dist 分布族
-     * @param scale 尺度参数
-     * @param shape 形状参数
-     * @param a 先验形状参数
-     * @param b 先验尺度参数
-     * @param c 先验似然参数
-     * @param signal 周期性信号
+     * @param dist distribution family
+     * @param scale scale parameter
+     * @param shape shape parameter
+     * @param a prior shape parameter
+     * @param b prior scale parameter
+     * @param c prior likelihood parameter
+     * @param signal periodical signal
      */
     public PeriodicalDistributionGenerator(
             DistributionFamily dist,
@@ -82,18 +85,20 @@ public class PeriodicalDistributionGenerator extends DistributionGenerator {
     }
 
     /**
-     * 创建带先验知识和稳定随机流名称的周期性分布生成器。
+     * Create a periodical distribution generator with prior knowledge and a stable random stream
+     * name.
      *
-     * <p>显式随机流可避免历史示例在同一模型内因构造顺序共享默认流身份。</p>
+     * <p>An explicit random stream prevents historical examples from sharing the default stream
+     * identity because of construction order within the same model.</p>
      *
-     * @param dist 分布族
-     * @param scale 基础尺度参数
-     * @param shape 形状参数
-     * @param a 先验形状参数
-     * @param b 先验尺度参数
-     * @param c 先验似然参数
-     * @param signal 周期性信号
-     * @param randomStream 稳定随机组件名称
+     * @param dist distribution family
+     * @param scale base scale parameter
+     * @param shape shape parameter
+     * @param a prior shape parameter
+     * @param b prior scale parameter
+     * @param c prior likelihood parameter
+     * @param signal periodical signal
+     * @param randomStream stable random component name
      */
     public PeriodicalDistributionGenerator(
             DistributionFamily dist,
@@ -111,7 +116,7 @@ public class PeriodicalDistributionGenerator extends DistributionGenerator {
         updateCumulativeSamples();
         cursor = 0;
     }
-    /** 按当前累计模拟时间扩展预采样序列。 */
+    /** Extend the pre-sampled sequence at the current cumulative simulation time. */
     @Override
     public void extendSamples() {
         double currentTime = cumulativeSamples[cumulativeSamples.length - 1];
@@ -121,10 +126,10 @@ public class PeriodicalDistributionGenerator extends DistributionGenerator {
     }
 
     /**
-     * 生成一批按周期信号切换的样本。
+     * Generate a batch of samples that switch according to the periodical signal.
      *
-     * @param currentTime 当前累计模拟时间
-     * @return 新样本数组
+     * @param currentTime current cumulative simulation time
+     * @return new sample array
      */
     private double[] generatePeriodicalSamples(double currentTime) {
         RealDistribution distributionUpper = getDistribution(signal.getUpperBound(), shape);

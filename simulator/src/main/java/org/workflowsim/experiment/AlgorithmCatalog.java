@@ -11,24 +11,28 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 可选算法的机器可读语义契约。
+ * Machine-readable semantic contract of the selectable algorithms.
  *
- * <p>目录记录当前实现的决策范围和回归验证状态；它不构成现实平台校准或算法
- * 普遍优越性的主张。</p>
+ * <p>The catalog records the decision scope and the regression verification status of the
+ * current implementation; it does not constitute a claim of real-platform calibration or of
+ * general algorithmic superiority.</p>
  */
 public final class AlgorithmCatalog {
 
     private AlgorithmCatalog() {}
 
     /**
-     * 判断调度器标签是否在标准 {@link SimulationRunner} 入口中具有已维护的执行契约。
+     * Tests whether a scheduler label has a maintained execution contract in the standard
+     * {@link SimulationRunner} entry point.
      *
-     * <p>该判断刻意独立于目录对历史标签的描述能力。将分类集中在这里，可以在
-     * 新增枚举值时避免运行器与 manifest 契约悄然偏离。</p>
+     * <p>This predicate is deliberately independent of the catalog's ability to describe
+     * historical labels. Centralizing the classification here avoids a silent divergence
+     * between the runner and the manifest contract when a new enum value is added.</p>
      *
-     * @param algorithm 待判断的调度算法标签
-     * @return 当该标签可经标准运行器生成研究证据时返回 {@code true}
-     * @throws IllegalArgumentException 当 {@code algorithm} 为空时抛出
+     * @param algorithm scheduler algorithm label to test
+     * @return {@code true} when the label can produce research evidence through the standard
+     *         runner
+     * @throws IllegalArgumentException when {@code algorithm} is {@code null}
      */
     public static boolean isSupportedBySimulationRunner(SchedulingAlgorithm algorithm) {
         if (algorithm == null) {
@@ -56,13 +60,15 @@ public final class AlgorithmCatalog {
     }
 
     /**
-     * 判断规划器标签是否在标准 {@link SimulationRunner} 入口中具有已维护的执行契约。
+     * Tests whether a planner label has a maintained execution contract in the standard
+     * {@link SimulationRunner} entry point.
      *
-     * <p>在线调度配置有意不包含规划阶段，因此 {@code INVALID} 在这里属于支持状态。</p>
+     * <p>An online scheduling configuration deliberately has no planning phase, so
+     * {@code INVALID} is a supported state here.</p>
      *
-     * @param algorithm 待判断的规划算法标签
-     * @return 当该标签可经标准运行器使用时返回 {@code true}
-     * @throws IllegalArgumentException 当 {@code algorithm} 为空时抛出
+     * @param algorithm planner algorithm label to test
+     * @return {@code true} when the label can be used through the standard runner
+     * @throws IllegalArgumentException when {@code algorithm} is {@code null}
      */
     public static boolean isSupportedBySimulationRunner(PlanningAlgorithm algorithm) {
         if (algorithm == null) {
@@ -106,11 +112,11 @@ public final class AlgorithmCatalog {
     }
 
     /**
-     * 返回会写入每个运行 manifest 的调度器和规划器契约。
+     * Returns the scheduler and planner contract written into every run manifest.
      *
-     * @param config 本次运行的不可变配置
-     * @return 按固定字段顺序组织的机器可读算法契约
-     * @throws IllegalArgumentException 当 {@code config} 为空时抛出
+     * @param config immutable configuration of this run
+     * @return machine-readable algorithm contract organized in a fixed field order
+     * @throws IllegalArgumentException when {@code config} is {@code null}
      */
     public static Map<String, Object> forConfiguration(SimulationConfig config) {
         if (config == null) {

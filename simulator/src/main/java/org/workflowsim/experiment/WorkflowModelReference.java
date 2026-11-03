@@ -23,22 +23,31 @@ import org.workflowsim.utils.SimulationTiming;
 import org.workflowsim.utils.TaskExecutionModel;
 
 /**
- * 为当前共享存储执行模型计算一个刻意限定范围的关键路径参考值。
+ * Computes a deliberately narrow-scope critical-path reference for the current
+ * shared-storage execution model.
  *
- * <p>该参考值是乐观下界，而不是最优调度。它消除 VM 容量争用及非零工作流到达约束，
- * 让每个任务使用有效执行时长最短的兼容 VM；有任务×VM 成本矩阵时，计算工作量采用与运行时
- * 相同的整数 MI 投影，而不是原始输入长度。参考计入模型生成的 stage-in Job，以及历史共享
- * 存储规则下逐任务串行输入的整数 MI 时延。</p>
+ * <p>The reference is an optimistic lower bound, not an optimal schedule. It removes VM
+ * capacity contention and non-zero workflow arrival constraints, and gives every task the
+ * compatible VM with the shortest effective execution duration; with a task-by-VM cost
+ * matrix, the compute work uses the same integer MI projection as the runtime rather than
+ * the raw input length. The reference includes the model-generated stage-in Job and, under
+ * the historical shared-storage rule, the integer MI delay of per-task serial input.</p>
  *
- * <p>可用于 LEGACY_WORKFLOWSIM_V1 和 FIXED_ENDPOINT_NO_CONTENTION_V1：后者的
- * 非负接入时延和额外带宽上限被乐观地去掉，所以保留的历史存储时延不会高估其输入时延。
- * 执行前传输模型可让不同父任务的输入重叠，不能复用此串行输入下界；这些合法运行仅将本参考
- * 标记为不可用。参考不是每工作流流时，也不作跨数据移动模型的 makespan 单调性承诺。</p>
+ * <p>It is available for LEGACY_WORKFLOWSIM_V1 and FIXED_ENDPOINT_NO_CONTENTION_V1: the
+ * non-negative access delay and the extra bandwidth cap of the latter are optimistically
+ * removed, so the retained historical storage delay does not overestimate its input delay.
+ * The pre-execution transfer model lets inputs of different parent tasks overlap, so this
+ * serial-input lower bound cannot be reused; those legitimate runs only mark this reference
+ * as unavailable. The reference is not a per-workflow flow time, and it makes no
+ * makespan-monotonicity promise across data movement models.</p>
  *
- * <p>这是可选观测：任一 PE 兼容候选的计算工作量、输入信封或时长无法表示时，整个参考报告
- * {@code UNAVAILABLE_UNREPRESENTABLE_EXECUTION_COST}，不回退原始成本，也不跳过坏候选后
- * 冒称已有完整参考。这不新增全矩阵预检，不改变规划器或实际所选坐标的执行校验；不能使一个
- * 已完成有效执行的运行仅因未选候选的参考计算而失败。</p>
+ * <p>This is an optional observation: when the compute work, input envelope, or duration of
+ * any PE-compatible candidate cannot be represented, the whole reference reports
+ * {@code UNAVAILABLE_UNREPRESENTABLE_EXECUTION_COST}, neither falling back to the raw cost
+ * nor skipping the bad candidate and claiming a complete reference. This adds no
+ * full-matrix preflight and changes no planner or actual-selected-coordinate execution
+ * validation; it must not make an already completed valid execution fail merely because of
+ * the reference computation of an unselected candidate.</p>
  */
 final class WorkflowModelReference {
 
@@ -50,7 +59,10 @@ final class WorkflowModelReference {
 
     private WorkflowModelReference() {}
 
-    /** {@code calculate} 的图结构校验阶段：返回父度映射；图为非法结构时返回 {@code null}。 */
+    /**
+     * Graph-structure validation stage of {@code calculate}: returns the parent-count map,
+     * or {@code null} when the structure is invalid.
+     */
     private static Map<Task, Integer> validatedRemainingParents(List<Task> tasks) {
         Map<Task, Integer> remainingParents = new HashMap<Task, Integer>();
         Set<Task> taskSet = new HashSet<Task>(tasks);
@@ -75,10 +87,12 @@ final class WorkflowModelReference {
     }
 
     /**
-     * {@code calculate} 的关键路径下界遍历阶段（BFS，就绪队列 + 子节点 ID 升序入队）。
+     * Critical-path lower-bound traversal stage of {@code calculate} (BFS, ready queue plus
+     * child IDs enqueued in ascending order).
      *
-     * <p>返回值约定：unavailable 非空 = 前置失败（调用方直接透传）；
-     * 否则 processed/lowerBound 填入 and 遍历完成。</p>
+     * <p>Return convention: a non-null unavailable means an upstream failure (the caller
+     * propagates it unchanged); otherwise processed/lowerBound are populated and the
+     * traversal completed.</p>
      */
     private static TraversalResult traverseForLowerBound(
             List<Task> tasks,
@@ -147,7 +161,10 @@ final class WorkflowModelReference {
         return result;
     }
 
-    /** 遍历阶段私有搬运结构：unavailable 非空时 processed/lowerBound 无意义。 */
+    /**
+     * Private carrier of the traversal stage: when unavailable is non-null, processed and
+     * lowerBound are meaningless.
+     */
     private static final class TraversalResult {
         private Reference unavailable;
         private int processed;
@@ -189,8 +206,9 @@ final class WorkflowModelReference {
         if (fastestMips <= 0.0) {
             return Reference.unavailable("UNAVAILABLE_NO_POSITIVE_VM_MIPS");
         }
-        // 根计算 Job 在 stage-in 事件完成后的一个 CloudSim 内核间隔才释放，
-        // 与 WorkflowEngine/WorkflowScheduler 的实际行为保持一致。
+        // The root compute Job is released only one CloudSim kernel interval after the
+        // stage-in event completes, matching the actual WorkflowEngine/WorkflowScheduler
+        // behavior.
         double stageSeconds = SimulationTiming.earliestCloudletCompletionTime(
                         0.0, STAGE_IN_JOB_LENGTH_MI / fastestMips, config.getCloudSimMinEventIntervalSeconds())
                 + config.getCloudSimMinEventIntervalSeconds();
@@ -227,7 +245,8 @@ final class WorkflowModelReference {
             long transferMi = (long) transferWorkMi;
             long envelopeMi = Math.addExact(computeMi, transferMi);
             TaskExecutionModel.requireRepresentableLength(envelopeMi, task.getNumberOfPes());
-            // CloudSim 多 PE 任务并行执行，使用单 PE 长度与运行时一致。
+            // CloudSim runs multi-PE tasks in parallel; use the single-PE length to match
+            // the runtime.
             double candidateSeconds = envelopeMi / vm.getMips();
             if (!Double.isFinite(candidateSeconds) || candidateSeconds <= 0.0) {
                 throw new IllegalArgumentException("Reference execution seconds must be finite and positive");

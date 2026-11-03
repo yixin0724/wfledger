@@ -28,7 +28,7 @@ import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * 基于影响因子相近性的水平均衡聚类方法。
+ * Horizontal balancing clustering method based on impact-factor proximity.
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
  * @date Apr 9, 2013
@@ -36,18 +36,18 @@ import org.workflowsim.clustering.TaskSet;
 public class HorizontalImpactBalancing extends BalancingMethod {
 
     /**
-     * 创建基于影响因子的水平均衡方法。
+     * Creates the impact-factor horizontal balancing method.
      *
-     * @param levelMap 按层组织的任务集合
-     * @param taskMap 逻辑任务到任务集合的映射
-     * @param clusterNum 每层目标聚类作业数
+     * @param levelMap task sets organized by level
+     * @param taskMap logical task to task set mapping
+     * @param clusterNum target number of clustered jobs per level
      */
     public HorizontalImpactBalancing(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
     /**
-     * 对每层任务集合执行影响因子相近的合并。
+     * Merges the task sets of every level that have close impact factors.
      */
     @Override
     public void run() {
@@ -58,9 +58,9 @@ public class HorizontalImpactBalancing extends BalancingMethod {
     }
 
     /**
-     * 按影响因子处理同层集合，并合并相近候选。
+     * Processes the task sets of one level by impact factor and merges close candidates.
      *
-     * @param taskList 待处理的同层任务集合
+     * @param taskList task sets of the same level to process
      */
     public void process(List<TaskSet> taskList) {
 
@@ -75,7 +75,7 @@ public class HorizontalImpactBalancing extends BalancingMethod {
             }
             sortListDecreasing(taskList);
             for (TaskSet set : taskList) {
-                // 目标选择器优先选择影响因子相同的可容纳集合。
+                // The target selector prefers a set with the same impact factor that can still hold tasks.
                 TaskSet job = null;
                 try {
                     job = getCandidateTastSet(jobList, set, clusters_size);
@@ -85,9 +85,9 @@ public class HorizontalImpactBalancing extends BalancingMethod {
                 addTaskSet2TaskSet(set, job);
                 job.addTask(set.getTaskList());
                 job.setImpactFafctor(set.getImpactFactor());
-                // 更新逻辑任务到新目标集合的映射。
+                // Update the logical task to target set mapping.
                 for (Task task : set.getTaskList()) {
-                    getTaskMap().put(task, job); // 依赖关系由调用方统一重建
+                    getTaskMap().put(task, job); // dependency edges are rebuilt by the caller
                 }
             }
             taskList.clear();
@@ -95,32 +95,32 @@ public class HorizontalImpactBalancing extends BalancingMethod {
     }
 
     /**
-     * 按作业长度升序排列任务集合。
+     * Sorts task sets by ascending job length.
      *
-     * @param taskList 待排序的任务集合
+     * @param taskList task sets to sort
      */
     private void sortListIncreasing(List taskList) {
         Collections.sort(taskList, new Comparator<TaskSet>() {
             @Override
             public int compare(TaskSet t1, TaskSet t2) {
-                // 升序：较短的集合排在前面。
-                // F-005 修复（2026-10-19）：Long.compare 全域正确，杜绝 (int)(long 差)
-                // 在 2^32 回绕域的判等塌缩；常规值域行为不变。
+                // Ascending: shorter sets come first.
+                // F-005 fix (2026-10-19): Long.compare is exact over the whole domain, ruling out the
+                // (int)(long difference) equality collapse in the 2^32 wrap domain; regular ranges unchanged.
                 return Long.compare(t1.getJobRuntime(), t2.getJobRuntime());
             }
         });
     }
     /**
-     * 按影响因子降序、再按作业长度排序任务集合。
+     * Sorts task sets by descending impact factor, then by job length.
      *
-     * @param taskList 待排序的任务集合
+     * @param taskList task sets to sort
      */
     private void sortListDecreasing(List taskList) {
 
         Collections.sort(taskList, new Comparator<TaskSet>() {
             @Override
             public int compare(TaskSet t1, TaskSet t2) {
-                // 影响因子较高的集合优先处理。
+                // Sets with a higher impact factor are processed first.
                 if (Math.abs(t2.getImpactFactor() - t1.getImpactFactor()) > 1.0e-8) {
                     if (t1.getImpactFactor() > t2.getImpactFactor()) {
                         return 1;
@@ -175,7 +175,7 @@ public class HorizontalImpactBalancing extends BalancingMethod {
         }
 
         if (returnList.isEmpty()) {
-            returnList.clear(); // 转而寻找空目标集合或下一组相近影响因子
+            returnList.clear(); // fall back to an empty target set or the next close impact factor
             for (TaskSet set : taskList) {
                 if (set.getTaskList().isEmpty()) {
                     returnList.add(set);
@@ -183,7 +183,7 @@ public class HorizontalImpactBalancing extends BalancingMethod {
                 }
             }
             map.remove(checkSet.getImpactFactor());
-            // 没有空集合时，逐步尝试下一个影响因子候选。
+            // With no empty set available, try the next impact factor candidate step by step.
             while (returnList.isEmpty()) {
 
                 List<Double> keys = new ArrayList(map.keySet());
@@ -213,12 +213,12 @@ public class HorizontalImpactBalancing extends BalancingMethod {
     }
 
     /**
-     * 从可合并候选集合中选择运行时间最长的任务集合。
+     * Selects the longest-running task set among the mergeable candidates.
      *
-     * @param taskList 当前层级的任务集合
-     * @param checkSet 正在扩展的任务集合
-     * @param clusters_size 单个聚类允许的最大任务数
-     * @return 选中的候选集合；没有更优候选时返回列表首项
+     * @param taskList task sets of the current level
+     * @param checkSet task set being extended
+     * @param clusters_size maximum number of tasks allowed in a single cluster
+     * @return the selected candidate set; the first list entry when no better candidate exists
      */
     protected TaskSet getCandidateTastSet(List<TaskSet> taskList, TaskSet checkSet, int clusters_size) {
 

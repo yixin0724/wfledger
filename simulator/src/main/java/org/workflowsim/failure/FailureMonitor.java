@@ -21,9 +21,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 收集失败记录，并按监控粒度估计后续重聚类使用的任务失败率。
+ * Collects failure records and estimates the task failure rate that later re-clustering uses, at
+ * the configured monitoring granularity.
  *
- * <p>记录仅属于当前模拟会话；调用方必须先初始化监视器，再写入或分析记录。</p>
+ * <p>Records belong to the current simulation session only; callers must initialize the monitor
+ * before writing or analyzing records.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -32,30 +34,30 @@ import java.util.Map;
 public class FailureMonitor {
 
     /**
-     * 按 VM 标识索引的失败记录。
+     * Failure records indexed by VM id.
      */
     protected static Map<Integer, List<FailureRecord>> vm2record;
     /**
-     * 按任务深度（历史代码中也称 type）索引的失败记录。
+     * Failure records indexed by task depth (also called type in the historical code).
      */
     protected static Map<Integer, List<FailureRecord>> type2record;
-    /** 按 VM 标识和任务深度复合键索引的失败记录。 */
+    /** Failure records indexed by the composite key of VM id and task depth. */
     protected static Map<String, List<FailureRecord>> vmDepth2record;
     /**
-     * 按 Job 标识索引的失败记录。
+     * Failure records indexed by Job id.
      */
     protected static Map<Integer, FailureRecord> jobid2record;
     /**
-     * 当前会话的全部失败记录。
+     * All failure records of the current session.
      */
     protected static List<FailureRecord> recordList;
     /**
-     * Job 索引映射，供旧版故障恢复路径使用。
+     * Job index mapping, used by the legacy failure recovery path.
      */
     public static Map index2job;
 
     /**
-     * 初始化当前模拟运行的失败记录容器。
+     * Initializes the failure record containers of the current simulation run.
      */
     public static void init() {
         vm2record = new HashMap<>();
@@ -65,7 +67,7 @@ public class FailureMonitor {
         recordList = new ArrayList<>();
     }
 
-    /** 清除已结束模拟运行持有的全部监控记录。 */
+    /** Clears all monitoring records held by the finished simulation run. */
     public static void reset() {
         vm2record = null;
         type2record = null;
@@ -86,12 +88,12 @@ public class FailureMonitor {
     }
 
     /**
-     * 根据观测到的失败率计算建议的聚类因子。
+     * Computes the suggested clustering factor from an observed failure rate.
      *
-     * @param d 延迟开销
-     * @param a 观测到的任务失败率
-     * @param t 任务运行时间
-     * @return 建议的聚类因子
+     * @param d delay overhead
+     * @param a observed task failure rate
+     * @param t task runtime
+     * @return suggested clustering factor
      */
     protected static double getK(double d, double a, double t) {
         double k = (-d + Math.sqrt(d * d - 4 * d / Math.log(1 - a))) / (2 * t);
@@ -99,10 +101,11 @@ public class FailureMonitor {
     }
 
     /**
-     * 依据指定失败记录及当前监控模式返回建议的聚类因子。
+     * Returns the suggested clustering factor for the given failure record under the current
+     * monitoring mode.
      *
-     * @param record 当前恢复请求对应的失败记录
-     * @return 建议的聚类因子
+     * @param record failure record of the current recovery request
+     * @return suggested clustering factor
      */
     public static int getClusteringFactor(FailureRecord record) {
 
@@ -113,7 +116,7 @@ public class FailureMonitor {
         switch (FailureParameters.getMonitorMode()) {
             case MONITOR_JOB:
                 /**
-                 * MONITOR_JOB 在此旧实现中按全局记录处理。
+                 * In this legacy implementation MONITOR_JOB is handled through the global records.
                  */
             case MONITOR_ALL:
                 a = analyze(0, record.depth);
@@ -124,7 +127,8 @@ public class FailureMonitor {
             case MONITOR_VM_JOB:
                 a = analyzeVmDepth(record.vmId, record.depth);
                 break;
-                // MONITOR_NONE 不分析聚类因子，保持 a=0.0 走全任务数兜底（遗留故障路径历史语义）。
+                // MONITOR_NONE analyzes no clustering factor and keeps a=0.0, so the all-task-count
+                // fallback applies (historical semantics of the legacy failure path).
             default:
                 break;
         }
@@ -135,7 +139,7 @@ public class FailureMonitor {
             double k = getK(d, a, t);
 
             if (k <= 1) {
-                k = 1; // 聚类因子至少为 1。
+                k = 1; // The clustering factor is at least 1.
             }
 
             return (int) k;
@@ -143,9 +147,10 @@ public class FailureMonitor {
     }
 
     /**
-     * 接收调度代理提交的失败记录，并按当前监控模式建立索引。
+     * Accepts a failure record posted by the scheduling agent and indexes it under the current
+     * monitoring mode.
      *
-     * @param record 待写入的失败记录
+     * @param record failure record to be stored
      */
     public static void postFailureRecord(FailureRecord record) {
         requireInitialized();
@@ -179,7 +184,8 @@ public class FailureMonitor {
                 break;
             case MONITOR_NONE:
                 break;
-                // 唯一走 default 的是 MONITOR_ALL：不建分组索引，analyze 按 recordList 全量汇总。
+                // MONITOR_ALL is the only mode that reaches default: it builds no grouped index and
+                // analyze() aggregates the whole recordList.
             default:
                 break;
         }
@@ -188,17 +194,17 @@ public class FailureMonitor {
     }
 
     /**
-     * 根据当前记录集合计算观测到的任务失败率。
+     * Computes the observed task failure rate from the current record set.
      *
-     * @param workflowId 当前版本未使用，保留以兼容旧接口
-     * @param type VM 标识或任务深度，取决于监控模式
-     * @return 任务失败率
+     * @param workflowId unused in the current version; kept for compatibility with the old interface
+     * @param type VM id or task depth, depending on the monitoring mode
+     * @return task failure rate
      */
     public static double analyze(int workflowId, int type) {
         requireInitialized();
 
         /**
-         * MONITOR_ALL 按整个工作流的全部 Job 汇总。
+         * MONITOR_ALL aggregates all Jobs of the whole workflow.
          */
         int sumFailures = 0;
         int sumJobs = 0;
@@ -233,7 +239,8 @@ public class FailureMonitor {
                 break;
             case MONITOR_VM_JOB:
                 throw new IllegalStateException("MONITOR_VM_JOB requires analyzeVmDepth(vmId, depth)");
-                // 唯一走 default 的是 MONITOR_NONE：无监控记录，两计数保持 0 → 返回 0。
+                // MONITOR_NONE is the only mode that reaches default: it holds no monitoring records,
+                // so both counters stay 0 and the result is 0.
             default:
                 break;
         }
@@ -246,11 +253,11 @@ public class FailureMonitor {
     }
 
     /**
-     * 按 VM 标识和 DAG 深度计算观测失败率。
+     * Computes the observed failure rate for a VM id and a DAG depth.
      *
-     * @param vmId VM 标识
-     * @param depth DAG 深度
-     * @return 对应复合分组的失败任务占比；尚无记录时为 0
+     * @param vmId VM id
+     * @param depth DAG depth
+     * @return failed-task share of the matching composite group; 0 when no record exists yet
      */
     public static double analyzeVmDepth(int vmId, int depth) {
         requireInitialized();

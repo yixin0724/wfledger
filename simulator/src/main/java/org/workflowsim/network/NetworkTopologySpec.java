@@ -5,20 +5,22 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 平台网络拓扑的不可变声明。
+ * Immutable declaration of a platform network topology.
  *
- * <p>v1 只支持 Al-Fares k-Pod Fat-tree（见 {@link FatTreeTopology} 与
- * {@code docs/research/FAT_TREE_DESIGN.md}）。拓扑参数属于平台描述
- * （{@code PlatformProfile}），数据移动模型只声明"使用拓扑争用"这一语义。</p>
+ * <p>v1 supports only the Al-Fares k-Pod Fat-tree (see {@link FatTreeTopology}
+ * and {@code docs/research/FAT_TREE_DESIGN.md}). Topology parameters belong to
+ * the platform description ({@code PlatformProfile}); a data movement model
+ * only declares the semantics "use topology contention".</p>
  *
- * <p>诚实边界：流级流体模型的结构声明——不包含丢包、排队时延细节、ECN、
- * 自适应路由或链路故障语义。</p>
+ * <p>Honest boundary: a structural declaration of a flow-level fluid model --
+ * it contains no packet loss, queueing delay detail, ECN, adaptive routing, or
+ * link failure semantics.</p>
  */
 public final class NetworkTopologySpec {
 
-    /** 拓扑族。 */
+    /** Topology family. */
     public enum Kind {
-        /** Al-Fares SIGCOMM 2008 k-Pod Fat-tree。 */
+        /** Al-Fares SIGCOMM 2008 k-Pod Fat-tree. */
         FAT_TREE
     }
 
@@ -42,39 +44,46 @@ public final class NetworkTopologySpec {
     }
 
     /**
-     * 声明满配（无过订）k-Pod Fat-tree，主机按 hostId 升序轮转铺设到全部
-     * edge 交换机（确定性默认放置）。
+     * Declares a fully provisioned (no oversubscription) k-Pod Fat-tree, with
+     * hosts laid out round-robin over all edge switches in ascending hostId
+     * order (deterministic default placement).
      *
-     * @param k k-Pod 参数，必须为 ≥ 2 的偶数
-     * @param linkBandwidthMbPerSecond 统一链路带宽，MB/s，必须为正有限值
-     * @return 不可变拓扑声明
+     * @param k k-Pod parameter, must be an even integer >= 2
+     * @param linkBandwidthMbPerSecond uniform link bandwidth, MB/s, must be
+     *        positive and finite
+     * @return immutable topology declaration
      */
     public static NetworkTopologySpec fatTree(int k, double linkBandwidthMbPerSecond) {
         return fatTree(k, linkBandwidthMbPerSecond, null, null);
     }
 
     /**
-     * 声明可超收敛的 k-Pod Fat-tree。
+     * Declares a k-Pod Fat-tree that may be oversubscribed.
      *
-     * @param k k-Pod 参数，必须为 ≥ 2 的偶数
-     * @param linkBandwidthMbPerSecond 统一链路带宽，MB/s，必须为正有限值
-     * @param coreSwitchCount core 交换机数量，1 ≤ m ≤ k²/4；m &lt; k²/4 即超收敛
-     * @return 不可变拓扑声明
+     * @param k k-Pod parameter, must be an even integer >= 2
+     * @param linkBandwidthMbPerSecond uniform link bandwidth, MB/s, must be
+     *        positive and finite
+     * @param coreSwitchCount number of core switches, 1 &lt;= m &lt;= k*k/4;
+     *        m &lt; k*k/4 means oversubscribed
+     * @return immutable topology declaration
      */
     public static NetworkTopologySpec fatTree(int k, double linkBandwidthMbPerSecond, int coreSwitchCount) {
         return fatTree(k, linkBandwidthMbPerSecond, Integer.valueOf(coreSwitchCount), null);
     }
 
     /**
-     * 声明带显式主机放置的 k-Pod Fat-tree。
+     * Declares a k-Pod Fat-tree with explicit host placement.
      *
-     * @param k k-Pod 参数，必须为 ≥ 2 的偶数
-     * @param linkBandwidthMbPerSecond 统一链路带宽，MB/s，必须为正有限值
-     * @param coreSwitchCount core 交换机数量，null 表示满配 k²/4
-     * @param hostEdgePlacements hostId → edge 交换机全局索引
-     *        （idx = pod·(k/2) + edge ∈ [0, k²/2)）；null 表示默认轮转放置；
-     *        显式提供时必须覆盖全部主机且每台 edge 至多 k/2 台主机
-     * @return 不可变拓扑声明
+     * @param k k-Pod parameter, must be an even integer >= 2
+     * @param linkBandwidthMbPerSecond uniform link bandwidth, MB/s, must be
+     *        positive and finite
+     * @param coreSwitchCount number of core switches; null means fully
+     *        provisioned k*k/4
+     * @param hostEdgePlacements hostId to global edge switch index
+     *        (idx = pod*(k/2) + edge in [0, k*k/2)); null means the default
+     *        round-robin placement; when supplied explicitly, the mapping must
+     *        cover every host and each edge switch holds at most k/2 hosts
+     * @return immutable topology declaration
      */
     public static NetworkTopologySpec fatTree(
             int k, double linkBandwidthMbPerSecond, Integer coreSwitchCount, Map<Integer, Integer> hostEdgePlacements) {
@@ -117,22 +126,22 @@ public final class NetworkTopologySpec {
         return kind;
     }
 
-    /** k-Pod 参数。 */
+    /** k-Pod parameter. */
     public int getK() {
         return k;
     }
 
-    /** 统一链路带宽，MB/s。 */
+    /** Uniform link bandwidth, MB/s. */
     public double getLinkBandwidthMbPerSecond() {
         return linkBandwidthMbPerSecond;
     }
 
-    /** core 交换机数量；null 表示满配 k²/4。 */
+    /** Number of core switches; null means fully provisioned k*k/4. */
     public Integer getCoreSwitchCount() {
         return coreSwitchCount;
     }
 
-    /** hostId → edge 交换机全局索引；null 表示默认轮转放置。不可变。 */
+    /** hostId to global edge switch index; null means the default round-robin placement. Immutable. */
     public Map<Integer, Integer> getHostEdgePlacements() {
         return hostEdgePlacements;
     }

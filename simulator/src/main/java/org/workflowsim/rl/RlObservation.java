@@ -10,21 +10,24 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * R4 RL 轨道的决策时刻状态快照（observation）。
+ * Decision-instant state snapshot (observation) of the R4 RL track.
  *
- * <p>状态 = 当前仿真时钟下的就绪 Job 队列特征 + VM 负载视图，与路线图 R4 的
- * 环境契约一致。快照在调度决策时刻从运行时状态一次性抽取，构造后不可变；
- * ready Job 保持调度器队列的到达序，VM 按 ID 升序——顺序本身是确定性的，
- * 策略输出与状态输入之间的索引对应关系因此逐位可复现。</p>
+ * <p>State = ready Job queue features at the current simulation clock + VM load view, consistent
+ * with the environment contract of roadmap R4. The snapshot is taken once from runtime state at the
+ * scheduling decision instant and is immutable after construction; ready Jobs keep the scheduler
+ * queue arrival order and VMs are ordered by ascending ID -- the order itself is deterministic, so
+ * the index correspondence between policy output and state input is reproducible bit for bit.</p>
  *
- * <p>VM 负载视图刻意保持最小：空间共享模型下每台 VM 同一时刻至多执行一个
- * Job，因此"负载"由忙/闲状态 + MIPS + PE 数完整刻画；不引入未经回归验证的
- * 推测量。Job 视图提供聚合工作长度（与在线调度器的 ECT 语义相同：
- * {@code cloudletLength / mips}）与 PE 需求，供策略估计完成时刻。</p>
+ * <p>The VM load view is deliberately minimal: under the space-sharing model each VM runs at most
+ * one Job at a time, so "load" is fully described by the busy/idle state plus MIPS and PE count; no
+ * inference quantity without regression verification is introduced. The Job view exposes the
+ * aggregate work length (the same semantics as the online scheduler's ECT:
+ * {@code cloudletLength / mips}) and the PE demand, so a policy can estimate the completion
+ * instant.</p>
  */
 public final class RlObservation {
 
-    /** 就绪 Job 的状态视图。 */
+    /** State view of a ready Job. */
     public static final class JobView {
         private final int jobId;
         private final long totalLength;
@@ -36,23 +39,23 @@ public final class RlObservation {
             this.pes = pes;
         }
 
-        /** @return Job ID（CloudSim cloudlet ID） */
+        /** @return Job ID (CloudSim cloudlet ID) */
         public int getJobId() {
             return jobId;
         }
 
-        /** @return Job 聚合工作长度（MI），ECT 估计使用 {@code totalLength / vmMips} */
+        /** @return Job aggregate work length (MI); ECT estimation uses {@code totalLength / vmMips} */
         public long getTotalLength() {
             return totalLength;
         }
 
-        /** @return Job 需要的 PE 数 */
+        /** @return number of PEs the Job requires */
         public int getPes() {
             return pes;
         }
     }
 
-    /** VM 的状态视图。 */
+    /** State view of a VM. */
     public static final class VmView {
         private final int vmId;
         private final double mips;
@@ -71,17 +74,17 @@ public final class RlObservation {
             return vmId;
         }
 
-        /** @return VM 单 PE 性能（MIPS） */
+        /** @return VM per-PE performance (MIPS) */
         public double getMips() {
             return mips;
         }
 
-        /** @return VM 的 PE 数 */
+        /** @return number of PEs of the VM */
         public int getPes() {
             return pes;
         }
 
-        /** @return VM 当前是否空闲（空间共享模型下忙 VM 不接受新 Job） */
+        /** @return whether the VM is currently idle (a busy VM accepts no new Job under space sharing) */
         public boolean isIdle() {
             return idle;
         }
@@ -98,11 +101,11 @@ public final class RlObservation {
     }
 
     /**
-     * 在决策时刻从运行时状态抽取不可变快照。
+     * Extracts an immutable snapshot from runtime state at the decision instant.
      *
-     * @param readyJobs 当前就绪 Job 队列（保持到达序）
-     * @param vms 当前全部 VM（内部按 ID 升序排列）
-     * @return 不可变观测快照
+     * @param readyJobs current ready Job queue (arrival order preserved)
+     * @param vms all current VMs (sorted internally by ascending ID)
+     * @return immutable observation snapshot
      */
     public static RlObservation of(List<? extends Cloudlet> readyJobs, List<CondorVM> vms) {
         List<JobView> jobViews = new ArrayList<JobView>();
@@ -120,17 +123,17 @@ public final class RlObservation {
         return new RlObservation(CloudSim.clock(), jobViews, vmViews);
     }
 
-    /** @return 决策时刻的仿真时钟（秒） */
+    /** @return simulation clock at the decision instant (seconds) */
     public double getSimulationTime() {
         return simulationTime;
     }
 
-    /** @return 就绪 Job 视图列表（调度器到达序，索引即策略动作下标） */
+    /** @return ready Job view list (scheduler arrival order; the index is the policy action index) */
     public List<JobView> getReadyJobs() {
         return readyJobs;
     }
 
-    /** @return VM 视图列表（VM ID 升序，索引即策略动作取值域） */
+    /** @return VM view list (ascending VM ID; the index is the policy action value domain) */
     public List<VmView> getVms() {
         return vms;
     }

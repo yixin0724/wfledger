@@ -10,9 +10,10 @@ import org.workflowsim.Job;
 import org.workflowsim.Task;
 
 /**
- * 运行私有的有序事件记录器。
+ * Ordered event recorder private to a single run.
  *
- * <p>实例刻意不依赖 WorkflowSim 的遗留静态状态，以保证顺序会话之间相互隔离。</p>
+ * <p>An instance deliberately depends on no legacy static state of WorkflowSim, so that
+ * consecutive sessions stay isolated from one another.</p>
  */
 public final class SimulationEventRecorder {
 
@@ -22,7 +23,7 @@ public final class SimulationEventRecorder {
     private final List<SimulationEvent> events;
     private long nextSequence;
 
-    /** 创建仅服务于一次仿真运行的启用状态记录器。 */
+    /** Create an enabled recorder that serves a single simulation run. */
     public SimulationEventRecorder() {
         this(true);
     }
@@ -33,9 +34,9 @@ public final class SimulationEventRecorder {
     }
 
     /**
-     * 返回供遗留入口使用的空操作记录器。
+     * Return the no-op recorder used by legacy entry points.
      *
-     * @return 可安全接受记录调用但不保存事件的共享记录器
+     * @return shared recorder that accepts recording calls safely without storing events
      */
     public static SimulationEventRecorder disabled() {
         return DISABLED;
@@ -46,24 +47,24 @@ public final class SimulationEventRecorder {
     }
 
     /**
-     * 记录不关联 Job 的模拟事件。
+     * Record a simulation event that carries no Job association.
      *
-     * @param type 事件类型，不能为空
-     * @param simulationTime 事件发生的有限模拟时间
-     * @throws IllegalArgumentException 当事件类型为空或模拟时间非有限时抛出
+     * @param type event type, must not be null
+     * @param simulationTime finite simulation time at which the event occurs
+     * @throws IllegalArgumentException if the event type is null or the simulation time is not finite
      */
     public synchronized void record(SimulationEventType type, double simulationTime) {
         record(type, simulationTime, null, Collections.<String, Object>emptyMap());
     }
 
     /**
-     * 记录可关联 Job 和附加属性的模拟事件。
+     * Record a simulation event that may carry a Job association and additional attributes.
      *
-     * @param type 事件类型，不能为空
-     * @param simulationTime 事件发生的有限模拟时间
-     * @param job 可选关联 Job；为空时不会写入 Job、VM、类别或任务标识
-     * @param attributes 可选附加属性，会在记录时复制
-     * @throws IllegalArgumentException 当事件类型为空或模拟时间非有限时抛出
+     * @param type event type, must not be null
+     * @param simulationTime finite simulation time at which the event occurs
+     * @param job optional associated Job; when null, no Job, VM, class or task identifier is written
+     * @param attributes optional additional attributes, copied when the event is recorded
+     * @throws IllegalArgumentException if the event type is null or the simulation time is not finite
      */
     public synchronized void record(
             SimulationEventType type, double simulationTime, Job job, Map<String, ?> attributes) {
@@ -94,9 +95,9 @@ public final class SimulationEventRecorder {
     }
 
     /**
-     * 按原始事件顺序返回不可变快照。
+     * Return an immutable snapshot in original event order.
      *
-     * @return 当前已记录事件的不可变副本；禁用记录器返回空列表
+     * @return immutable copy of the events recorded so far; a disabled recorder returns an empty list
      */
     public synchronized List<SimulationEvent> snapshot() {
         if (!enabled) {
@@ -106,11 +107,11 @@ public final class SimulationEventRecorder {
     }
 
     /**
-     * 从交替出现的键和值构造一个小型确定性事件属性映射。
+     * Build a small deterministic event attribute map from alternating keys and values.
      *
-     * @param values 交替出现的 {@link String} 键和值；为空时返回空映射
-     * @return 保持调用方给定顺序的属性映射
-     * @throws IllegalArgumentException 当元素数量为奇数或键不是字符串时抛出
+     * @param values alternating {@link String} keys and values; empty yields an empty map
+     * @return attribute map that preserves the order given by the caller
+     * @throws IllegalArgumentException if the element count is odd or a key is not a string
      */
     public static Map<String, Object> attributes(Object... values) {
         if (values == null || values.length == 0) {

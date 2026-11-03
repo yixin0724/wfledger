@@ -28,7 +28,7 @@ import org.workflowsim.clustering.TaskSet;
 import org.workflowsim.utils.SimulationRandom;
 
 /**
- * 按运行时间进行水平负载均衡的聚类方法。
+ * Clustering method that balances load horizontally by job runtime.
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
  * @date Apr 9, 2013
@@ -36,24 +36,24 @@ import org.workflowsim.utils.SimulationRandom;
 public class HorizontalRuntimeBalancing extends BalancingMethod {
 
     /**
-     * 创建运行时间均衡方法。
+     * Creates the runtime balancing method.
      *
-     * @param levelMap 按层组织的任务集合
-     * @param taskMap 逻辑任务到任务集合的映射
-     * @param clusterNum 每层目标聚类作业数
+     * @param levelMap task sets organized by level
+     * @param taskMap logical task to task set mapping
+     * @param clusterNum target number of clustered jobs per level
      */
     public HorizontalRuntimeBalancing(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
     /**
-     * 将每层任务按长度从长到短放入当前长度最小的目标集合。
+     * Places the tasks of each level, longest first, into the currently shortest target set.
      */
     @Override
     public void run() {
         Map<Integer, List<TaskSet>> map = getLevelMap();
         for (List<TaskSet> taskList : map.values()) {
-            // 通过受控随机置换打破同长度候选的原始输入顺序。
+            // Break the original input order of equal-length candidates by a controlled random permutation.
             Collections.shuffle(taskList, SimulationRandom.newJavaRandom("clustering.balancing.runtime"));
             Collections.shuffle(taskList, SimulationRandom.newJavaRandom("clustering.balancing.runtime"));
 
@@ -64,62 +64,63 @@ public class HorizontalRuntimeBalancing extends BalancingMethod {
                 }
                 sortListDecreasing(taskList);
                 for (TaskSet set : taskList) {
-                    // 先按当前作业长度升序排列，首个集合即当前最短候选。
+                    // Sort by ascending current job length first, so the first set is the current shortest candidate.
                     sortListIncreasing(jobList);
                     TaskSet job = (TaskSet) jobList.get(0);
                     job.addTask(set.getTaskList());
-                    // 更新每个逻辑任务的所属集合映射。
+                    // Update the owning set mapping of every logical task.
                     for (Task task : set.getTaskList()) {
-                        getTaskMap().put(task, job); // 依赖关系由调用方统一重建
+                        getTaskMap().put(task, job); // dependency edges are rebuilt by the caller
                     }
                 }
 
-                taskList.clear(); // 原集合已被新的均衡集合替代
+                taskList.clear(); // the original set has been replaced by the new balanced sets
             } else {
-                // 候选数不超过目标数时无需合并。
+                // No merge is needed when the candidate count does not exceed the target count.
             }
         }
     }
     /**
-     * 按作业长度升序排列任务集合。
+     * Sorts task sets by ascending job length.
      *
-     * @param taskList 待排序的任务集合
+     * @param taskList task sets to sort
      */
     private void sortListIncreasing(List<TaskSet> taskList) {
         Collections.sort(taskList, RUNTIME_INCREASING);
     }
 
     /**
-     * 按作业长度降序排列任务集合。
+     * Sorts task sets by descending job length.
      *
-     * @param taskList 待排序的任务集合
+     * @param taskList task sets to sort
      */
     private void sortListDecreasing(List<TaskSet> taskList) {
         Collections.sort(taskList, RUNTIME_DECREASING);
     }
 
     /**
-     * 升序比较器：按 {@link TaskSet#getJobRuntime()} 升序。
+     * Ascending comparator: orders by {@link TaskSet#getJobRuntime()} in ascending order.
      *
-     * <p>审查工程 F-005：历史实现 {@code (int)(t1-t2)} 对 long 差窄化取低 32 位，
-     * 差恰为 2^32 倍数的两个集合会被误判"相等"（稳定排序保持错误顺序）。
-     * 该语义由 {@code BalancingComparatorContractTest} 按守恒律锁定；
-     * 本字段是供其直接审计的单一实现。</p>
+     * <p>Review engineering F-005: the historical implementation {@code (int)(t1-t2)} narrowed the
+     * long difference to its low 32 bits, so two sets whose difference was an exact multiple of 2^32
+     * were misjudged "equal" (a stable sort then kept the wrong order). The semantics are locked by
+     * {@code BalancingComparatorContractTest} against the conservation law; this field is the single
+     * implementation that test audits directly.</p>
      */
     static final Comparator<TaskSet> RUNTIME_INCREASING = new Comparator<TaskSet>() {
         @Override
         public int compare(TaskSet t1, TaskSet t2) {
-            // F-005 修复（2026-10-19）：Long.compare 全域正确，杜绝 (int)(long 差) 的
-            // 2^32 回绕塌缩（差为 2^32 倍数被误判相等）。
+            // F-005 fix (2026-10-19): Long.compare is exact over the whole domain, ruling out the
+            // 2^32 wrap collapse of (int)(long difference) (multiples of 2^32 were misjudged equal).
             return Long.compare(t1.getJobRuntime(), t2.getJobRuntime());
         }
     };
 
-    /** 降序比较器：与 {@link #RUNTIME_INCREASING} 同一排序标准的反向。 */
+    /** Descending comparator: the reverse of the same ordering used by {@link #RUNTIME_INCREASING}. */
     static final Comparator<TaskSet> RUNTIME_DECREASING = new Comparator<TaskSet>() {
         @Override
         public int compare(TaskSet t1, TaskSet t2) {
-            // F-005 修复（2026-10-19）：同上，全域正确的反向比较。
+            // F-005 fix (2026-10-19): as above, an exact reverse comparison over the whole domain.
             return Long.compare(t2.getJobRuntime(), t1.getJobRuntime());
         }
     };

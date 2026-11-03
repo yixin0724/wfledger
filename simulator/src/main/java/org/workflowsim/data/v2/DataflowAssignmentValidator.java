@@ -235,7 +235,7 @@ public final class DataflowAssignmentValidator {
         anchorComputeMainEvent(main, type, sequence, at, attempt);
     }
 
-    /** acceptEvent() 的计算类主事件锚定阶段（READY/RETURNED/FAILED/RETRY，逐字搬运转写）。 */
+    /** Compute main-event anchoring stage of acceptEvent() (READY/RETURNED/FAILED/RETRY, moved verbatim). */
     private void anchorComputeMainEvent(JsonObject main, String type, long sequence, double at, Attempt attempt) {
         Anchor anchor = new Anchor(sequence, at);
         if ("JOB_READY".equals(type)) {
@@ -251,7 +251,8 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from anchorComputeMainEvent; statements verbatim; order unchanged.
-     * 范围：JOB_READY 分支——同拍先行 assignment、首次/重试父号校验，并登记 ready 锚点。
+     * Scope: JOB_READY branch -- same-clock preceding assignment, initial/retry parent check, and
+     * registration of the ready anchor.
      */
     private void anchorReady(JsonObject main, Attempt attempt, double at, Anchor anchor) {
         Action action = assignments.get(attempt.id);
@@ -272,7 +273,8 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from anchorComputeMainEvent; statements verbatim; order unchanged.
-     * 范围：JOB_RETURNED 分支——绑定/就绪先行、唯一性与终态 Job status 校验，并登记 returned 锚点。
+     * Scope: JOB_RETURNED branch -- binding/readiness precedence, uniqueness and terminal Job status
+     * check, and registration of the returned anchor.
      */
     private void anchorReturned(JsonObject main, Attempt attempt, Anchor anchor) {
         require(
@@ -288,7 +290,8 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from anchorComputeMainEvent; statements verbatim; order unchanged.
-     * 范围：JOB_FAILED 分支——终态 FAILED、唯一性与 return 严格先行校验，并登记 failed 锚点。
+     * Scope: JOB_FAILED branch -- terminal FAILED, uniqueness and strict return-precedence checks,
+     * and registration of the failed anchor.
      */
     private void anchorFailed(Attempt attempt, long sequence, double at, Anchor anchor) {
         require(
@@ -303,7 +306,8 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from anchorComputeMainEvent; statements verbatim; order unchanged.
-     * 范围：RETRY_JOB_CREATED 分支——同 Task 同 VM 单一已 FAILED 父号链校验，并登记 Retry 与预算上界。
+     * Scope: RETRY_JOB_CREATED branch -- single already-FAILED parent chain on the same Task and VM,
+     * and registration of the Retry plus the budget upper bound.
      */
     private void anchorRetry(JsonObject main, long sequence, double at, Attempt attempt) {
         int parentId =
@@ -364,7 +368,8 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * 范围：已校验生命周期事件流的单遍按序回放（发布/请求/拷贝/解析/CPU 启动/终局），填充 prefix。
+     * Scope: single in-order replay of the validated lifecycle event stream
+     * (publish/request/copy/resolve/CPU start/terminal), populating prefix.
      */
     private void replayLifecycle(Prefix prefix) {
         for (JsonElement item : lifecycle) {
@@ -497,7 +502,8 @@ public final class DataflowAssignmentValidator {
 
         /**
          * 2026-10-26 complexity extraction from request; statements verbatim; order unchanged.
-         * 范围：首次绑定（INITIAL）与重试绑定（RETRY_REUSE）的种类一致性与固定 VM 失败父链校验。
+         * Scope: kind consistency of the initial binding (INITIAL) and the retry binding
+         * (RETRY_REUSE), plus the failed parent chain on the fixed VM.
          */
         private void requireBindingConsistency(Attempt attempt, Action action, Integer bound, Retry retry, double now) {
             if (bound == null) {
@@ -517,7 +523,8 @@ public final class DataflowAssignmentValidator {
 
         /**
          * 2026-10-26 complexity extraction from request; statements verbatim; order unchanged.
-         * 范围：assignment observation 摘要与紧前 pre-request 状态（存储模式/时钟/活跃计数）一致性校验。
+         * Scope: consistency of the assignment observation summary with the immediately
+         * pre-request state (storage mode/clock/active counts).
          */
         private void requireObservationSnapshot(Action action, Attempt attempt, double now) {
             Summary summary = action.summary;
@@ -533,7 +540,8 @@ public final class DataflowAssignmentValidator {
                             && summary.scoped == tasks.get(attempt.task).inputs.size(),
                     "Observation differs from immediately pre-request state");
         }
-        /** request() 的候选估值循环（逐字搬运转写；分数公式的 binary64 次序与 tie-break 原样）。 */
+        /** Candidate evaluation loop of request() (moved verbatim; the binary64 order and the
+         * tie-break of the score formula are preserved). */
         private CandidateLoop evaluateCandidates(
                 Attempt attempt, Action action, List<Integer> expectedVms, double now) {
             Candidate selected = null;
@@ -583,7 +591,7 @@ public final class DataflowAssignmentValidator {
             return loop;
         }
 
-        /** request() 候选循环结果的私有搬运转写结构。 */
+        /** Private moved-verbatim holder for the candidate-loop result of request(). */
         private final class CandidateLoop {
             private Candidate selected;
             private int bestVm;
@@ -800,7 +808,8 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from loadAttempts; statements verbatim; order unchanged.
-     * 范围：dataflowComputeRequests 循环——逐请求解析声明、校验并登记唯一 Attempt（含同 Task 长度/PE 一致性）。
+     * Scope: dataflowComputeRequests loop -- parse and validate the declaration of each request and
+     * register its unique Attempt (including same-Task length/PE consistency).
      */
     private void loadComputeRequests(
             JsonObject manifest,
@@ -838,7 +847,8 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from loadAttempts; statements verbatim; order unchanged.
-     * 范围：单个计算请求相对 Job/Task 终局的全量元数据一致性 require 校验。
+     * Scope: full metadata consistency require checks of one compute request against the Job/Task
+     * terminal records.
      */
     private void requireComputeMetadata(JsonObject job, JsonObject outcome, int task, int vm, int status, long length) {
         require(
@@ -1364,7 +1374,7 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from same; statements verbatim; order unchanged.
-     * 范围：对象层比对——keySet 全等校验后对每个键递归 same。
+     * Scope: object-level comparison -- check keySet equality, then recurse into same for every key.
      */
     private static void sameObject(JsonElement a, JsonElement b, String message) {
         JsonObject x = a.getAsJsonObject(), y = b.getAsJsonObject();
@@ -1376,7 +1386,7 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from same; statements verbatim; order unchanged.
-     * 范围：数组层比对——长度相等校验后对每个下标递归 same。
+     * Scope: array-level comparison -- check equal length, then recurse into same for every index.
      */
     private static void sameArray(JsonElement a, JsonElement b, String message) {
         JsonArray x = a.getAsJsonArray(), y = b.getAsJsonArray();
@@ -1388,7 +1398,8 @@ public final class DataflowAssignmentValidator {
 
     /**
      * 2026-10-26 complexity extraction from same; statements verbatim; order unchanged.
-     * 范围：标量层比对——数值按 decimal 精确比较，其余回退 null/equals 兜底校验。
+     * Scope: scalar-level comparison -- compare numbers exactly as decimal, with a null/equals
+     * fallback check otherwise.
      */
     private static void sameScalar(JsonElement a, JsonElement b, String message) {
         if (a != null

@@ -39,11 +39,12 @@ import org.workflowsim.clustering.balancing.metrics.PipelineRuntimeVariance;
 import org.workflowsim.utils.Parameters;
 
 /**
- * 均衡聚类的公共实现：在保持任务依赖关系的同时，按不同启发式平衡作业长度、
- * 影响因子或图距离。
+ * Shared implementation of balanced clustering: balances job length, impact factor or
+ * graph distance under different heuristics while preserving task dependencies.
  *
- * <p>具体均衡方法由 {@code ClusteringParameters.code} 选择。该实现描述的是抽象
- * 聚类策略，不代表真实资源负载均衡或平台利用率预测。</p>
+ * <p>{@code ClusteringParameters.code} selects the concrete balancing method. This
+ * implementation describes an abstract clustering strategy and does not represent real
+ * resource load balancing or a platform utilization forecast.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -52,22 +53,22 @@ import org.workflowsim.utils.Parameters;
 public class BalancedClustering extends BasicClustering {
 
     /**
-     * 每层期望生成的聚类作业数。
+     * Expected number of clustered jobs generated per level.
      */
     private final int clusterNum;
     /**
-     * 逻辑任务到所属任务集合的映射。
+     * Mapping from a logical task to the task set that owns it.
      */
     private final Map<Task, TaskSet> mTask2TaskSet;
     /**
-     * 任务集合到其计算深度的缓存。
+     * Cache from a task set to its computed depth.
      */
     private final Map<TaskSet, Integer> mTaskSet2Depth;
 
     /**
-     * 创建均衡聚类器。
+     * Creates a balanced clusterer.
      *
-     * @param clusterNum 每层聚类作业数（{@code clusters.num}）
+     * @param clusterNum number of clustered jobs per level ({@code clusters.num})
      */
     public BalancedClustering(int clusterNum) {
         super();
@@ -77,7 +78,7 @@ public class BalancedClustering extends BasicClustering {
     }
 
     /**
-     * 清除所有任务集合的遍历标记。
+     * Clears the traversal flag of every task set.
      *
      */
     public void cleanTaskSetChecked() {
@@ -88,14 +89,14 @@ public class BalancedClustering extends BasicClustering {
     }
 
     /**
-     * 将影响因子沿父集合方向递归分摊。
+     * Recursively distributes the impact factor toward the parent sets.
      *
-     * @param set 起始任务集合
-     * @param impact 要加入的影响因子
+     * @param set starting task set
+     * @param impact impact factor to add
      */
     private void addImpact(TaskSet set, double impact) {
         /*
-         * 从当前集合向其父集合传播影响因子。
+         * Propagate the impact factor from the current set to its parent sets.
          */
         set.setImpactFafctor(set.getImpactFactor() + impact);
         int size = set.getParentList().size();
@@ -108,7 +109,7 @@ public class BalancedClustering extends BasicClustering {
     }
 
     /**
-     * 计算并输出当前任务集合的均衡指标。
+     * Computes and prints the balance metrics of the current task sets.
      */
     public void printMetrics() {
         Map<Integer, List<TaskSet>> map = getCurrentTaskSetAtLevels();
@@ -126,7 +127,8 @@ public class BalancedClustering extends BasicClustering {
         List<TaskSet> exits = map.get(maxDepth);
         double avg = 1.0 / exits.size();
         for (TaskSet set : exits) {
-            // 旧版可直接赋值影响因子；当前路径通过递归传播影响。
+            // The legacy branch could assign the impact factor directly; the current path
+            // propagates it recursively.
             addImpact(set, avg);
         }
 
@@ -134,19 +136,19 @@ public class BalancedClustering extends BasicClustering {
             int depth = entry.getKey();
             List<TaskSet> list = entry.getValue();
             /**
-             * 同层运行时间方差。
+             * Same-level runtime variance.
              */
             double hrv = new HorizontalRuntimeVariance().getMetric(list);
             /**
-             * 影响因子方差。
+             * Impact factor variance.
              */
             double ifv = new ImpactFactorVariance().getMetric(list);
             /**
-             * 流水线运行时间方差。
+             * Pipeline runtime variance.
              */
             double prv = new PipelineRuntimeVariance().getMetric(list);
             /**
-             * 图距离方差。
+             * Graph distance variance.
              */
             double dv = new DistanceVariance().getMetric(list);
             Log.printLine("HRV " + depth + " " + list.size()
@@ -157,12 +159,13 @@ public class BalancedClustering extends BasicClustering {
     }
 
     /**
-     * 返回按计算深度分组的当前任务集合。
+     * Returns the current task sets grouped by computed depth.
      *
-     * @return 每层的任务集合列表
+     * @return task set list per level
      */
     public Map<Integer, List<TaskSet>> getCurrentTaskSetAtLevels() {
-        // 计算前后都恢复 hasChecked，避免状态泄漏到下一个均衡步骤。
+        // hasChecked is restored after the computation so no state leaks into the next
+        // balancing step.
         Map<Integer, List<TaskSet>> map = new HashMap<>();
         Collection<TaskSet> sets = mTask2TaskSet.values();
         for (TaskSet set : sets) {
@@ -177,16 +180,16 @@ public class BalancedClustering extends BasicClustering {
             }
         }
         mTaskSet2Depth.clear();
-        // 必须恢复遍历标记，供后续算法复用。
+        // The traversal flag must be restored for later algorithms to reuse.
         cleanTaskSetChecked();
         return map;
     }
 
     /**
-     * 递归计算任务集合的 DAG 深度，并缓存结果。
+     * Recursively computes the DAG depth of a task set and caches the result.
      *
-     * @param set 任务集合
-     * @return DAG 深度
+     * @param set task set
+     * @return DAG depth
      */
     private int getDepth(TaskSet set) {
         if (mTaskSet2Depth.containsKey(set)) {
@@ -206,11 +209,11 @@ public class BalancedClustering extends BasicClustering {
     }
 
     /**
-     * 判断一个任务是否为另一个任务的祖先。
+     * Tests whether one task is an ancestor of another.
      *
-     * @param ancestor 候选祖先任务
-     * @param set 候选后代任务
-     * @return 是否存在祖先关系
+     * @param ancestor candidate ancestor task
+     * @param set candidate descendant task
+     * @return whether the ancestor relation holds
      */
     private boolean check(Task ancestor, Task set) {
         if (ancestor == null || set == null) {
@@ -229,12 +232,13 @@ public class BalancedClustering extends BasicClustering {
         return false;
     }
     /**
-     * 临时移除的边，用于聚类完成后恢复原图。
+     * Edges removed temporarily, restored once clustering completes.
      */
     private final Map<Task, Task> mRecover = new HashMap<>();
 
     /**
-     * 暂时移除会形成跨层祖先关系的子边，并记录以便恢复。
+     * Temporarily removes the child edges that would form a cross-level ancestor relation,
+     * recording them for restoration.
      */
     private void remove() {
 
@@ -244,10 +248,11 @@ public class BalancedClustering extends BasicClustering {
                     Task children = (Task) set.getChildList().get(i);
                     for (int j = i + 1; j < set.getChildList().size(); j++) {
                         Task another = (Task) set.getChildList().get(j);
-                        // 只检查深度不同的两个兄弟候选，避免无效递归。
+                        // Check only two sibling candidates at different depths so that
+                        // recursion is not wasted.
                         if (children.getDepth() > another.getDepth()) {
                             if (check(another, children)) {
-                                // 暂时移除该边，聚类结束后恢复。
+                                // Remove the edge for now and restore it once clustering completes.
                                 set.getChildList().remove(children);
                                 children.getParentList().remove(set);
                                 i--;
@@ -277,7 +282,7 @@ public class BalancedClustering extends BasicClustering {
     }
 
     /**
-     * 恢复此前暂时移除的依赖边。
+     * Restores the dependency edges removed earlier.
      */
     private void recover() {
         for (Entry<Task, Task> entry : mRecover.entrySet()) {
@@ -356,7 +361,7 @@ public class BalancedClustering extends BasicClustering {
                 addTasks2Job(set.getTaskList());
             }
         }
-        // 清除本轮遍历标记，避免状态泄漏到后续聚类步骤。
+        // Clear this round's traversal flags so no state leaks into later clustering steps.
         cleanTaskSetChecked();
 
         updateDependencies();
@@ -366,7 +371,7 @@ public class BalancedClustering extends BasicClustering {
     }
 
     /**
-     * 输出任务集合中的聚类诊断信息。
+     * Prints clustering diagnostics for the task sets.
      */
     private void printOut() {
         Collection<TaskSet> sets = mTask2TaskSet.values();
@@ -381,12 +386,12 @@ public class BalancedClustering extends BasicClustering {
                 }
             }
         }
-        // 在方法退出前恢复遍历标记。
+        // Restore the traversal flag before the method exits.
         cleanTaskSetChecked();
     }
 
     /**
-     * 从逻辑任务依赖重建任务集合的父子关系。
+     * Rebuilds the task-set parent/child relations from the logical task dependencies.
      */
     private void updateTaskSetDependencies() {
 
@@ -412,7 +417,7 @@ public class BalancedClustering extends BasicClustering {
                 }
             }
         }
-        // 在方法退出前恢复遍历标记。
+        // Restore the traversal flag before the method exits.
         cleanTaskSetChecked();
     }
 }

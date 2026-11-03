@@ -21,10 +21,11 @@ import org.cloudbus.cloudsim.CloudletScheduler;
 import org.cloudbus.cloudsim.Vm;
 
 /**
- * WorkflowSim 的虚拟机（VM）模型。
+ * The WorkflowSim virtual machine (VM) model.
  *
- * <p>该类在 CloudSim {@link Vm} 的资源属性之外保存工作流调度所需的空闲/忙碌状态和
- * 资源计费参数。它不自行模拟宿主机级 CPU、网络或存储资源争用。</p>
+ * <p>Beyond the CloudSim {@link Vm} resource attributes, this class keeps the idle/busy state
+ * and the resource-cost parameters that workflow scheduling needs. It does not model
+ * host-level CPU, network or storage contention itself.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -33,27 +34,30 @@ import org.cloudbus.cloudsim.Vm;
 public class CondorVM extends Vm {
 
     /**
-     * 虚拟机状态，只能使用 {@link WorkflowSimTags} 中的 IDLE、READY（当前保留）或
-     * BUSY 标签。
+     * VM status; only the IDLE, READY (currently reserved) or BUSY tags of
+     * {@link WorkflowSimTags} are legal here.
      */
     private int state;
 
     /*
-     * BAT-D2（2026-10-29）：本 VM 的 DVFS 频档表（P-state 表）。
+     * BAT-D2 (2026-10-29): the DVFS frequency-tier table (P-state table) of this VM.
      *
-     * <p>与 {@link org.workflowsim.platform.PlatformProfile.VmSpec#getFrequencyTiers()}
-     * 同构：空表 = v1 单档模式（无 DVFS 语义）；非空表按 MIPS 降序、首档=默认档。
-     * 由 {@link org.workflowsim.platform.PlatformFactory} 在 VM 装配时一次性注入，
-     * 运行期只读——把频档表放在 VM 上是因为 P-state 表是硬件属性，派发路径
-     * （WorkflowScheduler）无需回查平台剖面即可做频档决策。</p>
+     * <p>Isomorphic to {@link org.workflowsim.platform.PlatformProfile.VmSpec#getFrequencyTiers()}:
+     * an empty table means v1 single-tier mode (no DVFS semantics); a non-empty table is ordered
+     * by descending MIPS with the first tier as the default tier. It is injected once at VM
+     * assembly time by {@link org.workflowsim.platform.PlatformFactory} and is read-only
+     * afterwards -- the table lives on the VM because a P-state table is a hardware property, so
+     * the dispatch path (WorkflowScheduler) can make tier decisions without looking the platform
+     * profile back up.</p>
      */
     private List<org.workflowsim.platform.PlatformProfile.FrequencyTier> frequencyTiers =
             java.util.Collections.emptyList();
 
     /**
-     * BAT-D2：安装本 VM 的 DVFS 频档表（装配期一次性调用；运行期只读）。
+     * BAT-D2: installs the DVFS frequency-tier table of this VM (called once at assembly time,
+     * read-only afterwards).
      *
-     * @param tiers 平台声明序频档表；null 或空表保持 v1 模式
+     * @param tiers platform-declared frequency tiers; null or empty keeps v1 mode
      */
     public void setFrequencyTiers(final List<org.workflowsim.platform.PlatformProfile.FrequencyTier> tiers) {
         this.frequencyTiers = tiers == null || tiers.isEmpty()
@@ -62,41 +66,42 @@ public class CondorVM extends Vm {
     }
 
     /**
-     * BAT-D2：@return 本 VM 的 DVFS 频档表（不可变；空 = v1 单档模式）
+     * BAT-D2: @return the DVFS frequency-tier table of this VM (immutable; empty = v1
+     * single-tier mode)
      */
     public List<org.workflowsim.platform.PlatformProfile.FrequencyTier> getFrequencyTiers() {
         return this.frequencyTiers;
     }
 
-    /** BAT-D2：@return 本 VM 是否声明了 DVFS 频档表 */
+    /** BAT-D2: @return whether this VM declares a DVFS frequency-tier table */
     public boolean hasFrequencyTiers() {
         return this.frequencyTiers != null && !this.frequencyTiers.isEmpty();
     }
 
-    /** 内存资源单价。 */
+    /** Cost per unit of memory. */
     private double costPerMem = 0.0;
 
-    /** 带宽资源单价。 */
+    /** Cost per unit of bandwidth. */
     private double costPerBW = 0.0;
 
-    /** 存储资源单价。 */
+    /** Cost per unit of storage. */
     private double costPerStorage = 0.0;
 
-    /** CPU 资源单价。 */
+    /** Cost per unit of CPU. */
     private double cost = 0.0;
 
     /**
-     * 创建一个未显式配置费用的虚拟机。
+     * Creates a VM without explicitly configured costs.
      *
-     * @param id 虚拟机唯一编号
-     * @param userId 虚拟机所属用户编号
-     * @param mips 每秒百万条指令处理能力
-     * @param numberOfPes CPU 处理单元数
-     * @param ram 内存容量
-     * @param bw 带宽容量
-     * @param size 存储容量
-     * @param vmm 虚拟机监控器名称
-     * @param cloudletScheduler Cloudlet 调度策略
+     * @param id unique VM id
+     * @param userId id of the user that owns the VM
+     * @param mips processing capacity in million instructions per second
+     * @param numberOfPes number of CPU processing elements
+     * @param ram memory capacity
+     * @param bw bandwidth capacity
+     * @param size storage capacity
+     * @param vmm name of the virtual machine monitor
+     * @param cloudletScheduler Cloudlet scheduling policy
      */
     public CondorVM(
             int id,
@@ -110,27 +115,27 @@ public class CondorVM extends Vm {
             CloudletScheduler cloudletScheduler) {
         super(id, userId, mips, numberOfPes, ram, bw, size, vmm, cloudletScheduler);
         /*
-         * 会话开始时所有虚拟机均可接收作业。
+         * Every VM can accept jobs at the start of a session.
          */
         setState(WorkflowSimTags.VM_STATUS_IDLE);
     }
 
     /**
-     * 创建一个带资源计费参数的虚拟机。
+     * Creates a VM with resource-cost parameters.
      *
-     * @param id 虚拟机唯一编号
-     * @param userId 虚拟机所属用户编号
-     * @param mips 每秒百万条指令处理能力
-     * @param numberOfPes CPU 处理单元数
-     * @param ram 内存容量
-     * @param bw 带宽容量
-     * @param size 存储容量
-     * @param vmm 虚拟机监控器名称
-     * @param cost CPU 单价
-     * @param costPerMem 内存单价
-     * @param costPerStorage 存储单价
-     * @param costPerBW 带宽单价
-     * @param cloudletScheduler Cloudlet 调度策略
+     * @param id unique VM id
+     * @param userId id of the user that owns the VM
+     * @param mips processing capacity in million instructions per second
+     * @param numberOfPes number of CPU processing elements
+     * @param ram memory capacity
+     * @param bw bandwidth capacity
+     * @param size storage capacity
+     * @param vmm name of the virtual machine monitor
+     * @param cost cost per CPU unit
+     * @param costPerMem cost per memory unit
+     * @param costPerStorage cost per storage unit
+     * @param costPerBW cost per bandwidth unit
+     * @param cloudletScheduler Cloudlet scheduling policy
      */
     public CondorVM(
             int id,
@@ -153,36 +158,36 @@ public class CondorVM extends Vm {
         this.costPerStorage = costPerStorage;
     }
 
-    /** @return CPU 资源单价 */
+    /** @return cost per unit of CPU */
     public double getCost() {
         return this.cost;
     }
 
-    /** @return 带宽资源单价 */
+    /** @return cost per unit of bandwidth */
     public double getCostPerBW() {
         return this.costPerBW;
     }
 
-    /** @return 存储资源单价 */
+    /** @return cost per unit of storage */
     public double getCostPerStorage() {
         return this.costPerStorage;
     }
 
-    /** @return 内存资源单价 */
+    /** @return cost per unit of memory */
     public double getCostPerMem() {
         return this.costPerMem;
     }
 
     /**
-     * 设置虚拟机状态。
+     * Sets the VM status.
      *
-     * @param tag {@link WorkflowSimTags} 中定义的虚拟机状态标签
+     * @param tag VM status tag defined in {@link WorkflowSimTags}
      */
     public final void setState(int tag) {
         this.state = tag;
     }
 
-    /** @return 当前虚拟机状态标签 */
+    /** @return current VM status tag */
     public final int getState() {
         return this.state;
     }

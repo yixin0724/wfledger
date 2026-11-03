@@ -30,10 +30,12 @@ import org.workflowsim.utils.DistributionGenerator;
 import org.workflowsim.utils.SimulationRandom;
 
 /**
- * 在任务的执行时间窗内，根据已配置的失效到达时间样本判定 Job 是否失败。
+ * Decides whether a Job fails from the configured failure-arrival time samples within the
+ * task execution window.
  *
- * <p>本类依赖 {@link FailureParameters} 中由单次模拟会话安装的状态；它实现
- * 的是抽象失效模型，并不意味着已按真实云平台故障数据完成校准。</p>
+ * <p>This class depends on the state installed by a single simulation session in
+ * {@link FailureParameters}; it implements an abstract failure model and does not imply
+ * calibration against real cloud-platform failure data.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -42,21 +44,25 @@ import org.workflowsim.utils.SimulationRandom;
 public class FailureGenerator {
 
     /**
-     * 当现有样本尚未覆盖任务开始时间时，按需扩展分布样本；扩展次数受上限约束，
-     * 以避免极高失效率导致无界采样。
+     * Extends the distribution samples on demand while the existing samples do not yet cover
+     * the task start time; the number of extensions is capped so that an extremely high
+     * failure rate cannot cause unbounded sampling.
      */
     private static final int MAX_FAILURE_SIZE_EXTENSION = 50;
-    /** 每个生成器独立记录的样本缓存扩展次数，避免多个故障流相互消耗安全额度。 */
+    /**
+     * Sample-cache extension count recorded per generator, so that multiple failure streams
+     * do not consume each other's safety allowance.
+     */
     private static final Map<DistributionGenerator, Integer> FAILURE_SIZE_EXTENSIONS =
             new IdentityHashMap<DistributionGenerator, Integer>();
 
     private static final boolean HAS_CHANGE_TIME = false;
     /**
-     * 按当前配置的分布族创建随机分布。
+     * Creates a random distribution for the currently configured distribution family.
      *
-     * @param alpha 分布参数 alpha
-     * @param beta 分布参数 beta
-     * @return 对应的连续随机分布
+     * @param alpha distribution parameter alpha
+     * @param beta distribution parameter beta
+     * @return corresponding real-valued distribution
      */
     protected static RealDistribution getDistribution(double alpha, double beta) {
         RealDistribution distribution = null;
@@ -83,7 +89,8 @@ public class FailureGenerator {
                         GammaDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
                 break;
             case NORMAL:
-                // NORMAL 分布中 beta 为标准差，1.0 / alpha 为均值。
+                // For the NORMAL distribution beta is the standard deviation and 1.0 / alpha
+                // is the mean.
                 distribution = new NormalDistribution(
                         SimulationRandom.newApacheRandom("failure.distribution"),
                         1.0 / alpha,
@@ -99,14 +106,14 @@ public class FailureGenerator {
     protected static void initFailureSamples() {}
 
     /**
-     * 初始化一次模拟运行的失效生成计数器。
+     * Initializes the failure-generation counters of one simulation run.
      */
     public static void init() {
         FAILURE_SIZE_EXTENSIONS.clear();
         initFailureSamples();
     }
 
-    /** 清除已结束模拟运行持有的失效生成计数器。 */
+    /** Clears the failure-generation counters held by a finished simulation run. */
     public static void reset() {
         FAILURE_SIZE_EXTENSIONS.clear();
     }
@@ -116,7 +123,8 @@ public class FailureGenerator {
         if (FailureParameters.getFailureGeneratorMode() == FailureParameters.FTCFailure.FAILURE_NONE) {
             return false;
         }
-        // 故障判定与 DR 重聚类共享同一坐标解释，避免模式名称被不同路径重新解释。
+        // Failure verdicts and DR reclustering share one coordinate interpretation, so
+        // the mode name is not reinterpreted by different paths.
         DistributionGenerator generator = FailureParameters.getGeneratorForFailureScope(vmId, task.getDepth());
 
         double start = task.getExecStartTime();
@@ -135,17 +143,20 @@ public class FailureGenerator {
         double[] samples = generator.getCumulativeSamples();
         for (int sampleId = generator.getConsumedSampleCount(); sampleId < samples.length; sampleId++) {
             if (samples[sampleId] < start) {
-                // 空闲期内已过期的 arrival 仍必须只消费一次。
+                // An arrival already expired during an idle period must still be consumed
+                // exactly once.
                 generator.consumeSamplesThrough(sampleId);
                 continue;
             }
             if (end < samples[sampleId]) {
-                // 下一个失效到达时间已在本任务结束之后，因此本任务不失败。
+                // The next failure arrival lies after the end of this task, so this task
+                // does not fail.
                 return false;
             }
             if (start <= samples[sampleId]) {
-                // 失效到达时间落在本任务执行区间内。
-                // 消费命中的累计 arrival 本身，而不是错误地消费游标处的另一段原始间隔。
+                // The failure arrival falls inside the execution window of this task.
+                // Consume the cumulative arrival that matched, not another raw interval at
+                // the cursor.
                 generator.consumeSamplesThrough(sampleId);
                 return true;
             }
@@ -154,7 +165,7 @@ public class FailureGenerator {
         throw new IllegalStateException("Failure arrival cache has no unconsumed sample after coverage");
     }
 
-    /** 将单个故障流扩展到同时覆盖当前时间和未消费游标。 */
+    /** Extends one failure stream to cover both the current time and the unconsumed cursor. */
     private static void ensureUnconsumedArrivalCoverage(DistributionGenerator generator, double start)
             throws Exception {
         double[] samples = generator.getCumulativeSamples();
@@ -176,16 +187,19 @@ public class FailureGenerator {
     }
 
     /**
-     * 对 Job 内的任务逐个判定失效，并同步更新任务与 Job 的状态。
+     * Decides failure task by task within the Job and updates the status of the tasks and of
+     * the Job in step.
      *
      * @param job
-     * @return {@code true} 表示至少一个任务失败
+     * @return {@code true} when at least one task failed
      */
     public static boolean generate(Job job) {
         boolean jobFailed = false;
         if (FailureParameters.getFailureGeneratorMode() == FailureParameters.FTCFailure.FAILURE_NONE) {
-            // 即使没有启用失效到达流，完成的 compute Job 也需要为其逻辑 Task 建立明确的
-            // 成功状态。数据中心据此按 Task 提交输出副本，避免把“未写状态”误判为失败。
+            // Even when no failure arrival stream is enabled, a completed compute Job
+            // must establish an explicit SUCCESS status for its logical Tasks. The
+            // datacenter uses it to submit output replicas per Task, so an unset status
+            // is not mistaken for a failure.
             try {
                 for (Task task : job.getTaskList()) {
                     task.setCloudletStatus(Cloudlet.SUCCESS);
@@ -202,7 +216,7 @@ public class FailureGenerator {
             for (Task task : job.getTaskList()) {
                 int failedTaskSum = 0;
                 if (checkFailureStatus(task, job.getVmId())) {
-                    // 当前任务的执行时间窗包含一次失效到达。
+                    // The execution window of the current task contains one failure arrival.
                     jobFailed = true;
                     failedTaskSum++;
                     task.setCloudletStatus(Cloudlet.FAILED);

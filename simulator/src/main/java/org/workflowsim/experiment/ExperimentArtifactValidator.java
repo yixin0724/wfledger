@@ -17,30 +17,34 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 /**
- * 只读校验实验 manifest 与 metrics/events sidecar 的跨文件完整性契约。
+ * Read-only validation of the cross-file integrity contract of an experiment manifest and
+ * the metrics/events sidecars.
  *
- * <p>校验器持续接受迁移前产生的 v2 工件。v3 在相同 sidecar 完整性约束外，还要求
- * provenance 清楚区分核心模拟器和可选的 reference/study driver 身份。</p>
+ * <p>The validator keeps accepting v2 artifacts produced before the migration. Beyond the
+ * same sidecar integrity constraints, v3 additionally requires provenance to distinguish
+ * the core simulator identity clearly from the optional reference/study driver identity.</p>
  */
 public final class ExperimentArtifactValidator {
 
-    /** 迁移前 evidence manifest 的只读兼容 schema。 */
+    /** Read-only compatibility schema of the pre-migration evidence manifest. */
     public static final String MANIFEST_SCHEMA_V2 = "workflowsim-experiment-manifest-v2";
-    /** 当前 evidence manifest schema。 */
+    /** Current evidence manifest schema. */
     public static final String MANIFEST_SCHEMA_V3 = ExperimentManifestWriter.SCHEMA_V3;
-    /** 完整配置快照的当前 schema。 */
+    /** Current schema of the full configuration snapshot. */
     public static final String MANIFEST_SCHEMA_V4 = ExperimentManifestWriter.SCHEMA_V4;
 
     private ExperimentArtifactValidator() {}
 
     /**
-     * 只读校验 manifest 与 metrics/events sidecar 的 schema、路径、哈希、大小、事件序列，
-     * 以及 v3 provenance 的结构化身份契约。
+     * Read-only validation of the schema, paths, hashes, sizes, and event sequence of the
+     * manifest and the metrics/events sidecars, plus the structured identity contract of
+     * the v3 provenance.
      *
-     * @param manifestPath 待校验的 v2 或 v3 manifest 路径
-     * @return 包含已验证工件路径和事件数量的校验结果
-     * @throws IOException 当工件不存在、格式不合法或跨文件内容不一致时抛出
-     * @throws IllegalArgumentException 当 {@code manifestPath} 为空时抛出
+     * @param manifestPath path of the v2 or v3 manifest to validate
+     * @return validation result carrying the verified artifact paths and the event count
+     * @throws IOException when an artifact is missing, malformed, or inconsistent across
+     *         files
+     * @throws IllegalArgumentException when {@code manifestPath} is empty
      */
     public static ValidationResult validate(Path manifestPath) throws IOException {
         JsonObject root = openManifest(manifestPath);
@@ -74,8 +78,10 @@ public final class ExperimentArtifactValidator {
             throw new IOException("Event count mismatch: manifest declares " + expectedEvents + " but JSONL contains "
                     + actualEvents);
         }
-        // 2026-11-02 复核轮：清单自报的事件序号边界此前无人核对（Python 审计器同批修复）。
-        // 边界属于"声明的上下文"，必须与事件流绑定；键缺省（空流）保持兼容。
+        // 2026-11-02 review round: nobody had previously checked the event sequence
+        // bounds declared by the manifest (fixed in the same batch in the Python auditor).
+        // The bounds belong to the declared context and must be bound to the event stream;
+        // a missing key (empty stream) stays compatible.
         if (actualEvents > 0) {
             checkDeclaredSequenceBound(eventSummary, "firstSequence", eventStream[1]);
             checkDeclaredSequenceBound(eventSummary, "lastSequence", eventStream[2]);
@@ -143,7 +149,8 @@ public final class ExperimentArtifactValidator {
 
     /**
      * 2026-10-26 complexity extraction from openManifest; statements verbatim; order unchanged.
-     * 作用域：仅校验 coherent 数据面、dataflowPlan 或 sourceStorage 特性必须搭载 v4 schema。
+     * Scope: only validates that the coherent data plane, dataflowPlan, or sourceStorage
+     * features must carry the v4 schema.
      */
     private static void requireV4ForCoherentFeatures(JsonObject root, String schema) throws IOException {
         if ((isCoherentManifest(root)
@@ -156,7 +163,7 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    /** validate() 的结果装配阶段（逐字搬运转写）。 */
+    /** Result assembly stage of validate() (moved verbatim). */
     private static ValidationResult buildValidationResult(
             Path manifest,
             Path metrics,
@@ -188,7 +195,7 @@ public final class ExperimentArtifactValidator {
                 fileContext == null ? null : fileContext.getDataflowAssignmentResult());
     }
 
-    /** validate() 的网络记录配置解析阶段（逐字搬运转写）。 */
+    /** Network recording configuration decoding stage of validate() (moved verbatim). */
     private static org.workflowsim.data.NetworkEvidenceConfig decodeRecordingConfig(JsonObject root)
             throws IOException {
         org.workflowsim.data.NetworkEvidenceConfig recording = org.workflowsim.data.NetworkEvidenceConfig.off();
@@ -203,7 +210,10 @@ public final class ExperimentArtifactValidator {
         return recording;
     }
 
-    /** validate() 的证据束装配阶段：角色一致性检查与三侧车解析（逐字搬运转写）。 */
+    /**
+     * Evidence-bundle assembly stage of validate(): role consistency check and decoding of
+     * the three sidecars (moved verbatim).
+     */
     private static EvidenceBundles decodeEvidenceBundles(
             JsonObject root,
             Map<String, Path> paths,
@@ -262,7 +272,10 @@ public final class ExperimentArtifactValidator {
         return bundles;
     }
 
-    /** validate() 证据束的私有搬运转写结构（字段直读，无转发行为）。 */
+    /**
+     * Private relocated structure of the validate() evidence bundle (direct field reads,
+     * no forwarding behavior).
+     */
     private static final class EvidenceBundles {
         private org.workflowsim.data.NetworkLedgerCodec.Decoded decoded;
         private org.workflowsim.data.v2.FileLifecycleCodec.Decoded fileDecoded;
@@ -288,7 +301,7 @@ public final class ExperimentArtifactValidator {
         requireObject(root, "runtime", "experiment manifest");
     }
 
-    /** 命令行校验入口；不会写入任何文件。 */
+    /** Command-line validation entry point; it writes no files. */
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: ExperimentArtifactValidator <manifest.json>");
@@ -392,7 +405,10 @@ public final class ExperimentArtifactValidator {
         return result;
     }
 
-    /** v2 契约要求存在的指标字段（含 v1→v2 重命名与新增字段）。 */
+    /**
+     * Metric fields required to be present by the v2 contract (including the v1-to-v2
+     * renames and the newly added fields).
+     */
     private static final String[] REQUIRED_METRIC_FIELDS = {
         "makespanSeconds",
         "meanJobVmQueueWaitingTimeSeconds",
@@ -510,7 +526,10 @@ public final class ExperimentArtifactValidator {
         return new long[] {count, firstSequence, lastSequence};
     }
 
-    /** 声明的序号边界存在时必须等于事件流边界；缺省（空流历史形态）保持兼容。 */
+    /**
+     * A declared sequence bound, when present, must equal the event stream bound; an absent
+     * key (the historical shape of an empty stream) stays compatible.
+     */
     private static void checkDeclaredSequenceBound(JsonObject summary, String key, long actual) throws IOException {
         if (!summary.has(key) || summary.get(key).isJsonNull()) {
             return;
@@ -642,7 +661,7 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    /** 供程序调用方使用的只读校验结果。 */
+    /** Read-only validation result for programmatic callers. */
     public static final class ValidationResult {
         private final Path manifest;
         private final Path metrics;

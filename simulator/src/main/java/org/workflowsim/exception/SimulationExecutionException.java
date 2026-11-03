@@ -1,52 +1,56 @@
 package org.workflowsim.exception;
 
 /**
- * 当 CloudSim 仿真执行过程中发生无法恢复的错误时抛出的异常。
+ * Thrown when an unrecoverable error occurs during CloudSim simulation execution.
  *
- * <p>此异常表示仿真执行层的失败，包括但不限于：</p>
+ * <p>This exception represents a failure in the simulation execution layer, including but not
+ * limited to:</p>
  * <ul>
- *   <li>CloudSim 实体创建失败</li>
- *   <li>事件处理流程异常</li>
- *   <li>VM 创建失败或 VM-to-Host 映射不一致</li>
- *   <li>调度或规划算法执行时的内部错误</li>
- *   <li>数据移动模型计算异常</li>
+ *   <li>CloudSim entity creation failure</li>
+ *   <li>exception in the event processing flow</li>
+ *   <li>VM creation failure or VM-to-Host mapping inconsistency</li>
+ *   <li>internal error while executing a scheduling or planning algorithm</li>
+ *   <li>exception in a data movement model computation</li>
  * </ul>
  *
- * <p>此异常与配置错误（{@link SimulationConfigurationException}）的区别在于：
- * 配置错误是启动前可检测的静态约束违反，而执行异常是运行时动态发生的失败。</p>
+ * <p>This exception differs from a configuration error
+ * ({@link SimulationConfigurationException}): a configuration error is a static constraint
+ * violation that is detectable before startup, whereas an execution exception is a failure
+ * that occurs dynamically at runtime.</p>
  *
- * <p>科研人员遇到此异常时应检查：</p>
+ * <p>When researchers encounter this exception they should check:</p>
  * <ol>
- *   <li>模拟器日志中的详细堆栈信息</li>
- *   <li>配置与输入的组合是否触发了未预期的边界情况</li>
- *   <li>是否需要向模拟器维护者报告潜在的实现缺陷</li>
+ *   <li>the detailed stack trace in the simulator log</li>
+ *   <li>whether the combination of configuration and input triggered an unexpected edge case</li>
+ *   <li>whether a potential implementation defect should be reported to the simulator
+ *       maintainers</li>
  * </ol>
  */
 public final class SimulationExecutionException extends WorkflowSimException {
 
     /**
-     * 使用执行错误描述创建异常。
+     * Creates the exception with an execution error description.
      *
-     * @param message 执行失败的具体说明
+     * @param message specific description of the execution failure
      */
     public SimulationExecutionException(String message) {
         super(message);
     }
 
     /**
-     * 使用执行错误描述和根因创建异常。
+     * Creates the exception with an execution error description and the root cause.
      *
-     * @param message 执行失败的具体说明
-     * @param cause 导致执行失败的底层异常
+     * @param message specific description of the execution failure
+     * @param cause underlying exception that caused the execution failure
      */
     public SimulationExecutionException(String message, Throwable cause) {
         super(message, cause);
     }
 
     /**
-     * 使用根因创建异常。
+     * Creates the exception with the root cause.
      *
-     * @param cause 导致执行失败的底层异常
+     * @param cause underlying exception that caused the execution failure
      */
     public SimulationExecutionException(Throwable cause) {
         super(cause);

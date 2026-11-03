@@ -11,33 +11,40 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * 与 WorkflowSim 受控 LOCAL 文件系统执行模型对齐的通信感知 CPOP 静态 DAG 规划器。
+ * Communication-aware CPOP static DAG planner aligned with the WorkflowSim controlled
+ * LOCAL file-system execution model.
  *
- * <p><b>算法</b>（Critical-Path-on-a-Processor，与 HEFT 同出 Topcuoglu, Hariri &amp;
- * Wu, IEEE TPDS 2002）：</p>
+ * <p><b>Algorithm</b> (Critical-Path-on-a-Processor, published alongside HEFT by
+ * Topcuoglu, Hariri &amp; Wu, IEEE TPDS 2002):</p>
  * <ol>
- *   <li>优先级 = 向上 rank + 向下 rank：{@code r_u(t) = w̄_t + max_child(c̄ + r_u)}，
- *       {@code r_d(t) = max_parent(r_d(parent) + w̄_parent + c̄_parent,t)}（入口为 0）；</li>
- *   <li>关键路径：从最高优先级的入口任务出发，沿保持关键路径长度且满足向上 rank
- *       递推等式的边走到出口；多条等长路径取较小任务 ID；</li>
- *   <li>关键路径处理器 {@code p_CP} = 使关键路径任务计算秒数之和最小的 VM
- *       （平局取较小 VM ID）；</li>
- *   <li>就绪队列调度：每步取就绪任务中优先级最大者（平局取较小任务 ID）；关键路径
- *       任务绑定 {@code p_CP}（仍用插入式最早开始搜索），其余任务在全部 VM 中取
- *       最小插入式 EFT（平局取较小 VM ID）。</li>
+ *   <li>priority = upward rank + downward rank: {@code r_u(t) = w_bar_t +
+ *       max_child(c_bar + r_u)}, {@code r_d(t) = max_parent(r_d(parent) + w_bar_parent +
+ *       c_bar_parent,t)} (entry is 0);</li>
+ *   <li>critical path: start from the highest-priority entry task and follow edges that
+ *       preserve the critical-path length and satisfy the upward-rank recurrence until
+ *       an exit; among several equal-length paths take the smaller task ID;</li>
+ *   <li>critical-path processor {@code p_CP} = the VM that minimizes the sum of compute
+ *       seconds of the critical-path tasks (ties take the smaller VM ID);</li>
+ *   <li>ready-queue scheduling: each step takes the ready task with the largest priority
+ *       (ties take the smaller task ID); critical-path tasks bind to {@code p_CP} (still
+ *       using the insertion-based earliest-start search), while every other task takes
+ *       the minimum insertion-based EFT over all VMs (ties take the smaller VM ID).</li>
  * </ol>
  *
- * <p><b>通信建模与执行语义</b>与 {@link LocalHeftPlanningAlgorithm} 共用
- * {@link AbstractLocalCommPlanningAlgorithm}：传输是可与 VM 忙碌期重叠的执行前
- * 延迟；副本按输入 hold 完成与输出计算完成时刻登记，并在依赖就绪时过滤可见性。
- * 关键处理器必须兼容整条路径，其他分配只考虑各任务的兼容 VM。
- * 该估计不重放完整运行期事件；适用前提与边界声明同 LOCAL_HEFT。</p>
+ * <p><b>Communication modeling and execution semantics</b> are shared with
+ * {@link LocalHeftPlanningAlgorithm} through {@link AbstractLocalCommPlanningAlgorithm}:
+ * a transfer is a pre-execution delay that may overlap the VM busy period; replicas are
+ * registered at input-hold completion and at output compute completion, and their
+ * visibility is filtered when the dependency becomes ready. The critical processor must
+ * be compatible with the whole path; other assignments only consider each task's
+ * compatible VMs. The estimate does not replay the full runtime event stream; the
+ * applicability preconditions and boundary statements match LOCAL_HEFT.</p>
  */
 public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningAlgorithm {
 
     private static final double RANK_TOLERANCE = 1.0e-9;
 
-    /** 任务 → 向下 rank。 */
+    /** Task -> downward rank. */
     private final Map<Task, Double> downwardRanks = new HashMap<Task, Double>();
 
     private List<Integer> criticalPathTaskIds = Collections.emptyList();
@@ -66,7 +73,8 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         criticalPathTaskIds = Collections.unmodifiableList(pathIds);
         criticalProcessorVmId = Integer.valueOf(cpVm.getId());
 
-        // 就绪队列调度：未调度且全部父任务已调度的任务中，优先级最大者先行。
+        // Ready-queue scheduling: among unscheduled tasks whose parents are all scheduled,
+        // the one with the largest priority goes first.
         double stageInFinish = stageInFinishTime();
         List<Task> pending = new ArrayList<Task>(tasks);
         int scheduled = 0;
@@ -105,27 +113,28 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         return true;
     }
 
-    /** 已计算的向下 rank；包内只读诊断，不触发计算。 */
+    /** Already computed downward rank; package-private read-only diagnostic, never triggers a computation. */
     double downwardRankOf(Task task) {
         return downwardRanks.get(task).doubleValue();
     }
 
-    /** 已计算的 CPOP 优先级；包内只读诊断。 */
+    /** Already computed CPOP priority; package-private read-only diagnostic. */
     double priorityOf(Task task) {
         return upwardRankOf(task) + downwardRankOf(task);
     }
 
-    /** 最近一次所选关键路径的不可变任务 ID 快照。 */
+    /** Immutable task-ID snapshot of the most recently selected critical path. */
     List<Integer> getCriticalPathTaskIds() {
         return criticalPathTaskIds;
     }
 
-    /** 最近一次所选关键处理器；尚未选择时为 null。 */
+    /** Most recently selected critical processor; null while none has been selected yet. */
     Integer getCriticalProcessorVmId() {
         return criticalProcessorVmId;
     }
 
-    /** 向下 rank：前驱的向下 rank、计算成本与入边通信成本之和的最大值；入口为 0。 */
+    /** Downward rank: max over predecessors of downward rank + compute cost + in-edge
+     *         communication cost; entry is 0. */
     private double downwardRank(Task task) {
         Double cached = downwardRanks.get(task);
         if (cached != null) {
@@ -144,7 +153,8 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         return rank;
     }
 
-    /** 从最高优先级入口任务出发，沿最长路径上的实际边前进，平局取较小任务 ID。 */
+    /** Start from the highest-priority entry task and follow real edges on the longest
+     *         path; ties take the smaller task ID. */
     private LinkedHashSet<Task> walkCriticalPath(List<Task> tasks) {
         Task entry = highestPriorityEntry(tasks);
         double criticalPathLength = priorityOf(entry);
@@ -154,8 +164,9 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         while (!current.getChildList().isEmpty()) {
             Task next = null;
             for (Task child : current.getChildList()) {
-                // 两节点可能分别位于不同的等长关键路径上；优先级相等并不足以
-                // 保证连接它们的边也在关键路径上，还必须满足向上 rank 递推等式。
+                // The two nodes may lie on different equal-length critical paths; equal priority
+                // alone does not prove the edge joining them is also on a critical path, so
+                // the upward-rank recurrence must hold as well.
                 double via =
                         meanComputeSeconds(current) + meanCommunicationSeconds(current, child) + upwardRankOf(child);
                 if (!sameRank(priorityOf(child), criticalPathLength) || !sameRank(upwardRankOf(current), via)) {
@@ -185,7 +196,8 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
 
     /**
      * 2026-10-26 complexity extraction from walkCriticalPath; statements verbatim; order unchanged.
-     * 作用域：仅在全部入口任务中选出优先级最高者（平局取较小任务 ID），无入口任务即抛。
+     * Scope: select only the highest-priority task among all entry tasks (ties take the smaller
+     * task ID); throw when there is no entry task.
      */
     private Task highestPriorityEntry(List<Task> tasks) {
         Task entry = null;
@@ -207,7 +219,8 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         return entry;
     }
 
-    /** 关键路径处理器：使关键路径任务计算秒数之和最小的 VM，平局取较小 VM ID。 */
+    /** Critical-path processor: the VM minimizing the sum of critical-path task compute
+     *         seconds; ties take the smaller VM ID. */
     private CondorVM criticalPathVm(LinkedHashSet<Task> criticalPath) {
         CondorVM best = null;
         double bestTotal = Double.POSITIVE_INFINITY;

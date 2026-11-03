@@ -47,7 +47,11 @@ public final class EnergyAccounting {
         this.vmEnergyJoules = vmEnergyJoules;
     }
 
-    /** 逐档归因与总忙秒的浮点和容差（秒；同一账本求和只差在非线性加法末位）。 */
+    /**
+     * Floating-point sum tolerance (seconds) between the per-tier attribution and the
+     * total busy seconds; summing the same ledger differs only in the last digits of the
+     * nonlinear addition.
+     */
     private static final double TIER_SUM_SLACK_SECONDS = 1e-9;
 
     /**
@@ -93,29 +97,35 @@ public final class EnergyAccounting {
             int vmId = entry.getKey();
             SimulationMetrics.VmMetrics m = entry.getValue();
             PlatformProfile.VmSpec spec = findSpec(platform, vmId);
-            // BAT-D2（2026-10-29）：修复 D1 死闸——tiered VM 的功率在频档表内（平面
-            // idle/max 字段被"单一真源"校验强制为 0），hasPowerModel() 对其恒 false，
-            // 导致声明频档的平台被当成无功率平台整台记 0J。功率闸幂改为
-            // "平面字段或频档表任一声明"（两路互斥由 VmSpec 构造校验保证）。
+            // BAT-D2 (2026-10-29): fixes the D1 dead gate -- the power of a tiered VM lives
+            // in the frequency tier table (the flat idle/max fields are forced to 0 by the
+            // "single source of truth" validation), so hasPowerModel() is always false for
+            // it, causing a platform that declares frequency tiers to be booked as 0 J
+            // across the board as if it had no power model. The power gate now reads
+            // "either the flat fields or the frequency tier table declares power" (the two
+            // paths are mutually exclusive by VmSpec constructor validation).
             if (spec == null || !(spec.hasPowerModel() || spec.hasFrequencyTiers())) {
                 perVm.put(vmId, Double.valueOf(0.0));
                 continue;
             }
             double e;
             if (spec.hasFrequencyTiers()) {
-                // v2: E_vm = P_idle(default)×T_sim + Σ档 [(P_max(档) − P_idle(默认))×busy(档)]
-                // — 形式与 §2.3 文献修正式代数恒等（P_idle×T_idle + Σ P_max(档)×busy(档)）。
+                // v2: E_vm = P_idle(default)*T_sim + sum over tiers
+                // [(P_max(tier) - P_idle(default))*busy(tier)]
+                // -- algebraically identical to the formula corrected from the literature in
+                // section 2.3 (P_idle*T_idle + sum over tiers P_max(tier)*busy(tier)).
                 double idleDefault = spec.defaultFrequencyTier().getIdlePowerWatts();
                 e = idleDefault * makespanSeconds;
                 Map<Double, Double> tierBusy =
                         perTierBusySecondsByVm == null ? null : perTierBusySecondsByVm.get(Integer.valueOf(vmId));
                 if (tierBusy == null || tierBusy.isEmpty()) {
-                    // D1 退化口径：无逐档归因（tierMips 全缺）→ 整段默认档满载矩形。
+                    // D1 degenerate accounting: no per-tier attribution (tierMips entirely
+                    // absent) -> the whole interval as a default-tier full-load rectangle.
                     double dynDefault = spec.defaultFrequencyTier().getMaxPowerWatts() - idleDefault;
                     e += dynDefault * m.getModeledBusyIntervalSeconds();
                 } else {
                     double attributed = 0.0;
-                    // TreeMap 键升序 = 确定性求和序（AGENTS #9）。
+                    // Ascending TreeMap key order = deterministic summation order (AGENTS #9).
                     for (Map.Entry<Double, Double> tier : new java.util.TreeMap<Double, Double>(tierBusy).entrySet()) {
                         PlatformProfile.FrequencyTier byMips =
                                 tierByMips(spec, tier.getKey().doubleValue());
@@ -145,8 +155,9 @@ public final class EnergyAccounting {
     }
 
     /**
-     * BAT-D2：按 MIPS 精确身份在 VM 频档表内定位档（档按 MIPS 唯一，降序校验已在
-     * VmSpec 构造期保证）。找不到匹配 = 证据链断裂，显式失败。
+     * BAT-D2: locates the tier by exact MIPS identity in the VM frequency tier table
+     * (tiers are unique by MIPS; the descending-order check is already guaranteed at
+     * VmSpec construction time). No match = broken evidence chain, explicit failure.
      */
     private static PlatformProfile.FrequencyTier tierByMips(PlatformProfile.VmSpec spec, double mips) {
         for (PlatformProfile.FrequencyTier tier : spec.getFrequencyTiers()) {
@@ -159,9 +170,10 @@ public final class EnergyAccounting {
                 + ": the per-Job tier evidence chain is broken (BAT-D2)");
     }
 
-    // BAT-R6（2026-10-27 审查第六轮）：删除从未被调用的 unpowered() 工厂——
-    // fromFrozenMetrics 对无功率平台天然产出全零（每 VM 0.0 贡献），死者公开面从 E1
-    // 落地起就无调用方；留 public 无主人口属于无审视接口面。
+    // BAT-R6 (2026-10-27, sixth review round): removed the never-called unpowered()
+    // factory -- fromFrozenMetrics already yields all zeros for a platform without a power
+    // model (a 0.0 contribution per VM), so the dead public surface had no caller since E1
+    // landed; keeping a public surface without an owner is an unreviewed interface.
 
     private static PlatformProfile.VmSpec findSpec(PlatformProfile platform, int vmId) {
         for (PlatformProfile.VmSpec spec : platform.getVms()) {

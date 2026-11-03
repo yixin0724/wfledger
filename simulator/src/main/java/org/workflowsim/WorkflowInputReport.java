@@ -5,20 +5,23 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 记录一次工作流输入转换为 WorkflowSim 任务时的来源信息和显式归一化。
+ * Records provenance and explicit normalization when a workflow input is
+ * converted into WorkflowSim tasks.
  *
- * <p>该报告只描述输入解释过程，不代表仿真输出或现实执行观测；实验清单可使用它追溯
- * 输入格式、声明的架构版本及为满足模型约束而做的转换。</p>
+ * <p>The report describes only the input interpretation process; it is neither
+ * simulation output nor an observed real-world execution. An experiment
+ * manifest can use it to trace the input format, the declared schema version,
+ * and the conversions applied to satisfy model constraints.</p>
  */
 public final class WorkflowInputReport {
 
-    /** 已支持的工作流输入格式。 */
+    /** Supported workflow input formats. */
     public enum Format {
         DAX_XML,
         WFCOMMONS_JSON
     }
 
-    /** 当前输入转换中可能记录的归一化类型。 */
+    /** Normalization kinds the current input conversion may record. */
     public enum NormalizationKind {
         TASK_RUNTIME_FLOORED_TO_MINIMUM
     }
@@ -30,11 +33,12 @@ public final class WorkflowInputReport {
     private int taskCount;
 
     /**
-     * 创建输入转换报告。
+     * Creates an input conversion report.
      *
-     * @param sourcePath 已解析输入文件的路径
-     * @param format 输入格式
-     * @param declaredVersion 输入中声明的格式或架构版本；未知时可为 {@code null}
+     * @param sourcePath path of the parsed input file
+     * @param format input format
+     * @param declaredVersion format or schema version declared by the input;
+     *        may be {@code null} when unknown
      */
     public WorkflowInputReport(String sourcePath, Format format, String declaredVersion) {
         if (sourcePath == null || sourcePath.trim().isEmpty() || format == null) {
@@ -45,30 +49,30 @@ public final class WorkflowInputReport {
         this.declaredVersion = declaredVersion;
     }
 
-    /** @return 已解析输入文件的路径 */
+    /** @return path of the parsed input file */
     public String getSourcePath() {
         return sourcePath;
     }
 
-    /** @return 输入格式 */
+    /** @return input format */
     public Format getFormat() {
         return format;
     }
 
-    /** @return 输入中声明的格式或架构版本；未声明时为 {@code null} */
+    /** @return format or schema version declared by the input; {@code null} when not declared */
     public String getDeclaredVersion() {
         return declaredVersion;
     }
 
-    /** @return 成功转换得到的任务数 */
+    /** @return number of tasks converted successfully */
     public int getTaskCount() {
         return taskCount;
     }
 
     /**
-     * 设置成功转换得到的任务数。
+     * Sets the number of tasks converted successfully.
      *
-     * @param taskCount 非负任务数
+     * @param taskCount non-negative task count
      */
     public void setTaskCount(int taskCount) {
         if (taskCount < 0) {
@@ -78,24 +82,24 @@ public final class WorkflowInputReport {
     }
 
     /**
-     * 记录一项有意执行的输入值转换。
+     * Records one intentional conversion of an input value.
      *
-     * @param kind 转换类型
-     * @param subject 被转换的输入对象标识
-     * @param originalValue 原始数值
-     * @param normalizedValue 进入模型的数值
+     * @param kind normalization kind
+     * @param subject identifier of the converted input object
+     * @param originalValue original value
+     * @param normalizedValue value entering the model
      */
     public void recordNormalization(
             NormalizationKind kind, String subject, double originalValue, double normalizedValue) {
         normalizations.add(new Normalization(kind, subject, originalValue, normalizedValue));
     }
 
-    /** @return 不可修改的归一化记录列表 */
+    /** @return unmodifiable list of normalization records */
     public List<Normalization> getNormalizations() {
         return Collections.unmodifiableList(normalizations);
     }
 
-    /** 一项有意执行的输入值转换记录。 */
+    /** Record of one intentional conversion of an input value. */
     public static final class Normalization {
 
         private final NormalizationKind kind;
@@ -110,22 +114,22 @@ public final class WorkflowInputReport {
             this.normalizedValue = normalizedValue;
         }
 
-        /** @return 转换类型 */
+        /** @return normalization kind */
         public NormalizationKind getKind() {
             return kind;
         }
 
-        /** @return 被转换的输入对象标识 */
+        /** @return identifier of the converted input object */
         public String getSubject() {
             return subject;
         }
 
-        /** @return 原始数值 */
+        /** @return original value */
         public double getOriginalValue() {
             return originalValue;
         }
 
-        /** @return 归一化后的模型数值 */
+        /** @return model value after normalization */
         public double getNormalizedValue() {
             return normalizedValue;
         }

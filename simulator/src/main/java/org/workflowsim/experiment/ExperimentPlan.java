@@ -14,10 +14,12 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 不可变且可执行的研究实验 campaign 声明。
+ * Immutable, executable declaration of a research experiment campaign.
  *
- * <p>每个比较组必须且只能声明一个基线。组内所有候选方案必须采用相同的随机化解释，
- * 但每个 cell 仍显式保存各自的种子序列，以便实验协议能够独立审计。</p>
+ * <p>Each comparison group must declare exactly one baseline. All candidate variants
+ * within a group must share the same randomization interpretation, yet each cell still
+ * stores its own explicit seed sequence so that the experiment protocol can be audited
+ * independently.</p>
  */
 public final class ExperimentPlan {
 
@@ -33,11 +35,12 @@ public final class ExperimentPlan {
     }
 
     /**
-     * 创建实验计划构建器。
+     * Creates an experiment plan builder.
      *
-     * @param id 计划的稳定标识符，必须符合本类定义的标识符格式
-     * @return 尚未包含任何 cell 的构建器
-     * @throws IllegalArgumentException 当标识符无效时
+     * @param id stable identifier of the plan; must match the identifier format defined
+     *           by this class
+     * @return a builder that does not yet contain any cell
+     * @throws IllegalArgumentException when the identifier is invalid
      */
     public static Builder builder(String id) {
         return new Builder(id);
@@ -52,9 +55,9 @@ public final class ExperimentPlan {
     }
 
     /**
-     * 返回计划中所有 cell 声明的重复运行总数。
+     * Returns the total number of repeated runs declared by all cells of the plan.
      *
-     * @return 每个 cell 的复制次数之和
+     * @return the sum of the replication counts of every cell
      */
     public int getRunCount() {
         int result = 0;
@@ -77,13 +80,14 @@ public final class ExperimentPlan {
         }
 
         /**
-         * 向计划追加一个候选方案、平台和工作流组合。
+         * Appends one candidate, platform, and workflow combination to the plan.
          *
-         * <p>跨 cell 的标识符、基线和随机化设计约束在 {@link #build()} 时统一校验。</p>
+         * <p>Identifier, baseline, and randomization-design constraints across cells are
+         * validated together in {@link #build()}.</p>
          *
-         * @param value 要声明的非空实验 cell
-         * @return 当前构建器，以支持链式调用
-         * @throws IllegalArgumentException 当 cell 为 {@code null} 时
+         * @param value non-null experiment cell to declare
+         * @return this builder, to support chained calls
+         * @throws IllegalArgumentException when the cell is {@code null}
          */
         public Builder addCell(Cell value) {
             cells.add(requireNonNull(value, "Experiment cell"));
@@ -91,10 +95,12 @@ public final class ExperimentPlan {
         }
 
         /**
-         * 校验并冻结当前声明。
+         * Validates and freezes the current declaration.
          *
-         * @return 满足比较组、基线、候选标识和随机化设计约束的不可变计划
-         * @throws IllegalArgumentException 当未声明 cell，或任一跨 cell 约束不成立时
+         * @return an immutable plan satisfying the comparison-group, baseline, candidate
+         *         identifier, and randomization-design constraints
+         * @throws IllegalArgumentException when no cell is declared, or when any
+         *         cross-cell constraint does not hold
          */
         public ExperimentPlan build() {
             if (cells.isEmpty()) {
@@ -134,7 +140,8 @@ public final class ExperimentPlan {
     }
 
     /**
-     * 一个候选算法、平台、工作流配置及其显式种子序列构成的不可变实验 cell。
+     * Immutable experiment cell formed by a candidate algorithm, a platform, a workflow
+     * configuration, and its explicit seed sequence.
      */
     public static final class Cell {
         private final String id;
@@ -147,17 +154,20 @@ public final class ExperimentPlan {
         private final Map<String, String> tags;
 
         /**
-         * 创建一个实验 cell。
+         * Creates an experiment cell.
          *
-         * @param id cell 的稳定标识符
-         * @param comparisonGroup 该 cell 所属的比较组标识符
-         * @param candidateId 比较组内候选方案的标识符
-         * @param baseline 此 cell 是否为比较组基线
-         * @param config 本次仿真的显式配置
-         * @param platform 与配置 VM 数量一致的平台描述
-         * @param seedPlan 复制次数和随机化设计均已声明的种子计划
-         * @param tags 可选的不可变实验标签；传入 {@code null} 等价于空标签
-         * @throws IllegalArgumentException 当标识符、必要对象、VM 数量或标签不满足约束时
+         * @param id stable identifier of the cell
+         * @param comparisonGroup identifier of the comparison group this cell belongs to
+         * @param candidateId identifier of the candidate within the comparison group
+         * @param baseline whether this cell is the baseline of its comparison group
+         * @param config explicit configuration of this simulation
+         * @param platform platform description whose VM count matches the configuration
+         * @param seedPlan seed plan whose replication count and randomization design are
+         *                 both declared
+         * @param tags optional immutable experiment tags; passing {@code null} is
+         *             equivalent to empty tags
+         * @throws IllegalArgumentException when an identifier, a required object, the VM
+         *         count, or a tag violates its constraint
          */
         public Cell(
                 String id,

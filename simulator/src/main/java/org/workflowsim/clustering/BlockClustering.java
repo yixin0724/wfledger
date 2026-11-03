@@ -23,10 +23,11 @@ import java.util.Map;
 import org.workflowsim.Task;
 
 /**
- * 分块聚类策略：同时沿同层与单分支方向收集任务。
+ * Block clustering strategy: collects tasks along both same-level and single-branch directions.
  *
- * <p>任务先按 DAG 深度分组，再依据 {@code clusters.num} 或 {@code clusters.size}
- * 形成作业；沿着唯一父子链的任务会被一并收集。</p>
+ * <p>Tasks are first grouped by DAG depth and then formed into jobs according to
+ * {@code clusters.num} or {@code clusters.size}; tasks along a unique parent-child chain are
+ * collected together.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -35,27 +36,27 @@ import org.workflowsim.Task;
 public class BlockClustering extends BasicClustering {
 
     /**
-     * 每个 DAG 层期望生成的聚类作业数。
+     * Number of clustering jobs expected per DAG level.
      */
     private final int clusterNum;
     /**
-     * 每个聚类作业期望包含的任务数。
+     * Number of tasks expected in each clustering job.
      */
     private final int clusterSize;
     /**
-     * 记录任务是否已被遍历的映射。
+     * Mapping recording whether a task has already been visited.
      */
     private final Map<Integer, Boolean> mHasChecked;
     /**
-     * 按 DAG 深度保存任务的映射。
+     * Mapping holding the tasks of each DAG depth.
      */
     private final Map<Integer, List> mDepth2Task;
 
     /**
-     * 创建分块聚类器。
+     * Creates a block clusterer.
      *
-     * @param cNum 每层聚类作业数（{@code clusters.num}）
-     * @param cSize 每个聚类作业的任务数（{@code clusters.size}）
+     * @param cNum number of clustering jobs per level ({@code clusters.num})
+     * @param cSize number of tasks per clustering job ({@code clusters.size})
      */
     public BlockClustering(int cNum, int cSize) {
         super();
@@ -66,9 +67,9 @@ public class BlockClustering extends BasicClustering {
     }
 
     /**
-     * 将任务标记为已遍历。
+     * Marks a task as visited.
      *
-     * @param index 任务 ID
+     * @param index task ID
      */
     private void setCheck(int index) {
         if (mHasChecked.containsKey(index)) {
@@ -78,10 +79,10 @@ public class BlockClustering extends BasicClustering {
     }
 
     /**
-     * 判断任务是否已遍历。
+     * Tests whether a task has already been visited.
      *
-     * @param index 任务 ID
-     * @return 任务是否已遍历
+     * @param index task ID
+     * @return whether the task has already been visited
      */
     private boolean getCheck(int index) {
         if (mHasChecked.containsKey(index)) {
@@ -91,12 +92,13 @@ public class BlockClustering extends BasicClustering {
     }
 
     /**
-     * 按配置执行分块聚类，并重建作业依赖和聚类延迟。
+     * Executes block clustering with the configured parameters and rebuilds job dependencies
+     * and clustering delays.
      */
     @Override
     public void run() {
 
-        // 先按 DAG 深度归并任务。
+        // First merge the tasks by DAG depth.
         if (clusterNum > 0 || clusterSize > 0) {
             for (Task task : getTaskList()) {
                 int depth = task.getDepth();
@@ -124,10 +126,11 @@ public class BlockClustering extends BasicClustering {
     }
 
     /**
-     * 从种子任务出发收集可沿唯一依赖链合并的候选任务。
+     * Collects, starting from the seed tasks, the candidate tasks that can be merged along a
+     * unique dependency chain.
      *
-     * @param taskList 种子任务
-     * @return 可合并的候选任务
+     * @param taskList seed tasks
+     * @return candidate tasks that can be merged
      */
     private List searchList(List<Task> taskList) {
         List<Task> sucList = new ArrayList<>();
@@ -135,7 +138,7 @@ public class BlockClustering extends BasicClustering {
             if (!getCheck(task.getCloudletId())) {
                 setCheck(task.getCloudletId());
                 sucList.add(task);
-                // 只沿唯一父子关系继续收集后继任务。
+                // Continue collecting successors only along a unique parent-child relation.
                 Task node = task;
                 while (node != null) {
                     if (node.getChildList().size() == 1) {
@@ -158,7 +161,7 @@ public class BlockClustering extends BasicClustering {
     }
 
     /**
-     * 将每层任务合并为固定数量的作业。
+     * Merges the tasks of each level into a fixed number of jobs.
      */
     private void bundleClustering() {
 
@@ -182,10 +185,10 @@ public class BlockClustering extends BasicClustering {
             for (int i = 0; i < this.clusterNum; i++) {
                 start = end + 1;
                 if (i < mid) {
-                    // 使用较大的分组大小处理余数。
+                    // Use the larger group size to cover the remainder.
                     end = start + avg_b - 1;
                 } else {
-                    // 使用常规分组大小。
+                    // Use the regular group size.
                     end = start + avg_a - 1;
                 }
 
@@ -202,7 +205,7 @@ public class BlockClustering extends BasicClustering {
     }
 
     /**
-     * 将固定数量的任务合并为一个作业。
+     * Merges a fixed number of tasks into a single job.
      */
     private void collapseClustering() {
         for (Map.Entry<Integer, List> pairs : mDepth2Task.entrySet()) {

@@ -40,7 +40,10 @@ final class NetworkLedgerContextValidator {
     private final Topology topology;
     private long references;
     private BigDecimal required = BigDecimal.ZERO, requiredError = BigDecimal.ZERO;
-    /** verifyTraceEvents 循环内链路计数：2026-10-26 复杂度抽取时由局部量原样上提，单实例单次核算。 */
+    /**
+     * Link count inside the verifyTraceEvents loop: hoisted as-is from a local variable
+     * during the 2026-10-26 complexity extraction; a single instance is accounted once.
+     */
     private long linkCount;
 
     static void validateReport(SimulationReport report) throws IOException {
@@ -94,7 +97,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from NetworkLedgerContextValidator; statements verbatim; order unchanged.
-     * 范围：平台主机唯一 ID 集合与 result 实际落位/带宽容量的一致性核验。
+     * Scope: consistency check between the unique host ID set of the platform and the
+     * actual placements and bandwidth capacities recorded in result.
      */
     private Set<Integer> verifyPlatformAssignments(JsonObject platform, JsonObject result) throws IOException {
         JsonObject assignments = obj(result, "actualVmHostAssignments");
@@ -126,7 +130,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from NetworkLedgerContextValidator; statements verbatim; order unchanged.
-     * 范围：result 每个 Job 的标识/VM/任务表与起止时间的落账核验。
+     * Scope: ledger check of the identity, VM, and task table plus the start and end
+     * times of every Job in result.
      */
     private void verifyJobOutcomes(JsonObject result) throws IOException {
         for (JsonElement item : arr(result, "jobs")) {
@@ -183,7 +188,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from acceptEvent; statements verbatim; order unchanged.
-     * 范围：DATA_STAGE_IN_MODELED 事件的模型口径/文件计数核验与引用字节聚会计入。
+     * Scope: model-convention and file-count check of a DATA_STAGE_IN_MODELED event,
+     * plus the aggregation of the referenced bytes.
      */
     private void verifyStageInEvent(JsonObject event, int jobId, double time) throws IOException {
         JsonObject attributes = obj(event, "attributes");
@@ -253,7 +259,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * 范围：引擎在位时容量声明覆盖全部 VM 端点且数目不多不少的核验。
+     * Scope: check that, while the engine is in place, the capacity declarations cover
+     * every VM endpoint and neither over- nor under-count them.
      */
     private void verifyCapacityDeclarations(Set<String> capacities, boolean started, long linkCount, boolean complete)
             throws IOException {
@@ -272,7 +279,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * 范围：逐 StageView 的账本组计数/准入字节数不越模型口径的核验。
+     * Scope: check that the ledger-group counts and admitted bytes of each StageView
+     * stay within the model convention.
      */
     private void verifyStageAdmissionAggregates(
             Map<Integer, Integer> counts, Map<Integer, BigDecimal> payloads, boolean complete) throws IOException {
@@ -294,7 +302,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * 范围：complete 轨迹下完成转移/非本地引用/准入字节总额的三段终局核验。
+     * Scope: three-part final check of the completed transfers, non-local references,
+     * and total admitted bytes of a complete trace.
      */
     private void verifyCompletedRunAggregates(
             Set<Long> completed,
@@ -323,7 +332,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * 范围：外部/父组网络绑定的端点与路由资源路径核对。
+     * Scope: verification of the endpoints and routing resource paths of external and
+     * parent-group network bindings.
      */
     private Map<Long, NetworkFlowBinding> collectAndVerifyBindings() throws IOException {
         Map<Long, NetworkFlowBinding> bindings = new HashMap<Long, NetworkFlowBinding>();
@@ -346,7 +356,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from collectAndVerifyBindings; statements verbatim; order unchanged.
-     * 范围：单条网络绑定外部组/父组路由路径与其声明资源序列的一致性核验。
+     * Scope: consistency check of the external-group/parent-group routing path of one
+     * network binding against its declared resource sequence.
      */
     private void verifyBindingRoutingPath(NetworkFlowBinding b, JobView job, Set<Integer> externalJobs)
             throws IOException {
@@ -387,7 +398,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * 范围：轨迹事件的容量初始化/准入起算/完成核验的聚合核算。
+     * Scope: aggregate accounting of the capacity initialization, admission start, and
+     * completion checks of the trace events.
      */
     private TraceAggregates verifyTraceEvents(Map<Long, NetworkFlowBinding> bindings) throws IOException {
         TraceAggregates trace = new TraceAggregates();
@@ -440,7 +452,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from verifyTraceEvents; statements verbatim; order unchanged.
-     * 范围：单条 CAPACITY 轨迹事件先于准入一次性初始化且数值/资源归类一致。
+     * Scope: one CAPACITY trace event is initialized exactly once before admission,
+     * with consistent value and resource classification.
      */
     private void verifyTraceCapacityEvent(TransferTraceEvent e, boolean started, Set<String> capacities)
             throws IOException {
@@ -468,7 +481,8 @@ final class NetworkLedgerContextValidator {
 
     /**
      * 2026-10-26 complexity extraction from verifyTraceEvents; statements verbatim; order unchanged.
-     * 范围：单条 COMPLETE 轨迹事件绑定引回与完成时点核验并计入完成集。
+     * Scope: one COMPLETE trace event is checked for its binding back-reference and its
+     * completion instant, then added to the completion set.
      */
     private void verifyTraceCompletionEvent(
             TransferTraceEvent e, Map<Long, NetworkFlowBinding> bindings, Set<Long> completed) throws IOException {
@@ -482,7 +496,10 @@ final class NetworkLedgerContextValidator {
         completed.add(e.getAdmissionOrdinal());
     }
 
-    /** finish() 轨迹聚合的私有搬运转写结构（字段直读，无转发行为）。 */
+    /**
+     * Private relocated structure of the finish() trace aggregates (direct field reads,
+     * no forwarding behavior).
+     */
     private static final class TraceAggregates {
         private Set<String> capacities;
         private Set<Long> completed;
@@ -559,7 +576,8 @@ final class NetworkLedgerContextValidator {
 
         /**
          * 2026-10-26 complexity extraction from Topology; statements verbatim; order unchanged.
-         * 范围：hostEdgePlacements 缺省轮转派位与显式派位的完备性/边界核验。
+         * Scope: completeness and bounds check of the default round-robin placement and
+         * the explicit placement of hostEdgePlacements.
          */
         private void assignEdgePlacements(JsonObject raw, Set<Integer> hosts) throws IOException {
             JsonElement explicit = required(raw, "hostEdgePlacements");
@@ -646,7 +664,7 @@ final class NetworkLedgerContextValidator {
 
         /**
          * 2026-10-26 complexity extraction from directed; statements verbatim; order unchanged.
-         * 范围：链路形状 ACC→EDGE 的宿主边坐标核对。
+         * Scope: verification of the host-edge coordinates for the ACC->EDGE link shape.
          */
         private boolean isAccToEdge(String[] a, String[] b) throws IOException {
             int[] p = placement.get(canonicalInt(a[1]));
@@ -655,7 +673,7 @@ final class NetworkLedgerContextValidator {
 
         /**
          * 2026-10-26 complexity extraction from directed; statements verbatim; order unchanged.
-         * 范围：链路形状 EDGE→AGG 的 pod/half 边界核对。
+         * Scope: pod/half boundary check for the EDGE->AGG link shape.
          */
         private boolean isEdgeToAgg(String[] a, String[] b) throws IOException {
             int p = canonicalInt(a[1]), e = canonicalInt(a[2]), q = canonicalInt(b[1]), g = canonicalInt(b[2]);
@@ -664,7 +682,7 @@ final class NetworkLedgerContextValidator {
 
         /**
          * 2026-10-26 complexity extraction from directed; statements verbatim; order unchanged.
-         * 范围：链路形状 AGG→CORE 的 pod/half/cores 边界核对。
+         * Scope: pod/half/cores boundary check for the AGG->CORE link shape.
          */
         private boolean isAggToCore(String[] a, String[] b) throws IOException {
             int p = canonicalInt(a[1]), g = canonicalInt(a[2]), c = canonicalInt(b[1]);

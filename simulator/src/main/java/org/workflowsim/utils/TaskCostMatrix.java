@@ -5,30 +5,36 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 任务×VM 异构执行成本矩阵——论文复现轮新增的平台能力。
+ * Task-by-VM heterogeneous execution cost matrix -- a platform capability added in the paper
+ * reproduction round.
  *
- * <p><b>动机</b>：WorkflowSim 的原生执行模型是"单一 MI ÷ 统一 MIPS 缩放"
- * （执行秒数 = cloudletLength / vmMips），每台 VM 的成本只能是同一任务成本的线性缩放。
- * 而经典 DAG 调度论文（HEFT/CPOP/DLS/ETF/PEFT 等）普遍使用<b>任务×处理器任意成本矩阵</b>
- * （如 Topcuoglu 2002 Table I：每个任务在每台处理器上有独立成本，不满足线性缩放）。
- * 没有本矩阵，这类论文的精确数值复现全部受阻。</p>
+ * <p><b>Motivation</b>: the native WorkflowSim execution model is "a single MI divided by a
+ * uniform MIPS scale" (execution seconds = cloudletLength / vmMips), so each VM's cost can only be
+ * a linear scaling of the same task's cost. Classic DAG scheduling papers (HEFT/CPOP/DLS/ETF/PEFT
+ * and others) generally use an <b>arbitrary task-by-processor cost matrix</b> (for example
+ * Topcuoglu 2002 Table I: every task has an independent cost on every processor and does not
+ * satisfy linear scaling). Without this matrix, an exact numerical reproduction of such papers is
+ * blocked entirely.</p>
  *
- * <p><b>语义</b>：矩阵条目 {@code (taskId, vmId) → 执行秒数}。STATIC 派发在作业提交前
- * 按 {@code MI = round(执行秒数 × vm.mips)} 折算，保证运行时执行时间与矩阵条目一致
- * （受 CloudSim 整数 MI 舍入影响，见 WorkflowDatacenter 换算 Javadoc）。规划器直接读取
- * 矩阵进行成本估计。</p>
+ * <p><b>Semantics</b>: matrix entry {@code (taskId, vmId) -> execution seconds}. STATIC dispatch
+ * converts by {@code MI = round(execution seconds * vm.mips)} before job submission, so that the
+ * runtime execution time matches the matrix entry (subject to CloudSim integer-MI rounding, see
+ * the WorkflowDatacenter conversion Javadoc). Planners read the matrix directly for cost
+ * estimation.</p>
  *
- * <p><b>契约</b>：</p>
+ * <p><b>Contract</b>:</p>
  * <ul>
- *   <li>矩阵为可选配置：未配置时平台保持既有 MI/mips 缩放行为，参考数字不变；</li>
- *   <li>配置矩阵时必须使用 STATIC 派发（在线调度器不做折算）且聚类方法为 NONE
- *       （作业必须与逻辑任务一一对应，折算才有唯一 VM 目标）；</li>
- *   <li>矩阵必须覆盖仿真中出现的全部任务 ID × 全部 VM ID：缺失条目在应用阶段
- *       fail-fast，不做静默回退；</li>
- *   <li>条目必须为正有限秒数。</li>
+ *   <li>The matrix is an optional configuration: when it is not configured the platform keeps the
+ *       existing MI/mips scaling behavior and the reference numbers are unchanged;</li>
+ *   <li>Configuring the matrix requires STATIC dispatch (the online schedulers perform no
+ *       conversion) and the NONE clustering method (jobs must correspond one-to-one with logical
+ *       tasks for the conversion to have a unique VM target);</li>
+ *   <li>The matrix must cover every task ID x every VM ID appearing in the simulation: a missing
+ *       entry fails fast at the application stage and never falls back silently;</li>
+ *   <li>Entries must be positive finite seconds.</li>
  * </ul>
  *
- * <p>本类是不可变值对象：构建后深拷贝为不可变映射。</p>
+ * <p>This class is an immutable value object: construction deep-copies it into immutable maps.</p>
  */
 public final class TaskCostMatrix {
 
@@ -44,21 +50,21 @@ public final class TaskCostMatrix {
     }
 
     /**
-     * 返回一个新的构建器。
+     * Return a new builder.
      *
-     * @return 空构建器
+     * @return an empty builder
      */
     public static Builder builder() {
         return new Builder();
     }
 
     /**
-     * 返回某任务在某 VM 上的执行秒数。
+     * Return the execution seconds of a task on a VM.
      *
-     * @param taskId 逻辑任务 ID（cloudlet ID）
+     * @param taskId logical task ID (cloudlet ID)
      * @param vmId VM ID
-     * @return 执行秒数
-     * @throws IllegalArgumentException 当条目缺失时抛出（fail-fast，不静默回退）
+     * @return execution seconds
+     * @throws IllegalArgumentException when the entry is missing (fail-fast, no silent fallback)
      */
     public double getCostSeconds(int taskId, int vmId) {
         Map<Integer, Double> perVm = costSecondsByTaskAndVm.get(Integer.valueOf(taskId));
@@ -73,22 +79,23 @@ public final class TaskCostMatrix {
     }
 
     /**
-     * 返回矩阵覆盖的任务 ID 集合（不可变，构建顺序）。
+     * Return the set of task IDs covered by the matrix (immutable, build order).
      *
-     * @return 任务 ID 集合
+     * @return task ID set
      */
     public java.util.Set<Integer> getTaskIds() {
         return costSecondsByTaskAndVm.keySet();
     }
 
     /**
-     * 返回指定任务在全部已登记 VM 上的执行秒数（不可变快照）。
+     * Return the execution seconds of the given task on every registered VM (immutable snapshot).
      *
-     * <p>该接口供证据写出与审计工具使用；调用方不能通过返回值修改矩阵内部状态。</p>
+     * <p>This accessor exists for evidence writing and audit tools; callers cannot modify the matrix
+     * internal state through the return value.</p>
      *
-     * @param taskId 逻辑任务 ID
-     * @return VM ID 到执行秒数的不可变映射
-     * @throws IllegalArgumentException 当任务没有任何矩阵条目时抛出
+     * @param taskId logical task ID
+     * @return immutable map from VM ID to execution seconds
+     * @throws IllegalArgumentException when the task has no matrix entry
      */
     public Map<Integer, Double> getCostsForTask(int taskId) {
         Map<Integer, Double> perVm = costSecondsByTaskAndVm.get(Integer.valueOf(taskId));
@@ -99,9 +106,9 @@ public final class TaskCostMatrix {
     }
 
     /**
-     * 返回完整任务×VM矩阵的不可变深拷贝。
+     * Return an immutable deep copy of the full task-by-VM matrix.
      *
-     * @return 任务 ID 到 VM 成本映射的不可变快照
+     * @return immutable snapshot from task ID to the per-VM cost map
      */
     public Map<Integer, Map<Integer, Double>> asMap() {
         Map<Integer, Map<Integer, Double>> copy = new LinkedHashMap<Integer, Map<Integer, Double>>();
@@ -112,11 +119,11 @@ public final class TaskCostMatrix {
     }
 
     /**
-     * 判断某任务×VM 组合是否有登记条目。
+     * Return whether a task-by-VM pair has a registered entry.
      *
-     * @param taskId 逻辑任务 ID（cloudlet ID）
+     * @param taskId logical task ID (cloudlet ID)
      * @param vmId VM ID
-     * @return 有登记条目时返回 true
+     * @return true when a registered entry exists
      */
     public boolean contains(int taskId, int vmId) {
         Map<Integer, Double> perVm = costSecondsByTaskAndVm.get(Integer.valueOf(taskId));
@@ -124,11 +131,11 @@ public final class TaskCostMatrix {
     }
 
     /**
-     * 判断矩阵是否覆盖给定的任务 ID 与 VM ID 集合。
+     * Return whether the matrix covers the given task IDs and VM IDs.
      *
-     * @param taskIds 需要覆盖的任务 ID
-     * @param vmIds 需要覆盖的 VM ID
-     * @return 全部覆盖时返回 true
+     * @param taskIds task IDs that must be covered
+     * @param vmIds VM IDs that must be covered
+     * @return true when all are covered
      */
     public boolean covers(Iterable<Integer> taskIds, Iterable<Integer> vmIds) {
         for (Integer taskId : taskIds) {
@@ -145,7 +152,7 @@ public final class TaskCostMatrix {
         return true;
     }
 
-    /** TaskCostMatrix 的可变构建器。 */
+    /** Mutable builder for TaskCostMatrix. */
     public static final class Builder {
 
         private final Map<Integer, Map<Integer, Double>> entries = new LinkedHashMap<Integer, Map<Integer, Double>>();
@@ -153,13 +160,15 @@ public final class TaskCostMatrix {
         private Builder() {}
 
         /**
-         * 登记一个条目。
+         * Register one entry.
          *
-         * @param taskId 逻辑任务 ID（cloudlet ID）
+         * @param taskId logical task ID (cloudlet ID)
          * @param vmId VM ID
-         * @param costSeconds 该任务在该 VM 上的执行秒数，必须为正有限值
-         * @return 本构建器
-         * @throws IllegalArgumentException 当秒数非正/非有限，或条目重复登记时抛出
+         * @param costSeconds execution seconds of that task on that VM; must be a positive finite
+         *     value
+         * @return this builder
+         * @throws IllegalArgumentException when the seconds are non-positive/non-finite, or the
+         *     entry is registered twice
          */
         public Builder put(int taskId, int vmId, double costSeconds) {
             if (!(costSeconds > 0.0) || Double.isNaN(costSeconds) || Double.isInfinite(costSeconds)) {
@@ -179,10 +188,10 @@ public final class TaskCostMatrix {
         }
 
         /**
-         * 构建不可变矩阵。
+         * Build the immutable matrix.
          *
-         * @return 不可变 TaskCostMatrix
-         * @throws IllegalArgumentException 当矩阵为空时抛出
+         * @return immutable TaskCostMatrix
+         * @throws IllegalArgumentException when the matrix is empty
          */
         public TaskCostMatrix build() {
             if (entries.isEmpty()) {

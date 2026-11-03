@@ -28,10 +28,10 @@ import org.workflowsim.clustering.AbstractArrayList;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * 子节点感知的水平均衡方法。
+ * Child-aware horizontal balancing method.
  *
- * <p>当同层两个任务集合共享可合并的父集合时，该策略将其合并，并向后续层传播
- * 检查状态。</p>
+ * <p>When two task sets in the same level share a mergeable parent set, this strategy
+ * merges them and propagates the check state to the subsequent levels.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -40,18 +40,18 @@ import org.workflowsim.clustering.TaskSet;
 public class ChildAwareHorizontalClustering extends BalancingMethod {
 
     /**
-     * 创建子节点感知的水平均衡方法。
+     * Creates the child-aware horizontal balancing method.
      *
-     * @param levelMap 按层组织的任务集合
-     * @param taskMap 逻辑任务到任务集合的映射
-     * @param clusterNum 每层目标聚类作业数
+     * @param levelMap task sets organized by level
+     * @param taskMap mapping from logical tasks to task sets
+     * @param clusterNum target number of clustered jobs per level
      */
     public ChildAwareHorizontalClustering(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
     /**
-     * 从任务集合数量最多的层开始执行子节点感知合并。
+     * Runs the child-aware merge starting from the level with the most task sets.
      */
     @Override
     public void run() {
@@ -71,7 +71,8 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
                 // Log.printLine("Depth:"+list.getDepth());
                 if (hasClustered) {
                     list.hasChecked = true;
-                    // 继续检查后续层，传播本次合并带来的关系变化。
+                    // Continue checking the subsequent levels to propagate the relation
+                    // changes introduced by this merge.
                     int depth = list.getDepth();
 
                     int i = depth + 1;
@@ -85,14 +86,14 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
                 }
             }
         }
-        // 在方法退出前恢复任务集合的遍历标记。
+        // Restore the task-set traversal flags before the method returns.
         cleanTaskSetChecked();
     }
 
     /**
-     * 按任务集合大小降序排列层列表。
+     * Sorts the level list by descending task-set size.
      *
-     * @param list 待排序的层列表
+     * @param list level list to sort
      */
     private void sortMap(List<AbstractArrayList> list) {
         Collections.sort(list, new Comparator<AbstractArrayList>() {
@@ -105,15 +106,16 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
     }
 
     /**
-     * 处理同一层的任务集合，并尝试合并共享父集合的候选项。
+     * Processes the task sets of one level and attempts to merge the candidates that
+     * share a parent set.
      *
-     * @param taskList 待处理的任务集合
-     * @return 是否执行过合并
+     * @param taskList task sets to process
+     * @return whether any merge was performed
      */
     private boolean CHBcheckLevel(List<TaskSet> taskList) {
         boolean hasClustered = false;
         for (TaskSet setA : taskList) {
-            setA.hasChecked = false; // 确保本层从干净的遍历状态开始
+            setA.hasChecked = false; // ensure this level starts from a clean traversal state
         }
         for (int i = 0; i < taskList.size(); i++) {
             TaskSet setA = taskList.get(i);
@@ -124,8 +126,8 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
 
                         TaskSet kid = CHBhasOneParent(setA, setB);
                         if (kid != null) {
-                            if (true) { // 历史实现未额外施加运行时间约束
-                                setA.hasChecked = true; // 标记已参与本轮处理
+                            if (true) { // the historical implementation imposed no additional runtime constraint
+                                setA.hasChecked = true; // mark as handled in this round
                                 setB.hasChecked = true;
                                 addTaskSet2TaskSet(setA, setB);
                                 hasClustered = true;
@@ -139,11 +141,11 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
     }
 
     /**
-     * 判断两个任务集合是否拥有同一个唯一子集合。
+     * Determines whether two task sets own the same unique child set.
      *
-     * @param setA 第一个待比较集合
-     * @param setB 第二个待比较集合
-     * @return 共享的唯一子集合；不存在时返回 {@code null}
+     * @param setA first set to compare
+     * @param setB second set to compare
+     * @return the shared unique child set; {@code null} when none exists
      */
     private TaskSet CHBhasOnlyChild(TaskSet setA, TaskSet setB) {
 
@@ -158,11 +160,11 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
     }
 
     /**
-     * 判断两个任务集合是否拥有同一个唯一父集合。
+     * Determines whether two task sets own the same unique parent set.
      *
-     * @param setA 第一个待比较集合
-     * @param setB 第二个待比较集合
-     * @return 共享的唯一父集合；不存在时返回 {@code null}
+     * @param setA first set to compare
+     * @param setB second set to compare
+     * @return the shared unique parent set; {@code null} when none exists
      */
     private TaskSet CHBhasOnlyParent(TaskSet setA, TaskSet setB) {
 
@@ -177,11 +179,11 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
     }
 
     /**
-     * 查找两个任务集合的任意共同父集合。
+     * Finds any common parent set of two task sets.
      *
-     * @param setA 第一个待比较集合
-     * @param setB 第二个待比较集合
-     * @return 共同父集合；不存在时返回 {@code null}
+     * @param setA first set to compare
+     * @param setB second set to compare
+     * @return the common parent set; {@code null} when none exists
      */
     private TaskSet CHBhasOneParent(TaskSet setA, TaskSet setB) {
         for (TaskSet parentA : setA.getParentList()) {

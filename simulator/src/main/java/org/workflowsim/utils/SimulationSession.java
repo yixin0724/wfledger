@@ -9,11 +9,12 @@ import org.workflowsim.failure.FailureMonitor;
 import org.workflowsim.failure.FailureParameters;
 
 /**
- * 管理一次串行实验关联的 WorkflowSim 全局状态。
+ * Manage the WorkflowSim global state associated with one serial experiment.
  *
- * <p>随附的 CloudSim 3 内核使用 JVM 全局状态，因此同一 JVM 内会话显式拒绝并发使用；
- * 但每个按顺序打开的会话都会获得全新的 WorkflowSim 配置。调用方应使用
- * try-with-resources 确保 {@link #close()} 被调用。</p>
+ * <p>The bundled CloudSim 3 kernel uses JVM global state, so a session explicitly rejects
+ * concurrent use inside the same JVM; every session opened in sequence however obtains a fresh
+ * WorkflowSim configuration. Callers should use try-with-resources so that {@link #close()} is
+ * invoked.</p>
  */
 public final class SimulationSession implements AutoCloseable {
 
@@ -24,7 +25,7 @@ public final class SimulationSession implements AutoCloseable {
     private boolean cloudSimInitialized;
     /** True only after this session enters a kernel initialization attempt. */
     private boolean ownsCloudSimKernel;
-    /** 会话打开时的 Log 全局开关状态，close 时恢复（R8 审计修复 P1-5）。 */
+    /** Global Log switch state at session open, restored by close (R8 audit fix P1-5). */
     private final boolean logDisabledAtOpen;
 
     private SimulationSession(SimulationConfig config) {
@@ -33,11 +34,11 @@ public final class SimulationSession implements AutoCloseable {
     }
 
     /**
-     * 打开并配置一个新的串行 WorkflowSim 会话。
+     * Open and configure a new serial WorkflowSim session.
      *
-     * @param config 本次运行的不可变配置
-     * @return 已激活的会话
-     * @throws IllegalStateException 当同一 JVM 中已有未关闭会话时
+     * @param config immutable configuration of this run
+     * @return the activated session
+     * @throws IllegalStateException if an unclosed session already exists in the same JVM
      */
     public static synchronized SimulationSession open(SimulationConfig config) {
         if (config == null) {
@@ -52,7 +53,8 @@ public final class SimulationSession implements AutoCloseable {
         Parameters.setRuntimeScale(config.getRuntimeScale());
         Parameters.setRuntimeReferenceMips(config.getRuntimeReferenceMips());
         Parameters.setCostModel(config.getCostModel());
-        // BAT-D2（2026-10-29）：派发时刻频档策略随会话装载（与调度枚举同一载体语义）。
+        // BAT-D2 (2026-10-29): the dispatch-time frequency tier policy is loaded with the session
+        // (same carrier semantics as the scheduling enum).
         Parameters.setFrequencyPolicy(config.getFrequencyPolicy());
         if (config.getRegisteredSchedulingAlgorithmProvider() != null) {
             // BAT-3 (2026-10-26): registered SPI algorithm — carried through the same
@@ -98,16 +100,20 @@ public final class SimulationSession implements AutoCloseable {
     }
 
     /**
-     * 在所有 WorkflowSim 全局状态已配置、任何仿真实体创建前初始化 CloudSim 内核。
+     * Initialize the CloudSim kernel once all WorkflowSim global state is configured and before any
+     * simulation entity is created.
      *
-     * <p>通过本地参数检查后，显式初始化调用将内核生命周期交给本会话管理；进入内核的
-     * 初始化尝试即使失败也会被清理。仅打开会话、或在进入内核前拒绝参数，不取得其他
-     * legacy 内核的归属。会话存续期间不要从其他调用方替换内核；只支持串行生命周期。</p>
+     * <p>After the local argument checks pass, the explicit initialization call hands the kernel
+     * lifecycle to this session; an initialization attempt that enters the kernel is cleaned up even
+     * when it fails. Merely opening a session, or rejecting arguments before entering the kernel,
+     * acquires no ownership of another legacy kernel. Do not replace the kernel from another caller
+     * while the session is alive; only serial lifecycles are supported.</p>
      *
-     * @param users CloudSim 用户数
-     * @param calendar 仿真开始日历；{@code null} 时交由 CloudSim 处理
-     * @param trace 是否启用 CloudSim 事件跟踪输出
-     * @throws IllegalStateException 当会话已关闭、CloudSim 已初始化或内核初始化失败时
+     * @param users number of CloudSim users
+     * @param calendar simulation start calendar; {@code null} lets CloudSim handle it
+     * @param trace whether to enable CloudSim event trace output
+     * @throws IllegalStateException if the session is closed, CloudSim is already initialized or
+     *         kernel initialization fails
      */
     public void initializeCloudSim(int users, Calendar calendar, boolean trace) {
         requireOpen();

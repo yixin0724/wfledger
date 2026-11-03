@@ -28,9 +28,10 @@ import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * 基于后继图距离的水平均衡聚类方法。
+ * Horizontal balancing clustering method driven by successor-graph distance.
  *
- * <p>同层任务集合按到共同后继的距离选择候选目标，再以作业长度打破候选间的平局。</p>
+ * <p>Task sets on the same level choose candidate targets by their distance to a shared
+ * successor, and job length then breaks ties among the candidates.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -39,18 +40,18 @@ import org.workflowsim.clustering.TaskSet;
 public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
 
     /**
-     * 创建基于图距离的水平均衡方法。
+     * Creates a graph-distance horizontal balancing method.
      *
-     * @param levelMap 按层组织的任务集合
-     * @param taskMap 逻辑任务到任务集合的映射
-     * @param clusterNum 每层目标聚类作业数
+     * @param levelMap task sets organized by level
+     * @param taskMap logical task to task-set mapping
+     * @param clusterNum target number of clustered jobs per level
      */
     public HorizontalDistanceBalancing(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
     /**
-     * 对每层任务集合执行基于图距离的合并。
+     * Merges task sets by graph distance on every level.
      */
     @Override
     public void run() {
@@ -61,9 +62,10 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
     }
 
     /**
-     * 预处理同层集合后，选择图距离最接近且容量允许的目标集合。
+     * Preprocesses the same-level sets, then selects the target set with the closest graph
+     * distance whose capacity still allows it.
      *
-     * @param taskList 待处理的同层任务集合
+     * @param taskList same-level task sets to process
      */
     public void process(List<TaskSet> taskList) {
 
@@ -76,36 +78,39 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
             if (clusters_size * getClusterNum() < taskList.size()) {
                 clusters_size++;
             }
-            // 此策略由距离预处理确定初始目标，而非按影响因子排序。
+            // This strategy fixes its initial targets by distance preprocessing rather than
+            // sorting by impact factor.
             preprocessing(taskList, jobList);
 
             for (TaskSet set : taskList) {
-                // 候选选择器同时考虑图距离、容量与当前作业长度。
+                // The candidate selector weighs graph distance, capacity and the current job
+                // length together.
                 TaskSet job = getCandidateTastSet(jobList, set, clusters_size);
                 addTaskSet2TaskSet(set, job);
                 job.addTask(set.getTaskList());
                 job.setImpactFafctor(set.getImpactFactor());
-                // 更新逻辑任务到新目标集合的映射。
+                // Update the logical task to target set mapping.
                 for (Task task : set.getTaskList()) {
-                    getTaskMap().put(task, job); // 依赖关系由调用方统一重建
-                    // 目标集合沿用当前策略定义的影响因子。
+                    getTaskMap().put(task, job); // dependencies are rebuilt centrally by the caller
+                    // The target set keeps the impact factor defined by the current strategy.
                 }
             }
-            taskList.clear(); // 原层集合已被目标作业集合替代
+            taskList.clear(); // the original level sets are replaced by the target job sets
         }
     }
 
     /**
-     * 按距离矩阵选择彼此最远的初始种子索引。
+     * Selects the initial seed indices that are farthest apart according to the distance
+     * matrix.
      *
-     * @param distances 下三角距离矩阵
-     * @param size 任务集合数量
-     * @param num 所需种子数量
-     * @return 种子任务集合的索引
+     * @param distances lower-triangular distance matrix
+     * @param size number of task sets
+     * @param num number of seeds required
+     * @return indices of the seed task sets
      */
     private List<Integer> sortDistanceIncreasing(int[][] distances, int size, int num) {
         List<Integer> newList = new ArrayList<>();
-        // 先选取距离最大的两个种子。
+        // First pick the two seeds with the largest distance.
         int max = 0;
         int max_i = 0;
         int max_j = 0;
@@ -124,7 +129,8 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
         double max_dist = 0;
         max_i = 0;
         for (int id = 0; id < num - 2; id++) {
-            max_dist = 0; // 每轮重新寻找与已选种子平均距离最大的候选
+            max_dist = 0; // each round looks for the candidate with the largest average
+            // distance to the seeds already chosen
             for (int i = 0; i < size; i++) {
                 double dist = getAvgDistance(i, newList, distances);
                 if (max_dist < dist) {
@@ -154,7 +160,7 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
                 avg += distances[id][nId];
             }
         }
-        // 非空列表的平均距离。
+        // Mean distance over the non-empty list.
         avg = avg / list.size();
         return avg;
     }
@@ -179,7 +185,7 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
             }
         }
         int job_index = 0;
-        // 已被选为初始种子的索引记录在 record 中。
+        // Indices already chosen as initial seeds are recorded in record.
         List<Integer> idList = sortDistanceIncreasing(distances, size, jobList.size());
         for (int max_i : idList) {
             record[index_record] = max_i;
@@ -189,10 +195,10 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
             addTaskSet2TaskSet(set, job);
             job.addTask(set.getTaskList());
             job.setImpactFafctor(set.getImpactFactor());
-            // 更新逻辑任务到新目标集合的映射。
+            // Update the logical task to target set mapping.
             for (Task task : set.getTaskList()) {
-                getTaskMap().put(task, job); // 依赖关系由调用方统一重建
-                // 保留策略定义的影响因子。
+                getTaskMap().put(task, job); // dependencies are rebuilt centrally by the caller
+                // Keep the impact factor defined by the strategy.
             }
             job_index++;
             if (job_index == jobList.size()) {
@@ -201,7 +207,8 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
         }
 
         /**
-         * 先排序索引再逆序删除，避免移除时改变后续索引。
+         * Sort the indices first and delete in reverse order, so that a removal does not
+         * shift the indices still pending removal.
          */
         Arrays.sort(record);
         for (int i = size - 1; i >= 0 && record[i] >= 0; i--) {
@@ -243,7 +250,7 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
                 }
             }
 
-            // 没有空集合时，逐步放宽到下一个最小距离层。
+            // With no empty set available, relax step by step to the next smallest distance tier.
             while (returnList.isEmpty()) {
                 map.remove(dis);
                 List<Integer> keys = new ArrayList(map.keySet());
@@ -266,12 +273,13 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
     }
 
     /**
-     * 选择可容纳当前集合且图距离最小的候选目标。
+     * Selects the candidate target that can hold the current set and has the smallest graph
+     * distance.
      *
-     * @param taskList 候选目标集合
-     * @param checkSet 当前待合并集合
-     * @param clusters_size 每个目标集合允许的最大任务数
-     * @return 候选目标集合
+     * @param taskList candidate target sets
+     * @param checkSet current set to merge
+     * @param clusters_size maximum number of tasks allowed per target set
+     * @return candidate target set
      */
     protected TaskSet getCandidateTastSet(ArrayList<TaskSet> taskList, TaskSet checkSet, int clusters_size) {
 
@@ -293,12 +301,13 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
     }
 
     /**
-     * 计算两个同层任务集合到共同后继的图距离。
-     * 水平聚类假定两个集合位于同一 DAG 层，不适用于任意跨层任务对。
+     * Computes the graph distance of two same-level task sets to their common successor.
+     * Horizontal clustering assumes both sets sit on the same DAG level and is not
+     * applicable to arbitrary cross-level task pairs.
      *
-     * @param taskA 第一个同层任务集合
-     * @param taskB 第二个同层任务集合
-     * @return 偶数形式的后继图距离
+     * @param taskA first same-level task set
+     * @param taskB second same-level task set
+     * @return the successor graph distance in even form
      */
     private int calDistance(TaskSet taskA, TaskSet taskB) {
         if (taskA == null || taskB == null || taskA == taskB) {
@@ -348,7 +357,7 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
     }
 }
 /*
- * 图距离及其两个集合索引的简单值对象。
+ * Simple value object for a graph distance plus its two set indices.
  */
 
 class Distance {

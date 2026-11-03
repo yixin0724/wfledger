@@ -23,11 +23,12 @@ import org.cloudbus.cloudsim.Log;
 import org.workflowsim.Job;
 
 /**
- * 历史执行路径使用的可变开销参数集合。
+ * Mutable overhead parameter set used by the historical execution path.
  *
- * <p>新代码应优先在 {@link SimulationConfig} 中使用不可变的
- * {@link OverheadModelConfig}，由会话按根种子创建本类。各延迟映射以任务或作业深度为键，
- * 键 {@code 0} 表示缺少显式深度项时的默认值。</p>
+ * <p>New code should prefer the immutable {@link OverheadModelConfig} in
+ * {@link SimulationConfig}; the session creates this class from the root seed. Each delay
+ * map is keyed by task or job depth, and key {@code 0} is the default used when no explicit
+ * depth entry exists.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -35,28 +36,29 @@ import org.workflowsim.Job;
  */
 public class OverheadParameters {
 
-    /** WED 子批次最大作业数（0 表示整批不拆分）。 */
+    /** Maximum number of jobs per WED sub-batch (0 means the whole batch is not split). */
     private final int WED_INTERVAL;
-    /** 旧开销路径使用的逻辑带宽。 */
+    /** Logical bandwidth used by the legacy overhead path. */
     private final double bandwidth;
-    /** 任务深度到工作流引擎延迟生成器的映射。 */
+    /** Map from task depth to the workflow engine delay generator. */
     private final Map<Integer, DistributionGenerator> WED_DELAY;
-    /** 任务深度到队列延迟生成器的映射。 */
+    /** Map from task depth to the queue delay generator. */
     private final Map<Integer, DistributionGenerator> QUEUE_DELAY;
-    /** 任务深度到后处理延迟生成器的映射。 */
+    /** Map from task depth to the post-processing delay generator. */
     private final Map<Integer, DistributionGenerator> POST_DELAY;
-    /** 任务深度到聚类延迟生成器的映射。 */
+    /** Map from task depth to the clustering delay generator. */
     private final Map<Integer, DistributionGenerator> CLUST_DELAY;
 
     /**
-     * 创建旧式开销参数。
+     * Creates the legacy overhead parameters.
      *
-     * @param wed_interval WED 子批次最大作业数（0 表示整批不拆分）
-     * @param wed_delay 工作流引擎延迟生成器
-     * @param queue_delay 队列延迟生成器
-     * @param post_delay 后处理延迟生成器
-     * @param cluster_delay 聚类延迟生成器
-     * @param bandwidth 逻辑带宽
+     * @param wed_interval maximum number of jobs per WED sub-batch (0 means the whole batch
+     *        is not split)
+     * @param wed_delay workflow engine delay generator
+     * @param queue_delay queue delay generator
+     * @param post_delay post-processing delay generator
+     * @param cluster_delay clustering delay generator
+     * @param bandwidth logical bandwidth
      */
     public OverheadParameters(
             int wed_interval,
@@ -73,41 +75,42 @@ public class OverheadParameters {
         this.bandwidth = bandwidth;
     }
 
-    /** @return 逻辑带宽 */
+    /** @return logical bandwidth */
     public double getBandwidth() {
         return this.bandwidth;
     }
 
-    /** @return WED 子批次最大作业数（0 表示整批不拆分） */
+    /** @return maximum number of jobs per WED sub-batch (0 means the whole batch is not split) */
     public int getWEDInterval() {
         return this.WED_INTERVAL;
     }
 
-    /** @return 任务深度到队列延迟生成器的映射 */
+    /** @return map from task depth to the queue delay generator */
     public Map<Integer, DistributionGenerator> getQueueDelay() {
         return this.QUEUE_DELAY;
     }
 
-    /** @return 任务深度到后处理延迟生成器的映射 */
+    /** @return map from task depth to the post-processing delay generator */
     public Map<Integer, DistributionGenerator> getPostDelay() {
         return this.POST_DELAY;
     }
 
-    /** @return 任务深度到工作流引擎延迟生成器的映射 */
+    /** @return map from task depth to the workflow engine delay generator */
     public Map<Integer, DistributionGenerator> getWEDDelay() {
         return this.WED_DELAY;
     }
 
-    /** @return 任务深度到聚类延迟生成器的映射 */
+    /** @return map from task depth to the clustering delay generator */
     public Map<Integer, DistributionGenerator> getClustDelay() {
         return this.CLUST_DELAY;
     }
 
     /**
-     * 按作业深度抽取聚类延迟。
+     * Samples the clustering delay by job depth.
      *
-     * @param cl 聚类后的作业 Cloudlet
-     * @return 对应深度的延迟；没有专用项时使用深度 0 默认项或 {@code 0.0}
+     * @param cl clustered job cloudlet
+     * @return delay for the matching depth; the depth-0 default or {@code 0.0} when no
+     *         dedicated entry exists
      */
     public double getClustDelay(Cloudlet cl) {
         double delay = 0.0;
@@ -132,10 +135,11 @@ public class OverheadParameters {
     }
 
     /**
-     * 按作业深度抽取队列延迟。
+     * Samples the queue delay by job depth.
      *
-     * @param cl 聚类后的作业 Cloudlet
-     * @return 对应深度的延迟；没有专用项时使用深度 0 默认项或 {@code 0.0}
+     * @param cl clustered job cloudlet
+     * @return delay for the matching depth; the depth-0 default or {@code 0.0} when no
+     *         dedicated entry exists
      */
     public double getQueueDelay(Cloudlet cl) {
         double delay = 0.0;
@@ -161,10 +165,11 @@ public class OverheadParameters {
     }
 
     /**
-     * 按作业深度抽取后处理延迟。
+     * Samples the post-processing delay by job depth.
      *
-     * @param job 聚类后的作业
-     * @return 对应深度的延迟；没有专用项时使用深度 0 默认项或 {@code 0.0}
+     * @param job clustered job
+     * @return delay for the matching depth; the depth-0 default or {@code 0.0} when no
+     *         dedicated entry exists
      */
     public double getPostDelay(Job job) {
         double delay = 0.0;
@@ -177,7 +182,7 @@ public class OverheadParameters {
             if (this.POST_DELAY.containsKey(job.getDepth())) {
                 delay = this.POST_DELAY.get(job.getDepth()).getNextSample();
             } else if (this.POST_DELAY.containsKey(0)) {
-                // 深度 0 是历史配置中的默认延迟项。
+                // Depth 0 is the default delay entry in the historical configuration.
                 delay = this.POST_DELAY.get(0).getNextSample();
             } else {
                 delay = 0.0;
@@ -190,10 +195,11 @@ public class OverheadParameters {
     }
 
     /**
-     * 根据批次中第一个作业的深度抽取工作流引擎延迟。
+     * Samples the workflow engine delay from the depth of the first job in the batch.
      *
-     * @param list 待提交的作业列表
-     * @return 对应深度的延迟；空列表或未配置延迟时为 {@code 0.0}
+     * @param list jobs to submit
+     * @return delay for the matching depth; {@code 0.0} for an empty list or when no delay
+     *         is configured
      */
     public double getWEDDelay(List list) {
         double delay = 0.0;
@@ -212,7 +218,8 @@ public class OverheadParameters {
             }
 
         } else {
-            // 空批次没有可用于选择深度的作业，历史语义是零延迟。
+            // An empty batch has no job from which to select a depth; the historical
+            // semantics is zero delay.
         }
         return delay;
     }

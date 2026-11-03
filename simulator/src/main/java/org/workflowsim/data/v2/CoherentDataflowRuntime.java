@@ -269,7 +269,7 @@ public final class CoherentDataflowRuntime {
                 jobs,
                 frame.outputObligations);
     }
-    /** observation() 的文件持有者视图阶段（逐字搬运转写）。 */
+    /** File-holder view stage of observation() (verbatim move; statement order unchanged). */
     private void observeFileViews(
             Frame frame,
             Set<DataflowFilePlan.FileId> selected,
@@ -288,7 +288,7 @@ public final class CoherentDataflowRuntime {
         }
     }
 
-    /** observation() 的在途拷贝视图阶段（服务/副本/拷贝三方对账，逐字搬运转写）。 */
+    /** In-flight copies stage of observation() (service/replica/copy three-way reconciliation, verbatim). */
     private void observeCopyViews(
             Frame frame,
             org.workflowsim.data.TransferServiceSnapshot service,
@@ -399,7 +399,7 @@ public final class CoherentDataflowRuntime {
         return job.preparation;
     }
 
-    /** requestJob() 的逐需求解析阶段：local/zero/join/new-copy 四路 + 事件记录（逐字搬运转写）。 */
+    /** Per-demand resolution stage of requestJob(): local/zero/join/new-copy paths plus event records (verbatim). */
     private InputAggregate resolveJobInputs(
             Stage staged,
             Frame frame,
@@ -487,7 +487,7 @@ public final class CoherentDataflowRuntime {
         }
         return aggregate;
     }
-    /** resolveJobInputs() 的 COPY_ADMITTED 事件记录阶段（逐字搬运转写）。 */
+    /** COPY_ADMITTED event recording stage of resolveJobInputs() (verbatim move). */
     private void recordCopyAdmitted(
             Stage staged,
             double now,
@@ -512,7 +512,7 @@ public final class CoherentDataflowRuntime {
         }
     }
 
-    /** requestJob() 累计量的私有搬运转写结构。 */
+    /** Private transfer structure for the requestJob() accumulators. */
     private static final class InputAggregate {
         private double bytes;
         private double seconds;
@@ -575,7 +575,8 @@ public final class CoherentDataflowRuntime {
 
     /**
      * 2026-10-26 complexity extraction from requestStorageJob; statements verbatim; order unchanged.
-     * 作用域：仅处理单条输入需求在 store 提交前的等待登记（未提交则挂起 jobId 记账）或即时解析。
+     * Scope: handles only the wait registration of a single input demand before its store commitment
+     * (an uncommitted demand records the pending jobId in the ledger) or its immediate resolution.
      */
     private void awaitOrResolveStorageInput(
             Stage staged,
@@ -1003,13 +1004,15 @@ public final class CoherentDataflowRuntime {
     }
 
     /**
-     * B1（2026-11-02）：取一个可安全写入的作业状态——若该条目仍与源帧共享，先复制再写。
-     * 所有会改变 JobState 的路径都必须经此取得对象；只读路径可继续用 {@code frame.jobs.get}。
+     * B1 (2026-11-02): obtains a Job state that is safe to write -- if the entry is still shared with
+     * the source frame, it is copied before the write. Every path that mutates JobState must obtain
+     * the object here; read-only paths may keep using {@code frame.jobs.get}.
      */
     private JobState mutable(Frame frame, int jobId) {
-        // 防御闸：可写句柄只能取自暂存帧。若对已提交状态（current）就地改写，事务的
-        // 回滚语义与「上一帧不可变」不变量会同时失效，且不会有任何测试红灯——必须显式
-        // 失败（B1 复核轮）。
+        // Defense gate: a writable handle may only come from a staged frame. An in-place rewrite of the
+        // committed state (current) would invalidate the transaction rollback semantics and the
+        // "previous frame is immutable" invariant at once, and no test would turn red -- it must fail
+        // explicitly (B1 review round).
         if (frame == current) {
             throw new IllegalStateException(
                     "mutable() must be called on a staged frame; the committed state is immutable");
@@ -1206,9 +1209,10 @@ public final class CoherentDataflowRuntime {
         final Set<DataflowFilePlan.FileId> outputObligations = new TreeSet<>();
         // Mutable copies contain active work only; closed lookup histories share immutable roots.
         final Map<Integer, JobState> jobs = new LinkedHashMap<>();
-        // B1（2026-11-02）：写时复制所有权。fork 后 jobs 与源帧<b>共享</b> JobState 实例，
-        // 只有本集合里的 id 才允许就地修改；任何写路径先经 {@link #mutable} 取到私有副本。
-        // 这消灭了每个事务 O(活跃作业数) 的深拷贝（宽活跃集上的二次分配）。
+        // B1 (2026-11-02): copy-on-write ownership. After a fork, jobs <b>shares</b> JobState instances
+        // with the source frame; only ids held in this set may be modified in place, and every write
+        // path first takes a private copy through {@link #mutable}. This eliminates the O(active jobs)
+        // deep copy per transaction (a quadratic allocation over wide active sets).
         final java.util.Set<Integer> ownedJobs = new HashSet<>();
         PersistentHistoryMap<Integer, CompletedJob> completedJobs = PersistentHistoryMap.empty();
         PersistentHistoryMap<Integer, Boolean> successfulTasks = PersistentHistoryMap.empty();
@@ -1225,8 +1229,8 @@ public final class CoherentDataflowRuntime {
             replicas = from.replicas.fork();
             service = from.service == null ? null : from.service.fork();
             nextTime = from.nextTime;
-            // B1：浅拷贝活跃作业表——实例共享，写路径用 mutable() 按需分叉（rollback 安全：
-            // 未被 mutable() 取用的条目从未被修改）。
+            // B1: shallow copy of the active-job table -- instances are shared, and write paths fork on
+            // demand through mutable() (rollback safe: entries never taken by mutable() are never modified).
             jobs.putAll(from.jobs);
             for (Map.Entry<Target, LinkedHashSet<Integer>> entry : from.waiters.entrySet()) {
                 waiters.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));

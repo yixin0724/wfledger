@@ -1,19 +1,21 @@
 package org.workflowsim.platform;
 
-/** 已维护示例使用的标准化、显式抽象平台集合。 */
+/** Set of standardized, explicit abstract platforms used by the maintained examples. */
 public final class PlatformProfiles {
 
     private PlatformProfiles() {}
 
     /**
-     * 创建每个 Host 配置一台单核 VM 的同构本地抽象平台。
+     * Creates a homogeneous local abstract platform with one single-core VM per
+     * Host.
      *
-     * <p>该平台是配置驱动的研究基线，不是 WfCommons 执行机器的回放。</p>
+     * <p>This platform is a configuration-driven research baseline, not a
+     * replay of a WfCommons execution machine.</p>
      *
-     * @param name 平台名称
-     * @param vmCount 需要创建的 VM 和 Host 数量，必须为正数
-     * @return 一台 VM 对应一台 Host 的同构抽象平台
-     * @throws IllegalArgumentException 当 {@code vmCount} 非正时抛出
+     * @param name platform name
+     * @param vmCount number of VMs and Hosts to create, must be positive
+     * @return homogeneous abstract platform with one VM per Host
+     * @throws IllegalArgumentException when {@code vmCount} is not positive
      */
     public static PlatformProfile homogeneousLocal(String name, int vmCount) {
         if (vmCount <= 0) {
@@ -29,22 +31,29 @@ public final class PlatformProfiles {
     }
 
     /**
-     * 创建异构 MIPS 的本地抽象平台：每个 Host 配置一台单核 VM，VM ID 按
-     * {@code vmMips} 列表顺序从 0 递增。
+     * Creates a local abstract platform with heterogeneous MIPS: one single-core
+     * VM per Host, with VM IDs increasing from 0 in {@code vmMips} list order.
      *
-     * <p>用于比较不同计算能力下的调度行为。仅改变 MIPS 不会使无矩阵 PSO 的成本项
-     * 随映射变化：{@code (rawLength / mips) * (mips / 1000) = rawLength / 1000}。
-     * 配置任务×VM 成本矩阵后，有效执行秒数不再必须与 MIPS 成反比，PSO 的成本项
-     * 才可能依映射变化；其单价仍是抽象启发式，不是真实云定价。
-     * Host 的每 PE MIPS 固定为对应 VM 的 2 倍，与
-     * {@link #homogeneousLocal(String, int)} 的 Host/VM 比例一致；其余资源规格相同。</p>
+     * <p>Used to compare scheduling behavior under different compute capacities.
+     * Changing only MIPS does not make the cost term of the matrix-free PSO vary
+     * with the mapping: {@code (rawLength / mips) * (mips / 1000) =
+     * rawLength / 1000}. Once a task-by-VM cost matrix is configured, the
+     * effective execution seconds need no longer be inversely proportional to
+     * MIPS, so only then can the PSO cost term vary with the mapping; its unit
+     * price remains an abstract heuristic, not real cloud pricing. The Host
+     * per-PE MIPS is fixed at twice the corresponding VM, matching the Host/VM
+     * ratio of {@link #homogeneousLocal(String, int)}; all other resource
+     * specifications are identical.</p>
      *
-     * <p>该平台是配置驱动的研究基线，不是任何真实云的机型回放。</p>
+     * <p>This platform is a configuration-driven research baseline, not a
+     * machine-type replay of any real cloud.</p>
      *
-     * @param name 平台名称
-     * @param vmMips 每台 VM 的 MIPS（必须为正且有限），列表长度 = VM/Host 数量
-     * @return 一台 VM 对应一台 Host 的异构抽象平台
-     * @throws IllegalArgumentException 当列表为空、含非正或非有限 MIPS 时抛出
+     * @param name platform name
+     * @param vmMips MIPS of each VM (must be positive and finite); list length
+     *        = number of VMs/Hosts
+     * @return heterogeneous abstract platform with one VM per Host
+     * @throws IllegalArgumentException when the list is empty or contains a
+     *         non-positive or non-finite MIPS value
      */
     public static PlatformProfile heterogeneousLocal(String name, java.util.List<Double> vmMips) {
         if (vmMips == null || vmMips.isEmpty()) {

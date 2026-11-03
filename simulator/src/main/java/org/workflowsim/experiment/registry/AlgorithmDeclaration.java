@@ -16,24 +16,34 @@ import org.workflowsim.utils.ReplicaCatalog;
  * it fail-fast; it does not verify that the declared class actually implements a
  * literature-grade heuristic — that claim remains the author's responsibility.</p>
  *
- * <p>BAT-E3（2026-10-27）能耗维度声明字段：{@code energyAware} 声明算法的评分/选择逻辑
- * 使用了能耗成本；{@code powerModelRequired} 要求平台剖面提供每 VM 功率字段
- * （否则注册即拒绝该配置）；{@code energyObjectiveWeight} 是作者声明的能耗权衡权重
- * （仅正、有限；0 表示未参与目标函数）。三者默认关闭，全部经由
- * {@link AlgorithmRegistry} 在 validate() 中与平台功率字段联动执行。</p>
+ * <p>BAT-E3 (2026-10-27) energy-dimension declaration fields: {@code energyAware}
+ * declares that the algorithm's scoring/selection logic uses energy cost;
+ * {@code powerModelRequired} requires the platform profile to provide a per-VM power
+ * field (otherwise registration rejects that configuration); {@code energyObjectiveWeight}
+ * is the author-declared energy trade-off weight (positive and finite only; 0 means it
+ * does not enter the objective). All three are off by default, and all are enforced
+ * through {@link AlgorithmRegistry} in validate(), coupled with the platform power
+ * field.</p>
  *
- * <p>BAT-C5（2026-10-28）碳维度声明字段：{@code carbonAware} 与
- * {@code carbonObjectiveWeight} 按同一蕴含格镜像能耗三元组——正权重蕴含 carbonAware，
- * 且因 v1 两种碳核算（强度/预算）都骑在已审计的能量链上（设计文档 §2.2），同时蕴含
- * energyAware；预算窗口场景另由碳预算模型（平台 carbonWindows 声明）承载，不新增
- * 独立的碳平台门槛字段。默认全关（0/未声明的碳权重），既有注册零影响。</p>
+ * <p>BAT-C5 (2026-10-28) carbon-dimension declaration fields: {@code carbonAware} and
+ * {@code carbonObjectiveWeight} mirror the energy triple along the same implication
+ * lattice -- a positive weight implies carbonAware, and because both v1 carbon accounting
+ * modes (intensity/budget) ride on the already-audited energy chain (design document
+ * section 2.2), it also implies energyAware; budget-window scenarios are carried by the
+ * carbon budget model (platform carbonWindows declaration) instead, with no separate
+ * carbon platform gate field added. All off by default (0/undeclared carbon weight),
+ * zero impact on existing registrations.</p>
  *
- * <p>BAT-D4（2026-10-29）DVFS 维度声明字段（docs/advanced/DVFS_DIMENSION_DESIGN.md
- * §2.6）：{@code dvfsAware} 声明算法通过频档 API 做逐 Job 变频决策；搭配
- * {@code powerModelRequired} 时注入因子提醒：频档表<b>替代</b>平面功率字段（BAT-D1
- * 单一真源），要求频档表的算法不要再声明平面功率门槛——{@code frequencyTiersRequired}
- * 要求平台剖面对每台（或参与计算的）VM 声明频档表（BAT-D4 蕴含格：
- * required ⇒ aware）。默认全关，既有注册零影响。</p>
+ * <p>BAT-D4 (2026-10-29) DVFS-dimension declaration fields
+ * (docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.6): {@code dvfsAware} declares that
+ * the algorithm makes per-Job frequency decisions through the tier API; when paired with
+ * {@code powerModelRequired} the injection factor warns that the tier table
+ * <b>replaces</b> the flat power field (BAT-D1 single source of truth), so an algorithm
+ * that requires a tier table must not also declare a flat power gate --
+ * {@code frequencyTiersRequired} requires the platform profile to declare a tier table
+ * for every VM (or every VM participating in the computation) (BAT-D4 implication
+ * lattice: required implies aware). All off by default, zero impact on existing
+ * registrations.</p>
  */
 public final class AlgorithmDeclaration {
 
@@ -113,37 +123,42 @@ public final class AlgorithmDeclaration {
         return description;
     }
 
-    /** BAT-E3：@return 算法是否在其决策逻辑中声明使用能耗成本 */
+    /** BAT-E3: @return whether the algorithm declares use of energy cost in its decision logic */
     public boolean isEnergyAware() {
         return energyAware;
     }
 
-    /** BAT-E3：@return 算法是否要求平台剖面声明每 VM 功率字段 */
+    /** BAT-E3: @return whether the algorithm requires the platform profile to declare a per-VM power field */
     public boolean isPowerModelRequired() {
         return powerModelRequired;
     }
 
-    /** BAT-E3：@return 声明的能耗目标权重（能量-时距乘积的权衡系数；0=不参与） */
+    /**
+     * BAT-E3: @return the declared energy objective weight (energy-makespan product
+     *         trade-off coefficient; 0 means it does not enter the objective)
+     */
     public double getEnergyObjectiveWeight() {
         return energyObjectiveWeight;
     }
 
-    /** BAT-C5：@return 算法是否在其决策逻辑中声明使用碳成本（强度或预算模型） */
+    /** BAT-C5: @return whether the algorithm declares use of carbon cost in its decision
+     *         logic (intensity or budget model) */
     public boolean isCarbonAware() {
         return carbonAware;
     }
 
-    /** BAT-C5：@return 声明的碳目标权重（碳-时延权衡系数；0=不参与） */
+    /** BAT-C5: @return the declared carbon objective weight (carbon-latency trade-off coefficient; 0=not part) */
     public double getCarbonObjectiveWeight() {
         return carbonObjectiveWeight;
     }
 
-    /** BAT-D4：@return 算法是否声明通过频档 API 做逐 Job 变频决策 */
+    /** BAT-D4: @return whether the algorithm declares per-Job frequency decisions through the tier API */
     public boolean isDvfsAware() {
         return dvfsAware;
     }
 
-    /** BAT-D4：@return 算法是否要求平台剖面对 VM 声明频档表（蕴含 dvfsAware） */
+    /** BAT-D4: @return whether the algorithm requires the platform profile to declare a
+     *         tier table per VM (implies dvfsAware) */
     public boolean isFrequencyTiersRequired() {
         return frequencyTiersRequired;
     }
@@ -210,13 +225,13 @@ public final class AlgorithmDeclaration {
             return this;
         }
 
-        /** BAT-E3：声明算法的决策逻辑使用能耗成本（默认 false）。 */
+        /** BAT-E3: declares that the algorithm's decision logic uses energy cost (default false). */
         public Builder energyAware(boolean aware) {
             this.energyAware = aware;
             return this;
         }
 
-        /** BAT-E3：要求配置的平台剖面提供每 VM 功率字段（默认 false）。 */
+        /** BAT-E3: requires the configured platform profile to provide a per-VM power field (default false). */
         public Builder powerModelRequired(boolean required) {
             this.powerModelRequired = required;
             if (required && !energyAware) {
@@ -225,7 +240,7 @@ public final class AlgorithmDeclaration {
             return this;
         }
 
-        /** BAT-E3：声明能耗目标权重；必须 ≥ 0 且有限（默认 0 表示不参与）。 */
+        /** BAT-E3: declares the energy objective weight; must be >= 0 and finite (default 0, not part). */
         public Builder energyObjectiveWeight(double weight) {
             if (weight < 0.0 || !Double.isFinite(weight)) {
                 throw new IllegalArgumentException("energyObjectiveWeight must be finite and >= 0: " + weight);
@@ -237,17 +252,20 @@ public final class AlgorithmDeclaration {
             return this;
         }
 
-        /** BAT-C5：声明算法的决策逻辑使用碳成本（强度或预算模型；默认 false）。 */
+        /** BAT-C5: declares that the algorithm's decision logic uses carbon cost (intensity
+         *         or budget model; default false). */
         public Builder carbonAware(boolean aware) {
             this.carbonAware = aware;
             return this;
         }
 
         /**
-         * BAT-C5：声明碳目标权重；必须 ≥ 0 且有限（默认 0 表示不参与）。正权重蕴含
-         * carbonAware，且因 v1 两种碳核算都定义在已守恒锁定的能量链上
-         * （docs/advanced/CARBON_DIMENSION_DESIGN.md §2.2），同时蕴含 energyAware——
-         * 蕴含格与能量三元组同构，注册入口零特判。
+         * BAT-C5: declares the carbon objective weight; must be >= 0 and finite (default 0,
+         * not part). A positive weight implies carbonAware, and because both v1 carbon
+         * accounting modes are defined on the already conserved-locked energy chain
+         * (docs/advanced/CARBON_DIMENSION_DESIGN.md section 2.2), it also implies
+         * energyAware -- the implication lattice is isomorphic to the energy triple, with
+         * zero special-casing at the registration entry point.
          */
         public Builder carbonObjectiveWeight(double weight) {
             if (weight < 0.0 || !Double.isFinite(weight)) {
@@ -261,16 +279,18 @@ public final class AlgorithmDeclaration {
             return this;
         }
 
-        /** BAT-D4：声明算法通过频档 API 做逐 Job 变频决策（默认 false；描述性标志，非门槛）。 */
+        /** BAT-D4: declares per-Job frequency decisions through the tier API (default false;
+         *         descriptive flag, not a gate). */
         public Builder dvfsAware(boolean aware) {
             this.dvfsAware = aware;
             return this;
         }
 
         /**
-         * BAT-D4：要求配置的平台剖面对 VM 声明频档表（默认 false）。required ⇒ aware
-         * 蕴含格——与 {@code powerModelRequired ⇒ energyAware} 同构：required 标志在
-         * setter 处拉起 aware 标志，注册入口零特判。
+         * BAT-D4: requires the configured platform profile to declare a tier table per VM
+         * (default false). required implies aware, the same lattice as
+         * {@code powerModelRequired implies energyAware}: the required flag raises the aware
+         * flag in the setter, with zero special-casing at the registration entry point.
          */
         public Builder frequencyTiersRequired(boolean required) {
             this.frequencyTiersRequired = required;

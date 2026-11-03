@@ -11,10 +11,11 @@ import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 import org.workflowsim.utils.DistributionSpec;
 
 /**
- * 单次模拟会话使用的不可变失效模型描述。
+ * Immutable failure model description used by a single simulation session.
  *
- * <p>随机分布生成器仅在打开会话时创建。这样采样发生在运行种子已安装之后，
- * 并避免生成器状态泄漏到下一次运行。</p>
+ * <p>Random distribution generators are created only when the session opens. Sampling therefore
+ * happens after the run seed has been installed, and generator state cannot leak into the next
+ * run.</p>
  */
 public final class FailureModelConfig {
 
@@ -32,7 +33,7 @@ public final class FailureModelConfig {
     private final FailureParameters.FTCFailure generatorMode;
     private final DistributionFamily distributionFamily;
     private final DistributionSpec[][] generatorSpecs;
-    /** 现代 VM 级模型按真实 VM ID 键控的生成器行；与稠密矩阵二选一。 */
+    /** Generator rows of the modern VM-level model, keyed by real VM ID; exclusive with the dense matrix. */
     private final Map<Integer, DistributionSpec[]> generatorSpecsByVmId;
 
     private final int maxTotalRetryJobs;
@@ -54,7 +55,7 @@ public final class FailureModelConfig {
         this.maxTotalRetryJobs = maxTotalRetryJobs;
     }
 
-    /** 返回普通实验显式采用的“无失效”默认模型。 */
+    /** Returns the "no failure" default model that ordinary experiments adopt explicitly. */
     public static FailureModelConfig disabled() {
         return DISABLED;
     }
@@ -80,40 +81,46 @@ public final class FailureModelConfig {
     }
 
     /**
-     * 返回旧式稠密规格矩阵的副本，绝不暴露内部矩阵。
+     * Returns a copy of the legacy dense specification matrix and never exposes the internal
+     * matrix.
      *
-     * <p>采用 {@link #getGeneratorSpecsByVmId()} 的现代 VM ID 键控配置时，返回空矩阵。</p>
+     * <p>When the modern VM-ID-keyed configuration of {@link #getGeneratorSpecsByVmId()} is used,
+     * an empty matrix is returned.</p>
      */
     public DistributionSpec[][] getGeneratorSpecs() {
         return copySpecs(generatorSpecs);
     }
 
     /**
-     * 返回按真实 VM ID 键控的生成器行副本。
+     * Returns a copy of the generator rows keyed by real VM ID.
      *
-     * <p>该形式仅适用于 {@code FAILURE_VM} 和 {@code FAILURE_VM_JOB}，用于避免非连续
-     * VM 标识被错误地解释为二维数组下标。旧式稠密矩阵配置时返回空映射。</p>
+     * <p>This form applies only to {@code FAILURE_VM} and {@code FAILURE_VM_JOB}; it prevents
+     * non-contiguous VM identifiers from being misinterpreted as indices of a two-dimensional
+     * array. A legacy dense matrix configuration returns an empty map.</p>
      */
     public Map<Integer, DistributionSpec[]> getGeneratorSpecsByVmId() {
         return copySpecsByVmId(generatorSpecsByVmId);
     }
 
-    /** @return 当前模型是否以真实 VM ID 键控生成器行 */
+    /** @return whether the current model keys generator rows by real VM ID */
     public boolean usesVmIdKeyedGeneratorRows() {
         return !generatorSpecsByVmId.isEmpty();
     }
 
-    /** @return 本次运行允许创建的 retry Job 总数；禁用故障模型时为 0 */
+    /** @return total retry Jobs this run may create; 0 when the failure model is disabled */
     public int getMaxTotalRetryJobs() {
         return maxTotalRetryJobs;
     }
 
-    /** 当会话必须分配带状态的随机生成器时返回 {@code true}。 */
+    /** Returns {@code true} when the session must allocate stateful random generators. */
     public boolean isEnabled() {
         return generatorMode != FailureParameters.FTCFailure.FAILURE_NONE;
     }
 
-    /** 将由当前运行种子作用域限定的新生成器矩阵和停止预算安装到旧版门面。 */
+    /**
+     * Installs the new generator matrices and the stop budget, both scoped by the current run
+     * seed, into the legacy facade.
+     */
     public void applyToFailureParameters(long rootSeed) {
         if (!isEnabled()) {
             FailureParameters.init(
@@ -187,7 +194,7 @@ public final class FailureModelConfig {
         return Collections.unmodifiableMap(new LinkedHashMap<Integer, DistributionSpec[]>(sorted));
     }
 
-    /** 构建器会在创建任何模拟实体前验证配置结构。 */
+    /** The builder validates the configuration structure before any simulation entity is created. */
     public static final class Builder {
 
         private FailureParameters.FTCluteringAlgorithm clusteringAlgorithm =
@@ -226,13 +233,14 @@ public final class FailureModelConfig {
         }
 
         /**
-         * 按真实 VM ID 指定生成器行。
+         * Declares the generator rows by real VM ID.
          *
-         * <p>此形式仅用于 VM 维度参与选择的模型，允许平台使用非连续 VM ID，例如
-         * {@code 10} 和 {@code 20}，而无需构造无意义的第 0 至第 19 行。</p>
+         * <p>This form is only for models whose selection involves the VM dimension; it lets a
+         * platform use non-contiguous VM IDs such as {@code 10} and {@code 20} without building
+         * meaningless rows 0 through 19.</p>
          *
-         * @param value VM ID 到各任务深度规格行的映射
-         * @return 当前构建器
+         * @param value mapping from VM ID to the specification row of each task depth
+         * @return this builder
          */
         public Builder generatorSpecsByVmId(Map<Integer, DistributionSpec[]> value) {
             generatorSpecsByVmId = value;
@@ -240,12 +248,13 @@ public final class FailureModelConfig {
         }
 
         /**
-         * 设置本次故障模型最多可创建的 retry Job 数。
+         * Sets the maximum number of retry Jobs the failure model may create for this run.
          *
-         * <p>启用故障模型时必须显式设置正值，使高故障率实验拥有可记录的停止条件。</p>
+         * <p>An enabled failure model must set an explicit positive value, so that
+         * high-failure-rate experiments have a recordable stop condition.</p>
          *
-         * @param value 正的 retry Job 总数上限
-         * @return 当前构建器
+         * @param value positive upper bound on the total number of retry Jobs
+         * @return this builder
          */
         public Builder maxTotalRetryJobs(int value) {
             maxTotalRetryJobs = value;
@@ -274,7 +283,9 @@ public final class FailureModelConfig {
 
         /**
          * 2026-10-26 complexity extraction from build; statements verbatim; order unchanged.
-         * 作用域：仅校验故障模型启停与生成器布局（禁用禁配生成器与 retry 预算；启用时恰取一种布局且模式/预算匹配）。
+         * Scope: validates only failure-model enablement and generator layout (a disabled model must
+         * define neither generators nor a retry budget; an enabled model takes exactly one layout
+         * whose mode and budget match).
          */
         private void validateGeneratorLayout() {
             boolean hasDenseMatrix = generatorSpecs.length != 0;

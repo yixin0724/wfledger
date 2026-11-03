@@ -15,10 +15,13 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-/** 为一次仿真运行写入完整、自描述的证据工件包。 */
+/** Writes the complete, self-describing evidence artifact set for one simulation run. */
 public final class ExperimentArtifactWriter {
 
-    /* v3 provenance 需要区分“未声明 study”和“字段未写出”，因此保留 null。 */
+    /*
+     * v3 provenance must distinguish "no study declared" from "field not written out", so null is
+     * preserved.
+     */
     private static final Gson GSON =
             new GsonBuilder().serializeNulls().setPrettyPrinting().create();
     private static final Gson JSONL_GSON = new Gson();
@@ -26,17 +29,21 @@ public final class ExperimentArtifactWriter {
     private ExperimentArtifactWriter() {}
 
     /**
-     * 写入 {@code <runId>.manifest.json}、{@code <runId>.metrics.json} 和
-     * {@code <runId>.events.jsonl}；ON时另写独立network-ledger JSON。
+     * Writes {@code <runId>.manifest.json}, {@code <runId>.metrics.json} and
+     * {@code <runId>.events.jsonl}; when recording is ON, also writes the separate network-ledger
+     * JSON.
      *
-     * <p>只有对应新文件完整写入后，才会原子替换同名已有文件。</p>
+     * <p>An existing file of the same name is replaced atomically only after the matching new file
+     * has been written completely.</p>
      *
-     * @param report 已完成仿真的不可变报告
-     * @param outputDirectory 存放既有三件套和可选网络账本的输出目录
-     * @param runId 文件名安全的运行标识
-     * @return 已写入工件的绝对路径；OFF的网络账本路径为null
-     * @throws IOException 当目录或工件无法写入时抛出
-     * @throws IllegalArgumentException 当报告、输出目录或运行标识不合法时抛出
+     * @param report immutable report of the completed simulation
+     * @param outputDirectory output directory holding the established artifact trio and the
+     *        optional network ledger
+     * @param runId file-name-safe run identifier
+     * @return absolute paths of the written artifacts; the network ledger path is null when OFF
+     * @throws IOException when the directory or an artifact cannot be written
+     * @throws IllegalArgumentException when the report, output directory or run identifier is
+     *         invalid
      */
     public static ExperimentArtifacts write(SimulationReport report, Path outputDirectory, String runId)
             throws IOException {
@@ -44,15 +51,18 @@ public final class ExperimentArtifactWriter {
     }
 
     /**
-     * 写入完整证据工件包，并将可选的 reference/study 身份写入 manifest。
+     * Writes the complete evidence artifact set and records the optional reference or study
+     * identity in the manifest.
      *
-     * @param report 已完成仿真的不可变报告
-     * @param outputDirectory 存放既有三件套和可选网络账本的输出目录
-     * @param runId 文件名安全的运行标识
-     * @param evidenceContext 可选的 reference 或 study 研究身份
-     * @return 已写入工件的绝对路径；OFF的网络账本路径为null
-     * @throws IOException 当目录或工件无法写入时抛出
-     * @throws IllegalArgumentException 当报告、输出目录或运行标识不合法时抛出
+     * @param report immutable report of the completed simulation
+     * @param outputDirectory output directory holding the established artifact trio and the
+     *        optional network ledger
+     * @param runId file-name-safe run identifier
+     * @param evidenceContext optional reference or study research identity
+     * @return absolute paths of the written artifacts; the network ledger path is null when OFF
+     * @throws IOException when the directory or an artifact cannot be written
+     * @throws IllegalArgumentException when the report, output directory or run identifier is
+     *         invalid
      */
     public static ExperimentArtifacts write(
             SimulationReport report, Path outputDirectory, String runId, ExperimentEvidenceContext evidenceContext)
@@ -125,7 +135,8 @@ public final class ExperimentArtifactWriter {
 
     /**
      * 2026-10-26 complexity extraction from write; statements verbatim; order unchanged.
-     * 作用域：仅做导出前置校验（参数非空、runId 合法、在线绑定需完整生命周期记录、sourceStorage 与模型匹配）。
+     * Scope: export preflight only (non-null arguments, valid runId, online binding requiring
+     * complete lifecycle capture, sourceStorage matching the model).
      */
     private static void requireExportableReport(SimulationReport report, Path outputDirectory, String runId)
             throws IOException {
@@ -178,15 +189,16 @@ public final class ExperimentArtifactWriter {
     }
 
     /**
-     * 将调用方组织的研究索引或摘要原子写为格式化 JSON。
+     * Atomically writes a caller-assembled research index or summary as formatted JSON.
      *
-     * <p>reference/study 模块可用此方法写出自己的索引；它不替代
-     * {@link #write(SimulationReport, Path, String)} 对单次仿真证据包的完整写入。</p>
+     * <p>Reference and study modules can use this method to write their own index; it does not
+     * replace the complete single-run evidence artifact write performed by
+     * {@link #write(SimulationReport, Path, String)}.</p>
      *
-     * @param target 要写入的 JSON 文件
-     * @param value 可由 Gson 序列化的值
-     * @throws IOException 当文件无法写入或替换时抛出
-     * @throws IllegalArgumentException 当输出路径为空时抛出
+     * @param target JSON file to write
+     * @param value value that Gson can serialize
+     * @throws IOException when the file cannot be written or replaced
+     * @throws IllegalArgumentException when the output path is null
      */
     public static void writeJson(Path target, Object value) throws IOException {
         if (target == null) {
@@ -242,10 +254,10 @@ public final class ExperimentArtifactWriter {
 
     private static Map<String, Object> metricsDocument(SimulationReport report) {
         Map<String, Object> values = new LinkedHashMap<String, Object>();
-        // v2：等待时间/减速比字段重命名（meanJobWaitingTimeSeconds →
-        // meanJobVmQueueWaitingTimeSeconds、meanJobSlowdown → meanJobVmLevelSlowdown）
-        // 并新增 meanComputeTotalWaitingTimeSeconds / meanComputeTrueSlowdown，
-        // 属于破坏性契约变更，故升级 schema 版本。
+        // v2: the waiting-time and slowdown fields were renamed (meanJobWaitingTimeSeconds ->
+        // meanJobVmQueueWaitingTimeSeconds, meanJobSlowdown -> meanJobVmLevelSlowdown) and
+        // meanComputeTotalWaitingTimeSeconds / meanComputeTrueSlowdown were added; this is a
+        // breaking contract change, so the schema version is bumped.
         values.put("schema", "workflowsim-simulation-metrics-v2");
         values.put("metrics", report.getMetrics());
         return values;
@@ -266,7 +278,7 @@ public final class ExperimentArtifactWriter {
         }
     }
 
-    /** {@link #write} 生成的既有工件路径和可选网络账本路径。 */
+    /** Established artifact paths and the optional network ledger path produced by {@link #write}. */
     public static final class ExperimentArtifacts {
         private final Path manifest;
         private final Path metrics;

@@ -18,10 +18,11 @@
 package org.workflowsim.utils;
 
 /**
- * 周期性变化的两级信号模型。
+ * Two-level signal that varies periodically.
  *
- * <p>在一个周期内，信号按 {@code portion} 保持上界或下界，再切换为另一个值。该类可用
- * 于周期性故障或开销实验的抽象输入，不模拟连续时间物理过程。</p>
+ * <p>Within one period the signal holds the upper or the lower bound for {@code portion} of the
+ * period, then switches to the other value. The class can serve as abstract input for periodic
+ * fault or overhead experiments; it does not model a continuous-time physical process.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -29,25 +30,25 @@ package org.workflowsim.utils;
  */
 public class PeriodicalSignal {
 
-    /** 信号周期，单位为模拟秒。 */
+    /** Signal period in simulated seconds. */
     private double period;
-    /** 信号上界。 */
+    /** Upper bound of the signal. */
     private double upperbound;
-    /** 信号下界。 */
+    /** Lower bound of the signal. */
     private double lowerbound;
-    /** 一个周期内先出现的信号状态所占比例。 */
+    /** Fraction of one period occupied by the signal state that occurs first. */
     private double portion;
-    /** {@code true} 时周期起始于上界；否则起始于下界。 */
+    /** When {@code true} the period starts at the upper bound; otherwise at the lower bound. */
     private boolean direction;
 
     /**
-     * 创建周期性两级信号。
+     * Create a periodic two-level signal.
      *
-     * @param period 周期，单位为模拟秒
-     * @param upperbound 信号上界
-     * @param lowerbound 信号下界
-     * @param portion 起始状态在一个周期中所占比例
-     * @param direction {@code true} 时起始状态为上界
+     * @param period period in simulated seconds
+     * @param upperbound upper bound of the signal
+     * @param lowerbound lower bound of the signal
+     * @param portion fraction of one period occupied by the starting state
+     * @param direction {@code true} when the starting state is the upper bound
      */
     public PeriodicalSignal(double period, double upperbound, double lowerbound, double portion, boolean direction) {
         validatePositiveFinite("Period", period);
@@ -64,33 +65,34 @@ public class PeriodicalSignal {
     }
 
     /**
-     * 创建以上界为起始状态的周期性两级信号。
+     * Create a periodic two-level signal whose starting state is the upper bound.
      *
-     * @param period 周期，单位为模拟秒
-     * @param upperbound 信号上界
-     * @param lowerbound 信号下界
-     * @param portion 起始状态在一个周期中所占比例
+     * @param period period in simulated seconds
+     * @param upperbound upper bound of the signal
+     * @param lowerbound lower bound of the signal
+     * @param portion fraction of one period occupied by the starting state
      */
     public PeriodicalSignal(double period, double upperbound, double lowerbound, double portion) {
         this(period, upperbound, lowerbound, portion, true);
     }
 
     /**
-     * 创建以上界为起始状态且两个状态各占半个周期的信号。
+     * Create a signal that starts at the upper bound with each of the two states holding half a
+     * period.
      *
-     * @param period 周期，单位为模拟秒
-     * @param upperbound 信号上界
-     * @param lowerbound 信号下界
+     * @param period period in simulated seconds
+     * @param upperbound upper bound of the signal
+     * @param lowerbound lower bound of the signal
      */
     public PeriodicalSignal(double period, double upperbound, double lowerbound) {
         this(period, upperbound, lowerbound, 0.5);
     }
 
     /**
-     * 获取指定模拟时间的信号值。
+     * Return the signal value at the specified simulation time.
      *
-     * @param currentTime 模拟时间
-     * @return 上界或下界；负时间返回 {@code 0.0}
+     * @param currentTime simulation time
+     * @return the upper or the lower bound; a negative time returns {@code 0.0}
      */
     public double getCurrentSignal(double currentTime) {
         if (currentTime < 0.0) {
@@ -112,27 +114,27 @@ public class PeriodicalSignal {
         }
     }
 
-    /** @return 信号上界 */
+    /** @return upper bound of the signal */
     public double getUpperBound() {
         return upperbound;
     }
 
-    /** @return 信号下界 */
+    /** @return lower bound of the signal */
     public double getLowerBound() {
         return lowerbound;
     }
 
-    /** @return 周期，单位为模拟秒 */
+    /** @return period in simulated seconds */
     public double getPeriod() {
         return period;
     }
 
-    /** @return 起始状态占一个周期的比例 */
+    /** @return fraction of one period occupied by the starting state */
     public double getPortion() {
         return portion;
     }
 
-    /** @return {@code true} 表示周期起始于上界 */
+    /** @return {@code true} when the period starts at the upper bound */
     public boolean getDirection() {
         return direction;
     }

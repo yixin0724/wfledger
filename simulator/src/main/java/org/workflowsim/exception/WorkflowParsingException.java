@@ -1,19 +1,19 @@
 package org.workflowsim.exception;
 
 /**
- * 当工作流输入文件无法解析或转换为合法 DAG 模型时抛出的异常。
+ * Thrown when a workflow input file cannot be parsed or converted into a valid DAG model.
  *
- * <p>此异常涵盖以下错误场景：</p>
+ * <p>This exception covers the following error scenarios:</p>
  * <ul>
- *   <li>输入文件格式错误（XML/JSON 结构不合法）</li>
- *   <li>必需字段缺失或类型不匹配</li>
- *   <li>任务图包含环路，无法表示为 DAG</li>
- *   <li>文件依赖引用不存在的任务或文件</li>
- *   <li>WfCommons JSON 的 runtime 字段无法转换为 MI</li>
+ *   <li>malformed input file (invalid XML/JSON structure)</li>
+ *   <li>missing required field or type mismatch</li>
+ *   <li>task graph contains a cycle and cannot be represented as a DAG</li>
+ *   <li>file dependency references a non-existent task or file</li>
+ *   <li>the WfCommons JSON runtime field cannot be converted to MI</li>
  * </ul>
  *
- * <p>调用方应将此异常视为输入数据问题，而不是模拟器内部错误。科研人员需要检查
- * 输入文件的完整性和格式正确性。</p>
+ * <p>Callers should treat this exception as an input-data problem, not as a simulator-internal
+ * error. Researchers must check the integrity and format correctness of the input file.</p>
  *
  * @see org.workflowsim.WorkflowParser
  * @see org.workflowsim.WfCommonsJsonParser
@@ -24,9 +24,9 @@ public final class WorkflowParsingException extends WorkflowSimException {
     private final String inputPath;
 
     /**
-     * 使用解析错误描述创建异常。
+     * Creates the exception with a parse error description.
      *
-     * @param message 解析失败的具体说明
+     * @param message specific description of the parse failure
      */
     public WorkflowParsingException(String message) {
         super(message);
@@ -34,10 +34,10 @@ public final class WorkflowParsingException extends WorkflowSimException {
     }
 
     /**
-     * 使用解析错误描述和输入路径创建异常。
+     * Creates the exception with a parse error description and the input path.
      *
-     * @param message 解析失败的具体说明
-     * @param inputPath 导致解析失败的输入文件路径
+     * @param message specific description of the parse failure
+     * @param inputPath path of the input file that caused the parse failure
      */
     public WorkflowParsingException(String message, String inputPath) {
         super(message + (inputPath != null ? " (input: " + inputPath + ")" : ""));
@@ -45,11 +45,11 @@ public final class WorkflowParsingException extends WorkflowSimException {
     }
 
     /**
-     * 使用解析错误描述、输入路径和根因创建异常。
+     * Creates the exception with a parse error description, the input path, and the root cause.
      *
-     * @param message 解析失败的具体说明
-     * @param inputPath 导致解析失败的输入文件路径
-     * @param cause 导致解析失败的底层异常
+     * @param message specific description of the parse failure
+     * @param inputPath path of the input file that caused the parse failure
+     * @param cause underlying exception that caused the parse failure
      */
     public WorkflowParsingException(String message, String inputPath, Throwable cause) {
         super(message + (inputPath != null ? " (input: " + inputPath + ")" : ""), cause);
@@ -57,9 +57,9 @@ public final class WorkflowParsingException extends WorkflowSimException {
     }
 
     /**
-     * 返回导致解析失败的输入文件路径。
+     * Returns the path of the input file that caused the parse failure.
      *
-     * @return 输入文件路径，若未指定则为 {@code null}
+     * @return input file path, or {@code null} if it was not specified
      */
     public String getInputPath() {
         return inputPath;

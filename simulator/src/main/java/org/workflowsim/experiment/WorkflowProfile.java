@@ -15,11 +15,12 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters.FileType;
 
 /**
- * 已解析源工作流的不可变结构描述。
+ * Immutable structural description of a parsed source workflow.
  *
- * <p>该画像刻意在聚类、调度、重试和执行之前生成。外部输入字段采用全图定义：
- * 只有当任一源任务均未声明同名 OUTPUT 文件时，INPUT 文件才是外部文件。因此它是
- * 输入工作负载描述，不是对遗留数据 stage-in 实现的断言。</p>
+ * <p>The profile is deliberately produced before clustering, scheduling, retry and execution.
+ * External-input fields use a whole-graph definition: an INPUT file is external only when no source
+ * task declares an OUTPUT file of the same name. It is therefore an input-workload description, not
+ * an assertion about the legacy data stage-in implementation.</p>
  */
 public final class WorkflowProfile {
 
@@ -73,12 +74,12 @@ public final class WorkflowProfile {
     }
 
     /**
-     * 为完整的已解析任务图生成画像；对不合法的图或文件数据直接拒绝，避免输出
-     * 具有误导性的聚合值。
+     * Builds the profile of a complete parsed task graph; an invalid graph or invalid file data is
+     * rejected outright so that misleading aggregates are never emitted.
      *
-     * @param sourceTasks 已解析的源任务图；可以为空，但不能为 {@code null}
-     * @return 描述任务、边、深度、宽度、运行长度和文件引用的不可变画像
-     * @throws IllegalArgumentException 当任务图、依赖关系或文件声明不合法时抛出
+     * @param sourceTasks parsed source task graph; may be empty, but not {@code null}
+     * @return immutable profile describing tasks, edges, depth, width, run length and file references
+     * @throws IllegalArgumentException if the task graph, dependencies or file declarations are invalid
      */
     public static WorkflowProfile fromTasks(List<Task> sourceTasks) {
         if (sourceTasks == null) {
@@ -116,7 +117,10 @@ public final class WorkflowProfile {
                 files.totalDistinctExternalBytes);
     }
 
-    /** {@link #fromTasks} 的确定性排序阶段：按 cloudletId 升序（tie-break 红线：禁止迭代序漂移）。 */
+    /**
+     * Deterministic ordering stage of {@link #fromTasks}: ascending cloudletId (tie-break red line:
+     * no iteration-order drift).
+     */
     private static List<Task> sortedByCloudletId(List<Task> sourceTasks) {
         List<Task> tasks = new ArrayList<Task>(sourceTasks);
         Collections.sort(tasks, new Comparator<Task>() {
@@ -128,7 +132,7 @@ public final class WorkflowProfile {
         return tasks;
     }
 
-    /** {@link #fromTasks} 的索引阶段：null/重复 ID 直接拒绝。 */
+    /** {@link #fromTasks} indexing stage: null or duplicate IDs are rejected outright. */
     private static Map<Integer, Task> indexById(List<Task> tasks) {
         Map<Integer, Task> tasksById = new HashMap<Integer, Task>();
         for (Task task : tasks) {
@@ -139,7 +143,7 @@ public final class WorkflowProfile {
         return tasksById;
     }
 
-    /** {@link #fromTasks} 的边统计阶段：邻接表合法性 + 根/叶/边数/总长度。 */
+    /** {@link #fromTasks} edge-counting stage: adjacency validity plus roots/leaves/edge count/total length. */
     private static EdgeStatistics validateAndCountEdges(List<Task> tasks, Set<Task> taskSet) {
         EdgeStatistics stats = new EdgeStatistics();
         for (Task task : tasks) {
@@ -177,7 +181,10 @@ public final class WorkflowProfile {
         return stats;
     }
 
-    /** {@link #fromTasks} 的深度阶段：ID 序就绪队列的层次遍历 + 宽度/入队校验（环检测）。 */
+    /**
+     * {@link #fromTasks} depth stage: level traversal over the ID-ordered ready queue plus width and
+     * enqueue validation (cycle detection).
+     */
     private static DepthStatistics computeDepthStatistics(
             List<Task> tasks, Map<Task, Integer> remainingParents, Map<Task, Integer> depthByTask) {
         PriorityQueue<Task> ready = new PriorityQueue<Task>(tasks.size(), new Comparator<Task>() {
@@ -223,7 +230,10 @@ public final class WorkflowProfile {
         return stats;
     }
 
-    /** {@link #fromTasks} 的长度统计阶段：均值与变异系数（求和顺序与原实现逐序一致）。 */
+    /**
+     * {@link #fromTasks} length stage: mean and coefficient of variation (the summation order matches
+     * the original implementation step by step).
+     */
     private static LengthStatistics computeLengthStatistics(List<Task> tasks, long totalLength) {
         double meanLength = (double) totalLength / tasks.size();
         double variance = 0.0;
@@ -238,7 +248,10 @@ public final class WorkflowProfile {
         return stats;
     }
 
-    /** {@link #fromTasks} 阶段间的私有搬运结构（字段直读，无转发行为）。 */
+    /**
+     * Private transfer structure between the {@link #fromTasks} stages (fields are read directly; no
+     * forwarding behavior).
+     */
     private static final class EdgeStatistics {
         private final Map<Task, Integer> remainingParents = new HashMap<Task, Integer>();
         private final Map<Task, Integer> depthByTask = new HashMap<Task, Integer>();
@@ -327,13 +340,14 @@ public final class WorkflowProfile {
         if (previous == null) {
             filesByName.put(file.getName(), Double.valueOf(file.getSize()));
         } else if (Double.compare(previous.doubleValue(), file.getSize()) != 0) {
-            // 放宽校验：使用第一次声明的 size，记录警告。
-            // 与 WorkflowParser 中的逻辑一致：真实工作流中同一文件的 size 估算可能不同。
+            // Relaxed validation: use the size from the first declaration and log a warning.
+            // Identical to the logic in WorkflowParser: a real workflow may estimate the size of the
+            // same file differently.
             org.cloudbus.cloudsim.Log.printLine("WARNING: Workflow declares inconsistent " + kind
                     + " size for '" + file.getName() + "': "
                     + "first=" + previous.doubleValue() + ", current=" + file.getSize()
                     + " (using first declaration)");
-            // 继续使用 previous，不抛异常
+            // Keep using previous; do not throw
         }
     }
 

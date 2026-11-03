@@ -28,10 +28,11 @@ import org.workflowsim.utils.Parameters.ClassType;
 import org.workflowsim.utils.Parameters.FileType;
 
 /**
- * 默认的无聚类策略：每个逻辑任务映射为一个独立作业。
+ * Default no-clustering policy: every logical task maps to one independent job.
  *
- * <p>该实现还负责把逻辑任务依赖、文件引用、静态映射时间和聚类开销转换为作业级
- * 表示，是其他聚类策略的公共基础。</p>
+ * <p>This implementation also converts logical task dependencies, file references, static
+ * schedule times, and clustering overhead into a job-level representation; it is the common
+ * base of the other clustering policies.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -40,34 +41,34 @@ import org.workflowsim.utils.Parameters.FileType;
 public class BasicClustering implements ClusteringInterface {
 
     /**
-     * 待转换的逻辑任务列表。
+     * Logical tasks to convert.
      */
     private List<Task> taskList;
     /**
-     * 聚类后生成的作业列表。
+     * Jobs produced by clustering.
      */
     private final List<Job> jobList;
     /**
-     * 逻辑任务到生成作业的映射。
+     * Map from a logical task to the job it produced.
      */
     private final Map mTask2Job;
     /**
-     * 聚类后所有作业引用的文件。
+     * Files referenced by all jobs after clustering.
      */
     private final List<FileItem> allFileList;
     /**
-     * 临时加入的虚拟根任务。
+     * Temporarily added virtual root task.
      */
     private Task root;
     /**
-     * 下一个生成作业的 ID。
+     * ID of the next generated job.
      */
     private int idIndex;
 
     /**
-     * 返回聚类后收集的文件引用。
+     * Returns the file references collected during clustering.
      *
-     * @return 文件引用列表
+     * @return file reference list
      */
     @Override
     public final List<FileItem> getTaskFiles() {
@@ -75,7 +76,7 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 创建无聚类策略实例。
+     * Creates a no-clustering policy instance.
      */
     public BasicClustering() {
         this.jobList = new ArrayList<>();
@@ -87,9 +88,9 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 设置待转换的逻辑任务列表。
+     * Sets the logical tasks to convert.
      *
-     * @param list 逻辑任务列表
+     * @param list logical task list
      */
     @Override
     public final void setTaskList(List<Task> list) {
@@ -97,9 +98,9 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 返回已生成的作业列表。
+     * Returns the generated job list.
      *
-     * @return 作业列表
+     * @return job list
      */
     @Override
     public final List<Job> getJobList() {
@@ -107,9 +108,9 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 返回待转换的逻辑任务列表。
+     * Returns the logical tasks to convert.
      *
-     * @return 逻辑任务列表
+     * @return logical task list
      */
     @Override
     public final List<Task> getTaskList() {
@@ -117,16 +118,17 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 返回逻辑任务到作业的映射。
+     * Returns the logical-task-to-job map.
      *
-     * @return 任务到作业的映射
+     * @return task-to-job map
      */
     public final Map getTask2Job() {
         return this.mTask2Job;
     }
 
     /**
-     * 将每个逻辑任务转换为独立作业，并重建作业级依赖关系。
+     * Converts every logical task into an independent job and rebuilds the job-level
+     * dependency relations.
      */
     @Override
     public void run() {
@@ -142,16 +144,16 @@ public class BasicClustering implements ClusteringInterface {
             getTask2Job().put(task, job);
         }
         /**
-         * 将逻辑任务的父子边投影为作业的父子边。
+         * Projects the logical-task parent/child edges onto job parent/child edges.
          */
         updateDependencies();
     }
 
     /**
-     * 将单个逻辑任务加入新作业。
+     * Adds a single logical task as a new job.
      *
-     * @param task 逻辑任务
-     * @return 新建作业
+     * @param task logical task
+     * @return newly created job
      */
     protected final Job addTasks2Job(Task task) {
         List<Task> tasks = new ArrayList<>();
@@ -160,10 +162,10 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 将一组逻辑任务合并为一个新作业。
+     * Merges a group of logical tasks into one new job.
      *
-     * @param taskList 逻辑任务列表
-     * @return 新建作业；输入为空时返回 {@code null}
+     * @param taskList logical task list
+     * @return newly created job; {@code null} when the input is empty
      */
     protected final Job addTasks2Job(List<Task> taskList) {
         if (taskList != null && !taskList.isEmpty()) {
@@ -172,7 +174,8 @@ public class BasicClustering implements ClusteringInterface {
             int userId = 0;
             int priority = 0;
             int depth = 0;
-            // CloudSim 在构造后固定输入/输出文件大小，因此先以长度占位创建作业。
+            // CloudSim fixes the input/output file sizes at construction, so create the job
+            // with a placeholder length first.
             Job job = new Job(idIndex, length /*, inputFileSize, outputFileSize*/);
             job.setClassType(ClassType.COMPUTE.value);
             for (Task task : taskList) {
@@ -190,7 +193,7 @@ public class BasicClustering implements ClusteringInterface {
                     if (!hasFile) {
                         job.getFileList().add(file);
                         if (file.getType() == FileType.INPUT) {
-                            // 供后续 stage-in 作业使用。
+                            // Used by the later stage-in jobs.
                             if (!this.allFileList.contains(file)) {
                                 this.allFileList.add(file);
                             }
@@ -220,13 +223,13 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 为每个生成作业加入声明的聚类延迟；默认延迟为零。
+     * Adds the declared clustering delay to every generated job; the default delay is zero.
      */
     public void addClustDelay() {
 
         for (Job job : getJobList()) {
             double delay = Parameters.getOverheadParams().getClustDelay(job);
-            delay *= 1000; // 与历史工作流解析阶段使用的换算比例一致
+            delay *= 1000; // Matches the conversion ratio used by the historical workflow parsing stage
             long length = job.getCloudletLength();
             length += (long) delay;
             job.setCloudletLength(length);
@@ -234,20 +237,20 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 根据逻辑任务依赖更新作业级父子关系。
+     * Updates the job-level parent/child relations from the logical task dependencies.
      */
     protected final void updateDependencies() {
         for (Task task : getTaskList()) {
             Job job = (Job) getTask2Job().get(task);
             for (Task parentTask : task.getParentList()) {
                 Job parentJob = (Job) getTask2Job().get(parentTask);
-                if (!job.getParentList().contains(parentJob) && parentJob != job) { // 避免重复边和自环
+                if (!job.getParentList().contains(parentJob) && parentJob != job) { // no duplicate edges or self-loops
                     job.addParent(parentJob);
                 }
             }
             for (Task childTask : task.getChildList()) {
                 Job childJob = (Job) getTask2Job().get(childTask);
-                if (!job.getChildList().contains(childJob) && childJob != job) { // 避免重复边和自环
+                if (!job.getChildList().contains(childJob) && childJob != job) { // no duplicate edges or self-loops
                     job.addChild(childJob);
                 }
             }
@@ -256,14 +259,14 @@ public class BasicClustering implements ClusteringInterface {
         getTaskList().clear();
     }
     /*
-     * 添加一个虚拟根任务，使所有原始根任务都成为它的子节点。
-     * 调用本方法后必须调用 {@link #clean()} 移除临时根节点。
+     * Adds a virtual root task so that all original root tasks become its children.
+     * Callers must invoke {@link #clean()} afterwards to remove the temporary root node.
      */
 
     public Task addRoot() {
 
         if (root == null) {
-            // 使用不与当前任务列表冲突的临时 ID。
+            // Use a temporary ID that does not collide with the current task list.
             root = new Task(taskList.size() + 1, 0 /*,0,0*/);
             for (Task node : taskList) {
                 if (node.getParentList().isEmpty()) {
@@ -277,7 +280,8 @@ public class BasicClustering implements ClusteringInterface {
     }
 
     /**
-     * 删除此前加入的虚拟根任务，并恢复原始根任务关系。
+     * Removes the previously added virtual root task and restores the original root
+     * relations.
      */
     public void clean() {
         if (root != null) {

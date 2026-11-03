@@ -3,11 +3,13 @@ package org.workflowsim.utils;
 import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 
 /**
- * 抽样分布的不可变、与随机种子无关的参数描述。
+ * Immutable description of the parameters of a sampling distribution, independent of any
+ * random seed.
  *
- * <p>该对象只保存分布族和参数，不持有随机数发生器。每次调用
- * {@link #createGenerator(String)} 都会从指定的 {@link SimulationRandom} 流创建新的
- * 生成器，从而使配置与随机序列的生命周期分离。</p>
+ * <p>This object stores only the distribution family and its parameters and holds no random
+ * number generator. Every call to {@link #createGenerator(String)} creates a new generator
+ * from the specified {@link SimulationRandom} stream, which decouples the configuration
+ * lifetime from the random sequence lifetime.</p>
  */
 public final class DistributionSpec {
 
@@ -34,12 +36,12 @@ public final class DistributionSpec {
     }
 
     /**
-     * 创建不带先验参数的分布描述。
+     * Creates a distribution description without prior parameters.
      *
-     * @param family 分布族
-     * @param scale 尺度参数
-     * @param shape 形状参数
-     * @return 已验证的分布描述
+     * @param family distribution family
+     * @param scale scale parameter
+     * @param shape shape parameter
+     * @return validated distribution description
      */
     public static DistributionSpec of(DistributionFamily family, double scale, double shape) {
         validate(family, scale, shape, null, null, null);
@@ -47,15 +49,15 @@ public final class DistributionSpec {
     }
 
     /**
-     * 创建带完整先验参数的分布描述。
+     * Creates a distribution description with the full set of prior parameters.
      *
-     * @param family 分布族
-     * @param scale 尺度参数
-     * @param shape 形状参数
-     * @param priorShape 先验形状参数
-     * @param priorScale 先验尺度参数
-     * @param likelihoodPrior 似然先验参数
-     * @return 已验证的分布描述
+     * @param family distribution family
+     * @param scale scale parameter
+     * @param shape shape parameter
+     * @param priorShape prior shape parameter
+     * @param priorScale prior scale parameter
+     * @param likelihoodPrior likelihood prior parameter
+     * @return validated distribution description
      */
     public static DistributionSpec withPriors(
             DistributionFamily family,
@@ -68,36 +70,36 @@ public final class DistributionSpec {
         return new DistributionSpec(family, scale, shape, priorShape, priorScale, likelihoodPrior);
     }
 
-    /** @return 分布族 */
+    /** @return distribution family */
     public DistributionFamily getFamily() {
         return family;
     }
-    /** @return 尺度参数 */
+    /** @return scale parameter */
     public double getScale() {
         return scale;
     }
-    /** @return 形状参数 */
+    /** @return shape parameter */
     public double getShape() {
         return shape;
     }
-    /** @return 先验形状参数；未配置先验时为 {@code null} */
+    /** @return prior shape parameter; {@code null} when no prior is configured */
     public Double getPriorShape() {
         return priorShape;
     }
-    /** @return 先验尺度参数；未配置先验时为 {@code null} */
+    /** @return prior scale parameter; {@code null} when no prior is configured */
     public Double getPriorScale() {
         return priorScale;
     }
-    /** @return 似然先验参数；未配置先验时为 {@code null} */
+    /** @return likelihood prior parameter; {@code null} when no prior is configured */
     public Double getLikelihoodPrior() {
         return likelihoodPrior;
     }
 
     /**
-     * 基于指定的命名随机流创建一个新的分布生成器。
+     * Creates a new distribution generator bound to the specified named random stream.
      *
-     * @param randomStream 稳定的随机组件名称
-     * @return 与该随机流绑定的生成器
+     * @param randomStream stable random component name
+     * @return generator bound to that random stream
      */
     public DistributionGenerator createGenerator(String randomStream) {
         if (priorShape == null) {
@@ -124,7 +126,8 @@ public final class DistributionSpec {
 
     /**
      * 2026-10-26 complexity extraction from validate; statements verbatim; order unchanged.
-     * 作用域：仅校验贝叶斯先验三参数必须同配且全部有限，否则抛参数校验异常。
+     * Scope: validates only that the three Bayesian prior parameters are supplied together and
+     * are all finite; otherwise throws a parameter validation exception.
      */
     private static void validatePriors(Double priorShape, Double priorScale, Double likelihoodPrior) {
         boolean anyPrior = priorShape != null || priorScale != null || likelihoodPrior != null;

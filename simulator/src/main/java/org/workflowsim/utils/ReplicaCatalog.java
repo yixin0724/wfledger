@@ -25,10 +25,12 @@ import java.util.Map;
 import org.workflowsim.FileItem;
 
 /**
- * 单次仿真中的文件副本目录。
+ * Per-simulation file replica catalog.
  *
- * <p>目录保存文件元数据及其所在逻辑存储位置。它是由 {@link SimulationSession} 重置的
- * 全局运行期状态，不可跨会话复用，也不代表外部存储系统的一致性或复制协议。</p>
+ * <p>The catalog holds file metadata and the logical storage locations that hold each file.
+ * It is global runtime state reset by {@link SimulationSession}, must not be reused across
+ * sessions, and does not represent the consistency or replication protocol of an external
+ * storage system.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -36,22 +38,22 @@ import org.workflowsim.FileItem;
  */
 public class ReplicaCatalog {
 
-    /** 支持的文件系统抽象。 */
+    /** Supported file system abstraction. */
     public enum FileSystem {
         SHARED,
         LOCAL
     }
-    /** 文件名到文件元数据的映射。 */
+    /** File name to file metadata mapping. */
     private static Map<String, FileItem> fileName2File;
-    /** 当前会话选定的文件系统模型。 */
+    /** File system model selected for the current session. */
     private static FileSystem fileSystem;
-    /** 文件名到持有该文件的逻辑存储位置列表的映射。 */
+    /** File name to the list of logical storage locations holding that file. */
     private static Map<String, List<String>> dataReplicaCatalog;
 
     /**
-     * 初始化本次仿真的副本目录。
+     * Initializes the replica catalog for this simulation.
      *
-     * @param fs 共享或本地文件系统模型
+     * @param fs shared or local file system model
      */
     public static void init(FileSystem fs) {
         if (fs == null) {
@@ -62,7 +64,7 @@ public class ReplicaCatalog {
         fileName2File = new HashMap<>();
     }
 
-    /** 清理本次运行的全部副本状态。 */
+    /** Clears all replica state of this run. */
     public static void reset() {
         fileSystem = null;
         dataReplicaCatalog = null;
@@ -75,17 +77,17 @@ public class ReplicaCatalog {
         }
     }
 
-    /** @return 当前文件系统模型 */
+    /** @return current file system model */
     public static FileSystem getFileSystem() {
         requireInitialized();
         return fileSystem;
     }
 
     /**
-     * 按文件名查询文件元数据。
+     * Looks up file metadata by file name.
      *
-     * @param fileName 文件名
-     * @return 文件元数据；目录中不存在时为 {@code null}
+     * @param fileName file name
+     * @return file metadata, or {@code null} if absent from the catalog
      */
     public static FileItem getFile(String fileName) {
         requireInitialized();
@@ -93,10 +95,10 @@ public class ReplicaCatalog {
     }
 
     /**
-     * 写入文件名及其文件元数据。
+     * Stores a file name and its file metadata.
      *
-     * @param fileName 文件名
-     * @param file 文件元数据
+     * @param fileName file name
+     * @param file file metadata
      */
     public static void setFile(String fileName, FileItem file) {
         requireInitialized();
@@ -104,10 +106,10 @@ public class ReplicaCatalog {
     }
 
     /**
-     * 判断目录中是否包含指定文件。
+     * Tests whether the catalog contains the given file.
      *
-     * @param fileName 文件名
-     * @return 存在时为 {@code true}
+     * @param fileName file name
+     * @return {@code true} if present
      */
     public static boolean containsFile(String fileName) {
         requireInitialized();
@@ -115,10 +117,10 @@ public class ReplicaCatalog {
     }
 
     /**
-     * 查询持有指定文件的逻辑存储位置。
+     * Returns the logical storage locations that hold the given file.
      *
-     * @param file 文件名
-     * @return 存储位置列表；尚未登记位置时为 {@code null}
+     * @param file file name
+     * @return list of storage locations, or {@code null} if no location is registered yet
      */
     public static List<String> getStorageList(String file) {
         requireInitialized();
@@ -126,10 +128,10 @@ public class ReplicaCatalog {
     }
 
     /**
-     * 将文件登记到一个逻辑存储位置。
+     * Registers a file at one logical storage location.
      *
-     * @param file 文件名
-     * @param storage 持有该文件的存储位置
+     * @param file file name
+     * @param storage storage location holding that file
      */
     public static void addFileToStorage(String file, String storage) {
         requireInitialized();

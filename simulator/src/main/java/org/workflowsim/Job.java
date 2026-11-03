@@ -19,12 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 聚类后的作业（Job）。
+ * Clustered job (Job).
  *
- * <p>{@code Job} 继承 {@link Task}，并保存组成它的原始任务。{@link ClusteringEngine}
- * 将任务合并为作业后，作业运行长度通常等于其中任务运行长度之和；具体的聚类策略和
- * 文件传输估计仍由聚类引擎负责。</p>
- *
+ * <p>{@code Job} extends {@link Task} and keeps the original tasks that compose it. After
+ * {@link ClusteringEngine} merges tasks into a job, the job length is usually the sum of the
+ * lengths of its tasks; the concrete clustering policy and the file transfer estimate remain the
+ * responsibility of the clustering engine.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -32,24 +32,25 @@ import java.util.List;
  */
 public class Job extends Task {
 
-    /** 构成该聚类作业的原始任务列表。 */
+    /** Original task list that composes this clustered job. */
     private List<Task> taskList;
 
     /**
-     * BAT-D2（2026-10-29）：本 Job 被派发时由调度器确定的 DVFS 频档 MIPS。
+     * BAT-D2 (2026-10-29): DVFS tier MIPS assigned by the scheduler when this Job is dispatched.
      *
-     * <p>不可变的"派发时刻指派"：null = v1 无频档模式（平台未声明频档，或本 Job 不是
-     * 计算 Job）；非 null = 该 Job 的 [startTime, finishTime) 区间按此档速度执行。
-     * 由 {@code WorkflowScheduler} 在 VM 指派后写入，经 {@code JobOutcome.fromJob}
-     * 进入证据链；运行前由报告捕获冻结。</p>
+     * <p>Immutable "assignment at dispatch time": null = v1 no-tier mode (the platform declares no
+     * tier, or this Job is not a compute Job); non-null = the [startTime, finishTime) interval of
+     * this Job executes at the speed of this tier. Written by {@code WorkflowScheduler} after the
+     * VM assignment, it enters the evidence chain through {@code JobOutcome.fromJob} and is frozen
+     * by the report capture before the run.</p>
      */
     private Double tierMips;
 
     /**
-     * 创建一个聚类作业。
+     * Create a clustered job.
      *
-     * @param jobId 作业唯一编号
-     * @param jobLength 待执行的作业长度，单位为百万条指令（MI）
+     * @param jobId unique job identifier
+     * @param jobLength job length to execute, in million instructions (MI)
      */
     public Job(final int jobId, final long jobLength) {
 
@@ -57,25 +58,26 @@ public class Job extends Task {
         this.taskList = new ArrayList<>();
     }
 
-    /** @return 组成该作业的原始任务列表 */
+    /** @return original task list that composes this job */
     public List<Task> getTaskList() {
         return this.taskList;
     }
 
     /**
-     * BAT-D2：返回本 Job 派发时指派的频档 MIPS。
+     * BAT-D2: return the tier MIPS assigned when this Job was dispatched.
      *
-     * @return 指派档的 MIPS；null = v1 无频档模式（v1 兼容与 stage-in Job）
+     * @return MIPS of the assigned tier; null = v1 no-tier mode (v1 compatibility and stage-in Job)
      */
     public Double getTierMips() {
         return this.tierMips;
     }
 
     /**
-     * BAT-D2：记录派发时刻的频档指派（每 Job 恰一次；调度器派发路径专用）。
+     * BAT-D2: record the tier assignment at dispatch time (exactly once per Job; reserved for the
+     * scheduler dispatch path).
      *
-     * @param tierMips 指派档的 MIPS；必须为正有限值
-     * @throws IllegalArgumentException 当值非正或非有限时抛出
+     * @param tierMips MIPS of the assigned tier; must be a positive finite value
+     * @throws IllegalArgumentException if the value is not positive or not finite
      */
     public void setTierMips(final Double tierMips) {
         if (tierMips == null || !(tierMips.doubleValue() > 0.0) || tierMips.isNaN() || tierMips.isInfinite()) {
@@ -85,27 +87,27 @@ public class Job extends Task {
     }
 
     /**
-     * 替换组成该作业的原始任务列表。
+     * Replace the original task list that composes this job.
      *
-     * @param list 新的原始任务列表
+     * @param list new original task list
      */
     public void setTaskList(List list) {
         this.taskList = list;
     }
 
     /**
-     * 向作业追加一组原始任务。
+     * Append a group of original tasks to the job.
      *
-     * @param list 要追加的任务列表
+     * @param list task list to append
      */
     public void addTaskList(List list) {
         this.taskList.addAll(list);
     }
 
     /**
-     * 返回该作业的父任务列表。
+     * Return the parent task list of this job.
      *
-     * @return 父任务列表
+     * @return parent task list
      */
     @Override
     public List getParentList() {

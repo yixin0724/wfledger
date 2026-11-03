@@ -6,10 +6,12 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * 在会话内实例化抽样延迟的不可变开销模型。
+ * Immutable overhead model whose sampled delays are instantiated inside the session.
  *
- * <p>四个延迟映射均以任务深度为键；键 {@code 0} 保留历史语义，表示未显式配置深度时
- * 使用的默认延迟。此配置不持有可变抽样状态，真正的生成器在已设置根种子的会话中创建。</p>
+ * <p>All four delay maps are keyed by task depth; key {@code 0} keeps its historical meaning as
+ * the default delay used when no depth is configured explicitly. This configuration holds no
+ * mutable sampling state: the actual generators are created in a session whose root seed has
+ * already been set.</p>
  */
 public final class OverheadModelConfig {
 
@@ -43,24 +45,25 @@ public final class OverheadModelConfig {
         this.clusteringDelays = frozenCopy(clusteringDelays);
     }
 
-    /** @return 不引入任何工作流开销的共享不可变模型 */
+    /** @return shared immutable model that introduces no workflow overhead */
     public static OverheadModelConfig none() {
         return NONE;
     }
 
-    /** @return 新的开销模型构建器 */
+    /** @return a new overhead model builder */
     public static Builder builder() {
         return new Builder();
     }
 
     /**
-     * 面向早期 {@link SimulationConfig} 调用方的兼容桥。
+     * Compatibility bridge for early {@link SimulationConfig} callers.
      *
-     * <p>该方法只提取旧生成器的分布族和参数，并在会话中按配置的根种子重新抽样，避免
-     * 将既有可变随机状态泄漏进新的实验会话。</p>
+     * <p>The method extracts only the distribution family and parameters of the legacy generators
+     * and resamples them in the session under the configured root seed, so that existing mutable
+     * random state cannot leak into a new experiment session.</p>
      *
-     * @param parameters 旧式开销参数
-     * @return 等价的不可变开销模型
+     * @param parameters legacy overhead parameters
+     * @return equivalent immutable overhead model
      */
     public static OverheadModelConfig fromLegacy(OverheadParameters parameters) {
         if (parameters == null) {
@@ -76,35 +79,39 @@ public final class OverheadModelConfig {
                 .build();
     }
 
-    /** @return WED 子批次最大作业数；0 表示不拆分，非空批次仍应用已配置延迟 */
+    /**
+     * @return maximum Jobs per WED sub-batch; 0 means no split, and non-empty batches still apply
+     *         the configured delays
+     */
     public int getWorkflowEngineDelayInterval() {
         return workflowEngineDelayInterval;
     }
-    /** @return 旧开销模型使用的逻辑带宽 */
+    /** @return logical bandwidth used by the legacy overhead model */
     public double getBandwidth() {
         return bandwidth;
     }
-    /** @return 以任务深度为键的工作流引擎延迟分布 */
+    /** @return workflow engine delay distributions keyed by task depth */
     public Map<Integer, DistributionSpec> getWorkflowEngineDelays() {
         return workflowEngineDelays;
     }
-    /** @return 以任务深度为键的队列延迟分布 */
+    /** @return queue delay distributions keyed by task depth */
     public Map<Integer, DistributionSpec> getQueueDelays() {
         return queueDelays;
     }
-    /** @return 以任务深度为键的后处理延迟分布 */
+    /** @return post-processing delay distributions keyed by task depth */
     public Map<Integer, DistributionSpec> getPostDelays() {
         return postDelays;
     }
-    /** @return 以任务深度为键的聚类延迟分布 */
+    /** @return clustering delay distributions keyed by task depth */
     public Map<Integer, DistributionSpec> getClusteringDelays() {
         return clusteringDelays;
     }
 
     /**
-     * 为已设定随机种子的会话创建新的、有状态的旧式开销参数。
+     * Creates new stateful legacy overhead parameters for a session whose random seed is already
+     * set.
      *
-     * @return 供历史执行路径使用的开销参数
+     * @return overhead parameters used by the historical execution path
      */
     public OverheadParameters createParameters() {
         return new OverheadParameters(
@@ -167,7 +174,8 @@ public final class OverheadModelConfig {
     }
 
     /**
-     * 可确定性重建、可记录到实验清单的开销模型构建器。
+     * Overhead model builder that can be rebuilt deterministically and recorded in the experiment
+     * manifest.
      */
     public static final class Builder {
 
@@ -178,46 +186,64 @@ public final class OverheadModelConfig {
         private Map<Integer, DistributionSpec> postDelays = Collections.emptyMap();
         private Map<Integer, DistributionSpec> clusteringDelays = Collections.emptyMap();
 
-        /** @param value WED 子批次最大作业数，0 表示整批不拆分 @return 当前构建器 */
+        /**
+         * @param value maximum Jobs per WED sub-batch; 0 leaves the whole batch unsplit
+         * @return this builder
+         */
         public Builder workflowEngineDelayInterval(int value) {
             workflowEngineDelayInterval = value;
             return this;
         }
 
-        /** @param value 旧开销模型的逻辑带宽 @return 当前构建器 */
+        /**
+         * @param value logical bandwidth of the legacy overhead model
+         * @return this builder
+         */
         public Builder bandwidth(double value) {
             bandwidth = value;
             return this;
         }
 
-        /** @param value 工作流引擎延迟分布 @return 当前构建器 */
+        /**
+         * @param value workflow engine delay distributions
+         * @return this builder
+         */
         public Builder workflowEngineDelays(Map<Integer, DistributionSpec> value) {
             workflowEngineDelays = value;
             return this;
         }
 
-        /** @param value 队列延迟分布 @return 当前构建器 */
+        /**
+         * @param value queue delay distributions
+         * @return this builder
+         */
         public Builder queueDelays(Map<Integer, DistributionSpec> value) {
             queueDelays = value;
             return this;
         }
 
-        /** @param value 后处理延迟分布 @return 当前构建器 */
+        /**
+         * @param value post-processing delay distributions
+         * @return this builder
+         */
         public Builder postDelays(Map<Integer, DistributionSpec> value) {
             postDelays = value;
             return this;
         }
 
-        /** @param value 聚类延迟分布 @return 当前构建器 */
+        /**
+         * @param value clustering delay distributions
+         * @return this builder
+         */
         public Builder clusteringDelays(Map<Integer, DistributionSpec> value) {
             clusteringDelays = value;
             return this;
         }
 
         /**
-         * 校验数值范围并创建开销模型。
+         * Validates the numeric ranges and creates the overhead model.
          *
-         * @return 不可变开销模型
+         * @return immutable overhead model
          */
         public OverheadModelConfig build() {
             if (workflowEngineDelayInterval < 0

@@ -18,10 +18,12 @@
 package org.workflowsim.reclustering;
 
 /**
- * 在给定抽象运行时间、开销和失效分布参数的前提下，估计任务重聚类大小。
+ * Estimates the task reclustering size given the abstract runtime, overhead, and
+ * failure distribution parameters.
  *
- * <p>该估计器使用旧版解析近似，适合作为兼容性恢复策略的一部分；其参数并非
- * 自动来自真实平台校准。</p>
+ * <p>This estimator uses the legacy analytic approximation and serves as part of a
+ * compatibility recovery strategy; its parameters do not come automatically from
+ * calibration against a real platform.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -30,15 +32,15 @@ package org.workflowsim.reclustering;
 public class ClusteringSizeEstimator {
 
     /**
-     * 在 {@code n / k >> r} 的近似前提下计算目标函数。
+     * Computes the objective function under the approximation {@code n / k >> r}.
      *
-     * @param k 聚类大小
-     * @param t 任务运行时间
-     * @param s 系统开销
-     * @param theta 到达间隔估计参数
-     * @param phi_gamma 分布形状参数
-     * @param phi_ts 时间缩放参数
-     * @return 近似目标函数值
+     * @param k clustering size
+     * @param t task runtime
+     * @param s system overhead
+     * @param theta arrival interval estimation parameter
+     * @param phi_gamma distribution shape parameter
+     * @param phi_ts time scaling parameter
+     * @return approximate objective function value
      */
     protected static double f(double k, double t, double s, double theta, double phi_gamma, double phi_ts) {
         double d = (k * t + s) * (phi_ts - 1);
@@ -46,14 +48,15 @@ public class ClusteringSizeEstimator {
     }
 
     /**
-     * 在 {@code n / k >> r} 的近似前提下计算目标函数的一阶导数。
+     * Computes the first derivative of the objective function under the approximation
+     * {@code n / k >> r}.
      *
-     * @param k 聚类大小
-     * @param t 任务运行时间
-     * @param s 系统开销
-     * @param theta 到达间隔估计参数
-     * @param phi Weibull 分布参数
-     * @return 近似目标函数的一阶导数
+     * @param k clustering size
+     * @param t task runtime
+     * @param s system overhead
+     * @param theta arrival interval estimation parameter
+     * @param phi Weibull distribution parameter
+     * @return approximate first derivative of the objective function
      */
     protected static double fprime(double k, double t, double s, double theta, double phi) {
         double first_part = Math.exp(Math.pow((k * t + s) / theta, phi));
@@ -62,14 +65,14 @@ public class ClusteringSizeEstimator {
     }
 
     /**
-     * 在 {@code n / k >> r} 的近似前提下枚举候选聚类大小。
+     * Enumerates candidate clustering sizes under the approximation {@code n / k >> r}.
      *
-     * @param t 任务运行时间
-     * @param s 系统开销
-     * @param theta 到达间隔估计参数
-     * @param phi_gamma 分布形状参数
-     * @param phi_ts 时间缩放参数
-     * @return 枚举范围内目标值最小的聚类大小
+     * @param t task runtime
+     * @param s system overhead
+     * @param theta arrival interval estimation parameter
+     * @param phi_gamma distribution shape parameter
+     * @param phi_ts time scaling parameter
+     * @return clustering size with the smallest objective value in the enumerated range
      */
     public static int estimateK(double t, double s, double theta, double phi_gamma, double phi_ts) {
         int optimalK = 0;
@@ -80,7 +83,7 @@ public class ClusteringSizeEstimator {
                 minM = M;
                 optimalK = k;
             }
-            // 调试时可输出每个候选 k 的目标函数值。
+            // The objective value of each candidate k can be printed for debugging.
         }
         return optimalK;
     }
