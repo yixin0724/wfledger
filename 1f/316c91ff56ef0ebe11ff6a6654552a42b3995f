@@ -1,0 +1,30 @@
+simulator/src/main/java/org/cloudbus/cloudsim/Log.java
+  s_3ae6b032aa2d87::t_7527f8514239be 116-123
+  s_3ae6b032aa2d87::t_34b72b89826f74 13-14
+  s_3ae6b032aa2d87::t_ee2a5411591a8e 124-134
+  s_3ae6b032aa2d87::t_3df826be9ef8d1 115
+  s_3ae6b032aa2d87::t_db09aabd577280 135-136
+simulator/src/test/java/org/cloudbus/cloudsim/LogPrintErrorTest.java
+  s_3ae6b032aa2d87::t_7cf48f20968638 3-4,9-11,26,35
+  s_3ae6b032aa2d87::t_1d2f5f9a116e71 1-2,5-8,12-25,27-34,36-68
+simulator/src/main/java/org/workflowsim/clustering/balancing/methods/HorizontalImpactBalancing.java
+  s_3ae6b032aa2d87::t_3abe91579569da 232-234
+  s_3ae6b032aa2d87::t_18467d52c04c9c 27
+  s_3ae6b032aa2d87::t_4e6408c4526986 84-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1f316c91ff56ef0ebe11ff6a6654552a42b3995f",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
