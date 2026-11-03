@@ -45,7 +45,7 @@ Exit codes of the first two tools:
 | 1 | The checks found problems or could not complete the requested coverage; the report keeps the diagnostics |
 | 2 | Usage, output-protection, or report-writing failure |
 
-Check the exit code, `status`, `issueCount`, and the coverage statement together; do not treat "the report file was generated" as success. `--max-issues` defaults to 200 and only caps the saved diagnostic details; it does not reduce the issue count or change the failure status. For the network checker's statuses and the full interpretation of what it captures, see the [independent network verification notes](<../docs/advanced/NETWORK_LEDGER_PYTHON.md>).
+Check the exit code, `status`, `issueCount`, and the coverage statement together; do not treat "the report file was generated" as success. `--max-issues` defaults to 200 and only caps the saved diagnostic details; it does not reduce the issue count or change the failure status. For the network checker's statuses and the full interpretation of what it captures, see the [shared-core network verification notes](<../docs/advanced/NETWORK_LEDGER_PYTHON.md>).
 
 ## Registered Study Identities and Compatibility Modes
 

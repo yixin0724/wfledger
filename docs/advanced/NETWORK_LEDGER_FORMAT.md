@@ -2,7 +2,7 @@
 
 ## Purpose and Interfaces
 
-`NetworkLedgerCodec` performs the strict JSON encoding/decoding and the immutable reconstruction of the V1 group ledger; `ExperimentArtifactWriter` writes the complete artifacts, and `ExperimentArtifactValidator` checks the ledger content and the run context. The [independent Python checker](<NETWORK_LEDGER_PYTHON.md>) invokes no Java. The [rerun tooling](<../experiments/RERUN_DIFF_CONTRACT.md>) compares the scientific fields of the complete ledger, and [Workbench](<../getting-started/WORKBENCH.md>) displays only the verified bounded projection.
+`NetworkLedgerCodec` performs the strict JSON encoding/decoding and the immutable reconstruction of the V1 group ledger; `ExperimentArtifactWriter` writes the complete artifacts, and `ExperimentArtifactValidator` checks the ledger content and the run context. The [Python checker](<NETWORK_LEDGER_PYTHON.md>) (one shared implementation, independent of the Java production path) invokes no Java. The [rerun tooling](<../experiments/RERUN_DIFF_CONTRACT.md>) compares the scientific fields of the complete ledger, and [Workbench](<../getting-started/WORKBENCH.md>) displays only the verified bounded projection.
 
 This document defines only the V1 group ledger. Per-file V2, Storage V3, and online actions each use their own contracts, as shown in the [capability matrix](<DATAFLOW_CAPABILITY_MATRIX.md>), and must not be treated as interchangeable under one semantics.
 

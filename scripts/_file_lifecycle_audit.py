@@ -1,4 +1,4 @@
-"""Independent, complete-history V2 file-lifecycle verifier (stdlib only).
+"""Shared-core, complete-history V2 file-lifecycle verifier (stdlib only).
 
 Use ``_network_audit.decode_json`` before ``verify_document`` so integer IDs and
 counters are checked as exact JSON numbers, not after lossy float conversion.

@@ -75,7 +75,7 @@ These content hashes are not Git commit numbers, author authentication, or relea
   validators can read supported older manifests but do not automatically fill in missing semantics.
   Since 2026-11-02 the declared event-sequence bounds (`events.firstSequence` /
   `lastSequence`) are bound to the event stream on both sides — the Java artifact validator and
-  the independent Python auditor reject a manifest whose declared bounds disagree with the
+  the Python auditor (independent of the Java production path) reject a manifest whose declared bounds disagree with the
   JSONL, where previously only the event count was checked. Since 2026-11-03 the Java artifact
   validator additionally runs the registered independent recompute for manifest v4: the
   F-006/F-007 event-contract cross-checks, plus `makespanSeconds` (the result end clock) and

@@ -28,7 +28,7 @@ Online target assignment is the independent configuration `CONTROL_READY_ONLINE_
 | FILE_STORAGE_LIFECYCLE_V3 | All of the above, plus restricted SOURCE, input waiting, and the obligations of all successful outputs | Complex storage coherence, capacity/eviction/failure protocols |
 | Online action main events | Assignment, PE/MI, CPU reservations, nominal input boundaries, logged scores, and the fixed retry VM | Exact active-flow balances, a full replay of future contention, or global optimality |
 
-Both the Java side and the independent Python side have validators. Online attestation requires a matching full-lifecycle capture; a raw Java run may still disable recording with the physics and the actions unchanged, but a complete online attestation cannot be exported from it. Missing, truncated, and field-contradictory state is rejected; nominal progress drift within the allowed range still counts among the exact-rerun core quantities and gains no exemption through a hash update.
+Both the Java side and the Python side (an implementation independent of the Java production path) have validators. Online attestation requires a matching full-lifecycle capture; a raw Java run may still disable recording with the physics and the actions unchanged, but a complete online attestation cannot be exported from it. Missing, truncated, and field-contradictory state is rejected; nominal progress drift within the allowed range still counts among the exact-rerun core quantities and gains no exemption through a hash update.
 
 Regular Workbench and standalone reports use only the same verified snapshot. The physical and action panels coexist, numbers are displayed as exact strings; the action/candidate previews have explicit caps, and no extra sidecar is read. For the complete files and new configuration examples see the [Workbench guide](<../getting-started/WORKBENCH.md>).
 
@@ -42,8 +42,8 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
 - Every manifest carries a mandatory `energyMetrics` section (four summary fields plus the
   per-VM `vmEnergyJoules` map; all-zero is the legal unpowered case), and the platform section
   serializes each VM's power fields so the dimension is recomputable from the manifest alone.
-- The independent Python
-  [auditor](<../../scripts/verify-study-evidence.py>) recomputes the conservation law
+- The Python
+  [auditor](<../../scripts/verify-study-evidence.py>) (independent of the Java production path) recomputes the conservation law
   conditionally: powered runs must satisfy `totalEnergyJoules = Σ_vm P_idle × T_sim +
   (P_max − P_idle) × T_busy` recomputed from the manifest's own busy intervals; unpowered runs
   are skipped by the energy branch (backward compatible).
@@ -79,7 +79,7 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
   `perVmCarbonGrams` (intensity family; all zero under the budget model) and
   `totalCarbonExcessWattSeconds`, `windowExcessWattSeconds` (budget family; zero under the intensity
   model).
-- The independent Python [auditor](<../../scripts/verify-study-evidence.py>) recomputes both families
+- The Python [auditor](<../../scripts/verify-study-evidence.py>) (independent of the Java production path) recomputes both families
   from the manifest alone (BAT-C2): grams from the recomputed per-VM energy and the declared intensities;
   the excess integral from the same compute-job intervals that feed the busy-interval/energy checks
   (fleet power = Σ idle + concurrent × per-VM active delta; the v1 fleet is homogeneous — the design's
@@ -129,8 +129,8 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
 - The **extended conservation law** `E_vm = P_idle(default)×T_sim +
   Σ_tier[(P_max(tier) − P_idle(default))×busy(tier)]` degenerates exactly to the v1 law
   without tiers; the per-tier busy ledger is reconstructable from the manifest's per-Job
-  `tierMips` keys alone (tiers unique by mips), and the independent Python
-  [auditor](<../../scripts/verify-study-evidence.py>) recomputes per-tier energy and the
+  `tierMips` keys alone (tiers unique by mips), and the Python
+  [auditor](<../../scripts/verify-study-evidence.py>) (independent of the Java production path) recomputes per-tier energy and the
   carbon models riding it with the same kill faces as the flat law (tier-attribution and
   window forgeries are caught, not rounded).
 - Registry declarations carry `dvfsAware` / `frequencyTiersRequired` (required ⇒ aware,

@@ -1,4 +1,4 @@
-"""Independent, stdlib-only V3 bounded-storage lifecycle sidecar verifier.
+"""Shared-core, stdlib-only V3 bounded-storage lifecycle sidecar verifier.
 
 Decode with ``_network_audit.decode_json`` before ``verify_document``. The closed
 V3 grammar reuses only PRIVATE independent V2 lexical/plan/path/replay machinery;

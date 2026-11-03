@@ -42,7 +42,7 @@ and superseded audit drafts are not long-term entry points.
 | Exact fields and validation rules of the per-file sidecar | [File lifecycle format](<advanced/FILE_LIFECYCLE_V2_FORMAT.md>) |
 | Format, roles, and strict reading of the V1 group ledger | [Network ledger format](<advanced/NETWORK_LEDGER_FORMAT.md>) |
 | V1 stable-allocation certificates, exact accounting, and truncated prefixes | [Ledger validation and metrics](<advanced/NETWORK_LEDGER_VALIDATION.md>) |
-| Java-independent V1/V2/V3 and online check entry points | [Independent Python evidence verification](<advanced/NETWORK_LEDGER_PYTHON.md>) |
+| Java-independent V1/V2/V3 and online check entry points | [Shared-core Python evidence verification](<advanced/NETWORK_LEDGER_PYTHON.md>) |
 | Same verified snapshot, exact text, and bounded previews | [Offline network and action reports](<advanced/NETWORK_REPORT_DISPLAY.md>) |
 
 ## Experiments, replay, and statistics

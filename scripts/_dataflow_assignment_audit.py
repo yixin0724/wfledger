@@ -1,4 +1,4 @@
-"""Independent stdlib NF005B online-assignment action/context audit.
+"""Shared-core stdlib NF005B online-assignment action/context audit.
 
 Scope: BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1. Visibility, binding, PE,
 compute, observed-start reservations and logged score/argmin are checked. A

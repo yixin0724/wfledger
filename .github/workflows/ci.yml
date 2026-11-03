@@ -45,7 +45,7 @@ jobs:
           python3 -B scripts/test-check-dataset-indexes.py
           python3 -B scripts/check-dataset-indexes.py
 
-      - name: Verify independent evidence and statistics checkers
+      - name: Verify study evidence and statistics checker self-tests (shared core, independent of Java)
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py
 
       - name: Verify mutation gate self-tests (BAT-R4, previously missing from CI)
@@ -54,7 +54,7 @@ jobs:
       - name: Verify energy portrait analysis (BAT-R4, skips the retained-copy test when evidence is absent)
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-energy-portrait.py
 
-      - name: Verify independent network checker self-tests
+      - name: Verify network audit self-tests (shared Python core, independent of Java)
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-network-ledger.py
 
       - name: Generate network ledger producer fixtures
@@ -78,7 +78,7 @@ jobs:
               print(json.dumps(dict(input=name, **result), allow_nan=False))
           PY
 
-      - name: Verify independent V2 lifecycle and context checkers
+      - name: Verify V2 lifecycle and context audit self-tests (shared Python core, independent of Java)
         run: |
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-file-lifecycle.py
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-file-lifecycle-context.py
@@ -104,7 +104,7 @@ jobs:
               print(json.dumps(dict(input=name, **result), allow_nan=False))
           PY
 
-      - name: Verify independent V3 storage and context checkers
+      - name: Verify V3 storage and context audit self-tests (shared Python core, independent of Java)
         run: |
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-storage-lifecycle.py
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-storage-lifecycle-context.py
@@ -130,7 +130,7 @@ jobs:
               print(json.dumps(dict(input=name, **result), allow_nan=False))
           PY
 
-      - name: Verify independent online assignment audit
+      - name: Verify online assignment audit self-tests (shared Python core, independent of Java)
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-dataflow-assignment.py
 
       - name: Verify strict performance comparison tooling

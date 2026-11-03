@@ -1,6 +1,9 @@
-"""Independent fluid-ledger audit using stdlib binary64 + exact rational arithmetic.
+"""Shared implementation core of the Python ledger/dataflow audits (AUD-F08).
 
-No JVM, WorkflowSim allocator, simulation replay or transport model is invoked.
+Uses stdlib binary64 + exact rational arithmetic. The contract checkers share
+this one core; the independence claimed is independence from the Java
+production path -- no JVM, WorkflowSim allocator, simulation replay or
+transport model is invoked -- not four separate implementations.
 Truncated tails get necessary checks only, never full-capture certification.
 """
 from __future__ import annotations

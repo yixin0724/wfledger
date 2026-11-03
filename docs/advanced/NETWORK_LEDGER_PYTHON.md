@@ -1,4 +1,4 @@
-# Independent Python Network and Dataflow Evidence Checker
+# Python Network and Dataflow Evidence Checker (Shared Core, Independent of Java)
 
 ## How to Run
 
@@ -38,9 +38,9 @@ The plain OFF entrypoint for ordinary legacy modes is narrower in scope: it chec
 
 Also read the scope and context markers in the output. A standalone sidecar carries no complete run result, and its check scope must not be conflated with that of the manifest entrypoint.
 
-## Independence and Numerical Handling
+## Shared Core and Numerical Handling
 
-The implementation entrypoint is [_network_audit.py](<../../scripts/_network_audit.py>), which dispatches by contract to specialized checkers such as [_file_lifecycle_audit.py](<../../scripts/_file_lifecycle_audit.py>), [_storage_lifecycle_audit.py](<../../scripts/_storage_lifecycle_audit.py>), and [_dataflow_assignment_audit.py](<../../scripts/_dataflow_assignment_audit.py>).
+All four contract checkers share one implementation core, [_network_audit.py](<../../scripts/_network_audit.py>), which dispatches by contract to the specialized checkers [_file_lifecycle_audit.py](<../../scripts/_file_lifecycle_audit.py>), [_storage_lifecycle_audit.py](<../../scripts/_storage_lifecycle_audit.py>), and [_dataflow_assignment_audit.py](<../../scripts/_dataflow_assignment_audit.py>). The independence claimed is independence from the Java production path — no JVM, solver, allocator, or simulation runs here — not four separate implementations: a defect in the shared core would surface in every contract, which is the deliberate trade-off against four duplicated implementations (AUD-F08).
 
 - Times, rates, and balances are checked under the declared binary64 scalar rules; exact int/long and decimal aggregations never pass through a lossy double conversion.
 - V1 obtains the exact rational of the binary64 values in the records via `Fraction.from_float` and accumulates balance deltas, rate areas, and capacity loads; the rounding of means/utilizations follows its dedicated contract.

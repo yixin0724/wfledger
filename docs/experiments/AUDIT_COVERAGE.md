@@ -5,7 +5,7 @@ deliberately out of scope.** It is a ledger of coverage, not a claim that no def
 row names the test or command that fails when the property breaks.
 
 Last sweep: 2026-11-03 (review rounds 1-7, the dedicated coverage goal, the AUD-F05 validator
-recompute, and the AUD-F13 dataset index chain).
+recompute, the AUD-F13 dataset index chain, and the AUD-F08 shared-core honesty pass).
 
 ## 1. Evidence dimensions: a positive case and a tamper case each
 
@@ -94,6 +94,10 @@ nothing (`events.count` instead of `eventCount`, a stage-in envelope's already-e
   record, and freshly produced tiered evidence now re-runs.
 - The deferral engine's bound is per Job, not per workflow: a later ready wave may hop once more,
   until no cleaner declared window remains.
+- The four Python contract auditors (V1 network, V2 file lifecycle, V3 storage, online
+  assignment) share one implementation core, `_network_audit.py`, by design: splitting them
+  would create four duplicated implementations. Their claimed independence is independence
+  from the Java production path, not independence from each other (AUD-F08).
 
 ## 6. Commands that constitute the gate
 
