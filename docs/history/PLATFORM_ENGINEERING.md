@@ -55,5 +55,5 @@ and in Git history; nothing here overrides a contract.
 ## Open record
 
 - All numbered TORs (F-001..F-009) have dispositions in the engineering archive (BUGS
-  ledger); none is pending. The canary ledger (11 registered mutants) is documented at the
+  ledger); none is pending. The canary ledger (19 registered mutants) is documented at the
   [mutation gate](<../advanced/MUTATION_GATE.md>).

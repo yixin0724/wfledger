@@ -27,15 +27,27 @@ closed with dedicated boundary/conservation tests at that time.
 | M9 | Task execution window offset by 1e-6 s | timing-window exactness |
 | M10 | SHARED DLS dynamic level flips the earliest-start subtraction into an addition | DLS decision surface |
 | M11 | Registered declaration's ANY scope covers no file system | registry declaration semantics |
+| M12 | Engine fork drops the shared retained-trace prefix | contention trace fork conservation (AUD-F04) |
+| M13 | Metric recompute mismatch check ignores the declared metrics value | artifact validator recompute (AUD-F05) |
+| M14 | Holm step-down drops the `(familySize - rank)` multiplier | within-family multiplicity correction (AUD-F06) |
+| M15 | Event recorder cap admits one event beyond the budget | recorder retention fail-fast (AUD-F07) |
+| M16 | Cost-caliber guard rejects homogeneous groups instead of mixed ones | comparison-group caliber homogeneity (AUD-F09) |
+| M17 | Deprecated-label bypass only throws when legacy aliases are enabled | legacy label gate closure (AUD-F10) |
+| M18 | Finished lifecycle validator still accepts event feeding | lifecycle single-use contract (AUD-F15) |
+| M19 | INVALID label binds the FCFS policy instead of the static no-decision shell | unmapped label explicit binding (AUD-F21) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
 One semantic axis, one canary; growth is by deliberate ledger addition (policy below).
+The M12–M19 growth (2026-11-03, AUD-F02) registered one canary per semantic axis that this
+audit-fix effort introduced, each verified KILLED red-first at the killers stage; the F-19
+logging channel stays unregistered by argument — log routing is diagnostics visibility,
+not a research-claim decision surface, and `LogPrintErrorTest` guards it directly.
 
 ## Usage
 
 ```bash
-# Full battery (~3–5 min; requires a clean Git tree and exclusive run — no parallel builds)
+# Full battery (~5–10 min for the 19 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)
