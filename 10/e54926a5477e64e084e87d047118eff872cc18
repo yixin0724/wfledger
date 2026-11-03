@@ -1,0 +1,27 @@
+scripts/mutation-gate.py
+  s_3ae6b032aa2d87::t_e81fc6ec006baf 68-69
+simulator/src/main/java/org/workflowsim/network/FatTreeTopology.java
+  s_3ae6b032aa2d87::t_ecbc9bdfc42f4d 219-250,255-265,267
+  s_3ae6b032aa2d87::t_0103a38dd82223 23,45,266,268,270
+simulator/src/main/java/org/workflowsim/data/v2/FileLifecycleValidator.java
+  s_3ae6b032aa2d87::t_f2f2d00d27555d 20-21
+  s_3ae6b032aa2d87::t_df97108f13f02e 625-629
+docs/advanced/FILE_LIFECYCLE_V2_FORMAT.md
+  s_3ae6b032aa2d87::t_7f6c03aefbd35c 70-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "10e54926a5477e64e084e87d047118eff872cc18",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
