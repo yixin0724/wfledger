@@ -1,0 +1,31 @@
+docs/algorithms/CONTRACTS.md
+  s_3ae6b032aa2d87::t_974cf49a897224 138
+simulator/src/main/java/org/workflowsim/rl/package-info.java
+  s_3ae6b032aa2d87::t_a8a89ca335d230 16-25
+simulator/src/main/java/org/workflowsim/rl/RlObservation.java
+  s_3ae6b032aa2d87::t_63ebef8a9c19fd 27-32
+simulator/src/main/java/org/workflowsim/rl/RlEnvironment.java
+  s_3ae6b032aa2d87::t_aa393e685704e8 25-29
+simulator/src/main/java/org/workflowsim/rl/RlPolicyRegistry.java
+  s_3ae6b032aa2d87::t_d5161d306e8129 18-19
+docs/algorithms/CATALOG.md
+  s_3ae6b032aa2d87::t_d9d179eb53bedb 67-70
+simulator/src/main/java/org/workflowsim/rl/RlPolicy.java
+  s_3ae6b032aa2d87::t_1c2066c5826b94 32-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7e3ca25a080a15d207a068f9030bee1cf6a95c84",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
