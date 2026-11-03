@@ -1,0 +1,23 @@
+simulator/src/test/java/org/workflowsim/experiment/SimulationMetricsContractTest.java
+  s_3ae6b032aa2d87::t_6b34e2b2f5dcf5 1-9,13-49,51-61,63-64,66-73,84-85,87-170
+  s_3ae6b032aa2d87::t_4790ca48a85805 62,65
+  s_3ae6b032aa2d87::t_42c56eca53b9c2 10-12
+  s_3ae6b032aa2d87::t_247e7a3d23d8aa 50
+  s_3ae6b032aa2d87::t_0a33e4eecea6df 74-83,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a1de55e9dd4181ddde7bf99e9b36e7a38c8e71bc",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
