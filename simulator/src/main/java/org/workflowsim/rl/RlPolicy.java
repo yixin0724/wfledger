@@ -29,6 +29,12 @@ package org.workflowsim.rl;
  *       randomness is needed, use the named seeded random stream
  *       {@code SimulationRandom.newApacheRandom(stream)}.</li>
  * </ul>
+ *
+ * <p><b>Demo interface scope (AUD-F11)</b>: the observation this contract receives is
+ * non-Markovian (no DAG structure, no transfer state, no history) and the reward is emitted
+ * only at the terminal state, so a policy implemented against this interface is a
+ * demonstration-grade closed loop, not a research-grade MDP learner; see the
+ * {@code org.workflowsim.rl} package description for the full boundary statement.</p>
  */
 public interface RlPolicy {
 

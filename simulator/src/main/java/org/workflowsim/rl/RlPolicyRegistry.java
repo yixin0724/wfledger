@@ -15,7 +15,8 @@ import org.workflowsim.exception.SimulationConfigurationException;
  * platform static-configuration pattern (see {@code FailureParameters}): {@code RlEnvironment}
  * calls {@link #init(RlPolicy)} before each episode starts and {@link #reset()} after it
  * ends. The registry is not a thread-safe resource; platform simulation is a single-threaded
- * event loop.</p>
+ * event loop, and because the registry is a static single-process registry, concurrent
+ * episodes in one JVM are not supported (AUD-F11, demo interface scope).</p>
  */
 public final class RlPolicyRegistry {
 

@@ -24,6 +24,12 @@ import org.workflowsim.WorkflowSimTags;
  * aggregate work length (the same semantics as the online scheduler's ECT:
  * {@code cloudletLength / mips}) and the PE demand, so a policy can estimate the completion
  * instant.</p>
+ *
+ * <p><b>Non-Markovian by design (AUD-F11)</b>: the snapshot deliberately omits the DAG structure,
+ * network/transfer state, and any history of past actions or observations, so a policy cannot in
+ * principle distinguish states that differ only in the omitted context. This demo-interface
+ * boundary keeps the closed loop minimal and auditable; it is not a claim that the observation
+ * is a sufficient statistic of the environment state.</p>
  */
 public final class RlObservation {
 

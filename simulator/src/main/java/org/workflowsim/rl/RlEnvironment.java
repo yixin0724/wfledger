@@ -22,7 +22,11 @@ import org.workflowsim.utils.SimulationConfig;
  * trainer such as PyTorch/JAX requires an out-of-process bridge (the platform is a
  * single-process Java event loop) and is an extension direction after R4. The baseline
  * policy {@link EarliestFinishGreedyPolicy} validates the closed loop and provides a
- * comparable reference score.</p>
+ * comparable reference score. As a whole this track is a demo interface (AUD-F11): the
+ * observation is non-Markovian, the reward is terminal-only, and the policy registry is a
+ * static single-process registry, so concurrent episodes in one JVM are not supported --
+ * see the {@code org.workflowsim.rl} package description for the full boundary
+ * statement.</p>
  */
 public final class RlEnvironment {
 

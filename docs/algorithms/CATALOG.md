@@ -64,7 +64,10 @@ loudly instead of hanging the workflow.
 Ordinary online policies and RL dispatch at most one Job per VM per cycle; remaining Jobs
 wait for later updates. `RL_POLICY` cannot be an ordinary Workbench JSON candidate; it must
 go through [RlEnvironment](<../../simulator/src/main/java/org/workflowsim/rl/RlEnvironment.java>),
-which provides the environment, trajectories, and rewards but no DQN/PPO-style learner.
+which provides the environment, trajectories, and rewards but no DQN/PPO-style learner. The
+RL track is a demo interface (AUD-F11): the observation is deliberately non-Markovian (no DAG
+structure, transfer state, or history), the reward is terminal-only, and the policy
+registry is static and single-process.
 
 ## Current planner labels
 
