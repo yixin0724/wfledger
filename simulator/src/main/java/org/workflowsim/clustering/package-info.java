@@ -1,9 +1,11 @@
 /**
- * 工作流任务聚类实现。
+ * Workflow task clustering implementations.
  *
- * <p>本包将逻辑任务组织为可提交的作业，并提供基础、水平、垂直和分块聚类策略。
- * 聚类会改变任务到作业的映射及随后可观察到的执行事件；研究使用时必须将聚类策略
- * 作为显式实验因素记录。当前标准 {@code SimulationRunner} 仅支持无任务聚类的
- * 受控研究轨道。</p>
+ * <p>This package organizes logical tasks into submittable jobs and provides basic,
+ * horizontal, vertical, and block clustering strategies. Clustering changes the mapping
+ * from tasks to jobs and the execution events observable afterwards; a study that uses it
+ * must record the clustering strategy as an explicit experimental factor. The current
+ * standard {@code SimulationRunner} supports only the controlled research track without
+ * task clustering.</p>
  */
 package org.workflowsim.clustering;

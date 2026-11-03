@@ -23,11 +23,12 @@ import org.cloudbus.cloudsim.Log;
 import org.workflowsim.platform.PlatformProfile;
 
 /**
- * WorkflowSim 历史全局参数仓库。
+ * Historical global parameter repository of WorkflowSim.
  *
- * <p>该类保留为与既有 WorkflowSim API 兼容的静态状态入口。新实验代码应优先通过
- * {@link SimulationConfig} 与 {@link SimulationSession} 建立显式会话边界，避免在同一
- * JVM 内泄漏配置、随机流或副本状态。</p>
+ * <p>This class survives as the static-state entry point for compatibility with the existing
+ * WorkflowSim API. New experiment code should prefer an explicit session boundary built from
+ * {@link SimulationConfig} and {@link SimulationSession}, so that configuration, random
+ * streams, and replica state do not leak inside one JVM.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -35,55 +36,72 @@ import org.workflowsim.platform.PlatformProfile;
  */
 public class Parameters {
 
-    /** 在线（局部）调度算法。 */
+    /** Online (local) scheduling algorithm. */
     public enum SchedulingAlgorithm {
 
-        // 适配 WorkflowSim 事件生命周期的在线就绪批次变体。
+        // Online ready-batch variants that fit the WorkflowSim event lifecycle.
         READY_BATCH_MINMIN,
         READY_BATCH_MAXMIN,
         READY_BATCH_MCT,
         READY_BATCH_ROUNDROBIN,
-        // 原始实现已改名，以下枚举值仅保留二进制/配置兼容性。
-        /** @deprecated 实际行为是 SPT-fastest-idle,非经典 Min-Min。用 READY_BATCH_MINMIN 替代 */
+        // The original implementations were renamed; the values below are kept only for
+        // binary and configuration compatibility.
+        /**
+         * @deprecated The actual behavior is SPT-fastest-idle, not classic Min-Min.
+         *             Use READY_BATCH_MINMIN instead
+         */
         @Deprecated
         MINMIN,
-        /** @deprecated 实际行为是 LJF-fastest-idle,非经典 Max-Min。用 READY_BATCH_MAXMIN 替代 */
+        /**
+         * @deprecated The actual behavior is LJF-fastest-idle, not classic Max-Min.
+         *             Use READY_BATCH_MAXMIN instead
+         */
         @Deprecated
         MAXMIN,
-        /** @deprecated 实际行为是贪心最快 VM,非经典 MCT。用 READY_BATCH_MCT 替代 */
+        /**
+         * @deprecated The actual behavior is greedy fastest VM, not classic MCT.
+         *             Use READY_BATCH_MCT instead
+         */
         @Deprecated
         MCT,
-        /** @deprecated vmIndex 死代码,实际 First-Fit-Idle。用 READY_BATCH_ROUNDROBIN 替代 */
+        /**
+         * @deprecated vmIndex is dead code; the actual behavior is First-Fit-Idle.
+         *             Use READY_BATCH_ROUNDROBIN instead
+         */
         @Deprecated
         ROUNDROBIN,
-        // 以下枚举值保留其现有调度语义。
+        // The values below keep their existing scheduling semantics.
         DATA,
         STATIC,
         FCFS,
         /**
-         * R4 RL 轨道：策略驱动的在线调度。每次 ready-batch 更新向经
-         * {@code RlPolicyRegistry} 注册的 {@code RlPolicy} 请求 Job→VM 动作；
-         * 必须通过 {@code RlEnvironment.runEpisode} 运行（规划层 INVALID），
-         * 直接用 {@code SimulationRunner} 运行会因缺少注册策略而显式失败。
+         * R4 RL track: policy-driven online scheduling. Each ready-batch update requests a
+         * Job-to-VM action from the {@code RlPolicy} registered in {@code RlPolicyRegistry}. It
+         * must run through {@code RlEnvironment.runEpisode} (the planning layer is INVALID);
+         * running it directly through {@code SimulationRunner} fails explicitly because no
+         * policy is registered.
          */
         RL_POLICY,
         /**
-         * C1（2026-11-02）：碳感知延后在线调度。把就绪作业压后到平台声明的、绿色功率
-         * 更高的下一个碳窗口再执行（CWM 时间平移的在线版本）。每个作业至多压后一次；
-         * 延后周期由调度器排唤醒事件推进时钟，无唤醒时刻即显式失败（不静默挂起）。
-         * 需要 {@code carbonWindows} 预算模型声明；无窗口时退化为 FCFS 同序派发。
+         * C1 (2026-11-02): carbon-aware deferred online scheduling. A ready Job is held back
+         * until the next carbon window with higher green power as declared by the platform
+         * (the online version of CWM time shifting). Each Job is deferred at most once; the
+         * scheduler advances the clock by scheduling a wake-up event for the deferral period,
+         * and a missing wake-up instant fails explicitly (it does not hang silently). A
+         * {@code carbonWindows} budget-model declaration is required; without windows it
+         * degrades to same-order FCFS dispatch.
          */
         CARBON_WINDOW_DEFER,
         INVALID
     }
 
-    /** 离线（全局）规划算法。 */
+    /** Offline (global) planning algorithm. */
     public enum PlanningAlgorithm {
         INVALID,
         RANDOM,
         /**
-         * 面向独立任务集合的离线基线算法。它们拒绝含依赖边的工作流；DAG 工作流应使用
-         * 专用 DAG 规划器。
+         * Offline baseline algorithms for independent task sets. They reject workflows with
+         * dependency edges; DAG workflows should use a dedicated DAG planner.
          */
         STATIC_OLB,
         STATIC_MET,
@@ -93,8 +111,8 @@ public class Parameters {
         STATIC_SUFFERAGE,
         STATIC_ROUND_ROBIN,
         /**
-         * 静态 DAG 映射算法，其估计器刻意与当前“共享存储、无聚类”的 WorkflowSim 执行
-         * 模型对齐。
+         * Static DAG mapping algorithms whose estimators are deliberately aligned with the
+         * current "shared storage, no clustering" WorkflowSim execution model.
          */
         SHARED_STORAGE_HEFT,
         SHARED_STORAGE_CPOP,
@@ -102,40 +120,45 @@ public class Parameters {
         SHARED_STORAGE_ETF,
         SHARED_STORAGE_PEFT,
         /**
-         * PSO（粒子群优化）映射规划器——论文复现实现（Pandey et al., AINA 2010；
-         * 参考开源实现 meysamhit/workflowsim-pso）。适应度为 0.8·成本 + 0.2·makespan
-         * 的顺序负载模型（忽略依赖边，忠实保留自参考实现）；运行期必须搭配
-         * {@code SchedulingAlgorithm.STATIC} 执行映射。
+         * PSO (particle swarm optimization) mapping planner -- a paper reproduction (Pandey
+         * et al., AINA 2010; reference open-source implementation meysamhit/workflowsim-pso).
+         * Fitness is the sequential load model 0.8 * cost + 0.2 * makespan (dependency edges
+         * ignored, faithfully retained from the reference implementation). At runtime it must
+         * be paired with {@code SchedulingAlgorithm.STATIC} for execution mapping.
          */
         PSO,
         /**
-         * 通信感知 HEFT 静态 DAG 规划器（Topcuoglu, Hariri &amp; Wu, IEEE TPDS 2002），
-         * 对齐 LOCAL 文件系统执行模型：任务间数据传输按运行时历史规则逐位镜像
-         * （SOURCE→VM 带宽、VM 间 min(bw)、副本演进）；传输建模为执行前网络延迟，
-         * 可与 VM 忙碌期重叠、VM 只被计算占用（论文 AST 语义）。
-         * 需要 LOCAL 文件系统、NONE 聚类、无故障/开销、
-         * {@code preExecutionTransferDelayV1} 数据移动模型与
-         * {@code SchedulingAlgorithm.STATIC} 派发。
+         * Communication-aware HEFT static DAG planner (Topcuoglu, Hariri &amp; Wu, IEEE TPDS
+         * 2002) aligned with the LOCAL file-system execution model: inter-task data transfer
+         * mirrors the runtime historical rules bit for bit (SOURCE-to-VM bandwidth, min(bw)
+         * between VMs, replica evolution); transfer is modeled as pre-execution network delay
+         * that may overlap the VM busy period while the VM is occupied by compute only (the
+         * paper's AST semantics). Requires the LOCAL file system, NONE clustering, no
+         * failure/overhead, the {@code preExecutionTransferDelayV1} data-movement model, and
+         * {@code SchedulingAlgorithm.STATIC} dispatch.
          */
         LOCAL_HEFT,
         /**
-         * 通信感知 CPOP 静态 DAG 规划器（与 HEFT 同出 Topcuoglu, Hariri &amp; Wu,
-         * IEEE TPDS 2002）：优先级 = 向上 rank + 向下 rank，关键路径任务绑定使关键
-         * 路径计算总秒数最小的 VM，其余任务取插入式最小 EFT。通信建模、执行语义与
-         * 适用前提与 {@link #LOCAL_HEFT} 完全一致。
+         * Communication-aware CPOP static DAG planner (from the same Topcuoglu, Hariri &amp;
+         * Wu, IEEE TPDS 2002 work as HEFT): priority = upward rank + downward rank; the tasks
+         * on the critical path are bound to the VM that minimizes the total critical-path
+         * compute seconds, and the remaining tasks take the insertion-based minimum EFT.
+         * Communication modeling, execution semantics, and preconditions are exactly the same
+         * as {@link #LOCAL_HEFT}.
          */
         LOCAL_CPOP,
         /**
-         * 通信感知 PEFT 静态 DAG 规划器（Arabnejad &amp; Barbosa, IEEE TPDS 2014）：
-         * 优先级 = 乐观成本表 OCT 在全部 VM 上的平均值降序，VM 选择最小化
-         * {@code EFT + OCT(t, vm)}。OCT 递推使用真实的按 VM 对 LOCAL 通信成本
-         * （c &gt; 0，与 SHARED_STORAGE_PEFT 的无链路模型退化形相对）。通信建模、
-         * 执行语义与适用前提与 {@link #LOCAL_HEFT} 完全一致。
+         * Communication-aware PEFT static DAG planner (Arabnejad &amp; Barbosa, IEEE TPDS
+         * 2014): priority = descending average of the optimistic cost table OCT over all VMs,
+         * and the VM is chosen to minimize {@code EFT + OCT(t, vm)}. The OCT recurrence uses
+         * the real per-VM-pair LOCAL communication cost (c &gt; 0, as opposed to the link-free
+         * degraded form of SHARED_STORAGE_PEFT). Communication modeling, execution semantics,
+         * and preconditions are exactly the same as {@link #LOCAL_HEFT}.
          */
         LOCAL_PEFT
     }
 
-    /** 工作流文件类型。 */
+    /** Workflow file type. */
     public enum FileType {
         NONE(0),
         INPUT(1),
@@ -147,7 +170,7 @@ public class Parameters {
         }
     }
 
-    /** 任务执行阶段类型。 */
+    /** Task execution stage type. */
     public enum ClassType {
         STAGE_IN(1),
         COMPUTE(2),
@@ -161,9 +184,10 @@ public class Parameters {
     }
 
     /**
-     * 成本模型。
+     * Cost model.
      *
-     * <p>{@code DATACENTER} 使用数据中心级成本，{@code VM} 使用虚拟机级成本。</p>
+     * <p>{@code DATACENTER} uses datacenter-level cost, {@code VM} uses virtual-machine-level
+     * cost.</p>
      */
     public enum CostModel {
         DATACENTER(1),
@@ -175,117 +199,131 @@ public class Parameters {
         }
     }
 
-    /** 源主机（提交主机）的逻辑名称。 */
+    /** Logical name of the source host (submission host). */
     public static String SOURCE = "source";
 
     public static final int BASE = 0;
 
-    /** 当前调度模式。 */
+    /** Current scheduling mode. */
     private static SchedulingAlgorithm schedulingAlgorithm;
 
-    /** BAT-3（2026-10-26）：本次会话注册的第三方调度算法；null 表示未启用注册算轨。 */
+    /**
+     * BAT-3 (2026-10-26): third-party scheduling algorithm registered for this session;
+     * null means the registered-algorithm track is not enabled.
+     */
     private static org.workflowsim.experiment.registry.SchedulingAlgorithmProvider
             registeredSchedulingAlgorithmProvider;
 
-    /** 当前规划模式。 */
+    /** Current planning mode. */
     private static PlanningAlgorithm planningAlgorithm;
 
-    /** 当前作业规约模式。 */
+    /** Current job reduction mode. */
     private static String reduceMethod;
-    /** 可用虚拟机数量。 */
+    /** Number of available virtual machines. */
     private static int vmNum;
-    /** 单个 DAX 或 JSON 工作流输入的物理路径。 */
+    /** Physical path of a single DAX or JSON workflow input. */
     private static String daxPath;
 
-    /** 多个 DAX 或 JSON 工作流输入的物理路径。 */
+    /** Physical paths of multiple DAX or JSON workflow inputs. */
     private static List<String> daxPaths;
     /**
-     * 外部运行时间文件路径。
+     * External runtime file path.
      *
-     * <p>历史格式为 {@code ID1 1.0 ID2 2.0 ...}。若 DAX 已声明任务运行时间，则无需
-     * 配置该文件。</p>
+     * <p>The historical format is {@code ID1 1.0 ID2 2.0 ...}. The file is not needed when the
+     * DAX already declares task runtimes.</p>
      */
     private static String runtimePath;
     /**
-     * 外部数据大小文件路径。
+     * External data-size file path.
      *
-     * <p>历史格式为 {@code DATA1 1000 DATA2 2000 ...}。若 DAX 已声明文件大小，则无需
-     * 配置该文件。</p>
+     * <p>The historical format is {@code DATA1 1000 DATA2 2000 ...}. The file is not needed when
+     * the DAX already declares file sizes.</p>
      */
     private static String datasizePath;
-    /** 工具包版本号。 */
+    /** Toolkit version number. */
     private static final String VERSION = "1.1.0";
-    /** 历史版本说明。 */
+    /** Historical version note. */
     private static final String NOTE = " supports planning algorithm at Nov 9, 2013";
-    /** 当前会话的旧式开销参数。 */
+    /** Legacy overhead parameters of the current session. */
     private static OverheadParameters oParams;
-    /** 当前会话的聚类参数。 */
+    /** Clustering parameters of the current session. */
     private static ClusteringParameters cParams;
-    /** 工作流截止时间；0 表示未请求截止时间。 */
+    /** Workflow deadline; 0 means no deadline was requested. */
     private static long deadline;
 
-    /** 虚拟机之间的逻辑带宽矩阵。 */
+    /** Logical bandwidth matrix between virtual machines. */
     private static double[][] bandwidths;
 
-    /** 最大 DAG 深度，由解析/配置路径初始化，供 {@code FailureGenerator} 使用。 */
+    /**
+     * Maximum DAG depth, initialized by the parse/configuration path and consumed by
+     * {@code FailureGenerator}.
+     */
     private static int maxDepth;
 
-    /** 未设置字符串参数时的历史占位值。 */
+    /** Historical placeholder value used when a string parameter is not set. */
     private static final String INVALID = "Invalid";
 
-    /** 输入运行时间转换为模型任务长度后的缩放系数。 */
+    /** Scaling factor applied after input runtimes are converted to model task lengths. */
     private static double runtime_scale = 1.0;
 
-    /** 将以秒表示的工作流运行时间转换为 CloudSim MI 时使用的参考吞吐量。 */
+    /**
+     * Reference throughput used to convert workflow runtimes expressed in seconds into CloudSim
+     * MI.
+     */
     private static double runtimeReferenceMips = 1000.0;
 
     /**
-     * 所有 WorkflowSim 自有随机组件的根种子。
+     * Root seed of all WorkflowSim-owned random components.
      *
-     * <p>默认值使不变配置可重复运行，但研究实验仍应显式设置种子并记录到结果清单中。</p>
+     * <p>The default value makes an unchanged configuration reproducible, but research
+     * experiments should still set the seed explicitly and record it in the results manifest.</p>
      */
     private static long randomSeed = 0L;
 
-    /** 默认使用与 CloudSim 一致的数据中心级成本模型。 */
+    /** Uses the CloudSim-consistent datacenter-level cost model by default. */
     private static CostModel costModel = CostModel.DATACENTER;
 
     /**
-     * BAT-D2（2026-10-29）：会话内生效的 DVFS 频档指派策略。
+     * BAT-D2 (2026-10-29): DVFS frequency-level assignment policy in effect for the session.
      *
-     * <p>与调度算法枚举相同的会话管理 legacy Parameters 载体（BAT-3 判例）：由
-     * {@link SimulationSession#open} 从 {@link SimulationConfig} 装载，由
-     * {@link #reset()} 清回缺省。</p>
+     * <p>The same session-managed legacy Parameters carrier as the scheduling algorithm enums
+     * (the BAT-3 precedent): loaded by {@link SimulationSession#open} from
+     * {@link SimulationConfig} and cleared back to the default by {@link #reset()}.</p>
      */
     private static SimulationConfig.FrequencyPolicy frequencyPolicy = SimulationConfig.FrequencyPolicy.DEFAULT;
 
     /**
-     * R5 动态到达：每个工作流输入的提交时刻（模拟秒），与输入路径一一对应。
+     * R5 dynamic arrival: submission instant (in simulated seconds) of each workflow input,
+     * one-to-one with the input paths.
      *
-     * <p>{@code null} 或全零表示全部输入在 t=0 提交（历史行为）。</p>
+     * <p>{@code null} or all zeros means every input is submitted at t=0 (the historical
+     * behavior).</p>
      */
     private static List<Double> workflowArrivalSeconds;
     /**
-     * C1（2026-11-02）：本次运行声明的绿色预算窗口（平台剖面的事实源，由
-     * {@code SimulationRunner} 在会话内注入）。空列表 = 未声明预算模型。
+     * C1 (2026-11-02): green budget windows declared for this run (the source of truth of the
+     * platform profile, injected by {@code SimulationRunner} within the session). An empty list
+     * means no budget model was declared.
      */
     private static List<PlatformProfile.CarbonWindow> carbonWindows = Collections.emptyList();
 
     /**
-     * 初始化单输入工作流的历史全局参数。
+     * Initializes the historical global parameters for a single-input workflow.
      *
-     * <p>新代码优先使用 {@link SimulationSession}。该方法仍会重置自有随机流分配，
-     * 因此不应在同一会话中间调用。</p>
+     * <p>New code should use {@link SimulationSession} instead. This method still resets the
+     * WorkflowSim-owned random stream assignment, so it must not be called in the middle of a
+     * session.</p>
      *
-     * @param vm 虚拟机数量
-     * @param dax DAX 或 JSON 工作流路径
-     * @param runtime 可选的外部运行时间文件路径
-     * @param datasize 可选的外部数据大小文件路径
-     * @param op 开销参数
-     * @param cp 聚类参数
-     * @param scheduler 调度模式
-     * @param planner 规划模式
-     * @param rMethod 作业规约模式
-     * @param dl 工作流截止时间
+     * @param vm number of virtual machines
+     * @param dax DAX or JSON workflow path
+     * @param runtime optional external runtime file path
+     * @param datasize optional external data-size file path
+     * @param op overhead parameters
+     * @param cp clustering parameters
+     * @param scheduler scheduling mode
+     * @param planner planning mode
+     * @param rMethod job reduction mode
+     * @param dl workflow deadline
      */
     public static void init(
             int vm,
@@ -316,18 +354,18 @@ public class Parameters {
     }
 
     /**
-     * 初始化多输入工作流的历史全局参数。
+     * Initializes the historical global parameters for a multi-input workflow.
      *
-     * @param vm 虚拟机数量
-     * @param dax DAX 或 JSON 工作流路径列表
-     * @param runtime 可选的外部运行时间文件路径
-     * @param datasize 可选的外部数据大小文件路径
-     * @param op 开销参数
-     * @param cp 聚类参数
-     * @param scheduler 调度模式
-     * @param planner 规划模式
-     * @param rMethod 作业规约模式
-     * @param dl 工作流截止时间
+     * @param vm number of virtual machines
+     * @param dax list of DAX or JSON workflow paths
+     * @param runtime optional external runtime file path
+     * @param datasize optional external data-size file path
+     * @param op overhead parameters
+     * @param cp clustering parameters
+     * @param scheduler scheduling mode
+     * @param planner planning mode
+     * @param rMethod job reduction mode
+     * @param dl workflow deadline
      */
     public static void init(
             int vm,
@@ -357,12 +395,12 @@ public class Parameters {
         SimulationRandom.reset(randomSeed);
     }
 
-    /** @return 当前会话的旧式开销参数 */
+    /** @return legacy overhead parameters of the current session */
     public static OverheadParameters getOverheadParams() {
         return oParams;
     }
 
-    /** @return 当前作业规约模式；未设置时返回历史占位值 {@code Invalid} */
+    /** @return current job reduction mode; returns the historical placeholder {@code Invalid} when unset */
     public static String getReduceMethod() {
         if (reduceMethod != null) {
             return reduceMethod;
@@ -371,51 +409,51 @@ public class Parameters {
         }
     }
 
-    /** @return 单个 DAX 或 JSON 工作流路径；多输入配置时为 {@code null} */
+    /** @return a single DAX or JSON workflow path; {@code null} for a multi-input configuration */
     public static String getDaxPath() {
         return daxPath;
     }
 
-    /** @return 可选的外部运行时间文件路径 */
+    /** @return optional external runtime file path */
     public static String getRuntimePath() {
         return runtimePath;
     }
 
-    /** @return 可选的外部数据大小文件路径 */
+    /** @return optional external data-size file path */
     public static String getDatasizePath() {
         return datasizePath;
     }
 
-    /** @return 当前可用虚拟机数量 */
+    /** @return number of currently available virtual machines */
     public static int getVmNum() {
         return vmNum;
     }
 
-    /** @return 当前成本模型 */
+    /** @return current cost model */
     public static CostModel getCostModel() {
         return costModel;
     }
 
     /**
-     * 设置当前可用虚拟机数量。
+     * Sets the number of currently available virtual machines.
      *
-     * @param num 虚拟机数量
+     * @param num number of virtual machines
      */
     public static void setVmNum(int num) {
         vmNum = num;
     }
 
-    /** @return 当前聚类参数 */
+    /** @return current clustering parameters */
     public static ClusteringParameters getClusteringParameters() {
         return cParams;
     }
 
-    /** @return 当前调度算法 */
+    /** @return current scheduling algorithm */
     public static SchedulingAlgorithm getSchedulingAlgorithm() {
         return schedulingAlgorithm;
     }
 
-    /** BAT-3（2026-10-26）：设置会话内生效的第三方注册调度算法（随 reset() 清除）。 */
+    /** BAT-3 (2026-10-26): sets the session-scoped third-party registered scheduling algorithm (cleared by reset()) */
     public static void setRegisteredSchedulingAlgorithmProvider(
             org.workflowsim.experiment.registry.SchedulingAlgorithmProvider provider) {
         if (provider == null) {
@@ -424,17 +462,17 @@ public class Parameters {
         registeredSchedulingAlgorithmProvider = provider;
     }
 
-    /** @return 会话内生效的第三方注册调度算法；null 表示未启用。 */
+    /** @return session-scoped third-party registered scheduling algorithm; null means not enabled */
     public static org.workflowsim.experiment.registry.SchedulingAlgorithmProvider
             getRegisteredSchedulingAlgorithmProvider() {
         return registeredSchedulingAlgorithmProvider;
     }
 
-    /** @return 当前规划算法 */
+    /** @return current planning algorithm */
     public static PlanningAlgorithm getPlanningAlgorithm() {
         return planningAlgorithm;
     }
-    /** @return 工具包版本号 */
+    /** @return toolkit version number */
     public static String getVersion() {
         return VERSION;
     }
@@ -443,29 +481,29 @@ public class Parameters {
         Log.printLine("WorkflowSim Version: " + VERSION);
         Log.printLine("Change Note: " + NOTE);
     }
-    /** @return 当前工作流截止时间；0 表示未请求 */
+    /** @return current workflow deadline; 0 means not requested */
     public static long getDeadline() {
         return deadline;
     }
 
-    /** @return 当前记录的最大 DAG 深度 */
+    /** @return currently recorded maximum DAG depth */
     public static int getMaxDepth() {
         return maxDepth;
     }
 
     /**
-     * 设置当前记录的最大 DAG 深度。
+     * Sets the currently recorded maximum DAG depth.
      *
-     * @param depth 最大深度
+     * @param depth maximum depth
      */
     public static void setMaxDepth(int depth) {
         maxDepth = depth;
     }
 
     /**
-     * 设置运行时间缩放系数。
+     * Sets the runtime scaling factor.
      *
-     * @param scale 有限正数缩放系数
+     * @param scale finite and positive scaling factor
      */
     public static void setRuntimeScale(double scale) {
         if (scale <= 0.0 || Double.isInfinite(scale) || Double.isNaN(scale)) {
@@ -475,9 +513,9 @@ public class Parameters {
     }
 
     /**
-     * 设置成本模型。
+     * Sets the cost model.
      *
-     * @param model 数据中心级或虚拟机级成本模型
+     * @param model datacenter-level or virtual-machine-level cost model
      */
     public static void setCostModel(CostModel model) {
         if (model == null) {
@@ -487,9 +525,10 @@ public class Parameters {
     }
 
     /**
-     * BAT-D2（2026-10-29）：设置会话内生效的 DVFS 频档指派策略（随 reset() 清回缺省）。
+     * BAT-D2 (2026-10-29): sets the DVFS frequency-level assignment policy in effect for the
+     * session (cleared back to the default by reset()).
      *
-     * @param policy 策略枚举，不能为 {@code null}
+     * @param policy policy enum, must not be {@code null}
      */
     public static void setFrequencyPolicy(SimulationConfig.FrequencyPolicy policy) {
         if (policy == null) {
@@ -498,20 +537,21 @@ public class Parameters {
         frequencyPolicy = policy;
     }
 
-    /** BAT-D2：@return 会话内生效的 DVFS 频档指派策略；缺省 {@code DEFAULT}（v1 退化） */
+    /** BAT-D2: @return session DVFS frequency-level assignment policy; default {@code DEFAULT} (v1 degraded) */
     public static SimulationConfig.FrequencyPolicy getFrequencyPolicy() {
         return frequencyPolicy;
     }
 
-    /** @return 当前运行时间缩放系数 */
+    /** @return current runtime scaling factor */
     public static double getRuntimeScale() {
         return runtime_scale;
     }
 
     /**
-     * 设置解析器将秒级运行时间转换为 MI 时使用的参考 VM 吞吐量。
+     * Sets the reference VM throughput the parser uses to convert runtimes expressed in seconds
+     * into MI.
      *
-     * @param mips 有限正数参考吞吐量，单位为 MI/s
+     * @param mips finite and positive reference throughput, in MI/s
      */
     public static void setRuntimeReferenceMips(double mips) {
         if (mips <= 0.0 || Double.isInfinite(mips) || Double.isNaN(mips)) {
@@ -520,33 +560,34 @@ public class Parameters {
         runtimeReferenceMips = mips;
     }
 
-    /** @return 秒到 MI 转换使用的参考吞吐量，单位为 MI/s */
+    /** @return reference throughput used for the seconds-to-MI conversion, in MI/s */
     public static double getRuntimeReferenceMips() {
         return runtimeReferenceMips;
     }
 
     /**
-     * 设置 WorkflowSim 自有随机模型使用的根种子。
+     * Sets the root seed used by WorkflowSim-owned random models.
      *
-     * <p>应在构建开销或故障分布前调用；每次调用都会启动新的命名随机流上下文。</p>
+     * <p>It should be called before building overhead or failure distributions; every call starts
+     * a new named random stream context.</p>
      *
-     * @param seed 一次实验的根种子
+     * @param seed root seed of one experiment
      */
     public static void setRandomSeed(long seed) {
         randomSeed = seed;
         SimulationRandom.reset(seed);
     }
 
-    /** @return 当前实验配置的根种子 */
+    /** @return root seed configured for the current experiment */
     public static long getRandomSeed() {
         return randomSeed;
     }
 
     /**
-     * 将全部 WorkflowSim 自有全局参数恢复为默认值。
+     * Restores all WorkflowSim-owned global parameters to their default values.
      *
-     * <p>本方法不重置 CloudSim 内核；需要完整串行运行边界时应使用
-     * {@link SimulationSession}。</p>
+     * <p>This method does not reset the CloudSim kernel; use {@link SimulationSession} when a
+     * full serial run boundary is required.</p>
      */
     public static void reset() {
         SOURCE = "source";
@@ -575,9 +616,9 @@ public class Parameters {
     }
 
     /**
-     * C1（2026-11-02）：设置本次运行的绿色预算窗口（会话作用域）。
+     * C1 (2026-11-02): sets the green budget windows for this run (session scope).
      *
-     * @param windows 平台声明的窗口列表；{@code null} 视为未声明
+     * @param windows platform-declared window list; {@code null} is treated as undeclared
      */
     public static void setCarbonWindows(List<PlatformProfile.CarbonWindow> windows) {
         carbonWindows = windows == null
@@ -585,26 +626,27 @@ public class Parameters {
                 : Collections.unmodifiableList(new ArrayList<PlatformProfile.CarbonWindow>(windows));
     }
 
-    /** @return 本次运行的绿色预算窗口；未声明时为空列表（永不返回 {@code null}） */
+    /** @return green budget windows of this run; an empty list when undeclared (never returns {@code null}) */
     public static List<PlatformProfile.CarbonWindow> getCarbonWindows() {
         return carbonWindows;
     }
 
-    /** @return 不可修改的多输入路径列表；单输入配置时为 {@code null} */
+    /** @return unmodifiable multi-input path list; {@code null} for a single-input configuration */
     public static List<String> getDAXPaths() {
         return daxPaths == null ? null : Collections.unmodifiableList(daxPaths);
     }
 
     /**
-     * 设置每个工作流输入的提交时刻（模拟秒），与输入路径一一对应。
+     * Sets the submission instant (in simulated seconds) of each workflow input, one-to-one with
+     * the input paths.
      *
-     * @param arrivalSeconds 每个输入的提交时刻；{@code null} 表示全部 t=0
+     * @param arrivalSeconds submission instant of each input; {@code null} means all at t=0
      */
     public static void setWorkflowArrivalSeconds(List<Double> arrivalSeconds) {
         workflowArrivalSeconds = arrivalSeconds == null ? null : new ArrayList<>(arrivalSeconds);
     }
 
-    /** @return 每个输入的提交时刻列表（模拟秒）；未配置时为 {@code null} */
+    /** @return submission instants of each input in simulated seconds; {@code null} when unconfigured */
     public static List<Double> getWorkflowArrivalSeconds() {
         return workflowArrivalSeconds == null ? null : Collections.unmodifiableList(workflowArrivalSeconds);
     }

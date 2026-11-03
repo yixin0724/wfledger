@@ -25,11 +25,13 @@ import org.cloudbus.cloudsim.Vm;
 import org.workflowsim.CondorVM;
 
 /**
- * 调度器基类，集中保存就绪 Job、VM 和本轮已分派 Job。
+ * Scheduler base class; it holds the ready Jobs, the VMs, and the Jobs dispatched in the
+ * current round.
  *
- * <p>具体策略应继承本类，但它不是可直接使用的调度算法。维护轨道通过
- * {@link #validateCloudletCompatibility()} 拒绝没有足够 PE 的 Job，并通过
- * {@link #sortedVmsById()} 为等代价 VM 选择提供稳定的 VM-ID 顺序。</p>
+ * <p>A concrete policy should extend this class, but it is not a directly usable scheduling
+ * algorithm. The maintained track rejects Jobs without enough PEs through
+ * {@link #validateCloudletCompatibility()} and provides a stable VM-ID order for equal-cost
+ * VM selection through {@link #sortedVmsById()}.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -37,61 +39,63 @@ import org.workflowsim.CondorVM;
  */
 public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInterface {
 
-    /** 当前事件已就绪、等待本策略处理的 Job 列表。 */
+    /** Jobs that are ready at the current event and wait to be handled by this policy. */
     private List<? extends Cloudlet> cloudletList;
-    /** 当前可见的 VM 列表。 */
+    /** Currently visible VM list. */
     private List<? extends Vm> vmList;
-    /** 本次 {@link #run()} 已经分派的 Job。 */
+    /** Jobs dispatched by the current {@link #run()}. */
     private List<Cloudlet> scheduledList;
 
-    /** 初始化空的本轮分派结果。 */
+    /** Initializes an empty dispatch result for the current round. */
     public BaseSchedulingAlgorithm() {
         this.scheduledList = new ArrayList();
     }
 
     /**
-     * 设置当前 ready Job 列表；内部复制列表以稳定候选集合。
+     * Sets the current ready Job list; the list is copied internally to stabilize the
+     * candidate set.
      *
-     * <p><strong>防御性复制：</strong>调用方（调度器）传入的是其内部就绪队列的
-     * 真实引用。部分历史算法（如 {@link FirstFitIdleSchedulingAlgorithm}）会在
-     * {@link #run()} 内对 {@link #getCloudletList()} 排序；若不复制，排序残留会
-     * 泄漏回调度器队列，破坏跨调度周期的到达序（FCFS 语义）。与
-     * {@link #setVmList(List)} 保持一致的复制语义。
+     * <p><strong>Defensive copy:</strong> the caller (the scheduler) passes the real reference
+     * of its internal ready queue. Some historical algorithms (for example
+     * {@link FirstFitIdleSchedulingAlgorithm}) sort {@link #getCloudletList()} inside
+     * {@link #run()}; without the copy, that sorting residue would leak back into the
+     * scheduler queue and break the arrival order across scheduling cycles (FCFS semantics).
+     * The copy semantics match those of {@link #setVmList(List)}.
      */
     @Override
     public void setCloudletList(List list) {
         this.cloudletList = new ArrayList(list);
     }
 
-    /** 设置当前 VM 列表；内部复制列表以稳定候选集合。 */
+    /** Sets the current VM list; the list is copied internally to stabilize the candidate set. */
     @Override
     public void setVmList(List list) {
         this.vmList = new ArrayList(list);
     }
 
-    /** 返回当前 ready Job 列表。 */
+    /** Returns the current ready Job list. */
     @Override
     public List getCloudletList() {
         return this.cloudletList;
     }
 
-    /** 返回当前 VM 列表。 */
+    /** Returns the current VM list. */
     @Override
     public List getVmList() {
         return this.vmList;
     }
 
-    /** 执行一次在线调度更新。 */
+    /** Performs one online scheduling update. */
     @Override
     public abstract void run() throws Exception;
 
-    /** 返回本轮被分派的 Job 列表。 */
+    /** Returns the Jobs dispatched in this round. */
     @Override
     public List getScheduledList() {
         return this.scheduledList;
     }
 
-    /** 在任一已声明 VM 都不具备足够 PE 时，拒绝永远无法执行的 ready Job。 */
+    /** Rejects a ready Job when no declared VM has enough PEs, so it could never execute. */
     protected final void validateCloudletCompatibility() {
         for (Object item : getCloudletList()) {
             Cloudlet cloudlet = (Cloudlet) item;
@@ -116,7 +120,7 @@ public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInte
         return false;
     }
 
-    /** 为等代价 VM 选择提供稳定的候选顺序：按 VM ID 升序。 */
+    /** Provides a stable candidate order for equal-cost VM selection: ascending VM ID. */
     protected final List<CondorVM> sortedVmsById() {
         List<CondorVM> result = new ArrayList<CondorVM>();
         for (Object item : getVmList()) {

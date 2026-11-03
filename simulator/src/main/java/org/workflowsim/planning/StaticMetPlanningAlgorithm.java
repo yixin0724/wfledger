@@ -6,10 +6,11 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * 独立任务的 Minimum Execution Time（MET）基线。
+ * Minimum Execution Time (MET) baseline for independent tasks.
  *
- * <p>按 Task-ID 顺序选择纯执行时间 {@code taskLength / vmMips} 最小的兼容 VM；相同时间
- * 选择较小 VM ID。它不维护排队可用时间，因此不能用于解释调度等待或 DAG 依赖。</p>
+ * <p>In Task-ID order, selects the compatible VM with the smallest pure execution time
+ * {@code taskLength / vmMips}; equal times select the smaller VM ID. It maintains no queued
+ * availability time, so it cannot be used to explain scheduling waits or DAG dependencies.</p>
  */
 public final class StaticMetPlanningAlgorithm extends StaticIndependentPlanningSupport {
 

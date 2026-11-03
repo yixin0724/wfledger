@@ -21,29 +21,36 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * Fastest-VM: 对每个任务,贪心分配到当前最大 MIPS 的空闲 VM。
+ * Fastest-VM: for each task, greedily assign the idle VM with the highest MIPS.
  *
- * <p>原名为 MCTSchedulingAlgorithm,但其行为不符合 Maheswaran et al. 1999 的经典
- * MCT 定义(对每个任务,计算 length/mips 的完成时间,分配到完成时间最小的机器)。
- * 本实现不考虑任务长度,仅比较 VM 的单 PE 速度 {@code getMips()},与经典 MCT 不同。</p>
+ * <p>It was originally named MCTSchedulingAlgorithm, but its behavior does not match the
+ * classical MCT definition of Maheswaran et al. 1999 (for each task, compute the completion
+ * time length/mips and assign it to the machine with the smallest completion time). This
+ * implementation ignores task length and compares only the VM's single-PE speed
+ * {@code getMips()}, so it differs from classical MCT.</p>
  *
- * <p><strong>MIPS 度量说明：</strong>作业固定占用 1 个 PE（{@code Task} 构造器
- * pesNumber=1），实际执行速率只取决于单 PE MIPS。历史实现曾比较
- * {@code getCurrentRequestedTotalMips()}（= mips × PE 数），在多 PE 异构
- * VM 配置下会系统性选错 VM（如 2PE@500 总 MIPS=1000 胜过 1PE@800，
- * 但作业在前者实际只以 500 MIPS 运行）。现已统一为 {@code getMips()}，
- * 与 {@link ReadyBatchMCTSchedulingAlgorithm} 的度量一致。</p>
+ * <p><strong>MIPS metric:</strong> a Job always occupies 1 PE ({@code Task} constructor
+ * pesNumber=1), so the actual execution rate depends only on single-PE MIPS. The historical
+ * implementation compared {@code getCurrentRequestedTotalMips()} (= mips x PE count), which
+ * systematically picks the wrong VM under multi-PE heterogeneous VM configurations (for
+ * example 2PE@500 with total MIPS=1000 beats 1PE@800, although the Job actually runs at only
+ * 500 MIPS on the former). It is now unified on {@code getMips()}, consistent with the metric
+ * of {@link ReadyBatchMCTSchedulingAlgorithm}.</p>
  *
- * <p>ready-batch MCT 请参考 {@link ReadyBatchMCTSchedulingAlgorithm}。</p>
+ * <p>For ready-batch MCT see {@link ReadyBatchMCTSchedulingAlgorithm}.</p>
  *
- * <p><strong>平局与兼容检查注记（复核轮 2026-09 确认）：</strong>本类遍历原始
- * {@code vmList}，同 MIPS 平局时选择取决于传入顺序（未按 VM ID 排序），且不做
- * PE 兼容检查——与维护轨道的 FCFS/ReadyBatch 系列（{@code sortedVmsById} +
- * 兼容检查）不一致。作业固定 1 PE、VM 恒 ≥1 PE 时兼容检查不可达；平局顺序
- * 差异仅影响异构同速 VM 的边缘场景，且本类不在标准研究入口内，故不修复。</p>
+ * <p><strong>Tie and compatibility-check notes (confirmed in review round 2026-09):</strong>
+ * this class traverses the raw {@code vmList}, so an equal-MIPS tie depends on the incoming
+ * order (it is not sorted by VM ID), and it performs no PE compatibility check -- unlike the
+ * maintained-track FCFS/ReadyBatch family ({@code sortedVmsById} + compatibility check). With
+ * Jobs fixed at 1 PE and VMs always at 1 PE or more the compatibility check is unreachable;
+ * the tie-order difference affects only the edge case of heterogeneous equal-speed VMs, and
+ * this class is outside the standard research entry point, so it is not fixed.</p>
  *
- * <p><strong>兼容边界：</strong>本类仅为历史直接 API 保留；标准研究入口应使用
- * {@link ReadyBatchMCTSchedulingAlgorithm}，不能把本类结果称为经典 MCT 证据。</p>
+ * <p><strong>Compatibility boundary:</strong> this class is kept for the historical direct
+ * API only; the standard research entry point should use
+ * {@link ReadyBatchMCTSchedulingAlgorithm}, and its results must not be called classical MCT
+ * evidence.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0

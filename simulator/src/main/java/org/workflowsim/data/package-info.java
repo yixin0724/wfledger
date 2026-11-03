@@ -1,7 +1,7 @@
 /**
- * 工作流输入输出文件及其抽象数据移动模型。
+ * Workflow input and output files and their abstract data movement model.
  *
- * <p>本包中的参数描述的是仿真模型假设，不代表网络拓扑、存储服务质量或
- * 现实平台的校准结果。</p>
+ * <p>The parameters in this package describe simulation-model assumptions; they do not represent
+ * network topology, storage quality of service, or calibration results from a real platform.</p>
  */
 package org.workflowsim.data;

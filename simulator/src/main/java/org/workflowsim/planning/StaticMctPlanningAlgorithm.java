@@ -6,10 +6,11 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * 独立任务的 Minimum Completion Time（MCT）基线。
+ * Minimum Completion Time (MCT) baseline for independent tasks.
  *
- * <p>按确定的 Task-ID 顺序逐个映射，每次选择 {@code availability + executionTime} 最小的
- * 兼容 VM，并更新该 VM 的暂定可用时间。它不是运行时 ready-batch MCT 调度器。</p>
+ * <p>Maps tasks one at a time in deterministic Task-ID order, each time selecting the compatible
+ * VM with the smallest {@code availability + executionTime} and updating that VM's provisional
+ * availability time. It is not a runtime ready-batch MCT scheduler.</p>
  */
 public final class StaticMctPlanningAlgorithm extends StaticIndependentPlanningSupport {
 

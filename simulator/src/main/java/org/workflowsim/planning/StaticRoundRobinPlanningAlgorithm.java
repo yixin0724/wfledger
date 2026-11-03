@@ -6,10 +6,11 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * 独立任务的确定性 VM-ID 轮转基线。
+ * Deterministic VM-ID round-robin baseline for independent tasks.
  *
- * <p>按 Task-ID 顺序，从上一次成功映射 VM 的后继位置循环寻找第一个 PE 兼容 VM；它不估计
- * 执行时间、等待时间或 DAG 依赖。</p>
+ * <p>In Task-ID order, scans cyclically from the successor position of the last successfully
+ * mapped VM for the first PE-compatible VM; it estimates neither execution time, nor waiting
+ * time, nor DAG dependencies.</p>
  */
 public final class StaticRoundRobinPlanningAlgorithm extends StaticIndependentPlanningSupport {
 

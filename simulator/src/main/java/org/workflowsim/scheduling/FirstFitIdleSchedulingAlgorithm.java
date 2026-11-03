@@ -24,15 +24,17 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * First-Fit-Idle: 按 cloudletId 排序,按 vmId 排序,每个任务分配第一个空闲 VM。
+ * First-Fit-Idle: sort by cloudletId and by vmId, then give each task the first idle VM.
  *
- * <p>原名为 RoundRobinSchedulingAlgorithm,但声明的 vmIndex 是死代码,
- * 实际行为并非 Round-Robin(持续轮转)。本实现是 First-Fit-Idle。</p>
+ * <p>It was originally named RoundRobinSchedulingAlgorithm, but the declared vmIndex is dead
+ * code, so the actual behavior is not Round-Robin (continuous rotation). This implementation
+ * is First-Fit-Idle.</p>
  *
- * <p>ready-batch Round-Robin 请参考 {@link ReadyBatchRoundRobinSchedulingAlgorithm}。</p>
+ * <p>For ready-batch Round-Robin see {@link ReadyBatchRoundRobinSchedulingAlgorithm}.</p>
  *
- * <p><strong>兼容边界：</strong>本类仅保留给历史直接 API 调用；标准
- * {@code SimulationRunner} 不接受其历史标签作为研究证据入口。</p>
+ * <p><strong>Compatibility boundary:</strong> this class is retained for historical direct
+ * API calls only; the standard {@code SimulationRunner} does not accept its historical label
+ * as a research evidence entry point.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -67,7 +69,7 @@ public class FirstFitIdleSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         }
     }
 
-    /** 按 VM ID 升序排序。 */
+    /** Sorts by ascending VM ID. */
     public class VmListComparator implements Comparator<CondorVM> {
         @Override
         public int compare(CondorVM v1, CondorVM v2) {
@@ -75,7 +77,7 @@ public class FirstFitIdleSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         }
     }
 
-    /** 按 Cloudlet ID 升序排序。 */
+    /** Sorts by ascending Cloudlet ID. */
     public class CloudletListComparator implements Comparator<Cloudlet> {
         @Override
         public int compare(Cloudlet c1, Cloudlet c2) {

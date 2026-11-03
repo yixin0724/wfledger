@@ -17,16 +17,20 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 从不可变 {@link SimulationReport} 推导出的、名称明确的模型层指标。
- * 这些值描述的是本次模拟器运行，不是生产工作流执行的实测数据。
+ * Explicitly named model-level metrics derived from an immutable {@link SimulationReport}.
+ * These values describe this simulator run, not measured data of production workflow execution.
  *
- * <p><b>MethodLength 判例（2026-10-23）。</b>本类唯二的超限段落——
- * 构造器与 {@code assembleMetrics(...)}——是结构性不可约：一个
- * ~79 字段不可变指标账本的逐一赋值构造 + 单一 79 参数原子快照调用。任何"提取"
- * 只会制造人工碎片、破坏快照组装的内聚性，且经逐字段核对不存在可分组的语义簇。
- * 依据 MethodLength Tier-B 判例账，此两处登记为 documented irreducible，不强制清零；
- * 清该判例的唯一正当路径是指标字段的契约性重组（属于 schema 提案，非风格重构）。
- * （BAT-D2，2026-10-29：+2 字段为逐档忙秒账本 pair，判例登记随账本同步。）</p>
+ * <p><b>MethodLength precedent (2026-10-23).</b>The only two over-limit sections of this class
+ * -- the constructor and {@code assembleMetrics(...)} -- are structurally irreducible: a
+ * field-by-field construction of a ~79-field immutable metric ledger plus a single 79-parameter
+ * atomic snapshot call. Any "extraction" would only manufacture artificial fragments and break
+ * the cohesion of snapshot assembly, and a field-by-field review found no groupable semantic
+ * clusters. Under the MethodLength Tier-B precedent ledger these two sites are registered as
+ * documented irreducible and are not forced to zero; the only legitimate way to clear the
+ * precedent is a contractual reorganization of the metric fields (a schema proposal, not a style
+ * refactor).
+ * (BAT-D2, 2026-10-29: the +2 fields are the per-tier busy-seconds ledger pair; the precedent
+ * registration follows the ledger.)</p>
  */
 public final class SimulationMetrics {
 
@@ -60,33 +64,33 @@ public final class SimulationMetrics {
     private final double meanJobVmQueueWaitingTimeSeconds;
     private final double meanJobResponseTimeSeconds;
     private final double meanJobVmLevelSlowdown;
-    /** VM 层面减速比的样本观测数（仅 executionTime > 0.001s 的作业；与均值同集合）。 */
+    /** Number of VM-level slowdown observations (only jobs with executionTime > 0.001s; same set as the mean). */
     private final int vmLevelSlowdownObservationCount;
 
     private final double meanComputeTotalWaitingTimeSeconds;
     private final double meanComputeTrueSlowdown;
     private final int trueSlowdownObservationCount;
-    /** 总等待时间的观测数（与真实减速比观测数同口径：就绪事件齐备的计算作业）。 */
+    /** Total-waiting-time observation count (same scope as true slowdown: compute jobs with complete ready events). */
     private final int totalWaitingTimeObservationCount;
-    /** 总等待时间中位数（秒）；分布尾部统计，调度算法差异常体现在尾部而非均值。 */
+    /** Median total waiting time (seconds); a tail statistic -- scheduling differences often show in the tail. */
     private final double medianComputeTotalWaitingTimeSeconds;
-    /** 总等待时间 P95（秒，最近秩法）。 */
+    /** Total waiting time P95 (seconds, nearest-rank method). */
     private final double p95ComputeTotalWaitingTimeSeconds;
-    /** 总等待时间最大值（秒）。 */
+    /** Maximum total waiting time (seconds). */
     private final double maxComputeTotalWaitingTimeSeconds;
-    /** 真实减速比中位数；分布尾部统计。 */
+    /** Median true slowdown; a tail statistic of the distribution. */
     private final double medianComputeTrueSlowdown;
-    /** 真实减速比 P95（最近秩法）。 */
+    /** True slowdown P95 (nearest-rank method). */
     private final double p95ComputeTrueSlowdown;
-    /** 真实减速比最大值。 */
+    /** Maximum true slowdown. */
     private final double maxComputeTrueSlowdown;
-    /** 仅成功作业的总等待时间均值（秒）；仅条件于成功尝试，不宣称消除了选择偏差。 */
+    /** Success-only mean total waiting time (seconds); conditioned on success, no selection-bias claim. */
     private final double successOnlyMeanComputeTotalWaitingTimeSeconds;
-    /** 仅成功作业的真实减速比均值；仅条件于成功尝试，不宣称消除了选择偏差。 */
+    /** Success-only mean true slowdown; conditioned on success, no selection-bias claim. */
     private final double successOnlyMeanComputeTrueSlowdown;
-    /** success-only 变体的观测数（成功且就绪事件齐备的计算作业）。 */
+    /** Observation count of the success-only variant (successful compute jobs with complete ready events). */
     private final int successOnlyWaitingObservationCount;
-    /** 重试放大率 = 逻辑任务尝试总数 / 逻辑任务数；无失败时为 1.0，无任务时为 0.0。 */
+    /** Retry amplification ratio = logical task attempts / logical tasks; 1.0 with no failures, 0.0 with no tasks. */
     private final double retryAmplificationRatio;
 
     private final double meanComputeReadyToDecisionDelaySeconds;
@@ -110,21 +114,24 @@ public final class SimulationMetrics {
     private final double totalVmModeledBusyIntervalSeconds;
     private final double meanVmModeledIntervalUtilization;
     private final double vmModeledBusyTimeCoefficientOfVariation;
-    /** VM 利用率 Jain 公平性指数 ∈ (0,1]；同窗口非零负载下等于 1/(1+CV²)。 */
+    /** VM utilization Jain fairness index in (0,1]; 1/(1+CV^2) under nonzero load in the same window. */
     private final double vmUtilizationJainFairnessIndex;
 
     /**
-     * BAT-D2（2026-10-29）：逐 VM 逐档忙秒账——{@code vmId → (档 MIPS → 忙秒)}。
+     * BAT-D2 (2026-10-29): per-VM per-tier busy-seconds ledger --
+     * {@code vmId -> (tier MIPS -> busy seconds)}.
      *
-     * <p>每个 Job attempt 的 [startTime, finishTime) 区间按其指派档归因；
-     * {@code tierMips == null} 的 Job（无档 VM 之外不可能出现——无档 VM 整体
-     * 不入账）按该 VM 的默认档（表首档）归因。空 map = v1 无频档运行（守恒律
-     * 退化为 D1 的"全部默认档"口径）。transient：manifest metrics 节的序列化
-     * 面不随本账本扩展（证据面变更属 D3/D4 台账批），Java 侧经 getter 供
-     * 能量守恒核算与测试使用。</p>
+     * <p>Each Job attempt's [startTime, finishTime) interval is attributed to its assigned tier;
+     * a Job with {@code tierMips == null} (impossible outside a tierless VM -- a tierless VM is
+     * not booked at all) is attributed to that VM's default tier (the first table entry). An empty
+     * map = a v1 run without frequency tiers (the conservation law degenerates to D1's
+     * "all default tier" scope). transient: the serialization surface of the manifest metrics
+     * section does not grow with this ledger (an evidence-surface change belongs to the D3/D4
+     * ledger batch); the Java side exposes it through a getter for energy-conservation auditing
+     * and tests.</p>
      */
     private final transient Map<Integer, Map<Double, Double>> perTierBusySecondsByVm;
-    /** BAT-D2：舰队合计逐档忙秒——{@code 档 MIPS → 忙秒}（TreeMap 升序确定性）。 */
+    /** BAT-D2: fleet total per-tier busy seconds -- {@code tier MIPS -> busy seconds} (TreeMap ascending). */
     private final transient Map<Double, Double> fleetPerTierBusySeconds;
 
     private final boolean controlledSharedStorageCriticalPathReferenceAvailable;
@@ -299,7 +306,7 @@ public final class SimulationMetrics {
         this.deadlineTardinessSeconds = deadlineTardinessSeconds;
         this.exactTaskTimingObservationCount = exactTaskTimingObservationCount;
         this.modeledApproximateTaskTimingObservationCount = modeledApproximateTaskTimingObservationCount;
-        // BAT-D2（2026-10-29）：逐档账本冻结——TreeMap 键序保证确定性（AGENTS #9）。
+        // BAT-D2 (2026-10-29): freeze the per-tier ledger -- TreeMap key order keeps determinism (AGENTS #9).
         this.perTierBusySecondsByVm =
                 Collections.unmodifiableMap(new LinkedHashMap<Integer, Map<Double, Double>>(perTierBusySecondsByVm));
         this.fleetPerTierBusySeconds =
@@ -307,9 +314,10 @@ public final class SimulationMetrics {
     }
 
     /**
-     * Bounded slowdown 阈值（秒）。
-     * 在计算减速比时，执行时间下限设为此值，防止极短作业导致数值爆炸。
-     * 参考 Feitelson 等人的调度研究标准实践。
+     * Bounded slowdown threshold (seconds).
+     * When computing the slowdown ratio, the execution time floor is set to this value so that
+     * extremely short jobs cannot make the numbers blow up. Follows the standard practice of
+     * Feitelson et al. in scheduling research.
      */
     private static final double BOUNDED_SLOWDOWN_THRESHOLD_SECONDS = 10.0;
 
@@ -322,9 +330,9 @@ public final class SimulationMetrics {
             List<Task> sourceTasks,
             SimulationConfig config,
             PlatformProfile platform) {
-        // 数值稳定性：校验 makespan 有限性，防止 NaN/Infinity 静默传播进指标计算
+        // Numerical stability: require a finite makespan so NaN/Infinity cannot silently leak into the metrics
         requireFinite(makespan, "makespan");
-        // 校验每个 JobOutcome 的时间和成本字段有限性
+        // Validate the finiteness of the time and cost fields of every JobOutcome
         for (SimulationReport.JobOutcome job : jobs) {
             requireFinite(job.getSubmissionTime(), "job " + job.getJobId() + " submissionTime");
             requireFinite(job.getStartTime(), "job " + job.getJobId() + " startTime");
@@ -338,8 +346,9 @@ public final class SimulationMetrics {
         Set<Integer> retryJobIds = retryJobIds(events, jobsById);
         EventTiming timing = scanTimingEvents(events);
 
-        // BAT-D2（2026-10-29）：逐 VM 默认档 MIPS（表首档）——无档 VM 不入映射，
-        // 其忙秒不进逐档账本（v1 逐位退化）；有档 VM 上未指派 Job 的区间按默认档归因。
+        // BAT-D2 (2026-10-29): per-VM default-tier MIPS (first table entry) -- a tierless VM does
+        // not enter the map and its busy seconds stay out of the per-tier ledger (v1 degenerates
+        // exactly); intervals of unassigned Jobs on a tiered VM go to the default tier.
         Map<Integer, Double> defaultTierMipsByVm = new LinkedHashMap<Integer, Double>();
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
             if (spec.hasFrequencyTiers()) {
@@ -358,7 +367,7 @@ public final class SimulationMetrics {
                 makespan, jobs, taskOutcomes, sourceTasks, config, platform, jobsById, retryJobIds, timing, vm, acc);
     }
 
-    /** Job 结算扫描阶段（逐字搬运转写自 calculate()；compute 分支单列搬运）。 */
+    /** Job settlement scan stage (moved verbatim from calculate(); the compute branch is moved separately). */
     private static JobAccumulators accumulateJobOutcomes(
             List<SimulationReport.JobOutcome> jobs,
             Set<Integer> retryJobIds,
@@ -389,7 +398,7 @@ public final class SimulationMetrics {
         return acc;
     }
 
-    /** 单个 compute Job 的计数/等待/减速比累计（逐字搬运转写自 calculate() 的 compute 分支）。 */
+    /** Per-compute-Job counting, waiting and slowdown accumulation (moved verbatim from the calculate() branch). */
     private static void accumulateComputeJob(
             SimulationReport.JobOutcome job, JobAccumulators acc, Set<Integer> retryJobIds, EventTiming timing) {
         acc.compute++;
@@ -406,11 +415,11 @@ public final class SimulationMetrics {
         }
         acc.computeRunTimeSum += nonNegative(job.getFinishTime() - job.getStartTime());
 
-        // 统计等待时间和响应时间（所有作业，包括成功和失败）
+        // Accumulate waiting time and response time (all jobs, successful and failed)
         acc.jobWaitingTimeSum += job.getWaitingTime();
         acc.jobResponseTimeSum += job.getResponseTime();
 
-        // 统计减速比（仅执行时间 > 0.001 秒的作业，避免除零）
+        // Accumulate the slowdown ratio (only jobs with execution time > 0.001 seconds, to avoid division by zero)
         if (job.getExecutionTime() > 0.001) {
             double slowdown = job.getResponseTime() / job.getExecutionTime();
             acc.jobSlowdownSum += slowdown;
@@ -427,14 +436,14 @@ public final class SimulationMetrics {
             acc.decisionToStartSum += job.getStartTime() - decision.doubleValue();
             acc.decisionToStartCount++;
         }
-        // 总等待时间（就绪到开始执行）：涵盖调度器队列等待 + 派发延迟
+        // Total waiting time (ready to start of execution): covers scheduler queue waiting + dispatch delay
         if (ready != null && job.getStartTime() >= ready.doubleValue()) {
             double trueWait = job.getStartTime() - ready.doubleValue();
             double execTime = nonNegative(job.getFinishTime() - job.getStartTime());
-            // 真实减速比（bounded slowdown，Feitelson 标准）：
-            // max( (真实等待 + 执行时间) / max(执行时间, 10s), 1.0 )
-            // 分母下限 10 秒防止极短作业导致数值爆炸；
-            // 外层 max(1) 保证减速比语义（不存在 "加速"）
+            // True slowdown (bounded slowdown, Feitelson standard):
+            // max( (true wait + execution time) / max(execution time, 10s), 1.0 )
+            // The 10-second denominator floor prevents numerical blow-up on extremely short jobs;
+            // the outer max(1) keeps the slowdown semantics (there is no "speedup")
             double boundedExec = Math.max(execTime, BOUNDED_SLOWDOWN_THRESHOLD_SECONDS);
             double trueSlowdown = Math.max((trueWait + execTime) / boundedExec, 1.0);
 
@@ -445,7 +454,8 @@ public final class SimulationMetrics {
             acc.trueSlowdownCount++;
             acc.trueSlowdownSamples.add(Double.valueOf(trueSlowdown));
 
-            // success-only 变体：剔除失败尝试，避免跨失败率方案比较时均值有偏。
+            // success-only variant: drop failed attempts so means stay unbiased when comparing schemes
+            // with different failure rates.
             if (job.getStatus() == Cloudlet.SUCCESS) {
                 acc.successOnlyTotalWaitingSum += trueWait;
                 acc.successOnlyTrueSlowdownSum += trueSlowdown;
@@ -454,7 +464,7 @@ public final class SimulationMetrics {
         }
     }
 
-    /** calculate() Job 结算口径的私有搬运转写结构（保持原局部变量声明顺序）。 */
+    /** Private move-only structure for the calculate() settlement scope (keeps the original declaration order). */
     private static final class JobAccumulators {
         int compute;
         int stageIn;
@@ -475,7 +485,7 @@ public final class SimulationMetrics {
         int decisionToStartCount;
         double totalWaitingTimeSum;
         int totalWaitingTimeCount;
-        // 分布统计样本（中位数/p95/max）与 success-only 变体累加器。
+        // Distribution samples (median/p95/max) and the success-only variant accumulators.
         final List<Double> totalWaitingSamples = new ArrayList<Double>();
         final List<Double> trueSlowdownSamples = new ArrayList<Double>();
         double successOnlyTotalWaitingSum;
@@ -491,12 +501,12 @@ public final class SimulationMetrics {
         double failedComputeCost;
     }
 
-    /** VM 冻结阶段（逐字搬运转写自 calculate()；BAT-D2 追加逐档账本冻结）。 */
+    /** VM freeze stage (moved verbatim from calculate(); BAT-D2 appends the per-tier ledger freeze). */
     private static FrozenVms freezeVmMetrics(double makespan, Map<Integer, MutableVmMetrics> vm) {
         Map<Integer, VmMetrics> frozenVm = new LinkedHashMap<Integer, VmMetrics>();
         List<Double> busyTimes = new ArrayList<Double>();
         double totalBusyInterval = 0.0;
-        // BAT-D2：逐 VM 逐档 + 舰队合计（TreeMap 键升序——确定性遍历）。
+        // BAT-D2: per-VM per-tier plus fleet total (TreeMap ascending keys -- deterministic traversal).
         Map<Integer, Map<Double, Double>> perTierBusy = new LinkedHashMap<Integer, Map<Double, Double>>();
         java.util.TreeMap<Double, Double> fleetPerTierBusy = new java.util.TreeMap<Double, Double>();
         for (Map.Entry<Integer, MutableVmMetrics> entry : vm.entrySet()) {
@@ -523,12 +533,12 @@ public final class SimulationMetrics {
                 Collections.unmodifiableMap(fleetPerTierBusy));
     }
 
-    /** calculate() VM 冻结阶段的私有搬运转写结构。 */
+    /** Private move-only structure for the VM freeze stage of calculate(). */
     private static final class FrozenVms {
         final Map<Integer, VmMetrics> frozenVm;
         final List<Double> busyTimes;
         final double totalBusyInterval;
-        /** BAT-D2（2026-10-29）：逐 VM 逐档忙秒 + 舰队合计逐档忙秒（不可变）。 */
+        /** BAT-D2 (2026-10-29): per-VM per-tier busy seconds + fleet total per-tier busy seconds (immutable). */
         final Map<Integer, Map<Double, Double>> perTierBusySecondsByVm;
 
         final Map<Double, Double> fleetPerTierBusySeconds;
@@ -547,7 +557,7 @@ public final class SimulationMetrics {
         }
     }
 
-    /** 逻辑任务完成/关键路径/计划长度比阶段（逐字搬运转写自 calculate()）。 */
+    /** Logical task completion / critical path / schedule length ratio stage (moved verbatim from calculate()). */
     private static LogicalSupport logicalCompletion(
             double makespan,
             List<SimulationReport.JobOutcome> jobs,
@@ -601,7 +611,7 @@ public final class SimulationMetrics {
                 scheduleLengthRatio);
     }
 
-    /** calculate() 逻辑任务阶段的私有搬运转写结构。 */
+    /** Private move-only structure for the logical task stage of calculate(). */
     private static final class LogicalSupport {
         final int logicalTaskCount;
         final int logicalSuccesses;
@@ -635,7 +645,10 @@ public final class SimulationMetrics {
         }
     }
 
-    /** deadline 判定与精确计时样本数阶段（逐字搬运转写自 calculate()，BigDecimal 精确语义注释原位保留）。 */
+    /**
+     * deadline evaluation and exact-timing sample count stage (moved verbatim from calculate();
+     * the BigDecimal exact-semantics comment stays in place).
+     */
     private static DeadlineResults evaluateDeadline(
             SimulationConfig config,
             double makespan,
@@ -669,7 +682,7 @@ public final class SimulationMetrics {
                 exactTaskTimingCount);
     }
 
-    /** calculate() deadline 阶段的私有搬运转写结构。 */
+    /** Private move-only structure for the deadline stage of calculate(). */
     private static final class DeadlineResults {
         final boolean workflowCompleted;
         final boolean deadlineEnabled;
@@ -697,7 +710,10 @@ public final class SimulationMetrics {
         }
     }
 
-    /** 组装阶段（逐字搬运转写自 calculate()；77 参构造调用是不可变快照类的单一原子语句，行数接近规则上限）。 */
+    /**
+     * Assembly stage (moved verbatim from calculate(); the 77-argument constructor call is a single
+     * atomic statement of the immutable snapshot class and is near the rule limit).
+     */
     private static SimulationMetrics assembleMetrics(
             double makespan,
             List<SimulationReport.JobOutcome> jobs,
@@ -715,10 +731,10 @@ public final class SimulationMetrics {
                 logicalCompletion(makespan, jobs, taskOutcomes, sourceTasks, jobsById, retryJobIds, config, platform);
         DeadlineResults deadline =
                 evaluateDeadline(config, makespan, taskOutcomes, logical.logicalTaskCompletionStatus);
-        // ── 指标增强：分布统计、公平性指数、success-only 变体、重试放大率 ──
-        // VM 利用率 Jain 公平性指数：(Σu)² / (n·Σu²)，当前同窗口下与 CV 等价。
+        // -- Metric enhancements: distribution statistics, fairness index, success-only variant, retry amplification --
+        // VM utilization Jain fairness index: (sum u)^2 / (n * sum u^2); equal to the CV in this same window.
         double vmUtilizationJainFairnessIndex = jainFairnessIndex(vmUtilizations(frozen.frozenVm));
-        // 等待/减速比分布统计（排序后最近秩法取中位数/p95/max）。
+        // Waiting/slowdown distribution statistics (nearest rank on the sorted samples gives median/p95/max).
         Collections.sort(acc.totalWaitingSamples);
         Collections.sort(acc.trueSlowdownSamples);
         double retryAmplificationRatio =
@@ -802,18 +818,19 @@ public final class SimulationMetrics {
                 deadline.tardiness,
                 deadline.exactTaskTimingCount,
                 taskOutcomes.size() - deadline.exactTaskTimingCount,
-                // BAT-D2（2026-10-29）：逐档忙秒账本——空 = v1 无频档运行（守恒退化）。
+                // BAT-D2 (2026-10-29): per-tier ledger -- empty = a v1 run without tiers (conservation degenerates).
                 frozen.perTierBusySecondsByVm,
                 frozen.fleetPerTierBusySeconds);
     }
 
-    /** 事件计时扫描阶段（逐字搬运转写自 calculate()，PLAT-16 重复事件 fail-fast 原位保留）。 */
+    /** Event timing scan stage (moved verbatim from calculate(); PLAT-16 duplicate-event fail-fast stays in place). */
     private static EventTiming scanTimingEvents(List<SimulationEvent> events) {
         EventTiming timing = new EventTiming();
         for (SimulationEvent event : events) {
             if (event.getType() == SimulationEventType.JOB_READY && event.getJobId() != null) {
-                // PLAT-16：每个作业只应有一个 JOB_READY 事件（retry 作业使用新 jobId）。
-                // 重复事件说明事件流被破坏，静默覆盖会让等待时间指标悄悄失真，故 fail-fast。
+                // PLAT-16: each job must have exactly one JOB_READY event (retry jobs use a new jobId).
+                // A duplicate means the event stream is corrupted, and a silent overwrite would quietly
+                // distort the waiting-time metrics, hence fail-fast.
                 Double previousReady = timing.readyTimes.put(event.getJobId(), event.getSimulationTime());
                 if (previousReady != null) {
                     throw new IllegalStateException("Duplicate JOB_READY event for job "
@@ -822,7 +839,8 @@ public final class SimulationMetrics {
                             + event.getSimulationTime());
                 }
             } else if (event.getType() == SimulationEventType.SCHEDULING_DECISION && event.getJobId() != null) {
-                // PLAT-16：同上，SCHEDULING_DECISION 每作业恰一次，重复即事件流破坏。
+                // PLAT-16: same as above -- SCHEDULING_DECISION occurs exactly once per job;
+                // a duplicate means the event stream is corrupted.
                 Double previousDecision = timing.decisionTimes.put(event.getJobId(), event.getSimulationTime());
                 if (previousDecision != null) {
                     throw new IllegalStateException("Duplicate SCHEDULING_DECISION event for job "
@@ -850,7 +868,7 @@ public final class SimulationMetrics {
         return timing;
     }
 
-    /** calculate() 事件计时扫描阶段的私有搬运转写结构（保持原局部变量声明顺序）。 */
+    /** Private move-only structure for the event timing scan stage (keeps the original declaration order). */
     private static final class EventTiming {
         final Map<Integer, Double> readyTimes = new LinkedHashMap<Integer, Double>();
         final Map<Integer, Double> decisionTimes = new LinkedHashMap<Integer, Double>();
@@ -865,50 +883,53 @@ public final class SimulationMetrics {
     }
 
     /**
-     * 返回兼容历史口径的 CloudSim 仿真结束时间。
+     * Return the CloudSim simulation-end time under the historical-convention scope.
      *
-     * <p>该值可能包含末个 Job 返回后的工作流引擎生命周期尾部，不应无条件理解为最后一个
-     * 逻辑 Task 的成功完成时间。</p>
+     * <p>The value may include the workflow-engine lifecycle tail after the last Job returns and
+     * must not be read unconditionally as the successful completion time of the last logical
+     * Task.</p>
      *
-     * @return 以模拟秒表示的仿真结束时间
+     * @return simulation-end time in simulated seconds
      */
     public double getMakespanSeconds() {
         return makespanSeconds;
     }
     /**
-     * 返回本次运行的 CloudSim 仿真结束时间。
+     * Return the CloudSim simulation-end time of this run.
      *
-     * @return 与 {@link #getMakespanSeconds()} 完全相同的模拟秒值
+     * @return exactly the same simulated-seconds value as {@link #getMakespanSeconds()}
      */
     public double getSimulationEndSeconds() {
         return makespanSeconds;
     }
     /**
-     * 返回全部逻辑 Task 首次由成功 compute Job 完成时的最大 Job envelope 结束时刻。
+     * Return the maximum Job envelope finish instant at which every logical Task is first
+     * completed by a successful compute Job.
      *
-     * @return 全部逻辑 Task 成功时的完成秒数；否则为 {@code null}
+     * @return completion seconds when all logical Tasks succeed; otherwise {@code null}
      */
     public Double getLogicalTaskCompletionSeconds() {
         return logicalTaskCompletionSeconds;
     }
     /**
-     * 返回 {@code COMPLETED_SUCCESSFULLY}、{@code INCOMPLETE_LOGICAL_TASKS} 或
-     * {@code NO_LOGICAL_TASKS}，以明确逻辑完成时间是否可用。
+     * Return {@code COMPLETED_SUCCESSFULLY}, {@code INCOMPLETE_LOGICAL_TASKS}, or
+     * {@code NO_LOGICAL_TASKS}, making explicit whether the logical completion time is available.
      *
-     * @return 逻辑 Task 完成时间状态
+     * @return logical Task completion status
      */
     public String getLogicalTaskCompletionStatus() {
         return logicalTaskCompletionStatus;
     }
     /**
-     * 返回最后一个逻辑 Task 成功完成到 CloudSim 仿真结束之间的生命周期尾部。
+     * Return the lifecycle tail between the last successful logical Task completion and the
+     * CloudSim simulation end.
      *
-     * @return 工作流完整时的非负模拟秒数；否则为 {@code null}
+     * @return non-negative simulated seconds when the workflow is complete; otherwise {@code null}
      */
     public Double getTerminalLifecycleTailSeconds() {
         return terminalLifecycleTailSeconds;
     }
-    /** @return 已完成 Job attempt 数，等同于 {@link #getJobOutcomeCount()} */
+    /** @return number of completed Job attempts, equal to {@link #getJobOutcomeCount()} */
     public int getCompletedJobAttemptCount() {
         return jobOutcomeCount;
     }
@@ -916,7 +937,7 @@ public final class SimulationMetrics {
     public int getJobOutcomeCount() {
         return jobOutcomeCount;
     }
-    /** @return 已完成 compute Job attempt 数，包含 retry attempt */
+    /** @return number of completed compute Job attempts, including retry attempts */
     public int getCompletedComputeAttemptCount() {
         return computeJobOutcomeCount;
     }
@@ -945,9 +966,9 @@ public final class SimulationMetrics {
         return failedComputeJobOutcomeCount;
     }
     /**
-     * 返回成功计算 Job 占全部计算 Job 的比例。
+     * Return the fraction of successful compute Jobs among all compute Jobs.
      *
-     * @return 成功计算 Job 结果率；无计算 Job 时为零
+     * @return successful compute Job outcome rate; zero when there is no compute Job
      */
     public double getSuccessfulComputeJobOutcomeRate() {
         return successfulComputeJobOutcomeRate;
@@ -965,9 +986,9 @@ public final class SimulationMetrics {
         return logicalTasksNotYetSuccessfullyCompletedCount;
     }
     /**
-     * 返回至少被一个成功 compute Job 完成的逻辑任务比例。
+     * Return the fraction of logical tasks completed by at least one successful compute Job.
      *
-     * @return 成功完成的逻辑任务比例；无逻辑任务时为零
+     * @return successful logical task completion rate; zero when there is no logical task
      */
     public double getSuccessfulLogicalTaskCompletionRate() {
         return successfulLogicalTaskCompletionRate;
@@ -977,286 +998,302 @@ public final class SimulationMetrics {
         return allLogicalTasksCompletedSuccessfully;
     }
     /**
-     * 返回单次运行层面的工作流成功指示量。
+     * Return the run-level workflow success indicator.
      *
-     * <p>它是一次运行的完成事实，不能单独当作故障分布下的可靠性概率。后者只能由独立
-     * 重复实验在 campaign 层估计。</p>
+     * <p>It is a completion fact of one run and must not be read on its own as a reliability
+     * probability under a failure distribution. The latter can only be estimated at the campaign
+     * layer from independent replications.</p>
      *
-     * @return 全部逻辑 Task 是否都由成功 compute Job 完成
+     * @return whether every logical Task is completed by a successful compute Job
      */
     public boolean isWorkflowCompletedSuccessfully() {
         return allLogicalTasksCompletedSuccessfully;
     }
     /**
-     * 返回未在 {@code RETRY_JOB_CREATED} 事件中出现的已完成 compute attempt 数。
+     * Return the number of completed compute attempts that do not appear in a
+     * {@code RETRY_JOB_CREATED} event.
      *
-     * @return 初始 compute attempt 数
+     * @return initial compute attempt count
      */
     public int getInitialComputeJobOutcomeCount() {
         return initialComputeJobOutcomeCount;
     }
-    /** @return 事件流中创建的 retry Job 数 */
+    /** @return number of retry Jobs created in the event stream */
     public int getRetryJobCreatedCount() {
         return retryJobCreatedCount;
     }
-    /** @return 已完成且由 retry 创建事件证实的 compute attempt 数 */
+    /** @return number of completed compute attempts confirmed by a retry creation event */
     public int getCompletedRetryComputeJobOutcomeCount() {
         return completedRetryComputeJobOutcomeCount;
     }
     /**
-     * 返回 completed compute Job 中逻辑 Task 的尝试数。
+     * Return the number of logical Task attempts among completed compute Jobs.
      *
-     * <p>聚类 Job 可以贡献多个 Task attempt；同一逻辑 Task 的重试会分别计入。</p>
+     * <p>A clustered Job can contribute several Task attempts; retries of the same logical Task
+     * are counted separately.</p>
      *
-     * @return 逻辑 Task attempt 数
+     * @return logical Task attempt count
      */
     public int getLogicalTaskAttemptCount() {
         return logicalTaskAttemptCount;
     }
-    /** @return 至少出现在一个 retry compute Job 中的不同逻辑 Task 数 */
+    /** @return number of distinct logical Tasks appearing in at least one retry compute Job */
     public int getRetriedLogicalTaskCount() {
         return retriedLogicalTaskCount;
     }
     /**
-     * 返回所有失败 compute attempt 的 Job envelope 时长之和。
+     * Return the sum of Job envelope durations of all failed compute attempts.
      *
-     * <p>它是当前 fail-after-attempt 模型中的失败执行证据，不自动等同于现实系统的中途
-     * 宕机损失或可结算浪费。</p>
+     * <p>It is the failed-execution evidence of the current fail-after-attempt model and is not
+     * automatically equal to the mid-run crash loss or the settleable waste of a real system.</p>
      *
-     * @return 失败 compute attempt 的累计信封秒数
+     * @return cumulative envelope seconds of failed compute attempts
      */
     public double getFailedComputeAttemptEnvelopeSeconds() {
         return failedComputeAttemptEnvelopeSeconds;
     }
     /**
-     * 返回失败 compute attempt 的建模处理成本之和。
+     * Return the sum of the modeled processing cost of failed compute attempts.
      *
-     * @return 失败 compute attempt 的抽象成本单位值
+     * @return abstract cost unit value of failed compute attempts
      */
     public double getFailedComputeAttemptModeledProcessingCost() {
         return failedComputeAttemptModeledProcessingCost;
     }
-    /** @return retry compute attempt 的建模处理成本之和 */
+    /** @return sum of the modeled processing cost of retry compute attempts */
     public double getRetryComputeAttemptModeledProcessingCost() {
         return retryComputeAttemptModeledProcessingCost;
     }
     /**
-     * 返回计算 Job 结果相对于 makespan 的吞吐率。
+     * Return the compute Job outcome throughput relative to the makespan.
      *
-     * @return 每模拟秒的计算 Job 结果数；makespan 为零时为零
+     * @return compute Job outcomes per simulated second; zero when the makespan is zero
      */
     public double getComputeJobOutcomeThroughputPerSecond() {
         return computeJobOutcomeThroughputPerSecond;
     }
     /**
-     * 计算 Job 信封的平均端到端时长，其中包含生效的 stage-in。
+     * Mean end-to-end duration of the compute Job envelope, including the effective stage-in.
      *
-     * <p>样本为<b>全部计算 Job attempt</b>（含失败与 retry 尝试），与
-     * {@link #getMeanComputeTotalWaitingTimeSeconds()} 的样本口径一致。</p>
+     * <p>The sample is <b>all compute Job attempts</b> (failed and retry attempts included), the
+     * same sample scope as {@link #getMeanComputeTotalWaitingTimeSeconds()}.</p>
      *
-     * @return 以模拟秒表示的平均计算 Job 信封时长
+     * @return mean compute Job envelope duration in simulated seconds
      */
     public double getMeanComputeJobRunTimeSeconds() {
         return meanComputeJobRunTimeSeconds;
     }
 
     /**
-     * 返回作业在 VM 队列内的平均等待时间（到达 VM 到开始执行）。
-     * <p><strong>注意：</strong>在 WorkflowSim 中，所有调度算法都只向空闲 VM 派发作业，
-     * 因此该值几乎总是 0。它衡量的是 CloudSim 层面的 VM 队列排队，
-     * 不包括调度器队列等待。如需真实等待时间，请使用
-     * {@link #getMeanComputeTotalWaitingTimeSeconds()}。</p>
+     * Return the mean waiting time of jobs inside the VM queue (arrival at the VM to start of
+     * execution).
+     * <p><strong>Note:</strong> in WorkflowSim every scheduling algorithm dispatches jobs only to
+     * idle VMs, so this value is almost always 0. It measures CloudSim-level VM queueing and does
+     * not include scheduler queue waiting. For the true waiting time use
+     * {@link #getMeanComputeTotalWaitingTimeSeconds()}.</p>
      *
-     * @return 以模拟秒表示的平均 VM 队列等待时间（通常为 0）
+     * @return mean VM queue waiting time in simulated seconds (usually 0)
      */
     public double getMeanJobVmQueueWaitingTimeSeconds() {
         return meanJobVmQueueWaitingTimeSeconds;
     }
 
     /**
-     * 返回作业平均响应时间（从 VM 到达时刻到完成）。
+     * Return the mean job response time (from VM arrival to completion).
      *
-     * <p><b>⚠️ 口径说明</b>：这里的"提交"是 CloudSim 的 {@code submissionTime}，
-     * 即作业<strong>到达执行 VM 的时刻</strong>（由 {@code ResCloudlet} 在 VM 受理时设置），
-     * <b>不是</b>作业进入调度器就绪队列的时刻。因此该指标
-     * <b>不包含</b>调度器队列等待与派发延迟。</p>
-     * <p>如需衡量"就绪 → 完成"的全程响应时间，请改用
-     * {@code 平均总等待时间 + 平均执行时间}；如需纯等待口径，请使用
-     * {@link #getMeanComputeTotalWaitingTimeSeconds()}。</p>
+     * <p><b>Warning: scope definition</b>: the "submission" here is the CloudSim
+     * {@code submissionTime}, that is, the instant the job <strong>arrives at the execution
+     * VM</strong> (set by {@code ResCloudlet} when the VM admits it), <b>not</b> the instant the
+     * job enters the scheduler ready queue. The metric therefore <b>excludes</b> scheduler queue
+     * waiting and dispatch delay.</p>
+     * <p>For the end-to-end "ready -> finish" response time use
+     * {@code mean total waiting time + mean execution time}; for the pure waiting scope use
+     * {@link #getMeanComputeTotalWaitingTimeSeconds()}.</p>
      *
-     * @return 以模拟秒表示的平均作业响应时间（VM 到达 → 完成）
+     * @return mean job response time in simulated seconds (VM arrival -> completion)
      */
     public double getMeanJobResponseTimeSeconds() {
         return meanJobResponseTimeSeconds;
     }
 
     /**
-     * 返回作业平均 VM 层面减速比（基于 VM 到达时间的响应时间 / 执行时间）。
-     * <p><b>⚠️ 注意</b>：在 WorkflowSim 中，由于所有调度算法都只向空闲 VM 派发作业，
-     * 该值恒为 1.0 左右，<b>不适合</b>用于调度算法性能比较。
-     * 请使用 {@link #getMeanComputeTrueSlowdown()} 作为真实调度效率指标。</p>
-     * <p>仅统计执行时间 > 0.001 秒的作业，避免除零。</p>
+     * Return the mean VM-level slowdown of jobs (response time based on VM arrival / execution
+     * time).
+     * <p><b>Warning:</b> in WorkflowSim every scheduling algorithm dispatches jobs only to idle
+     * VMs, so this value stays at about 1.0 and is <b>not suitable</b> for comparing scheduling
+     * algorithms. Use {@link #getMeanComputeTrueSlowdown()} as the real scheduling efficiency
+     * metric.</p>
+     * <p>Only jobs with execution time > 0.001 seconds are counted, to avoid division by zero.</p>
      *
-     * @return 无量纲的平均 VM 层面减速比（通常约为 1.0）
+     * @return dimensionless mean VM-level slowdown (usually about 1.0)
      */
     public double getMeanJobVmLevelSlowdown() {
         return meanJobVmLevelSlowdown;
     }
 
     /**
-     * 返回 VM 层面减速比的样本观测数。
+     * Return the number of VM-level slowdown observations.
      *
-     * <p>与 {@link #getMeanJobVmLevelSlowdown()} 同一集合：仅统计
-     * {@code executionTime > 0.001s} 的计算作业（防比值爆炸的独立门控，
-     * 与真实减速比的 max(exec,10s) 分母钳制语义不同）。观测数不足均值时
-     * 说明有极短/零长作业被排除。</p>
+     * <p>Same set as {@link #getMeanJobVmLevelSlowdown()}: only compute jobs with
+     * {@code executionTime > 0.001s} are counted (an independent gate against ratio blow-up, with
+     * different semantics from the max(exec,10s) denominator clamp of the true slowdown). A count
+     * below the mean's denominator means that extremely short or zero-length jobs were
+     * excluded.</p>
      *
-     * @return 观测计数
+     * @return observation count
      */
     public int getVmLevelSlowdownObservationCount() {
         return vmLevelSlowdownObservationCount;
     }
 
     /**
-     * 返回计算作业的平均总等待时间（从就绪到开始执行）。
-     * <p>这是调度研究中最核心的等待时间指标，等于
-     * {@code startTime - readyTime}，包含调度器等待与派发延迟。
-     * 执行前传输模型还把数据准备持有计入此等待；legacy 模型则把 stage-in 放入执行信封，
-     * 因此跨数据移动模型比较时必须同时声明这些不同的包含范围。
-     * 就绪时间来自 {@link SimulationEventType#JOB_READY} 事件。</p>
-     * <p>与 {@link #getMeanComputeReadyToDecisionDelaySeconds()} 和
-     * {@link #getMeanComputeDecisionToStartDelaySeconds()} 的关系：
-     * 总等待 ≈ 就绪到决策延迟 + 决策到开始延迟。</p>
+     * Return the mean total waiting time of compute jobs (from ready to start of execution).
+     * <p>This is the central waiting-time metric of scheduling research, equal to
+     * {@code startTime - readyTime}, covering scheduler waiting and dispatch delay.
+     * The pre-execution transfer model also counts data-preparation holding in this waiting; the
+     * legacy model puts stage-in into the execution envelope, so comparisons across data movement
+     * models must declare these differing inclusion scopes together.
+     * Ready times come from {@link SimulationEventType#JOB_READY} events.</p>
+     * <p>Relation to {@link #getMeanComputeReadyToDecisionDelaySeconds()} and
+     * {@link #getMeanComputeDecisionToStartDelaySeconds()}:
+     * total waiting ~= ready-to-decision delay + decision-to-start delay.</p>
      *
-     * @return 以模拟秒表示的平均总等待时间（就绪到开始）
+     * @return mean total waiting time in simulated seconds (ready to start)
      */
     public double getMeanComputeTotalWaitingTimeSeconds() {
         return meanComputeTotalWaitingTimeSeconds;
     }
 
     /**
-     * 返回计算作业的平均真实减速比（基于就绪时间，bounded slowdown）。
-     * <p>定义（Feitelson 标准）：对每个作业计算
-     * {@code max((startTime - readyTime + executionTime) / max(executionTime, 10.0), 1.0)}，
-     * 然后取算术平均。两处边界处理：</p>
+     * Return the mean true slowdown of compute jobs (ready-based, bounded slowdown).
+     * <p>Definition (Feitelson standard): for each job compute
+     * {@code max((startTime - readyTime + executionTime) / max(executionTime, 10.0), 1.0)},
+     * then take the arithmetic mean. Two boundary treatments:</p>
      * <ul>
-     *   <li>分母下限 10 秒：防止极短作业导致数值爆炸（bounded slowdown）</li>
-     *   <li>结果下限 1.0：保证不存在小于一的建模减速比</li>
+     *   <li>10-second denominator floor: prevents numerical blow-up on extremely short jobs
+     *   (bounded slowdown)</li>
+     *   <li>result floor 1.0: guarantees no modeled slowdown below one</li>
      * </ul>
-     * <p>短任务的等待可能被 10 秒分母阈值和下限钳制掩盖，因此 1.0 不等价于无等待。
-     * 比较时应同时报告等待时间、执行时间分布与样本数。</p>
-     * <p>与 {@link #getMeanJobVmLevelSlowdown()} 的区别：后者基于 VM 到达时间，
-     * 在 WorkflowSim 中恒为 1.0；本指标基于作业就绪时间，能真实反映调度延迟。</p>
+     * <p>The waiting of short tasks can be masked by the 10-second denominator threshold and by
+     * the floor, so 1.0 is not equivalent to no waiting. When comparing, report the waiting time,
+     * the execution time distribution, and the sample count together.</p>
+     * <p>Difference from {@link #getMeanJobVmLevelSlowdown()}: the latter is based on VM arrival
+     * time and stays 1.0 in WorkflowSim; this metric is based on job ready time and genuinely
+     * reflects the scheduling delay.</p>
      *
-     * @return 无量纲的平均真实减速比（bounded，分母下限 10s，结果下限 1.0）
+     * @return dimensionless mean true slowdown (bounded, 10s denominator floor, result floor 1.0)
      */
     public double getMeanComputeTrueSlowdown() {
         return meanComputeTrueSlowdown;
     }
 
     /**
-     * 返回参与真实减速比计算的作业数量。
-     * <p>只有同时满足以下条件的作业才参与计算：</p>
+     * Return the number of jobs taking part in the true slowdown computation.
+     * <p>Only jobs satisfying both of the following conditions take part:</p>
      * <ul>
-     *   <li>有 JOB_READY 事件记录（readyTime 非 null）</li>
-     *   <li>startTime &gt;= readyTime（时间戳有效）</li>
+     *   <li>a JOB_READY event is recorded (readyTime is not null)</li>
+     *   <li>startTime &gt;= readyTime (valid timestamps)</li>
      * </ul>
      *
-     * @return 观测计数
+     * @return observation count
      */
     public int getTrueSlowdownObservationCount() {
         return trueSlowdownObservationCount;
     }
 
     /**
-     * 返回总等待时间的样本观测数（与真实减速比样本同一集合）。
+     * Return the number of total-waiting-time observations (the same set as the true slowdown
+     * samples).
      *
-     * @return 观测计数
+     * @return observation count
      */
     public int getTotalWaitingTimeObservationCount() {
         return totalWaitingTimeObservationCount;
     }
 
-    /** @return 总等待时间中位数（秒）；无观测时为 0.0 */
+    /** @return median total waiting time (seconds); 0.0 with no observations */
     public double getMedianComputeTotalWaitingTimeSeconds() {
         return medianComputeTotalWaitingTimeSeconds;
     }
 
-    /** @return 总等待时间 P95（秒，最近秩法）；无观测时为 0.0 */
+    /** @return total waiting time P95 (seconds, nearest-rank method); 0.0 with no observations */
     public double getP95ComputeTotalWaitingTimeSeconds() {
         return p95ComputeTotalWaitingTimeSeconds;
     }
 
-    /** @return 总等待时间最大值（秒）；无观测时为 0.0 */
+    /** @return maximum total waiting time (seconds); 0.0 with no observations */
     public double getMaxComputeTotalWaitingTimeSeconds() {
         return maxComputeTotalWaitingTimeSeconds;
     }
 
-    /** @return 真实减速比中位数；无观测时为 0.0 */
+    /** @return median true slowdown; 0.0 with no observations */
     public double getMedianComputeTrueSlowdown() {
         return medianComputeTrueSlowdown;
     }
 
-    /** @return 真实减速比 P95（最近秩法）；无观测时为 0.0 */
+    /** @return true slowdown P95 (nearest-rank method); 0.0 with no observations */
     public double getP95ComputeTrueSlowdown() {
         return p95ComputeTrueSlowdown;
     }
 
-    /** @return 真实减速比最大值；无观测时为 0.0 */
+    /** @return maximum true slowdown; 0.0 with no observations */
     public double getMaxComputeTrueSlowdown() {
         return maxComputeTrueSlowdown;
     }
 
     /**
-     * 返回仅成功作业的平均总等待时间（秒）。
+     * Return the mean total waiting time of successful jobs only (seconds).
      *
-     * <p>仅条件于成功尝试，不宣称消除了选择偏差：失败尝试的等待时间计入总体均值会使
-     * 跨失败率方案的比较失真，本变体只统计成功完成作业的样本。</p>
+     * <p>Conditioned on successful attempts only, with no claim that selection bias is removed:
+     * counting the waiting time of failed attempts in the overall mean distorts comparisons across
+     * schemes with different failure rates, so this variant keeps only samples of successfully
+     * completed jobs.</p>
      *
-     * @return 以模拟秒表示的 success-only 平均总等待时间；无观测时为 0.0
+     * @return success-only mean total waiting time in simulated seconds; 0.0 with no observations
      */
     public double getSuccessOnlyMeanComputeTotalWaitingTimeSeconds() {
         return successOnlyMeanComputeTotalWaitingTimeSeconds;
     }
 
     /**
-     * 返回仅成功作业的平均真实减速比。
+     * Return the mean true slowdown of successful jobs only.
      *
-     * @return success-only 平均真实减速比；无观测时为 0.0
+     * @return success-only mean true slowdown; 0.0 with no observations
      */
     public double getSuccessOnlyMeanComputeTrueSlowdown() {
         return successOnlyMeanComputeTrueSlowdown;
     }
 
-    /** @return success-only 等待/减速比变体的样本观测数 */
+    /** @return number of observations of the success-only waiting/slowdown variant */
     public int getSuccessOnlyWaitingObservationCount() {
         return successOnlyWaitingObservationCount;
     }
 
     /**
-     * 返回重试放大率 = 逻辑任务尝试总数 / 逻辑任务数。
+     * Return the retry amplification ratio = total logical task attempts / logical task count.
      *
-     * <p>无失败时为 1.0；无逻辑任务时为 0.0（此分支无 SLA 含义，消费端应结合
-     * {@link #getLogicalTaskCount()} 判断）。衡量失败恢复带来的总执行开销放大。</p>
+     * <p>1.0 with no failures; 0.0 with no logical tasks (this branch carries no SLA meaning; the
+     * consumer must consult {@link #getLogicalTaskCount()}). Measures the total execution overhead
+     * amplification caused by failure recovery.</p>
      *
-     * @return 重试放大率；正常闭环下 ≥1.0，无逻辑任务时为 0.0
+     * @return retry amplification ratio; >=1.0 in the normal closed loop, 0.0 with no logical tasks
      */
     public double getRetryAmplificationRatio() {
         return retryAmplificationRatio;
     }
 
     /**
-     * 返回从计算 Job 就绪到被调度器作出决策的平均延迟。
+     * Return the mean delay from a compute Job becoming ready to the scheduler making a decision.
      *
-     * @return 以模拟秒表示的平均就绪到决策延迟
+     * @return mean ready-to-decision delay in simulated seconds
      */
     public double getMeanComputeReadyToDecisionDelaySeconds() {
         return meanComputeReadyToDecisionDelaySeconds;
     }
     /**
-     * 返回从调度器决策到计算 Job 开始执行的平均延迟。
+     * Return the mean delay from the scheduler decision to the start of execution of a compute Job.
      *
-     * @return 以模拟秒表示的平均决策到开始延迟
+     * @return mean decision-to-start delay in simulated seconds
      */
     public double getMeanComputeDecisionToStartDelaySeconds() {
         return meanComputeDecisionToStartDelaySeconds;
@@ -1274,125 +1311,133 @@ public final class SimulationMetrics {
         return schedulingCycleCount;
     }
     /**
-     * 返回调度决策消耗的本地 JVM 墙钟时间总和。
+     * Return the total local JVM wall-clock time consumed by scheduling decisions.
      *
-     * <p>该值是本机开销观测，不能用于跨机器性能对比。</p>
+     * <p>It is a local-cost observation and must not be used for cross-machine performance
+     * comparison.</p>
      *
-     * @return 调度决策墙钟耗时，单位纳秒
+     * @return scheduling decision wall-clock cost in nanoseconds
      */
     public long getTotalSchedulingDecisionWallClockNanos() {
         return totalSchedulingDecisionWallClockNanos;
     }
     /**
-     * 事件记录中观测到的显式静态规划器决策次数。
+     * Number of explicit static-planner decisions observed in the event record.
      *
-     * @return 显式规划器决策观测数
+     * @return explicit planner decision observation count
      */
     public int getExplicitPlannerDecisionObservationCount() {
         return explicitPlannerDecisionObservationCount;
     }
     /**
-     * 显式规划器决策消耗的 JVM 墙钟时间。这是本地算法开销证据，不是模拟时间，也不能作为
-     * 跨机器性能基准。
+     * JVM wall-clock time consumed by explicit planner decisions. This is local algorithm cost
+     * evidence, not simulated time, and cannot serve as a cross-machine performance baseline.
      *
-     * @return 显式规划器决策消耗的本地墙钟纳秒数
+     * @return local wall-clock nanoseconds consumed by explicit planner decisions
      */
     public long getTotalPlanningDecisionWallClockNanos() {
         return totalPlanningDecisionWallClockNanos;
     }
     /**
-     * 本次运行中观测到的计算 Job 数据 stage-in 估计次数。
+     * Number of compute Job data stage-in estimates observed in this run.
      *
-     * @return 数据 stage-in 模型观测数
+     * @return data stage-in model observation count
      */
     public int getDataStageInModelObservationCount() {
         return dataStageInModelObservationCount;
     }
     /**
-     * 被配置的数据移动模型观测到的逻辑输入需求文件数。
+     * Number of logical input demand files observed by the configured data movement model.
      *
-     * <p>本地副本命中可以使建模 stage-in 时间为零，故该值不是实际网络上传输过的文件数。</p>
+     * <p>A local replica hit can make the modeled stage-in time zero, so this is not the number of
+     * files actually transferred over the network.</p>
      *
-     * @return 被计入的文件传输数量
+     * @return number of file transfers counted
      */
     public int getModeledDataTransferFileCount() {
         return modeledDataTransferFileCount;
     }
-    /** @return 与 {@link #getModeledDataTransferFileCount()} 相同的逻辑输入需求文件数 */
+    /** @return the same logical input demand file count as {@link #getModeledDataTransferFileCount()} */
     public int getModeledRequiredInputDemandFileCount() {
         return modeledDataTransferFileCount;
     }
     /**
-     * DATA_STAGE_IN_MODELED 记录的名义 stage-in 估计秒数之和。
+     * Sum of the nominal stage-in estimate seconds recorded by DATA_STAGE_IN_MODELED.
      *
-     * <p>执行前模型的父组可并行，争用模型仍在此记录无争用名义估计；因此这个和既不是
-     * 整个网络的墙钟耗时，也不是实际争用持有时长之和。实际数据准备对作业的影响会进入
-     * ready-to-start 等待及完成时刻。</p>
+     * <p>Under the pre-execution model the parent group can run in parallel, and the contention
+     * model still records the contention-free nominal estimate here; the sum is therefore neither
+     * the wall-clock time of the whole network nor the sum of actual contention holding durations.
+     * The effect of actual data preparation on a job appears in the ready-to-start waiting and in
+     * the completion instant.</p>
      *
-     * @return 以模拟秒表示的名义 stage-in 估计总和
+     * @return total nominal stage-in estimate in simulated seconds
      */
     public double getTotalModeledDataTransferSeconds() {
         return totalModeledDataTransferSeconds;
     }
     /**
-     * 上述传输观测所计入的逻辑输入需求字节数总和。
+     * Total logical input demand bytes counted by the transfer observations above.
      *
-     * <p>该值不是已通过物理链路搬运的字节数；当前数据移动模型不维护该类链路级账本。</p>
+     * <p>This is not the number of bytes moved over physical links; the current data movement
+     * models keep no such link-level ledger.</p>
      *
-     * @return 被模型纳入的数据字节总数
+     * @return total data bytes taken into the model
      */
     public double getTotalModeledRequiredInputBytes() {
         return totalModeledRequiredInputBytes;
     }
-    /** @return 与 {@link #getTotalModeledRequiredInputBytes()} 相同的逻辑输入需求字节数 */
+    /** @return the same logical input demand bytes as {@link #getTotalModeledRequiredInputBytes()} */
     public double getTotalModeledRequiredInputDemandBytes() {
         return totalModeledRequiredInputBytes;
     }
     /**
-     * 每个计算 Job 数据模型观测对应的平均名义 stage-in 估计。
+     * Mean nominal stage-in estimate per compute Job data-model observation.
      *
-     * @return 以模拟秒表示的平均名义估计，不是平均实际争用持有时间
+     * @return mean nominal estimate in simulated seconds, not the mean actual contention holding
+     * time
      */
     public double getMeanModeledDataTransferSeconds() {
         return meanModeledDataTransferSeconds;
     }
     /**
-     * 全部完成 Job attempt 的建模处理成本之和；其中可能包含 stage-in 的整数 MI 表示，
-     * 也包括失败和 retry attempt，因而不是云服务商价格回放。
+     * Sum of the modeled processing cost of all completed Job attempts; it may include the integer
+     * MI representation of stage-in and also covers failed and retry attempts, so it is not a cloud
+     * provider price replay.
      *
-     * @return 汇总的建模处理成本
+     * @return aggregated modeled processing cost
      */
     public double getTotalModeledProcessingCost() {
         return totalModeledProcessingCost;
     }
     /**
-     * 返回全部 Job attempt 的 CPU envelope 抽象成本分量。
+     * Return the CPU envelope abstract cost component of all Job attempts.
      *
-     * @return CPU envelope 成本之和，可能包含生效的 stage-in MI
+     * @return sum of CPU envelope cost, possibly including the effective stage-in MI
      */
     public double getTotalModeledCpuEnvelopeCost() {
         return totalModeledCpuEnvelopeCost;
     }
     /**
-     * 返回全部 Job attempt 按其声明文件字节数连续计价的带宽抽象成本分量。
+     * Return the bandwidth abstract cost component of all Job attempts, priced continuously by
+     * declared file bytes.
      *
-     * @return 声明文件带宽成本之和
+     * @return sum of declared file bandwidth cost
      */
     public double getTotalModeledDeclaredFileBandwidthCost() {
         return totalModeledDeclaredFileBandwidthCost;
     }
     /**
-     * 返回进入声明文件带宽抽象成本的总字节当量。
+     * Return the total byte equivalent entering the declared-file bandwidth abstract cost.
      *
-     * @return 所有 Job 文件表声明字节数之和，不是实际传输字节数
+     * @return sum of declared bytes in all Job file tables, not the bytes actually transferred
      */
     public double getTotalModeledDeclaredFileBytes() {
         return totalModeledDeclaredFileBytes;
     }
     /**
-     * 返回按 VM 标识索引的不可变聚合指标。
+     * Return the immutable aggregate metrics indexed by VM identifier.
      *
-     * @return VM ID 到每 VM 指标的映射
+     * @return mapping from VM ID to per-VM metrics
      */
     public Map<Integer, VmMetrics> getVmMetrics() {
         return vmMetrics;
@@ -1402,174 +1447,190 @@ public final class SimulationMetrics {
         return totalVmModeledBusyIntervalSeconds;
     }
     /**
-     * 返回基于建模 Job 区间并集计算的所有 VM 平均利用率。
+     * Return the mean utilization over all VMs, computed from the union of modeled Job intervals.
      *
-     * @return 以 makespan 归一化的平均建模区间利用率
+     * @return mean modeled interval utilization normalized by the makespan
      */
     public double getMeanVmModeledIntervalUtilization() {
         return meanVmModeledIntervalUtilization;
     }
     /**
-     * 返回各 VM 建模繁忙时间的变异系数（CV）。
+     * Return the coefficient of variation (CV) of modeled busy time across VMs.
      *
-     * <p>公式：总体标准差（÷n）/ 均值；均值或空集时为 0.0。由于利用率与繁忙时间
-     * 同除常数 makespan，CV(繁忙时间) ≡ CV(利用率)，控制台标签"利用率变异系数"
-     * 数值等价。<b>注意</b>：此处用总体标准差（÷n），而 campaign 层
-     * {@code MetricSummary} 用样本标准差（÷(n−1)），跨层比较离散度时注意约定差异。</p>
+     * <p>Formula: population standard deviation (/n) / mean; 0.0 for a zero mean or an empty set.
+     * Because utilization and busy time are both divided by the same constant makespan,
+     * CV(busy time) == CV(utilization), and the console label "utilization coefficient of
+     * variation" is numerically equivalent. <b>Note</b>: this uses the population standard
+     * deviation (/n), while the campaign-layer {@code MetricSummary} uses the sample standard
+     * deviation (/(n-1)); mind the convention difference when comparing dispersion across
+     * layers.</p>
      *
-     * @return 繁忙时间变异系数；无 VM 或全零繁忙时为 0.0
+     * @return busy-time coefficient of variation; 0.0 with no VM or all-zero busy time
      */
     public double getVmModeledBusyTimeCoefficientOfVariation() {
         return vmModeledBusyTimeCoefficientOfVariation;
     }
     /**
-     * 返回 VM 利用率的 Jain 公平性指数 ∈ (0,1]。
+     * Return the Jain fairness index of VM utilization in (0,1].
      *
-     * <p>对相同 VM 集合和统计窗口，非零均值时有 Jain = 1 / (1 + CV²)，
-     * 其中 CV 使用总体标准差。该指标不提供独立于 CV 的负载形态信息。
-     * 无 VM 或全零利用率时返回 1.0 哨兵值，不据此推断实际资源效率。</p>
+     * <p>For the same VM set and statistical window, with a nonzero mean,
+     * Jain = 1 / (1 + CV^2), where CV uses the population standard deviation. The metric provides
+     * no load-shape information independent of the CV. With no VM or all-zero utilization it
+     * returns the sentinel 1.0, from which no actual resource efficiency may be inferred.</p>
      *
-     * @return Jain 公平性指数
+     * @return Jain fairness index
      */
     public double getVmUtilizationJainFairnessIndex() {
         return vmUtilizationJainFairnessIndex;
     }
     /**
-     * BAT-D2（2026-10-29）：返回逐 VM 逐档忙秒账 {@code vmId → (档 MIPS → 忙秒)}。
+     * BAT-D2 (2026-10-29): return the per-VM per-tier busy-seconds ledger
+     * {@code vmId -> (tier MIPS -> busy seconds)}.
      *
-     * <p>每个 Job attempt 的执行区间按其指派档归因（未指派尝试按 VM 默认档）；
-     * 总忙秒与 {@code VmMetrics.getModeledBusyIntervalSeconds()} 同一区间口径。
-     * 空 map = v1 无频档运行（逐档守恒退化为 D1 的全默认档口径）。</p>
+     * <p>Each Job attempt's execution interval is attributed to its assigned tier (an unassigned
+     * attempt goes to the VM's default tier); total busy seconds use the same interval scope as
+     * {@code VmMetrics.getModeledBusyIntervalSeconds()}. An empty map = a v1 run without frequency
+     * tiers (per-tier conservation degenerates to D1's all-default-tier scope).</p>
      *
-     * @return 不可变的逐 VM 逐档忙秒映射；无档运行为空
+     * @return immutable per-VM per-tier busy-seconds mapping; empty for a run without tiers
      */
     public Map<Integer, Map<Double, Double>> getPerTierBusySecondsByVm() {
         return perTierBusySecondsByVm;
     }
     /**
-     * BAT-D2（2026-10-29）：返回舰队合计的逐档忙秒 {@code 档 MIPS → 忙秒}。
+     * BAT-D2 (2026-10-29): return the fleet total per-tier busy seconds
+     * {@code tier MIPS -> busy seconds}.
      *
-     * <p>档按 MIPS 值跨 VM 合并（档按 MIPS 唯一，可经平台 frequencyTiers 匹配复原
-     * 功率对）；TreeMap 升序键序保证确定性。空 map = v1 无频档运行。</p>
+     * <p>Tiers are merged across VMs by MIPS value (a tier is unique by MIPS, so the power pair can
+     * be recovered by matching against the platform frequencyTiers); the TreeMap ascending key
+     * order keeps determinism. An empty map = a v1 run without tiers.</p>
      *
-     * @return 不可变的舰队逐档忙秒映射；无档运行为空
+     * @return immutable fleet per-tier busy-seconds mapping; empty for a run without tiers
      */
     public Map<Double, Double> getFleetPerTierBusySeconds() {
         return fleetPerTierBusySeconds;
     }
     /**
-     * 返回受控共享存储关键路径参考是否适用于本次运行的模型范围。
+     * Return whether the controlled shared-storage critical path reference applies to the model
+     * scope of this run.
      *
-     * <p>要求 NONE 聚类、无故障、无开销及 SPACE_SHARED VM。数据移动仅接受历史串行
-     * 输入模型或固定端点无争用模型；后者使用去掉额外接入时延和带宽上限后的乐观参考。
-     * 执行前传输模型可重叠父输入，故本参考不可用，但不禁止这些模型本身的合法运行。</p>
+     * <p>It requires NONE clustering, no failures, no overhead, and SPACE_SHARED VMs. For data
+     * movement only the historical serial-input model or the fixed-endpoint contention-free model
+     * is accepted; the latter uses the optimistic reference after removing the extra access
+     * latency and bandwidth caps. The pre-execution transfer model can overlap parent inputs, so
+     * this reference is unavailable, but those models are not barred from running.</p>
      *
-     * @return 关键路径下界参考是否可用
+     * @return whether the critical path lower bound reference is available
      */
     public boolean isControlledSharedStorageCriticalPathReferenceAvailable() {
         return controlledSharedStorageCriticalPathReferenceAvailable;
     }
     /**
-     * 返回受控共享存储关键路径参考的作用域或不可用原因。
+     * Return the scope of the controlled shared-storage critical path reference, or the reason it
+     * is unavailable.
      *
-     * @return 机器可读的参考作用域状态
+     * @return machine-readable reference scope status
      */
     public String getControlledSharedStorageCriticalPathReferenceScope() {
         return controlledSharedStorageCriticalPathReferenceScope;
     }
     /**
-     * 返回受控共享存储模型下的关键路径 makespan 下界。
+     * Return the critical path makespan lower bound under the controlled shared-storage model.
      *
-     * @return 以模拟秒表示的下界；参考不可用时为零
+     * @return lower bound in simulated seconds; zero when the reference is unavailable
      */
     public double getControlledSharedStorageCriticalPathLowerBoundSeconds() {
         return controlledSharedStorageCriticalPathLowerBoundSeconds;
     }
     /**
-     * 返回 makespan 与可用关键路径下界的比值。
+     * Return the ratio of the makespan to the available critical path lower bound.
      *
-     * @return 调度长度比；参考不可用或下界为零时为零
+     * @return schedule length ratio; zero when the reference is unavailable or the bound is zero
      */
     public double getControlledSharedStorageScheduleLengthRatio() {
         return controlledSharedStorageScheduleLengthRatio;
     }
     /**
-     * 仅当配置提供正数观测阈值时为 {@code true}。
+     * {@code true} only when the configuration supplies a positive observation threshold.
      *
-     * @return 是否请求 deadline 观测
+     * @return whether deadline observation was requested
      */
     public boolean isDeadlineObservationEnabled() {
         return deadlineObservationEnabled;
     }
     /**
-     * 返回 deadline 比较所使用的时间轴。
+     * Return the time axis used by the deadline comparison.
      *
-     * @return 固定为 {@code SIMULATION_END_SECONDS}，即历史 makespan 的时间轴
+     * @return fixed to {@code SIMULATION_END_SECONDS}, the time axis of the historical makespan
      */
     public String getDeadlineObservationTimeBasis() {
         return deadlineObservationTimeBasis;
     }
     /**
-     * 返回 {@code NOT_REQUESTED}、{@code MET}、{@code MISSED_LATE} 或
-     * {@code MISSED_INCOMPLETE_WORKFLOW}。
+     * Return {@code NOT_REQUESTED}, {@code MET}, {@code MISSED_LATE}, or
+     * {@code MISSED_INCOMPLETE_WORKFLOW}.
      *
-     * @return deadline 观测的机器可读结果
+     * @return machine-readable outcome of the deadline observation
      */
     public String getDeadlineObservationOutcome() {
         return deadlineObservationOutcome;
     }
     /**
-     * 仅报告 SLA 观测，不会影响调度决策。
+     * Reports the SLA observation only and never affects scheduling decisions.
      *
-     * @return 工作流是否满足已请求的 deadline
+     * @return whether the workflow met the requested deadline
      */
     public boolean isDeadlineMet() {
         return deadlineMet;
     }
     /**
-     * 已启用时为 {@code deadline - makespan}，未请求 deadline 时为零。
+     * {@code deadline - makespan} when enabled, zero when no deadline was requested.
      *
-     * <p>先用精确 long 阈值与仿真时钟 double 的精确二进制值相减，只将最终差值舍入为
-     * double 指标。不会先将大整数阈值转换成 double，也不会以时钟的最短十进制字符串
-     * 代替其精确值；截止结果按未舍入差值的符号判断。</p>
+     * <p>The exact long threshold is first subtracted from the exact binary value of the simulation
+     * clock, and only the final difference is rounded to the double metric. A large integer
+     * threshold is never converted to double first, and the clock's shortest decimal string is
+     * never substituted for its exact value; the deadline outcome uses the sign of the unrounded
+     * difference.</p>
      *
-     * @return 以模拟秒表示的 deadline 余量
+     * @return deadline slack in simulated seconds
      */
     public double getDeadlineSlackSeconds() {
         return deadlineSlackSeconds;
     }
     /**
-     * 已启用时为 {@code max(0, makespan - deadline)}，未请求时为零。
+     * {@code max(0, makespan - deadline)} when enabled, zero when not requested.
      *
-     * <p>与 {@link #getDeadlineSlackSeconds()} 使用同一精确阈值差，不丢弃 long 的低位。</p>
+     * <p>Uses the same exact threshold difference as {@link #getDeadlineSlackSeconds()} and does
+     * not drop the low bits of the long.</p>
      *
-     * @return 以模拟秒表示的 deadline 迟延
+     * @return deadline tardiness in simulated seconds
      */
     public double getDeadlineTardinessSeconds() {
         return deadlineTardinessSeconds;
     }
     /**
-     * 与其 Job 信封完全相等的单任务计算窗口数。
+     * Number of single-Task computation windows exactly equal to their Job envelope.
      *
-     * @return 精确任务时序观测数
+     * @return exact task timing observation count
      */
     public int getExactTaskTimingObservationCount() {
         return exactTaskTimingObservationCount;
     }
     /**
-     * 与其 Job 信封不同的 Task 窗口数。
+     * Number of Task windows that differ from their Job envelope.
      *
-     * @return 近似任务时序观测数
+     * @return approximate task timing observation count
      */
     public int getModeledApproximateTaskTimingObservationCount() {
         return modeledApproximateTaskTimingObservationCount;
     }
 
     /**
-     * 每个 VM 的利用率基于其建模 Job 区间的并集。
+     * Each VM's utilization is based on the union of its modeled Job intervals.
      *
-     * <p>繁忙区间包含<b>失败尝试</b>的 start→finish 包络（失败的执行同样占用
-     * 了 VM 的建模资源窗口）；重叠区间经并集合并，不重复计。</p>
+     * <p>The busy intervals include the start-to-finish envelope of <b>failed attempts</b> (a
+     * failed execution also occupies the VM's modeled resource window); overlapping intervals are
+     * merged by union and not counted twice.</p>
      */
     public static final class VmMetrics {
         private final int vmId;
@@ -1625,11 +1686,12 @@ public final class SimulationMetrics {
         private int jobs;
         private double cpuTime;
         /**
-         * BAT-D2（2026-10-29）：本 VM 的默认档 MIPS（表首档）；null = v1 无档 VM
-         * （整台 VM 不进逐档账本）。构造期由 calculate() 按平台声明解析，之后只读。
+         * BAT-D2 (2026-10-29): the VM's default-tier MIPS (first table entry); null = a v1 VM
+         * without tiers (the whole VM stays out of the per-tier ledger). Resolved at construction
+         * time from the platform declaration, read-only afterwards.
          */
         private final Double defaultTierMips;
-        /** BAT-D2：档 MIPS → 忙秒（TreeMap 键升序——遍历确定性）。 */
+        /** BAT-D2: tier MIPS -> busy seconds (TreeMap ascending keys -- deterministic traversal). */
         private final java.util.TreeMap<Double, Double> tierBusySeconds = new java.util.TreeMap<Double, Double>();
 
         private MutableVmMetrics(int vmId, Double defaultTierMips) {
@@ -1641,8 +1703,9 @@ public final class SimulationMetrics {
             jobs++;
             cpuTime += job.getCpuTime();
             intervals.add(new Interval(job.getStartTime(), job.getFinishTime()));
-            // BAT-D2：逐档归因——指派档缺失的 Job（非计算尝试）按 VM 默认档；
-            // 忙秒与 busy 并集同源（SPACE_SHARED 单 Job 序列下逐档之和==并集总忙秒）。
+            // BAT-D2: per-tier attribution -- a Job without an assigned tier (a non-compute attempt)
+            // uses the VM default tier; busy seconds share their source with the busy union (under a
+            // single-Job SPACE_SHARED sequence the per-tier sum equals the union total busy seconds).
             if (defaultTierMips != null) {
                 double tier =
                         job.getTierMips() != null ? job.getTierMips().doubleValue() : defaultTierMips.doubleValue();
@@ -1720,14 +1783,15 @@ public final class SimulationMetrics {
     }
 
     /**
-     * 最近秩法百分位数。
+     * Nearest-rank percentile.
      *
-     * <p>样本必须已升序排序；rank = ceil(fraction × n)，fraction=1.0 时即最大值。
-     * 空样本返回 0.0（与其余指标的空集约定一致）。</p>
+     * <p>The samples must already be sorted ascending; rank = ceil(fraction x n), and
+     * fraction=1.0 gives the maximum. An empty sample returns 0.0 (consistent with the empty-set
+     * convention of the other metrics).</p>
      *
-     * @param sortedSamples 已升序排序的样本
-     * @param fraction 目标分位（0.5 中位数 / 0.95 P95 / 1.0 最大值）
-     * @return 对应分位值
+     * @param sortedSamples samples sorted in ascending order
+     * @param fraction target quantile (0.5 median / 0.95 P95 / 1.0 maximum)
+     * @return the corresponding quantile value
      */
     private static double percentile(List<Double> sortedSamples, double fraction) {
         if (sortedSamples.isEmpty()) {
@@ -1738,14 +1802,16 @@ public final class SimulationMetrics {
     }
 
     /**
-     * Jain 公平性指数：(Σu)² / (n·Σu²)。
+     * Jain fairness index: (sum u)^2 / (n x sum u^2).
      *
-     * <p>值域 (0,1]，1.0 表示所有 VM 利用率相同。对当前同一观测窗口、相同 VM 样本且
-     * 非零平均负载，Jain = 1 / (1 + CV²)，两者不是独立的分布形态信息。
-     * 空列表或全零利用率返回 1.0（这是零负载的约定，不表示资源被充分利用）。</p>
+     * <p>Range (0,1]; 1.0 means all VM utilizations are equal. For the current identical
+     * observation window, identical VM sample, and nonzero mean load, Jain = 1 / (1 + CV^2); the
+     * two are not independent distribution-shape information. An empty list or all-zero
+     * utilization returns 1.0 (a zero-load convention that does not mean the resources are fully
+     * utilized).</p>
      *
-     * @param utilizations 各 VM 的利用率样本（≥0）
-     * @return Jain 公平性指数
+     * @param utilizations utilization sample of each VM (>=0)
+     * @return Jain fairness index
      */
     private static double jainFairnessIndex(List<Double> utilizations) {
         if (utilizations.isEmpty()) {
@@ -1764,7 +1830,7 @@ public final class SimulationMetrics {
         return (sum * sum) / (utilizations.size() * sumSquared);
     }
 
-    /** 提取每台 VM 的建模区间利用率，供公平性指数计算。 */
+    /** Extract the modeled interval utilization of each VM for the fairness index computation. */
     private static List<Double> vmUtilizations(Map<Integer, VmMetrics> frozenVm) {
         List<Double> result = new ArrayList<Double>();
         for (VmMetrics metrics : frozenVm.values()) {
@@ -1790,7 +1856,7 @@ public final class SimulationMetrics {
         return result;
     }
 
-    /** 建立 Job outcome 的唯一 ID 索引，避免下游指标静默覆盖执行尝试。 */
+    /** Build a unique ID index of Job outcomes so downstream metrics cannot silently overwrite attempts. */
     private static Map<Integer, SimulationReport.JobOutcome> jobOutcomesById(List<SimulationReport.JobOutcome> jobs) {
         Map<Integer, SimulationReport.JobOutcome> result = new LinkedHashMap<Integer, SimulationReport.JobOutcome>();
         if (jobs == null) {
@@ -1809,10 +1875,12 @@ public final class SimulationMetrics {
     }
 
     /**
-     * 从 retry 创建事件恢复并验证 retry Job 与其失败父 attempt 的证据关系。
+     * Recover and validate the evidence relation between retry Jobs and their failed parent
+     * attempt from retry creation events.
      *
-     * <p>报告捕获时所有 completed Job 都已可用，因此任何 retry 事件没有对应 Job outcome
-     * 都表示证据包不完整，而不是一个可忽略的部分观测。</p>
+     * <p>All completed Jobs are available when the report is captured, so any retry event without
+     * a matching Job outcome means the evidence package is incomplete, not a partial observation
+     * that may be ignored.</p>
      */
     private static Set<Integer> retryJobIds(
             List<SimulationEvent> events, Map<Integer, SimulationReport.JobOutcome> jobsById) {
@@ -1858,7 +1926,7 @@ public final class SimulationMetrics {
         return result;
     }
 
-    /** 以成功 compute Job 的完成时间作为逻辑 Task 的可用完成边界。 */
+    /** Use the completion time of a successful compute Job as the available completion boundary of a logical Task. */
     private static Map<Integer, Double> earliestSuccessfulJobFinishByLogicalTask(
             List<SimulationReport.JobOutcome> jobs, Set<Integer> logicalTaskIds) {
         Map<Integer, Double> result = new LinkedHashMap<Integer, Double>();
@@ -2007,11 +2075,12 @@ public final class SimulationMetrics {
     }
 
     /**
-     * 要求值为有限数（非 NaN、非无穷大），否则抛出 IllegalStateException。
+     * Require the value to be finite (not NaN, not infinite), otherwise throw
+     * IllegalStateException.
      *
-     * @param value 待检查的数值
-     * @param description 值的描述，用于错误信息
-     * @throws IllegalStateException 当值为 NaN 或无穷大时
+     * @param value the number to check
+     * @param description description of the value, used in the error message
+     * @throws IllegalStateException when the value is NaN or infinite
      */
     private static void requireFinite(double value, String description) {
         if (Double.isNaN(value) || Double.isInfinite(value)) {

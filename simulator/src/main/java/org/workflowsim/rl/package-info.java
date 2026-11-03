@@ -1,15 +1,17 @@
 /**
- * R4 RL 调度轨道：状态、动作、奖励契约与环境闭环。
+ * R4 RL scheduling track: state, action, and reward contracts plus the environment loop.
  *
- * <p>本包把平台的确定性事件循环封装成强化学习环境：状态 = 就绪 Job 队列 +
- * VM 负载视图（{@link org.workflowsim.rl.RlObservation}），动作 = 每个就绪 Job
- * 的 VM 选择（{@link org.workflowsim.rl.RlPolicy}），奖励 = −makespan
- * （{@link org.workflowsim.rl.RlEpisodeResult}）。episode 由
- * {@link org.workflowsim.rl.RlEnvironment} 驱动，内部经标准
- * {@code SimulationRunner} 执行，决策轨迹完整可审计。</p>
+ * <p>This package wraps the deterministic event loop of the platform into a reinforcement
+ * learning environment: state = the ready-Job queue plus the VM load view
+ * ({@link org.workflowsim.rl.RlObservation}), action = the VM choice for each ready Job
+ * ({@link org.workflowsim.rl.RlPolicy}), reward = -makespan
+ * ({@link org.workflowsim.rl.RlEpisodeResult}). An episode is driven by
+ * {@link org.workflowsim.rl.RlEnvironment}, which executes internally through the standard
+ * {@code SimulationRunner}, so the decision trace is fully auditable.</p>
  *
- * <p>接入方式：配置 {@code SchedulingAlgorithm.RL_POLICY}（在线调度轨道，规划层
- * 必须为 INVALID），经 {@code RlEnvironment.runEpisode} 运行。直接以
- * {@code SimulationRunner} 运行 RL_POLICY 配置会因缺少注册策略而显式失败。</p>
+ * <p>Wiring: configure {@code SchedulingAlgorithm.RL_POLICY} (online scheduling track; the
+ * planning layer must be INVALID) and run through {@code RlEnvironment.runEpisode}.
+ * Running an RL_POLICY configuration directly with {@code SimulationRunner} fails
+ * explicitly because no registered policy is available.</p>
  */
 package org.workflowsim.rl;

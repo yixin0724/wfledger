@@ -1,8 +1,9 @@
 /**
- * 故障生成、监控与会话级故障模型配置。
+ * Failure generation, monitoring, and session-level failure-model configuration.
  *
- * <p>故障分布和监控方式描述的是模拟中的情景假设，而不是对真实平台故障率的校准。
- * 使用随机故障时，应通过 {@code SimulationConfig} 和种子计划记录完整配置，避免
- * 跨运行复用有状态的生成器。</p>
+ * <p>Failure distributions and monitoring modes describe scenario assumptions within the
+ * simulation, not a calibration of real platform failure rates. When random failures are
+ * used, record the complete configuration through {@code SimulationConfig} and the seed
+ * plan, and avoid reusing stateful generators across runs.</p>
  */
 package org.workflowsim.failure;

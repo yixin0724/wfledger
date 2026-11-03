@@ -16,12 +16,12 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.OverheadModelConfig;
 import org.workflowsim.utils.SimulationConfig;
 
-/** 仅在调用方显式指定输出路径时，将报告写为 manifest。 */
+/** Writes a report as a manifest only when the caller explicitly names the output path. */
 public final class ExperimentManifestWriter {
 
-    /** 上一代证据 manifest schema，供只读校验器兼容历史工件。 */
+    /** Previous-generation evidence manifest schema, kept so read-only verifiers read historical artifacts. */
     static final String SCHEMA_V3 = "workflowsim-experiment-manifest-v3";
-    /** 当前证据 manifest schema，包含完整到达、成本矩阵和拓扑声明。 */
+    /** Current evidence manifest schema: complete arrivals, cost matrix, and topology declarations. */
     static final String SCHEMA_V4 = "workflowsim-experiment-manifest-v4";
 
     private ExperimentManifestWriter() {}
@@ -95,15 +95,16 @@ public final class ExperimentManifestWriter {
     }
 
     /**
-     * 将一份报告写为独立 JSON manifest。
+     * Writes one report as a standalone JSON manifest.
      *
-     * <p>此重载不生成 metrics/events sidecar；需要完整可校验的证据包时，应使用
-     * {@link ExperimentArtifactWriter#write(SimulationReport, Path, String)}。</p>
+     * <p>This overload produces no metrics/events sidecar; use
+     * {@link ExperimentArtifactWriter#write(SimulationReport, Path, String)} when a fully
+     * verifiable evidence bundle is required.</p>
      *
-     * @param report 已完成仿真的不可变报告
-     * @param outputFile manifest 输出文件
-     * @throws IOException 当 manifest 无法写入时抛出
-     * @throws IllegalArgumentException 当报告或输出路径为空时抛出
+     * @param report immutable report of a completed simulation
+     * @param outputFile manifest output file
+     * @throws IOException when the manifest cannot be written
+     * @throws IllegalArgumentException when the report or the output path is null
      * @throws UnsupportedOperationException if ON network evidence is exported without a complete bundle reference
      */
     public static void writeJson(SimulationReport report, Path outputFile) throws IOException {
@@ -111,17 +112,17 @@ public final class ExperimentManifestWriter {
     }
 
     /**
-     * 将一份报告与可选的 reference/study 身份写为独立 JSON manifest。
+     * Writes one report together with optional reference/study identity as a standalone JSON manifest.
      *
-     * <p>未提供 {@code evidenceContext} 时，manifest 仍是 v4 格式，但 provenance 中的
-     * {@code study} 字段为 {@code null}。这适合普通仿真运行，不能将其误认为已声明协议的
-     * 正式研究证据。</p>
+     * <p>Without {@code evidenceContext} the manifest stays in v4 format, but the {@code study} field
+     * in provenance is {@code null}. That suits an ordinary simulation run; it must not be mistaken
+     * for formal research evidence of a declared protocol.</p>
      *
-     * @param report 已完成仿真的不可变报告
-     * @param outputFile manifest 输出文件
-     * @param evidenceContext 可选的 reference 或 study 研究身份
-     * @throws IOException 当 manifest 无法写入时抛出
-     * @throws IllegalArgumentException 当报告或输出路径为空时抛出
+     * @param report immutable report of a completed simulation
+     * @param outputFile manifest output file
+     * @param evidenceContext optional reference or study research identity
+     * @throws IOException when the manifest cannot be written
+     * @throws IllegalArgumentException when the report or the output path is null
      * @throws UnsupportedOperationException if ON network evidence is exported without a complete bundle reference
      */
     public static void writeJson(SimulationReport report, Path outputFile, ExperimentEvidenceContext evidenceContext)

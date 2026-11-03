@@ -1,8 +1,11 @@
 /**
- * WorkflowSim 的标准研究运行、实验计划、可复现性证据与指标基础设施。
+ * Standard research runs, experiment plans, reproducibility evidence, and metrics
+ * infrastructure of WorkflowSim.
  *
- * <p>本包通过不可变配置、显式平台、种子计划、事件证据和工件校验支持受控的
- * 抽象模型实验。验证器检查工件完整性和声明一致性，不替代现实平台校准、工作流
- * trace 回放或统计设计审查。</p>
+ * <p>This package supports controlled abstract-model experiments through immutable
+ * configuration, explicit platforms, seed plans, event evidence, and artifact
+ * verification. The verifiers check artifact integrity and claim consistency; they do not
+ * substitute for real-platform calibration, workflow trace replay, or statistical design
+ * review.</p>
  */
 package org.workflowsim.experiment;

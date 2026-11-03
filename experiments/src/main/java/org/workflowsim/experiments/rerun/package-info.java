@@ -1,13 +1,18 @@
 /**
- * R11 rerun 与核心量差异比对（D2）：从历史 v4 证据重建运行并与当前代码结果比对。
+ * R11 rerun and core-quantity difference comparison (D2): rebuild a run from historical
+ * v4 evidence and compare it against the results of the current code.
  *
- * <p>本包只消费证据，不修改模拟器语义。流程契约见
- * {@code docs/experiments/RERUN_DIFF_CONTRACT.md}：读取三件套 → 输入定位（sha256
- * 核对）→ 配置重建 → 经标准 {@code SimulationRunner} 重跑 → 核心量精确比对 →
- * 生成 verdict 报告。核心量要求序列化值逐位一致，浮点不设容差；provenance、
- * runtime 与本机 wall-clock 字段属显式枚举的易变量白名单，不参与判定。</p>
+ * <p>This package only consumes evidence and does not modify simulator semantics. The
+ * process contract is {@code docs/experiments/RERUN_DIFF_CONTRACT.md}: read the evidence
+ * triple -> locate inputs (sha256 verification) -> rebuild the configuration -> rerun
+ * through the standard {@code SimulationRunner} -> compare core quantities exactly ->
+ * generate the verdict report. Core quantities must agree bit for bit in their serialized
+ * values, with no tolerance for floating-point values; provenance, runtime, and local
+ * wall-clock fields belong to the explicitly enumerated whitelist of volatile variables
+ * and do not participate in the verdict.</p>
  *
- * <p>v1 范围：单个 run 目录、manifest v4。历史 v2/v3 证据可读但不可 rerun，
- * 会被明确拒绝；结果复用缓存与 study 级批量不在本包范围内。</p>
+ * <p>v1 scope: one run directory, manifest v4. Historical v2/v3 evidence is readable but
+ * cannot be rerun and is rejected explicitly; result-reuse caching and study-level
+ * batching are outside this package.</p>
  */
 package org.workflowsim.experiments.rerun;

@@ -8,7 +8,9 @@ import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.VmAllocationPolicySimple;
 
-/** 在 CloudSim 创建 VM 时强制执行 {@link PlatformProfile} 的预检放置结果。 */
+/**
+ * Enforces the preflight placement result of {@link PlatformProfile} when CloudSim creates a VM.
+ */
 final class DeterministicVmAllocationPolicy extends VmAllocationPolicySimple {
 
     private final Map<Integer, Integer> hostByVmId;

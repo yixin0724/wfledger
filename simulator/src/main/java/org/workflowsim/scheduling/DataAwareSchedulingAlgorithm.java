@@ -26,17 +26,21 @@ import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 数据局部性基线：将 ready Job 分派给尚未记录其所需真实输入的字节数最少的空闲 VM。
+ * Data-locality baseline: dispatches a ready Job to the idle VM that records the fewest bytes
+ * of the real inputs that Job requires.
  *
- * <p>候选 VM 按 ID 升序遍历，因此相同非本地字节数时保留较小 VM ID。该策略刻意只衡量
- * ReplicaCatalog 中的副本局部性，不是网络时间模型；它不预测带宽、拓扑、争用或缓存替换。</p>
+ * <p>Candidate VMs are traversed in ascending ID order, so equal non-local byte counts keep
+ * the smaller VM ID. The policy deliberately measures only replica locality in
+ * ReplicaCatalog; it is not a network time model and predicts neither bandwidth, topology,
+ * contention, nor cache replacement.</p>
  *
- * <p><strong>文件系统模式限制：</strong>局部性判定按 VM ID 匹配副本站点
- * （{@code Integer.toString(vmId)}），这只在 {@code FileSystem.LOCAL} 模式下成立。
- * SHARED 模式的副本按数据中心名注册，与 VM ID 永不匹配，本算法会退化为
- * first-fit-idle（所有 VM 得分相同，恒选最小 ID 空闲 VM）。标准研究入口
- * （{@code SimulationConfig.Builder.build()}）已拒绝 DATA + SHARED 组合；直接
- * API 使用时由 {@link #run()} 打印一次性告警。</p>
+ * <p><strong>File-system mode restriction:</strong> locality is decided by matching the VM ID
+ * against the replica site ({@code Integer.toString(vmId)}), which holds only under
+ * {@code FileSystem.LOCAL}. In SHARED mode replicas are registered under datacenter names
+ * that never match a VM ID, so this algorithm degenerates to first-fit-idle (all VMs score the
+ * same and the smallest-ID idle VM is always chosen). The standard research entry point
+ * ({@code SimulationConfig.Builder.build()}) already rejects the DATA + SHARED combination;
+ * direct API use prints a one-time warning from {@link #run()}.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -44,7 +48,7 @@ import org.workflowsim.utils.ReplicaCatalog;
  */
 public class DataAwareSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
-    /** 只告警一次的标记：SHARED 模式下局部性判定无效。 */
+    /** One-shot warning flag: locality scoring is ineffective under SHARED mode. */
     private boolean sharedModeWarningShown = false;
 
     public DataAwareSchedulingAlgorithm() {
@@ -90,20 +94,21 @@ public class DataAwareSchedulingAlgorithm extends BaseSchedulingAlgorithm {
     }
 
     /**
-     * 计算一个 ready Job 的局部性分值。
+     * Computes the locality score of one ready Job.
      *
-     * <p>为保持源码兼容仍沿用历史方法名；返回值是未驻留真实输入的字节数，而不是传输时间。</p>
+     * <p>The historical method name is kept for source compatibility; the return value is the
+     * number of bytes of real inputs not resident on the VM, not a transfer time.</p>
      *
-     * @param requiredFiles 需要检查的输入/输出文件
-     * @param cl 待处理 Job
-     * @param vmId 候选 VM ID
-     * @return 候选 VM 未记录为本地副本的真实输入字节数
+     * @param requiredFiles input/output files to inspect
+     * @param cl the Job to process
+     * @param vmId candidate VM ID
+     * @return bytes of real inputs that the candidate VM does not record as a local replica
      */
     protected double dataTransferTime(List<FileItem> requiredFiles, Cloudlet cl, int vmId) {
         double time = 0.0;
 
         for (FileItem file : requiredFiles) {
-            // 只计入真实输入，输出文件不构成该 Job 的阶段输入负担。
+            // Real inputs are counted only; output files are no stage-in burden for this Job.
             if (file.isRealInputFile(requiredFiles)) {
                 List<String> siteList = ReplicaCatalog.getStorageList(file.getName());
 

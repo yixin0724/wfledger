@@ -55,11 +55,12 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 代表一个工作流用户执行运行时调度的 CloudSim Broker。
+ * CloudSim broker that performs runtime scheduling on behalf of one workflow user.
  *
- * <p>该实体管理 VM 创建与销毁、就绪作业派发和完成事件回收，并按配置创建一个
- * {@link BaseSchedulingAlgorithm}。算法对象在同一调度器生命周期内复用，以保持如
- * ready-batch round robin 等有状态策略的跨事件语义。</p>
+ * <p>This entity manages VM creation and destruction, ready Job dispatch, and completion-event
+ * reclamation, and instantiates one {@link BaseSchedulingAlgorithm} according to the
+ * configuration. The algorithm object is reused for the lifetime of the scheduler so that
+ * stateful policies such as ready-batch round robin keep their cross-event semantics.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -67,13 +68,13 @@ import org.workflowsim.utils.SimulationConfig;
  */
 public class WorkflowScheduler extends DatacenterBroker {
 
-    /** 上游工作流引擎的 CloudSim 实体编号。 */
+    /** CloudSim entity id of the upstream workflow engine. */
     private int workflowEngineId;
 
-    /** 在当前调度实体生命周期内保留的策略实例。 */
+    /** Policy instance retained for the lifetime of this scheduling entity. */
     private BaseSchedulingAlgorithm activeSchedulingPolicy;
 
-    /** 创建当前策略实例时使用的配置枚举值。 */
+    /** Configuration enum value used when the current policy instance was created. */
     private SchedulingAlgorithm activeSchedulingPolicyType;
 
     private SimulationEventRecorder eventRecorder = SimulationEventRecorder.disabled();
@@ -84,27 +85,27 @@ public class WorkflowScheduler extends DatacenterBroker {
         strictDataflowBindings = true;
     }
     /**
-     * VM 创建成功时冻结的 VM 到 Host 映射。
+     * VM-to-Host mapping frozen when VM creation succeeds.
      *
-     * <p>CloudSim 关闭阶段会释放 VM 的 Host 引用，故这是记录执行证据的唯一可靠
-     * 生命周期时点。</p>
+     * <p>CloudSim releases the Host reference of a VM during shutdown, so this is the only
+     * reliable lifecycle instant at which execution evidence can be recorded.</p>
      */
     private final Map<Integer, Integer> createdVmHostAssignments = new LinkedHashMap<Integer, Integer>();
 
     /**
-     * 创建工作流运行时调度实体。
+     * Creates the workflow runtime scheduling entity.
      *
-     * @param name CloudSim 实体名称
-     * @throws Exception 当 CloudSim Broker 无法创建时
+     * @param name CloudSim entity name
+     * @throws Exception when the CloudSim broker cannot be created
      */
     public WorkflowScheduler(String name) throws Exception {
         super(name);
     }
 
     /**
-     * 绑定一个可供该调度器请求 VM 的数据中心。
+     * Binds a datacenter from which this scheduler can request VMs.
      *
-     * @param datacenterId 数据中心实体编号
+     * @param datacenterId datacenter entity id
      */
     public void bindSchedulerDatacenter(int datacenterId) {
         if (datacenterId <= 0) {
@@ -115,18 +116,18 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 设置上游工作流引擎编号。
+     * Sets the upstream workflow engine id.
      *
-     * @param workflowEngineId 工作流引擎实体编号
+     * @param workflowEngineId workflow engine entity id
      */
     public void setWorkflowEngineId(int workflowEngineId) {
         this.workflowEngineId = workflowEngineId;
     }
 
     /**
-     * 在仿真启动前安装本次运行私有的事件记录器。
+     * Installs the event recorder private to this run before the simulation starts.
      *
-     * @param value 本次运行的事件记录器
+     * @param value event recorder of this run
      */
     public void setEventRecorder(SimulationEventRecorder value) {
         if (value == null) {
@@ -136,21 +137,21 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 返回 VM 创建成功时观测到的 VM 到 Host 映射。
+     * Returns the VM-to-Host mapping observed when VM creation succeeded.
      *
-     * <p>CloudSim 在关闭阶段会清除 VM Host 引用，因此该副本保留了唯一可用于执行证据的
-     * 生命周期观测。</p>
+     * <p>CloudSim clears the VM Host reference during shutdown, so this copy preserves the only
+     * lifecycle observation usable as execution evidence.</p>
      *
-     * @return 不可修改的 VM 编号到 Host 编号映射
+     * @return unmodifiable mapping from VM id to Host id
      */
     public Map<Integer, Integer> getCreatedVmHostAssignments() {
         return Collections.unmodifiableMap(new LinkedHashMap<Integer, Integer>(createdVmHostAssignments));
     }
 
     /**
-     * 安装本次运行聚类后的完整静态计划顺序。
+     * Installs the complete static plan order of this run after clustering.
      *
-     * @param value 完整静态计划
+     * @param value complete static plan
      */
     public void setStaticSchedulePlan(StaticSchedulePlan value) {
         if (value == null) {
@@ -163,26 +164,26 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 分发运行时调度生命周期事件。
+     * Dispatches runtime scheduling lifecycle events.
      *
-     * @param ev 接收的 CloudSim 事件
+     * @param ev received CloudSim event
      */
     @Override
     public void processEvent(SimEvent ev) {
         switch (ev.getTag()) {
-                // 请求各数据中心资源特征。
+                // Request resource characteristics from each datacenter.
             case CloudSimTags.RESOURCE_CHARACTERISTICS_REQUEST:
                 processResourceCharacteristicsRequest(ev);
                 break;
-                // 接收数据中心资源特征。
+                // Receive datacenter resource characteristics.
             case CloudSimTags.RESOURCE_CHARACTERISTICS:
                 processResourceCharacteristics(ev);
                 break;
-                // 接收 VM 创建确认。
+                // Receive the VM creation acknowledgement.
             case CloudSimTags.VM_CREATE_ACK:
                 processVmCreate(ev);
                 break;
-                // 接收作业完成或由完成检查触发的返回事件。
+                // Receive a Job completion, or a return event triggered by a completion check.
             case WorkflowSimTags.CLOUDLET_CHECK:
                 processCloudletReturn(ev);
                 break;
@@ -205,21 +206,22 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 根据配置创建运行时调度策略。
+     * Creates the runtime scheduling policy from the configuration.
      *
-     * <p>映射需与 {@link Parameters.SchedulingAlgorithm} 的公开实验语义一致。四个
-     * 已弃用枚举仍绑定其历史策略，只用于兼容既有调用；研究运行应选择明确维护的
-     * ready-batch 或静态策略。</p>
+     * <p>The mapping must stay consistent with the public experiment semantics of
+     * {@link Parameters.SchedulingAlgorithm}. The four deprecated enums still bind their
+     * historical policies and only serve compatibility with existing callers; research runs
+     * should select an explicitly maintained ready-batch or static policy.</p>
      *
-     * @param name 调度算法枚举
-     * @return 对应的调度策略
+     * @param name scheduling algorithm enum
+     * @return the corresponding scheduling policy
      */
     private BaseSchedulingAlgorithm createSchedulingPolicy(SchedulingAlgorithm name) {
         BaseSchedulingAlgorithm algorithm;
 
-        // 新增策略时必须同步维护 Parameters 中的可报告算法枚举。
+        // A new policy requires maintaining the reportable algorithm enum in Parameters at the same time.
         switch (name) {
-                // FCFS 是默认在线调度策略。
+                // FCFS is the default online scheduling policy.
             case FCFS:
                 algorithm = new FCFSSchedulingAlgorithm();
                 break;

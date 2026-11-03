@@ -1,12 +1,15 @@
 /**
- * 工作流运行时就绪 Job 的在线调度策略。
+ * Online scheduling policies for ready jobs at workflow runtime.
  *
- * <p>本包的调度器只观察当前事件时刻已就绪的 Job 与空闲 VM；一次调度更新中每台 VM
- * 至多接收一个 Job。维护轨道的 {@code FCFS}、{@code READY_BATCH_*} 和 {@code DATA}
- * 实现都使用确定性的 VM-ID 或 Job-ID 作为同分 tie-break，并在无法找到兼容 PE 数的 VM
- * 时快速失败。</p>
+ * <p>The schedulers in this package observe only the jobs that are ready at the current event
+ * time and the idle VMs; each scheduling update assigns at most one job to each VM. The
+ * maintained-track {@code FCFS}, {@code READY_BATCH_*} and {@code DATA} implementations all
+ * break ties deterministically by VM ID or job ID, and fail fast when no VM with a compatible
+ * PE count can be found.</p>
  *
- * <p>它们不是离线静态映射器：不会维护未来 VM 可用时间、生成完整执行计划或重放真实队列。
- * 历史标签保留在本包中仅为兼容既有调用；研究入口应使用具有明确语义契约的维护轨道标签。</p>
+ * <p>They are not offline static mappers: they do not maintain future VM availability, generate
+ * a complete execution plan, or replay a real queue. Historical labels remain in this package
+ * solely for compatibility with existing callers; research entry points should use
+ * maintained-track labels that carry an explicit semantic contract.</p>
  */
 package org.workflowsim.scheduling;

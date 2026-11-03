@@ -1,9 +1,11 @@
 /**
- * WorkflowSim 的配置、随机性、开销、故障参数和遗留全局状态支撑。
+ * Configuration, randomness, cost, failure-parameter, and legacy global-state support for
+ * WorkflowSim.
  *
- * <p>{@link org.workflowsim.utils.SimulationConfig} 是一次标准运行的不可变声明；
- * {@link org.workflowsim.utils.SimulationSession} 在每次串行运行前后管理遗留
- * {@code Parameters}、副本目录和故障模型的全局状态。由于底层 CloudSim 内核保留静态状态，
- * 本包不承诺同一 JVM 内并发执行多个仿真会话。</p>
+ * <p>{@link org.workflowsim.utils.SimulationConfig} is the immutable declaration of one
+ * standard run; {@link org.workflowsim.utils.SimulationSession} manages the legacy global
+ * state of {@code Parameters}, the replica catalog, and the failure models around each
+ * serial run. Because the underlying CloudSim kernel keeps static state, this package does
+ * not promise concurrent execution of multiple simulation sessions inside one JVM.</p>
  */
 package org.workflowsim.utils;

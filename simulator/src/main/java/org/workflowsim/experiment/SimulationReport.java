@@ -25,7 +25,7 @@ import org.workflowsim.planning.SharedStorageDagPlanTrace;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
-/** 一次已完成 WorkflowSim 运行的不可变证据记录。 */
+/** Immutable evidence record of one completed WorkflowSim run. */
 public final class SimulationReport {
 
     private final SimulationConfig config;
@@ -103,7 +103,8 @@ public final class SimulationReport {
                 makespan, this.jobs, this.vmSummaries, this.events, this.tasks, sourceTasks, config, platform);
         this.energyAccounting = EnergyAccounting.fromFrozenMetrics(
                 makespan, this.metrics.getVmMetrics(), this.metrics.getPerTierBusySecondsByVm(), platform);
-        // BAT-C1（2026-10-28）：两种碳模型互斥；未声明→null（合法缺省，非全零）。
+        // BAT-C1 (2026-10-28): the two carbon models are mutually exclusive; undeclared -> null
+        // (a legal default, not all zeros).
         if (platform.getVms() != null && anyCarbonIntensity(platform)) {
             if (platform.getCarbonWindows() != null
                     && !platform.getCarbonWindows().isEmpty()) {
@@ -121,10 +122,13 @@ public final class SimulationReport {
     }
 
     /**
-     * R5 动态到达：按输入下标计算每个工作流的到达/完成/流时证据。
+     * R5 dynamic arrival: compute the arrival, completion, and flow-time evidence of every
+     * workflow by input index.
      *
-     * <p>任务编号在输入间连续分配，任务区间由各输入报告的 taskCount 推导；流时取该工作流
-     * 全部成功任务的最大完成时刻减去其配置提交时刻。没有任何成功任务时流时为 {@code NaN}。</p>
+     * <p>Task identifiers are allocated contiguously across inputs, so the task interval of an
+     * input is derived from the taskCount of its input report; flow time is the latest
+     * completion instant over all successful tasks of that workflow minus its configured
+     * submission instant. Flow time is {@code NaN} when there is no successful task.</p>
      */
     private List<WorkflowOutcome> computeWorkflowOutcomes() {
         List<Double> arrivals = config.getWorkflowArrivalSeconds();
@@ -281,7 +285,8 @@ public final class SimulationReport {
                 computeRequests);
     }
 
-    /** capture() 的 Job 结果聚合阶段（去重/成功失败计数/VM 汇总累计，逐字搬运转写）。 */
+    /** Job result aggregation stage of capture(): deduplication, success/failure counting, VM summary
+     * accumulation (verbatim move of the former in-method code). */
     private static OutcomeCounts accumulateJobOutcomes(
             List<Job> completedJobs,
             List<JobOutcome> jobs,
@@ -311,7 +316,8 @@ public final class SimulationReport {
         return counts;
     }
 
-    /** capture() 的在线计算请求装配阶段（TreeMap 确定性次序，逐字搬运转写）。 */
+    /** Online compute request assembly stage of capture() (deterministic TreeMap order, verbatim move of
+     * the former in-method code). */
     private static List<DataflowComputeRequest> buildComputeRequests(SimulationConfig config, List<Job> completedJobs) {
         if (!config.getDataflowAssignmentConfig().isEnabled()) {
             return null;
@@ -332,7 +338,8 @@ public final class SimulationReport {
         return new ArrayList<>(ordered.values());
     }
 
-    /** capture() 聚合计数的私有搬运转写结构。 */
+    /** Private mutable accumulation structure for the capture() counts (verbatim move of the former
+     * in-method code). */
     private static final class OutcomeCounts {
         private int successes;
         private int failures;
@@ -346,61 +353,63 @@ public final class SimulationReport {
         return platform;
     }
     /**
-     * 返回兼容历史 API 的 CloudSim 仿真结束时钟。
+     * Return the CloudSim simulation end clock kept for compatibility with the historical API.
      *
-     * <p>该值可能包含末个 Job 返回后的 workflow-engine post-delay；研究代码需要最后一个
-     * 逻辑 Task 的成功 Job envelope 完成时刻时，应使用
-     * {@link #getLogicalTaskCompletionSeconds()}。</p>
+     * <p>The value may include the workflow-engine post-delay after the last Job returns.
+     * Research code that needs the completion instant of the successful Job envelope of the
+     * last logical Task must use {@link #getLogicalTaskCompletionSeconds()}.</p>
      *
-     * @return 以模拟秒表示的仿真结束时间
+     * @return simulation end time in simulated seconds
      */
     public double getMakespan() {
         return makespan;
     }
     /**
-     * 返回本次运行的 CloudSim 仿真结束时间。
+     * Return the CloudSim simulation end time of this run.
      *
-     * @return 与历史 {@link #getMakespan()} 完全相同的模拟秒值
+     * @return the same simulated-seconds value as the historical {@link #getMakespan()}
      */
     public double getSimulationEndSeconds() {
         return makespan;
     }
     /**
-     * 返回全部解析逻辑 Task 首次由成功 Job 完成的最大 Job envelope 结束时间。
+     * Return the latest Job envelope end time at which every parsed logical Task was first
+     * completed by a successful Job.
      *
-     * @return 全部逻辑 Task 成功时的完成秒数；否则为 {@code null}
+     * @return completion in seconds when every logical Task succeeded; otherwise {@code null}
      */
     public Double getLogicalTaskCompletionSeconds() {
         return metrics.getLogicalTaskCompletionSeconds();
     }
-    /** @return 逻辑 Task 完成时间是否可用的机器可读状态 */
+    /** @return machine-readable status telling whether the logical Task completion time is available */
     public String getLogicalTaskCompletionStatus() {
         return metrics.getLogicalTaskCompletionStatus();
     }
     /**
-     * 返回最后一个逻辑 Task 成功完成到 CloudSim 仿真结束之间的生命周期尾部。
+     * Return the lifecycle tail between the successful completion of the last logical Task and
+     * the CloudSim simulation end.
      *
-     * @return 工作流完整时的非负模拟秒数；否则为 {@code null}
+     * @return non-negative simulated seconds when the workflow is complete; otherwise {@code null}
      */
     public Double getTerminalLifecycleTailSeconds() {
         return metrics.getTerminalLifecycleTailSeconds();
     }
-    /** @return 本次运行是否使全部逻辑 Task 成功完成 */
+    /** @return whether this run completed every logical Task successfully */
     public boolean isWorkflowCompletedSuccessfully() {
         return metrics.isWorkflowCompletedSuccessfully();
     }
     /**
-     * 返回本次运行实际消费的输入文件指纹。
+     * Return the fingerprints of the input files actually consumed by this run.
      *
-     * @return 按配置顺序排列的不可变输入指纹列表
+     * @return immutable list of input fingerprints in configuration order
      */
     public List<InputArtifact> getInputs() {
         return inputs;
     }
     /**
-     * 返回解析器针对每个配置输入给出的验证报告。
+     * Return the validation report that the parser produced for each configured input.
      *
-     * @return 按配置顺序排列的不可变输入报告列表
+     * @return immutable list of input reports in configuration order
      */
     public List<WorkflowInputReport> getInputReports() {
         return inputReports;
@@ -415,9 +424,10 @@ public final class SimulationReport {
     }
 
     /**
-     * R5 动态到达：按输入下标返回每个工作流的到达/流时证据。
+     * R5 dynamic arrival: return the arrival and flow-time evidence of every workflow by input
+     * index.
      *
-     * @return 与 {@link #getInputReports()} 同序的每工作流结果
+     * @return per-workflow results in the same order as {@link #getInputReports()}
      */
     public List<WorkflowOutcome> getWorkflowOutcomes() {
         return workflowOutcomes;
@@ -427,9 +437,9 @@ public final class SimulationReport {
         return vmSummaries;
     }
     /**
-     * 已与平台预检结果比对过的实际 CloudSim VM 到 Host 放置。
+     * Actual CloudSim VM to Host placement, already compared against the platform precheck result.
      *
-     * @return 不可变的完整 VM-Host 实际放置映射
+     * @return immutable complete VM-Host actual placement mapping
      */
     public Map<Integer, Integer> getActualVmHostAssignments() {
         return actualVmHostAssignments;
@@ -451,28 +461,30 @@ public final class SimulationReport {
         return events;
     }
     /**
-     * 返回由本次运行解析出的任务快照计算的工作流结构摘要。
+     * Return the workflow structure summary computed from the task snapshot parsed by this run.
      *
-     * @return 不可变的工作流画像
+     * @return immutable workflow profile
      */
     public WorkflowProfile getWorkflowProfile() {
         return workflowProfile;
     }
     /**
-     * 返回由运行证据推导出的模型层指标。
+     * Return the model-layer metrics derived from the run evidence.
      *
-     * @return 不可变的仿真指标集合
+     * @return immutable set of simulation metrics
      */
     public SimulationMetrics getMetrics() {
         return metrics;
     }
 
-    /** BAT-E1（2026-10-27）：@return 每次运行的能耗核算；无功率模型时为全零。 */
+    /** BAT-E1 (2026-10-27): @return the energy accounting of each run; all zeros when there is no power
+     * model. */
     public EnergyAccounting getEnergyAccounting() {
         return energyAccounting;
     }
 
-    /** BAT-C1：@return 碳核算（强度/预算模型择一）；未声明时为 null。 */
+    /** BAT-C1: @return the carbon accounting (either the intensity or the budget model); null when
+     * undeclared. */
     public CarbonAccounting getCarbonAccounting() {
         return carbonAccounting;
     }
@@ -508,18 +520,20 @@ public final class SimulationReport {
         return dataflowPlan == null ? null : dataflowPlan.deepCopy();
     }
     /**
-     * 返回共享存储静态 DAG 规划的追踪记录。
+     * Return the trace record of the shared-storage static DAG plan.
      *
-     * <p>没有采用相应规划路径时，该值可以为 {@code null}；调用方须先根据配置和算法契约
-     * 判断其是否适用。</p>
+     * <p>The value may be {@code null} when the corresponding planning path was not taken; the
+     * caller must first decide from the configuration and the algorithm contract whether it
+     * applies.</p>
      *
-     * @return 规划追踪记录，或 {@code null}
+     * @return planning trace record, or {@code null}
      */
     public SharedStorageDagPlanTrace getSharedStorageDagPlanTrace() {
         return sharedStorageDagPlanTrace;
     }
 
-    /** @return 按任务ID排序的原始逻辑任务依赖快照，不含stage-in或retry节点 */
+    /** @return raw logical task dependency snapshot sorted by task ID, without stage-in or retry
+     * nodes */
     public List<TaskNode> getWorkflowGraph() {
         return workflowGraph;
     }
@@ -562,7 +576,7 @@ public final class SimulationReport {
         }
     }
 
-    /** 供报告和复核使用的原始任务节点。 */
+    /** Original task node used for reporting and cross-review. */
     public static final class TaskNode {
         private final int taskId;
         private final String type;
@@ -609,7 +623,7 @@ public final class SimulationReport {
         }
     }
 
-    /** 已消费工作流文件的不可变内容指纹。 */
+    /** Immutable content fingerprint of a consumed workflow file. */
     public static final class InputArtifact {
 
         private final String path;
@@ -643,7 +657,7 @@ public final class SimulationReport {
         }
     }
 
-    /** 一个 WorkflowSim Job 的不可变执行结果。 */
+    /** Immutable execution result of one WorkflowSim Job. */
     public static final class JobOutcome {
 
         private final int jobId;
@@ -664,16 +678,19 @@ public final class SimulationReport {
         private final int taskCount;
         private final List<Integer> taskIds;
         /**
-         * BAT-D2（2026-10-29）：派发时刻指派的 DVFS 频档 MIPS。
+         * BAT-D2 (2026-10-29): MIPS of the DVFS frequency tier assigned at dispatch time.
          *
-         * <p>{@code null} = v1 无频档模式（兼容运行与结果清单中的合法缺省）；
-         * 非 null = 本 Job 的 [startTime, finishTime) 区间按该档速度执行的频档身份
-         * （档唯一性可由 MIPS 值对平台 frequencyTiers 匹配复原——档按 MIPS 唯一）。
-         * 字段声明在末位：序列化键序对既有 manifest 逐位稳定，新键只追加。
-         * <b>transient：</b>manifest 外层 Gson 配置 {@code serializeNulls()}，非
-         * transient 的 null 档会在每个 v1 legacy Job 上多出 {@code "tierMips":null}
-         * 键——证据面要求 null=缺键（v1 legacy），该键只由
-         * {@code ExperimentManifestWriter} 在值非 null 时显式追加。</p>
+         * <p>{@code null} = v1 no-tier mode (the legal default in compatibility runs and in the
+         * result manifest); non-null = the tier identity under whose speed this Job executes over
+         * the [startTime, finishTime) interval (the tier can be recovered by matching the MIPS
+         * value against the platform frequencyTiers -- tiers are unique by MIPS).
+         * The field is declared last: the serialization key order stays bit-for-bit stable for
+         * existing manifests, and new keys are only appended.
+         * <b>transient:</b> the outer manifest Gson configures {@code serializeNulls()}, so a
+         * non-transient null tier would add a {@code "tierMips":null} key to every v1 legacy Job
+         * -- the evidence surface requires null to mean a missing key (v1 legacy), and
+         * {@code ExperimentManifestWriter} appends that key explicitly only when the value is
+         * non-null.</p>
          */
         private final transient Double tierMips;
 
@@ -758,7 +775,8 @@ public final class SimulationReport {
             this.submissionTime = submissionTime;
             this.startTime = startTime;
             this.finishTime = finishTime;
-            // 边界保护：失败/异常作业的时间戳可能不完整，负值裁剪为 0
+            // Boundary guard: timestamps of failed or exceptional jobs may be incomplete, so negative
+            // values are clamped to 0
             this.waitingTime = Math.max(0.0, startTime - submissionTime);
             this.executionTime = Math.max(0.0, finishTime - startTime);
             this.responseTime = Math.max(0.0, finishTime - submissionTime);
@@ -769,7 +787,8 @@ public final class SimulationReport {
             this.modeledProcessingCost = modeledCpuEnvelopeCost + modeledDeclaredFileBandwidthCost;
             this.taskCount = taskCount;
             this.taskIds = Collections.unmodifiableList(new ArrayList<>(taskIds));
-            // BAT-D2：非正值档不是合法缺省——证据链拒绝而不是静默置 null（无档=null）。
+            // BAT-D2: a non-positive tier is not a legal default -- the evidence chain rejects it
+            // instead of silently setting null (no tier means null).
             if (tierMips != null
                     && !(tierMips.doubleValue() > 0.0 && tierMips.isInfinite() == false && tierMips.isNaN() == false)) {
                 throw new IllegalArgumentException("Invalid tier mips on Job " + jobId + ": " + tierMips);
@@ -827,10 +846,11 @@ public final class SimulationReport {
             return finishTime;
         }
         /**
-         * 返回 VM 队列等待时间（到达 VM 到开始执行，即 startTime - submissionTime）。
-         * <p><strong>注意：</strong>WorkflowSim 的所有调度算法都只向空闲 VM 派发作业，
-         * 因此该值几乎总是 0。真实的调度等待时间（就绪到开始）见
-         * {@code SimulationMetrics#getMeanComputeTotalWaitingTimeSeconds()}。</p>
+         * Return the VM queue waiting time (arrival at the VM to start of execution, that is
+         * startTime - submissionTime).
+         * <p><strong>Note:</strong> every scheduling algorithm in WorkflowSim dispatches jobs only
+         * to idle VMs, so this value is almost always 0. For the real scheduling wait (ready to
+         * start) see {@code SimulationMetrics#getMeanComputeTotalWaitingTimeSeconds()}.</p>
          */
         public double getWaitingTime() {
             return waitingTime;
@@ -844,43 +864,45 @@ public final class SimulationReport {
             return responseTime;
         }
         /**
-         * CloudSim 报告的该 Job 信封执行时间。启用 stage-in 时，该值可能包括相应延迟的
-         * 整数 MI 表示；它不是纯粹的实测 CPU 时间观测。
+         * Job envelope execution time as reported by CloudSim. With stage-in enabled the value may
+         * include the integer MI representation of the corresponding delay; it is not a purely
+         * measured CPU time observation.
          *
-         * @return 以模拟秒表示的 Job 信封执行时间
+         * @return Job envelope execution time in simulated seconds
          */
         public double getCpuTime() {
             return cpuTime;
         }
         /**
-         * Job envelope 的 CPU 抽象成本分量。
+         * CPU abstract cost component of the Job envelope.
          *
-         * @return 可能包含 CloudSim stage-in MI 注入的 CPU envelope 成本
+         * @return CPU envelope cost, possibly including CloudSim stage-in MI injection
          */
         public double getModeledCpuEnvelopeCost() {
             return modeledCpuEnvelopeCost;
         }
         /**
-         * 按 Job 全部声明文件字节数、每十进制 MB 连续计价的带宽抽象成本分量。
+         * Bandwidth abstract cost component, continuously priced per decimal MB over all declared
+         * file bytes of the Job.
          *
-         * @return 声明文件带宽成本近似
+         * @return declared-file bandwidth cost approximation
          */
         public double getModeledDeclaredFileBandwidthCost() {
             return modeledDeclaredFileBandwidthCost;
         }
         /**
-         * 进入声明文件带宽成本的连续字节当量。
+         * Continuous byte equivalent that enters the declared-file bandwidth cost.
          *
-         * @return Job 文件表中所有声明文件大小之和
+         * @return sum of all declared file sizes in the Job file table
          */
         public double getModeledDeclaredFileBytes() {
             return modeledDeclaredFileBytes;
         }
         /**
-         * 同一 Job 信封的 CloudSim 处理成本。该值既不是服务商资费回放，也不是单独计价的
-         * 网络传输成本。
+         * CloudSim processing cost of the same Job envelope. The value is neither a replay of a
+         * provider tariff nor a separately priced network transfer cost.
          *
-         * @return 该 Job 的建模处理成本
+         * @return modeled processing cost of the Job
          */
         public double getModeledProcessingCost() {
             return modeledProcessingCost;
@@ -895,10 +917,10 @@ public final class SimulationReport {
         }
 
         /**
-         * BAT-D2（2026-10-29）：返回派发时刻指派的 DVFS 频档 MIPS。
+         * BAT-D2 (2026-10-29): return the MIPS of the DVFS frequency tier assigned at dispatch time.
          *
-         * @return 指派档的 MIPS；{@code null} = v1 无频档模式（结果清单中的合法缺省，
-         *         序列化为缺键而非显式 null）
+         * @return MIPS of the assigned tier; {@code null} = v1 no-tier mode (the legal default in
+         *         the result manifest, serialized as a missing key rather than an explicit null)
          */
         public Double getTierMips() {
             return tierMips;
@@ -906,10 +928,12 @@ public final class SimulationReport {
     }
 
     /**
-     * 不可变的任务级观测。一个任务可以出现在多个重试 Job 中；任一包含该任务的成功 Job 都会
-     * 使该任务被视为成功完成。失败 Job 保留其任务级状态，以便故障与重聚类记录仍可观察。
-     * 逻辑 Task 时序是提交时记录的模型推导计算窗口。只有单任务 Job 的该窗口与完成后的
-     * CloudSim Job 信封相等时，才标为精确；建模 stage-in 使这两个范围保持区分。
+     * Immutable task-level observation. A task may appear in several retry Jobs; any successful
+     * Job that contains it makes the task count as successfully completed. Failed Jobs keep their
+     * task-level state so that failure and reclustering records remain observable.
+     * Logical Task timing is the model-derived computation window recorded at submission. It is
+     * marked exact only when that window of a single-task Job equals the CloudSim Job envelope
+     * after completion; modeled stage-in keeps the two ranges distinct.
      */
     public static final class TaskOutcome {
 
@@ -1050,16 +1074,17 @@ public final class SimulationReport {
             return finishTime;
         }
         /**
-         * 仅当单任务计算窗口等于 CloudSim Job 信封时为 {@code true}。
+         * {@code true} only when the single-task computation window equals the CloudSim Job envelope.
          *
-         * @return 此任务是否具有精确 Job 时序
+         * @return whether this task has exact Job timing
          */
         public boolean hasExactJobTiming() {
             return exactJobTiming;
         }
     }
 
-    /** R5 动态到达：单个工作流输入的到达时刻、任务区间与流时证据。 */
+    /** R5 dynamic arrival: arrival instant, task interval, and flow-time evidence of one workflow
+     * input. */
     public static final class WorkflowOutcome {
 
         private final int index;
@@ -1090,41 +1115,42 @@ public final class SimulationReport {
             this.flowTimeSeconds = flowTimeSeconds;
         }
 
-        /** @return 输入在本次提交中的下标（0 起） */
+        /** @return index of the input in this submission (0-based) */
         public int getIndex() {
             return index;
         }
-        /** @return 输入文件路径 */
+        /** @return input file path */
         public String getPath() {
             return path;
         }
-        /** @return 配置的提交时刻（模拟秒） */
+        /** @return configured submission instant (simulated seconds) */
         public double getArrivalSecond() {
             return arrivalSecond;
         }
-        /** @return 该输入的首个任务编号 */
+        /** @return first task identifier of this input */
         public int getFirstTaskId() {
             return firstTaskId;
         }
-        /** @return 该输入的末个任务编号 */
+        /** @return last task identifier of this input */
         public int getLastTaskId() {
             return lastTaskId;
         }
-        /** @return 该输入的任务数量 */
+        /** @return task count of this input */
         public int getTaskCount() {
             return taskCount;
         }
-        /** @return 全部成功任务的最大完成时刻；无成功任务时为 {@code NaN} */
+        /** @return latest completion instant over all successful tasks; {@code NaN} when none succeeded */
         public double getLastSuccessFinishSecond() {
             return lastSuccessFinishSecond;
         }
-        /** @return 流时 = 最大成功完成时刻 − 提交时刻；无成功任务时为 {@code NaN} */
+        /** @return flow time = latest successful completion instant - submission instant; {@code NaN}
+         * when no task succeeded */
         public double getFlowTimeSeconds() {
             return flowTimeSeconds;
         }
     }
 
-    /** 基于已完成 Job 的每 VM 聚合值，不是 Host 利用率模型。 */
+    /** Per-VM aggregate over completed Jobs; not a Host utilization model. */
     public static final class VmSummary {
 
         private final int vmId;

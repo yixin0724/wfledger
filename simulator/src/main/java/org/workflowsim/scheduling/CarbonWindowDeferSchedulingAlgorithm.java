@@ -15,34 +15,42 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 
 /**
- * C1（2026-11-02）：绿色预算窗口内的碳感知延后调度（CWM 时间平移的在线版本）。
+ * C1 (2026-11-02): carbon-aware deferral inside green-budget windows (an online version of
+ * the CWM time shift).
  *
- * <p>这不是 C5-lite 那个"LPT + 最小 VM id"的演示器，而是真正会把作业<b>压后到更
- * 干净的时间窗</b>再执行的引擎。规则只有一条，刻意保持可审计：</p>
+ * <p>This is not the "LPT + smallest VM id" demonstrator of C5-lite; it is an engine that
+ * really <b>pushes jobs back to a cleaner time window</b> before executing them. There is
+ * exactly one rule, deliberately kept auditable:</p>
  *
  * <ol>
- *   <li>取当前时刻所在的窗口 w（{@code carbonWindows} 覆盖 [0,T_sim)，声明期已校验
- *       排序与不重叠），记其绿色功率 g_w。</li>
- *   <li>向前找<b>第一个绿色功率严格更高</b>的窗口 w'；若无，按普通在线策略派发。</li>
- *   <li>若就绪集合非空且其中每个作业都<b>尚未</b>被压后过，则本轮一个都不派发，
- *       把唤醒时刻设为 w' 的起点——清账窗口开始后统一派发。</li>
- *   <li>每个作业最多被压后一次：这保证不会无休止推迟（饥饿上界），也让"压后收益"
- *       可以逐作业归因。</li>
+ *   <li>Take the window w that contains the current instant ({@code carbonWindows} covers
+ *       [0,T_sim), and the declaration phase has already validated ordering and
+ *       non-overlap) and record its green power g_w.</li>
+ *   <li>Look forward for the <b>first window w' with strictly higher green power</b>; if
+ *       there is none, dispatch under the ordinary online policy.</li>
+ *   <li>If the ready set is non-empty and every job in it has <b>not yet</b> been deferred,
+ *       dispatch none of them in this round and set the wake-up instant to the start of
+ *       w' -- all of them are dispatched together once the cleaner window opens.</li>
+ *   <li>Each job is deferred at most once: this rules out unbounded postponement (a
+ *       starvation bound) and makes the "deferral gain" attributable per job.</li>
  * </ol>
  *
- * <p><b>诚实边界</b>：本引擎只看平台声明的绿色功率，不看实时舰队负载（那属于研究
- * 协议的窗口声明域）；它牺牲成批完成时间换更低超额，是否值得由实验判据决定，引擎
- * 自身不宣称更优。窗口与派发规则都来自运行配置，因此同一输入逐位可复现。</p>
+ * <p><b>Honest boundary</b>: this engine reads only the green power declared by the
+ * platform, not live fleet load (that belongs to the window-declaration domain of the
+ * research protocol); it trades batch completion time for a lower overshoot, and whether
+ * that is worthwhile is decided by the experimental criteria -- the engine itself claims no
+ * superiority. Both the windows and the dispatch rule come from the run configuration, so
+ * the same input is reproducible bit for bit.</p>
  *
- * <p>契约：延后的作业仍留在调度器就绪队列里，由
- * {@link DeferralAwareSchedulingAlgorithm#getNextWakeSeconds()} 给出的唤醒事件重新
- * 触发调度周期；{@link org.workflowsim.WorkflowScheduler} 负责排该事件，并对
- * "既压后又没有唤醒时刻"的死锁形态显式失败。</p>
+ * <p>Contract: a deferred job stays in the scheduler ready queue, and the wake-up event
+ * returned by {@link DeferralAwareSchedulingAlgorithm#getNextWakeSeconds()} re-triggers the
+ * scheduling cycle; {@link org.workflowsim.WorkflowScheduler} schedules that event and fails
+ * explicitly on the deadlock shape "deferred but no wake-up instant".</p>
  */
 public final class CarbonWindowDeferSchedulingAlgorithm extends BaseSchedulingAlgorithm
         implements DeferralAwareSchedulingAlgorithm {
 
-    /** 已被压后过的作业 id：每个作业至多压后一次（饥饿上界）。 */
+    /** Ids of jobs already deferred: each job is deferred at most once (starvation bound). */
     private final Set<Integer> deferredOnce = new HashSet<Integer>();
 
     private double nextWakeSeconds = Double.POSITIVE_INFINITY;
@@ -81,7 +89,10 @@ public final class CarbonWindowDeferSchedulingAlgorithm extends BaseSchedulingAl
         dispatch(ready);
     }
 
-    /** 普通在线派发：FCFS 到最小的空闲且兼容 VM（与 FCFS 同序，便于对照）。 */
+    /**
+     * Ordinary online dispatch: FCFS onto the smallest idle compatible VM (same order as
+     * FCFS, so the two can be compared).
+     */
     private void dispatch(List<Cloudlet> ready) {
         List<CondorVM> vms = sortedVmsById();
         for (Cloudlet cloudlet : ready) {
@@ -101,7 +112,10 @@ public final class CarbonWindowDeferSchedulingAlgorithm extends BaseSchedulingAl
         }
     }
 
-    /** 只有"全部就绪作业都还没压后过"时才整体压后——避免部分压后造成的乱序与饥饿。 */
+    /**
+     * Defer the whole ready set only when every ready job has not been deferred yet --
+     * partial deferral would cause reordering and starvation.
+     */
     private boolean canDefer(List<Cloudlet> ready) {
         for (Cloudlet cloudlet : ready) {
             if (deferredOnce.contains(Integer.valueOf(cloudlet.getCloudletId()))) {
@@ -112,10 +126,11 @@ public final class CarbonWindowDeferSchedulingAlgorithm extends BaseSchedulingAl
     }
 
     /**
-     * 找当前时刻之后第一个绿色功率更高的窗口。
+     * Find the first window after the current instant whose green power is strictly higher.
      *
-     * @return 该窗口；当前已在高点、或其后没有更干净的窗口、或候选窗口起点不晚于
-     *     当前时刻（无法推进时钟）时返回 {@code null}
+     * @return that window; {@code null} when the current instant is already at the peak, no
+     *     cleaner window follows it, or the candidate window starts no later than the current
+     *     instant (so the clock cannot advance)
      */
     private static PlatformProfile.CarbonWindow nextCleanerWindow(
             List<PlatformProfile.CarbonWindow> windows, double now) {
@@ -134,7 +149,10 @@ public final class CarbonWindowDeferSchedulingAlgorithm extends BaseSchedulingAl
         return best;
     }
 
-    /** 覆盖 {@code now} 的窗口绿色功率；窗口未覆盖（历史/边界形态）时视为无穷大（不触发压后）。 */
+    /**
+     * Green power of the window that covers {@code now}; when no window covers it (historical
+     * or boundary shape) the value is treated as infinite, which triggers no deferral.
+     */
     private static double greenWattsAt(List<PlatformProfile.CarbonWindow> windows, double now) {
         for (PlatformProfile.CarbonWindow window : windows) {
             if (now >= window.getStartSeconds() && now < window.getEndSeconds()) {
@@ -154,7 +172,10 @@ public final class CarbonWindowDeferSchedulingAlgorithm extends BaseSchedulingAl
         return deferredJobCount;
     }
 
-    /** 供证据侧读取的"压后过的作业数"（跨周期累计，只用于观察）。 */
+    /**
+     * Number of jobs deferred so far, read by the evidence side (accumulated across cycles,
+     * for observation only).
+     */
     public int getTotalDeferredJobs() {
         return deferredOnce.size();
     }

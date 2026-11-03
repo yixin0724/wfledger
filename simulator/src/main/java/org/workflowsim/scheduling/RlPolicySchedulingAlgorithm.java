@@ -14,18 +14,22 @@ import org.workflowsim.rl.RlPolicy;
 import org.workflowsim.rl.RlPolicyRegistry;
 
 /**
- * R4 RL 轨道的策略驱动调度器：每次 ready-batch 更新向已注册的
- * {@link RlPolicy} 请求 Job→VM 动作并执行。
+ * Policy-driven scheduler of the R4 RL track: each ready-batch update asks the registered
+ * {@link RlPolicy} for Job-to-VM actions and executes them.
  *
- * <p>执行契约与 ready-batch 调度器一致——只考虑当前就绪 Job，一次更新内每台
- * VM 至多接收一个 Job。策略动作按观测中的 Job 到达序与 VM ID 升序解释；
- * 动作指向忙/不兼容/本轮已占用 VM 时跳过该 Job（保持就绪，下次更新重新决策）。
- * 策略有义务最终给出可执行动作；持续跳过导致的停滞由平台看门狗显式拦截。</p>
+ * <p>The execution contract matches the ready-batch schedulers -- only currently ready Jobs
+ * are considered, and each VM receives at most one Job per update. Policy actions are
+ * interpreted by the Job arrival order of the observation and by ascending VM ID; when an
+ * action points at a busy, incompatible, or already-used VM in this round, that Job is
+ * skipped (it stays ready and is decided again in the next update). A policy is obliged to
+ * eventually return an executable action; a stall caused by persistent skipping is
+ * intercepted explicitly by the platform watchdog.</p>
  *
- * <p>策略实例经 {@link RlPolicyRegistry} 送达（调度器按枚举构造，无构造器通道），
- * 决策轨迹同样写回注册表供 episode 收集。无注册策略时以
- * {@link SimulationConfigurationException} 显式失败——RL_POLICY 必须经
- * {@code RlEnvironment} 运行。</p>
+ * <p>Policy instances arrive through {@link RlPolicyRegistry} (the scheduler is constructed by
+ * enum and has no constructor channel), and decision records are written back to the same
+ * registry for episode collection. With no registered policy it fails explicitly with
+ * {@link SimulationConfigurationException} -- RL_POLICY must run through
+ * {@code RlEnvironment}.</p>
  */
 public class RlPolicySchedulingAlgorithm extends BaseSchedulingAlgorithm {
 

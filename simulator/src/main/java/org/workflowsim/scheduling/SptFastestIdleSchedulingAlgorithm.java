@@ -23,25 +23,32 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * SPT-Fastest-Idle: 选最短任务(Shortest Processing Time),分配到最快的空闲 VM。
+ * SPT-Fastest-Idle: picks the shortest Job (Shortest Processing Time) and assigns it to the
+ * fastest idle VM.
  *
- * <p>原名为 MinMinSchedulingAlgorithm,但其行为不符合 Braun et al. 2001 的经典
- * Min-Min 定义(先计算每个任务在所有机器上的 ECT,再从候选中选全局最小)。
- * 本实现是在线 SPT 变体,与经典 Min-Min 不同。</p>
+ * <p>It was originally named MinMinSchedulingAlgorithm, but its behavior does not match the
+ * classical Min-Min definition of Braun et al. 2001 (first compute the ECT of every task on
+ * every machine, then take the global minimum among the candidates). This implementation is
+ * an online SPT variant, distinct from classical Min-Min.</p>
  *
- * <p>ready-batch Min-Min 请参考 {@link ReadyBatchMinMinSchedulingAlgorithm}。</p>
+ * <p>For ready-batch Min-Min see {@link ReadyBatchMinMinSchedulingAlgorithm}.</p>
  *
- * <p><strong>MIPS 度量说明：</strong>作业固定占用 1 个 PE，"最快 VM"按单 PE 速度
- * {@code getMips()} 比较（历史实现用 {@code getCurrentRequestedTotalMips()}
- * 在多 PE 异构配置下会系统性选错 VM），与 ReadyBatch 系列度量一致。</p>
+ * <p><strong>MIPS metric:</strong> a Job always occupies 1 PE, so "fastest VM" compares the
+ * single-PE speed {@code getMips()} (the historical implementation used
+ * {@code getCurrentRequestedTotalMips()}, which systematically picks the wrong VM under
+ * multi-PE heterogeneous configurations); this is consistent with the metric of the
+ * ReadyBatch family.</p>
  *
- * <p><strong>排序键与平局注记（复核轮 2026-09 确认）：</strong>任务排序键是 MI
- * （{@code getCloudletLength()}）而非估算执行时间——异构 VM 下与教科书 SPT
- * 略有差别；"最快空闲 VM"遍历原始 {@code vmList}，同 MIPS 平局取决于传入顺序。
- * 作业固定 1 PE 时差异不可达，本类不在标准研究入口内，故不修复。</p>
+ * <p><strong>Sort key and tie notes (confirmed in review round 2026-09):</strong> the task
+ * sort key is MI ({@code getCloudletLength()}) rather than the estimated execution time,
+ * which differs slightly from textbook SPT on heterogeneous VMs; "fastest idle VM" traverses
+ * the raw {@code vmList}, so equal-MIPS ties depend on the incoming order. With Jobs fixed at
+ * 1 PE the difference is unreachable, and this class is outside the standard research entry
+ * point, so it is not fixed.</p>
  *
- * <p><strong>兼容边界：</strong>它仅供历史直接 API 探索，标准研究入口不接受历史
- * {@code MINMIN} 标签；不得将其结果表述为经典 Min-Min。</p>
+ * <p><strong>Compatibility boundary:</strong> it serves historical direct API exploration
+ * only; the standard research entry point does not accept the historical {@code MINMIN}
+ * label, and its results must not be presented as classical Min-Min.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0

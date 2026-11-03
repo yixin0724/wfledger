@@ -11,10 +11,11 @@ import org.workflowsim.Job;
 import org.workflowsim.utils.Parameters.ClassType;
 
 /**
- * 一次运行私有的按 VM 分组的静态 Job 顺序。
+ * Per-VM static Job order, private to one run.
  *
- * <p>完整静态 DAG 规划器会写入每台 VM 的 Job 序列；仅产生 Task-to-VM 映射的规划器则
- * 有意返回空计划。该对象只约束静态分派顺序，不把模型解释为现实机器队列。</p>
+ * <p>A full static DAG planner writes the Job sequence of each VM; planners that only produce
+ * a Task-to-VM mapping deliberately return an empty plan. This object constrains the static
+ * dispatch order only and does not interpret the model as a real machine queue.</p>
  */
 public final class StaticSchedulePlan {
 
@@ -36,16 +37,17 @@ public final class StaticSchedulePlan {
         }
     }
 
-    /** 为仅映射或历史兼容规划器返回空计划。 */
+    /** Returns the empty plan, for mapping-only or historical-compatibility planners. */
     public static StaticSchedulePlan empty() {
         return EMPTY;
     }
 
     /**
-     * 在无聚类将规划 Task 转换为 Job 后构造计划。
+     * Builds a plan after a clustering-free conversion of planned Tasks into Jobs.
      *
-     * <p>如果没有任一计算 Job 带有计划开始时间，则该运行仍只是映射，不强制 Job 顺序。
-     * 同一 VM 的相同开始时间按 Job ID 升序打破平局。</p>
+     * <p>If no compute Job carries a planned start time, the run is still mapping-only and Job
+     * order is not enforced. Equal start times on the same VM are broken by ascending Job
+     * ID.</p>
      */
     public static StaticSchedulePlan fromJobs(List<Job> jobs) {
         Map<Integer, List<Job>> grouped = new LinkedHashMap<Integer, List<Job>>();
@@ -104,7 +106,7 @@ public final class StaticSchedulePlan {
         return ids != null && ids.contains(job.getCloudletId());
     }
 
-    /** 返回该静态计划下当前唯一可由指定 VM 分派的计算 Job。 */
+    /** Returns the only compute Job that the given VM may dispatch next under this static plan. */
     public Integer nextExpectedJobId(int vmId) {
         List<Integer> ids = jobIdsByVm.get(vmId);
         if (ids == null) {
@@ -114,7 +116,7 @@ public final class StaticSchedulePlan {
         return index < ids.size() ? ids.get(index) : null;
     }
 
-    /** 仅在预期 Job 已实际分派后推进对应 VM 的计划游标。 */
+    /** Advances the plan cursor of the VM only after the expected Job has actually been dispatched. */
     public void markDispatched(Job job) {
         Integer expected = nextExpectedJobId(job.getVmId());
         if (expected == null || expected.intValue() != job.getCloudletId()) {

@@ -7,25 +7,29 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * 面向 WorkflowSim 在线 ready-batch 生命周期的 Max-Min 调度器。
+ * Max-Min scheduler for the WorkflowSim online ready-batch lifecycle.
  *
- * <p>它只考虑当前 ready Job 和空闲兼容 VM，不是为独立任务批次维护未来 VM 可用时间的
- * 静态 Max-Min 映射器。</p>
+ * <p>It considers only currently ready Jobs and idle compatible VMs; it is not a static
+ * Max-Min mapper that maintains future VM availability times for an independent-task
+ * batch.</p>
  *
- * <p>算法定义:</p>
+ * <p>Algorithm definition:</p>
  * <ol>
- *   <li>对每个未调度任务,计算其在所有机器上的最早完成时间(ECT)</li>
- *   <li>取每个任务的最小 ECT</li>
- *   <li>从所有任务的最小 ECT 中,选全局最大者(先调度大任务)</li>
- *   <li>将该任务分配到对应机器</li>
- *   <li>重复直到所有任务被分配或本次更新中没有空闲 VM</li>
+ *   <li>For each unscheduled task, compute its earliest completion time on every machine
+ *       (ECT)</li>
+ *   <li>Take the minimum ECT of each task</li>
+ *   <li>Among the minimum ECTs of all tasks, select the global maximum (large tasks are
+ *       scheduled first)</li>
+ *   <li>Assign that task to the corresponding machine</li>
+ *   <li>Repeat until all tasks are assigned or no idle VM remains in this update</li>
  * </ol>
  *
- * <p>与 Min-Min 的区别仅在第 3 步：Max-Min 选最大，Min-Min 选最小。相同任务最小 ECT
- * 时选择较小 VM ID；相同全局最大 ECT 时选择较小 Job ID。Max-Min 倾向于先调度大任务，
- * 使小任务可在后续空闲资源上填充。</p>
+ * <p>The only difference from Min-Min is step 3: Max-Min takes the maximum, Min-Min the
+ * minimum. An equal task minimum ECT selects the smaller VM ID; an equal global maximum ECT
+ * selects the smaller Job ID. Max-Min tends to schedule large tasks first, so that small
+ * tasks can fill resources that become idle later.</p>
  *
- * <p>参考: Braun, T.D., et al. "A Comparison of Eleven Static Heuristics for
+ * <p>Reference: Braun, T.D., et al. "A Comparison of Eleven Static Heuristics for
  * Mapping a Class of Independent Tasks onto Heterogeneous Distributed Computing
  * Systems." JPDC 2001.</p>
  */
@@ -40,7 +44,7 @@ public class ReadyBatchMaxMinSchedulingAlgorithm extends BaseSchedulingAlgorithm
         int scheduledCount = 0;
 
         while (scheduledCount < taskCount) {
-            double globalMaxEct = -1.0; // Max-Min 选最大
+            double globalMaxEct = -1.0; // Max-Min takes the maximum
             int globalMaxTaskIdx = -1;
             int globalMaxVmIdx = -1;
 
@@ -64,7 +68,7 @@ public class ReadyBatchMaxMinSchedulingAlgorithm extends BaseSchedulingAlgorithm
                     }
                 }
 
-                // Max-Min:从各任务的最小 ECT 中选最大
+                // Max-Min: take the maximum among the per-task minimum ECTs
                 if (bestVmForTask != -1
                         && (minEctForTask > globalMaxEct
                                 || (Double.compare(minEctForTask, globalMaxEct) == 0

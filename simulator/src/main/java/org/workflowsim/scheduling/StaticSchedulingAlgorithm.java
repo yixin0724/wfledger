@@ -29,11 +29,13 @@ import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.utils.Parameters.ClassType;
 
 /**
- * 静态映射结果的运行时分派器。
+ * Runtime dispatcher for a static mapping result.
  *
- * <p>它不重新选择 Task-to-VM 映射，而是依赖规划器预先设置 VM ID，并检查计算 Job 是否
- * 已映射。只有当 {@link StaticSchedulePlan} 非空时才按规划器产生的每 VM 顺序放行计算 Job；
- * 仅映射规划器和历史规划器保留空计划，仍按引擎的普通 ready/idle 生命周期分派。</p>
+ * <p>It does not reselect the Task-to-VM mapping; it relies on the VM ID that the planner set
+ * in advance and checks whether the compute Job is already mapped. Only when
+ * {@link StaticSchedulePlan} is non-empty are compute Jobs released in the per-VM order that
+ * the planner produced; mapping-only planners and historical planners keep an empty plan and
+ * are still dispatched through the engine's ordinary ready/idle lifecycle.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -87,14 +89,16 @@ public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             return;
         }
 
-        // 模型生成的非计算 Job（当前为 stage-in）不属于 Task 规划器的计划，必须先行分派。
+        // Model-generated non-compute Jobs (currently stage-in) are not part of the Task
+        // planner's plan and must be dispatched first.
         dispatchInPlannedOrder(vmIds, mId2Vm, fallbackRewrittenJobIds, fallbackVmId);
     }
 
-    /** run() 的绑定校验与 fallback 阶段（PLAT-15 记录语义逐字搬运转写）。 */
+    /** Binding validation and fallback stage of run(); a verbatim port of the PLAT-15 recording semantics. */
     private List<Integer> applyBindingRules(Map<Integer, CondorVM> mId2Vm, int fallbackVmId) {
-        // PLAT-15：记录被 fallback 改写 VM 映射的 Job。当这类 Job 后续在强制顺序计划
-        // 校验中失败时，错误信息能指出真实根因（缺少规划器映射），而不是只报表象。
+        // PLAT-15: record the Jobs whose VM mapping was rewritten by the fallback. When such a
+        // Job later fails the strict-order plan check, the error message can point at the true
+        // root cause (a missing planner mapping) instead of reporting only the symptom.
         List<Integer> fallbackRewrittenJobIds = new ArrayList<Integer>();
         for (Object item : getCloudletList()) {
             Cloudlet cloudlet = (Cloudlet) item;
@@ -125,20 +129,25 @@ public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         return fallbackRewrittenJobIds;
     }
 
-    /** run() 的强顺序计划派发阶段（PLAT-15 根因提示与逐 VM 期望 Job 派发逐字搬运转写）。 */
+    /**
+     * Strict-order planned dispatch stage of run(); a verbatim port of the PLAT-15 root-cause
+     * hint and of the per-VM expected-Job dispatch.
+     */
     private void dispatchInPlannedOrder(
             List<Integer> vmIds,
             Map<Integer, CondorVM> mId2Vm,
             List<Integer> fallbackRewrittenJobIds,
             int fallbackVmId) {
-        // 模型生成的非计算 Job（当前为 stage-in）不属于 Task 规划器的计划，必须先行分派。
+        // Model-generated non-compute Jobs (currently stage-in) are not part of the Task
+        // planner's plan and must be dispatched first.
         for (Object item : getCloudletList()) {
             Job job = (Job) item;
             if (job.getClassType() != ClassType.COMPUTE.value) {
                 scheduleIfIdle(job, mId2Vm);
             } else if (!staticSchedulePlan.isPlanned(job)) {
-                // PLAT-15：区分两种根因——规划器遗漏映射（Job 先被 fallback 改写）
-                // 与计划本身缺条目，避免误导性错误信息。
+                // PLAT-15: separate the two root causes -- a planner omission (the Job was
+                // first rewritten by the fallback) versus a missing entry in the plan itself --
+                // so that the error message does not mislead.
                 String rootCauseHint = fallbackRewrittenJobIds.contains(job.getCloudletId())
                         ? " Root cause: the job arrived without a planner VM mapping and was"
                                 + " rewritten to fallback VM " + fallbackVmId + "; the planner must"

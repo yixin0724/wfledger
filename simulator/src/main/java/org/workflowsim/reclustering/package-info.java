@@ -1,7 +1,9 @@
 /**
- * 任务或作业失败后的重聚类逻辑。
+ * Reclustering logic applied after a task or job failure.
  *
- * <p>本包根据失败记录生成后续作业或估计合适的聚类规模。其行为依赖于所选的故障、
- * 聚类和调度模型，应作为受控实验条件解释，而非真实恢复系统的性能预测。</p>
+ * <p>This package derives follow-up jobs from the failure record or estimates a suitable
+ * clustering size. Its behavior depends on the selected failure, clustering, and
+ * scheduling models, so it must be interpreted as a controlled experimental condition
+ * rather than as a performance prediction for a real recovery system.</p>
  */
 package org.workflowsim.reclustering;

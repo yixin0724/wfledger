@@ -20,10 +20,11 @@ package org.workflowsim.clustering;
 import java.util.ArrayList;
 
 /**
- * 聚类过程使用的任务列表及其层级信息容器。
+ * Container for a task list used by the clustering process, together with its level
+ * information.
  *
- * <p>与普通 {@link ArrayList} 相比，该类型额外保存同一批任务对应的 DAG 深度，
- * 供按层聚类算法进行分组。</p>
+ * <p>Unlike a plain {@link ArrayList}, this type additionally stores the DAG depth shared
+ * by the tasks of the batch, which level-based clustering algorithms use for grouping.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -32,19 +33,19 @@ import java.util.ArrayList;
 public class AbstractArrayList {
 
     /**
-     * 当前层的任务列表。
+     * Task list of the current level.
      */
     private final ArrayList taskList;
     /**
-     * 当前层的 DAG 深度。
+     * DAG depth of the current level.
      */
     private final int depth;
 
     /**
-     * 创建任务列表及其 DAG 深度的容器。
+     * Creates a container for a task list and its DAG depth.
      *
-     * @param taskList 任务列表
-     * @param depth 这些任务所在的 DAG 深度
+     * @param taskList the task list
+     * @param depth the DAG depth at which these tasks reside
      */
     public AbstractArrayList(ArrayList taskList, int depth) {
         this.taskList = taskList;
@@ -53,24 +54,24 @@ public class AbstractArrayList {
     }
 
     /**
-     * 返回任务列表。
+     * Returns the task list.
      *
-     * @return 任务列表
+     * @return the task list
      */
     public ArrayList getArrayList() {
         return this.taskList;
     }
 
     /**
-     * 返回这些任务所在的 DAG 深度。
+     * Returns the DAG depth at which these tasks reside.
      *
-     * @return DAG 深度
+     * @return the DAG depth
      */
     public int getDepth() {
         return this.depth;
     }
     /**
-     * 聚类遍历使用的已检查标记。
+     * Already-checked flag used by the clustering traversal.
      */
     public boolean hasChecked;
 }

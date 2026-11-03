@@ -52,11 +52,13 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 
 /**
- * 工作流仿真的解析与规划入口实体。
+ * Parsing and planning entry-point entity of the workflow simulation.
  *
- * <p>仿真从该实体开始：解析输入任务 DAG，按配置可选地执行离线规划，计算供平衡聚类使用的
- * 影响度，再将任务交给 {@link ClusteringEngine}。规划器只负责任务到 VM 的静态映射或
- * 静态顺序决定；实际派发仍由工作流引擎和调度器完成。</p>
+ * <p>A simulation starts at this entity: it parses the input task DAG, optionally runs offline
+ * planning according to the configuration, computes the impact factor consumed by balanced
+ * clustering, and then hands the tasks to {@link ClusteringEngine}. The planner owns only the
+ * static task-to-VM mapping or the static order decision; the actual dispatch is still performed
+ * by the workflow engine and the scheduler.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -65,11 +67,11 @@ import org.workflowsim.utils.Parameters.PlanningAlgorithm;
  */
 public final class WorkflowPlanner extends SimEntity {
 
-    /** 当前待规划、待聚类的任务列表。 */
+    /** Tasks currently waiting for planning and clustering. */
     protected List<Task> taskList;
-    /** 当前工作流输入解析器。 */
+    /** Current workflow input parser. */
     protected WorkflowParser parser;
-    /** 下游聚类引擎实体编号。 */
+    /** Entity ID of the downstream clustering engine. */
     private int clusteringEngineId;
 
     private ClusteringEngine clusteringEngine;
@@ -77,7 +79,7 @@ public final class WorkflowPlanner extends SimEntity {
     private PlanningContext planningContext;
     private List<Task> parsedTaskSnapshot = Collections.emptyList();
     private SharedStorageDagPlanTrace sharedStorageDagPlanTrace;
-    /** 可选的任务×VM 异构执行成本矩阵；为 null 时平台保持 MI/mips 缩放。 */
+    /** Optional task-by-VM heterogeneous execution cost matrix; when null the platform keeps MI/mips scaling. */
     private org.workflowsim.utils.TaskCostMatrix taskCostMatrix;
 
     private org.workflowsim.data.v2.CoherentDataflowRuntime coherentDataflow;
@@ -91,21 +93,22 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 创建一个使用单个运行时调度器的工作流规划实体。
+     * Creates a workflow planner entity that uses a single runtime scheduler.
      *
-     * @param name CloudSim 实体名称
-     * @throws Exception 当 CloudSim 实体无法创建时
+     * @param name CloudSim entity name
+     * @throws Exception when the CloudSim entity cannot be created
      */
     public WorkflowPlanner(String name) throws Exception {
         this(name, 1);
     }
 
     /**
-     * 创建工作流规划实体及其下游聚类/执行链。
+     * Creates a workflow planner entity together with its downstream clustering and execution
+     * chain.
      *
-     * @param name CloudSim 实体名称
-     * @param schedulers 下游运行时调度器数量
-     * @throws Exception 当 CloudSim 实体无法创建时
+     * @param name CloudSim entity name
+     * @param schedulers number of downstream runtime schedulers
+     * @throws Exception when the CloudSim entity cannot be created
      */
     public WorkflowPlanner(String name, int schedulers) throws Exception {
         super(name);
