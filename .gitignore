@@ -21,6 +21,9 @@ scripts/__pycache__/
 # WfCommonsCliSmokeIntegrationTest no longer skip in a standard build (including a fresh CI
 # checkout). A directory-level ignore cannot re-include inner files, hence the /* + ! ladder.
 datasets/wfinstances/*
+# AUD-F13: the family integrity indexes ship with the repository even though the
+# corpora behind them do not.
+!datasets/wfinstances/INDEX.json
 !datasets/wfinstances/v1.5/
 datasets/wfinstances/v1.5/*
 !datasets/wfinstances/v1.5/makeflow/
@@ -40,6 +43,7 @@ datasets/wfinstances/v1.5/pegasus/srasearch/*
 datasets/wfinstances/v1.5/pegasus/montage/*
 !datasets/wfinstances/v1.5/pegasus/montage/montage-chameleon-2mass-005d-001.json
 datasets/wfformat/*
+!datasets/wfformat/INDEX.json
 !datasets/wfformat/montage/
 datasets/wfformat/montage/*
 !datasets/wfformat/montage/n100/

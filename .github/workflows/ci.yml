@@ -40,6 +40,11 @@ jobs:
           python3 -B scripts/test-check-language.py
           python3 -B scripts/check-language.py
 
+      - name: Verify dataset indexes (AUD-F13)
+        run: |
+          python3 -B scripts/test-check-dataset-indexes.py
+          python3 -B scripts/check-dataset-indexes.py
+
       - name: Verify independent evidence and statistics checkers
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py
 

@@ -1,0 +1,43 @@
+{
+  "description": "Top-level integrity and provenance index for the three workflow input families.",
+  "created_at": "2026-11-03T17:30:00+08:00",
+  "chain": "Each family index records the sha256 of every file it lists; this index records the sha256 of each family index. scripts/check-dataset-indexes.py fails on any recorded hash mismatch, on any file present under datasets/ that no index lists, and on any tracked-but-unlisted file.",
+  "families": [
+    {
+      "family": "dax",
+      "description": "Classic Pegasus DAX inputs (Bharathi et al. 2008 characterization), DAX 2.1/3.3 XML.",
+      "index": "dax/INDEX.json",
+      "index_sha256": "f1834491a75180861e78c97d9a632d50ee956e609eb36eebe190a2f2d15ff352",
+      "n_instances": 20,
+      "n_auxiliary_files": 2,
+      "retained_in_standard_checkout": "All 22 files: 20 instances plus the HEFT paper example and the preserved pre-fix Epigenomics_997 original.",
+      "boundary": "Synthetic characterization workflows; the paper example is not counted among the 20 instances."
+    },
+    {
+      "family": "wfformat",
+      "description": "WfCommons WfGen synthetic instances (WfFormat JSON) with generation manifests.",
+      "index": "wfformat/INDEX.json",
+      "index_sha256": "e2351d62958d2ead3afdf198fd35b24ac2b1ae26343558f5bc93f4b0a436f862",
+      "n_instances": 42,
+      "n_auxiliary_files": 0,
+      "retained_in_standard_checkout": "1 of 42 instance JSONs (montage/n100/montage-100-000.json); its generation manifest and the remaining instances are prepared separately.",
+      "boundary": "Structures, runtimes, and file sizes come from learned distributions, not raw observations of a production execution; this corpus must not be mixed with real-execution-derived inputs into one workload population."
+    },
+    {
+      "family": "wfinstances",
+      "description": "WfInstances v1.5 WfFormat JSON derived from real executions.",
+      "index": "wfinstances/INDEX.json",
+      "index_sha256": "23f1c1d548da55f1011cdc28f69b9d8c02c26c9635dc2261b5493e1d35dfec8e",
+      "n_instances": 180,
+      "n_auxiliary_files": 25,
+      "retained_in_standard_checkout": "4 of 180 inputs; the remaining corpus is prepared separately.",
+      "upstream": {
+        "repository": "https://github.com/wfcommons/WfInstances.git",
+        "tag": "v1.5",
+        "commit": "1fd739359dd3ef2d68aa4e5aefaf11df43c617ae"
+      },
+      "boundary": "Derived from real executions, but not a source-platform trace replay: source machines, core counts, memory, commands, timestamps, and observed makespan are not replayed automatically. Structure validation of the snapshot does not imply that every input passes the standard simulation pipeline."
+    }
+  ],
+  "checker": "scripts/check-dataset-indexes.py"
+}

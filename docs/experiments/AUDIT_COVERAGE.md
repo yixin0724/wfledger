@@ -4,8 +4,8 @@ This page answers one question: **what has actually been verified, by which comm
 deliberately out of scope.** It is a ledger of coverage, not a claim that no defect exists. Every
 row names the test or command that fails when the property breaks.
 
-Last sweep: 2026-11-03 (review rounds 1-7, the dedicated coverage goal, and the AUD-F05 validator
-recompute).
+Last sweep: 2026-11-03 (review rounds 1-7, the dedicated coverage goal, the AUD-F05 validator
+recompute, and the AUD-F13 dataset index chain).
 
 ## 1. Evidence dimensions: a positive case and a tamper case each
 
@@ -20,6 +20,7 @@ recompute).
 | Storage lifecycle V3 | CI fixtures + `_storage_lifecycle_audit` | `test-storage-lifecycle.py` negative cases |
 | Event stream | `EventStream` ordering/sequence/count checks | out-of-order time, duplicate sequence, blank line, eventCount, first/lastSequence — all refused (Python self-test + Java validator test) |
 | Simulation metrics v4 | Java validator recompute (AUD-F05) + `verify-study-evidence.py` derived metrics | consistently-tampered `makespanSeconds` / `meanJobVmQueueWaitingTimeSeconds`, shifted terminal clock, broken start derivation, uncovered executed job — all refused (Java validator test; Python auditor) |
+| Dataset integrity indexes | `check-dataset-indexes.py` passes over the standard checkout in CI and over the full local snapshots | 19-case self-test: digest tampering, missing retained file, broken index chain, unindexed disk/Git file, count drift — all refused (AUD-F13) |
 
 ## 2. Rerun path: which tampering yields which verdict
 
@@ -101,6 +102,7 @@ mvn -Pjavadoc clean verify                                   # unit + integratio
 python3 -B scripts/check-docs.py                             # link/anchor validation
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py   # 38 auditor self-tests
 for t in scripts/test-*.py; do PYTHONDONTWRITEBYTECODE=1 python3 -B "$t"; done
+python3 -B scripts/check-dataset-indexes.py                   # dataset index integrity chain (AUD-F13)
 node scripts/verify-report.cjs <fixtures>/browser-fixtures.json     # offline report acceptance
 python3 -B scripts/mutation-gate.py --output <new>.json       # registered mutants
 ```

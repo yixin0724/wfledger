@@ -3,13 +3,16 @@
   "schema": "DAX 2.1 XML",
   "source": "Pegasus classic DAX (Bharathi et al. 2008), originally bundled as WorkflowSim-1.0/config/dax",
   "created_at": "2026-08-31T14:19:54.416095+08:00",
+  "updated_at": "2026-11-03T17:30:00+08:00",
   "n_instances": 20,
+  "n_auxiliary_files": 2,
   "instances": [
     {
       "family": "cybershake",
       "application": "CyberShake",
       "num_tasks": 100,
       "dax_xml": "cybershake/n100/CyberShake_100.dax",
+      "sha256": "183ac79c4ee80a6293adff71d8386e7538d31a9bd1b609b176d94b131b9fdb52",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -17,6 +20,7 @@
       "application": "CyberShake",
       "num_tasks": 1000,
       "dax_xml": "cybershake/n1000/CyberShake_1000.dax",
+      "sha256": "4314ae0e6bb43c3f74818306b600151c0614b62184295438350837217f1df95b",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -24,6 +28,7 @@
       "application": "CyberShake",
       "num_tasks": 30,
       "dax_xml": "cybershake/n30/CyberShake_30.dax",
+      "sha256": "230b9861c69cb9b04165b6d37952a39059aaa1a406350f6c03b238c81aa0228e",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -31,6 +36,7 @@
       "application": "CyberShake",
       "num_tasks": 50,
       "dax_xml": "cybershake/n50/CyberShake_50.dax",
+      "sha256": "9fbf8c6b6455abf74b4a5cd4800af76bdafcc0a13a210ab8ad3055166b228bc2",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -38,6 +44,7 @@
       "application": "Epigenomics",
       "num_tasks": 100,
       "dax_xml": "epigenomics/n100/Epigenomics_100.dax",
+      "sha256": "374521746417b18133682de21b654b84c32acde6332462c0ce916c4ba12c7f36",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -45,6 +52,7 @@
       "application": "Epigenomics",
       "num_tasks": 24,
       "dax_xml": "epigenomics/n24/Epigenomics_24.dax",
+      "sha256": "867696c4d3028eded842bec41c9ce3ef6ddceb3ccd925212f1282281101c7af1",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -52,6 +60,7 @@
       "application": "Epigenomics",
       "num_tasks": 46,
       "dax_xml": "epigenomics/n46/Epigenomics_46.dax",
+      "sha256": "994c4bea6c5709bcf7cc8f703a53eab9cbb9af049cf331c02735b8cd115040ed",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -59,6 +68,7 @@
       "application": "Epigenomics",
       "num_tasks": 997,
       "dax_xml": "epigenomics/n997/Epigenomics_997.dax",
+      "sha256": "2ed853db24126750a1bf427b5731d5fb18b6d31baf3d2088c14b310478bed628",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -66,6 +76,7 @@
       "application": "LIGO Inspiral",
       "num_tasks": 100,
       "dax_xml": "inspiral/n100/Inspiral_100.dax",
+      "sha256": "64e2bc60893d65f8347c436986841741d7ced1bd05435f67081707d4346decfa",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -73,6 +84,7 @@
       "application": "LIGO Inspiral",
       "num_tasks": 1000,
       "dax_xml": "inspiral/n1000/Inspiral_1000.dax",
+      "sha256": "6bb03f1e524af97d90425493fe52a74e38a7516bd15fd05ded85968acf2ebb17",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -80,6 +92,7 @@
       "application": "LIGO Inspiral",
       "num_tasks": 30,
       "dax_xml": "inspiral/n30/Inspiral_30.dax",
+      "sha256": "6d8773fecf8376fda8c5df5c33c527a2485c721371b11f476f4858e1e8f5229b",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -87,6 +100,7 @@
       "application": "LIGO Inspiral",
       "num_tasks": 50,
       "dax_xml": "inspiral/n50/Inspiral_50.dax",
+      "sha256": "af01a203c49ceefbb0820ceb514496d6034b91b1f3943f8f14b1bc149fd68ab7",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -94,6 +108,7 @@
       "application": "Montage",
       "num_tasks": 100,
       "dax_xml": "montage/n100/Montage_100.dax",
+      "sha256": "ac26318b5d34e8d4afa743ab6735d4daa2e8163b3493e5d640394f771220c6bf",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -101,6 +116,7 @@
       "application": "Montage",
       "num_tasks": 1000,
       "dax_xml": "montage/n1000/Montage_1000.dax",
+      "sha256": "720dfe953dcf54958f33ba33d2bdac8563c306081ff8a601ab6d14bdaeea70f5",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -108,6 +124,7 @@
       "application": "Montage",
       "num_tasks": 25,
       "dax_xml": "montage/n25/Montage_25.dax",
+      "sha256": "3c791f17b8e57a06e5e7afad57fffc625c0611caf168036efeaa18b1888bab19",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -115,6 +132,7 @@
       "application": "Montage",
       "num_tasks": 50,
       "dax_xml": "montage/n50/Montage_50.dax",
+      "sha256": "7fcbdcdc89c6d5c6afe0a86a0900b13a1c6debd2139033949bb7296539963454",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -122,6 +140,7 @@
       "application": "SIPHT",
       "num_tasks": 100,
       "dax_xml": "sipht/n100/Sipht_100.dax",
+      "sha256": "eea7555c160d9d3c1bcb92297ef715e6ceb32a3c3448d3aece95fb3d5d8e38de",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -129,6 +148,7 @@
       "application": "SIPHT",
       "num_tasks": 1000,
       "dax_xml": "sipht/n1000/Sipht_1000.dax",
+      "sha256": "69f7b3a52c5a030eaff23b90224b4b340dc2287f684e0c44c4f7f2c1f8fd87c4",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -136,6 +156,7 @@
       "application": "SIPHT",
       "num_tasks": 30,
       "dax_xml": "sipht/n30/Sipht_30.dax",
+      "sha256": "f9d6bcaf70a9b3f9e57bd599955da2dd90fa35b8c2b9daabea7e137e36534bb6",
       "source": "originally WorkflowSim-1.0/config/dax"
     },
     {
@@ -143,7 +164,20 @@
       "application": "SIPHT",
       "num_tasks": 60,
       "dax_xml": "sipht/n60/Sipht_60.dax",
+      "sha256": "36408cb17853caba79a743b2284207ed69d1ff8826b1c690818c12fd94ac8653",
       "source": "originally WorkflowSim-1.0/config/dax"
+    }
+  ],
+  "auxiliary_files": [
+    {
+      "file": "heft/heft-paper-example.dax",
+      "sha256": "5e64adc375e0249dafed5cfaba75f63332d3793fe017e57ea6c8da68e9d86fbd",
+      "role": "HEFT/CPOP paper example; not counted among the 20 indexed instances"
+    },
+    {
+      "file": "epigenomics/n997/Epigenomics_997.dax.orig",
+      "sha256": "e9fecca3453f31873e890c36afe7c6ef87f53f786bf70c39a011b68a1da7a2e4",
+      "role": "Upstream original preserved for source auditing; the indexed instance removes stray negative sizes and runtimes"
     }
   ]
 }
