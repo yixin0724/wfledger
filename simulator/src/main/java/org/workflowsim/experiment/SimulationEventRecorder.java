@@ -14,23 +14,54 @@ import org.workflowsim.Task;
  *
  * <p>An instance deliberately depends on no legacy static state of WorkflowSim, so that
  * consecutive sessions stay isolated from one another.</p>
+ *
+ * <p>Retention is explicitly capped: the default cap is {@link #DEFAULT_MAX_EVENTS}, and a
+ * run that would exceed it fails fast with an actionable exception instead of keeping an
+ * unbounded resident list (AUD-F07).</p>
  */
 public final class SimulationEventRecorder {
 
-    private static final SimulationEventRecorder DISABLED = new SimulationEventRecorder(false);
+    private static final SimulationEventRecorder DISABLED = new SimulationEventRecorder(false, 0);
+
+    /**
+     * Default retention cap: twice the largest event stream measured across the
+     * benchmark-standard-v1 evidence (9008 events, CyberShake_1000 contention, PEFT),
+     * rounded up to 20000. Recording aborts loudly when the cap is reached instead of
+     * keeping an unbounded resident list.
+     */
+    public static final int DEFAULT_MAX_EVENTS = 20000;
 
     private final boolean enabled;
+    private final int maxEvents;
     private final List<SimulationEvent> events;
     private long nextSequence;
 
-    /** Create an enabled recorder that serves a single simulation run. */
+    /** Create an enabled recorder that serves a single simulation run with the default cap. */
     public SimulationEventRecorder() {
-        this(true);
+        this(true, DEFAULT_MAX_EVENTS);
     }
 
-    private SimulationEventRecorder(boolean enabled) {
+    /**
+     * Create an enabled recorder that retains at most {@code maxEvents} events.
+     *
+     * @param maxEvents positive retention cap; recording fails fast when it is reached
+     * @throws IllegalArgumentException if the cap is not positive
+     */
+    public SimulationEventRecorder(int maxEvents) {
+        this(true, checkedCap(maxEvents));
+    }
+
+    private SimulationEventRecorder(boolean enabled, int maxEvents) {
         this.enabled = enabled;
+        this.maxEvents = maxEvents;
         this.events = enabled ? new ArrayList<SimulationEvent>() : Collections.<SimulationEvent>emptyList();
+    }
+
+    private static int checkedCap(int maxEvents) {
+        if (maxEvents <= 0) {
+            throw new IllegalArgumentException("Event retention cap must be positive: " + maxEvents);
+        }
+        return maxEvents;
     }
 
     /**
@@ -65,6 +96,7 @@ public final class SimulationEventRecorder {
      * @param job optional associated Job; when null, no Job, VM, class or task identifier is written
      * @param attributes optional additional attributes, copied when the event is recorded
      * @throws IllegalArgumentException if the event type is null or the simulation time is not finite
+     * @throws IllegalStateException if the retention cap is already full
      */
     public synchronized void record(
             SimulationEventType type, double simulationTime, Job job, Map<String, ?> attributes) {
@@ -73,6 +105,14 @@ public final class SimulationEventRecorder {
         }
         if (type == null || Double.isNaN(simulationTime) || Double.isInfinite(simulationTime)) {
             throw new IllegalArgumentException("Event type and finite simulation time are required");
+        }
+        if (events.size() >= maxEvents) {
+            throw new IllegalStateException("Simulation event recorder reached its capacity cap of "
+                    + maxEvents
+                    + " events; the event stream stays bounded instead of growing unbounded. The "
+                    + "largest benchmark-standard-v1 run records 9008 events. Construct "
+                    + "SimulationEventRecorder with a larger cap, or use disabled() when the "
+                    + "event stream is not needed.");
         }
         List<Integer> taskIds = new ArrayList<Integer>();
         Integer jobId = null;
