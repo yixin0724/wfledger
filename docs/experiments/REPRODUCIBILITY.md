@@ -76,14 +76,22 @@ These content hashes are not Git commit numbers, author authentication, or relea
   Since 2026-11-02 the declared event-sequence bounds (`events.firstSequence` /
   `lastSequence`) are bound to the event stream on both sides — the Java artifact validator and
   the independent Python auditor reject a manifest whose declared bounds disagree with the
-  JSONL, where previously only the event count was checked.
+  JSONL, where previously only the event count was checked. Since 2026-11-03 the Java artifact
+  validator additionally runs the registered independent recompute for manifest v4: the
+  F-006/F-007 event-contract cross-checks, plus `makespanSeconds` (the result end clock) and
+  `meanJobVmQueueWaitingTimeSeconds` (the mean of `max(0, startTime - submissionTime)` over
+  the COMPUTE job outcomes), each compared with the Python auditor's registered tolerance —
+  a wrong number that was consistently written into both the manifest and the sidecar no
+  longer survives validation, and legacy schemas keep the declared manifest authority.
 - **Declaration-only fields**: some recorded values have no independent counterpart in the
   artifacts, so no recompute can cross-check them — for example `platform.vms[].pes` (which enters
   no audited formula for the single-PE workloads here) and the `taskIds` of a stage-in bookkeeping
   envelope (empty by construction). Tampering with them is not detectable from the bundle alone;
   they are context, not evidence. Fields that *do* feed a recomputed quantity — energies, carbon,
   per-tier busy seconds, job intervals, tier identity, window table, event count and sequence
-  bounds — are all bound on both sides, as the cross-language fuzz sweep (2026-11-02) confirms.
+  bounds, and (for manifest v4) the makespan and queue-wait metric families — are all bound on
+  both sides, as the cross-language fuzz sweep (2026-11-02) and the Java validator recompute
+  (2026-11-03) confirm.
 - **Actual rerun**: rebuilds the configuration from the recorded conditions, re-executes under the current code, and compares; it is not restoring a historical process, reusing cached results, or substituting events for the simulation. Concrete support and the precise whitelist are in the [rerun difference contract](<RERUN_DIFF_CONTRACT.md>).
 - **Identity differences**: JVM/OS, source identity, paths, and wall-clock nanoseconds may change and must be recorded. Simulation time, input identity, algorithm tags, execution semantics, and non-whitelisted fields do not gain tolerance or exemptions on that account.
 

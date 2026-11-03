@@ -4,7 +4,8 @@ This page answers one question: **what has actually been verified, by which comm
 deliberately out of scope.** It is a ledger of coverage, not a claim that no defect exists. Every
 row names the test or command that fails when the property breaks.
 
-Last sweep: 2026-11-02 (review rounds 1-7 plus the dedicated coverage goal).
+Last sweep: 2026-11-03 (review rounds 1-7, the dedicated coverage goal, and the AUD-F05 validator
+recompute).
 
 ## 1. Evidence dimensions: a positive case and a tamper case each
 
@@ -18,6 +19,7 @@ Last sweep: 2026-11-02 (review rounds 1-7 plus the dedicated coverage goal).
 | File lifecycle V2 | CI `verify` fixtures + `_file_lifecycle_audit` | `test-file-lifecycle.py` negative cases |
 | Storage lifecycle V3 | CI fixtures + `_storage_lifecycle_audit` | `test-storage-lifecycle.py` negative cases |
 | Event stream | `EventStream` ordering/sequence/count checks | out-of-order time, duplicate sequence, blank line, eventCount, first/lastSequence — all refused (Python self-test + Java validator test) |
+| Simulation metrics v4 | Java validator recompute (AUD-F05) + `verify-study-evidence.py` derived metrics | consistently-tampered `makespanSeconds` / `meanJobVmQueueWaitingTimeSeconds`, shifted terminal clock, broken start derivation, uncovered executed job — all refused (Java validator test; Python auditor) |
 
 ## 2. Rerun path: which tampering yields which verdict
 
@@ -26,6 +28,7 @@ Measured against a real bundle with `RerunDiffExecutor` (see the fuzz harness no
 | Tampering | Verdict | Exit |
 |---|---|---|
 | `configuration.vmCount`, `schema`, artifact hash/size, missing artifact, `workflowProfile.taskCount` | `EVIDENCE_INVALID` | 5 |
+| consistently-tampered `metrics.makespanSeconds` (manifest + sidecar in step) | `EVIDENCE_INVALID` since 2026-11-03 (AUD-F05 validator recompute; previously reached the diff and reported `DIVERGED`) | 5 |
 | input `sha256` | `INPUT_HASH_MISMATCH` | 3 |
 | `platform.vms[].mips`, `energyMetrics`, scheduling label, or `rootSeed` on a stochastic workload | `DIVERGED` | 1 |
 | malformed tier table, unknown/non-string `frequencyPolicy`, windowless deferral label | `RECONSTRUCTION_REJECTED` | 4 |

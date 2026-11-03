@@ -152,8 +152,17 @@ class RerunDiffExecutorTest {
                 .anyMatch(change -> "/configuration/workflowPaths/0".equals(change.getPointer())));
     }
 
+    /**
+     * AUD-F05 (2026-11-03): a metrics value that contradicts the bundle's own result records is
+     * invalid evidence on its face. The consistent makespan tampering that previously survived
+     * the cross-file checks and was only caught by the rerun diff (DIVERGED, pointer
+     * /metrics/makespanSeconds) is now refused at validation, before any rerun. The refusal
+     * still names the exact recomputed field; the rerun keeps its role as the ultimate check
+     * for a fully consistent forgery and for condition tampering that legitimately changes the
+     * rerun's computed metrics.
+     */
     @Test
-    void tamperedManifestMakespanReportsDivergedWithExactPointer() throws Exception {
+    void tamperedManifestMakespanIsRefusedAsInvalidEvidence() throws Exception {
         Path run = copyFixtureTo("tampered");
         double original = readManifest(run)
                 .getAsJsonObject("metrics")
@@ -163,25 +172,17 @@ class RerunDiffExecutorTest {
 
         RerunReport report = RerunDiffExecutor.execute(run, tempDir.resolve("tampered-out"));
 
-        assertEquals(RerunVerdict.DIVERGED, report.getVerdict());
-        assertEquals(1, report.getExitCode());
-        // Divergence does not hinder the rerun itself: the three rerun artifacts (manifest, metrics,
-        // events) are still written to disk.
-        assertTrue(Files.exists(tempDir.resolve("tampered-out/rerun/result.manifest.json")));
-        assertEquals(1, report.getCoreDivergences().size());
-        assertEquals(
-                "/metrics/makespanSeconds", report.getCoreDivergences().get(0).getPointer());
+        assertEquals(RerunVerdict.EVIDENCE_INVALID, report.getVerdict());
+        assertEquals(5, report.getExitCode());
+        assertTrue(report.getFailureReason().contains("makespanSeconds"), report.getFailureReason());
+        assertFalse(Files.exists(tempDir.resolve("tampered-out/rerun")));
+        assertTrue(Files.exists(tempDir.resolve("tampered-out").resolve(RerunDiffExecutor.REPORT_JSON_NAME)));
 
         JsonObject json = JsonParser.parseString(
                         read(tempDir.resolve("tampered-out").resolve(RerunDiffExecutor.REPORT_JSON_NAME)))
                 .getAsJsonObject();
-        assertEquals("DIVERGED", json.get("verdict").getAsString());
-        JsonArray divergences = json.getAsJsonArray("coreDivergences");
-        assertEquals(1, divergences.size());
-        JsonObject divergence = divergences.get(0).getAsJsonObject();
-        assertEquals("/metrics/makespanSeconds", divergence.get("pointer").getAsString());
-        assertNotNull(divergence.get("original").getAsString());
-        assertNotNull(divergence.get("rerun").getAsString());
+        assertEquals("EVIDENCE_INVALID", json.get("verdict").getAsString());
+        assertTrue(json.get("failureReason").getAsString().contains("makespanSeconds"));
     }
 
     @Test
@@ -310,10 +311,11 @@ class RerunDiffExecutorTest {
     }
 
     /**
-     * Consistent makespan tampering: rewrites the inline manifest metrics, the metrics sidecar and
-     * the artifacts hash/size in step. The cross-file validation of the stage 1 reader therefore
-     * still passes, and the tampering reaches the diff comparison stage -- rewriting only the
-     * manifest would be intercepted early as EVIDENCE_INVALID.
+     * Consistent makespan tampering: rewrites the inline manifest metrics, the metrics sidecar
+     * and the artifacts hash/size in step, so the cross-file hash/size/equality checks still
+     * pass. Since the AUD-F05 (2026-11-03) independent recompute, this tampering no longer
+     * reaches the diff comparison stage either: a metrics value that contradicts the bundle's
+     * own result records is refused as EVIDENCE_INVALID at validation.
      */
     private static void tamperMakespanConsistently(Path run, double newMakespan) throws Exception {
         JsonObject manifest = readManifest(run);

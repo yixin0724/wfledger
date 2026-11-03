@@ -7,8 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -23,6 +29,12 @@ import com.google.gson.JsonPrimitive;
  * <p>The validator keeps accepting v2 artifacts produced before the migration. Beyond the
  * same sidecar integrity constraints, v3 additionally requires provenance to distinguish
  * the core simulator identity clearly from the optional reference/study driver identity.</p>
+ *
+ * <p>V4 manifests additionally get the independent recompute registered for the Python
+ * evidence auditor (AUD-F05, 2026-11-03): the F-006/F-007 event-contract checks and the two
+ * result-derived metric families, so a wrong number that was consistently written into both
+ * the manifest and the sidecar no longer survives validation. Legacy schemas keep the
+ * declared manifest authority.</p>
  */
 public final class ExperimentArtifactValidator {
 
@@ -33,12 +45,28 @@ public final class ExperimentArtifactValidator {
     /** Current schema of the full configuration snapshot. */
     public static final String MANIFEST_SCHEMA_V4 = ExperimentManifestWriter.SCHEMA_V4;
 
+    /**
+     * Relative tolerance of the v4 independent metric recompute (AUD-F05, 2026-11-03),
+     * mirroring the registered rel_tol default of the Python evidence auditor
+     * (scripts/verify-study-evidence.py) so both gates accept the same honest bundles and
+     * reject the same drift.
+     */
+    private static final double METRIC_RELATIVE_TOLERANCE = 1e-10;
+
+    /**
+     * Absolute tolerance of the v4 independent metric recompute (AUD-F05, 2026-11-03),
+     * mirroring the registered abs_tol default of the Python evidence auditor.
+     */
+    private static final double METRIC_ABSOLUTE_TOLERANCE = 1e-8;
+
     private ExperimentArtifactValidator() {}
 
     /**
      * Read-only validation of the schema, paths, hashes, sizes, and event sequence of the
      * manifest and the metrics/events sidecars, plus the structured identity contract of
-     * the v3 provenance.
+     * the v3 provenance. V4 manifests additionally get the independent recompute of the two
+     * registered result-derived metric families and the F-006/F-007 event contract
+     * (AUD-F05, 2026-11-03).
      *
      * @param manifestPath path of the v2 or v3 manifest to validate
      * @return validation result carrying the verified artifact paths and the event count
@@ -72,7 +100,8 @@ public final class ExperimentArtifactValidator {
                 fileLifecycle = bundles.fileLifecycle,
                 storageLifecycle = bundles.storageLifecycle;
         boolean groupRequested = bundles.groupRequested;
-        long[] eventStream = validateEvents(events, networkContext, fileContext);
+        EventContractAudit contractAudit = new EventContractAudit();
+        long[] eventStream = validateEvents(events, networkContext, fileContext, contractAudit);
         int actualEvents = (int) eventStream[0];
         if (actualEvents != expectedEvents) {
             throw new IOException("Event count mismatch: manifest declares " + expectedEvents + " but JSONL contains "
@@ -85,6 +114,20 @@ public final class ExperimentArtifactValidator {
         if (actualEvents > 0) {
             checkDeclaredSequenceBound(eventSummary, "firstSequence", eventStream[1]);
             checkDeclaredSequenceBound(eventSummary, "lastSequence", eventStream[2]);
+        }
+        // AUD-F05 (2026-11-03): v4 manifests additionally get the independent recompute that
+        // mirrors the registered Python evidence auditor -- the F-006/F-007 event-contract
+        // checks and the two result-derived metric families. Before this, a wrong number
+        // that was consistently written into both the manifest and the sidecar survived
+        // validation. Legacy schemas keep the declared manifest authority ("old schemas
+        // are not silently upgraded", the same v4-only boundary as the Python auditor).
+        if (MANIFEST_SCHEMA_V4.equals(schema)) {
+            double end = requireFiniteNonNegativeNumber(
+                    requireObject(root, "result", "experiment manifest"),
+                    "simulationEndSeconds",
+                    "experiment manifest result");
+            verifyEventContract(contractAudit, end);
+            verifyMetricsRecompute(root, manifestMetrics, end);
         }
         if (networkContext != null) {
             networkContext.finish();
@@ -481,7 +524,10 @@ public final class ExperimentArtifactValidator {
     }
 
     private static long[] validateEvents(
-            Path path, NetworkLedgerContextValidator networkContext, FileLifecycleContextValidator fileContext)
+            Path path,
+            NetworkLedgerContextValidator networkContext,
+            FileLifecycleContextValidator fileContext,
+            EventContractAudit contractAudit)
             throws IOException {
         int count = 0;
         long firstSequence = -1L;
@@ -507,12 +553,16 @@ public final class ExperimentArtifactValidator {
                     throw new IOException("JSONL event sequence mismatch at line " + (count + 1) + ": expected " + count
                             + " but found " + sequence);
                 }
-                if (fileContext == null
-                        && event.has("type")
-                        && event.get("type").isJsonPrimitive()
-                        && "DATAFLOW_VM_ASSIGNED".equals(event.get("type").getAsString())) {
+                String type = null;
+                if (event.has("type") && event.get("type").isJsonPrimitive()) {
+                    type = event.get("type").getAsString();
+                }
+                if (fileContext == null && "DATAFLOW_VM_ASSIGNED".equals(type)) {
                     throw new IOException("Online assignment events require their full lifecycle context");
                 }
+                // AUD-F05 (2026-11-03): single-pass collection for the F-006/F-007 contract
+                // checks; the contract decisions happen once the whole stream has been read.
+                contractAudit.acceptEvent(type, event);
                 if (networkContext != null) {
                     networkContext.acceptEvent(event);
                 }
@@ -539,6 +589,140 @@ public final class ExperimentArtifactValidator {
             throw new IOException(
                     "Declared " + key + " " + declared + " does not match the event stream bound " + actual);
         }
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): mirror of the F-006/F-007 revision-stream contract in
+     * scripts/verify-study-evidence.py. When the markers are present, the terminal event
+     * must close the declared end exactly and every executed job instance must carry a
+     * derivation-consistent JOB_EXECUTION_STARTED. The queue-wait metric itself is NOT
+     * recomputed from the event stream: stage-in jobs also emit the started marker (every
+     * job instance flows through submitJobToScheduler) and the marker carries no submission
+     * clock, so the registered recompute population is the result job outcome records --
+     * exactly what the Python auditor recomputes from.
+     */
+    private static void verifyEventContract(EventContractAudit audit, double end) throws IOException {
+        if (audit.terminalCount > 0) {
+            if (audit.terminalCount != 1) {
+                throw new IOException("Duplicate SIMULATION_TERMINATED events: " + audit.terminalCount);
+            }
+            if (audit.terminalClock != end || audit.terminalDeclaredEnd != end) {
+                throw new IOException("Terminal clock identity violated: event time " + audit.terminalClock
+                        + ", declared end " + audit.terminalDeclaredEnd + ", manifest end " + end);
+            }
+            if (!"SIMULATION_TERMINATED".equals(audit.lastType)) {
+                throw new IOException("Terminal event position violated: last event type is " + audit.lastType);
+            }
+        }
+        for (Map.Entry<Long, double[]> entry : audit.startedDerivations.entrySet()) {
+            double[] derivation = entry.getValue();
+            if (derivation[2] != derivation[0] + derivation[1]) {
+                throw new IOException("Job start derivation violated for job " + entry.getKey() + ": modeled "
+                        + derivation[2] + " != envelope " + derivation[0] + " + effective stage " + derivation[1]);
+            }
+        }
+        if (!audit.startedDerivations.isEmpty() || audit.terminalCount > 0) {
+            List<Long> uncovered = new ArrayList<>();
+            for (Long executed : audit.executedJobs) {
+                if (!audit.startedDerivations.containsKey(executed)) {
+                    uncovered.add(executed);
+                }
+            }
+            if (!uncovered.isEmpty()) {
+                Collections.sort(uncovered);
+                throw new IOException("Job start coverage violated: executed jobs without a JOB_EXECUTION_STARTED "
+                        + "marker " + uncovered);
+            }
+        }
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): independent recompute of the two registered result-derived
+     * metric families, mirroring scripts/verify-study-evidence.py -- makespanSeconds is the
+     * manifest result end, and the queue-wait mean is the average of
+     * max(0, startTime - submissionTime) over the COMPUTE job outcome records, the same
+     * population and formula the metrics writer uses (SimulationReport.JobOutcome and
+     * SimulationMetrics). An empty compute population recomputes to zero, mirroring the
+     * registered mean of an empty family.
+     */
+    private static void verifyMetricsRecompute(JsonObject root, JsonObject metrics, double end) throws IOException {
+        JsonObject result = requireObject(root, "result", "experiment manifest");
+        JsonArray jobs = requireArray(result, "jobs", "experiment manifest result");
+        int stageInClass = org.workflowsim.utils.Parameters.ClassType.STAGE_IN.value;
+        int computeClass = org.workflowsim.utils.Parameters.ClassType.COMPUTE.value;
+        double queueWaitSum = 0.0;
+        int computeCount = 0;
+        Set<Long> seenJobIds = new HashSet<>();
+        for (int index = 0; index < jobs.size(); index++) {
+            JsonElement element = jobs.get(index);
+            if (!element.isJsonObject()) {
+                throw new IOException("Experiment manifest result job " + index + " is not an object");
+            }
+            JsonObject job = element.getAsJsonObject();
+            long jobId = requireLong(job, "jobId", "experiment manifest result job");
+            if (!seenJobIds.add(Long.valueOf(jobId))) {
+                throw new IOException("Duplicate experiment manifest result job id: " + jobId);
+            }
+            int classType = requireInt(job, "classType", "experiment manifest result job");
+            if (classType != stageInClass && classType != computeClass) {
+                throw new IOException(
+                        "Unsupported experiment manifest result job class type " + classType + " for job " + jobId);
+            }
+            double submissionTime =
+                    requireFiniteNonNegativeNumber(job, "submissionTime", "experiment manifest result job");
+            double startTime = requireFiniteNonNegativeNumber(job, "startTime", "experiment manifest result job");
+            if (classType == computeClass) {
+                queueWaitSum += Math.max(0.0, startTime - submissionTime);
+                computeCount++;
+            }
+        }
+        double expectedQueueWait = computeCount == 0 ? 0.0 : queueWaitSum / computeCount;
+        verifyMetricClose(metrics, "makespanSeconds", end);
+        verifyMetricClose(metrics, "meanJobVmQueueWaitingTimeSeconds", expectedQueueWait);
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): compares a recomputed metric against the declared value with
+     * the Python evidence auditor's registered tolerance (math.isclose defaults rel_tol
+     * 1e-10, abs_tol 1e-8), so the Java gate and the Python gate reject the same drift.
+     */
+    private static void verifyMetricClose(JsonObject metrics, String field, double expected) throws IOException {
+        JsonElement element = metrics.get(field);
+        if (element == null
+                || !element.isJsonPrimitive()
+                || !element.getAsJsonPrimitive().isNumber()) {
+            throw new IOException("Metrics field \"" + field + "\" is not a number");
+        }
+        double declared = element.getAsDouble();
+        if (!Double.isFinite(declared)) {
+            throw new IOException("Metrics field \"" + field + "\" is not finite: " + declared);
+        }
+        double tolerance = Math.max(
+                METRIC_RELATIVE_TOLERANCE * Math.max(Math.abs(declared), Math.abs(expected)),
+                METRIC_ABSOLUTE_TOLERANCE);
+        if (Math.abs(declared - expected) > tolerance) {
+            throw new IOException("Recomputed " + field + " " + expected + " does not match the declared metrics "
+                    + "value " + declared + " (rel_tol " + METRIC_RELATIVE_TOLERANCE + ", abs_tol "
+                    + METRIC_ABSOLUTE_TOLERANCE + ")");
+        }
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): a required finite nonnegative JSON number, mirroring the number
+     * gate of the Python auditor's manifest reader.
+     */
+    private static double requireFiniteNonNegativeNumber(JsonObject object, String key, String subject)
+            throws IOException {
+        if (!object.has(key)
+                || !object.get(key).isJsonPrimitive()
+                || !object.get(key).getAsJsonPrimitive().isNumber()) {
+            throw new IOException(subject + " is missing number " + key);
+        }
+        double value = object.get(key).getAsDouble();
+        if (!Double.isFinite(value) || value < 0.0) {
+            throw new IOException(subject + " has invalid number " + key + ": " + value);
+        }
+        return value;
     }
 
     private static Path required(Map<String, Path> paths, String role) throws IOException {
@@ -658,6 +842,48 @@ public final class ExperimentArtifactValidator {
             return Paths.get(value).isAbsolute();
         } catch (InvalidPathException exception) {
             return false;
+        }
+    }
+
+    /**
+     * Single-pass collector for the F-006/F-007 event-contract checks (AUD-F05,
+     * 2026-11-03), mirroring the by-type index that scripts/verify-study-evidence.py builds
+     * over the event stream. The collector records; the contract decisions happen once the
+     * whole stream has been read (see {@link #verifyEventContract}). Derivation entries are
+     * kept in insertion order so a violation is reported deterministically.
+     */
+    private static final class EventContractAudit {
+        private int terminalCount;
+        private double terminalClock;
+        private double terminalDeclaredEnd;
+        private String lastType;
+        private final Map<Long, double[]> startedDerivations = new LinkedHashMap<>();
+        private final Set<Long> executedJobs = new HashSet<>();
+
+        private void acceptEvent(String type, JsonObject event) throws IOException {
+            lastType = type;
+            if ("SIMULATION_TERMINATED".equals(type)) {
+                terminalCount++;
+                terminalClock = requireFiniteNonNegativeNumber(event, "simulationTime", "terminal event");
+                terminalDeclaredEnd = requireFiniteNonNegativeNumber(
+                        requireObject(event, "attributes", "terminal event"),
+                        "simulationEndSeconds",
+                        "terminal event attributes");
+            } else if ("JOB_EXECUTION_STARTED".equals(type)) {
+                long jobId = requireLong(event, "jobId", "JSONL event");
+                JsonObject attributes = requireObject(event, "attributes", "started event");
+                double envelope =
+                        requireFiniteNonNegativeNumber(attributes, "jobEnvelopeStartSeconds", "started event");
+                double effective =
+                        requireFiniteNonNegativeNumber(attributes, "effectiveDataStageSeconds", "started event");
+                requireFiniteNonNegativeNumber(attributes, "requestedDataStageSeconds", "started event");
+                double modeled = requireFiniteNonNegativeNumber(attributes, "modeledJobStartSeconds", "started event");
+                if (startedDerivations.put(Long.valueOf(jobId), new double[] {envelope, effective, modeled}) != null) {
+                    throw new IOException("Duplicate JOB_EXECUTION_STARTED event for job " + jobId);
+                }
+            } else if ("TASK_EXECUTION_MODELED".equals(type)) {
+                executedJobs.add(Long.valueOf(requireLong(event, "jobId", "JSONL event")));
+            }
         }
     }
 

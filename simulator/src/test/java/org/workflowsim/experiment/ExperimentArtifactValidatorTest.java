@@ -295,6 +295,27 @@ class ExperimentArtifactValidatorTest {
         Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Rewrite the events JSONL sidecar and sync the checksum and size of the matching manifest
+     * artifact, so a tampered stream reaches the deeper validation stages instead of failing the
+     * reference check first.
+     */
+    private static void rewriteEventsSidecar(
+            ExperimentArtifactWriter.ExperimentArtifacts artifacts, java.util.List<String> lines) throws Exception {
+        Files.write(artifacts.getEvents(), lines, StandardCharsets.UTF_8);
+        JsonObject manifest = JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getManifest()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        for (int index = 0; index < manifest.getAsJsonArray("artifacts").size(); index++) {
+            JsonObject entry = manifest.getAsJsonArray("artifacts").get(index).getAsJsonObject();
+            if ("events".equals(entry.get("role").getAsString())) {
+                entry.addProperty("sha256", ExperimentProvenance.fingerprint(artifacts.getEvents()));
+                entry.addProperty("sizeBytes", Files.size(artifacts.getEvents()));
+            }
+        }
+        Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
+    }
+
     @Test
     void rejectsManifestMissingARequiredTopLevelSection(@TempDir Path output) throws Exception {
         Log.disable();
@@ -315,6 +336,249 @@ class ExperimentArtifactValidatorTest {
         java.io.IOException exception = assertThrows(
                 java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
         assertTrue(exception.getMessage().contains("runtime"));
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): the validator must recompute the registered metric families from
+     * the result section instead of trusting two identical copies of the same wrong number --
+     * before this, tampering manifest.metrics and the sidecar identically passed validation, so
+     * a wrong value survived "mvn verify" (the audited gap). The expected value is the manifest
+     * result.simulationEndSeconds: the writer's makespan, the manifest end, and the terminal
+     * event clock are one and the same simulation clock.
+     */
+    @Test
+    void rejectsAMakespanThatContradictsTheResultSection(@TempDir Path output) throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal("validator-recompute-makespan", 2));
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                ExperimentArtifactWriter.write(report, output, "recompute-makespan-run");
+
+        JsonObject manifest = JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getManifest()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        double end =
+                manifest.getAsJsonObject("result").get("simulationEndSeconds").getAsDouble();
+        manifest.getAsJsonObject("metrics").addProperty("makespanSeconds", end + 1.0);
+        Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
+
+        JsonObject sidecar = JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getMetrics()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        sidecar.getAsJsonObject("metrics").addProperty("makespanSeconds", end + 1.0);
+        rewriteMetricsSidecar(artifacts, sidecar);
+
+        java.io.IOException exception = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(
+                exception.getMessage().contains("makespanSeconds"),
+                "the refusal must name the recomputed field: " + exception.getMessage());
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): second recomputed family -- the queue-wait mean is the average of
+     * max(0, startTime - submissionTime) over the COMPUTE job outcomes of result.jobs, exactly
+     * the population and formula the metrics writer and the Python auditor use.
+     */
+    @Test
+    void rejectsAQueueWaitMeanThatContradictsTheJobOutcomes(@TempDir Path output) throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal("validator-recompute-queue-wait", 2));
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                ExperimentArtifactWriter.write(report, output, "recompute-queue-wait-run");
+
+        JsonObject manifest = JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getManifest()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        JsonObject metrics = manifest.getAsJsonObject("metrics");
+        metrics.addProperty(
+                "meanJobVmQueueWaitingTimeSeconds",
+                metrics.get("meanJobVmQueueWaitingTimeSeconds").getAsDouble() + 1.0);
+        Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
+
+        JsonObject sidecar = JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getMetrics()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        JsonObject sidecarMetrics = sidecar.getAsJsonObject("metrics");
+        sidecarMetrics.addProperty(
+                "meanJobVmQueueWaitingTimeSeconds",
+                sidecarMetrics.get("meanJobVmQueueWaitingTimeSeconds").getAsDouble() + 1.0);
+        rewriteMetricsSidecar(artifacts, sidecar);
+
+        java.io.IOException exception = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(
+                exception.getMessage().contains("meanJobVmQueueWaitingTimeSeconds"),
+                "the refusal must name the recomputed field: " + exception.getMessage());
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): the F-006 terminal clock identity -- on a revision stream the
+     * SIMULATION_TERMINATED event time must equal the manifest end exactly; a shifted terminal
+     * clock silently changes the makespan family that the stream claims to recompute.
+     */
+    @Test
+    void rejectsATerminalClockThatContradictsTheDeclaredEnd(@TempDir Path output) throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal("validator-terminal-clock", 2));
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                ExperimentArtifactWriter.write(report, output, "terminal-clock-run");
+
+        java.util.List<String> lines = Files.readAllLines(artifacts.getEvents(), StandardCharsets.UTF_8);
+        int terminalIndex = -1;
+        for (int index = 0; index < lines.size(); index++) {
+            JsonObject event = JsonParser.parseString(lines.get(index)).getAsJsonObject();
+            if ("SIMULATION_TERMINATED".equals(event.get("type").getAsString())) {
+                terminalIndex = index;
+            }
+        }
+        assertTrue(terminalIndex >= 0, "a naturally completed run must terminate its event stream");
+        JsonObject terminal = JsonParser.parseString(lines.get(terminalIndex)).getAsJsonObject();
+        terminal.addProperty("simulationTime", terminal.get("simulationTime").getAsDouble() + 0.5);
+        lines.set(terminalIndex, JSON.toJson(terminal));
+        rewriteEventsSidecar(artifacts, lines);
+
+        java.io.IOException exception = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(
+                exception.getMessage().contains("Terminal"),
+                "the refusal must name the terminal clock identity: " + exception.getMessage());
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): the F-007 job-start derivation -- modeledJobStartSeconds must equal
+     * jobEnvelopeStartSeconds + effectiveDataStageSeconds exactly; a broken derivation corrupts
+     * the decision-to-start and waiting families that claim to be event-recomputable.
+     */
+    @Test
+    void rejectsAStartedEventWithABrokenDerivation(@TempDir Path output) throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal("validator-start-derivation", 2));
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                ExperimentArtifactWriter.write(report, output, "start-derivation-run");
+
+        java.util.List<String> lines = Files.readAllLines(artifacts.getEvents(), StandardCharsets.UTF_8);
+        boolean tampered = false;
+        for (int index = 0; index < lines.size() && !tampered; index++) {
+            JsonObject event = JsonParser.parseString(lines.get(index)).getAsJsonObject();
+            if ("JOB_EXECUTION_STARTED".equals(event.get("type").getAsString())) {
+                JsonObject attributes = event.getAsJsonObject("attributes");
+                attributes.addProperty(
+                        "modeledJobStartSeconds",
+                        attributes.get("modeledJobStartSeconds").getAsDouble() + 1.0);
+                lines.set(index, JSON.toJson(event));
+                tampered = true;
+            }
+        }
+        assertTrue(tampered, "the fixture run must record at least one started event");
+        rewriteEventsSidecar(artifacts, lines);
+
+        java.io.IOException exception = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(
+                exception.getMessage().contains("derivation"),
+                "the refusal must name the job-start derivation: " + exception.getMessage());
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): the F-007 coverage rule -- on a revision stream every executed job
+     * instance must carry its JOB_EXECUTION_STARTED marker; re-pointing one marker at a phantom
+     * job id leaves an executed job uncovered.
+     */
+    @Test
+    void rejectsAnExecutedJobWithoutAStartedMarker(@TempDir Path output) throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal("validator-start-coverage", 2));
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                ExperimentArtifactWriter.write(report, output, "start-coverage-run");
+
+        java.util.List<String> lines = Files.readAllLines(artifacts.getEvents(), StandardCharsets.UTF_8);
+        java.util.Set<Integer> executedJobIds = new java.util.HashSet<>();
+        for (String line : lines) {
+            JsonObject event = JsonParser.parseString(line).getAsJsonObject();
+            if ("TASK_EXECUTION_MODELED".equals(event.get("type").getAsString())) {
+                executedJobIds.add(event.get("jobId").getAsInt());
+            }
+        }
+        boolean tampered = false;
+        for (int index = 0; index < lines.size() && !tampered; index++) {
+            JsonObject event = JsonParser.parseString(lines.get(index)).getAsJsonObject();
+            if ("JOB_EXECUTION_STARTED".equals(event.get("type").getAsString())
+                    && executedJobIds.contains(event.get("jobId").getAsInt())) {
+                event.addProperty("jobId", 999999);
+                lines.set(index, JSON.toJson(event));
+                tampered = true;
+            }
+        }
+        assertTrue(tampered, "the fixture run must start at least one executed job");
+        rewriteEventsSidecar(artifacts, lines);
+
+        java.io.IOException exception = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(
+                exception.getMessage().contains("coverage"),
+                "the refusal must name the job-start coverage: " + exception.getMessage());
+    }
+
+    /**
+     * AUD-F05 (2026-11-03): the recompute follows the registered v4-only boundary -- legacy
+     * schema manifests keep the declared manifest authority, mirroring the Python auditor's
+     * "old schemas are not silently upgraded" gate. This is a compatibility pin: the new
+     * recompute must not silently change what an older manifest is allowed to declare.
+     */
+    @Test
+    void keepsDeclaredAuthorityForLegacyManifestSchemas(@TempDir Path output) throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal("validator-legacy-schema", 2));
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                ExperimentArtifactWriter.write(report, output, "legacy-schema-run");
+
+        JsonObject manifest = JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getManifest()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        double end =
+                manifest.getAsJsonObject("result").get("simulationEndSeconds").getAsDouble();
+        manifest.addProperty("schema", ExperimentArtifactValidator.MANIFEST_SCHEMA_V3);
+        manifest.getAsJsonObject("metrics").addProperty("makespanSeconds", end + 1.0);
+        Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
+
+        JsonObject sidecar = JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getMetrics()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        sidecar.getAsJsonObject("metrics").addProperty("makespanSeconds", end + 1.0);
+        rewriteMetricsSidecar(artifacts, sidecar);
+
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+                () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
     }
 
     private static String resourcePath(String resource) throws Exception {
