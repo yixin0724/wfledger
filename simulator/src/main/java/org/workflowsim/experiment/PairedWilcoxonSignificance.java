@@ -7,41 +7,51 @@ import java.util.List;
 import org.apache.commons.math3.stat.inference.WilcoxonSignedRankTest;
 
 /**
- * 对按根种子配对的两次仿真运行序列做 Wilcoxon 符号秩显著性检验。
+ * Runs a Wilcoxon signed-rank significance test on two simulation-run series paired by root seed.
  *
- * <p>这是 campaign 配对比对的推断层：给定候选方案与基线方案在相同根种子下的
- * 指标观测（如 makespan），检验配对差值的分布是否以零为中心。检验是非参数的，
- * 不假设正态性，适合仿真输出常见的偏态分布。</p>
+ * <p>This is the inference layer of campaign paired comparison: given the metric observations of
+ * a candidate scheme and a baseline scheme under the same root seeds (for example makespan), it
+ * tests whether the distribution of paired differences is centered on zero. The test is
+ * non-parametric and assumes no normality, which suits the skewed distributions typical of
+ * simulation output.</p>
  *
- * <p><b>推断边界（如实声明）</b>：平台的随机模型当前不是事件键控模型，复用根种子
- * 不构成严格的 common-random-numbers 配对（见 {@link RandomizationDesign}）。因此本检验
- * 结论应读作"共享根种子的配对序列之间的分布差异"，而非 CRN 配对下的方差缩减推断。
- * 状态字符串与 {@link ExperimentCampaignSummary.ComparisonSummary#getInferenceStatus()}
- * 一并记录，保证证据链中推断主张的口径可追溯。</p>
+ * <p><b>Inference boundary (declared as is)</b>: the random model of the platform is currently
+ * not an event-keyed model, so reusing a root seed does not constitute strict
+ * common-random-numbers pairing (see {@link RandomizationDesign}). The verdict of this test must
+ * therefore be read as "a distribution difference between paired series that share root seeds",
+ * not as a variance-reduction inference under CRN pairing. The status string is recorded together
+ * with {@link ExperimentCampaignSummary.ComparisonSummary#getInferenceStatus()} so that the
+ * framing of the inference claim stays traceable in the evidence chain.</p>
  *
- * <p><b>实现口径</b>：</p>
+ * <p><b>Implementation framing</b>:</p>
  * <ul>
- * <li>配对按输入下标对齐（调用方负责按相同种子顺序提供两个等长序列）；</li>
- * <li>差值为零的配对不参与秩统计（Wilcoxon 标准做法），有效样本数相应减少
- *     （R8 审计修复：此前含零差值的全数组被直接传给 commons-math3，与本文档
- *     口径不符，且完整配对数 &gt; 30 时精确路径会抛 NumberIsTooLargeException）；</li>
- * <li>有效非零差值数 ≤ 25 时用精确分布（库的精确双侧 p 无上限截断，本包装层
- *     钳制到 [0,1]），否则用正态近似；注意 commons-math3 3.2 的渐近路径连续性
- *     校正为 −0.5 方向（偏向显著、反保守）且不做并列方差校正，读渐近 p 值时
- *     应知悉该偏差；</li>
- * <li>全部差值为零（如确定性配置）时不做检验，返回不可用状态而非伪造 p 值。</li>
+ * <li>Pairs are aligned by input index (the caller is responsible for supplying two equal-length
+ *     series in the same seed order);</li>
+ * <li>Pairs with a zero difference do not enter the rank statistics (standard Wilcoxon practice),
+ *     and the effective sample count shrinks accordingly (R8 audit fix: previously the whole
+ *     array including zero differences was passed straight to commons-math3, which contradicted
+ *     the framing of this document, and made the exact path throw NumberIsTooLargeException once
+ *     the full pair count exceeded 30);</li>
+ * <li>With at most 25 effective nonzero differences the exact distribution is used (the exact
+ *     two-sided p of the library is not upper-truncated, so this wrapper clamps it to [0,1]);
+ *     otherwise the normal approximation is used. Note that the asymptotic path of commons-math3
+ *     3.2 applies a continuity correction in the -0.5 direction (biased toward significance,
+ *     anti-conservative) and does no tie variance correction; know that bias when reading an
+ *     asymptotic p value;</li>
+ * <li>When every difference is zero (for example a deterministic configuration) no test is run;
+ *     an unavailable status is returned instead of a fabricated p value.</li>
  * </ul>
  *
- * <p>本类不可变，所有集合均为防御性拷贝。</p>
+ * <p>This class is immutable and copies every collection defensively.</p>
  *
- * @since R1（多 seed 统计框架）
+ * @since R1 (multi-seed statistics framework)
  */
 public final class PairedWilcoxonSignificance {
 
-    /** 默认的显著性水平。 */
+    /** Default significance level. */
     public static final double DEFAULT_ALPHA = 0.05;
 
-    /** 精确分布适用的最大有效非零差值样本数。 */
+    /** Maximum number of effective nonzero differences for which the exact distribution applies. */
     private static final int MAX_EXACT_EFFECTIVE_SAMPLES = 25;
 
     private final String status;
@@ -67,12 +77,14 @@ public final class PairedWilcoxonSignificance {
     }
 
     /**
-     * 构造"独立重复设计不适用配对检验"的不可用结果。
+     * Builds the unavailable result for "an independent-replication design does not admit a
+     * paired test".
      *
-     * <p>用于 campaign 中 {@link RandomizationDesign#INDEPENDENT_REPLICATIONS} 的比对：
-     * 两侧种子互不相同，不存在配对差值。</p>
+     * <p>Used for the comparison under {@link RandomizationDesign#INDEPENDENT_REPLICATIONS} in a
+     * campaign: the seeds on the two sides are distinct, so no paired difference exists.</p>
      *
-     * @return 状态为 {@code UNAVAILABLE_INDEPENDENT_REPLICATIONS_ARE_NOT_PAIRED} 的不可变结果
+     * @return immutable result with status
+     *         {@code UNAVAILABLE_INDEPENDENT_REPLICATIONS_ARE_NOT_PAIRED}
      */
     public static PairedWilcoxonSignificance unavailableUnpaired() {
         return new PairedWilcoxonSignificance(
@@ -80,12 +92,16 @@ public final class PairedWilcoxonSignificance {
     }
 
     /**
-     * 检验候选方案减去基线方案的配对差值分布是否以零为中心。
+     * Tests whether the distribution of the paired differences, candidate minus baseline, is
+     * centered on zero.
      *
-     * @param baseline 基线方案按种子顺序的指标观测，全部有限
-     * @param candidate 候选方案按相同种子顺序的指标观测，全部有限
-     * @return 携带状态、p 值与默认显著性判定的不可变结果
-     * @throws IllegalArgumentException 当任一序列为空、长度不一致或含非有限值时抛出
+     * @param baseline metric observations of the baseline scheme in seed order, all finite
+     * @param candidate metric observations of the candidate scheme in the same seed order, all
+     *        finite
+     * @return immutable result carrying the status, the p value, and the default significance
+     *         verdict
+     * @throws IllegalArgumentException if either series is empty, the lengths differ, or a value
+     *         is not finite
      */
     public static PairedWilcoxonSignificance evaluate(List<Double> baseline, List<Double> candidate) {
         validateSamples(baseline, candidate);
@@ -124,11 +140,13 @@ public final class PairedWilcoxonSignificance {
                     1,
                     Double.valueOf(medianDifference));
         }
-        // R8 审计修复（P1）：只把非零差值配对传入秩检验——commons-math3 不剔除
-        // 零差值（零差值会占据最低秩并抬高 N），直接传全数组会使 p 值与
-        // effectiveSampleCount 双双失真，且完整配对数 > 30 时精确路径还会抛
-        // NumberIsTooLargeException 击穿 campaign 汇总。剔除零差值后库内 N 与
-        // 门控条件（非零数 ≤ 25 < 30）自然一致。
+        // R8 audit fix (P1): pass only the nonzero-difference pairs into the rank test --
+        // commons-math3 does not drop zero differences (they occupy the lowest ranks and inflate
+        // N), so passing the whole array distorts both the p value and effectiveSampleCount, and
+        // once the full pair count exceeds 30 the exact path additionally throws
+        // NumberIsTooLargeException and breaks the campaign summary. After the zero differences
+        // are removed, the internal N of the library and the gate condition (nonzero count at
+        // most 25 < 30) agree by construction.
         double[] pairedBaseline = new double[nonzeroIndices.size()];
         double[] pairedCandidate = new double[nonzeroIndices.size()];
         for (int slot = 0; slot < nonzeroIndices.size(); slot++) {
@@ -139,8 +157,9 @@ public final class PairedWilcoxonSignificance {
         WilcoxonSignedRankTest test = new WilcoxonSignedRankTest();
         boolean exact = nonzeroIndices.size() <= MAX_EXACT_EFFECTIVE_SAMPLES;
         double pValue = test.wilcoxonSignedRankTest(pairedBaseline, pairedCandidate, exact);
-        // commons-math3 精确双侧 p = 2·(秩和≥W 的子集数)/2^N，无上限截断，
-        // 在并列或 W 恰居中时可以略大于 1；按 p 值定义域钳制到 [0,1]。
+        // The exact two-sided p of commons-math3 is 2 * (number of subsets with rank sum >= W) / 2^N
+        // with no upper truncation, so under ties or when W sits exactly in the middle it can
+        // slightly exceed 1; clamp it to the [0,1] domain of a p value.
         pValue = Math.min(pValue, 1.0);
         return new PairedWilcoxonSignificance(
                 exact ? "AVAILABLE_WILCOXON_SIGNED_RANK_EXACT" : "AVAILABLE_WILCOXON_SIGNED_RANK_NORMAL_APPROXIMATION",
@@ -184,43 +203,43 @@ public final class PairedWilcoxonSignificance {
     }
 
     /**
-     * @return 机器可读的检验状态：
-     * {@code AVAILABLE_WILCOXON_SIGNED_RANK_EXACT}、
-     * {@code AVAILABLE_WILCOXON_SIGNED_RANK_NORMAL_APPROXIMATION}、
-     * {@code UNAVAILABLE_FEWER_THAN_TWO_PAIRED_SAMPLES}、
-     * {@code UNAVAILABLE_SINGLE_NONZERO_PAIRED_DIFFERENCE} 或
+     * @return machine-readable test status:
+     * {@code AVAILABLE_WILCOXON_SIGNED_RANK_EXACT},
+     * {@code AVAILABLE_WILCOXON_SIGNED_RANK_NORMAL_APPROXIMATION},
+     * {@code UNAVAILABLE_FEWER_THAN_TWO_PAIRED_SAMPLES},
+     * {@code UNAVAILABLE_SINGLE_NONZERO_PAIRED_DIFFERENCE}, or
      * {@code UNAVAILABLE_ALL_PAIRED_DIFFERENCES_ARE_ZERO}
      */
     public String getStatus() {
         return status;
     }
 
-    /** @return 双侧 p 值；不可用状态时为 {@code null} */
+    /** @return two-sided p value; {@code null} when the status is unavailable */
     public Double getPValue() {
         return pValue;
     }
 
-    /** @return 在 {@link #DEFAULT_ALPHA} 下是否拒绝零假设 */
+    /** @return whether the null hypothesis is rejected at {@link #DEFAULT_ALPHA} */
     public boolean isSignificantAtDefaultAlpha() {
         return significantAtDefaultAlpha;
     }
 
-    /** @return 按种子对齐的配对总数 */
+    /** @return total number of pairs aligned by seed */
     public int getPairedSampleCount() {
         return pairedSampleCount;
     }
 
-    /** @return 参与秩统计的非零差值数 */
+    /** @return number of nonzero differences entering the rank statistics */
     public int getEffectiveSampleCount() {
         return effectiveSampleCount;
     }
 
-    /** @return 配对差值（候选减基线）的中位数；配对数不足时为 {@code null} */
+    /** @return median of the paired differences (candidate minus baseline); {@code null} when pairs are too few */
     public Double getMedianDifference() {
         return medianDifference;
     }
 
-    /** @return 本检验使用的默认显著性水平 */
+    /** @return default significance level used by this test */
     public double getAlpha() {
         return DEFAULT_ALPHA;
     }

@@ -408,55 +408,55 @@ public final class SimulationConfig {
             return this;
         }
 
-        /** @param value 截止时间；0 表示未请求 @return 当前构建器 */
+        /** @param value deadline; 0 means not requested @return this builder */
         public Builder deadline(long value) {
             this.deadline = value;
             return this;
         }
 
-        /** @param value 文件系统模型 @return 当前构建器 */
+        /** @param value file system model @return this builder */
         public Builder fileSystem(ReplicaCatalog.FileSystem value) {
             this.fileSystem = value;
             return this;
         }
 
-        /** @param value 根随机种子 @return 当前构建器 */
+        /** @param value root random seed @return this builder */
         public Builder randomSeed(long value) {
             this.randomSeed = value;
             return this;
         }
 
-        /** @param value 运行时间缩放系数 @return 当前构建器 */
+        /** @param value runtime scaling factor @return this builder */
         public Builder runtimeScale(double value) {
             this.runtimeScale = value;
             return this;
         }
 
-        /** @param value 参考吞吐量，单位为 MI/s @return 当前构建器 */
+        /** @param value reference throughput in MI/s @return this builder */
         public Builder runtimeReferenceMips(double value) {
             this.runtimeReferenceMips = value;
             return this;
         }
 
-        /** @param value CloudSim 最小事件间隔，单位为模拟秒 @return 当前构建器 */
+        /** @param value CloudSim minimum event interval in simulated seconds @return this builder */
         public Builder cloudSimMinEventIntervalSeconds(double value) {
             this.cloudSimMinEventIntervalSeconds = value;
             return this;
         }
 
-        /** @param value 成本模型 @return 当前构建器 */
+        /** @param value cost model @return this builder */
         public Builder costModel(CostModel value) {
             this.costModel = value;
             return this;
         }
 
-        /** @param value 故障模型 @return 当前构建器 */
+        /** @param value failure model @return this builder */
         public Builder failureModel(FailureModelConfig value) {
             this.failureModel = value;
             return this;
         }
 
-        /** @param value 文件数据移动模型 @return 当前构建器 */
+        /** @param value file data movement model @return this builder */
         public Builder dataMovementModel(DataMovementModel value) {
             this.dataMovementModel = value;
             return this;
@@ -473,10 +473,12 @@ public final class SimulationConfig {
         }
 
         /**
-         * 设置可选的任务×VM 异构执行成本矩阵（论文复现支撑）。
+         * Set the optional task-by-VM heterogeneous execution cost matrix
+         * (paper-reproduction support).
          *
-         * @param value 任务×VM 执行成本矩阵；null 表示未配置（保持 MI/mips 缩放）
-         * @return 当前构建器
+         * @param value task-by-VM execution cost matrix; null means not configured (the
+         *              MI/mips scaling is kept)
+         * @return this builder
          */
         public Builder taskCostMatrix(TaskCostMatrix value) {
             this.taskCostMatrix = value;
@@ -484,10 +486,11 @@ public final class SimulationConfig {
         }
 
         /**
-         * R5：设置每个工作流输入的提交时刻（动态到达）。
+         * R5: set the submission instant of each workflow input (dynamic arrival).
          *
-         * @param value 与输入路径一一对应的提交时刻列表（模拟秒）
-         * @return 当前构建器
+         * @param value submission instant list in one-to-one correspondence with the input
+         *              paths (simulated seconds)
+         * @return this builder
          */
         public Builder workflowArrivalSeconds(List<Double> value) {
             if (value == null) {
@@ -499,10 +502,11 @@ public final class SimulationConfig {
         }
 
         /**
-         * 校验全部模型前提并创建不可变配置。
+         * Validate every model premise and create an immutable configuration.
          *
-         * @return 可用于 {@link SimulationSession} 的配置
-         * @throws IllegalArgumentException 当输入、数值或算法组合不合法时
+         * @return a configuration usable with {@link SimulationSession}
+         * @throws IllegalArgumentException when the inputs, numeric values, or algorithm
+         *                                  combination are invalid
          */
         public SimulationConfig build() {
             validateWorkflowPaths();
@@ -519,7 +523,7 @@ public final class SimulationConfig {
             return new SimulationConfig(this);
         }
 
-        /** 工作流输入路径非空校验（逐字搬运转写自 build())。 */
+        /** Workflow input path non-empty check (moved verbatim from build()). */
         private void validateWorkflowPaths() {
             for (String path : workflowPaths) {
                 if (path == null || path.trim().isEmpty()) {
@@ -528,7 +532,7 @@ public final class SimulationConfig {
             }
         }
 
-        /** 必备模型非空与网络证据兼容性校验（逐字搬运转写）。 */
+        /** Required-model null check and network-evidence compatibility check (moved verbatim). */
         private void validateRequiredModels() {
             // Validate required models before any cross-model condition dereferences them.
             if (overheadModel == null
@@ -546,7 +550,10 @@ public final class SimulationConfig {
             org.workflowsim.data.NetworkEvidenceConfigCodec.requireCompatible(dataMovementModel, networkEvidenceConfig);
         }
 
-        /** 到达时间口径与 R5 非零到达×非 NONE 聚类互斥校验（逐字搬运转写）。 */
+        /**
+         * Arrival-time convention, and the R5 mutual exclusion of a non-zero arrival with
+         * non-NONE clustering (moved verbatim).
+         */
         private void validateArrivalSeconds() {
             if (workflowArrivalSeconds == null || workflowArrivalSeconds.size() != workflowPaths.size()) {
                 throw new IllegalArgumentException(
@@ -564,8 +571,10 @@ public final class SimulationConfig {
                     break;
                 }
             }
-            // R5：到达门控按原始任务编号归属工作流；聚类会生成新 Job ID，
-            // 无法可靠归属，故非零提交时刻与非 NONE 聚类互斥（显式拒绝而非静默失效）。
+            // R5: arrival gating attributes a workflow by its original task ids; clustering
+            // generates new Job IDs that cannot be attributed reliably, so non-zero submission
+            // instants are mutually exclusive with non-NONE clustering (explicit rejection
+            // instead of silent failure).
             if (hasNonZeroArrival
                     && clusteringParameters.getClusteringMethod() != ClusteringParameters.ClusteringMethod.NONE) {
                 throw new IllegalArgumentException("Non-zero workflow arrival seconds require "
@@ -574,7 +583,7 @@ public final class SimulationConfig {
             }
         }
 
-        /** 数值标量边界校验（逐字搬运转写）。 */
+        /** Numeric scalar bound check (moved verbatim). */
         private void validateScalarBounds() {
             if (vmCount <= 0) {
                 throw new IllegalArgumentException("VM count must be positive");
@@ -591,7 +600,10 @@ public final class SimulationConfig {
             }
         }
 
-        /** 调度/规划算法组合校验（逐字搬运转写，含 PLAT-7 DATA/SHARED 拒绝）。 */
+        /**
+         * Scheduling/planning algorithm combination check (moved verbatim), including the
+         * PLAT-7 DATA/SHARED rejection.
+         */
         private void validateSchedulerCombinations() {
             if (planningAlgorithm != PlanningAlgorithm.INVALID && schedulingAlgorithm != SchedulingAlgorithm.STATIC) {
                 throw new IllegalArgumentException("A planning algorithm assigns VM mappings and requires "
@@ -603,9 +615,10 @@ public final class SimulationConfig {
                 throw new IllegalArgumentException(
                         "SchedulingAlgorithm.STATIC requires a planning algorithm " + "that assigns VM mappings");
             }
-            // PLAT-7：DATA 算法的局部性判定按 VM ID 匹配副本站点，而 SHARED 模式
-            // 的副本按数据中心名注册，两者永不匹配——DATA 会静默退化为 first-fit-idle，
-            // 产生误导性的"数据局部性"实验结果，故在配置层直接拒绝。
+            // PLAT-7: the DATA algorithm matches replica sites by VM ID for its locality verdict,
+            // while replicas under SHARED mode are registered by datacenter name; the two never
+            // match -- DATA would silently degenerate to first-fit-idle and produce misleading
+            // "data locality" experimental results, so the configuration layer rejects it outright.
             if (schedulingAlgorithm == SchedulingAlgorithm.DATA && fileSystem == ReplicaCatalog.FileSystem.SHARED) {
                 throw new IllegalArgumentException("SchedulingAlgorithm.DATA requires ReplicaCatalog.FileSystem.LOCAL; "
                         + "under SHARED storage its replica sites are datacenter names that never match "
@@ -617,7 +630,7 @@ public final class SimulationConfig {
             }
         }
 
-        /** 共享存储规划器前提校验（逐字搬运转写）。 */
+        /** Shared-storage planner premise check (moved verbatim). */
         private void validateSharedStoragePlanners() {
             if (planningAlgorithm == PlanningAlgorithm.SHARED_STORAGE_HEFT
                     || planningAlgorithm == PlanningAlgorithm.SHARED_STORAGE_CPOP
@@ -643,11 +656,16 @@ public final class SimulationConfig {
                             + "transfer estimates remain aligned");
                 }
             }
-            // 任务×VM 成本矩阵由 STATIC 派发路径折算（MI = 秒数 × vm.mips），在线
-            // 调度器不做折算会被静默忽略；折算还要求作业与逻辑任务一一对应（NONE 聚类）。
+            // The task-by-VM cost matrix is folded in by the STATIC dispatch path
+            // (MI = seconds * vm.mips); an online scheduler does not fold it in, so the matrix
+            // would be silently ignored; folding also requires a one-to-one correspondence
+            // between jobs and logical tasks (NONE clustering).
         }
 
-        /** 任务×VM 成本矩阵前提校验（逐字搬运转写，含 R8 审计修复 P1-1）。 */
+        /**
+         * Task-by-VM cost matrix premise check (moved verbatim), including the R8 audit fix
+         * P1-1.
+         */
         private void validateTaskCostMatrix() {
             if (taskCostMatrix != null) {
                 if (schedulingAlgorithm != SchedulingAlgorithm.STATIC) {
@@ -658,10 +676,12 @@ public final class SimulationConfig {
                     throw new IllegalArgumentException("A task cost matrix requires clustering method NONE "
                             + "so every Job maps to exactly one logical Task");
                 }
-                // R8 审计修复（算法通道 P1-1）：SharedStorageDagPlanner 的规划侧
-                // 执行时间只用原始 DAX 长度，不消费成本矩阵投影；运行时派发路径
-                // 却按矩阵折算 MI——两侧语义静默分叉会产生错误的规划顺序而无任何
-                // 报错。在配置层直接拒绝该组合。
+                // R8 audit fix (algorithm track P1-1): the planning side of
+                // SharedStorageDagPlanner derives execution times from raw DAX lengths only and
+                // does not consume the cost matrix projection, while the runtime dispatch path
+                // folds MI through the matrix -- the silent semantic divergence between the two
+                // sides would produce a wrong planning order without any error. The
+                // configuration layer rejects this combination outright.
                 if (planningAlgorithm == PlanningAlgorithm.SHARED_STORAGE_HEFT
                         || planningAlgorithm == PlanningAlgorithm.SHARED_STORAGE_CPOP
                         || planningAlgorithm == PlanningAlgorithm.SHARED_STORAGE_DLS
@@ -676,12 +696,14 @@ public final class SimulationConfig {
             }
         }
 
-        /** LOCAL 列表规划器前提校验（逐字搬运转写）。 */
+        /** LOCAL list-scheduler planner premise check (moved verbatim). */
         private void validateLocalPlanners() {
-            // LOCAL 列表规划使用父组并行传输和带可用时刻副本的无争用估计，
-            // 不是完整运行事件重放；这些模型前提在配置层和规划器中分别校验。
-            // 争用变体的运行期还受端点/链路容量及固定每 VM 顺序约束，
-            // 不能把规划时刻与任意 preExecution 轨道宣称为逐位一致。
+            // LOCAL list planning uses parallel transfer of parent groups and a contention-free
+            // estimate with replicas carrying availability instants; it is not a full replay of
+            // runtime events. These model premises are checked separately in the configuration
+            // layer and in the planner. The runtime of the contention variant is additionally
+            // constrained by endpoint/link capacity and by a fixed per-VM order, so planning
+            // instants cannot be claimed to be bit-identical to an arbitrary preExecution track.
             if (planningAlgorithm == PlanningAlgorithm.LOCAL_HEFT
                     || planningAlgorithm == PlanningAlgorithm.LOCAL_CPOP
                     || planningAlgorithm == PlanningAlgorithm.LOCAL_PEFT) {
@@ -712,10 +734,12 @@ public final class SimulationConfig {
             }
         }
 
-        /** 执行前传输与规划器配对校验（逐字搬运转写）。 */
+        /** Pre-execution transfer and planner pairing check (moved verbatim). */
         private void validatePreExecutionPairing() {
-            // 执行前传输延迟（含链路争用模型）在任务就绪时按目标 VM 估计与登记副本，
-            // 要求规划器在规划阶段完成静态 VM 映射；INVALID 规划层在释放时刻没有目标 VM。
+            // Pre-execution transfer delay (including the link-contention models) estimates and
+            // registers replicas against the destination VM when a task becomes ready, which
+            // requires the planner to complete a static VM mapping during planning; the INVALID
+            // planning layer has no destination VM at release time.
             if ((dataMovementModel.isPreExecutionTransferDelayV1()
                             || dataMovementModel.isPreExecutionTransferDelayWithContentionV1()
                             || dataMovementModel.isFatTreeContentionV1())
@@ -727,12 +751,14 @@ public final class SimulationConfig {
             }
         }
 
-        /** Fat-tree 拓扑争用前提校验（逐字搬运转写）。 */
+        /** Fat-tree topology contention premise check (moved verbatim). */
         private void validateFatTreePremises() {
-            // Fat-tree 链路争用模型：VM→VM 传输沿确定性路由占用共享链路，前提是
-            // LOCAL 文件系统（VM→VM 通信被建模）、静态映射（路径就绪期可知）、
-            // NONE 聚类与无故障/无开销（与 LOCAL_HEFT 轨道同一组前提）。平台侧
-            // 拓扑声明的存在性由标准运行器校验（PlatformProfile.networkTopology）。
+            // Fat-tree link contention model: VM-to-VM transfers occupy shared links along
+            // deterministic routes; the premises are the LOCAL file system (so VM-to-VM
+            // communication is modeled), a static mapping (the path is known at ready time),
+            // NONE clustering, and no failure / no overhead (the same premise set as the
+            // LOCAL_HEFT track). The existence of the platform-side topology declaration is
+            // checked by the standard runner (PlatformProfile.networkTopology).
             if (dataMovementModel.isFatTreeContentionV1()) {
                 if (fileSystem != ReplicaCatalog.FileSystem.LOCAL) {
                     throw new IllegalArgumentException(dataMovementModel.getKind()
@@ -754,7 +780,7 @@ public final class SimulationConfig {
             }
         }
 
-        /** 在线数据绑定与 coherent 运行时组合校验（逐字搬运转写）。 */
+        /** Online data binding and coherent runtime combination check (moved verbatim). */
         private void validateCoherentCombinations() {
             if (dataflowAssignmentConfig.isEnabled()
                     && (!dataMovementModel.usesCoherentDataflowRuntime()

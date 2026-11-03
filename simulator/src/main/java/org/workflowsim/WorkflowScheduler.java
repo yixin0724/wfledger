@@ -536,25 +536,32 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * BAT-D2（2026-10-29）：为刚获得 VM 指派的计算 Job 决定唯一频档并缩放作业长度。
+     * BAT-D2 (2026-10-29): fixes the single frequency tier of a compute Job that has just been
+     * assigned a VM and scales the Job length accordingly.
      *
-     * <p>语义契约（docs/advanced/DVFS_DIMENSION_DESIGN.md §1.4/§2.2）：assignment at
-     * admission——每个计算 Job 在派发到 VM 的时刻获得恰好一个频档，全 Job 时长固定
-     * 不做中途变频，保持 one-rectangle-per-Job 的可审计结构。仿真级语义的"低档变慢"
-     * 由缩放作业 MI 表达：执行时长 = work/档速，在 CloudSim 按声明 MIPS 执行的机器上
-     * 等价于把长度乘 {@code vm.mips / tier.mips}（数据中心提交前的
-     * {@code projectComputeExecutionLength} 以 effectiveExecutionLengthMi 为真源重构
-     * Job 长度，故此处同时写入 effective 值与 Cloudlet 长度）。stage-in 注入的
-     * 传输 MI 发生在其后，按 VM 声明速执行（网络传输不随 CPU 频档伸缩）。</p>
+     * <p>Semantic contract (docs/advanced/DVFS_DIMENSION_DESIGN.md sections 1.4/2.2):
+     * assignment at admission -- each compute Job receives exactly one frequency tier at the
+     * moment it is dispatched to a VM, and the tier is fixed for the full Job duration with no
+     * mid-Job frequency switching, which preserves the auditable one-rectangle-per-Job
+     * structure. The simulation-level semantics of "a lower tier runs slower" is expressed by
+     * scaling the Job MI: execution duration = work / tier speed, which on a machine executing
+     * at the declared MIPS of CloudSim is equivalent to multiplying the length by
+     * {@code vm.mips / tier.mips} (the datacenter rebuilds the Job length before submission
+     * through {@code projectComputeExecutionLength}, which takes effectiveExecutionLengthMi as
+     * the source of truth, so the effective value and the Cloudlet length are both written
+     * here). The transfer MI injected by stage-in happens afterwards and runs at the VM
+     * declared speed (network transfer does not scale with the CPU frequency tier).</p>
      *
-     * <p>非计算 Job（stage-in 平台准备）与无频档 VM（v1 平台或混合平台的无档 VM）
-     * 不获得频档：tierMips 保持 null，长度不变——v1 运行逐位不变。</p>
+     * <p>Non-compute Jobs (stage-in platform preparation) and VMs without frequency tiers (v1
+     * platforms or the tierless VMs of a mixed platform) receive no tier: tierMips stays null
+     * and the length is unchanged -- v1 runs stay bit-identical.</p>
      *
-     * @param job 刚被调度算法指派 VM 的计算 Job
+     * @param job compute Job that the scheduling algorithm has just assigned to a VM
      */
     private void assignFrequencyTier(Job job) {
         if (job.getClassType() != Parameters.ClassType.COMPUTE.value) {
-            // 非计算 Job（stage-in/stage-out/cleanup 平台簿记）不占用计算频档。
+            // Non-compute Jobs (stage-in/stage-out/cleanup platform bookkeeping) occupy no
+            // compute frequency tier.
             return;
         }
         CondorVM vm = findCreatedVm(job.getVmId());
@@ -564,21 +571,28 @@ public class WorkflowScheduler extends DatacenterBroker {
         List<PlatformProfile.FrequencyTier> tiers = vm.getFrequencyTiers();
         PlatformProfile.FrequencyTier selected = selectFrequencyTier(job, tiers);
         long scaledWork = scaledTierWorkMi(job, vm, selected);
-        // 证据链：Job 在报告捕获时把该值冻结进 JobOutcome.tierMips。
+        // Evidence chain: the Job freezes this value into JobOutcome.tierMips when the report
+        // is captured.
         job.setTierMips(selected.getMips());
         job.setEffectiveExecutionLengthMi(scaledWork);
         job.setCloudletLength(scaledWork);
     }
 
     /**
-     * BAT-D2：按会话频档策略选择 VM 频档表中的唯一档（表序=降序、首档=默认档）。
+     * BAT-D2: selects the single tier of the VM frequency-tier table under the session
+     * frequency policy (table order = descending, first tier = default tier).
      *
-     * <p>BAT-D6（2026-10-29，docs/advanced/DVFS_DIMENSION_DESIGN.md §2.2 注册面）：活动
-     * 调度策略实例实现 {@link FrequencyTierSelector} 时，逐 Job 档选择权归算法——第一类
-     * 调度时刻 API 的消费点，注册 DVFS-aware 算轨（如 EDP_GREEDY 示范）表达异质档位
-     * 策略的唯一通道；会话级策略（BASE 路径）退为无 selector 算法的缺省斜切。两条
-     * 路径的返回值都送 {@link #validateDeclaredTier(Job, PlatformProfile.FrequencyTier, List)}
-     * 做声明档成员校验（档按 MIPS 唯一），表外/空档按证据链断裂显式拒绝（不静默回退）。</p>
+     * <p>BAT-D6 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.2 registry
+     * surface): when the active scheduling policy instance implements
+     * {@link FrequencyTierSelector}, the per-Job tier choice belongs to the algorithm -- the
+     * consumption point of the first-class scheduling-time API and the only channel through
+     * which a registered DVFS-aware algorithm track (such as the EDP_GREEDY demonstrator)
+     * expresses a heterogeneous tier policy; the session-level policy (BASE path) recedes to
+     * the default cross-cutting behavior for algorithms without a selector. The return values
+     * of both paths go to
+     * {@link #validateDeclaredTier(Job, PlatformProfile.FrequencyTier, List)} for declared-tier
+     * membership validation (tiers are unique by MIPS); an out-of-table or missing tier is
+     * rejected explicitly as a broken evidence chain (no silent fallback).</p>
      */
     private PlatformProfile.FrequencyTier selectFrequencyTier(Job job, List<PlatformProfile.FrequencyTier> tiers) {
         BaseSchedulingAlgorithm policy = getSchedulingPolicy();
@@ -588,13 +602,15 @@ public class WorkflowScheduler extends DatacenterBroker {
         SimulationConfig.FrequencyPolicy policyValue = Parameters.getFrequencyPolicy();
         switch (policyValue) {
             case MIN_POWER:
-                // 节电上限：每个 Job 都在最低频档（表末档）执行。
+                // Power-saving upper bound: every Job runs at the lowest frequency tier (last
+                // table entry).
                 return tiers.get(tiers.size() - 1);
             case EDP_HEURISTIC:
                 return selectMinEdpTier(job, tiers);
             case DEFAULT:
-                // 缺省（含未配置）：首档=平台声明的默认档（绝不静默"挑最快"——
-                // 默认档身份来自表序声明，而非隐式 max()）。
+                // Default (including unconfigured): first tier = the default tier declared by the
+                // platform (never silently "pick the fastest" -- the identity of the default tier
+                // comes from the table-order declaration, not from an implicit max()).
                 return tiers.get(0);
             default:
                 throw new IllegalStateException("Unknown frequency policy " + policyValue);
@@ -602,12 +618,14 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * BAT-D6：selector 返回档的声明成员校验——null 或不在本 VM 声明频档表内
-     * （按 mips 精确身份，档按 mips 唯一）= 频档证据链断裂，显式失败。
+     * BAT-D6: declared-membership validation of the tier returned by a selector -- null, or not
+     * inside the declared frequency-tier table of this VM (exact identity by mips, tiers are
+     * unique by mips) = broken frequency-tier evidence chain, fail explicitly.
      *
-     * <p>本校验与 Java/Python 台账的同名条款（EnergyAccounting.tierByMips、
-     * verify-study-evidence.py）同源：自由构造的档身份在这里被挡下，不会以
-     * "伪声明档"流入 JobOutcome.tierMips 污染守恒律复算。</p>
+     * <p>This validation has the same source as the same-named clause of the Java/Python
+     * ledger (EnergyAccounting.tierByMips, verify-study-evidence.py): a freely constructed
+     * tier identity is stopped here and cannot flow into JobOutcome.tierMips as a
+     * "falsely declared tier" to corrupt the conservation-law recompute.</p>
      */
     private PlatformProfile.FrequencyTier validateDeclaredTier(
             Job job, PlatformProfile.FrequencyTier selected, List<PlatformProfile.FrequencyTier> tiers) {
@@ -626,7 +644,10 @@ public class WorkflowScheduler extends DatacenterBroker {
                 + job.getCloudletId() + ", BAT-D6): the per-Job tier evidence chain would be broken");
     }
 
-    /** BAT-D6：selector 拒绝消息引用的活动策略身份（注册标签优先于枚举名）。 */
+    /**
+     * BAT-D6: identity of the active policy cited in selector rejection messages (registered
+     * label before enum name).
+     */
     private String policyLabel() {
         if (Parameters.getRegisteredSchedulingAlgorithmProvider() != null) {
             String label = Parameters.getRegisteredSchedulingAlgorithmProvider().label();
@@ -638,19 +659,22 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * BAT-D2：v1 诚实贪心 EDP——派发时刻逐档估值，取 EDP 最小的档。
+     * BAT-D2: v1 honest greedy EDP -- evaluate every tier at dispatch time and take the tier
+     * with the smallest EDP.
      *
-     * <p>每个候选档 t 估计（只用派发可观测状态，无千里眼）：
-     * {@code T_t = work/档速}；
-     * makespan 估计取贪心关键路径下界 {@code clock + T_t}（本 Job 至少把日程推到自身
-     * 完成，任何更小的估计都在否认本 Job 自己的运行区间）。按任务契约：
-     * {@code EDP_t = (P_max(t)·T_t + P_idle(default)·makespan_est) × T_t}。全局最优 EDP
-     * 是 NP-hard 跨 Job 问题（设计 §3 诚实弃项），v2 目标是每 Job 独立贪心；并列时
-     * 严格 {@code <} 保表序首位（确定性 tie-break，AGENTS #9）。</p>
+     * <p>Estimate for each candidate tier t (dispatch-observable state only, no clairvoyance):
+     * {@code T_t = work / tier speed};
+     * the makespan estimate takes the greedy critical-path lower bound
+     * {@code clock + T_t} (this Job pushes the schedule at least to its own completion, and
+     * any smaller estimate denies this Job its own execution interval). Per the task contract:
+     * {@code EDP_t = (P_max(t)*T_t + P_idle(default)*makespan_est) * T_t}. The globally
+     * optimal EDP is an NP-hard cross-Job problem (design section 3 honest exclusion), and the
+     * v2 target is an independent greedy choice per Job; on ties the strict {@code <} keeps the
+     * first table entry (deterministic tie-break, AGENTS #9).</p>
      *
-     * @param job 待派发的计算 Job（提供声明的每 PE 计算 MI）
-     * @param tiers 候选频档表（降序）
-     * @return EDP 估计最小的档
+     * @param job compute Job to be dispatched (supplies the declared per-PE compute MI)
+     * @param tiers candidate frequency-tier table (descending)
+     * @return tier with the smallest estimated EDP
      */
     private PlatformProfile.FrequencyTier selectMinEdpTier(Job job, List<PlatformProfile.FrequencyTier> tiers) {
         long workMi = job.getEffectiveExecutionLengthMi();
@@ -673,12 +697,14 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * BAT-D2：把声明的每 PE 计算 MI 按档速折算为 CloudSim 长度。
+     * BAT-D2: converts the declared per-PE compute MI into a CloudSim length at the tier speed.
      *
-     * <p>{@code scaled = round(work × vm.mips / tier.mips)}：CloudSim 以声明 MIPS 执行
-     * 该长度所得时长恰为 {@code work / tier.mips}（work/档速）。工作不变——Job 的工作
-     * 语义量（MI）只随档速换算计时基准，声明任务长度（TaskOutcome.lengthMi）不变。
-     * 溢出/塌缩到不可表示值显式失败，不静默截断。</p>
+     * <p>{@code scaled = round(work * vm.mips / tier.mips)}: executing this length at the
+     * declared MIPS in CloudSim takes exactly {@code work / tier.mips} (work / tier speed). The
+     * work is unchanged -- the work-semantic quantity of the Job (MI) only converts its timing
+     * basis with the tier speed, and the declared task length (TaskOutcome.lengthMi) stays
+     * unchanged. An overflow, or a collapse to an unrepresentable value, fails explicitly
+     * instead of being silently truncated.</p>
      */
     private long scaledTierWorkMi(Job job, CondorVM vm, PlatformProfile.FrequencyTier tier) {
         long declaredWorkMi = job.getEffectiveExecutionLengthMi();
@@ -693,12 +719,14 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 处理一个作业返回事件。
+     * Processes one Job return event.
      *
-     * <p>数据中心已在提交输出副本之前判定 compute Job 的故障结果。本路径只负责释放 VM、
-     * 记录事件，再向工作流引擎回传作业。后处理延迟按当前作业深度从开销模型抽样。</p>
+     * <p>The datacenter has already decided the failure outcome of a compute Job before it
+     * submits the output replicas. This path only releases the VM, records the events, and
+     * returns the Job to the workflow engine. The post-processing delay is sampled from the
+     * overhead model according to the current Job depth.</p>
      *
-     * @param ev 作业返回事件
+     * @param ev Job return event
      */
     @Override
     protected void processCloudletReturn(SimEvent ev) {
@@ -709,7 +737,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         getCloudletSubmittedList().remove(cloudlet);
 
         CondorVM vm = findCreatedVm(cloudlet.getVmId());
-        // 作业已返回，虚拟机重新可接收后续作业。
+        // The Job has returned, so the VM can accept subsequent Jobs again.
         vm.setState(WorkflowSimTags.VM_STATUS_IDLE);
 
         double delay = 0.0;
@@ -737,16 +765,21 @@ public class WorkflowScheduler extends DatacenterBroker {
         schedule(this.workflowEngineId, delay, CloudSimTags.CLOUDLET_RETURN, cloudlet);
 
         cloudletsSubmitted--;
-        // PLAT-12：仅在有就绪作业等待时才触发后续调度周期。历史实现对每个作业返回
-        // 无条件补发 CLOUDLET_UPDATE，同刻多个返回会产生多个 readyJobCount=0 的
-        // 空转周期，扭曲周期/开销类指标。就绪作业后续到达时由 processCloudletSubmit
-        // 自行触发调度周期，跳过空转不会造成作业停滞。
+        // PLAT-12: trigger a subsequent scheduling cycle only when ready Jobs are waiting. The
+        // historical implementation re-sent CLOUDLET_UPDATE unconditionally on every Job return,
+        // so several returns at the same instant produced several idle cycles with
+        // readyJobCount=0 and distorted the cycle/overhead metrics. Later ready Jobs are
+        // dispatched through the scheduling cycle that processCloudletSubmit triggers itself, so
+        // skipping the idle cycle does not stall any Job.
         if (!getCloudletList().isEmpty()) {
             schedule(this.getId(), 0.0, WorkflowSimTags.CLOUDLET_UPDATE);
         }
     }
 
-    /** CloudSim VM 编号可由外部配置，不能假设它等于列表下标。 */
+    /**
+     * The CloudSim VM id may come from external configuration and must not be assumed to equal
+     * the list index.
+     */
     private CondorVM findCreatedVm(int vmId) {
         for (Object item : getVmsCreatedList()) {
             CondorVM vm = (CondorVM) item;
@@ -765,42 +798,44 @@ public class WorkflowScheduler extends DatacenterBroker {
         return statuses;
     }
 
-    /** 启动调度实体并注册到 CloudSim 信息服务。 */
+    /** Starts the scheduling entity and registers it with the CloudSim information service. */
     @Override
     public void startEntity() {
         Log.printLine(getName() + " is starting...");
-        // 未配置区域 GIS 时，使用系统默认的 CloudInformationService。
+        // When no regional GIS is configured, use the system default CloudInformationService.
         // int gisID = CloudSim.getEntityId(regionalCisName);
         int gisID = -1;
         if (gisID == -1) {
             gisID = CloudSim.getCloudInfoServiceEntityId();
         }
 
-        // 向 CloudSim 信息服务注册本调度实体。
+        // Register this scheduling entity with the CloudSim information service.
         sendNow(gisID, CloudSimTags.REGISTER_RESOURCE, getId());
     }
 
-    /** 关闭调度实体并释放数据中心资源。 */
+    /** Shuts down the scheduling entity and releases the datacenter resources. */
     @Override
     public void shutdownEntity() {
         clearDatacenters();
         Log.printLine(getName() + " is shutting down...");
     }
 
-    /** VM 创建完成后通知工作流引擎开始提交作业。 */
+    /** Notifies the workflow engine to start submitting Jobs once VM creation completes. */
     @Override
     protected void submitCloudlets() {
         sendNow(this.workflowEngineId, CloudSimTags.CLOUDLET_SUBMIT, null);
     }
 
     /**
-     * 接收一批来自工作流引擎的就绪作业并触发调度周期。
+     * Receives a batch of ready Jobs from the workflow engine and triggers a scheduling cycle.
      *
-     * <p>引擎可能向未分配到作业的调度器发送空批次；空批次与 {@code null} 负载
-     * 不触发调度周期，避免产生空转周期事件（PLAT-12）。历史死代码标记
-     * {@code processCloudletSubmitHasShown} 已移除（PLAT-20：置位后无任何效果）。</p>
+     * <p>The engine may send an empty batch to a scheduler that received no Jobs; an empty batch
+     * and a {@code null} payload do not trigger a scheduling cycle, so no idle-cycle event is
+     * produced (PLAT-12). The historical dead-code flag
+     * {@code processCloudletSubmitHasShown} has been removed (PLAT-20: setting it had no
+     * effect).</p>
      *
-     * @param ev 包含作业列表的提交事件
+     * @param ev submit event carrying the Job list
      */
     protected void processCloudletSubmit(SimEvent ev) {
         Object data = ev.getData();
@@ -817,9 +852,9 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 请求已绑定数据中心的资源特征。
+     * Requests the resource characteristics of the bound datacenters.
      *
-     * @param ev 资源特征请求事件
+     * @param ev resource-characteristics request event
      */
     @Override
     protected void processResourceCharacteristicsRequest(SimEvent ev) {

@@ -11,32 +11,38 @@ import java.util.Set;
 import org.workflowsim.data.TransferContentionEngine;
 
 /**
- * Al-Fares SIGCOMM 2008 k-Pod Fat-tree 拓扑：结构构造 + 确定性路由。
+ * Al-Fares SIGCOMM 2008 k-Pod Fat-tree topology: structural construction plus deterministic
+ * routing.
  *
- * <p>结构（k 为偶数）：k 个 Pod，每 Pod 含 k/2 台 edge 与 k/2 台 aggregate
- * 交换机（Pod 内全二部连接）；core 层满配 k²/4 台，core (i,j)（c = i·(k/2)+j）
- * 连接每个 Pod 的第 i 台 aggregate。core 减量 m &lt; k²/4 即超收敛，收敛比
- * (k²/4)/m。逐层带宽守恒（edge→agg、agg→core、core 下行、主机接入的链路总数
- * 均为 k³/4）给出满二分带宽；详见 {@code docs/research/FAT_TREE_DESIGN.md}。</p>
+ * <p>Structure (k even): k Pods, each Pod with k/2 edge switches and k/2 aggregate switches (full
+ * bipartite connection inside a Pod); the core layer is fully populated with k^2/4 switches, and
+ * core (i,j) (c = i*(k/2)+j) connects aggregate i of every Pod. A core reduction of
+ * m &lt; k^2/4 means oversubscription, with oversubscription ratio (k^2/4)/m. Bandwidth
+ * conservation layer by layer (the link totals of edge-&gt;agg, agg-&gt;core, core downlink, and
+ * host access are all k^3/4) yields full bisection bandwidth; see
+ * {@code docs/research/FAT_TREE_DESIGN.md} for details.</p>
  *
- * <p><b>确定性路由（v1 规则，全部写入证据可审计）</b>：</p>
+ * <p><b>Deterministic routing (v1 rules, all written into auditable evidence)</b>:</p>
  * <ul>
- *   <li>同主机：空路径（VM 间本地交换，不占用拓扑链路）；</li>
- *   <li>上行 aggregate 选择：a = srcEdge mod availA（availA = 拥有 core 上行
- *       的 aggregate 数 = ceil(2m/k)；满配时 availA = k/2）；</li>
- *   <li>跨 Pod core 选择：在 aggregate a 的可用 core {(a,j) : a·(k/2)+j &lt; m}
- *       中取 j = (srcEdge + dstEdge + srcPod + dstPod) mod jCount；</li>
- *   <li>结构性质决定目的 Pod 侧 aggregate 必为同一编号 a（core (a,j) 连接所有
- *       Pod 的 aggregate a）；下行链路唯一。</li>
+ *   <li>Same host: empty path (local switching between VMs, occupying no topology link);</li>
+ *   <li>Uplink aggregate choice: a = srcEdge mod availA (availA = number of aggregates that own a
+ *       core uplink = ceil(2m/k); availA = k/2 when fully populated);</li>
+ *   <li>Cross-Pod core choice: among the available cores of aggregate a,
+ *       {(a,j) : a*(k/2)+j &lt; m}, take j = (srcEdge + dstEdge + srcPod + dstPod) mod
+ *       jCount;</li>
+ *   <li>The structural property forces the aggregate on the destination Pod side to be the same
+ *       index a (core (a,j) connects aggregate a of every Pod); the downlink is unique.</li>
  * </ul>
  *
- * <p>链路为双工建模：每个方向是独立容量资源（键形如
- * {@code LINK:EDGE:0:1->AGG:0:0}），反向流量不共享容量。主机接入链路同样分
- * 方向（{@code LINK:ACC:h->EDGE:p:e} / {@code LINK:EDGE:p:e->ACC:h}）。</p>
+ * <p>Links are modelled as duplex: each direction is an independent capacity resource (keys such
+ * as {@code LINK:EDGE:0:1->AGG:0:0}), and reverse traffic does not share capacity. Host access
+ * links are likewise directional ({@code LINK:ACC:h->EDGE:p:e} /
+ * {@code LINK:EDGE:p:e->ACC:h}).</p>
  *
- * <p>诚实边界：交换机内部转发不设容量约束（只约束链路与端点）；均匀链路带宽；
- * 链路延迟不建模；无自适应路由/ECMP 哈希/链路故障。原理与取舍见
- * {@code docs/research/FAT_TREE_DESIGN.md} 的模型边界。</p>
+ * <p>Honest boundaries: forwarding inside a switch has no capacity constraint (only links and
+ * endpoints are constrained); uniform link bandwidth; link delay is not modelled; no adaptive
+ * routing, ECMP hashing, or link failure. For the rationale and trade-offs see the model
+ * boundaries of {@code docs/research/FAT_TREE_DESIGN.md}.</p>
  */
 public final class FatTreeTopology {
 
@@ -64,13 +70,15 @@ public final class FatTreeTopology {
     }
 
     /**
-     * 由拓扑声明与平台主机 ID 列表构造 Fat-tree。
+     * Builds a Fat-tree from the topology spec and the platform host IDs.
      *
-     * @param spec 拓扑声明（{@link NetworkTopologySpec#fatTree}）
-     * @param hostIds 平台全部主机 ID（顺序无关，内部按升序规范化）
-     * @return 不可变拓扑实例
-     * @throws IllegalArgumentException 主机数超过 k³/4、放置越界/重复/超容量、
-     *         超收敛过度导致某 aggregate 无 core 上行
+     * @param spec topology spec ({@link NetworkTopologySpec#fatTree})
+     * @param hostIds all platform host IDs (order irrelevant, normalized to ascending order
+     *        internally)
+     * @return immutable topology instance
+     * @throws IllegalArgumentException if the host count exceeds k^3/4, a placement is out of
+     *         range, duplicated, or over capacity, or excessive oversubscription leaves some
+     *         aggregate without a core uplink
      */
     public static FatTreeTopology fromSpec(NetworkTopologySpec spec, List<Integer> hostIds) {
         if (spec == null || spec.getKind() != NetworkTopologySpec.Kind.FAT_TREE) {
@@ -93,19 +101,22 @@ public final class FatTreeTopology {
         }
         int coreSwitchCount =
                 spec.getCoreSwitchCount() != null ? spec.getCoreSwitchCount().intValue() : k * k / 4;
-        // 超收敛校验：每台 aggregate（编号 a < availA 才会被路由使用）必须至少
-        // 有一条 core 上行，即 a*halfK < coreSwitchCount 对 a = availA-1 成立。
+        // Oversubscription check: every aggregate (only index a < availA is used by routing)
+        // must have at least one core uplink, that is a*halfK < coreSwitchCount for a = availA-1.
         int availableAggregateCount = (coreSwitchCount + halfK - 1) / halfK;
         if (availableAggregateCount < 1) {
             throw new IllegalArgumentException(
                     "Fat-tree core switch count too small for k=" + k + ": at least 1 core switch must be reachable");
         }
-        // 放置解析：显式 map 或默认轮转（hostId 升序 → edge 交换机索引轮转）。
+        // Placement resolution: explicit map or default rotation (ascending hostId -> rotating
+        // edge switch index).
         int edgeSwitchCount = k * halfK;
         Map<Integer, int[]> hostToPodEdge = resolveHostPlacements(spec, sorted, halfK, edgeSwitchCount);
-        // 单位契约：spec 的链路带宽按 MB/s 解释（×10⁶ = 字节/秒），与 VM 端点
-        // 容量（vm.getBw() × 10⁶）及遗留估算公式（bytes/10⁶/bw）同一惯例。
-        // 同声明值下链路容量与端点容量同量级（R8 审计修复：此前误按 Mb/s ÷8）。
+        // Unit contract: the link bandwidth of the spec is interpreted as MB/s (x 1e6 = bytes
+        // per second), the same convention as the VM endpoint capacity (vm.getBw() x 1e6) and
+        // the legacy estimation formula (bytes / 1e6 / bw). Under the same declared value, link
+        // capacity and endpoint capacity are of the same order of magnitude (R8 audit fix:
+        // previously it was mistakenly treated as Mb/s and divided by 8).
         Map<String, Double> linkCapacities = buildLinkCapacities(
                 k, halfK, coreSwitchCount, hostToPodEdge, spec.getLinkBandwidthMbPerSecond() * 1_000_000.0);
         return new FatTreeTopology(
@@ -118,7 +129,8 @@ public final class FatTreeTopology {
 
     /**
      * 2026-10-26 complexity extraction from fromSpec; statements verbatim; order unchanged.
-     * 作用域：仅解析主机放置表（placement 未声明时按 hostId 升序默认轮转，声明时校验覆盖与每 edge 容量）。
+     * Scope: resolves only the host placement table (default rotation in ascending hostId when
+     * placement is not declared; when it is declared, validates coverage and per-edge capacity).
      */
     private static Map<Integer, int[]> resolveHostPlacements(
             NetworkTopologySpec spec, List<Integer> sorted, int halfK, int edgeSwitchCount) {
@@ -156,7 +168,7 @@ public final class FatTreeTopology {
         return hostToPodEdge;
     }
 
-    /** 构造全部物理链路容量表（双工分方向；仅已放置主机的接入链路）。 */
+    /** Builds the full physical link capacity table (duplex, per direction; access links of placed hosts only). */
     private static Map<String, Double> buildLinkCapacities(
             int k, int halfK, int coreSwitchCount, Map<Integer, int[]> hostToPodEdge, double bandwidthBytesPerSecond) {
         Map<String, Double> capacities = new LinkedHashMap<String, Double>();
@@ -177,7 +189,7 @@ public final class FatTreeTopology {
                             Double.valueOf(bandwidthBytesPerSecond));
                 }
             }
-            // aggregate 的 core 上行：core c = agg*halfK + j，仅 c < coreSwitchCount 存在。
+            // Core uplinks of an aggregate: core c = agg*halfK + j, present only while c < coreSwitchCount.
             for (int agg = 0; agg < halfK; agg++) {
                 for (int j = 0; j < halfK && agg * halfK + j < coreSwitchCount; j++) {
                     int core = agg * halfK + j;
@@ -192,13 +204,14 @@ public final class FatTreeTopology {
     }
 
     /**
-     * 确定性路由：返回源主机到目的主机传输占用的链路资源键序列（上行在前、
-     * 下行在后，含两端接入链路）。
+     * Deterministic routing: returns the sequence of link resource keys occupied by a transfer
+     * from the source host to the destination host (uplinks first, downlinks after, including the
+     * access links at both ends).
      *
-     * @param srcHostId 源主机 ID
-     * @param dstHostId 目的主机 ID
-     * @return 资源键列表；同主机返回空列表
-     * @throws IllegalArgumentException 主机未放置在拓扑中
+     * @param srcHostId source host ID
+     * @param dstHostId destination host ID
+     * @return list of resource keys; empty list for the same host
+     * @throws IllegalArgumentException if a host is not placed in the topology
      */
     public List<String> route(int srcHostId, int dstHostId) {
         int[] src = requirePlaced(srcHostId);
@@ -229,9 +242,10 @@ public final class FatTreeTopology {
     }
 
     /**
-     * 把全部链路容量注册进争用引擎（作为通用资源键；引擎对资源键语义中立）。
+     * Registers every link capacity into the contention engine (as generic resource keys; the
+     * engine is agnostic to the semantics of a resource key).
      *
-     * @param engine 流体争用引擎
+     * @param engine fluid contention engine
      */
     public void registerCapacities(TransferContentionEngine engine) {
         if (engine == null) {
@@ -243,10 +257,11 @@ public final class FatTreeTopology {
     }
 
     /**
-     * 全部链路资源键的只读视图（R8 审计 F8：供测试锁定"任意路由的每条链路
-     * 都已注册容量"的闭包契约，防止路由命名与容量注册两侧漂移）。
+     * Read-only view of every link resource key (R8 audit F8: lets the test lock the closure
+     * contract that "every link of any route already has a registered capacity", preventing the
+     * route-naming side and the capacity-registration side from drifting apart).
      *
-     * @return 不可修改的链路资源键集合
+     * @return unmodifiable set of link resource keys
      */
     public Set<String> getLinkIds() {
         return java.util.Collections.unmodifiableSet(linkCapacities.keySet());
@@ -260,52 +275,52 @@ public final class FatTreeTopology {
         return podEdge;
     }
 
-    /** aggregate a 的可用 core 上行数量（≥ 1 由构造校验保证）。 */
+    /** Number of available core uplinks of aggregate a (at least 1, guaranteed by the construction check). */
     private int coreUplinkCount(int agg) {
         return Math.min(halfK, coreSwitchCount - agg * halfK);
     }
 
-    /** k-Pod 参数。 */
+    /** k-Pod parameter. */
     public int getK() {
         return k;
     }
 
-    /** core 交换机数量（满配 = k²/4）。 */
+    /** Number of core switches (fully populated = k^2/4). */
     public int getCoreSwitchCount() {
         return coreSwitchCount;
     }
 
-    /** 交换机总数 = core + k 个 Pod × k 台。 */
+    /** Total switch count = core + k Pods x k switches. */
     public int getSwitchCount() {
         return coreSwitchCount + k * k;
     }
 
-    /** 物理链路资源键总数（双工分方向计数）。 */
+    /** Total number of physical link resource keys (duplex, counted per direction). */
     public int getLinkResourceCount() {
         return linkCapacities.size();
     }
 
-    /** 已放置主机数。 */
+    /** Number of placed hosts. */
     public int getPlacedHostCount() {
         return hostToPodEdge.size();
     }
 
-    /** 主机容量上限 k³/4。 */
+    /** Host capacity limit k^3/4. */
     public int getHostCapacity() {
         return k * k * k / 4;
     }
 
-    /** 超收敛比 (k²/4)/m；满配为 1.0。 */
+    /** Oversubscription ratio (k^2/4)/m; 1.0 when fully populated. */
     public double getOversubscriptionRatio() {
         return (k * k / 4.0) / coreSwitchCount;
     }
 
-    /** 统一链路带宽，字节/秒。 */
+    /** Uniform link bandwidth, bytes per second. */
     public double getLinkBandwidthBytesPerSecond() {
         return linkBandwidthBytesPerSecond;
     }
 
-    /** 主机 → {pod, edgeIndex} 的不可变放置视图（测试与证据用）。 */
+    /** Immutable placement view host -> {pod, edgeIndex} (for tests and evidence). */
     public Map<Integer, int[]> getHostPlacements() {
         Map<Integer, int[]> copy = new LinkedHashMap<Integer, int[]>();
         for (Map.Entry<Integer, int[]> entry : hostToPodEdge.entrySet()) {

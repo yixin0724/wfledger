@@ -14,44 +14,59 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * 与 WorkflowSim 受控 LOCAL 文件系统执行模型对齐的通信感知 PEFT 静态 DAG 规划器。
+ * Communication-aware PEFT static DAG planner aligned with the controlled LOCAL file-system
+ * execution model of WorkflowSim.
  *
- * <p><b>算法</b>（Arabnejad &amp; Barbosa, IEEE TPDS 2014, Eq. (7)）：
- * {@code OCT(t,p) = max_child min_p'(OCT(child,p') + w(child,p') + c(t,child,p,p'))}，
- * 出口 {@code OCT(exit,p) = 0}。OCT 从后继开始计成本，不含当前任务自身计算量。
- * 每轮在依赖就绪任务中选择兼容 VM 平均 OCT 最高者（rank_o），平局取较小 Task ID；
- * 分配给插入式 {@code EFT(t,p) + OCT(t,p)} 最小的兼容 VM，平局取较小 VM ID。</p>
+ * <p><b>Algorithm</b> (Arabnejad &amp; Barbosa, IEEE TPDS 2014, Eq. (7)):
+ * {@code OCT(t,p) = max_child min_p'(OCT(child,p') + w(child,p') + c(t,child,p,p'))},
+ * with the exit condition {@code OCT(exit,p) = 0}. OCT costs successors first and excludes the
+ * computation amount of the current task itself. Each round picks, among the dependency-ready
+ * tasks, the one with the highest average OCT over the compatible VMs (rank_o), breaking ties by
+ * the smaller Task ID; that task is assigned to the compatible VM minimizing the insertion-based
+ * {@code EFT(t,p) + OCT(t,p)}, breaking ties by the smaller VM ID.</p>
  *
- * <p><b>一级来源</b>：作者公开博士论文第3章明确收录 DOI 10.1109/TPDS.2013.57，
- * 印刷 p71 Eq. (7) 与出口零条件、p73 Eq. (9) 和 Algorithm 1；
- * <a href="https://repositorio-aberto.up.pt/handle/10216/92290">University of Porto author source</a>。
- * 原先“自身 w + 后继 OCT、出口均值”的实现并非原 PEFT；其历史结果不能作为论文复现证据。</p>
+ * <p><b>Primary source</b>: chapter 3 of the author's public PhD thesis records
+ * DOI 10.1109/TPDS.2013.57 explicitly, with printed p71 Eq. (7) and the zero exit condition,
+ * p73 Eq. (9), and Algorithm 1;
+ * <a href="https://repositorio-aberto.up.pt/handle/10216/92290">University of Porto author source</a>.
+ * The earlier implementation ("own w + successor OCT, mean at the exit") was not the original
+ * PEFT; its historical results cannot serve as evidence for reproducing the paper.</p>
  *
- * <p><b>通信建模</b>——与 {@link SharedStoragePeftPlanningAlgorithm}（共享存储轨道，
- * 无链路模型，通信项 c ≡ 0 的退化 PEFT）的关键区别：OCT 使用模型内按 VM 对的
- * LOCAL 通信成本 {@code c(t, child, p, p') = bytes / (1e6 × min(bw_p, bw_p'))}
- * （p = p' 时为零），字节数取父 OUTPUT ∩ 子 INPUT。原文按平均链路成本建模，
- * 异构端点带宽与副本局部性是本平台的显式适配，并非原文完整网络模型。
- * stage-in 与带时间戳副本使用和 {@link LocalHeftPlanningAlgorithm} 相同的
- * {@link AbstractLocalCommPlanningAlgorithm} 估计；本类只实现 OCT、优先级及选择规则。</p>
+ * <p><b>Communication modelling</b> -- the key difference from
+ * {@link SharedStoragePeftPlanningAlgorithm} (shared-storage track, no link model, degenerate
+ * PEFT with the communication term c = 0): OCT uses the in-model per-VM-pair LOCAL
+ * communication cost {@code c(t, child, p, p') = bytes / (1e6 * min(bw_p, bw_p'))}
+ * (zero when p = p'), with the byte count taken as the intersection of the parent OUTPUT and the
+ * child INPUT. The original models by average link cost; heterogeneous endpoint bandwidth and
+ * replica locality are an explicit adaptation of this platform, not the full network model of the
+ * original. Stage-in and timestamped replicas use the same estimate as
+ * {@link LocalHeftPlanningAlgorithm} through {@link AbstractLocalCommPlanningAlgorithm}; this
+ * class implements only OCT, the priority, and the selection rules.</p>
  *
- * <p><b>适用前提</b>：LOCAL 文件系统、NONE 聚类、无故障、无建模开销、
- * {@code preExecutionTransferDelayV1} 数据移动模型与 SPACE_SHARED VM；由
- * {@link PlanningContext#validateLocalStaticDag()} 强制。规划器写出的每任务 VM
- * 映射与计划开始时间由 {@code StaticSchedulePlan} 强制为运行时的每 VM 派发顺序。</p>
+ * <p><b>Preconditions</b>: LOCAL file system, NONE clustering, no failures, no modelled overhead,
+ * the {@code preExecutionTransferDelayV1} data-movement model, and SPACE_SHARED VMs; enforced by
+ * {@link PlanningContext#validateLocalStaticDag()}. The per-task VM mapping and planned start time
+ * written by the planner are enforced by {@code StaticSchedulePlan} as the runtime per-VM dispatch
+ * order.</p>
  *
- * <p><b>边界声明</b>：OCT 是调度前静态量——按 VM 对无争用带宽计算，不做副本局部性
- * 减免（运行期 stage-in 可利用已演进的副本，实际传输可能快于 OCT 估计）；不建模
- * 链路争用、网络拓扑或多工作流并发传输（同 LOCAL_HEFT 边界）；副本估计不完整重放
- * 事件顺序，短计算的完成规则仍可能造成偏差。rank_o 降序在异构成本下理论上不保证
- * 拓扑序（后继处理器最小化可使父 OCT 低于后继的跨 VM 平均值），因此分配采用论文的
- * 标准就绪表纪律：每轮在前驱均已分配的任务中取 rank_o 最高者（平局取较小任务 ID）。
- * 当 rank_o 序本身拓扑合法时（例如本次核对的论文算例，由既有单测逐位守护），就绪表
- * 选择与字面 rank_o 序逐项一致，调度不变。它是抽象模型上的 PEFT，不是真实平台校准。</p>
+ * <p><b>Boundary statement</b>: OCT is a pre-scheduling static quantity -- computed from
+ * contention-free bandwidth per VM pair, with no replica-locality discount (runtime stage-in can
+ * use an already evolved replica, so the actual transfer may be faster than the OCT estimate); it
+ * models no link contention, network topology, or concurrent multi-workflow transfer (same
+ * boundary as LOCAL_HEFT); the replica estimate does not fully replay the event order, so the
+ * completion rule of short computations may still deviate. Descending rank_o does not
+ * theoretically guarantee a topological order under heterogeneous costs (minimizing over
+ * successor processors can push a parent's OCT below the cross-VM average of its successors), so
+ * allocation uses the standard ready-list discipline of the paper: each round takes the task of
+ * highest rank_o among those whose predecessors are all allocated (ties by the smaller task ID).
+ * When the rank_o order is itself topologically legal (for example the paper example checked here,
+ * guarded position by position by the existing unit test), the ready-list selection matches the
+ * literal rank_o order item by item and the schedule is unchanged. It is PEFT on an abstract
+ * model, not a calibration against a real platform.</p>
  */
 public final class LocalPeftPlanningAlgorithm extends AbstractLocalCommPlanningAlgorithm {
 
-    /** 任务 → (VM → OCT)；每次 {@link #prepare()} 清空，首次查询时重建。 */
+    /** Task -> (VM -> OCT); cleared by every {@link #prepare()} and rebuilt on first query. */
     private final Map<Task, Map<CondorVM, Double>> octByTaskVm = new HashMap<Task, Map<CondorVM, Double>>();
 
     public LocalPeftPlanningAlgorithm(PlanningContext context) {
@@ -78,10 +93,13 @@ public final class LocalPeftPlanningAlgorithm extends AbstractLocalCommPlanningA
             }
         });
         double stageInFinish = stageInFinishTime();
-        // 就绪表纪律：每轮在“前驱均已分配”的任务中取 rank_o 最高者。rank_o 降序
-        // 在异构成本下不保证拓扑序（见类边界声明），字面顺序直接分配会让基类
-        // readyTime 快速失败；当 rank_o 序本身拓扑合法（例如本次核对的论文算例）
-        // 时，就绪表选择与字面 rank_o 序逐项一致，调度逐位不变。
+        // Ready-list discipline: each round takes the task of highest rank_o among those whose
+        // predecessors are all allocated. Descending rank_o does not guarantee a topological order
+        // under heterogeneous costs (see the class boundary statement), and allocating in the
+        // literal order makes the base-class readyTime fail fast; when the rank_o order is itself
+        // topologically legal (for example the paper example checked here), the ready-list
+        // selection matches the literal rank_o order item by item and the schedule is unchanged
+        // position by position.
         List<Task> remaining = new ArrayList<Task>(priority);
         Set<Task> allocated = new HashSet<Task>();
         while (!remaining.isEmpty()) {
@@ -93,7 +111,8 @@ public final class LocalPeftPlanningAlgorithm extends AbstractLocalCommPlanningA
                 }
             }
             if (next == null) {
-                // prepare() 的深度校验已保证无环；此分支仅防御性兜底。
+                // The depth check in prepare() already guarantees acyclicity; this branch is a
+                // defensive fallback only.
                 throw new IllegalStateException(
                         label() + " ready list exhausted with " + remaining.size() + " unallocated tasks");
             }
@@ -104,8 +123,10 @@ public final class LocalPeftPlanningAlgorithm extends AbstractLocalCommPlanningA
     }
 
     /**
-     * 任务在全部 VM 上的 OCT。首次查询按逆拓扑序填表，深 DAG 不使用 Java 调用栈；
-     * {@link #prepare()} 后直接查询 rank_o 也不依赖 run() 按特定任务顺序预热。
+     * OCT of the task on every VM. The first query fills the table in reverse topological order,
+     * so a deep DAG does not use the Java call stack; querying rank_o directly after
+     * {@link #prepare()} also does not depend on run() warming the table in a particular task
+     * order.
      */
     private Map<CondorVM, Double> octPerVm(Task task) {
         Map<CondorVM, Double> cached = octByTaskVm.get(task);
@@ -122,7 +143,10 @@ public final class LocalPeftPlanningAlgorithm extends AbstractLocalCommPlanningA
         return octByTaskVm.get(task);
     }
 
-    /** 后继表项均已计算；保留原 VM/child 遍历、算术顺序及 PE 兼容域。 */
+    /**
+     * Every successor entry is already computed; the VM/child traversal, the arithmetic order,
+     * and the PE compatibility domain are preserved.
+     */
     private Map<CondorVM, Double> computeOctPerVm(Task task) {
         Map<CondorVM, Double> perVm = new LinkedHashMap<CondorVM, Double>();
         // One parent and one fill only. Preparation and later first-OCT queries remain separate reads.
@@ -164,7 +188,7 @@ public final class LocalPeftPlanningAlgorithm extends AbstractLocalCommPlanningA
         return perVm;
     }
 
-    /** 任务优先级 = OCT 在兼容 VM 上的平均值（rank_o）；run() 中可用。 */
+    /** Task priority = mean OCT over the compatible VMs (rank_o); available during run(). */
     final double priorityOf(Task task) {
         Map<CondorVM, Double> perVm = octPerVm(task);
         double total = 0.0;
@@ -182,7 +206,7 @@ public final class LocalPeftPlanningAlgorithm extends AbstractLocalCommPlanningA
         return total / count;
     }
 
-    /** 任务在指定 VM 上的 OCT；未计算抛 {@link IllegalStateException}。 */
+    /** OCT of the task on the given VM; throws {@link IllegalStateException} if not computed. */
     final double optimisticCostOf(Task task, CondorVM vm) {
         Map<CondorVM, Double> perVm = octByTaskVm.get(task);
         if (perVm == null) {
