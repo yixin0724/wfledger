@@ -1,0 +1,37 @@
+.github/workflows/ci.yml
+  s_dfd76f683cfd2c::t_c209859c32de3d 38-42
+Makefile
+  s_dfd76f683cfd2c::t_1476d696502836 4,65-70,85
+docs/advanced/CODE_STYLE.md
+  s_24f59fb6b2f10b::t_5fccd59b91fa9a 61-62
+docs/getting-started/BUILD.md
+  s_24f59fb6b2f10b::t_d59150af92c232 97-105
+scripts/check-language.py
+  s_dfd76f683cfd2c::t_7bc636cf8169a7 1-105
+scripts/test-check-language.py
+  s_24f59fb6b2f10b::t_338cf6f8143e16 1-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4ee62197f19717568cae237c69719350763aedd4",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_dfd76f683cfd2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18a73-43db-7ad2-a5c7-a77ef2d51736",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
