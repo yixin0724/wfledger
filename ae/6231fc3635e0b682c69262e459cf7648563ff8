@@ -1,0 +1,36 @@
+simulator/src/main/java/org/workflowsim/experiment/ExperimentPlan.java
+  s_3ae6b032aa2d87::t_7720e71eb1fd92 276-284
+  s_3ae6b032aa2d87::t_e6797f489ad949 23-28
+  s_3ae6b032aa2d87::t_d80ef50b6defd1 107,119-121,140-161
+  s_3ae6b032aa2d87::t_0402ff4ec8d809 162-163,285
+docs/experiments/CAMPAIGNS.md
+  s_3ae6b032aa2d87::t_d421b22053c6f9 37
+  s_3ae6b032aa2d87::t_d0f7be1e183617 35
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  s_3ae6b032aa2d87::t_a4fcfc9b428b2a 156-170
+  s_3ae6b032aa2d87::t_f2d54cb91de3e2 114-155,171-172
+docs/algorithms/CATALOG.md
+  s_3ae6b032aa2d87::t_7fe4b533b57332 52-57
+simulator/src/test/java/org/workflowsim/experiment/ExperimentPlanCaliberGuardTest.java
+  s_3ae6b032aa2d87::t_bb482f437a32ac 1-114
+  s_3ae6b032aa2d87::t_b123eb1084176e 115-122
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmCatalogCaliberTest.java
+  s_3ae6b032aa2d87::t_4767e1f9189e42 1-98
+  s_3ae6b032aa2d87::t_2e6dbee4b9121b 99-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ae6231fc3635e0b682c69262e459cf7648563ff8",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
