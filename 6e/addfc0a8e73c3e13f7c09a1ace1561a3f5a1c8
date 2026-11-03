@@ -1,0 +1,32 @@
+pom.xml
+  s_3ae6b032aa2d87::t_e921aff29e0fc5 254
+  s_3ae6b032aa2d87::t_295c7bc654b38a 286-291
+  s_3ae6b032aa2d87::t_7a5667f2d8aa47 50-55
+  s_3ae6b032aa2d87::t_2ef4543ae54f65 253,255-260,283-285,292-309,311-336
+  s_3ae6b032aa2d87::t_ecd30e01d4999f 310
+  s_3ae6b032aa2d87::t_391fc40e2a1140 49
+docs/getting-started/BUILD.md
+  s_3ae6b032aa2d87::t_545314b8271159 53
+experiments/pom.xml
+  s_3ae6b032aa2d87::t_9f61366bac5395 21,23-32
+  s_3ae6b032aa2d87::t_c60a38bf9b161b 22
+simulator/pom.xml
+  s_3ae6b032aa2d87::t_22338828066c39 23
+  s_3ae6b032aa2d87::t_080c338cbf9edd 22,24-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6eaddfc0a8e73c3e13f7c09a1ace1561a3f5a1c8",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
