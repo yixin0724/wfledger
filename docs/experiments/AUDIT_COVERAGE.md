@@ -98,6 +98,14 @@ nothing (`events.count` instead of `eventCount`, a stage-in envelope's already-e
   assignment) share one implementation core, `_network_audit.py`, by design: splitting them
   would create four duplicated implementations. Their claimed independence is independence
   from the Java production path, not independence from each other (AUD-F08).
+- Five bidirectional Java package pairs remain by historical growth (data vs network,
+  data.v2 vs utils, experiment.registry vs scheduling, experiment.registry vs utils,
+  failure vs utils); `PackageDependencyGuardTest` locks this inventory and the hotspot
+  outgoing-edge allowlists so the cycles cannot silently grow (AUD-F16). Untangling them
+  fully requires relocating aggregate carriers such as `SimulationConfig` (which
+  necessarily references the per-domain contract objects) — the recorded decoupling
+  proposal is to move `SchedulingAlgorithmProvider` into a leaf package, which breaks the
+  `experiment.registry <-> scheduling` pair and halves `experiment.registry <-> utils`.
 
 ## 6. Commands that constitute the gate
 
