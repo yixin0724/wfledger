@@ -1,0 +1,24 @@
+docs/experiments/AUDIT_COVERAGE.md
+  s_3ae6b032aa2d87::t_12391808f479fd 48
+docs/advanced/MUTATION_GATE.md
+  s_3ae6b032aa2d87::t_2a5f81e49d5a16 50
+  s_3ae6b032aa2d87::t_c20fccf8201c3b 30-37,42-45
+docs/history/PLATFORM_ENGINEERING.md
+  s_3ae6b032aa2d87::t_c06a1b2cb38921 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fa0cb1e0a1000ac056f846bdaad88f2ba72a41b1",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
