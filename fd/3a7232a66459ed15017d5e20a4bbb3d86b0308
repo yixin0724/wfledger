@@ -1,0 +1,44 @@
+docs/experiments/REPRODUCIBILITY.md
+  s_3ae6b032aa2d87::t_065cd3561f71ea 79-85
+  s_3ae6b032aa2d87::t_cdb7d9731f5ba5 92-94
+docs/experiments/RERUN_DIFF_CONTRACT.md
+  s_3ae6b032aa2d87::t_f3b74ba6575e61 162-163
+simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactValidator.java
+  s_3ae6b032aa2d87::t_4a509d98e08412 556-560,563-565
+  s_3ae6b032aa2d87::t_a4af788b5be57b 32-37
+  s_3ae6b032aa2d87::t_d184e3754954de 103-104
+  s_3ae6b032aa2d87::t_1ea29a1cc58470 848-888
+  s_3ae6b032aa2d87::t_1770ab012ba090 527-530
+  s_3ae6b032aa2d87::t_a117735032a890 10-11,13-15,17
+  s_3ae6b032aa2d87::t_297a5104033a70 67-69
+  s_3ae6b032aa2d87::t_3a78fb2141bae5 594-725
+  s_3ae6b032aa2d87::t_b74cc85fb71768 118-131
+  s_3ae6b032aa2d87::t_a893ed353ab9af 48-61
+  s_3ae6b032aa2d87::t_3877dffb4f4596 726-727,889
+experiments/src/test/java/org/workflowsim/experiments/rerun/RerunDiffExecutorTest.java
+  s_3ae6b032aa2d87::t_47d2fe0cb2e0a6 314-318
+  s_3ae6b032aa2d87::t_16ffb926250f97 155-163,165,175-179,184-185
+docs/experiments/AUDIT_COVERAGE.md
+  s_3ae6b032aa2d87::t_3dd19aeba3c3b3 31
+  s_3ae6b032aa2d87::t_e47dbede52f429 7-8
+  s_3ae6b032aa2d87::t_6d07e0ed5aa6b7 22
+simulator/src/test/java/org/workflowsim/experiment/ExperimentArtifactValidatorTest.java
+  s_3ae6b032aa2d87::t_408c7aaf321ab7 298-318
+  s_3ae6b032aa2d87::t_375505a89ac52a 341-583
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fd3a7232a66459ed15017d5e20a4bbb3d86b0308",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
