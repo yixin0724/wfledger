@@ -1,0 +1,22 @@
+simulator/src/test/java/org/workflowsim/PackageDependencyGuardTest.java
+  s_3ae6b032aa2d87::t_5d306ac24bb8c4 1-213
+  s_3ae6b032aa2d87::t_013fb2e949eb2a 214-225
+docs/experiments/AUDIT_COVERAGE.md
+  s_3ae6b032aa2d87::t_8db4d4129ecb8d 101-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9490617e41a90e8d0db9eddc5bb53992bc167f5d",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
