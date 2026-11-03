@@ -1,0 +1,41 @@
+experiments/src/main/java/org/workflowsim/experiments/network/NetworkStudySummary.java
+  s_3ae6b032aa2d87::t_0cee9e47bb96eb 9
+  s_3ae6b032aa2d87::t_ef93e48b017cdc 214-219,223-224,226-234
+  s_3ae6b032aa2d87::t_03aef087bd14d2 10
+simulator/src/main/java/org/workflowsim/experiment/HolmStepDownCorrection.java
+  s_3ae6b032aa2d87::t_7d23a7f7f69cc2 4
+  s_3ae6b032aa2d87::t_c0b90740b0429c 1-3,5-125
+docs/experiments/CAMPAIGNS.md
+  s_3ae6b032aa2d87::t_c11bf21a5ad300 63-64
+simulator/src/test/java/org/workflowsim/experiment/HolmStepDownCorrectionTest.java
+  s_3ae6b032aa2d87::t_ade6c567cc962f 41-45
+  s_3ae6b032aa2d87::t_af51f6da20cd6d 1-40,46-153
+simulator/src/main/java/org/workflowsim/experiment/ExperimentCampaignSummary.java
+  s_3ae6b032aa2d87::t_3219553b1edd36 467
+  s_3ae6b032aa2d87::t_91aeea3ef7647d 68-73,76-78,81-87
+  s_3ae6b032aa2d87::t_05d2131865a6c7 447-448
+  s_3ae6b032aa2d87::t_53abd1b62f1144 506-507
+  s_3ae6b032aa2d87::t_293991b9a86643 427
+  s_3ae6b032aa2d87::t_ecb989534cceaa 547,690-710
+  s_3ae6b032aa2d87::t_4c39ed9b9318cb 549-573
+  s_3ae6b032aa2d87::t_e5d5b4960da029 544-546
+  s_3ae6b032aa2d87::t_02694a184365ff 426,446,466,505,543,548,688-689
+simulator/src/test/java/org/workflowsim/experiment/CampaignHolmFamilyIntegrationTest.java
+  s_3ae6b032aa2d87::t_cf0d0a150b2b35 1-153
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "65254bc4ba6323f886126e663a93de764c8c0efe",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
