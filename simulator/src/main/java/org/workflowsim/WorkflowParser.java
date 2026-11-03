@@ -36,19 +36,23 @@ import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 将工作流输入转换为 WorkflowSim {@link Task} DAG 的统一入口。
+ * Single entry point that converts workflow input into a WorkflowSim {@link Task} DAG.
  *
- * <p>默认解析 DAX XML；扩展名为 {@code .json} 的输入委托给
- * {@link WfCommonsJsonParser} 解析 WfCommons WfFormat 实例。两条路径均将输入中的
- * 秒级运行时间按参考 MIPS 和运行时间缩放系数转换为百万条指令（MI），并对过小长度
- * 进行显式记录的归一化。</p>
+ * <p>DAX XML is parsed by default; an input whose extension is {@code .json} is delegated to
+ * {@link WfCommonsJsonParser} to parse a WfCommons WfFormat instance. Both paths convert the
+ * runtime in seconds carried by the input into million instructions (MI) using the reference MIPS
+ * and the runtime scale factor, and normalize a too-small length with the normalization recorded
+ * explicitly.</p>
  *
- * <p>版本契约（R8 审计，架构通道 P1-4）：DAX {@code version} 属性与 WfCommons
- * {@code schemaVersion} 仅记录进 {@link WorkflowInputReport} 作为证据，不做强制校验。
- * 解析语义按 Pegasus DAX 3.x 结构与 WfCommons 1.x 实现；DAX 的 {@code size} 属性
- * 沿用上游 WorkflowSim 历史约定直接按字节解释（Pegasus 3.x schema 名义单位为 KB，
- * 两者相差 1024 倍——平台带宽标定与黄金值均基于"按字节"语义）；DAX 2.x 或未来
- * 大版本的单位/结构差异未经验证，使用非目标版本输入前应人工对账单位语义。</p>
+ * <p>Version contract (R8 audit, architecture channel P1-4): the DAX {@code version} attribute and
+ * the WfCommons {@code schemaVersion} are only recorded into {@link WorkflowInputReport} as
+ * evidence and are not validated. Parsing semantics follow the Pegasus DAX 3.x structure and the
+ * WfCommons 1.x implementation; the DAX {@code size} attribute keeps the upstream WorkflowSim
+ * historical convention of interpreting it directly as bytes (the Pegasus 3.x schema nominally
+ * uses KB, a factor of 1024 apart -- the platform bandwidth calibration and golden values are both
+ * based on the "as bytes" semantics); unit or structure differences in DAX 2.x or future major
+ * versions are unverified, so reconcile the unit semantics manually before using input from a
+ * non-target version.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -59,51 +63,53 @@ public final class WorkflowParser {
 
     private static final long MIN_CLOUDLET_LENGTH = 100L;
 
-    /** 单个 DAX 或 JSON 输入路径。 */
+    /** Single DAX or JSON input path. */
     private final String daxPath;
-    /** 多个 DAX 或 JSON 输入路径。 */
+    /** Multiple DAX or JSON input paths. */
     private final List<String> daxPaths;
-    /** 最近一次解析产生的全部任务。 */
+    /** All tasks produced by the most recent parse. */
     private List<Task> taskList;
 
-    /** 最近一次解析中每个已消费输入的转换报告。 */
+    /** Conversion report for each input consumed by the most recent parse. */
     private final List<WorkflowInputReport> inputReports;
 
     /**
-     * R5 动态到达：最近一次解析中每个任务编号到其来源输入下标的映射。
+     * R5 dynamic arrival: mapping from each task number to its source input index in the most
+     * recent parse.
      *
-     * <p>任务编号在各输入间连续分配，输入下标与 {@link #inputReports} 的位置一一对应。</p>
+     * <p>Task numbers are assigned consecutively across inputs, and input indices correspond
+     * one-to-one to the positions in {@link #inputReports}.</p>
      */
     private final Map<Integer, Integer> taskWorkflowIndices;
-    /** 创建任务时写入的 CloudSim 用户编号。 */
+    /** CloudSim user ID written when a task is created. */
     private final int userId;
 
-    /** 下一个可分配任务编号，支持连续提交多个工作流。 */
+    /** Next assignable task number; supports submitting several workflows in sequence. */
     private int jobIdStartsFrom;
 
-    /** @return 最近一次解析产生的任务列表 */
+    /** @return task list produced by the most recent parse */
     @SuppressWarnings("unchecked")
     public List<Task> getTaskList() {
         return taskList;
     }
 
     /**
-     * 替换当前解析结果任务列表。
+     * Replace the task list of the current parse result.
      *
-     * @param taskList 新的任务列表
+     * @param taskList new task list
      */
     protected void setTaskList(List<Task> taskList) {
         this.taskList = taskList;
     }
-    /** DAX 任务名称到任务对象的临时索引。 */
+    /** Temporary index from DAX job name to task object. */
     protected Map<String, Task> mName2Task;
     /** Directed task-ID pairs seen in the current DAX input; lists retain first-declaration order. */
     private final Set<Long> daxDependencyEdges = new HashSet<>();
 
     /**
-     * 创建工作流解析器。
+     * Create a workflow parser.
      *
-     * @param userId 所有解析任务所属的 CloudSim 用户编号
+     * @param userId CloudSim user ID to which every parsed task belongs
      */
     public WorkflowParser(int userId) {
         this.userId = userId;
@@ -118,12 +124,13 @@ public final class WorkflowParser {
     }
 
     /**
-     * 解析已配置的一个或多个工作流输入。
+     * Parse the configured workflow input or inputs.
      *
-     * <p>DAX XML 仍是默认格式；以 {@code .json} 结尾的文件会按 WfCommons 工作流实例
-     * 解析。每次调用先清除上次的任务、名称索引和输入报告，故结果不与前一次解析累积。</p>
+     * <p>DAX XML is still the default format; a file ending in {@code .json} is parsed as a
+     * WfCommons workflow instance. Every call first clears the tasks, the name index, and the input
+     * reports of the previous run, so the result does not accumulate across parses.</p>
      *
-     * @throws WorkflowValidationException 当未配置输入或任一输入不合法时
+     * @throws WorkflowValidationException when no input is configured or any input is invalid
      */
     public void parse() {
         setTaskList(new ArrayList<Task>());
@@ -149,11 +156,12 @@ public final class WorkflowParser {
     }
 
     /**
-     * 解析单个输入并把它产生的任务登记到指定工作流下标（R5 动态到达用）。
+     * Parse a single input and register the tasks it produces under the given workflow index
+     * (used by R5 dynamic arrival).
      *
-     * @param path 输入文件路径
-     * @param fileNamespace 多输入提交的文件作用域；单输入时为 {@code null}
-     * @param workflowIndex 该输入在本次提交中的下标
+     * @param path input file path
+     * @param fileNamespace file scope of a multi-input submission; {@code null} for a single input
+     * @param workflowIndex index of this input within the current submission
      */
     private void parseInputWithWorkflowIndex(String path, String fileNamespace, int workflowIndex) {
         int firstTaskId = this.jobIdStartsFrom;
@@ -164,27 +172,28 @@ public final class WorkflowParser {
     }
 
     /**
-     * 获取最近一次解析的任务编号→来源输入下标映射（R5 动态到达用）。
+     * Return the mapping from task number to source input index of the most recent parse (used by
+     * R5 dynamic arrival).
      *
-     * @return 不可修改映射；单输入时全部任务下标为 0
+     * @return unmodifiable mapping; with a single input every task index is 0
      */
     public Map<Integer, Integer> getTaskWorkflowIndices() {
         return Collections.unmodifiableMap(taskWorkflowIndices);
     }
 
     /**
-     * 获取最近一次解析所消费输入的不可变报告。
+     * Return the immutable reports of the inputs consumed by the most recent parse.
      *
-     * @return 每个 DAX 或 WfCommons 输入对应一份报告
+     * @return one report per DAX or WfCommons input
      */
     public List<WorkflowInputReport> getInputReports() {
         return Collections.unmodifiableList(inputReports);
     }
 
     /**
-     * 按文件扩展名解析一个工作流输入。
+     * Parse a single workflow input by file extension.
      *
-     * @param path 工作流文件路径；DAX 使用 {@code .dax}/{@code .xml}，WfCommons 使用
+     * @param path workflow file path; DAX uses {@code .dax}/{@code .xml}, WfCommons uses
      * {@code .json}
      */
     private void parseWorkflowFile(String path, String fileNamespace) {
@@ -205,9 +214,9 @@ public final class WorkflowParser {
     }
 
     /**
-     * 解析一个 WfCommons WfFormat JSON 工作流实例。
+     * Parse a WfCommons WfFormat JSON workflow instance.
      *
-     * @param path JSON 文件路径
+     * @param path JSON file path
      */
     private void parseWfCommonsJsonFile(String path, String fileNamespace) {
         try {
@@ -225,12 +234,13 @@ public final class WorkflowParser {
     }
 
     /**
-     * 使用 JDOM 解析一个 DAX XML 文件。
+     * Parse a DAX XML file with JDOM.
      *
-     * <p>先建立全部任务定义，再解析父子关系，最后统一校验 DAG。不在依赖解析阶段
-     * 隐式创建缺失任务，以免错误输入被静默接受。</p>
+     * <p>All task definitions are built first, then parent-child relations are parsed, and the DAG
+     * is validated at the end. A missing task is never created implicitly during dependency
+     * parsing, so invalid input cannot be accepted silently.</p>
      *
-     * @param path DAX XML 路径
+     * @param path DAX XML path
      */
     private void parseXmlFile(String path, String fileNamespace) {
         try {
@@ -258,7 +268,8 @@ public final class WorkflowParser {
             mName2Task.clear();
             daxDependencyEdges.clear();
 
-            // 先建立全部任务定义，才能严格解析和验证后续的依赖引用。
+            // Every task definition must be built first, so that later dependency references can
+            // be strictly resolved and validated.
             for (Element node : list) {
                 if ("job".equalsIgnoreCase(node.getName())) {
                     parsedTasks.add(parseDaxJob(node, report, fileNamespace, firstDeclaredInputs));
@@ -271,10 +282,12 @@ public final class WorkflowParser {
                 }
             }
             WorkflowDagValidator.validateAndAssignDepths(parsedTasks);
-            // F-009 修复（2026-10-19）：结构与 DAG 校验全部通过，才把首轮 INPUT
-            // 声明提交进全局副本目录；失败解析不再留下半提交条目（污染会经
-            // "first-declared 尺寸沿用"规则替换同 JVM 重试解析的新声明）。
-            // 提交时保留历史跨解析语义：已存在即不覆盖。
+            // F-009 fix (2026-10-19): commit the first-round INPUT declarations into the global
+            // replica catalog only after the structure and DAG validation have fully passed; a
+            // failed parse no longer leaves half-committed entries (such pollution would replace
+            // the new declarations of a retried parse in the same JVM through the "reuse the
+            // first-declared size" rule). Commit keeps the historical cross-parse semantics: an
+            // existing entry is never overwritten.
             for (Map.Entry<String, FileItem> entry : firstDeclaredInputs.entrySet()) {
                 if (!ReplicaCatalog.containsFile(entry.getKey())) {
                     ReplicaCatalog.setFile(entry.getKey(), entry.getValue());
@@ -345,17 +358,19 @@ public final class WorkflowParser {
                 requiredAttribute(file, "size", "DAX file " + originalFileName),
                 "size for DAX file " + originalFileName);
         FileItem item;
-        // F-009：INPUT 声明只与"本地首轮表 + 既有全局目录"交互，不再直接写入全局目录；
-        // 三种来源中取首个：既有目录（历史跨解析语义）> 本轮先声明 > 新建条目。
+        // F-009: an INPUT declaration only interacts with the "local first-round table plus the
+        // existing global catalog" and no longer writes into the global catalog directly; the first
+        // of three sources wins: existing catalog entry (historical cross-parse semantics), then an
+        // earlier declaration in this round, then a new entry.
         FileItem registered = ReplicaCatalog.containsFile(fileName)
                 ? ReplicaCatalog.getFile(fileName)
                 : firstDeclaredInputs.get(fileName);
         if (type == FileType.INPUT && registered != null) {
             item = registered;
             if (Double.compare(item.getSize(), size) != 0) {
-                // 放宽校验：记录警告但继续使用第一次声明的 size。
-                // 真实科学工作流中，同一文件在不同任务的 size 估算可能不同，
-                // 这是 Pegasus DAX 生成的正常现象，不应阻止仿真执行。
+                // Relaxed validation: log a warning but keep using the first-declared size. In a
+                // real scientific workflow, the size estimated for the same file can differ across
+                // tasks; this is normal Pegasus DAX output and must not block simulation execution.
                 Log.printLine("WARNING: DAX file '" + originalFileName
                         + "' has inconsistent input size declarations: "
                         + "first=" + item.getSize() + ", current=" + size
@@ -364,12 +379,15 @@ public final class WorkflowParser {
         } else {
             item = new FileItem(fileName, size);
             if (type == FileType.INPUT) {
-                // 解析期先入本地首轮表；通过 DAG 校验后统一提交（见 parseXmlFile 尾部）。
+                // Enter the local first-round table during parsing; commit after the DAG
+                // check passes (see the end of parseXmlFile).
                 firstDeclaredInputs.putIfAbsent(fileName, item);
             } else if (registered != null && Double.compare(registered.getSize(), size) != 0) {
-                // R8 审计修复（架构通道 P1-4）：OUTPUT 与已注册同名 INPUT 尺寸不一致
-                // 原为完全静默——中间文件（上游 output = 下游 input）两处声明分叉时，
-                // 传输字节数取决于解析顺序。与 INPUT 分支对齐记录警告。
+                // R8 audit fix (architecture channel P1-4): a size mismatch between an OUTPUT and
+                // a registered INPUT of the same name was previously completely silent -- when the
+                // two declarations of an intermediate file (upstream output = downstream input)
+                // diverge, the transferred byte count depends on the parse order. Log a warning to
+                // match the INPUT branch.
                 Log.printLine("WARNING: DAX file '" + originalFileName
                         + "' output size " + size + " differs from registered input size "
                         + registered.getSize()
@@ -381,14 +399,16 @@ public final class WorkflowParser {
     }
 
     /**
-     * 为一次多输入提交中的文件建立内部逻辑身份。
+     * Build the internal logical identity of a file within a multi-input submission.
      *
-     * <p>不同工作流中的同名文件默认互不共享；只有同一输入内重复引用的文件才代表同一
-     * 逻辑数据对象。单输入场景保留原文件名，以维持历史 API 与已有实验的兼容性。</p>
+     * <p>Files of the same name in different workflows are not shared by default; only a file
+     * referenced repeatedly within the same input denotes the same logical data object. A
+     * single-input scenario keeps the original file name to preserve the historical API and the
+     * compatibility of existing experiments.</p>
      *
-     * @param fileNamespace 当前输入的稳定作用域；单输入时为 {@code null}
-     * @param originalFileName 输入格式中声明的原始文件名
-     * @return 用于任务和副本目录的内部文件身份
+     * @param fileNamespace stable scope of the current input; {@code null} for a single input
+     * @param originalFileName original file name declared in the input format
+     * @return internal file identity used by tasks and the replica catalog
      */
     private static String scopedFileName(String fileNamespace, String originalFileName) {
         if (fileNamespace == null) {

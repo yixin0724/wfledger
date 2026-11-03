@@ -20,46 +20,55 @@ import org.workflowsim.utils.SimulationTiming;
 import org.workflowsim.utils.TaskExecutionModel;
 
 /**
- * LOCAL 文件系统通信感知静态 DAG 规划器（Topcuoglu 族列表调度）的共享机制基类。
+ * Shared mechanism base class for communication-aware static DAG planners on the LOCAL
+ * file system (the Topcuoglu family of list scheduling).
  *
- * <p>承载 LOCAL_HEFT、LOCAL_CPOP 与 LOCAL_PEFT 的共用无争用估计：任务×兼容 VM
- * 的整数 MI 成本折算、向上 rank、带可用时刻的副本目录、按父分组的执行前传输与
- * 插入式计算预留。输入传输与 VM 忙碌期可重叠；外部输入从依赖就绪时点传输；输入
- * 副本在整个 hold 完成时可用，输出副本在计算完成时可用。候选只读取其依赖就绪
- * 时点已经可用的已规划副本，不把分配顺序误当作时间顺序。</p>
+ * <p>Hosts the contention-free estimation shared by LOCAL_HEFT, LOCAL_CPOP and LOCAL_PEFT:
+ * integer-MI cost conversion per task x compatible VM, upward rank, a replica catalog with
+ * availability times, per-parent grouped pre-execution transfer and insertion-based
+ * compute reservation. Input transfer may overlap VM busy periods; external inputs
+ * transfer from the dependency-ready instant; input replicas become available when the
+ * whole hold completes, output replicas when the computation completes. A candidate only
+ * reads planned replicas already available at its dependency-ready instant, and never
+ * mistakes allocation order for time order.</p>
  *
- * <p>这是基于当前部分计划的估计，不完整重放运行期事件。同刻事件次序、后规划任务
- * 更早产生副本、短计算完成钳制以及争用模型仍可能使计划与运行时不同；详细边界见
- * {@link LocalHeftPlanningAlgorithm}。</p>
+ * <p>This is an estimate over the current partial plan and does not fully replay runtime
+ * events. Same-instant event order, later-planned tasks producing replicas earlier, the
+ * short-computation completion clamp and the contention model may still make the plan
+ * differ from runtime; see {@link LocalHeftPlanningAlgorithm} for the detailed bounds.</p>
  *
- * <p><b>适用前提</b>（由 {@link PlanningContext#validateLocalStaticDag()} 强制）：
- * LOCAL 文件系统、NONE 聚类、无故障、无建模开销、{@code preExecutionTransferDelayV1}
- * 数据移动模型与 SPACE_SHARED VM。子类的 {@code run()} 先调 {@link #prepare()}，
- * 再按各自的优先级规则依次 {@link #allocate}。</p>
+ * <p><b>Applicability preconditions</b> (enforced by
+ * {@link PlanningContext#validateLocalStaticDag()}): LOCAL file system, NONE clustering,
+ * no failures, no modeling overhead, the {@code preExecutionTransferDelayV1} data movement
+ * model and SPACE_SHARED VMs. A subclass {@code run()} first calls {@link #prepare()} and
+ * then {@link #allocate} in its own priority order.</p>
  */
 abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;
-    /** 算法标签（如 "LOCAL_HEFT"），用于诊断消息。 */
+    /** Algorithm label (e.g. "LOCAL_HEFT"), used in diagnostic messages. */
     private final String label;
 
-    /** vmId → VM。 */
+    /** vmId -> VM. */
     private final Map<Integer, CondorVM> vmById = new LinkedHashMap<Integer, CondorVM>();
-    /** 按 VM ID 升序的 VM 列表（{@link #prepare()} 后可用）。 */
+    /** VMs in ascending VM ID order (available after {@link #prepare()}). */
     private final List<CondorVM> vms = new ArrayList<CondorVM>();
-    /** 任务 → (兼容 VM → 整数 MI 对应的有效计算秒数)。 */
+    /** Task -> (compatible VM -> effective compute seconds for the integer MI). */
     private final Map<Task, Map<CondorVM, Double>> computeSecondsByVm = new HashMap<Task, Map<CondorVM, Double>>();
-    /** 文件名 → (站点 → 副本最早可用时刻)，站点为 SOURCE 或 VM ID 字符串。 */
+    /** File name -> (site -> earliest replica availability time); a site is SOURCE or a VM ID string. */
     private final Map<String, Map<String, Double>> replicas = new LinkedHashMap<String, Map<String, Double>>();
-    /** 文件名 → 大小（字节）。 */
+    /** File name -> size in bytes. */
     private final Map<String, Double> fileSizes = new LinkedHashMap<String, Double>();
-    /** 经 DAG 校验的正向拓扑序，仅供 rank/OCT 动态规划，不改变调度的 ID 顺序。 */
+    /**
+     * Forward topological order after DAG validation; used only for rank/OCT dynamic
+     * programming and does not change the ID order of scheduling.
+     */
     private List<Task> topologicalTasks = Collections.emptyList();
-    /** 任务 → 向上 rank。 */
+    /** Task -> upward rank. */
     private final Map<Task, Double> upwardRanks = new HashMap<Task, Double>();
-    /** VM → 已预留区间。 */
+    /** VM -> reserved intervals. */
     private final Map<CondorVM, List<Reservation>> reservations = new LinkedHashMap<CondorVM, List<Reservation>>();
-    /** 任务 → 计划完成时刻。 */
+    /** Task -> planned finish time. */
     private final Map<Task, Double> finishes = new HashMap<Task, Double>();
 
     AbstractLocalCommPlanningAlgorithm(String label, PlanningContext context) {
@@ -70,22 +79,24 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         this.context = context;
     }
 
-    /** 算法标签，用于子类诊断消息。 */
+    /** Algorithm label, used in subclass diagnostic messages. */
     final String label() {
         return label;
     }
 
     /**
-     * 前置校验 + 确定性排序 + 成本/副本装配 + 全量向上 rank 计算。
+     * Precondition validation + deterministic ordering + cost/replica assembly + full
+     * upward rank computation.
      *
-     * @return 按任务 ID 升序的任务列表
+     * @return task list in ascending task ID order
      */
     final List<Task> prepare() {
         context.validateLocalStaticDag();
         List<Task> tasks = sortedTasks();
         sortedVms();
         WorkflowDagValidator.validateAndAssignDepths(tasks);
-        // 验证后的每条边都严格增加 depth。只对副本排序，保留 Task/VM 的调度平局规则。
+        // Every validated edge strictly increases depth. Only the replica copy is sorted,
+        // preserving the Task/VM scheduling tie-break rules.
         List<Task> byDepth = new ArrayList<Task>(tasks);
         Collections.sort(byDepth, new Comparator<Task>() {
             @Override
@@ -96,7 +107,8 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         });
         topologicalTasks = Collections.unmodifiableList(byDepth);
         resetPreparedCaches();
-        // 同一规划器可再次运行；rank、已完成状态及演进后的副本都只属于上一次计划。
+        // The same planner may run again; ranks, finished state and evolved replicas all
+        // belong to the previous plan only.
         computeSecondsByVm.clear();
         replicas.clear();
         fileSizes.clear();
@@ -110,30 +122,36 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         return tasks;
     }
 
-    /** 子类的准备期派生缓存失效钩子；不替代基类校验与成本装配。 */
+    /**
+     * Invalidation hook for subclass caches derived during prepare; does not replace
+     * base-class validation and cost assembly.
+     */
     void resetPreparedCaches() {}
 
-    /** 验证后的只读正向拓扑序；每个父任务都先于子任务，供子类计算静态 rank/OCT。 */
+    /**
+     * Read-only forward topological order after validation; every parent precedes its
+     * children, for subclass static rank/OCT computation.
+     */
     final List<Task> tasksInTopologicalOrder() {
         return topologicalTasks;
     }
 
-    /** 按 VM ID 升序的 VM 列表（{@link #prepare()} 之后可用）。 */
+    /** VMs in ascending VM ID order (available after {@link #prepare()}). */
     final List<CondorVM> vms() {
         return vms;
     }
 
-    /** 任务的向上 rank（{@link #prepare()} 之后可用）。 */
+    /** Upward rank of the task (available after {@link #prepare()}). */
     final double upwardRankOf(Task task) {
         return upwardRanks.get(task).doubleValue();
     }
 
-    /** 任务已计划的完成时刻；未计划返回 null。 */
+    /** Planned finish time of the task; null when not yet planned. */
     final Double plannedFinishOf(Task task) {
         return finishes.get(task);
     }
 
-    /** 任务在指定 VM 上的有效计算秒数；PE 不兼容时返回正无穷。 */
+    /** Effective compute seconds on the given VM; positive infinity when the PE counts are incompatible. */
     final double computeSecondsOn(Task task, CondorVM vm) {
         Double seconds = computeSecondsByVm.get(task).get(vm);
         return seconds == null ? Double.POSITIVE_INFINITY : seconds.doubleValue();
@@ -144,9 +162,10 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
     }
 
     /**
-     * 根任务等待模型 stage-in Job：与 SHARED_STORAGE_* 规划器一致，stage-in Job
-     * 在 fallback VM（最小 VM ID）上执行 110 MI，完成时刻经最小事件间隔规则对齐，
-     * 引擎收到完成事件后再经过一个内核间隔释放根计算 Job。
+     * Root tasks wait for the model stage-in Job: as in the SHARED_STORAGE_* planners, the
+     * stage-in Job executes 110 MI on the fallback VM (smallest VM ID), its completion time
+     * is aligned by the minimum event interval rule, and the engine releases the root
+     * compute Job one further kernel interval after receiving the completion event.
      */
     final double stageInFinishTime() {
         return SimulationTiming.earliestCloudletCompletionTime(
@@ -156,7 +175,10 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
                 + context.getCloudSimMinEventIntervalSeconds();
     }
 
-    /** 任务的就绪时刻 = 全部父任务计划完成时刻的最大值；根任务 = stage-in 完成时刻。 */
+    /**
+     * Ready time of the task = the maximum planned finish time over all parents; for a root
+     * task = the stage-in finish time.
+     */
     final double readyTime(Task task, double stageInFinish) {
         double readyTime = task.getParentList().isEmpty() ? stageInFinish : 0.0;
         for (Task parent : task.getParentList()) {
@@ -173,17 +195,23 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
     }
 
     /**
-     * 以依赖就绪时点的可见副本估算整个输入 hold 的完成时刻。
+     * Estimate the completion instant of the whole input hold from the replicas visible at
+     * the dependency-ready instant.
      *
-     * <p>保留无争用运行模型的按父分组语义：同父文件串行累加，不同父任务并行，
-     * 候选到达时刻为 {@code finish(pred) + Σ c_file(pred, vm)}。外部输入从本任务
-     * 依赖就绪时刻开始传输；stage-in 的平台级登记不表示根任务目标 VM 已有文件。
-     * 正 hold 按同一最小事件间隔钳制，输入副本到整个 hold 完成后才对后续估计可见。</p>
+     * <p>Preserves the per-parent grouping semantics of the contention-free runtime model:
+     * files from the same parent accumulate serially, different parents run in parallel, and
+     * the candidate arrival instant is {@code finish(pred) + sum c_file(pred, vm)}. External
+     * inputs transfer starting at this task's dependency-ready instant; the platform-level
+     * registration of stage-in does not mean the root task's target VM already holds the
+     * file. A positive hold is clamped by the same minimum event interval, and input
+     * replicas become visible to later estimates only once the whole hold completes.</p>
      *
-     * @param task 待分配任务
-     * @param vm 目标 VM
-     * @param dependencyReady 全部父任务已完成的时刻；根任务为 bootstrap 时刻
-     * @return 全部输入 hold 完成、计算可派发的时刻，不含 VM 排队
+     * @param task task to allocate
+     * @param vm target VM
+     * @param dependencyReady instant at which all parents have completed; the bootstrap
+     *                        instant for a root task
+     * @return instant at which all input holds complete and the computation can be
+     *         dispatched, excluding VM queueing
      */
     private double dataArrivalOn(Task task, CondorVM vm, double dependencyReady) {
         double arrival = dependencyReady;
@@ -232,31 +260,35 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
     }
 
     /**
-     * 将任务分配到最早完成的候选 VM（插入式 EFT），并演进副本状态。
+     * Allocate the task to the candidate VM with the earliest finish time (insertion-based
+     * EFT) and evolve replica state.
      *
-     * <p>执行前传输延迟语义：数据到达时刻为每个父任务并行传输的最晚到达；VM 预留区间
-     * 只覆盖计算（传输可与 VM 忙碌期重叠）。开始时刻为
-     * {@code max(avail[vm], dataArrival)} 经插入式搜索。</p>
+     * <p>Pre-execution transfer delay semantics: the data arrival instant is the latest
+     * arrival among the per-parent parallel transfers; VM reserved intervals cover only the
+     * computation (transfers may overlap VM busy periods). The start instant is
+     * {@code max(avail[vm], dataArrival)} found by insertion-based search.</p>
      *
-     * @param pinnedVm 非 null 时只考虑该 VM（CPOP 的关键路径处理器绑定）；
-     *                 null 时在全部 VM 中取最小 EFT，平局取较小 VM ID
-     * @return 计划完成时刻
+     * @param pinnedVm when non-null, only this VM is considered (CPOP critical-path
+     *                 processor binding); when null, the smallest EFT over all VMs wins,
+     *                 with the smaller VM ID breaking ties
+     * @return planned finish time
      */
     final double allocate(Task task, CondorVM pinnedVm, double stageInFinish) {
         return allocateInternal(task, pinnedVm, stageInFinish, null);
     }
 
     /**
-     * 将任务分配到乐观完成时间最小的 VM（插入式 {@code EFT + OCT(t, vm)}），
-     * 并演进副本状态。
+     * Allocate the task to the VM with the smallest optimistic completion time
+     * (insertion-based {@code EFT + OCT(t, vm)}) and evolve replica state.
      *
-     * <p>除评分函数外与 {@link #allocate(Task, CondorVM, double)} 完全一致：相同的
-     * 可派发时刻、数据到达时刻、插入式最早开始搜索、预留与副本演进语义；返回的仍是
-     * EFT 完成时刻（不含 OCT 项）。评分平局取较小 VM ID。</p>
+     * <p>Identical to {@link #allocate(Task, CondorVM, double)} except for the scoring
+     * function: same dispatchable instant, data arrival instant, insertion-based earliest
+     * start search, reservation and replica evolution semantics; the return value is still
+     * the EFT finish time (without the OCT term). The smaller VM ID breaks score ties.</p>
      *
-     * @param octPerVm 任务在全部 VM 上的 OCT 值；缺任一 VM 抛
+     * @param octPerVm OCT values of the task on all VMs; missing any VM throws
      *                 {@link IllegalStateException}
-     * @return 计划完成时刻（EFT，不含 OCT）
+     * @return planned finish time (EFT, without OCT)
      */
     final double allocateOptimistic(Task task, Map<CondorVM, Double> octPerVm, double stageInFinish) {
         if (octPerVm == null) {
@@ -267,8 +299,8 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
 
     private double allocateInternal(
             Task task, CondorVM pinnedVm, double stageInFinish, Map<CondorVM, Double> octPerVm) {
-        // 运行时镜像：Job 在全部父任务返回后才被释放，因此可派发时刻为
-        // max(全部父完成时刻, 数据到达时刻)。
+        // Runtime mirror: a Job is released only after all parent tasks return, so the
+        // dispatchable instant is max(all parent finish instants, data arrival instant).
         double dispatchable = readyTime(task, stageInFinish);
         List<CondorVM> candidates = pinnedVm != null ? Collections.singletonList(pinnedVm) : vms;
         CondorVM selectedVm = null;
@@ -328,8 +360,9 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
     }
 
     private void populateReplicasAndSizes(List<Task> tasks) {
-        // 全局 OUTPUT 名称集合：决定哪些 INPUT 是真实外部输入（解析期由 ClusteringEngine
-        // 注册到 SOURCE），哪些是中间文件（仅由产出任务的完成注册）。
+        // Global OUTPUT name set: decides which INPUTs are true external inputs (registered
+        // to SOURCE at parse time by ClusteringEngine) and which are intermediate files
+        // (registered only by the completion of the producing task).
         LinkedHashSet<String> outputNames = new LinkedHashSet<String>();
         for (Task task : tasks) {
             for (FileItem file : task.getFileList()) {
@@ -352,7 +385,8 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
                     replicas.put(file.getName(), sites);
                 }
                 if (file.getType() == FileType.INPUT && !outputNames.contains(file.getName())) {
-                    // SOURCE 自始可用；到目标 VM 的传输仍须等消费 Job 依赖就绪后开始。
+                    // SOURCE is available from the start; the transfer to the target VM still begins
+                    // only after the consuming Job becomes dependency-ready.
                     sites.put(Parameters.SOURCE, Double.valueOf(0.0));
                 }
             }
@@ -380,7 +414,10 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         return rank;
     }
 
-    /** 任务在全部兼容 VM 上有效计算秒数的平均值（w̄），不把不可行候选的无穷值纳入 rank。 */
+    /**
+     * Mean effective compute seconds of the task over all compatible VMs (w-bar); infinite
+     * values of infeasible candidates do not enter the rank.
+     */
     final double meanComputeSeconds(Task task) {
         double total = 0.0;
         Map<CondorVM, Double> perVm = computeSecondsByVm.get(task);
@@ -391,11 +428,14 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
     }
 
     /**
-     * 返回父子任务之间全部传输文件在 PE 兼容的有序跨 VM 对上的平均通信秒数。
+     * Return the mean communication seconds over ordered cross-VM pairs, PE-compatible on
+     * both ends, for all files transferred between a parent and a child task.
      *
-     * <p>平均仅覆盖不同 VM 的有序对（同 VM 传输为零，由运行时副本局部性处理，
-     * 与 HEFT 论文的 c̄_ij 约定一致）；跨 VM 对按
-     * {@code bytes / (1e6 × min(bw_i, bw_j))}。均匀带宽下退化为边权本身。</p>
+     * <p>The mean covers only ordered pairs of distinct VMs (same-VM transfer is zero and
+     * handled by runtime replica locality, consistent with the c-bar_ij convention of the
+     * HEFT paper); a cross-VM pair uses
+     * {@code bytes / (1e6 * min(bw_i, bw_j))}. Under uniform bandwidth this degenerates to
+     * the edge weight itself.</p>
      */
     final double meanCommunicationSeconds(Task parent, Task child) {
         double bytes = communicationBytes(parent, child);
@@ -417,16 +457,20 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
                 pairs++;
             }
         }
-        // 单 VM 时不存在跨处理器通信，避免 0/0 使 rank 变成 NaN。
+        // With a single VM there is no cross-processor communication; avoid 0/0 turning
+        // the rank into NaN.
         return pairs == 0 ? 0.0 : total / pairs;
     }
 
     /**
-     * 父任务全部传输文件到子任务在指定 VM 对之间的通信秒数（OCT 递推用）。
+     * Communication seconds for all files transferred from the parent to the child over the
+     * given VM pair (used by the OCT recurrence).
      *
-     * <p>与 {@link #meanCommunicationSeconds} 同约定：跨 VM 传输率取
-     * {@code min(bw_from, bw_to)}，无共享文件或同 VM 为零。与副本状态无关——OCT 是
-     * 调度前静态量，只按任务边上的字节数与端点带宽计算，不做副本局部性减免。</p>
+     * <p>Same convention as {@link #meanCommunicationSeconds}: the cross-VM transfer rate is
+     * {@code min(bw_from, bw_to)}, and no shared file or the same VM yields zero. Independent
+     * of replica state -- OCT is a static pre-scheduling quantity computed only from the
+     * bytes on the task edge and the endpoint bandwidths, with no replica locality
+     * discount.</p>
      */
     final double communicationSeconds(Task parent, Task child, CondorVM from, CondorVM to) {
         if (from.getId() == to.getId()) {
@@ -436,8 +480,10 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
     }
 
     /**
-     * 同一父任务的一次 OCT 行组计算内复用静态边字节数，包括零交集。
-     * 调用方拥有该局部 map；它不跨 prepare/首次 lazy OCT 阶段保留，也不缓存副本状态。
+     * Reuse the static edge byte count within one OCT row-group computation for the same
+     * parent, including a zero intersection. The caller owns this local map; it is not
+     * retained across prepare or the first lazy OCT phase, and it does not cache replica
+     * state.
      */
     final double communicationSeconds(
             Task parent, Task child, CondorVM from, CondorVM to, Map<Task, Double> edgeBytes) {
@@ -459,7 +505,7 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         return bytes / 1.0e6 / Math.min(from.getBw(), to.getBw());
     }
 
-    /** 父任务 OUTPUT 中被子任务 INPUT 消费的文件总字节数。 */
+    /** Total bytes of the parent's OUTPUT files consumed by the child's INPUT files. */
     private double communicationBytes(Task parent, Task child) {
         double bytes = 0.0;
         LinkedHashSet<String> parentOutputs = new LinkedHashSet<String>();
@@ -477,8 +523,10 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
     }
 
     /**
-     * 在任务依赖就绪时可见的副本中选最快来源；尚未到达的目标副本不能按本地零成本计。
-     * 已规划任务的可用时刻只读，不因候选试算提前登记副本。
+     * Select the fastest source among the replicas visible at the task's dependency-ready
+     * instant; a target replica that has not arrived yet cannot count as local zero cost.
+     * Availability times of planned tasks are read-only and no replica is registered early
+     * during candidate trials.
      */
     private double fileStageInSeconds(FileItem file, CondorVM vm, double dependencyReady) {
         Map<String, Double> sites = replicas.get(file.getName());
@@ -536,8 +584,10 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         finishes.put(task, Double.valueOf(finish));
         task.setVmId(vm.getId());
         task.setStaticScheduleStartTime(start);
-        // 输入在整个 hold 完成时登记，可能早于计算开始；输出仅在计算完成后可用。
-        // 分配顺序与实际时间顺序不同，必须保留时间戳而非把集合插入视为即时可读。
+        // Inputs are registered when the whole hold completes, possibly before the
+        // computation starts; outputs are available only after the computation completes.
+        // Allocation order differs from actual time order, so timestamps must be kept
+        // instead of treating insertion into the collection as immediately readable.
         String vmSite = Integer.toString(vm.getId());
         for (FileItem file : task.getFileList()) {
             if (file.getType() == FileType.INPUT && file.isRealInputFile(task.getFileList())) {
@@ -606,7 +656,7 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         }
     }
 
-    /** 规划期的 VM 占用区间。 */
+    /** VM occupancy interval during planning. */
     private static final class Reservation {
 
         private final double start;

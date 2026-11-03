@@ -27,11 +27,14 @@ import org.apache.commons.math3.distribution.WeibullDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 
 /**
- * 为开销和故障模型提供预采样序列的概率分布生成器。
+ * Probability distribution generator that provides pre-sampled sequences to the cost and
+ * failure models.
  *
- * <p>生成器从命名 {@link SimulationRandom} 流创建 Apache Commons Math 分布，并缓存
- * 样本及其累计和。缓存仅是性能实现，不改变抽样顺序；调用方应通过
- * {@link DistributionSpec} 或显式随机流名称避免不同模型组件意外共享随机序列。</p>
+ * <p>The generator creates Apache Commons Math distributions from named {@link SimulationRandom}
+ * streams and caches the samples together with their cumulative sums. The cache is a performance
+ * implementation only and does not change the sampling order; callers should go through
+ * {@link DistributionSpec} or an explicit random stream name so that distinct model components
+ * do not accidentally share a random sequence.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -48,13 +51,13 @@ public class DistributionGenerator {
     protected double[] samples;
     protected double[] cumulativeSamples;
     protected int cursor;
-    /** 每次预采样或扩容的样本数量。 */
+    /** Number of samples per pre-sampling or extension step. */
     protected final int SAMPLE_SIZE = 1500;
 
     private final RandomGenerator randomGenerator;
     private static long streamSequence;
 
-    /** 支持的概率分布族。 */
+    /** Supported probability distribution families. */
     public enum DistributionFamily {
         LOGNORMAL,
         GAMMA,
@@ -63,28 +66,30 @@ public class DistributionGenerator {
     }
 
     /**
-     * 创建使用自动分配默认随机流的生成器。
+     * Creates a generator that uses an automatically allocated default random stream.
      *
-     * <p>新实验代码应优先使用带 {@code randomStream} 的构造器，使随机流身份成为
-     * 配置的一部分。</p>
+     * <p>New experiment code should prefer the constructor taking {@code randomStream}, so that
+     * the random stream identity becomes part of the configuration.</p>
      *
-     * @param dist 分布族
-     * @param scale 尺度参数
-     * @param shape 形状参数
+     * @param dist distribution family
+     * @param scale scale parameter
+     * @param shape shape parameter
      */
     public DistributionGenerator(DistributionFamily dist, double scale, double shape) {
         this(dist, scale, shape, nextDefaultStream(dist));
     }
 
     /**
-     * 创建具有显式随机流身份的生成器。
+     * Creates a generator with an explicit random stream identity.
      *
-     * <p>受配置管理的实验应使用该构造器，以免独立延迟类别只因共享分布族而意外相关。</p>
+     * <p>Experiments under configuration management should use this constructor, so that
+     * independent delay categories do not become correlated merely by sharing a distribution
+     * family.</p>
      *
-     * @param dist 分布族
-     * @param scale 尺度参数
-     * @param shape 形状参数
-     * @param randomStream 稳定的随机组件名称
+     * @param dist distribution family
+     * @param scale scale parameter
+     * @param shape shape parameter
+     * @param randomStream stable random component name
      */
     public DistributionGenerator(DistributionFamily dist, double scale, double shape, String randomStream) {
         validateParameters(dist, scale, shape);
@@ -104,29 +109,30 @@ public class DistributionGenerator {
     }
 
     /**
-     * 创建使用自动默认随机流、带先验参数的生成器。
+     * Creates a generator with prior parameters that uses an automatically allocated default
+     * random stream.
      *
-     * @param dist 分布族
-     * @param scale 尺度参数
-     * @param shape 形状参数
-     * @param a 先验形状参数
-     * @param b 先验尺度参数
-     * @param c 先验似然参数
+     * @param dist distribution family
+     * @param scale scale parameter
+     * @param shape shape parameter
+     * @param a prior shape parameter
+     * @param b prior scale parameter
+     * @param c prior likelihood parameter
      */
     public DistributionGenerator(DistributionFamily dist, double scale, double shape, double a, double b, double c) {
         this(dist, scale, shape, a, b, c, nextDefaultStream(dist));
     }
 
     /**
-     * 创建带先验参数和显式随机流身份的生成器。
+     * Creates a generator with prior parameters and an explicit random stream identity.
      *
-     * @param dist 分布族
-     * @param scale 尺度参数
-     * @param shape 形状参数
-     * @param a 先验形状参数
-     * @param b 先验尺度参数
-     * @param c 先验似然参数
-     * @param randomStream 稳定的随机组件名称
+     * @param dist distribution family
+     * @param scale scale parameter
+     * @param shape shape parameter
+     * @param a prior shape parameter
+     * @param b prior scale parameter
+     * @param c prior likelihood parameter
+     * @param randomStream stable random component name
      */
     public DistributionGenerator(
             DistributionFamily dist, double scale, double shape, double a, double b, double c, String randomStream) {
@@ -136,37 +142,43 @@ public class DistributionGenerator {
         this.likelihood_prior = c;
     }
 
-    /** @return 当前预采样序列；调用方不得据此推断现实分布已被校准 */
+    /**
+     * @return current pre-sampled sequence; callers must not infer from it that the real
+     *         distribution has been calibrated
+     */
     public double[] getSamples() {
         return samples;
     }
 
-    /** @return 预采样序列的累计和 */
+    /** @return cumulative sums of the pre-sampled sequence */
     public double[] getCumulativeSamples() {
         return cumulativeSamples;
     }
 
     /**
-     * 返回已消费的原始样本数。
+     * Returns the number of raw samples already consumed.
      *
-     * <p>对于失效到达流，这一游标表示已经被过去时间窗跳过或命中的 inter-arrival
-     * 样本数；对于开销模型，它表示已经发出的延迟样本数。</p>
+     * <p>For failure arrival streams this cursor is the number of inter-arrival samples that past
+     * time windows have skipped or hit; for cost models it is the number of delay samples already
+     * issued.</p>
      *
-     * @return 已消费样本的前缀长度
+     * @return prefix length of the consumed samples
      */
     public int getConsumedSampleCount() {
         return cursor;
     }
 
     /**
-     * 单调地将样本消费游标推进到指定下标之后。
+     * Monotonically advances the sample consumption cursor past the given index.
      *
-     * <p>此方法用于累计到达流：当某个到达事件位于已过去的空闲期或当前执行窗口时，
-     * 调用方必须消费该事件及其之前的所有 inter-arrival 样本，避免同一到达被后续
-     * 任务重复解释。下标早于当前游标时保持幂等。</p>
+     * <p>This method serves cumulative arrival streams: when an arrival event lies in an idle
+     * period that has already passed or in the current execution window, the caller must consume
+     * that event and every inter-arrival sample before it, so that the same arrival is not
+     * interpreted again by a later task. The call is idempotent for an index earlier than the
+     * current cursor.</p>
      *
-     * @param lastConsumedIndex 最后一个应被视为已消费的样本下标
-     * @throws IllegalArgumentException 当下标不属于当前缓存时抛出
+     * @param lastConsumedIndex index of the last sample that is to be treated as consumed
+     * @throws IllegalArgumentException if the index does not belong to the current cache
      */
     public void consumeSamplesThrough(int lastConsumedIndex) {
         if (lastConsumedIndex < 0 || lastConsumedIndex >= samples.length) {
@@ -176,14 +188,14 @@ public class DistributionGenerator {
         cursor = Math.max(cursor, lastConsumedIndex + 1);
     }
 
-    /** 使用相同分布和随机流扩展预采样序列。 */
+    /** Extends the pre-sampled sequence with the same distribution and random stream. */
     public void extendSamples() {
         double[] newSamples = getDistribution(scale, shape).sample(SAMPLE_SIZE);
         samples = concat(samples, newSamples);
         updateCumulativeSamples();
     }
 
-    /** 根据当前样本序列重新计算累计和。 */
+    /** Recomputes the cumulative sums from the current sample sequence. */
     public void updateCumulativeSamples() {
         cumulativeSamples = new double[samples.length];
         cumulativeSamples[0] = samples[0];
@@ -193,19 +205,19 @@ public class DistributionGenerator {
     }
 
     /**
-     * 返回基于先验参数的估计值。
+     * Returns the estimate derived from the prior parameters.
      *
-     * @return 先验估计值
+     * @return prior estimate
      */
     public double getPKEMean() {
         return this.shape_prior / this.scale_prior;
     }
 
     /**
-     * 计算已消费样本的算术均值。
+     * Computes the arithmetic mean of the consumed samples.
      *
-     * @return 已消费样本均值
-     * @throws IllegalStateException 当尚未消费任何样本时
+     * @return mean of the consumed samples
+     * @throws IllegalStateException if no sample has been consumed yet
      */
     public double getMean() {
         if (cursor == 0) {
@@ -218,18 +230,20 @@ public class DistributionGenerator {
         return sum / cursor;
     }
 
-    /** @return 先验似然参数 */
+    /** @return prior likelihood parameter */
     public double getLikelihoodPrior() {
         return this.likelihood_prior;
     }
 
     /**
-     * 根据已消费样本和先验参数计算最大似然相关估计。
+     * Computes the maximum-likelihood-related estimate from the consumed samples and the prior
+     * parameters.
      *
-     * <p>该公式只为历史故障/开销实验路径保留；它不是对任意分布族的通用估计器，
-     * 对不支持的分布族返回 {@code 0.0}。</p>
+     * <p>The formula is retained only for the historical failure/cost experiment path; it is not a
+     * general estimator for arbitrary distribution families, and returns {@code 0.0} for the
+     * unsupported families.</p>
      *
-     * @return 估计延迟
+     * @return estimated delay
      */
     public double getMLEMean() {
         double a = shape_prior, b = scale_prior;
@@ -243,7 +257,8 @@ public class DistributionGenerator {
                 case WEIBULL:
                     sum += Math.pow(samples[i], likelihood_prior);
                     break;
-                    // 契约：不支持的分布族（LOGNORMAL/NORMAL）贡献 0，整体返回 0.0（见方法 javadoc）。
+                    // Contract: unsupported distribution families (LOGNORMAL/NORMAL) contribute 0,
+                    // so the method as a whole returns 0.0 (see the method javadoc).
                 default:
                     break;
             }
@@ -263,10 +278,10 @@ public class DistributionGenerator {
     }
 
     /**
-     * 修改分布参数并重新抽样，保留先验参数不变。
+     * Changes the distribution parameters and resamples, keeping the prior parameters unchanged.
      *
-     * @param scale 新尺度参数
-     * @param shape 新形状参数
+     * @param scale new scale parameter
+     * @param shape new shape parameter
      */
     public void varyDistribution(double scale, double shape) {
         validateParameters(dist, scale, shape);
@@ -275,15 +290,16 @@ public class DistributionGenerator {
         RealDistribution distribution = getDistribution(scale, shape);
         samples = distribution.sample(SAMPLE_SIZE);
         updateCumulativeSamples();
-        // 保留已消费位置是历史行为；调用方需要重新开始时应创建新生成器。
+        // Keeping the consumed position is historical behavior; a caller that needs to restart
+        // should create a new generator.
     }
 
     /**
-     * 拼接两个样本数组。
+     * Concatenates two sample arrays.
      *
-     * @param first 前一段样本
-     * @param second 后一段样本
-     * @return 新的拼接数组
+     * @param first leading sample segment
+     * @param second trailing sample segment
+     * @return new concatenated array
      */
     public double[] concat(double[] first, double[] second) {
         double[] result = Arrays.copyOf(first, first.length + second.length);
@@ -292,13 +308,15 @@ public class DistributionGenerator {
     }
 
     /**
-     * 取得下一个样本，缓存耗尽时自动按相同分布扩容。
+     * Obtains the next sample and extends the cache with the same distribution when it is
+     * exhausted.
      *
-     * @return 下一个抽样延迟
+     * @return next sampled delay
      */
     public double getNextSample() {
         while (cursor >= samples.length) {
-            // 子类可通过 extendSamples() 保持自己的采样语义，例如周期性参数调制。
+            // Subclasses can preserve their own sampling semantics through extendSamples(),
+            // for example periodic parameter modulation.
             extendSamples();
         }
         double delay = samples[cursor];
@@ -307,11 +325,11 @@ public class DistributionGenerator {
     }
 
     /**
-     * 按当前分布族和参数创建 Commons Math 分布实例。
+     * Creates a Commons Math distribution instance for the current family and parameters.
      *
-     * @param scale 尺度参数；正态分布中为均值
-     * @param shape 形状参数；正态分布中为标准差
-     * @return 随机流绑定的分布实例
+     * @param scale scale parameter; the mean for the normal distribution
+     * @param shape shape parameter; the standard deviation for the normal distribution
+     * @return distribution instance bound to the random stream
      */
     public RealDistribution getDistribution(double scale, double shape) {
         validateParameters(dist, scale, shape);
@@ -330,7 +348,7 @@ public class DistributionGenerator {
                         randomGenerator, shape, scale, GammaDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
                 break;
             case NORMAL:
-                // 正态分布的 scale 是均值，shape 是标准差。
+                // For the normal distribution scale is the mean and shape is the standard deviation.
                 distribution = new NormalDistribution(
                         randomGenerator, scale, shape, NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
                 break;
@@ -340,22 +358,22 @@ public class DistributionGenerator {
         return distribution;
     }
 
-    /** @return 当前尺度参数 */
+    /** @return current scale parameter */
     public double getScale() {
         return this.scale;
     }
 
-    /** @return 当前分布族 */
+    /** @return current distribution family */
     public DistributionFamily getFamily() {
         return this.dist;
     }
 
-    /** @return 当前形状参数 */
+    /** @return current shape parameter */
     public double getShape() {
         return this.shape;
     }
 
-    /** 在安装新仿真配置时重置默认随机流编号分配。 */
+    /** Resets the default random stream numbering when a new simulation configuration is installed. */
     public static synchronized void resetStreamAllocation() {
         streamSequence = 0L;
     }

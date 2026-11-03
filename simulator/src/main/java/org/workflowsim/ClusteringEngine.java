@@ -38,11 +38,12 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConstants;
 
 /**
- * 可选的任务聚类与统一 stage-in 构造实体。
+ * Optional task clustering and unified stage-in construction entity.
  *
- * <p>该实体将任务 DAG 合并为 {@link Job}，随后创建一个收集工作流外部输入文件的 stage-in
- * 作业并交给 {@link WorkflowEngine}。stage-in 是简化数据准备模型：它不模拟分块传输、
- * 链路争用、缓存一致性或真实存储协议。</p>
+ * <p>The entity merges the task DAG into {@link Job} instances and then creates a stage-in job
+ * that collects the external input files of the workflow and hands it to {@link WorkflowEngine}.
+ * stage-in is a simplified data-preparation model: it does not simulate chunked transfer, link
+ * contention, cache coherence, or a real storage protocol.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -51,31 +52,31 @@ import org.workflowsim.utils.SimulationConstants;
  */
 public final class ClusteringEngine extends SimEntity {
 
-    /** 待聚类的原始任务列表。 */
+    /** Original task list to be clustered. */
     protected List<Task> taskList;
-    /** 聚类后待执行的作业列表。 */
+    /** Job list to be executed after clustering. */
     protected List<Job> jobList;
-    /** 已提交任务列表。 */
+    /** Submitted task list. */
     protected List<? extends Task> taskSubmittedList;
-    /** 已接收任务列表。 */
+    /** Received task list. */
     protected List<? extends Task> taskReceivedList;
-    /** 已提交任务数。 */
+    /** Number of submitted tasks. */
     protected int cloudletsSubmitted;
-    /** 当前选定的具体聚类实现。 */
+    /** Currently selected concrete clustering implementation. */
     protected BasicClustering engine;
-    /** 下游工作流引擎的 CloudSim 实体编号。 */
+    /** CloudSim entity id of the downstream workflow engine. */
     private final int workflowEngineId;
-    /** 下游工作流引擎。 */
+    /** Downstream workflow engine. */
     private final WorkflowEngine workflowEngine;
 
     private SimulationEventRecorder eventRecorder = SimulationEventRecorder.disabled();
 
     /**
-     * 创建聚类实体及其下游工作流引擎。
+     * Creates the clustering entity and its downstream workflow engine.
      *
-     * @param name CloudSim 实体名称
-     * @param schedulers 下游运行时调度器数量
-     * @throws Exception 当 CloudSim 实体无法创建时
+     * @param name CloudSim entity name
+     * @param schedulers number of downstream runtime schedulers
+     * @throws Exception when the CloudSim entities cannot be created
      */
     public ClusteringEngine(String name, int schedulers) throws Exception {
         super(name);
@@ -89,20 +90,20 @@ public final class ClusteringEngine extends SimEntity {
         this.workflowEngineId = this.workflowEngine.getId();
     }
 
-    /** @return 下游工作流引擎的 CloudSim 实体编号 */
+    /** @return CloudSim entity id of the downstream workflow engine */
     public int getWorkflowEngineId() {
         return this.workflowEngineId;
     }
 
-    /** @return 下游工作流引擎 */
+    /** @return downstream workflow engine */
     public WorkflowEngine getWorkflowEngine() {
         return this.workflowEngine;
     }
 
     /**
-     * 安装本次运行私有的事件记录器，并传播给工作流引擎。
+     * Installs the run-private event recorder and propagates it to the workflow engine.
      *
-     * @param value 本次运行的事件记录器
+     * @param value event recorder of this run
      */
     public void setEventRecorder(SimulationEventRecorder value) {
         if (value == null) {
@@ -113,47 +114,48 @@ public final class ClusteringEngine extends SimEntity {
     }
 
     /**
-     * 追加一批待聚类任务。
+     * Appends a batch of tasks to be clustered.
      *
-     * @param list 待聚类任务列表
+     * @param list task list to be clustered
      */
     public void submitTaskList(List<Task> list) {
         getTaskList().addAll(list);
     }
 
     /**
-     * 根据当前配置选择聚类实现并生成作业。
+     * Selects the clustering implementation from the current configuration and generates the jobs.
      *
-     * <p>未启用聚类时使用 {@link BasicClustering}，保留原始任务粒度。</p>
+     * <p>When clustering is not enabled, {@link BasicClustering} is used and the original task
+     * granularity is preserved.</p>
      */
     protected void processClustering() {
 
-        // 聚类方法和粒度均来自本次会话的显式配置。
+        // Both the clustering method and the granularity come from this session's explicit configuration.
         ClusteringParameters params = Parameters.getClusteringParameters();
         switch (params.getClusteringMethod()) {
-                // 水平聚类按同一 DAG 层级分组合并。
+                // Horizontal clustering merges tasks grouped by the same DAG level.
             case HORIZONTAL:
-                // 优先按每层目标作业数构造。
+                // Construct by target job count per level first.
                 if (params.getClustersNum() != 0) {
                     this.engine = new HorizontalClustering(params.getClustersNum(), 0);
-                } else if (params.getClustersSize() != 0) { // 否则按每个作业的目标任务数构造。
+                } else if (params.getClustersSize() != 0) { // Otherwise construct by target task count per job.
                     this.engine = new HorizontalClustering(0, params.getClustersSize());
                 }
                 break;
-                // 垂直聚类沿 DAG 边合并，当前入口从第一层开始。
+                // Vertical clustering merges along DAG edges; the current entry starts at the first level.
             case VERTICAL:
                 int depth = 1;
                 this.engine = new VerticalClustering(depth);
                 break;
-                // 块聚类由实现类按数量和大小参数解释。
+                // Block clustering is interpreted by the implementation from the count and size parameters.
             case BLOCK:
                 this.engine = new BlockClustering(params.getClustersNum(), params.getClustersSize());
                 break;
-                // 平衡聚类使用规划阶段计算的任务影响度。
+                // Balanced clustering uses the task impact factor computed in the planning phase.
             case BALANCED:
                 this.engine = new BalancedClustering(params.getClustersNum());
                 break;
-                // 默认不合并任务，保留一任务一作业的执行粒度。
+                // By default tasks are not merged, preserving one-task-per-job execution granularity.
             default:
                 this.engine = new BasicClustering();
                 break;
@@ -175,25 +177,28 @@ public final class ClusteringEngine extends SimEntity {
     }
 
     /**
-     * 为所有真实外部输入文件创建一个统一的 stage-in 作业。
+     * Creates one unified stage-in job for all real external input files.
      *
-     * <p>该历史模型把全部外部输入汇聚到一个最小长度的前置作业，并让所有根作业依赖它。
-     * 这不是实际数据移动调度器；真实链路并发、传输重叠和存储容量不在此处建模。</p>
+     * <p>This historical model consolidates all external inputs into a minimum-length predecessor
+     * job and makes every root job depend on it. It is not an actual data-movement scheduler;
+     * real link concurrency, transfer overlap, and storage capacity are not modeled here.</p>
      */
     protected void processDatastaging() {
 
-        // 聚类引擎汇集了当前工作流中所有关联文件。
+        // The clustering engine has collected every associated file of the current workflow.
         List<FileItem> list = this.engine.getTaskFiles();
         /*
-         * 历史 CloudSim 路径要求 stage-in Cloudlet 至少为指定的最小长度；
-         * 使用当前作业数作为编号以延续既有作业编号约定。
+         * The historical CloudSim path requires the stage-in Cloudlet to have at least the
+         * specified minimum length; the current job count is used as the id to continue the
+         * existing job-numbering convention.
          */
         Job job = new Job(getJobList().size(), SimulationConstants.STAGE_IN_JOB_LENGTH_MI);
 
-        // 统一 stage-in 作业关联所有外部输入，以便既有执行路径计算传输延迟。
+        // The unified stage-in job owns all external inputs so that the existing execution path
+        // computes transfer delays.
         List<FileItem> fileList = new ArrayList<>();
         for (FileItem file : list) {
-            // 每个真实外部输入文件只登记一次。
+            // Register every real external input file exactly once.
             if (file.isRealInputFile(list)) {
                 ReplicaCatalog.addFileToStorage(file.getName(), Parameters.SOURCE);
                 fileList.add(file);
@@ -202,16 +207,16 @@ public final class ClusteringEngine extends SimEntity {
         job.setFileList(fileList);
         job.setClassType(ClassType.STAGE_IN.value);
 
-        // stage-in 必须先于工作流根作业执行。
+        // stage-in must run before the root jobs of the workflow.
         job.setDepth(0);
         job.setPriority(0);
 
-        // 历史语义：多调度器场景下 stage-in 固定交给第一个调度器。
+        // Historical semantics: with multiple schedulers, stage-in always goes to the first scheduler.
         job.setUserId(getWorkflowEngine().getSchedulerId(0));
 
-        // 所有根作业依赖 stage-in 作业，形成统一数据准备前置条件。
+        // All root jobs depend on the stage-in job, forming a unified data-preparation precondition.
         for (Job cJob : getJobList()) {
-            // 根作业没有父作业，是 stage-in 的直接后继。
+            // A root job has no parent and is a direct successor of the stage-in job.
             if (cJob.getParentList().isEmpty()) {
                 cJob.addParent(job);
                 job.addChild(cJob);
@@ -234,9 +239,9 @@ public final class ClusteringEngine extends SimEntity {
     }
 
     /**
-     * 处理聚类生命周期中的 CloudSim 事件。
+     * Handles CloudSim events in the clustering lifecycle.
      *
-     * @param ev 接收的事件
+     * @param ev the received event
      */
     @Override
     public void processEvent(SimEvent ev) {
@@ -247,9 +252,9 @@ public final class ClusteringEngine extends SimEntity {
             case WorkflowSimTags.JOB_SUBMIT:
                 List list = (List) ev.getData();
                 setTaskList(list);
-                // 未配置聚类时 processClustering 保留任务粒度，不会强制合并。
+                // Without clustering configured, processClustering keeps task granularity; it never merges.
                 processClustering();
-                // 追加统一 stage-in 作业，表达简化的工作流输入准备阶段。
+                // Append the unified stage-in job to express the simplified workflow input-preparation stage.
                 processDatastaging();
                 getWorkflowEngine().setStaticSchedulePlan(StaticSchedulePlan.fromJobs(getJobList()));
                 sendNow(this.workflowEngineId, WorkflowSimTags.JOB_SUBMIT, getJobList());
@@ -264,9 +269,9 @@ public final class ClusteringEngine extends SimEntity {
     }
 
     /**
-     * 处理未知事件并记录错误。
+     * Handles an unknown event and logs an error.
      *
-     * @param ev 未被当前聚类实体识别的事件
+     * @param ev event not recognized by this clustering entity
      */
     protected void processOtherEvent(SimEvent ev) {
         if (ev == null) {
@@ -277,78 +282,78 @@ public final class ClusteringEngine extends SimEntity {
         Log.printLine(getName() + ".processOtherEvent(): " + "Error - event unknown by this DatacenterBroker.");
     }
 
-    /** 预留的仿真结束通知入口；当前历史实现不发送额外事件。 */
+    /** Reserved hook for end-of-simulation notification; the current historical implementation sends no extra event. */
     protected void finishExecution() {
         // sendNow(getId(), CloudSimTags.END_OF_SIMULATION);
     }
 
-    /** 关闭聚类实体。 */
+    /** Shuts down the clustering entity. */
     @Override
     public void shutdownEntity() {
         Log.printLine(getName() + " is shutting down...");
     }
 
-    /** 启动聚类实体，并安排初始事件。 */
+    /** Starts the clustering entity and schedules the initial event. */
     @Override
     public void startEntity() {
         Log.printLine(getName() + " is starting...");
         schedule(getId(), 0, WorkflowSimTags.START_SIMULATION);
     }
 
-    /** @return 当前待聚类任务列表 */
+    /** @return current task list to be clustered */
     @SuppressWarnings("unchecked")
     public List<Task> getTaskList() {
         return (List<Task>) taskList;
     }
 
-    /** @return 当前聚类后作业列表 */
+    /** @return current job list after clustering */
     public List<Job> getJobList() {
         return jobList;
     }
 
     /**
-     * 替换待聚类任务列表。
+     * Replaces the task list to be clustered.
      *
-     * @param taskList 新任务列表
+     * @param taskList new task list
      */
     protected void setTaskList(List<Task> taskList) {
         this.taskList = taskList;
     }
 
     /**
-     * 替换聚类后作业列表。
+     * Replaces the job list after clustering.
      *
-     * @param jobList 新作业列表
+     * @param jobList new job list
      */
     protected void setJobList(List<Job> jobList) {
         this.jobList = jobList;
     }
 
-    /** @return 已提交任务列表 */
+    /** @return submitted task list */
     @SuppressWarnings("unchecked")
     public List<Task> getTaskSubmittedList() {
         return (List<Task>) taskSubmittedList;
     }
 
     /**
-     * 替换已提交任务列表。
+     * Replaces the submitted task list.
      *
-     * @param taskSubmittedList 新的已提交任务列表
+     * @param taskSubmittedList new submitted task list
      */
     protected void setTaskSubmittedList(List<Task> taskSubmittedList) {
         this.taskSubmittedList = taskSubmittedList;
     }
 
-    /** @return 已接收任务列表 */
+    /** @return received task list */
     @SuppressWarnings("unchecked")
     public List<Task> getTaskReceivedList() {
         return (List<Task>) taskReceivedList;
     }
 
     /**
-     * 替换已接收任务列表。
+     * Replaces the received task list.
      *
-     * @param taskReceivedList 新的已接收任务列表
+     * @param taskReceivedList new received task list
      */
     protected void setTaskReceivedList(List<Task> taskReceivedList) {
         this.taskReceivedList = taskReceivedList;

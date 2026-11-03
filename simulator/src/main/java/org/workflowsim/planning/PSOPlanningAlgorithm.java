@@ -12,65 +12,75 @@ import org.workflowsim.utils.SimulationRandom;
 import org.workflowsim.utils.TaskExecutionModel;
 
 /**
- * PSO（粒子群优化）工作流规划算法——论文复现实现。
+ * PSO (particle swarm optimization) workflow planning algorithm -- paper reproduction.
  *
- * <p>复现目标：<b>Pandey, Wu, Guru, Buyya, "A Particle Swarm Optimization-Based
+ * <p>Reproduction target: <b>Pandey, Wu, Guru, Buyya, "A Particle Swarm Optimization-Based
  * Heuristic for Scheduling Workflow Applications in Cloud Computing Environments",
- * AINA 2010</b>；参考开源实现：{@code meysamhit/workflowsim-pso}（该仓库的
- * {@code PSOPlanningAlgorithm/Particle/FitnessFunction}）。</p>
+ * AINA 2010</b>; reference open-source implementation: {@code meysamhit/workflowsim-pso}
+ * (that repository's {@code PSOPlanningAlgorithm/Particle/FitnessFunction}).</p>
  *
- * <h2>算法核心（与参考实现一致）</h2>
+ * <h2>Algorithm core (identical to the reference implementation)</h2>
  * <ul>
- *   <li>每个粒子编码一个 Task→VM 映射；种群规模 30，迭代 100；</li>
- *   <li>适应度 = 0.8·总成本 + 0.2·makespan（成本模型见
- *       {@link PsoFitnessFunction}，VM 单价 = mips/1000）；</li>
- *   <li>标准 PSO 速度/位置更新：w=0.7，c1=c2=1.5，位置四舍五入到最近 VM；</li>
- *   <li>收敛后将全局最优映射写入 {@code task.setVmId(...)}，运行期由
- *       {@code SchedulingAlgorithm.STATIC} 执行（平台契约强制）。</li>
+ *   <li>Each particle encodes a Task-to-VM mapping; population size 30, 100 iterations;</li>
+ *   <li>Fitness = 0.8 * total cost + 0.2 * makespan (cost model in
+ *       {@link PsoFitnessFunction}, VM unit price = mips/1000);</li>
+ *   <li>Standard PSO velocity/position update: w=0.7, c1=c2=1.5, position rounded to the
+ *       nearest VM;</li>
+ *   <li>After convergence the global best mapping is written through
+ *       {@code task.setVmId(...)} and executed at run time by
+ *       {@code SchedulingAlgorithm.STATIC} (enforced by the platform contract).</li>
  * </ul>
  *
- * <h2>与参考实现的刻意差异（平台契约适配）</h2>
+ * <h2>Deliberate differences from the reference implementation (platform contract adaptation)</h2>
  * <ul>
- *   <li>随机数：使用 {@code SimulationRandom.newJavaRandom("planning.pso")} 命名
- *       组件流（根种子经 campaign 种子控制、可复现），替代参考实现硬编码的
- *       {@code new Random(42)}；</li>
- *   <li>VM 候选先按 VM ID 升序排序，位置值域为该有序列表的下标——确定性平局
- *       契约，与受支持算法族一致；</li>
- *   <li>Task 按 ID 升序排序后与位置维度对应，保证映射定义不依赖解析顺序；</li>
- *   <li>矩阵存在时使用与运行时相同的有效执行秒数；初始化与位置更新后把 PE 不兼容
- *       坐标投影到最近可行 VM 下标，等距离取较小 VM ID，不增加随机抽样。
- *       全兼容平台上的原坐标、随机流和更新公式不变；</li>
- *   <li>参考实验用 {@code planning=PSO + scheduling=ROUNDROBIN}——在当前平台
- *       上该组合被 {@code SimulationConfig} 拒绝（规划算法必须搭配 STATIC 派发），
- *       且 ROUNDROBIN 调度会覆盖规划映射；复现实验使用 {@code PSO + STATIC}。</li>
+ *   <li>Random numbers: the named component stream
+ *       {@code SimulationRandom.newJavaRandom("planning.pso")} is used (the root seed is
+ *       controlled by the campaign seed and reproducible) instead of the reference
+ *       implementation's hard-coded {@code new Random(42)};</li>
+ *   <li>VM candidates are sorted by ascending VM ID first, and the position range is the
+ *       index of that ordered list -- a deterministic tie-break contract consistent with
+ *       the supported algorithm family;</li>
+ *   <li>Tasks are sorted by ascending ID and then matched to position dimensions, so the
+ *       mapping definition does not depend on parse order;</li>
+ *   <li>When the matrix is present the effective execution seconds are used, the same as
+ *       at run time; after initialization and each position update, coordinates
+ *       incompatible with the PE count are projected to the nearest feasible VM index,
+ *       with ties going to the smaller VM ID, and no extra random sampling is performed.
+ *       On a fully compatible platform the original coordinates, random stream, and
+ *       update formulas stay unchanged;</li>
+ *   <li>The reference experiment uses {@code planning=PSO + scheduling=ROUNDROBIN}; on the
+ *       current platform that combination is rejected by {@code SimulationConfig} (a
+ *       planning algorithm must be paired with STATIC dispatch), and ROUNDROBIN scheduling
+ *       would overwrite the planning mapping; the reproduction uses {@code PSO + STATIC}.</li>
  * </ul>
  *
- * <h2>已知模型限制（忠实保留自参考实现）</h2>
- * <p>适应度采用<b>顺序执行 VM 负载模型</b>，忽略 DAG 依赖边——参考实现与论文的
- * 简化成本模型均如此。运行侧 makespan 以引擎依赖释放后的真实执行为准。</p>
+ * <h2>Known model limitations (faithfully retained from the reference implementation)</h2>
+ * <p>Fitness uses a <b>sequential-execution VM load model</b> and ignores DAG dependency
+ * edges -- both the reference implementation and the paper use this simplified cost model.
+ * The run-side makespan follows the actual execution after engine dependency release.</p>
  *
- * @since WorkflowSim Toolkit 1.0（论文复现轮）
+ * @since WorkflowSim Toolkit 1.0 (paper reproduction round)
  */
 public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
 
-    /** 种群规模（参考实现常量）。 */
+    /** Population size (reference implementation constant). */
     public static final int POPULATION_SIZE = 30;
-    /** 最大迭代数（参考实现常量）。 */
+    /** Maximum iteration count (reference implementation constant). */
     public static final int MAX_ITERATIONS = 100;
-    /** 惯性权重（参考实现常量）。 */
+    /** Inertia weight (reference implementation constant). */
     public static final double INERTIA_WEIGHT = 0.7;
-    /** 认知系数（参考实现常量）。 */
+    /** Cognitive coefficient (reference implementation constant). */
     public static final double COGNITIVE_COEFFICIENT = 1.5;
-    /** 社会系数（参考实现常量）。 */
+    /** Social coefficient (reference implementation constant). */
     public static final double SOCIAL_COEFFICIENT = 1.5;
-    /** 成本权重（参考实现常量：成本主导，makespan 为辅）。 */
+    /** Cost weight (reference implementation constant: cost dominates, makespan is secondary). */
     public static final double COST_WEIGHT = 0.8;
 
-    /** 最近一次收敛的全局最优适应度（供回归测试与复现对账）。 */
+    /** Global best fitness of the latest convergence (for regression tests and reproduction checks). */
     private double lastBestFitness = Double.NaN;
-    /** 最近一次运行的实际迭代数。 */
+    /** Actual iteration count of the latest run. */
     private int lastIterationCount = 0;
-    /** 最近一次收敛的全局最优映射（Task ID → VM ID）。 */
+    /** Global best mapping of the latest convergence (Task ID to VM ID). */
     private java.util.Map<Integer, Integer> lastMapping = new java.util.LinkedHashMap<Integer, Integer>();
 
     @Override
@@ -84,7 +94,8 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
             return;
         }
 
-        // 确定性顺序：Task 按 ID 升序、VM 按 ID 升序（位置值域 = VM 列表下标）。
+        // Deterministic order: tasks by ascending ID, VMs by ascending ID
+        // (position range = VM list index).
         List<Task> tasks = new ArrayList<Task>(rawTasks);
         Collections.sort(tasks, new Comparator<Task>() {
             @Override
@@ -109,24 +120,25 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
         List<PsoParticle> swarm = initSwarm(taskCount, vmCount, random, compatibleIndices);
         PsoResult result = evolveSwarm(swarm, tasks, vms, compatibleIndices, random, vmCount);
 
-        // R8 审计修复（算法通道 P2-3）：若所有适应度均为 NaN（mips 校验后
-        // 理论不可达，但防御性保留），globalBestPosition 会停在 null，
-        // 原代码在此处以空指针崩溃。显式 fail-fast 指向根因。
+        // R8 audit fix (algorithm channel P2-3): if every fitness is NaN (unreachable in
+        // theory after the mips check, but kept defensively), globalBestPosition stays
+        // null and the original code crashed here with a null pointer. Fail fast
+        // explicitly at the root cause.
         if (result.position == null) {
             throw new IllegalStateException("PSO did not converge to any finite-fitness position (all particle "
                     + "fitnesses were NaN); check task lengths and VM MIPS");
         }
 
-        // 收敛后写入全局最优映射。
+        // Write the global best mapping after convergence.
         writeMapping(tasks, vms, result.position);
         lastBestFitness = result.fitness;
     }
 
-    /** {@link #run()} 的 MIPS 入口校验阶段（R8 审计修复 P2-3 原文搬运转写）。 */
+    /** MIPS entry validation stage of {@link #run()} (verbatim relocation of R8 fix P2-3). */
     private static void validatePositiveMips(List<Vm> vms) {
-        // R8 审计修复（算法通道 P2-3）：适应度按 length/mips 计算成本，
-        // mips 非正数会产生 Inf/NaN 适应度并污染整个粒子群，最终以
-        // globalBestPosition 空指针崩溃。入口处 fail-fast。
+        // R8 audit fix (algorithm channel P2-3): fitness computes cost as length/mips, so a
+        // non-positive mips yields Inf/NaN fitness and contaminates the whole swarm, ending
+        // in a globalBestPosition null-pointer crash. Fail fast at the entry point.
         for (Vm vm : vms) {
             double mips = vm.getMips();
             if (Double.isNaN(mips) || Double.isInfinite(mips) || mips <= 0.0) {
@@ -136,7 +148,7 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
         }
     }
 
-    /** {@link #run()} 的粒子群初始化阶段（逐字搬运转写）。 */
+    /** Swarm initialization stage of {@link #run()} (verbatim relocation). */
     private static List<PsoParticle> initSwarm(
             int taskCount, int vmCount, Random random, List<List<Integer>> compatibleIndices) {
         List<PsoParticle> swarm = new ArrayList<PsoParticle>();
@@ -149,7 +161,10 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
         return swarm;
     }
 
-    /** {@link #run()} 的迭代进化阶段（适应度→全局最优→速度/位置更新，逐字搬运转写）。 */
+    /**
+     * Iterative evolution stage of {@link #run()} (fitness -> global best -> velocity and
+     * position update, verbatim relocation).
+     */
     private PsoResult evolveSwarm(
             List<PsoParticle> swarm,
             List<Task> tasks,
@@ -185,7 +200,7 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
         return result;
     }
 
-    /** {@link #run()} 的收敛映射阶段（逐字搬运转写）。 */
+    /** Convergence mapping stage of {@link #run()} (verbatim relocation). */
     private void writeMapping(List<Task> tasks, List<Vm> vms, int[] globalBestPosition) {
         lastMapping.clear();
         for (int i = 0; i < tasks.size(); i++) {
@@ -196,7 +211,7 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
         }
     }
 
-    /** {PSO} 迭代阶段的私有搬运结构（全局最优位置与适应度）。 */
+    /** Private relocation holder for the {PSO} iteration stage (global best position and fitness). */
     private static final class PsoResult {
         private int[] position;
         private double fitness = Double.MAX_VALUE;
@@ -209,7 +224,8 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
             for (int index = 0; index < vms.size(); index++) {
                 Vm vm = vms.get(index);
                 if (task.getNumberOfPes() <= vm.getNumberOfPes()) {
-                    // 在采样前校验所有可行坐标，缺失矩阵条目不得取决于随机粒子是否访问它。
+                    // Validate every feasible coordinate before sampling; a missing matrix entry must not
+                    // depend on whether a random particle visits it.
                     TaskExecutionModel.executionSeconds(task, vm.getId(), vm.getMips());
                     candidates.add(Integer.valueOf(index));
                 }
@@ -223,7 +239,10 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
         return result;
     }
 
-    /** 保留原 VM 下标坐标系；不可行位置投影到最近可行下标，等距离取较小 VM ID。 */
+    /**
+     * Keep the original VM index coordinate system; project infeasible positions to the
+     * nearest feasible index, with ties resolved to the smaller VM ID.
+     */
     private static void constrainToCompatibleVms(int[] position, List<List<Integer>> candidates) {
         for (int task = 0; task < position.length; task++) {
             int selected = candidates.get(task).get(0).intValue();
@@ -239,17 +258,17 @@ public class PSOPlanningAlgorithm extends BasePlanningAlgorithm {
         }
     }
 
-    /** @return 最近一次收敛的全局最优适应度；未运行或无输入时为 {@code NaN} */
+    /** @return global best fitness of the latest convergence; {@code NaN} when not run or without input */
     public double getLastBestFitness() {
         return lastBestFitness;
     }
 
-    /** @return 最近一次运行的迭代数 */
+    /** @return iteration count of the latest run */
     public int getLastIterationCount() {
         return lastIterationCount;
     }
 
-    /** @return 最近一次收敛的映射（Task ID → VM ID），插入序 = Task ID 升序 */
+    /** @return mapping of the latest convergence (Task ID to VM ID); insertion order = ascending Task ID */
     public java.util.Map<Integer, Integer> getLastMapping() {
         return Collections.unmodifiableMap(lastMapping);
     }

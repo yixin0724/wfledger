@@ -120,35 +120,36 @@ public final class WorkflowPlanner extends SimEntity {
                 new WorkflowParser(getClusteringEngine().getWorkflowEngine().getSchedulerId(0));
     }
 
-    /** @return 下游聚类引擎的 CloudSim 实体编号 */
+    /** @return CloudSim entity ID of the downstream clustering engine */
     public int getClusteringEngineId() {
         return this.clusteringEngineId;
     }
 
-    /** @return 下游聚类引擎 */
+    /** @return downstream clustering engine */
     public ClusteringEngine getClusteringEngine() {
         return this.clusteringEngine;
     }
 
-    /** @return 工作流输入解析器 */
+    /** @return workflow input parser */
     public WorkflowParser getWorkflowParser() {
         return this.parser;
     }
 
-    /** @return 工作流引擎的 CloudSim 实体编号 */
+    /** @return CloudSim entity ID of the workflow engine */
     public int getWorkflowEngineId() {
         return getClusteringEngine().getWorkflowEngineId();
     }
 
-    /** @return 下游工作流引擎 */
+    /** @return downstream workflow engine */
     public WorkflowEngine getWorkflowEngine() {
         return getClusteringEngine().getWorkflowEngine();
     }
 
     /**
-     * 安装本次运行私有的事件记录器，并传播给下游执行链。
+     * Install the event recorder owned by this run and propagate it to the downstream execution
+     * chain.
      *
-     * @param value 本次运行的事件记录器
+     * @param value event recorder of this run
      */
     public void setEventRecorder(SimulationEventRecorder value) {
         if (value == null) {
@@ -159,9 +160,9 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 提供需要建模平台存储的规划器所需上下文。
+     * Provide the context required by planners that model platform storage.
      *
-     * @param value 显式规划上下文
+     * @param value explicit planning context
      */
     public void setPlanningContext(PlanningContext value) {
         if (value == null) {
@@ -171,22 +172,24 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 提供可选的任务×VM 异构执行成本矩阵（论文复现支撑）。
+     * Provide the optional task-by-VM heterogeneous execution cost matrix (supports paper
+     * reproduction).
      *
-     * <p>解析完成后矩阵会被投影到每个逻辑任务上：规划器读取任务投影进行成本估计，
-     * STATIC 派发在提交前按 {@code MI = round(秒数 × vm.mips)} 折算。未设置时平台
-     * 保持既有 MI/mips 缩放行为。</p>
+     * <p>After parsing, the matrix is projected onto every logical task: planners read the task
+     * projection to estimate cost, and STATIC dispatch converts it before submission as
+     * {@code MI = round(seconds * vm.mips)}. When it is not set, the platform keeps the existing
+     * MI/mips scaling behavior.</p>
      *
-     * @param value 任务×VM 执行成本矩阵；null 清除投影
+     * @param value task-by-VM execution cost matrix; null clears the projection
      */
     public void setTaskCostMatrix(org.workflowsim.utils.TaskCostMatrix value) {
         this.taskCostMatrix = value;
     }
 
     /**
-     * 处理规划生命周期中的 CloudSim 事件。
+     * Process a CloudSim event in the planning lifecycle.
      *
-     * @param ev 接收的事件
+     * @param ev received event
      */
     @Override
     public void processEvent(SimEvent ev) {
@@ -246,8 +249,9 @@ public final class WorkflowPlanner extends SimEntity {
                                                 .getTaskPlans()
                                                 .size()));
                 processImpactFactors(getTaskList());
-                // R5 动态到达：把每个输入的提交时刻与任务归属登记给引擎；全部 t=0 时
-                // 引擎行为与历史单时刻提交逐位一致。
+                // R5 dynamic arrival: register the submission instant and the task attribution of
+                // every input with the engine; when all instants are t=0, the engine behavior is
+                // bit-identical to the historical single-instant submission.
                 getWorkflowEngine()
                         .setWorkflowArrivals(
                                 Parameters.getWorkflowArrivalSeconds(),
@@ -257,7 +261,8 @@ public final class WorkflowPlanner extends SimEntity {
             case CloudSimTags.END_OF_SIMULATION:
                 shutdownEntity();
                 break;
-                // 未识别事件统一进入显式错误处理，避免被静默丢弃。
+                // An unrecognized event always enters explicit error handling instead of being
+                // dropped silently.
             default:
                 processOtherEvent(ev);
                 break;
@@ -287,7 +292,8 @@ public final class WorkflowPlanner extends SimEntity {
                 sharedStorageDagPlanTrace = ((SharedStoragePeftPlanningAlgorithm) planner).getLastPlanTrace();
             }
         } catch (org.workflowsim.exception.SimulationConfigurationException exception) {
-            // R8 审计修复（P1-7）：配置类异常不得被包装成"规划算法失败"的执行语义。
+            // R8 audit fix (P1-7): a configuration exception must not be wrapped into the
+            // execution semantics of "planning algorithm failed".
             throw exception;
         } catch (Exception exception) {
             throw new IllegalStateException(
@@ -296,10 +302,11 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 在解析已写入实际 DAG 深度、但任务尚未规划或提交之前验证故障模型坐标覆盖。
+     * Validate failure model coordinate coverage after parsing has written the actual DAG depths
+     * but before any task is planned or submitted.
      *
-     * <p>使用平台声明的真实 VM ID，而不是 VM 列表下标；这使非连续 ID 的配置错误在
-     * 任何 Job 派发前即可终止。</p>
+     * <p>The real VM IDs declared by the platform are used instead of VM list indices, so a
+     * configuration error with non-contiguous IDs terminates before any Job is dispatched.</p>
      */
     private void validateFailureModelCoverage() {
         List<Integer> vmIds = new ArrayList<Integer>();
@@ -310,11 +317,11 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 把可选的任务×VM 成本矩阵投影到解析出的每个逻辑任务。
+     * Project the optional task-by-VM cost matrix onto every parsed logical task.
      *
-     * <p>矩阵必须覆盖全部任务 ID × 全部 VM ID：缺失条目在任何 Job 派发前
-     * fail-fast，不做静默回退。投影完成后规划器可读取
-     * {@code task.getVmExecutionCostSeconds(vmId)} 做成本估计。</p>
+     * <p>The matrix must cover every combination of task ID and VM ID: a missing entry fails fast
+     * before any Job is dispatched, with no silent fallback. After the projection, planners can
+     * read {@code task.getVmExecutionCostSeconds(vmId)} to estimate cost.</p>
      */
     private void applyTaskCostMatrix() {
         if (taskCostMatrix == null) {
@@ -342,22 +349,23 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 根据配置创建规划算法实现。
+     * Create the planning algorithm implementation selected by the configuration.
      *
-     * <p>枚举值到实现的映射是实验协议的一部分。共享存储 DAG 规划器会收到显式
-     * {@link PlanningContext}。R9（2026-09-16）已移除与执行模型不对齐的历史
-     * HEFT/DHEFT 分发分支，静态 DAG 规划一律使用受维护的 SHARED_STORAGE_*
-     * 或 LOCAL_* 系列。</p>
+     * <p>The mapping from enum value to implementation is part of the experiment protocol. A
+     * shared-storage DAG planner receives an explicit {@link PlanningContext}. R9 (2026-09-16)
+     * removed the historical HEFT/DHEFT dispatch branches that did not align with the execution
+     * model; static DAG planning always uses the maintained SHARED_STORAGE_* or LOCAL_* series.</p>
      *
-     * @param name 规划算法枚举
-     * @return 对应规划算法；无效或未知枚举时为 {@code null}
+     * @param name planning algorithm enum
+     * @return corresponding planning algorithm; {@code null} for an invalid or unknown enum
      */
     private BasePlanningAlgorithm getPlanningAlgorithm(PlanningAlgorithm name) {
         BasePlanningAlgorithm planner;
 
-        // 新增规划器时必须同步维护 Parameters 中可报告的枚举契约。
+        // Adding a planner requires keeping the reportable enum contract in Parameters in sync.
         switch (name) {
-                // INVALID 不会调用此方法，保留 null 以维持历史 fail-fast 边界。
+                // INVALID never reaches this method; keep null to preserve the historical
+                // fail-fast boundary.
             case INVALID:
                 planner = null;
                 break;
@@ -420,12 +428,13 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 为每个任务计算影响度，供任务平衡聚类算法使用。
+     * Compute the impact factor of every task for the task-balanced clustering algorithm.
      *
-     * <p>每个出口任务获得相同初始影响度，并沿父边均分回传。该值是聚类启发式的内部
-     * 特征，不是关键路径长度、现实重要度或实验结果指标。</p>
+     * <p>Every exit task receives the same initial impact, which is propagated back along the
+     * parent edges in equal shares. This value is an internal feature of the clustering heuristic;
+     * it is not a critical-path length, a real-world importance, or an experimental metric.</p>
      *
-     * @param taskList 全部任务
+     * @param taskList all tasks
      */
     private void processImpactFactors(List<Task> taskList) {
         List<Task> exits = new ArrayList<>();
@@ -441,18 +450,22 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 将影响度累加到一个任务并沿其父边均分回传。
+     * Accumulate the impact into one task and propagate it back along the parent edges in equal
+     * shares.
      *
-     * <p>审查工程 F-004 修复（2026-10-19）：历史实现沿父边<b>递归</b>，调用栈深度
-     * 承受 DAG 深度，50 000 深度纯链上实测 {@code StackOverflowError}
-     * （回归测试 {@code PlannerImpactDeepChainTest}）。本实现改用显式帧栈模拟同一
-     * 递归：<b>调用序列与浮点累加顺序逐位保持</b>——激活帧先执行一次自身累加，
-     * 再按 {@code parentList} 声明顺序逐个压入父帧并等待其整个父链子树处理完毕后
-     * 才继续下一个父帧，与递归的调用顺序完全一致；图形由
-     * {@link WorkflowDagValidator} 保证无环。</p>
+     * <p>Review engineering F-004 fix (2026-10-19): the historical implementation <b>recursed</b>
+     * along the parent edges, so the call-stack depth grew with the DAG depth and a
+     * {@code StackOverflowError} was measured on a pure chain 50 000 deep (regression test
+     * {@code PlannerImpactDeepChainTest}). This implementation simulates the same recursion with
+     * an explicit frame stack: <b>the call sequence and the floating-point accumulation order are
+     * preserved bit for bit</b> -- an activated frame performs its own accumulation once, then
+     * pushes its parent frames one by one in the declaration order of {@code parentList} and only
+     * continues with the next parent frame after the whole parent-chain subtree of the current one
+     * is done, exactly matching the recursive call order; the graph is guaranteed acyclic by
+     * {@link WorkflowDagValidator}.</p>
      *
-     * @param start 接收初始影响度的任务
-     * @param impact 要累加和回传的影响度
+     * @param start task that receives the initial impact
+     * @param impact impact to accumulate and propagate
      */
     private void propagateImpactFrom(Task start, double impact) {
         java.util.Deque<ImpactFrame> stack = new java.util.ArrayDeque<>();
@@ -475,19 +488,22 @@ public final class WorkflowPlanner extends SimEntity {
         }
     }
 
-    /** 单个影响度分发帧：激活时先完成一次自身累加，随后按声明顺序驱动父帧。 */
+    /**
+     * Single impact propagation frame: on activation it accumulates once, then drives its parent
+     * frames in declaration order.
+     */
     private static final class ImpactFrame {
-        /** 接收本帧影响度的任务。 */
+        /** Task that receives the impact of this frame. */
         final Task task;
-        /** 待累加到该任务的影响度份额。 */
+        /** Impact share to accumulate into that task. */
         final double impact;
-        /** 已向下分发的父边数量。 */
+        /** Number of parent edges already dispatched downward. */
         private int nextParentIndex;
-        /** 父边总数；首次激活时计算。 */
+        /** Total parent edge count; computed on first activation. */
         private int parentCount;
-        /** 每条父边分得的份额（impact / parentCount）；无父边时为 0。 */
+        /** Share per parent edge (impact / parentCount); 0 when there is no parent edge. */
         private double parentShare;
-        /** 是否已执行自身累加（每帧恰好一次）。 */
+        /** Whether the frame has performed its own accumulation (exactly once per frame). */
         private boolean applied;
 
         ImpactFrame(Task task, double impact) {
@@ -497,9 +513,9 @@ public final class WorkflowPlanner extends SimEntity {
     }
 
     /**
-     * 处理未知事件并记录错误。
+     * Process an unknown event and log the error.
      *
-     * @param ev 未被当前规划器识别的事件
+     * @param ev event not recognized by the current planner
      */
     protected void processOtherEvent(SimEvent ev) {
         if (ev == null) {
@@ -510,18 +526,21 @@ public final class WorkflowPlanner extends SimEntity {
         Log.printLine(getName() + ".processOtherEvent(): " + "Error - event unknown by this DatacenterBroker.");
     }
 
-    /** 预留的仿真结束通知入口；当前历史实现不发送额外事件。 */
+    /**
+     * Reserved end-of-simulation notification hook; the current historical implementation sends
+     * no extra event.
+     */
     protected void finishExecution() {
         // sendNow(getId(), CloudSimTags.END_OF_SIMULATION);
     }
 
-    /** 关闭规划实体。 */
+    /** Shut down the planning entity. */
     @Override
     public void shutdownEntity() {
         Log.printLine(getName() + " is shutting down...");
     }
 
-    /** 启动规划实体，并安排初始工作流解析事件。 */
+    /** Start the planning entity and schedule the initial workflow parse event. */
     @Override
     public void startEntity() {
         Log.printLine("Starting WorkflowSim " + Parameters.getVersion());
@@ -529,37 +548,38 @@ public final class WorkflowPlanner extends SimEntity {
         schedule(getId(), 0, WorkflowSimTags.START_SIMULATION);
     }
 
-    /** @return 当前待规划或待聚类的任务列表 */
+    /** @return current task list waiting for planning or clustering */
     @SuppressWarnings("unchecked")
     public List<Task> getTaskList() {
         return (List<Task>) taskList;
     }
 
     /**
-     * 返回聚类消耗可变列表前保存的已解析任务图快照。
+     * Return the parsed task-graph snapshot saved before clustering consumes the mutable list.
      *
-     * <p>快照中的 {@link Task} 仍是实际仿真对象，因此报告捕获到的是这些任务的最终
-     * 任务级结果状态，而非输入数据的深拷贝。</p>
+     * <p>The {@link Task} objects in the snapshot are still the actual simulation objects, so a
+     * report captures their final task-level outcome state rather than a deep copy of the input
+     * data.</p>
      *
-     * @return 不可修改的已解析任务列表快照
+     * @return unmodifiable snapshot of the parsed task list
      */
     public List<Task> getParsedTaskSnapshot() {
         return parsedTaskSnapshot;
     }
 
     /**
-     * 返回选定规划器产生的完整静态 DAG 规划轨迹。
+     * Return the complete static DAG plan trace produced by the selected planner.
      *
-     * @return 静态 DAG 规划轨迹；未使用相应规划器时为 {@code null}
+     * @return static DAG plan trace; {@code null} when the corresponding planner was not used
      */
     public SharedStorageDagPlanTrace getSharedStorageDagPlanTrace() {
         return sharedStorageDagPlanTrace;
     }
 
     /**
-     * 替换当前任务列表。
+     * Replace the current task list.
      *
-     * @param taskList 新任务列表
+     * @param taskList new task list
      */
     protected void setTaskList(List<Task> taskList) {
         this.taskList = taskList;

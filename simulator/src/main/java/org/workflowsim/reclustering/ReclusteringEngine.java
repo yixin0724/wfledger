@@ -33,11 +33,12 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 
 /**
- * 在 Job 失败后创建一个或多个重试 Job 的旧版重聚类引擎。
+ * Legacy reclustering engine that creates one or more retry Jobs after a Job fails.
  *
- * <p>这里的重试策略延续 WorkflowSim 的兼容性行为，并依赖
- * {@link FailureParameters}、{@link FailureMonitor} 及开销参数中的抽象模型。
- * 它不是新版标准实验入口，也不能单独证明真实系统中的恢复效果。</p>
+ * <p>These retry policies continue the WorkflowSim compatibility behavior and depend on
+ * {@link FailureParameters}, {@link FailureMonitor}, and the abstract models in the
+ * overhead parameters. This is not the new standard experiment entry point, and it cannot
+ * by itself prove the recovery effect in a real system.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -47,14 +48,14 @@ import org.workflowsim.utils.Parameters;
 public class ReclusteringEngine {
 
     /**
-     * 从失败 Job 创建一个新的重试 Job。
+     * Create a new retry Job from a failed Job.
      *
-     * @param id 新 Job 标识
-     * @param job 失败的 Job
-     * @param length 新 Job 的计算长度
-     * @param taskList 重试任务列表
-     * @param updateDep 是否将重试 Job 写入原有依赖关系
-     * @return 新建的重试 Job
+     * @param id new Job identifier
+     * @param job failed Job
+     * @param length computational length of the new Job
+     * @param taskList retry task list
+     * @param updateDep whether to write the retry Job into the original dependency relations
+     * @return the newly created retry Job
      */
     private static Job createJob(int id, Job job, long length, List taskList, boolean updateDep) {
         if (job == null) {
@@ -76,8 +77,8 @@ public class ReclusteringEngine {
             throw new IllegalStateException("Could not initialize retry Job " + id, exception);
         }
 
-        // DC/DR 会增量构建重试 Job，因此初始占位任务列表可为 null；
-        // 每个真正可执行的重试 Job 都必须持有任务副本。
+        // DC/DR build retry Jobs incrementally, so the initial placeholder task list may be null;
+        // every genuinely executable retry Job must hold its own task copies.
         newJob.setTaskList(taskList == null ? new ArrayList<Task>() : copyTasks(taskList));
         populateRetryFileMetadata(newJob);
         newJob.setDepth(job.getDepth());
@@ -93,11 +94,12 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 根据当前容错聚类算法创建失败 Job 的重试 Job 列表。
+     * Create the list of retry Jobs for a failed Job according to the current
+     * fault-tolerant clustering algorithm.
      *
-     * @param job 失败的 Job
-     * @param id 第一个重试 Job 的标识
-     * @return 新建重试 Job 列表
+     * @param job failed Job
+     * @param id identifier of the first retry Job
+     * @return list of newly created retry Jobs
      */
     public static List<Job> process(Job job, int id) {
         if (job == null) {
@@ -114,35 +116,35 @@ public class ReclusteringEngine {
         switch (FailureParameters.getFTCluteringAlgorithm()) {
             case FTCLUSTERING_NOOP:
                 jobList.add(createJob(id, job, job.getEffectiveExecutionLengthMi(), job.getTaskList(), true));
-                // 重试 Job 尚未提交，无需处理失败 Job 的提交状态。
+                // The retry Job is not yet submitted, so the submission state of the failed Job needs no handling.
                 break;
                 /**
-                 * 动态重聚类。
+                 * Dynamic reclustering.
                  */
             case FTCLUSTERING_DC:
                 jobList = DCReclustering(jobList, job, id, job.getTaskList());
                 break;
                 /**
-                 * 选择性重聚类。
+                 * Selective reclustering.
                  */
             case FTCLUSTERING_SR:
                 jobList = SRReclustering(jobList, job, id);
 
                 break;
                 /**
-                 * 基于估计器的动态重聚类。
+                 * Estimator-based dynamic reclustering.
                  */
             case FTCLUSTERING_DR:
                 jobList = DRReclustering(jobList, job, id, job.getTaskList());
                 break;
                 /**
-                 * 按 DAG 深度分块重聚类。
+                 * Block reclustering by DAG depth.
                  */
             case FTCLUSTERING_BLOCK:
                 jobList = BlockReclustering(jobList, job, id);
                 break;
                 /**
-                 * 按 DAG 深度二分重聚类。
+                 * Binary reclustering by DAG depth.
                  */
             case FTCLUSTERING_VERTICAL:
                 jobList = VerticalReclustering(jobList, job, id);
@@ -155,8 +157,9 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 重试是一次新的执行尝试。复制任务标识和建模元数据，但绝不与失败尝试共享
-     * 可变状态或计时信息，避免污染已保留的失败证据。
+     * A retry is a fresh execution attempt. Copy the task identity and modeling metadata,
+     * but never share mutable state or timing information with the failed attempt, so the
+     * retained failure evidence is not polluted.
      */
     private static List<Task> copyTasks(List taskList) {
         if (taskList == null) {
@@ -195,11 +198,12 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 从重试任务副本重建 Job 级文件和 required-file 并集。
+     * Rebuild the Job-level file list and required-file union from the copied retry tasks.
      *
-     * <p>重试 Job 可能只包含原聚类 Job 的一部分任务，不能照搬原 Job 的完整文件列表。
-     * 重新聚合后的 compute Job 会继续进入既有的数据阶段输入模型，由该模型根据副本目录决定
-     * 是否需要实际传输。</p>
+     * <p>A retry Job may contain only part of the tasks of the original clustering Job, so the
+     * full file list of the original Job cannot be copied verbatim. The reaggregated compute Job
+     * still enters the existing data-stage input model, which decides from the copy directory
+     * whether an actual transfer is required.</p>
      */
     private static void populateRetryFileMetadata(Job retry) {
         for (Task task : retry.getTaskList()) {
@@ -215,18 +219,21 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 按固定上限将候选任务稳定地切分为重试 Job。
+     * Split candidate tasks stably into retry Jobs under a fixed upper bound.
      *
-     * <p>DC 和 DR 共用此路径，从而保证每个候选任务恰好进入一个输出 Job。这里先在加入当前
-     * 任务前关闭已满的簇，避免旧实现中恰好位于簇边界的任务被遗漏。{@code failedOnly}
-     * 为 {@code true} 时只保留状态为 {@link Cloudlet#FAILED} 的任务。</p>
+     * <p>DC and DR share this path, which guarantees that each candidate task enters exactly one
+     * output Job. A full cluster is closed before the current task is added, so tasks that sit
+     * exactly on a cluster boundary are not dropped as in the old implementation. When
+     * {@code failedOnly} is {@code true}, only tasks whose status is {@link Cloudlet#FAILED} are
+     * retained.</p>
      *
-     * @param job 失败的源 Job
-     * @param firstId 第一个新 Job 标识
-     * @param candidates 按原有顺序的候选任务
-     * @param clusterSize 每个重试 Job 至多包含的任务数量，必须为正
-     * @param failedOnly 是否只重试失败任务
-     * @return 连续编号、已重建文件元数据并已连接依赖边的重试 Job
+     * @param job failed source Job
+     * @param firstId identifier of the first new Job
+     * @param candidates candidate tasks in their original order
+     * @param clusterSize maximum number of tasks per retry Job, must be positive
+     * @param failedOnly whether to retry failed tasks only
+     * @return retry Jobs with consecutive identifiers, rebuilt file metadata, and connected
+     *         dependency edges
      */
     static List<Job> partitionRetryTasks(
             Job job, int firstId, List<Task> candidates, int clusterSize, boolean failedOnly) {
@@ -269,10 +276,10 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 按任务的 DAG 深度划分任务列表。
+     * Partition the task list by task DAG depth.
      *
-     * @param list 待划分的任务列表
-     * @return 以 DAG 深度为键的任务映射
+     * @param list task list to partition
+     * @return mapping from DAG depth to tasks
      */
     private static Map<Integer, List<Task>> getDepthMap(List<Task> list) {
         Map<Integer, List<Task>> map = new HashMap<>();
@@ -290,13 +297,13 @@ public class ReclusteringEngine {
 
         return map;
     }
-    // 动态重聚类及按层恢复策略共用的辅助逻辑。
+    // Shared helper logic for dynamic reclustering and layer-wise recovery.
 
     /**
-     * 获取深度映射中的最小层级，供动态和按层恢复策略使用。
+     * Return the minimum level in a depth map for the dynamic and layer-wise recovery policies.
      *
-     * @param map 以 DAG 深度为键的任务映射
-     * @return 映射中的最小键；空映射返回 -1
+     * @param map mapping from DAG depth to tasks
+     * @return minimum key in the map; -1 for an empty map
      */
     private static int getMin(Map<Integer, List<Task>> map) {
         if (map != null && !map.isEmpty()) {
@@ -312,10 +319,10 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 判断任务列表中是否存在失败任务。
+     * Determine whether a task list contains a failed task.
      *
-     * @param list 待检查的任务列表
-     * @return 存在失败任务时为 {@code true}
+     * @param list task list to inspect
+     * @return {@code true} if a failed task is present
      */
     private static boolean checkFailed(List<Task> list) {
         boolean all = false;
@@ -329,18 +336,18 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 按 DAG 深度将失败 Job 的任务二分后重聚类。
+     * Recluster the tasks of a failed Job after bisecting them by DAG depth.
      *
-     * @param jobList 累积的重试 Job 列表
-     * @param job 失败的 Job
-     * @param id 下一个可分配的 Job 标识
-     * @return 更新后的重试 Job 列表
+     * @param jobList accumulated retry Job list
+     * @param job failed Job
+     * @param id identifier of the next allocatable Job
+     * @return updated retry Job list
      */
     private static List<Job> VerticalReclustering(List<Job> jobList, Job job, int id) {
         Map<Integer, List<Task>> map = getDepthMap(job.getTaskList());
 
         /**
-         * 只有一个 DAG 层级时退化为动态重聚类。
+         * When there is only one DAG level, fall back to dynamic reclustering.
          */
         if (map.size() == 1) {
 
@@ -369,12 +376,12 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 对每个包含失败任务的 DAG 深度块分别执行动态重聚类。
+     * Run dynamic reclustering separately for each DAG depth block that contains a failed task.
      *
-     * @param jobList 累积的重试 Job 列表
-     * @param job 失败的 Job
-     * @param id 下一个可分配的 Job 标识
-     * @return 更新后的重试 Job 列表
+     * @param jobList accumulated retry Job list
+     * @param job failed Job
+     * @param id identifier of the next allocatable Job
+     * @return updated retry Job list
      */
     private static List BlockReclustering(List jobList, Job job, int id) {
         Map map = getDepthMap(job.getTaskList());
@@ -382,19 +389,19 @@ public class ReclusteringEngine {
             jobList = DRReclustering(jobList, job, id, job.getTaskList());
             return jobList;
         }
-        // 对每个深度块分别处理。
+        // Process each depth block separately.
         int min = getMin(map);
         for (int i = min; i < min + map.size(); i++) {
 
             List list = (List) map.get(i);
 
             if (checkFailed(list)) {
-                // 包含失败任务的深度块必须独立恢复。
+                // A depth block that contains a failed task must be recovered independently.
                 List newList = DRReclustering(new ArrayList(), job, id, list);
-                id = newList.size() + id; // 后续重试 Job 继续使用未占用的标识。
+                id = newList.size() + id; // later retry Jobs continue with the identifiers not yet taken.
                 jobList.addAll(newList);
             } else {
-                // 此深度块没有失败任务，无需创建重试 Job。
+                // This depth block has no failed task, so no retry Job is needed.
             }
         }
 
@@ -402,19 +409,20 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 使用监控器建议的聚类因子执行动态重聚类。
+     * Run dynamic reclustering with the clustering factor suggested by the monitor.
      *
-     * @param jobList 累积的重试 Job 列表
-     * @param job 失败的 Job
-     * @param id 下一个可分配的 Job 标识
-     * @param allTaskList 候选重试任务列表
-     * @return 更新后的重试 Job 列表
+     * @param jobList accumulated retry Job list
+     * @param job failed Job
+     * @param id identifier of the next allocatable Job
+     * @param allTaskList candidate retry task list
+     * @return updated retry Job list
      */
     private static List<Job> DCReclustering(List<Job> jobList, Job job, int id, List<Task> allTaskList) {
 
         Task firstTask = allTaskList.get(0);
-        // FailureRecord 的 length 是估计的单任务运行时间，不是整个 Job 的长度。
-        // 该历史公式把任务长度、聚类开销和深度相关除数结合起来。
+        // The FailureRecord length is the estimated single-task runtime, not the length of the
+        // whole Job. This historical formula combines task length, clustering overhead, and a
+        // depth-dependent divisor.
         OverheadParameters overhead = Parameters.getOverheadParams();
         double clusteringDelay = overhead == null ? 0.0 : overhead.getClustDelay(job);
         double taskLength =
@@ -424,19 +432,20 @@ public class ReclusteringEngine {
         record.delayLength = getCumulativeDelay(job.getDepth());
         int suggestedK = FailureMonitor.getClusteringFactor(record);
 
-        // 估计器返回 0 表示没有有限推荐值；退化为一个覆盖全部候选任务的重试簇。
+        // A zero from the estimator means that no finite recommendation exists; fall back to
+        // one retry cluster that covers all candidate tasks.
         int clusterSize = suggestedK > 0 ? suggestedK : Math.max(1, allTaskList.size());
         jobList.addAll(partitionRetryTasks(job, id, allTaskList, clusterSize, false));
         return jobList;
     }
 
     /**
-     * 仅为失败任务创建一个重试 Job。
+     * Create a single retry Job for the failed tasks only.
      *
-     * @param jobList 累积的重试 Job 列表
-     * @param job 失败的 Job
-     * @param id 新重试 Job 的标识
-     * @return 更新后的重试 Job 列表
+     * @param jobList accumulated retry Job list
+     * @param job failed Job
+     * @param id identifier of the new retry Job
+     * @return updated retry Job list
      */
     private static List<Job> SRReclustering(List<Job> jobList, Job job, int id) {
         List<Task> newTaskList = new ArrayList<>();
@@ -453,13 +462,14 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 返回旧版动态重聚类公式使用的深度相关除数。
+     * Return the depth-dependent divisor used by the legacy dynamic reclustering formula.
      *
-     * <p>这些常量仅覆盖历史实现中的少数深度，缺少实验校准依据；保留它们
-     * 是为了兼容旧行为，而不是作为通用平台模型。</p>
+     * <p>These constants cover only a few depths of the historical implementation and have no
+     * experimental calibration basis; they are retained for compatibility with the old
+     * behavior, not as a general platform model.</p>
      *
-     * @param depth DAG 深度
-     * @return 对应的历史除数，未知深度返回 1
+     * @param depth DAG depth
+     * @return the corresponding historical divisor, or 1 for an unknown depth
      */
     private static int getDividend(int depth) {
         int dividend = 1;
@@ -481,9 +491,9 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 累加某一 DAG 深度可用的队列、工作流引擎和提交后处理延迟均值。
-     * @param depth DAG 深度
-     * @return 累积延迟
+     * Sum the mean queue, workflow engine, and post-processing delays available for a DAG depth.
+     * @param depth DAG depth
+     * @return cumulative delay
      */
     private static double getCumulativeDelay(int depth) {
         double delay = 0.0;
@@ -504,12 +514,14 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 返回某一深度最先可用的开销分布先验，用于旧版动态重聚类估计器。
+     * Return the first available overhead distribution prior for a depth, for the legacy
+     * dynamic reclustering estimator.
      *
-     * <p>此选择顺序是历史兼容性规则，不表示多个开销来源的统计合并。</p>
+     * <p>This selection order is a historical compatibility rule; it does not express a
+     * statistical merge of multiple overhead sources.</p>
      *
-     * @param depth DAG 深度
-     * @return 选中的先验；没有对应开销时为 0
+     * @param depth DAG depth
+     * @return selected prior; 0 when no corresponding overhead exists
      */
     private static double getOverheadLikelihoodPrior(int depth) {
         double prior = 0.0;
@@ -529,26 +541,29 @@ public class ReclusteringEngine {
     }
 
     /**
-     * 根据失效到达时间和开销参数估计簇大小后，仅重试失败任务。
+     * Estimate the cluster size from the failure arrival time and overhead parameters, then
+     * retry the failed tasks only.
      *
-     * @param jobList 累积的重试 Job 列表
-     * @param job 失败的 Job
-     * @param id 下一个可分配的 Job 标识
-     * @param allTaskList 候选重试任务列表
-     * @return 更新后的重试 Job 列表
+     * @param jobList accumulated retry Job list
+     * @param job failed Job
+     * @param id identifier of the next allocatable Job
+     * @param allTaskList candidate retry task list
+     * @return updated retry Job list
      */
     private static List DRReclustering(List<Job> jobList, Job job, int id, List<Task> allTaskList) {
         Task firstTask = allTaskList.get(0);
 
-        // 旧版 DR 路径只用首个任务长度估计单任务运行时间；这里刻意不叠加簇开销。
+        // The legacy DR path estimates the single-task runtime from the first task length only;
+        // cluster overhead is deliberately not added here.
         double taskLength = (double) firstTask.getCloudletLength()
                 / 1000; // + Parameters.getOverheadParams().getClustDelay(job) / getDividend(job.getDepth());
 
-        // 历史实现曾通过 FailureMonitor 计算 suggestedK；现保留直接估计路径。
+        // The historical implementation computed suggestedK through FailureMonitor; the direct
+        // estimation path is kept now.
 
         double phi_ts = getOverheadLikelihoodPrior(job.getDepth());
         double delay = getCumulativeDelay(job.getDepth());
-        int suggestedK; // 历史实现可改由 FailureMonitor 提供建议值。
+        int suggestedK; // the historical implementation could instead take the suggestion from FailureMonitor.
 
         double theta = FailureParameters.getGeneratorForFailureScope(job.getVmId(), job.getDepth())
                 .getMLEMean();
@@ -558,15 +573,17 @@ public class ReclusteringEngine {
         suggestedK = ClusteringSizeEstimator.estimateK(taskLength, delay, theta, phi_gamma, phi_ts);
 
         Log.printLine("t=" + taskLength + " d=" + delay + " theta=" + theta + " k=" + suggestedK);
-        // 估计器没有有限建议时，仍严格只重试失败任务并将它们置于一个重试簇。
+        // When the estimator has no finite suggestion, still retry the failed tasks only and
+        // place them in a single retry cluster.
         int clusterSize = suggestedK > 0 ? suggestedK : Math.max(1, allTaskList.size());
         jobList.addAll(partitionRetryTasks(job, id, allTaskList, clusterSize, true));
         return jobList;
     }
 
     private static void updateDependencies(Job job, List<Job> jobList) {
-        // 每个重试 Job 都引用同一组依赖边；不能在循环内重写整个子节点列表，
-        // 否则后续重试 Job 会覆盖先前建立的依赖关系。
+        // Every retry Job references the same set of dependency edges; the whole child list must
+        // not be rewritten inside the loop, otherwise later retry Jobs overwrite the dependency
+        // relations established earlier.
         List<Task> parents = job.getParentList();
         List<Task> children = job.getChildList();
         for (Job rawJob : jobList) {

@@ -12,29 +12,35 @@ import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 
 /**
- * 一次串行 WorkflowSim 实验的不可变配置。
+ * Immutable configuration of one serial WorkflowSim experiment.
  *
- * <p>WorkflowSim 与 CloudSim 保留历史静态状态，因此此对象必须通过
- * {@link SimulationSession} 应用；它不表示同一 JVM 支持并发仿真。配置中显式记录
- * 输入、资源规模、算法、随机种子、时间换算、故障和数据移动模型，供运行清单追溯。</p>
+ * <p>WorkflowSim and CloudSim retain historical static state, so this object must be applied
+ * through {@link SimulationSession}; it does not mean the same JVM supports concurrent
+ * simulation. The configuration explicitly records the inputs, resource scale, algorithms,
+ * random seed, time conversion, failure, and data movement model for run-manifest
+ * traceability.</p>
  */
 public final class SimulationConfig {
 
     /**
-     * BAT-D2（2026-10-29）：配置级 DVFS 频档指派策略（docs/advanced/DVFS_DIMENSION_DESIGN.md §2.2）。
+     * BAT-D2 (2026-10-29): configuration-level DVFS frequency-tier assignment policy
+     * (docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.2).
      *
-     * <p>{@code DEFAULT}（未配置时的缺省值，v1 退化）：每个计算 Job 运行在 VM 频档表的
-     * <b>首档</b>（平台声明序即默认档）——绝无频档的平台行为与 v1 逐位一致；
-     * {@code MIN_POWER}：每个计算 Job 运行在<b>末档</b>（最低频，节电上限/速度下限）；
-     * {@code EDP_HEURISTIC}：派发时刻对每个候选档贪心最小化 EDP（v1 逐 Job 独立估计，
-     * 全局最优 EDP 是 NP-hard 跨 Job 问题，留给注册 DVFS-aware 算轨）。</p>
+     * <p>{@code DEFAULT} (the default value when nothing is configured, the v1 degenerate
+     * case): every compute Job runs at the <b>first tier</b> of the VM frequency table (the
+     * platform declaration order is the default tier) -- a platform with no frequency tier at
+     * all behaves bit-identically to v1; {@code MIN_POWER}: every compute Job runs at the
+     * <b>last tier</b> (lowest frequency, upper bound on power saving / lower bound on speed);
+     * {@code EDP_HEURISTIC}: greedily minimize EDP over the candidate tiers at dispatch time
+     * (v1 estimates each Job independently, and the globally optimal EDP is an NP-hard
+     * cross-Job problem left to a registered DVFS-aware algorithm track).</p>
      */
     public enum FrequencyPolicy {
-        /** 每个 Job 运行在频档表首档（=平台声明的默认档）。 */
+        /** Every Job runs at the first tier of the frequency table (= the platform default tier). */
         DEFAULT,
-        /** 每个 Job 运行在频档表末档（最低 MIPS）。 */
+        /** Every Job runs at the last tier of the frequency table (lowest MIPS). */
         MIN_POWER,
-        /** 每个 Job 派发时贪心选择 EDP 最小的档（v1 逐 Job 独立估计）。 */
+        /** Greedily pick the minimum-EDP tier at each Job dispatch (v1 estimates each Job independently). */
         EDP_HEURISTIC
     }
 
@@ -88,11 +94,11 @@ public final class SimulationConfig {
     }
 
     /**
-     * 从单个工作流输入创建构建器。
+     * Create a builder from a single workflow input.
      *
-     * @param workflowPath 工作流输入文件路径
-     * @param vmCount 可用虚拟机数量
-     * @return 新的配置构建器
+     * @param workflowPath workflow input file path
+     * @param vmCount number of available virtual machines
+     * @return a new configuration builder
      */
     public static Builder builder(String workflowPath, int vmCount) {
         return new Builder(Collections.singletonList(workflowPath), vmCount);
@@ -102,95 +108,96 @@ public final class SimulationConfig {
         return new Builder(workflowPaths, vmCount);
     }
 
-    /** @return 不可修改的工作流输入文件路径列表 */
+    /** @return an unmodifiable list of workflow input file paths */
     public List<String> getWorkflowPaths() {
         return workflowPaths;
     }
 
     /**
-     * @return 每个工作流输入的提交时刻（模拟秒），与 {@link #getWorkflowPaths()}
-     *         一一对应；全部为 0.0 时行为与单时刻提交逐位一致
+     * @return the submission instant of each workflow input (simulated seconds), in one-to-one
+     *         correspondence with {@link #getWorkflowPaths()}; when all are 0.0 the behavior is
+     *         bit-identical to single-instant submission
      */
     public List<Double> getWorkflowArrivalSeconds() {
         return workflowArrivalSeconds;
     }
 
-    /** @return 可用虚拟机数量 */
+    /** @return number of available virtual machines */
     public int getVmCount() {
         return vmCount;
     }
 
-    /** @return 可复现的调度与执行开销模型 */
+    /** @return reproducible scheduling and execution overhead model */
     public OverheadModelConfig getOverheadModel() {
         return overheadModel;
     }
 
-    /** @return 任务聚类参数 */
+    /** @return task clustering parameters */
     public ClusteringParameters getClusteringParameters() {
         return clusteringParameters;
     }
 
-    /** @return 在线调度或静态派发算法 */
+    /** @return online scheduling or static dispatch algorithm */
     public SchedulingAlgorithm getSchedulingAlgorithm() {
         return schedulingAlgorithm;
     }
 
-    /** BAT-3（2026-10-26）：@return 注册算轨的提供者；null 表示未启用。 */
+    /** BAT-3 (2026-10-26): @return provider of the registered algorithm track; null means not enabled. */
     public org.workflowsim.experiment.registry.SchedulingAlgorithmProvider getRegisteredSchedulingAlgorithmProvider() {
         return registeredSchedulingAlgorithmProvider;
     }
 
-    /** @return 离线规划算法；未启用时为 {@code INVALID} */
+    /** @return offline planning algorithm; {@code INVALID} when not enabled */
     public PlanningAlgorithm getPlanningAlgorithm() {
         return planningAlgorithm;
     }
 
-    /** @return 作业规约方法；未指定时为 {@code null} */
+    /** @return job reduction method; {@code null} when not specified */
     public String getReduceMethod() {
         return reduceMethod;
     }
 
-    /** @return 工作流截止时间；0 表示未请求截止时间 */
+    /** @return workflow deadline; 0 means no deadline was requested */
     public long getDeadline() {
         return deadline;
     }
 
-    /** @return 副本目录使用的共享或本地文件系统模型 */
+    /** @return shared or local file system model used by the replica catalog */
     public ReplicaCatalog.FileSystem getFileSystem() {
         return fileSystem;
     }
 
-    /** @return 本次实验的根随机种子 */
+    /** @return root random seed of this experiment */
     public long getRandomSeed() {
         return randomSeed;
     }
 
-    /** @return 输入运行时间转换到模型长度后的缩放系数 */
+    /** @return scaling factor applied to convert input runtimes to model lengths */
     public double getRuntimeScale() {
         return runtimeScale;
     }
 
-    /** @return 将以秒表示的输入运行时间转换为 MI 时使用的参考 MIPS */
+    /** @return reference MIPS used to convert input runtimes expressed in seconds to MI */
     public double getRuntimeReferenceMips() {
         return runtimeReferenceMips;
     }
 
-    /** @return 本次运行显式设置的 CloudSim 最小事件间隔，单位为模拟秒 */
+    /** @return CloudSim minimum event interval explicitly set for this run, in simulated seconds */
     public double getCloudSimMinEventIntervalSeconds() {
         return cloudSimMinEventIntervalSeconds;
     }
 
-    /** @return 数据中心级或虚拟机级成本模型 */
+    /** @return datacenter-level or VM-level cost model */
     public CostModel getCostModel() {
         return costModel;
     }
 
-    /** @return 故障模型配置 */
+    /** @return failure model configuration */
     public FailureModelConfig getFailureModel() {
         return failureModel;
     }
 
-    /** @return 本次运行采用的显式文件传输时间模型 */
+    /** @return explicit file transfer time model adopted by this run */
     public DataMovementModel getDataMovementModel() {
         return dataMovementModel;
     }
@@ -204,26 +211,27 @@ public final class SimulationConfig {
         return dataflowAssignmentConfig;
     }
 
-    /** @return 可选的任务×VM 异构执行成本矩阵；未配置时为 {@code null} */
+    /** @return optional task-by-VM heterogeneous execution cost matrix; {@code null} when not configured */
     public TaskCostMatrix getTaskCostMatrix() {
         return taskCostMatrix;
     }
 
     /**
-     * BAT-D2（2026-10-29）：@return 本次运行的 DVFS 频档指派策略；缺省 {@code DEFAULT}
-     * （无频档平台上的 v1 兼容运行绝不静默改变行为）
+     * BAT-D2 (2026-10-29): @return the DVFS frequency-tier assignment policy of this run;
+     * defaults to {@code DEFAULT} (a v1-compatible run on a platform without frequency tiers
+     * never changes behavior silently)
      */
     public FrequencyPolicy getFrequencyPolicy() {
         return frequencyPolicy;
     }
 
     /**
-     * 返回以当前全部配置值初始化的构建器。
+     * Return a builder initialized with every current configuration value.
      *
-     * <p>实验活动可据此显式修改每个重复的种子，而不依赖可变的全局
-     * {@link Parameters} 状态。</p>
+     * <p>Experiment campaigns use it to explicitly change the seed of each repetition without
+     * relying on mutable global {@link Parameters} state.</p>
      *
-     * @return 预填当前全部配置值的构建器
+     * @return a builder pre-filled with every current configuration value
      */
     public Builder toBuilder() {
         return new Builder(workflowPaths, vmCount)
@@ -249,23 +257,25 @@ public final class SimulationConfig {
     }
 
     /**
-     * 返回仅根随机种子不同的等价配置。
+     * Return an equivalent configuration that differs only in the root random seed.
      *
-     * <p>根种子本身不能保证 common random numbers；后者还要求随机模型按稳定事件键
-     * 分配随机性。</p>
+     * <p>The root seed alone does not guarantee common random numbers; the latter also requires
+     * that the random models allocate randomness by stable event keys.</p>
      *
-     * @param value 新的根随机种子
-     * @return 仅种子不同的不可变配置
+     * @param value new root random seed
+     * @return an immutable configuration differing only in the seed
      */
     public SimulationConfig withRandomSeed(long value) {
         return toBuilder().randomSeed(value).build();
     }
 
     /**
-     * 配置构建器，默认生成无开销的确定性运行配置。
+     * Configuration builder, producing a no-overhead deterministic run configuration by
+     * default.
      *
-     * <p>构建时会检查算法组合、输入、数值范围以及共享存储 DAG 规划器的模型前提。
-     * 不满足前提时立即失败，而不是静默改变实验语义。</p>
+     * <p>Building checks the algorithm combination, the inputs, the numeric ranges, and the
+     * model premises of the shared-storage DAG planners. When a premise is not met it fails
+     * immediately instead of silently changing the experiment semantics.</p>
      */
     public static final class Builder {
 
@@ -277,7 +287,10 @@ public final class SimulationConfig {
                 new ClusteringParameters(0, 0, ClusteringParameters.ClusteringMethod.NONE, null);
         private SchedulingAlgorithm schedulingAlgorithm = SchedulingAlgorithm.FCFS;
 
-        /** BAT-3（2026-10-26）：经算法注册表校验的第三方 SPI 调度算轨；null 表示不启用。 */
+        /**
+         * BAT-3 (2026-10-26): third-party SPI scheduling track validated by the algorithm
+         * registry; null means not enabled.
+         */
         private org.workflowsim.experiment.registry.SchedulingAlgorithmProvider registeredSchedulingAlgorithmProvider;
 
         private PlanningAlgorithm planningAlgorithm = PlanningAlgorithm.INVALID;
@@ -304,7 +317,10 @@ public final class SimulationConfig {
 
         private TaskCostMatrix taskCostMatrix;
 
-        /** BAT-D2（2026-10-29）：DVFS 频档指派策略；缺省 DEFAULT（v1 退化档）。 */
+        /**
+         * BAT-D2 (2026-10-29): DVFS frequency-tier assignment policy; defaults to DEFAULT (the
+         * v1 degenerate tier).
+         */
         private FrequencyPolicy frequencyPolicy = FrequencyPolicy.DEFAULT;
 
         private Builder(List<String> workflowPaths, int vmCount) {
@@ -312,18 +328,20 @@ public final class SimulationConfig {
                 throw new IllegalArgumentException("At least one workflow input is required");
             }
             this.workflowPaths = new ArrayList<>(workflowPaths);
-            // R5 默认：全部工作流在 t=0 提交——与历史单时刻提交逐位一致。
+            // R5 default: all workflows are submitted at t=0 -- bit-identical to the historical
+            // single-instant submission.
             this.workflowArrivalSeconds = new ArrayList<>(Collections.nCopies(workflowPaths.size(), 0.0));
             this.vmCount = vmCount;
         }
 
         /**
-         * 使用旧式可变开销参数构建模型。
+         * Build the model from legacy mutable overhead parameters.
          *
-         * @deprecated 请使用 {@link #overheadModel(OverheadModelConfig)}。该兼容桥只提取
-         * 分布族及其参数，并在会话中按本次运行的根种子重新抽样。
-         * @param value 旧式开销参数
-         * @return 当前构建器
+         * @deprecated use {@link #overheadModel(OverheadModelConfig)}. This compatibility bridge
+         *             only extracts the distribution family and its parameters and resamples
+         *             them in-session from the root seed of the current run.
+         * @param value legacy overhead parameters
+         * @return this builder
          */
         @Deprecated
         public Builder overheadParameters(OverheadParameters value) {
@@ -331,18 +349,19 @@ public final class SimulationConfig {
             return this;
         }
 
-        /** @param value 开销模型 @return 当前构建器 */
+        /** @param value overhead model @return this builder */
         public Builder overheadModel(OverheadModelConfig value) {
             this.overheadModel = value;
             return this;
         }
 
         /**
-         * BAT-D2（2026-10-29）：设置 DVFS 频档指派策略。
+         * BAT-D2 (2026-10-29): set the DVFS frequency-tier assignment policy.
          *
-         * @param value 策略枚举，不能为 {@code null}（不设置即为缺省 {@code DEFAULT}）
-         * @return 当前构建器
-         * @throws IllegalArgumentException 当 {@code value} 为 {@code null} 时抛出
+         * @param value policy enum, must not be {@code null} (leaving it unset means the default
+         *              {@code DEFAULT})
+         * @return this builder
+         * @throws IllegalArgumentException when {@code value} is {@code null}
          */
         public Builder frequencyPolicy(FrequencyPolicy value) {
             if (value == null) {
@@ -353,22 +372,23 @@ public final class SimulationConfig {
             return this;
         }
 
-        /** @param value 聚类参数 @return 当前构建器 */
+        /** @param value clustering parameters @return this builder */
         public Builder clusteringParameters(ClusteringParameters value) {
             this.clusteringParameters = value;
             return this;
         }
 
-        /** @param value 在线调度或静态派发算法 @return 当前构建器 */
+        /** @param value online scheduling or static dispatch algorithm @return this builder */
         public Builder schedulingAlgorithm(SchedulingAlgorithm value) {
             this.schedulingAlgorithm = value;
             return this;
         }
 
         /**
-         * BAT-3（2026-10-26）：启用第三方注册调度算轨。注册算法占用纯在线调度层：
-         * 枚举 schedulingAlgorithm 与 planningAlgorithm 必须保持 INVALID（分派由提
-         * 供者的策略实例承担），组合前提由 AlgorithmRegistry 校验 fail-fast。
+         * BAT-3 (2026-10-26): enable the third-party registered scheduling track. A registered
+         * algorithm occupies the pure online scheduling layer: the schedulingAlgorithm and
+         * planningAlgorithm enums must stay INVALID (dispatch is carried by the provider's
+         * policy instance), and AlgorithmRegistry validates the combination premise fail-fast.
          */
         public Builder registeredSchedulingAlgorithm(
                 org.workflowsim.experiment.registry.SchedulingAlgorithmProvider provider) {
@@ -376,13 +396,13 @@ public final class SimulationConfig {
             return this;
         }
 
-        /** @param value 离线规划算法 @return 当前构建器 */
+        /** @param value offline planning algorithm @return this builder */
         public Builder planningAlgorithm(PlanningAlgorithm value) {
             this.planningAlgorithm = value;
             return this;
         }
 
-        /** @param value 作业规约方法 @return 当前构建器 */
+        /** @param value job reduction method @return this builder */
         public Builder reduceMethod(String value) {
             this.reduceMethod = value;
             return this;

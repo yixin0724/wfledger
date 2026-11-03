@@ -23,10 +23,12 @@ import org.cloudbus.cloudsim.Consts;
 import org.cloudbus.cloudsim.UtilizationModelFull;
 
 /**
- * WorkflowSim 的工作流任务模型。
+ * Workflow task model of WorkflowSim.
  *
- * <p>该类扩展 CloudSim {@link Cloudlet}，并保存父子任务、数据文件、深度及研究算法
- * 所需的优先级/影响度信息。工作流引擎仅在所有父任务成功完成后才将任务释放给调度器。</p>
+ * <p>This class extends the CloudSim {@link Cloudlet} and stores parent and child tasks, data
+ * files, depth, and the priority/impact information required by research algorithms. The workflow
+ * engine releases a task to the scheduler only after all of its parent tasks have completed
+ * successfully.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -34,50 +36,54 @@ import org.cloudbus.cloudsim.UtilizationModelFull;
  */
 public class Task extends Cloudlet {
 
-    /** 父任务列表。 */
+    /** Parent task list. */
     private List<Task> parentList;
-    /** 子任务列表。 */
+    /** Child task list. */
     private List<Task> childList;
-    /** 关联的输入、输出和中间文件列表。 */
+    /** List of associated input, output, and intermediate files. */
     private List<FileItem> fileList;
     /**
-     * 供研究型算法使用的优先级；核心执行路径不直接解释该值。
+     * Priority for research algorithms; the core execution path does not interpret this value.
      *
-     * <p><strong>现状说明</strong>：当前全部内置调度算法（FCFS、ReadyBatch 系列、
-     * DATA、STATIC 及 legacy 变体）均<strong>不读取</strong>该字段；聚类层
-     * （ClusteringEngine）将其统一置为 0。它仅供外部研究型算法扩展自行解释，
-     * 设置该值不会影响内置算法的派发顺序。</p>
+     * <p><strong>Current status</strong>: none of the built-in scheduling algorithms (FCFS, the
+     * ReadyBatch family, DATA, STATIC, and the legacy variants) <strong>read</strong> this field;
+     * the clustering layer (ClusteringEngine) sets it uniformly to 0. It exists only for external
+     * research algorithm extensions to interpret on their own, and setting it does not affect the
+     * dispatch order of the built-in algorithms.</p>
      */
     private int priority;
     /**
-     * DAG 深度，即从任一根任务到该任务的最长路径节点数；由输入解析后的
-     * {@link WorkflowDagValidator} 统一写入。
+     * DAG depth, that is, the number of nodes on the longest path from any root task to this task;
+     * written uniformly by {@link WorkflowDagValidator} after input parsing.
      */
     private int depth;
-    /** 供研究型算法使用的任务影响度。 */
+    /** Task impact for research algorithms. */
     private double impact;
 
-    /** 输入工作流声明的任务类型或名称。 */
+    /** Task type or name declared by the input workflow. */
     private String type;
 
     /**
-     * WorkflowSim 维护的任务完成时间；Cloudlet 本身不允许本项目直接更新其完成时间字段。
+     * Task completion time maintained by WorkflowSim; Cloudlet itself does not allow this project
+     * to update its completion time field directly.
      */
     private double taskFinishTime;
 
     /**
-     * 可选的静态计划开始时间。仅生成完整每 VM 执行顺序的规划器会写入该值；仅提供
-     * VM 映射的计划保持为 {@link Double#NaN}。
+     * Optional static planned start time. Only planners that generate a complete per-VM execution
+     * order write this value; plans that provide a VM mapping only leave it at
+     * {@link Double#NaN}.
      */
     private double staticScheduleStartTime;
 
     /**
-     * 可选的任务×VM 异构执行成本投影（vmId → 执行秒数）。
+     * Optional heterogeneous task-by-VM execution cost projection (vmId -> execution seconds).
      *
-     * <p>由 {@code WorkflowPlanner} 在解析后从配置的 {@link org.workflowsim.utils.TaskCostMatrix}
-     * 投影到每个任务；未配置成本矩阵时保持 {@code null}，平台维持 MI/mips 缩放行为。
-     * 规划器读取该投影进行成本估计；STATIC 派发在作业提交前按
-     * {@code MI = round(秒数 × vm.mips)} 折算作业长度。</p>
+     * <p>After parsing, {@code WorkflowPlanner} projects it from the configured
+     * {@link org.workflowsim.utils.TaskCostMatrix} onto every task; when no cost matrix is
+     * configured the value stays {@code null} and the platform keeps the MI/mips scaling behavior.
+     * The planner reads this projection for cost estimation; STATIC dispatch converts the Job
+     * length as {@code MI = round(seconds * vm.mips)} before job submission.</p>
      */
     private java.util.Map<Integer, Double> vmExecutionCostSeconds;
 
@@ -85,15 +91,16 @@ public class Task extends Cloudlet {
     private Long effectiveExecutionLengthMi;
 
     /**
-     * 创建一个工作流任务。
+     * Creates a workflow task.
      *
-     * @param taskId 任务唯一编号
-     * @param taskLength 待执行长度，单位为百万条指令（MI）
+     * @param taskId unique task identifier
+     * @param taskLength length to execute, in million instructions (MI)
      */
     public Task(final int taskId, final long taskLength) {
         /*
-         * 文件依赖由 fileList 单独表达，因此不使用 Cloudlet 的单个输入/输出文件大小字段。
-         * CPU、内存和带宽利用率模型使用 CloudSim 的默认全利用率实现。
+         * File dependencies are expressed separately through fileList, so the single input/output
+         * file size fields of Cloudlet are not used. The CPU, memory, and bandwidth utilization
+         * models use the CloudSim default full-utilization implementation.
          */
         super(
                 taskId,
@@ -114,22 +121,24 @@ public class Task extends Cloudlet {
     }
 
     /**
-     * 设置输入工作流声明的任务类型。
+     * Sets the task type declared by the input workflow.
      *
-     * @param type 任务类型或名称
+     * @param type task type or name
      */
     public void setType(String type) {
         this.type = type;
     }
 
     /**
-     * 设置本任务在各 VM 上的异构执行成本投影。
+     * Sets the heterogeneous execution cost projection of this task on each VM.
      *
-     * <p>调用方必须传入覆盖全部候选 VM 的映射；条目必须为正有限秒数。传入后深拷贝为
-     * 不可变映射，防止规划期间被外部修改。</p>
+     * <p>The caller must pass a mapping that covers every candidate VM, and each entry must be a
+     * positive finite number of seconds. The mapping is deep-copied into an immutable map so that
+     * it cannot be modified externally during planning.</p>
      *
-     * @param value vmId → 执行秒数映射；不可为 null 或空
-     * @throws IllegalArgumentException 当映射为 null/空，或包含非正/非有限秒数时抛出
+     * @param value vmId -> execution seconds mapping; must not be null or empty
+     * @throws IllegalArgumentException when the mapping is null/empty or contains a non-positive or
+     *         non-finite number of seconds
      */
     public void setVmExecutionCostSeconds(java.util.Map<Integer, Double> value) {
         if (value == null || value.isEmpty()) {
@@ -148,10 +157,10 @@ public class Task extends Cloudlet {
     }
 
     /**
-     * 返回本任务在某 VM 上的异构执行成本秒数。
+     * Returns the heterogeneous execution cost of this task on one VM, in seconds.
      *
      * @param vmId VM ID
-     * @return 执行秒数；未配置成本投影时返回 null
+     * @return execution seconds; null when no cost projection is configured
      */
     public Double getVmExecutionCostSeconds(int vmId) {
         if (vmExecutionCostSeconds == null) {
@@ -161,9 +170,9 @@ public class Task extends Cloudlet {
     }
 
     /**
-     * 判断本任务是否携带异构执行成本投影。
+     * Tells whether this task carries a heterogeneous execution cost projection.
      *
-     * @return 携带时返回 true
+     * @return true when it carries one
      */
     public boolean hasVmExecutionCostSeconds() {
         return vmExecutionCostSeconds != null;
@@ -196,144 +205,144 @@ public class Task extends Cloudlet {
                 org.workflowsim.utils.TaskExecutionModel.requireRepresentableLength(value, getNumberOfPes()));
     }
 
-    /** @return 输入工作流声明的任务类型或名称 */
+    /** @return task type or name declared by the input workflow */
     public String getType() {
         return type;
     }
 
     /**
-     * 设置供研究型算法使用的优先级。
+     * Sets the priority used by research algorithms.
      *
-     * @param priority 优先级值
+     * @param priority priority value
      */
     public void setPriority(int priority) {
         this.priority = priority;
     }
 
     /**
-     * 设置 DAG 深度。
+     * Sets the DAG depth.
      *
-     * @param depth 从根任务开始计数的最长路径深度
+     * @param depth longest-path depth counted from the root task
      */
     public void setDepth(int depth) {
         this.depth = depth;
     }
 
-    /** @return 供研究型算法使用的优先级 */
+    /** @return priority used by research algorithms */
     public int getPriority() {
         return this.priority;
     }
 
-    /** @return DAG 深度 */
+    /** @return DAG depth */
     public int getDepth() {
         return this.depth;
     }
 
-    /** @return 子任务列表 */
+    /** @return child task list */
     public List<Task> getChildList() {
         return this.childList;
     }
 
     /**
-     * 替换子任务列表。
+     * Replaces the child task list.
      *
-     * @param list 子任务列表
+     * @param list child task list
      */
     public void setChildList(List<Task> list) {
         this.childList = list;
     }
 
     /**
-     * 替换父任务列表。
+     * Replaces the parent task list.
      *
-     * @param list 父任务列表
+     * @param list parent task list
      */
     public void setParentList(List<Task> list) {
         this.parentList = list;
     }
 
     /**
-     * 向现有子任务列表追加任务。
+     * Appends tasks to the existing child task list.
      *
-     * @param list 要追加的子任务列表
+     * @param list child tasks to append
      */
     public void addChildList(List<Task> list) {
         this.childList.addAll(list);
     }
 
     /**
-     * 向现有父任务列表追加任务。
+     * Appends tasks to the existing parent task list.
      *
-     * @param list 要追加的父任务列表
+     * @param list parent tasks to append
      */
     public void addParentList(List<Task> list) {
         this.parentList.addAll(list);
     }
 
-    /** @return 父任务列表 */
+    /** @return parent task list */
     public List<Task> getParentList() {
         return this.parentList;
     }
 
     /**
-     * 添加一个子任务。
+     * Adds one child task.
      *
-     * @param task 子任务
+     * @param task child task
      */
     public void addChild(Task task) {
         this.childList.add(task);
     }
 
     /**
-     * 添加一个父任务。
+     * Adds one parent task.
      *
-     * @param task 父任务
+     * @param task parent task
      */
     public void addParent(Task task) {
         this.parentList.add(task);
     }
 
-    /** @return 关联的输入、输出和中间文件列表 */
+    /** @return list of associated input, output, and intermediate files */
     public List<FileItem> getFileList() {
         return this.fileList;
     }
 
     /**
-     * 添加一个关联文件。
+     * Adds one associated file.
      *
-     * @param file 输入、输出或中间文件
+     * @param file input, output, or intermediate file
      */
     public void addFile(FileItem file) {
         this.fileList.add(file);
     }
 
     /**
-     * 替换关联文件列表。
+     * Replaces the associated file list.
      *
-     * @param list 输入、输出和中间文件列表
+     * @param list input, output, and intermediate file list
      */
     public void setFileList(List<FileItem> list) {
         this.fileList = list;
     }
 
     /**
-     * 设置任务影响度。
+     * Sets the task impact.
      *
-     * @param impact 供研究型算法使用的影响度
+     * @param impact impact used by research algorithms
      */
     public void setImpact(double impact) {
         this.impact = impact;
     }
 
-    /** @return 任务影响度 */
+    /** @return task impact */
     public double getImpact() {
         return this.impact;
     }
 
     /**
-     * 保存静态计划中的非负抽象开始时间。
+     * Stores the non-negative abstract start time of the static plan.
      *
-     * @param value 非负且有限的开始时间
+     * @param value non-negative and finite start time
      */
     public void setStaticScheduleStartTime(double value) {
         if (Double.isNaN(value) || Double.isInfinite(value) || value < 0.0) {
@@ -343,37 +352,40 @@ public class Task extends Cloudlet {
     }
 
     /**
-     * 返回静态计划开始时间。
+     * Returns the static plan start time.
      *
-     * @return 完整静态计划中的开始时间；仅有 VM 映射时为 {@link Double#NaN}
+     * @return start time in the complete static plan; {@link Double#NaN} when only a VM mapping is
+     *         available
      */
     public double getStaticScheduleStartTime() {
         return this.staticScheduleStartTime;
     }
 
     /**
-     * 设置 WorkflowSim 维护的任务完成时间。
+     * Sets the task completion time maintained by WorkflowSim.
      *
-     * @param time 模拟时间单位下的完成时间
+     * @param time completion time in simulation time units
      */
     public void setTaskFinishTime(double time) {
         this.taskFinishTime = time;
     }
 
-    /** @return WorkflowSim 维护的任务完成时间 */
+    /** @return task completion time maintained by WorkflowSim */
     public double getTaskFinishTime() {
         return this.taskFinishTime;
     }
 
     /**
-     * 计算任务处理成本。
+     * Computes the task processing cost.
      *
-     * <p>成本近似为 CPU 执行成本加关联文件的带宽价格。所有关联文件的声明字节数以
-     * 十进制 MB（{@code 1,000,000} bytes）连续换算后乘以带宽单价；不对每个文件
-     * 向下截断到整 MB。该方法不代表现实云厂商完整计费规则，也不等同于已发生的数据移动
-     * 交易或云服务商账单。</p>
+     * <p>The cost approximates the CPU execution cost plus the bandwidth price of the associated
+     * files. The declared byte count of every associated file is converted continuously at decimal
+     * MB ({@code 1,000,000} bytes) and then multiplied by the bandwidth unit price; no per-file
+     * truncation to whole MB is applied. This method does not represent the complete billing rules
+     * of a real cloud provider, nor does it equal data movement transactions that have taken place
+     * or a cloud provider invoice.</p>
      *
-     * @return 任务总处理成本
+     * @return total task processing cost
      */
     @Override
     public double getProcessingCost() {
@@ -381,24 +393,25 @@ public class Task extends Cloudlet {
     }
 
     /**
-     * 返回 Job envelope 的 CPU 价格分量。
+     * Returns the CPU price component of the Job envelope.
      *
-     * <p>CloudSim 可能已将建模的 stage-in 秒数换算为附加 MI，因此该值不是纯原始工作流
-     * CPU 工作量的现实计费。</p>
+     * <p>CloudSim may already have converted the modeled stage-in seconds into additional MI, so
+     * this value is not the real billing of pure original workflow CPU work.</p>
      *
-     * @return {@code costPerSecond * actualCpuTime} 的抽象成本单位值
+     * @return abstract cost-unit value of {@code costPerSecond * actualCpuTime}
      */
     public double getModeledCpuEnvelopeCost() {
         return getCostPerSec() * getActualCPUTime();
     }
 
     /**
-     * 返回当前 Task/Job 文件表中所有声明文件的字节数。
+     * Returns the byte count of all declared files in the current Task/Job file table.
      *
-     * <p>该值不按输入/输出、真实外部输入、缓存命中或副本位置过滤，因此是声明文件需求，
-     * 不是实际网络或存储搬运字节数。</p>
+     * <p>The value is not filtered by input/output, real external input, cache hits, or replica
+     * location, so it is a declared file requirement rather than an actual number of bytes moved
+     * over the network or storage.</p>
      *
-     * @return 声明文件字节当量的连续和
+     * @return continuous sum of declared file byte equivalents
      */
     public double getModeledDeclaredFileBytes() {
         double declaredFileBytes = 0.0;
@@ -409,12 +422,13 @@ public class Task extends Cloudlet {
     }
 
     /**
-     * 返回按声明文件字节数计算的带宽价格分量。
+     * Returns the bandwidth price component computed from the declared file byte count.
      *
-     * <p>计量单位为每 {@code 1,000,000} 字节一个十进制 MB；内部不做按文件、按 Job
-     * 或货币展示精度的舍入。</p>
+     * <p>The metering unit is one decimal MB per {@code 1,000,000} bytes; no rounding per file, per
+     * Job, or to currency display precision is performed internally.</p>
      *
-     * @return {@code bandwidthPrice * declaredFileBytes / 1_000_000} 的抽象成本单位值
+     * @return abstract cost-unit value of
+     *         {@code bandwidthPrice * declaredFileBytes / 1_000_000}
      */
     public double getModeledDeclaredFileBandwidthCost() {
         return costPerBw * getModeledDeclaredFileBytes() / (double) Consts.MILLION;

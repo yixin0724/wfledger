@@ -8,18 +8,18 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * WorkflowSim 实验使用的不可变抽象基础设施模型。
+ * Immutable abstract infrastructure model used by WorkflowSim experiments.
  *
- * <p>平台描述只定义被模拟的资源，不能据此声称 WfCommons 执行轨迹曾在相同
- * 基础设施上运行。</p>
+ * <p>A platform description only declares the resources being simulated; it cannot be
+ * used to claim that a WfCommons execution trace ran on the same infrastructure.</p>
  */
 public final class PlatformProfile {
 
-    /** VM 内 Cloudlet 的执行资源共享方式。 */
+    /** Execution resource sharing mode of Cloudlets inside a VM. */
     public enum CloudletSchedulerMode {
-        /** 每个任务独占分配到的处理资源，直到该任务完成。 */
+        /** Each task exclusively owns the allocated processing resources until it completes. */
         SPACE_SHARED,
-        /** 多个任务按时间片共享处理资源。 */
+        /** Multiple tasks share the processing resources in time slices. */
         TIME_SHARED
     }
 
@@ -51,14 +51,16 @@ public final class PlatformProfile {
                 : Collections.unmodifiableList(new ArrayList<>(builder.carbonWindows));
     }
 
-    /** BAT-C1：@return 预算模型声明的绿电窗口（不可变）；空=未声明该模型 */
+    /** BAT-C1: @return green power windows declared by the budget model (immutable); empty = model not declared */
     public List<CarbonWindow> getCarbonWindows() {
         return carbonWindows;
     }
 
     /**
-     * 预算模型的绿电窗口（BAT-C1，2026-10-28）：区间声明 [startSeconds, endSeconds) 上
-     * 的可用绿电功率。排序、不重叠在构建时校验；覆盖完整性由核算端按仿真时长校验。
+     * Green power windows of the budget model (BAT-C1, 2026-10-28): available green power
+     * over the interval [startSeconds, endSeconds). Ordering and non-overlap are validated
+     * at build time; coverage completeness is validated by the accounting side against the
+     * simulation duration.
      */
     public static final class CarbonWindow {
         private final double startSeconds;
@@ -94,15 +96,16 @@ public final class PlatformProfile {
     }
 
     /**
-     * DVFS 频档（BAT-D1，2026-10-29）。一个 P-state 三元组：MIPS 速度 + 该档的怠速与
-     * 满载功率。表序严格按 MIPS 降序（首档=默认档）。守恒律的推演：
+     * DVFS frequency tier (BAT-D1, 2026-10-29). A P-state triple: MIPS speed plus the idle
+     * and full-load power of that tier. The table order is strictly descending by MIPS
+     * (first tier = default tier). Derivation of the conservation law:
      *
      * <pre>
-     * E_vm = P_idle(默认档)×T_idle + Σ档 [P_max(该档)×T_busy(该档)]
+     * E_vm = P_idle(default tier) * T_idle + SUM_tier [P_max(tier) * T_busy(tier)]
      * </pre>
      *
-     * <p>单档链表（或空）在语义上退化为 v1 的线性律（等价一个 tier）。
-     * 空链表 = v1 模式；非空链表 = DVFS 模式。</p>
+     * <p>A single-tier list (or an empty one) degenerates semantically to the v1 linear law
+     * (equivalent to one tier). Empty list = v1 mode; non-empty list = DVFS mode.</p>
      */
     public static final class FrequencyTier {
         private final double mips;
@@ -151,20 +154,23 @@ public final class PlatformProfile {
     }
 
     /**
-     * 返回显式固定的 VM 到 Host 映射；未固定的 VM 不出现在该映射中。
+     * Returns the explicitly pinned VM-to-Host mapping; VMs that are not pinned do not
+     * appear in this mapping.
      *
-     * @return 不可变的显式 VM-Host 固定映射
+     * @return immutable explicit VM-Host pinning map
      */
     public java.util.Map<Integer, Integer> getPinnedVmHostIds() {
         return pinnedVmHostIds;
     }
 
     /**
-     * 返回构建平台时预检得到的确定性 VM 到 Host 放置。
+     * Returns the deterministic VM-to-Host placement computed by the preflight at platform
+     * construction time.
      *
-     * <p>标准运行器会在发布报告前将其与 CloudSim 实际创建的映射进行比对。</p>
+     * <p>The standard runner compares it with the mapping actually created by CloudSim
+     * before publishing a report.</p>
      *
-     * @return 不可变的完整 VM-Host 预检放置映射
+     * @return immutable complete VM-Host preflight placement map
      */
     public java.util.Map<Integer, Integer> getVmHostAssignments() {
         return vmHostAssignments;
@@ -184,28 +190,28 @@ public final class PlatformProfile {
     }
 
     /**
-     * 返回平台声明的网络拓扑；未声明时为 {@code null}。
+     * Returns the network topology declared by the platform; {@code null} when not declared.
      *
-     * <p>Fat-tree 链路争用数据移动模型要求此声明存在。</p>
+     * <p>The Fat-tree link-contention data movement model requires this declaration.</p>
      *
-     * @return 不可变网络拓扑声明，或 null
+     * @return immutable network topology declaration, or null
      */
     public org.workflowsim.network.NetworkTopologySpec getNetworkTopology() {
         return networkTopology;
     }
 
     /**
-     * 创建一个空的平台描述构建器。
+     * Creates an empty platform description builder.
      *
-     * @param name 用于报告和证据工件的平台名称，不能为空
-     * @return 可继续添加 Host、VM、存储和成本配置的构建器
-     * @throws IllegalArgumentException 当名称为空时抛出
+     * @param name platform name used in reports and evidence artifacts; must not be empty
+     * @return builder that can further add Host, VM, storage and cost configuration
+     * @throws IllegalArgumentException when the name is empty
      */
     public static Builder builder(String name) {
         return new Builder(name);
     }
 
-    /** 用于校验平台身份、资源容量和确定性放置约束的构建器。 */
+    /** Builder that validates platform identity, resource capacity and deterministic placement constraints. */
     public static final class Builder {
 
         private final String name;
@@ -233,11 +239,11 @@ public final class PlatformProfile {
         }
 
         /**
-         * 添加一个 Host 描述。
+         * Adds a Host description.
          *
-         * @param host 需要加入的平台 Host 描述，不能为空
-         * @return 当前构建器
-         * @throws IllegalArgumentException 当 {@code host} 为空时抛出
+         * @param host platform Host description to add; must not be null
+         * @return this builder
+         * @throws IllegalArgumentException when {@code host} is null
          */
         public Builder addHost(HostSpec host) {
             hosts.add(requireNonNull(host, "Host specification"));
@@ -245,11 +251,11 @@ public final class PlatformProfile {
         }
 
         /**
-         * 添加一个 VM 描述。
+         * Adds a VM description.
          *
-         * @param vm 需要加入的平台 VM 描述，不能为空
-         * @return 当前构建器
-         * @throws IllegalArgumentException 当 {@code vm} 为空时抛出
+         * @param vm platform VM description to add; must not be null
+         * @return this builder
+         * @throws IllegalArgumentException when {@code vm} is null
          */
         public Builder addVm(VmSpec vm) {
             vms.add(requireNonNull(vm, "VM specification"));
@@ -257,14 +263,16 @@ public final class PlatformProfile {
         }
 
         /**
-         * 将一个已声明 VM 固定到一个已声明 Host。
+         * Pins a declared VM to a declared Host.
          *
-         * <p>未固定的 VM 继续采用标准运行器使用的确定性兼容放置规则。</p>
+         * <p>VMs that are not pinned keep using the deterministic compatible placement rule
+         * applied by the standard runner.</p>
          *
-         * @param vmId 已声明 VM 的非负标识
-         * @param hostId 已声明 Host 的非负标识
-         * @return 当前构建器
-         * @throws IllegalArgumentException 当标识为负或同一 VM 被固定到不同 Host 时抛出
+         * @param vmId non-negative identifier of a declared VM
+         * @param hostId non-negative identifier of a declared Host
+         * @return this builder
+         * @throws IllegalArgumentException when an identifier is negative or the same VM is
+         *     pinned to different Hosts
          */
         public Builder pinVmToHost(int vmId, int hostId) {
             if (vmId < 0 || hostId < 0) {
@@ -278,11 +286,11 @@ public final class PlatformProfile {
         }
 
         /**
-         * 设置共享存储的抽象容量与最大传输速率。
+         * Sets the abstract capacity and maximum transfer rate of the shared storage.
          *
-         * @param value 非空的存储描述
-         * @return 当前构建器
-         * @throws IllegalArgumentException 当 {@code value} 为空时抛出
+         * @param value non-null storage description
+         * @return this builder
+         * @throws IllegalArgumentException when {@code value} is null
          */
         public Builder storage(StorageSpec value) {
             this.storage = requireNonNull(value, "Storage specification");
@@ -290,11 +298,11 @@ public final class PlatformProfile {
         }
 
         /**
-         * 设置数据中心级别的抽象成本参数。
+         * Sets the datacenter-level abstract cost parameters.
          *
-         * @param value 非空的成本描述
-         * @return 当前构建器
-         * @throws IllegalArgumentException 当 {@code value} 为空时抛出
+         * @param value non-null cost description
+         * @return this builder
+         * @throws IllegalArgumentException when {@code value} is null
          */
         public Builder costs(CostSpec value) {
             this.costs = requireNonNull(value, "Cost specification");
@@ -302,17 +310,18 @@ public final class PlatformProfile {
         }
 
         /**
-         * 声明平台的网络拓扑（v1 仅支持 Al-Fares k-Pod Fat-tree，见
-         * {@link org.workflowsim.network.NetworkTopologySpec#fatTree}）。
+         * Declares the network topology of the platform (v1 supports only the Al-Fares k-Pod
+         * Fat-tree; see {@link org.workflowsim.network.NetworkTopologySpec#fatTree}).
          *
-         * <p>仅供 Fat-tree 链路争用数据移动模型使用；声明后必须与该模型组合
-         * （标准运行器拒绝声明了拓扑却不使用该模型的配置）。</p>
+         * <p>Used only by the Fat-tree link-contention data movement model; once declared it
+         * must be combined with that model (the standard runner rejects a configuration that
+         * declares a topology without using that model).</p>
          *
-         * @param value 非空的拓扑声明
-         * @return 当前构建器
-         * @throws IllegalArgumentException 当 {@code value} 为空时抛出
+         * @param value non-null topology declaration
+         * @return this builder
+         * @throws IllegalArgumentException when {@code value} is null
          */
-        /** BAT-C1：追加一个绿电窗口；须按时间升序、不重叠（构建时校验）。 */
+        /** BAT-C1: appends a green power window; must be time-ascending and non-overlapping (validated at build). */
         public Builder carbonWindow(double startSeconds, double endSeconds, double greenWatts) {
             CarbonWindow window = new CarbonWindow(startSeconds, endSeconds, greenWatts);
             if (!carbonWindows.isEmpty()) {
@@ -332,10 +341,12 @@ public final class PlatformProfile {
         }
 
         /**
-         * 校验资源描述并计算确定性的 VM-Host 预检放置。
+         * Validates the resource descriptions and computes the deterministic VM-Host
+         * preflight placement.
          *
-         * @return 不可变的平台描述
-         * @throws IllegalArgumentException 当 Host/VM 缺失、标识重复、资源超额或固定放置不可行时抛出
+         * @return immutable platform description
+         * @throws IllegalArgumentException when a Host/VM is missing, an identifier is
+         *     duplicated, resources are oversubscribed, or the pinned placement is infeasible
          */
         public PlatformProfile build() {
             if (hosts.isEmpty() || vms.isEmpty()) {
@@ -419,9 +430,10 @@ public final class PlatformProfile {
         }
 
         /**
-         * 复现标准 {@code VmAllocationPolicySimple} 的候选顺序：剩余 PE 数最多优先，
-         * 再按 Host 声明顺序打破平局。固定绑定会替代对应 VM 的默认选择；可变容量检查
-         * 覆盖 CloudSim 创建 VM 时保留的全部资源。
+         * Reproduces the candidate order of the standard {@code VmAllocationPolicySimple}:
+         * most remaining PEs first, then Host declaration order to break ties. A pinned
+         * binding replaces the default choice of the corresponding VM; the variable capacity
+         * check covers all resources CloudSim retains when creating a VM.
          */
         private static java.util.Map<Integer, Integer> resolveVmHostAssignments(
                 List<HostSpec> hosts, List<VmSpec> vms, java.util.Map<Integer, Integer> pinned) {
@@ -469,7 +481,8 @@ public final class PlatformProfile {
         }
 
         /**
-         * 在确定性预检执行更严格的逐 Host 检查之前，先拒绝汇总资源已超额的配置。
+         * Rejects configurations whose aggregate resources are already oversubscribed,
+         * before the deterministic preflight runs the stricter per-Host checks.
          */
         private static void validateAggregateCapacity(List<HostSpec> hosts, List<VmSpec> vms) {
             long hostPes = 0L;
@@ -542,7 +555,7 @@ public final class PlatformProfile {
         }
     }
 
-    /** 一个抽象 Host 的不可变资源规格。 */
+    /** Immutable resource specification of an abstract Host. */
     public static final class HostSpec {
 
         private final int id;
@@ -553,15 +566,15 @@ public final class PlatformProfile {
         private final long storageMb;
 
         /**
-         * 创建 Host 资源规格。
+         * Creates a Host resource specification.
          *
-         * @param id 非负 Host 标识
-         * @param pes 可用处理单元数量，必须为正
-         * @param mipsPerPe 每个处理单元的计算能力，必须为正且有限
-         * @param ramMb 内存容量，单位 MB，必须为正
-         * @param bandwidth 可用带宽，必须为正
-         * @param storageMb 本地存储容量，单位 MB，必须为正
-         * @throws IllegalArgumentException 当任一资源参数不合法时抛出
+         * @param id non-negative Host identifier
+         * @param pes number of available processing elements; must be positive
+         * @param mipsPerPe compute capacity per processing element; must be positive and finite
+         * @param ramMb memory capacity in MB; must be positive
+         * @param bandwidth available bandwidth; must be positive
+         * @param storageMb local storage capacity in MB; must be positive
+         * @throws IllegalArgumentException when any resource parameter is invalid
          */
         public HostSpec(int id, int pes, double mipsPerPe, int ramMb, long bandwidth, long storageMb) {
             if (id < 0 || pes <= 0 || !positiveFinite(mipsPerPe) || ramMb <= 0 || bandwidth <= 0L || storageMb <= 0L) {
@@ -600,7 +613,7 @@ public final class PlatformProfile {
         }
     }
 
-    /** 一个抽象 VM 的不可变资源、调度器和可选计价规格。 */
+    /** Immutable resource, scheduler and optional pricing specification of an abstract VM. */
     public static final class VmSpec {
 
         private final int id;
@@ -618,17 +631,17 @@ public final class PlatformProfile {
         private final List<FrequencyTier> frequencyTiers;
 
         /**
-         * 创建不带 VM 级别显式计价的 VM 规格。
+         * Creates a VM specification without explicit VM-level pricing.
          *
-         * @param id 非负 VM 标识
-         * @param mips VM 的计算能力，必须为正且有限
-         * @param pes VM 处理单元数量，必须为正
-         * @param ramMb 内存容量，单位 MB，必须为正
-         * @param bandwidth VM 带宽，必须为正
-         * @param imageSizeMb VM 镜像大小，单位 MB，必须为正
-         * @param vmm VMM 名称，不能为空
-         * @param schedulerMode VM 内 Cloudlet 调度方式，不能为空
-         * @throws IllegalArgumentException 当任一资源参数不合法时抛出
+         * @param id non-negative VM identifier
+         * @param mips compute capacity of the VM; must be positive and finite
+         * @param pes number of VM processing elements; must be positive
+         * @param ramMb memory capacity in MB; must be positive
+         * @param bandwidth VM bandwidth; must be positive
+         * @param imageSizeMb VM image size in MB; must be positive
+         * @param vmm VMM name; must not be empty
+         * @param schedulerMode Cloudlet scheduling mode inside the VM; must not be null
+         * @throws IllegalArgumentException when any resource parameter is invalid
          */
         public VmSpec(
                 int id,
@@ -642,7 +655,7 @@ public final class PlatformProfile {
             this(id, mips, pes, ramMb, bandwidth, imageSizeMb, vmm, schedulerMode, null, 0.0, 0.0, null, null);
         }
 
-        /** BAT-D1 前的 12 参（含碳）委托：频档缺省 null。 */
+        /** 12-parameter (carbon included) delegate from before BAT-D1: frequency tiers default to null. */
         public VmSpec(
                 int id,
                 double mips,
@@ -686,7 +699,7 @@ public final class PlatformProfile {
             this(id, mips, pes, ramMb, bandwidth, imageSizeMb, vmm, schedulerMode, costs, 0.0, 0.0, null, null);
         }
 
-        /** BAT-C1 前的 11 参（含功率）委托：碳强度缺省 null。 */
+        /** 11-parameter (power included) delegate from before BAT-C1: carbon intensity defaults to null. */
         public VmSpec(
                 int id,
                 double mips,
@@ -716,20 +729,22 @@ public final class PlatformProfile {
         }
 
         /**
-         * 创建带可选 VM 级别计价的 VM 规格。
+         * Creates a VM specification with optional VM-level pricing.
          *
-         * <p>标准运行器使用 {@code CostModel.VM} 时，所有 VM 都必须提供计价信息。</p>
+         * <p>When the standard runner uses {@code CostModel.VM}, every VM must provide
+         * pricing information.</p>
          *
-         * @param id 非负 VM 标识
-         * @param mips VM 的计算能力，必须为正且有限
-         * @param pes VM 处理单元数量，必须为正
-         * @param ramMb 内存容量，单位 MB，必须为正
-         * @param bandwidth VM 带宽，必须为正
-         * @param imageSizeMb VM 镜像大小，单位 MB，必须为正
-         * @param vmm VMM 名称，不能为空
-         * @param schedulerMode VM 内 Cloudlet 调度方式，不能为空
-         * @param costs 可选 VM 级别成本规格；是否允许为空由所选成本模型决定
-         * @throws IllegalArgumentException 当任一资源参数不合法时抛出
+         * @param id non-negative VM identifier
+         * @param mips compute capacity of the VM; must be positive and finite
+         * @param pes number of VM processing elements; must be positive
+         * @param ramMb memory capacity in MB; must be positive
+         * @param bandwidth VM bandwidth; must be positive
+         * @param imageSizeMb VM image size in MB; must be positive
+         * @param vmm VMM name; must not be empty
+         * @param schedulerMode Cloudlet scheduling mode inside the VM; must not be null
+         * @param costs optional VM-level cost specification; whether null is allowed is
+         *     decided by the selected cost model
+         * @throws IllegalArgumentException when any resource parameter is invalid
          */
         /**
          * Creates a VmSpec with optional power fields for the energy dimension
@@ -752,7 +767,7 @@ public final class PlatformProfile {
                 double maxPowerWatts,
                 Double carbonIntensityGramsPerKWh,
                 List<FrequencyTier> frequencyTiers) {
-            // BAT-D1：频档链表非空 → v1 功率字段不得并存（单一真源）。
+            // BAT-D1: non-empty frequency tier list excludes the v1 power fields (single source of truth).
             if (frequencyTiers != null && !frequencyTiers.isEmpty()) {
                 if (idlePowerWatts > 0.0 || maxPowerWatts > 0.0) {
                     throw new IllegalArgumentException(
@@ -823,22 +838,22 @@ public final class PlatformProfile {
             return idlePowerWatts > 0.0 || maxPowerWatts > 0.0;
         }
 
-        /** BAT-C1：@return 强度模型声明的每 VM 碳强度（gCO₂/kWh）；null=未声明 */
+        /** BAT-C1: @return per-VM carbon intensity declared by the intensity model (gCO2/kWh); null = not declared */
         public Double getCarbonIntensityGramsPerKWh() {
             return carbonIntensityGramsPerKWh;
         }
 
-        /** BAT-D1：@return 频档表（不可变；空 = v1 单档模式） */
+        /** BAT-D1: @return frequency tier table (immutable; empty = v1 single-tier mode) */
         public List<FrequencyTier> getFrequencyTiers() {
             return frequencyTiers;
         }
 
-        /** BAT-D1：@return 本 VM 是否声明了 DVFS 频档 */
+        /** BAT-D1: @return whether this VM declares DVFS frequency tiers */
         public boolean hasFrequencyTiers() {
             return frequencyTiers != null && !frequencyTiers.isEmpty();
         }
 
-        /** BAT-D1：@return 默认档（= 表首档；调用方须先验 hasFrequencyTiers） */
+        /** BAT-D1: @return default tier (= first tier of the table; callers must check hasFrequencyTiers first) */
         public FrequencyTier defaultFrequencyTier() {
             return frequencyTiers.get(0);
         }
@@ -884,18 +899,18 @@ public final class PlatformProfile {
         }
     }
 
-    /** 抽象共享存储的不可变容量与最大传输速率规格。 */
+    /** Immutable capacity and maximum transfer rate specification of the abstract shared storage. */
     public static final class StorageSpec {
 
         private final long capacityMb;
         private final int maxTransferRateMbPerSecond;
 
         /**
-         * 创建共享存储规格。
+         * Creates a shared storage specification.
          *
-         * @param capacityMb 存储容量，单位 MB，必须为正
-         * @param maxTransferRateMbPerSecond 最大传输速率，单位 MB/s，必须为正
-         * @throws IllegalArgumentException 当容量或速率非正时抛出
+         * @param capacityMb storage capacity in MB; must be positive
+         * @param maxTransferRateMbPerSecond maximum transfer rate in MB/s; must be positive
+         * @throws IllegalArgumentException when the capacity or the rate is not positive
          */
         public StorageSpec(long capacityMb, int maxTransferRateMbPerSecond) {
             if (capacityMb <= 0L || maxTransferRateMbPerSecond <= 0) {
@@ -914,7 +929,7 @@ public final class PlatformProfile {
         }
     }
 
-    /** 数据中心或 VM 使用的不可变抽象成本规格。 */
+    /** Immutable abstract cost specification used by a datacenter or a VM. */
     public static final class CostSpec {
 
         private final double cpuPerSecond;
@@ -923,13 +938,13 @@ public final class PlatformProfile {
         private final double bandwidth;
 
         /**
-         * 创建抽象成本规格。
+         * Creates an abstract cost specification.
          *
-         * @param cpuPerSecond 每 CPU 秒成本，必须为非负有限值
-         * @param memory 内存成本，必须为非负有限值
-         * @param storage 存储成本，必须为非负有限值
-         * @param bandwidth 带宽成本，必须为非负有限值
-         * @throws IllegalArgumentException 当任一成本不是非负有限值时抛出
+         * @param cpuPerSecond cost per CPU second; must be a non-negative finite value
+         * @param memory memory cost; must be a non-negative finite value
+         * @param storage storage cost; must be a non-negative finite value
+         * @param bandwidth bandwidth cost; must be a non-negative finite value
+         * @throws IllegalArgumentException when any cost is not a non-negative finite value
          */
         public CostSpec(double cpuPerSecond, double memory, double storage, double bandwidth) {
             if (!nonNegativeFinite(cpuPerSecond)

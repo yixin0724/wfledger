@@ -11,7 +11,8 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
 
 /**
- * 对一个 campaign 的描述性统计汇总，并显式限定可作出的统计解释。
+ * Descriptive statistics summary for one campaign, with the admissible statistical
+ * interpretation stated explicitly.
  */
 public final class ExperimentCampaignSummary {
 
@@ -74,23 +75,24 @@ public final class ExperimentCampaignSummary {
     }
 
     /**
-     * 返回每个声明 cell 的描述性汇总。
+     * Return the descriptive summary of each declared cell.
      *
-     * @return 按计划声明顺序排列的不可变 cell 汇总列表
+     * @return immutable cell summary list in plan declaration order
      */
     public List<CellSummary> getCells() {
         return cells;
     }
     /**
-     * 返回每个非基线候选方案相对于其声明基线的比较汇总。
+     * Return the comparison summary of each non-baseline candidate against its
+     * declared baseline.
      *
-     * @return 不可变比较汇总列表
+     * @return immutable comparison summary list
      */
     public List<ComparisonSummary> getComparisons() {
         return comparisons;
     }
 
-    /** 一个已声明 cell 的聚合观测值。 */
+    /** Aggregated observations for one declared cell. */
     public static final class CellSummary {
         private final String cellId;
         private final String comparisonGroup;
@@ -101,17 +103,25 @@ public final class ExperimentCampaignSummary {
         private final MetricSummary makespanSeconds;
         private final MetricSummary modeledProcessingCost;
         private final MetricSummary successfulLogicalTaskCompletionRate;
-        /** PLAT-10：核心性能指标的 replication 层聚合（等待/减速比/利用率/公平性）。 */
+        /**
+         * PLAT-10: replication-level aggregation of the core performance metrics
+         * (waiting, slowdown ratio, utilization, fairness).
+         */
         private final MetricSummary meanComputeTotalWaitingTimeSeconds;
         /**
-         * 真实减速比的 replication 层聚合。
+         * Replication-level aggregation of the true slowdown ratio.
          *
-         * <p>减速比语义恒 ≥1.0，无观测运行的 0.0 是非法样本；因此仅聚合
-         * {@code trueSlowdownObservationCount > 0} 的运行，全部运行都无观测时
-         * 本字段为 {@code null}（而不是用 0.0 污染均值与置信区间）。</p>
+         * <p>Slowdown ratio semantics are always >= 1.0, so the 0.0 of a run without
+         * observations is an illegal sample; therefore only runs with
+         * {@code trueSlowdownObservationCount > 0} are aggregated, and this field is
+         * {@code null} when no run has an observation (rather than polluting the mean
+         * and confidence interval with 0.0).</p>
          */
         private final MetricSummary meanComputeTrueSlowdown;
-        /** 贡献了真实减速比样本的运行数（其余运行无观测，被排除在聚合外）。 */
+        /**
+         * Number of runs that contributed a true slowdown sample (the remaining runs
+         * have no observation and are excluded from the aggregation).
+         */
         private final int trueSlowdownObservationRunCount;
 
         private final MetricSummary meanVmModeledIntervalUtilization;
@@ -198,7 +208,10 @@ public final class ExperimentCampaignSummary {
                     successfulWorkflowCompletion);
         }
 
-        /** from() 的运行样本聚合阶段（PLAT-10 无观测非法样本排除语义逐字搬运转写）。 */
+        /**
+         * Run-sample aggregation stage of from() (verbatim extraction of the PLAT-10
+         * illegal-sample exclusion semantics for runs without observations).
+         */
         private static RunSampleAccumulator accumulateRuns(
                 ExperimentPlan.Cell cell, List<ExperimentCampaignResult.Run> runs) {
             RunSampleAccumulator samples = new RunSampleAccumulator();
@@ -221,11 +234,14 @@ public final class ExperimentCampaignSummary {
                 samples.completionRates.add(
                         Double.valueOf(run.getReport().getMetrics().getSuccessfulLogicalTaskCompletionRate()));
                 SimulationMetrics metrics = run.getReport().getMetrics();
-                // PLAT-10：核心性能指标进入 replication 层聚合，campaign 对比不再只有
-                // makespan/cost/完成率三个维度。等待/利用率/公平性无观测时的 0.0/1.0
-                // 是合法取值（口径与单运行一致）；但真实减速比语义恒 ≥1.0，无观测运行
-                // 的 0.0 是非法样本，必须排除而不是填充，否则会系统性拉低 replication
-                // 均值并污染置信区间。
+                // PLAT-10: core performance metrics enter replication-level aggregation, so a
+                // campaign comparison no longer has only makespan/cost/completion rate. The
+                // 0.0/1.0 of waiting/utilization/fairness without observations are legal
+                // values (same definition as a single run); but true slowdown semantics are
+                // always >= 1.0, so the 0.0 of a run without observations is an illegal
+                // sample that must be excluded rather than filled, otherwise it
+                // systematically lowers the replication mean and pollutes the confidence
+                // interval.
                 samples.meanWaitingTimes.add(Double.valueOf(metrics.getMeanComputeTotalWaitingTimeSeconds()));
                 if (metrics.getTrueSlowdownObservationCount() > 0) {
                     samples.meanTrueSlowdowns.add(Double.valueOf(metrics.getMeanComputeTrueSlowdown()));
@@ -254,7 +270,10 @@ public final class ExperimentCampaignSummary {
             return samples;
         }
 
-        /** from() 样本聚合的私有搬运转写结构（字段直读写，无转发行为）。 */
+        /**
+         * Private verbatim-extraction structure for from() sample aggregation (direct
+         * field reads and writes, no forwarding behavior).
+         */
         private static final class RunSampleAccumulator {
             private List<Long> seeds;
             private List<Double> makespans;
@@ -306,49 +325,56 @@ public final class ExperimentCampaignSummary {
         public MetricSummary getSuccessfulLogicalTaskCompletionRate() {
             return successfulLogicalTaskCompletionRate;
         }
-        /** @return 每次运行平均总等待时间（秒）的 replication 层汇总 */
+        /** @return replication-level summary of the per-run mean total waiting time in seconds */
         public MetricSummary getMeanComputeTotalWaitingTimeSeconds() {
             return meanComputeTotalWaitingTimeSeconds;
         }
         /**
-         * 返回每次运行平均真实减速比的 replication 层汇总。
+         * Return the replication-level summary of the per-run mean true slowdown ratio.
          *
-         * <p>仅聚合 {@code trueSlowdownObservationCount > 0} 的运行（减速比语义恒
-         * ≥1.0，无观测运行的 0.0 不得混入）。当 cell 内全部运行都无观测时返回
-         * {@code null}，调用方应按 {@link #getTrueSlowdownObservationRunCount()}
-         * 判断可用性。</p>
+         * <p>Only runs with {@code trueSlowdownObservationCount > 0} are aggregated
+         * (slowdown ratio semantics are always >= 1.0, so the 0.0 of a run without
+         * observations must not be mixed in). Returns {@code null} when no run in the
+         * cell has an observation; callers should use
+         * {@link #getTrueSlowdownObservationRunCount()} to determine availability.</p>
          *
-         * @return 真实减速比 replication 汇总；无可用观测时为 {@code null}
+         * @return true slowdown replication summary; {@code null} when no observation is available
          */
         public MetricSummary getMeanComputeTrueSlowdown() {
             return meanComputeTrueSlowdown;
         }
-        /** @return cell 内贡献了真实减速比样本的运行数（{@code 0..replicationCount}） */
+        /**
+         * @return number of runs in the cell that contributed a true slowdown sample
+         *         ({@code 0..replicationCount})
+         */
         public int getTrueSlowdownObservationRunCount() {
             return trueSlowdownObservationRunCount;
         }
-        /** @return 每次运行平均 VM 利用率的 replication 层汇总 */
+        /** @return replication-level summary of the per-run mean VM utilization */
         public MetricSummary getMeanVmModeledIntervalUtilization() {
             return meanVmModeledIntervalUtilization;
         }
-        /** @return 每次运行 VM 利用率 Jain 公平性指数的 replication 层汇总 */
+        /** @return replication-level summary of the per-run VM utilization Jain fairness index */
         public MetricSummary getVmUtilizationJainFairnessIndex() {
             return vmUtilizationJainFairnessIndex;
         }
         /**
-         * 返回 replication 层面的完整工作流成功率及其适用的比例区间。
+         * Return the replication-level complete workflow success rate and the proportion
+         * interval that applies to it.
          *
-         * <p>它与 {@link #getSuccessfulLogicalTaskCompletionRate()} 的任务级完成比例不同。</p>
+         * <p>It differs from the task-level completion proportion of
+         * {@link #getSuccessfulLogicalTaskCompletionRate()}.</p>
          *
-         * @return 工作流运行完成汇总
+         * @return workflow-run completion summary
          */
         public WorkflowRunCompletionSummary getWorkflowRunCompletion() {
             return workflowRunCompletion;
         }
         /**
-         * 返回仅以完整成功工作流为条件的逻辑完成时间汇总。
+         * Return the logical completion-time summary conditioned on fully successful
+         * workflows only.
          *
-         * @return 成功工作流条件完成时间汇总
+         * @return successful-workflow conditional completion-time summary
          */
         public ConditionalMetricSummary getSuccessfulWorkflowLogicalCompletionSeconds() {
             return successfulWorkflowLogicalCompletionSeconds;
@@ -356,11 +382,13 @@ public final class ExperimentCampaignSummary {
     }
 
     /**
-     * 候选方案减去基线方案的 makespan 比较。
+     * Makespan comparison of the candidate minus the baseline.
      *
-     * <p>配对序列上的 Wilcoxon 符号秩检验（{@link #getPairedSignificance()}）提供
-     * 保守的分布差异判定；由于随机抽样尚未按事件键控，该检验结论不构成
-     * CRN 配对推断主张（见 {@link PairedWilcoxonSignificance} 的推断边界声明）。</p>
+     * <p>The Wilcoxon signed-rank test on the paired series
+     * ({@link #getPairedSignificance()}) provides a conservative
+     * distribution-difference verdict; because random sampling is not yet event-keyed,
+     * that test result does not constitute a CRN paired-inference claim (see the
+     * inference-boundary statement of {@link PairedWilcoxonSignificance}).</p>
      */
     public static final class ComparisonSummary {
         private final String comparisonGroup;
@@ -539,20 +567,24 @@ public final class ExperimentCampaignSummary {
         public double getCandidateMeanMakespanSeconds() {
             return candidateMeanMakespanSeconds;
         }
-        /** 候选方案平均 makespan 除以基线平均 makespan；基线为零时返回 {@code null}。 */
+        /**
+         * Candidate mean makespan divided by baseline mean makespan; returns {@code null}
+         * when the baseline is zero.
+         */
         public Double getMeanMakespanRatio() {
             return meanMakespanRatio;
         }
         /**
-         * 已声明基线的平均 makespan 除以候选方案平均 makespan；候选方案为零时返回
-         * {@code null}。该值不是串行加速比。
+         * Baseline mean makespan divided by candidate mean makespan; returns {@code null}
+         * when the candidate is zero. This value is not a serial speedup.
          */
         public Double getBaselineRelativeMakespanSpeedup() {
             return baselineRelativeMakespanSpeedup;
         }
         /**
-         * 相对已声明基线的 makespan 降低百分比；基线 makespan 为零时返回 {@code null}。
-         * 此值仅为描述统计，并非效应量估计。
+         * Makespan reduction percentage relative to the declared baseline; returns
+         * {@code null} when baseline makespan is zero. This value is descriptive only and
+         * is not an effect-size estimate.
          */
         public Double getMakespanImprovementPercent() {
             return makespanImprovementPercent;
@@ -565,7 +597,10 @@ public final class ExperimentCampaignSummary {
         public double getCandidateMeanModeledProcessingCost() {
             return candidateMeanModeledProcessingCost;
         }
-        /** 候选方案平均建模成本除以基线平均成本；基线为零时返回 {@code null}。 */
+        /**
+         * Candidate mean modeled cost divided by baseline mean cost; returns {@code null}
+         * when the baseline is zero.
+         */
         public Double getMeanModeledProcessingCostRatio() {
             return meanModeledProcessingCostRatio;
         }
@@ -574,11 +609,13 @@ public final class ExperimentCampaignSummary {
             return successfulLogicalTaskCompletionRateDelta;
         }
         /**
-         * 返回候选方案减去基线方案的 workflow-run 完整成功率。
+         * Return the candidate minus baseline workflow-run full success rate.
          *
-         * <p>这是描述性差异，不附带两组比例差的显著性或区间推断。</p>
+         * <p>This is a descriptive difference; it carries no significance or interval
+         * inference for the difference between the two proportions.</p>
          *
-         * @return 两个 cell 都存在可定义 workflow-run 成功率时的差值；否则为 {@code null}
+         * @return the difference when both cells have a definable workflow-run success
+         *         rate; otherwise {@code null}
          */
         public Double getSuccessfulWorkflowRunRateDelta() {
             return successfulWorkflowRunRateDelta;
@@ -588,8 +625,9 @@ public final class ExperimentCampaignSummary {
             return inferenceStatus;
         }
         /**
-         * @return 配对 makespan 序列上的 Wilcoxon 符号秩显著性检验结果；
-         * 独立重复设计时状态为 {@code UNAVAILABLE_INDEPENDENT_REPLICATIONS_ARE_NOT_PAIRED}
+         * @return Wilcoxon signed-rank significance test result on the paired makespan
+         * series; the status is {@code UNAVAILABLE_INDEPENDENT_REPLICATIONS_ARE_NOT_PAIRED}
+         * for the independent-replication design
          */
         public PairedWilcoxonSignificance getPairedSignificance() {
             return pairedSignificance;
@@ -597,10 +635,11 @@ public final class ExperimentCampaignSummary {
     }
 
     /**
-     * replication 层面的完整逻辑工作流完成汇总。
+     * Replication-level summary of complete logical workflow completion.
      *
-     * <p>它与每次运行内部的逻辑 Task 完成比例是不同 estimand：这里的一次成功要求该运行中
-     * 全部逻辑 Task 都由成功 compute Job 完成。</p>
+     * <p>It is a different estimand from the logical Task completion proportion inside a
+     * single run: one success here requires that every logical Task of that run was
+     * completed by a successful compute Job.</p>
      */
     public static final class WorkflowRunCompletionSummary {
         private final int declaredRunCount;
@@ -661,7 +700,10 @@ public final class ExperimentCampaignSummary {
         public int getDeclaredRunCount() {
             return declaredRunCount;
         }
-        /** @return 具有至少一个逻辑 Task、可定义成功/未完成结果的运行数 */
+        /**
+         * @return number of runs with at least one logical Task, whose success or
+         *         incomplete outcome is definable
+         */
         public int getEligibleWorkflowRunCount() {
             return eligibleWorkflowRunCount;
         }
@@ -673,25 +715,34 @@ public final class ExperimentCampaignSummary {
         public int getIncompleteWorkflowRunCount() {
             return incompleteWorkflowRunCount;
         }
-        /** @return 没有可定义逻辑工作流的运行数，不计为成功或失败 */
+        /**
+         * @return number of runs without a definable logical workflow, counted as
+         *         neither success nor failure
+         */
         public int getNoLogicalTaskRunCount() {
             return noLogicalTaskRunCount;
         }
         /**
-         * 返回模型运行层面的完整工作流成功率。
+         * Return the complete workflow success rate at the model-run level.
          *
-         * @return 成功数除以 eligible 运行数；没有 eligible 运行时为 {@code null}
+         * @return successes divided by eligible runs; {@code null} when there is no eligible run
          */
         public Double getSuccessfulWorkflowRunRate() {
             return successfulWorkflowRunRate;
         }
-        /** @return 仅在独立重复设计下可作推断解释的 Wilson score 区间 */
+        /**
+         * @return Wilson score interval that is interpretable as inference only under the
+         *         independent-replication design
+         */
         public ProportionConfidenceInterval getWilsonConfidenceInterval() {
             return wilsonConfidenceInterval;
         }
     }
 
-    /** 只对满足明确条件的运行样本进行汇总，避免用失败运行的仿真结束时间填补。 */
+    /**
+     * Summarize only run samples that satisfy an explicit condition, avoiding imputation
+     * with the simulation end time of failed runs.
+     */
     public static final class ConditionalMetricSummary {
         private final String population;
         private final int successfulWorkflowRunCount;
@@ -747,7 +798,7 @@ public final class ExperimentCampaignSummary {
                     "AVAILABLE_SUCCESSFUL_WORKFLOW_RUNS_ONLY");
         }
 
-        /** @return 固定为 {@code SUCCESSFUL_WORKFLOW_RUNS_ONLY} */
+        /** @return fixed to {@code SUCCESSFUL_WORKFLOW_RUNS_ONLY} */
         public String getPopulation() {
             return population;
         }
@@ -763,7 +814,7 @@ public final class ExperimentCampaignSummary {
         public int getUnavailableCompletionTimeCount() {
             return unavailableCompletionTimeCount;
         }
-        /** @return 条件样本汇总；没有成功工作流运行时为 {@code null} */
+        /** @return conditional sample summary; {@code null} when there is no successful workflow run */
         public MetricSummary getSummary() {
             return summary;
         }
@@ -773,7 +824,7 @@ public final class ExperimentCampaignSummary {
         }
     }
 
-    /** workflow-run 二元成功率的 Wilson score 区间，或其不可用原因。 */
+    /** Wilson score interval for the binary workflow-run success rate, or the reason it is unavailable. */
     public static final class ProportionConfidenceInterval {
         private final boolean available;
         private final double confidenceLevel;
@@ -842,7 +893,7 @@ public final class ExperimentCampaignSummary {
         }
     }
 
-    /** 样本汇总及其适用条件被明确标注的 95% 均值置信区间。 */
+    /** 95% mean confidence interval whose sample summary and applicability conditions are explicitly labeled. */
     public static final class MetricSummary {
         private final List<Double> samples;
         private final int sampleSize;
@@ -923,7 +974,7 @@ public final class ExperimentCampaignSummary {
         }
     }
 
-    /** 均值置信区间，或说明其不可用原因的机器可读状态。 */
+    /** Mean confidence interval, or a machine-readable status stating why it is unavailable. */
     public static final class ConfidenceInterval {
         private final boolean available;
         private final double confidenceLevel;

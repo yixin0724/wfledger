@@ -24,18 +24,25 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** 在显式配置和平台描述下运行受维护的标准 WorkflowSim 流水线。 */
+/**
+ * Runs the maintained standard WorkflowSim pipeline from an explicit configuration and platform
+ * description.
+ */
 public final class SimulationRunner {
 
     /**
-     * 执行一次解析、聚类、规划、调度和 CloudSim 事件处理，并在释放全局状态前返回不可变报告。
+     * Executes one parse, clustering, planning, scheduling, and CloudSim event-processing pass, and
+     * returns the immutable report before global state is released.
      *
-     * @param config 包含输入、算法、随机性和模型选择的显式仿真配置
-     * @param platform 已完成容量预检的平台描述
-     * @return 本次运行的完整不可变证据报告
-     * @throws SimulationConfigurationException 当配置、平台或受维护执行模型的前置条件不满足时（unchecked）
-     * @throws PlatformException 当平台资源配置或 VM-to-Host 放置失败时（unchecked）
-     * @throws SimulationExecutionException 当解析、CloudSim 执行或报告捕获失败时
+     * @param config explicit simulation configuration covering inputs, algorithms, randomness, and
+     *        model selection
+     * @param platform platform description whose capacity preflight has already completed
+     * @return complete immutable evidence report for this run
+     * @throws SimulationConfigurationException when a precondition of the configuration, the
+     *         platform, or the maintained execution model is not met (unchecked)
+     * @throws PlatformException when platform resource configuration or VM-to-Host placement fails
+     *         (unchecked)
+     * @throws SimulationExecutionException when parsing, CloudSim execution, or report capture fails
      */
     public SimulationReport run(SimulationConfig config, PlatformProfile platform) throws SimulationExecutionException {
         if (config == null || platform == null) {
@@ -53,46 +60,59 @@ public final class SimulationRunner {
             throw new SimulationConfigurationException(
                     "Bounded sourceStorage must be present exactly for the storage V3 dataflow model");
         }
-        // BAT-D2（2026-10-29）：DVFS 频档维度前提（docs/advanced/DVFS_DIMENSION_DESIGN.md §2.2）。
+        // BAT-D2 (2026-10-29): DVFS frequency-tier dimension precondition
+        // (docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.2).
         validateFrequencyDimension(config, platform);
-        // C1（2026-11-02 复核）：碳延后引擎的声明前提，与频档策略同族法则——
-        // 无窗口平台上的延后引擎会静默退化成 FCFS，"以为在测时间平移，实际在跑
-        // 普通在线调度"属于误导性证据，必须显式拒绝。
+        // C1 (2026-11-02 review): declared precondition of the carbon deferral engine, a rule
+        // of the same family as the frequency-tier policy -- on a platform without windows the
+        // deferral engine degrades silently to FCFS, and "believing we measure time shifting
+        // while actually running ordinary online scheduling" is misleading evidence, so the
+        // configuration must be rejected explicitly.
         validateCarbonDeferralDimension(config, platform);
-        // Fat-tree 链路争用模型：在会话外装配拓扑并校验模型与拓扑声明的双向契约
-        // （配置异常在此直接以 SimulationConfigurationException 抛出，不被执行期
-        // 包装；拓扑构造是纯配置计算，不触碰 CloudSim 状态）。
+        // Fat-tree link contention model: assemble the topology outside the session and validate
+        // the bidirectional contract between model and topology declaration (a configuration
+        // exception is raised here directly as SimulationConfigurationException and is not
+        // wrapped by the execution stage; topology construction is pure configuration
+        // computation and does not touch CloudSim state).
         org.workflowsim.network.FatTreeTopology fatTreeTopology = prepareFatTreeTopology(config, platform);
 
         try (SimulationSession session = SimulationSession.open(config)) {
-            // C1（2026-11-02）：绿色预算窗口随会话装载（碳感知延后调度的事实源）。
-            // 会话外为空列表；跨运行不得残留（Parameters.reset 已归零）。
+            // C1 (2026-11-02): green budget windows are loaded with the session (the source of
+            // truth for carbon-aware deferred scheduling). Outside a session the list is empty;
+            // nothing may remain across runs (Parameters.reset already zeroes it).
             org.workflowsim.utils.Parameters.setCarbonWindows(platform.getCarbonWindows());
             return executeWithinSession(session, config, platform, fatTreeTopology);
         } catch (SimulationExecutionException e) {
             throw e;
         } catch (org.workflowsim.failure.RetryLimitExceededException e) {
-            // RetryLimitExceededException 是特定的运行时异常，应该直接抛出以便测试捕获
+            // RetryLimitExceededException is a specific runtime exception and must be rethrown
+            // directly so that tests can catch it
             throw e;
         } catch (IllegalStateException e) {
-            // IllegalStateException 可能是故障生成器或其他验证逻辑抛出的，应该直接抛出
+            // IllegalStateException may come from the failure generator or other validation
+            // logic and must be rethrown directly
             throw e;
         } catch (SimulationConfigurationException e) {
-            // R8 审计修复（P1-2）：配置异常不得降级为执行异常——Javadoc 契约
-            // 声明 @throws SimulationConfigurationException，按类型分流的调用方
-            // 依赖该保证。
+            // R8 audit fix (P1-2): a configuration exception must not degrade into an
+            // execution exception -- the Javadoc contract declares
+            // @throws SimulationConfigurationException, and callers that branch by type rely
+            // on that guarantee.
             throw e;
         } catch (IllegalArgumentException e) {
-            // R8 审计修复（P1-2）：解析/校验类 IAE（含 WorkflowValidationException）
-            // 原样放行，根因消息直达调用方，不再包装成 "Unexpected error"。
+            // R8 audit fix (P1-2): parse/validation IAEs (including WorkflowValidationException)
+            // pass through unchanged, so the root-cause message reaches the caller and is no
+            // longer wrapped as "Unexpected error".
             throw e;
         } catch (Exception e) {
-            // 将其他未预期的异常包装为 SimulationExecutionException
+            // Wrap any other unexpected exception as SimulationExecutionException
             throw new SimulationExecutionException("Unexpected error during simulation execution", e);
         }
     }
 
-    /** run() 会话内的装配阶段：datacenter/planner/engine/vm/coherent 装配（逐字搬运转写）。 */
+    /**
+     * Assembly stage inside the run() session: datacenter/planner/engine/vm/coherent assembly
+     * (moved verbatim during the refactor).
+     */
     private SimulationAssembly assembleSession(
             SimulationSession session,
             SimulationConfig config,
@@ -147,7 +167,10 @@ public final class SimulationRunner {
         return assembly;
     }
 
-    /** run() 会话内的执行/校验/捕获阶段（PLAT-14 看门狗与证据快照逐字搬运转写）。 */
+    /**
+     * Execution/validation/capture stage inside the run() session (the PLAT-14 watchdog and the
+     * evidence snapshot, moved verbatim during the refactor).
+     */
     private SimulationReport executeWithinSession(
             SimulationSession session,
             SimulationConfig config,
@@ -162,10 +185,13 @@ public final class SimulationRunner {
         org.workflowsim.data.v2.CoherentDataflowRuntime coherent = assembly.coherent;
 
         double makespan = CloudSim.startSimulation();
-        // PLAT-14：停滞看门狗。仿真自然结束但引擎仍有待释放或在途 Job，说明事件链
-        // 断裂导致工作流静默停滞（无后续事件驱动释放/返回）。必须显式失败，
-        // 而不是产出只含 INCOMPLETE_LOGICAL_TASKS 标记的残缺报告。
-        // RetryLimitExceededException 等合法中止路径通过异常传播，不会到达本检查。
+        // PLAT-14: stall watchdog. The simulation ended naturally but the engine still holds
+        // unreleased or in-flight Jobs, which means the event chain broke and the workflow
+        // stalled silently (no further event drives release/return). This must fail explicitly
+        // instead of producing a truncated report that carries only the INCOMPLETE_LOGICAL_TASKS
+        // marker.
+        // Legal abort paths such as RetryLimitExceededException propagate as exceptions and
+        // never reach this check.
         if (!engine.getJobsList().isEmpty() || engine.getInFlightJobCount() != 0) {
             throw new SimulationExecutionException("Simulation terminated while the workflow engine "
                     + "still holds " + engine.getJobsList().size() + " unreleased job(s) and "
@@ -214,7 +240,7 @@ public final class SimulationRunner {
         }
     }
 
-    /** run() 会话装配的私有搬运结构（字段直读，无转发行为）。 */
+    /** Private carrier for the run() session assembly (fields are read directly, no forwarding). */
     private static final class SimulationAssembly {
         private WorkflowDatacenter datacenter;
         private WorkflowPlanner planner;
@@ -223,12 +249,14 @@ public final class SimulationRunner {
     }
 
     /**
-     * 标准运行器仅接受具有维护中语义契约的算法。历史示例仍可使用旧静态 API，
-     * 但不得通过此入口悄然生成研究证据。
+     * The standard runner accepts only algorithms with a maintained semantic contract.
+     * Historical examples may still use the old static API, but they must not silently generate
+     * research evidence through this entry point.
      */
     private static void validateSupportedAlgorithms(SimulationConfig config, PlatformProfile platform) {
         if (config.getRegisteredSchedulingAlgorithmProvider() != null) {
-            // BAT-3（2026-10-26）：注册算轨走自声明契约矩阵；枚举规划/调度都必须为 INVALID。
+            // BAT-3 (2026-10-26): the registry track goes through the self-declared contract
+            // matrix; the enum planning/scheduling algorithms must both be INVALID.
             if (config.getSchedulingAlgorithm() != SchedulingAlgorithm.INVALID
                     || (config.getPlanningAlgorithm() != null
                             && config.getPlanningAlgorithm()
@@ -247,11 +275,15 @@ public final class SimulationRunner {
                                     && !config.getTaskCostMatrix().asMap().isEmpty(),
                             config.getFailureModel(),
                             config.getPlanningAlgorithm(),
-                            // BAT-D6（2026-10-29）：注册轨道的功率事实与能量链同源（BAT-D2
-                            // powered 谓词）——平面功率字段或频档表任一声明即 powered，
-                            // 频档平台上的 powerModelRequired 声明不再被平面-only 口径误拒。
+                            // BAT-D6 (2026-10-29): on the registry track the power fact comes from the
+                            // same source as the energy chain (the BAT-D2 powered predicate) -- a
+                            // declaration of either flat power fields or a frequency-tier table
+                            // makes the VM powered, so a powerModelRequired declaration on a
+                            // tiered platform is no longer wrongly rejected by the flat-only
+                            // reading.
                             anyVmPowered(platform),
-                            // BAT-D4（2026-10-29）：注册轨道的频档事实同面注入（§2.6 门槛条款）。
+                            // BAT-D4 (2026-10-29): the frequency-tier fact of the registry track is injected
+                            // on the same interface (the gate clause of section 2.6).
                             anyVmHasFrequencyTiers(platform)));
             return;
         }
@@ -286,16 +318,19 @@ public final class SimulationRunner {
     }
 
     /**
-     * 装配 Fat-tree 拓扑并校验其与数据移动模型的双向契约。
+     * Assembles the Fat-tree topology and validates its bidirectional contract with the data
+     * movement model.
      *
-     * <p>使用 {@code fatTreeContentionV1()} 时必须通过
-     * {@code PlatformProfile.networkTopology(...)} 声明拓扑；coherent V2/V3 可选择
-     * 声明拓扑并使用实际放置路径。其他模型拒绝多余拓扑，避免声明被静默忽略。</p>
+     * <p>With {@code fatTreeContentionV1()} the topology must be declared through
+     * {@code PlatformProfile.networkTopology(...)}; coherent V2/V3 may optionally declare a
+     * topology and then use the actual placement paths. Other models reject a superfluous
+     * topology so that a declaration is never ignored silently.</p>
      *
-     * @param config 仿真配置
-     * @param platform 平台描述
-     * @return 已放置拓扑；模型不使用拓扑时为 {@code null}
-     * @throws SimulationConfigurationException 当双向契约任一方向不满足时
+     * @param config simulation configuration
+     * @param platform platform description
+     * @return the placed topology; {@code null} when the model does not use a topology
+     * @throws SimulationConfigurationException when either direction of the bidirectional contract
+     *         is not satisfied
      */
     private static org.workflowsim.network.FatTreeTopology prepareFatTreeTopology(
             SimulationConfig config, PlatformProfile platform) {
@@ -334,8 +369,9 @@ public final class SimulationRunner {
     }
 
     /**
-     * 在标准运行器中，只有无操作重聚类具备执行层面的重试契约。其他历史重聚类启发式仍含
-     * 硬编码且未经验证的调优规则，因此仅能经由旧 API 使用。
+     * In the standard runner only the no-op reclustering has an execution-level retry contract.
+     * The other historical reclustering heuristics still contain hard-coded, unverified tuning
+     * rules, so they are reachable only through the old API.
      */
     private static void validateSupportedFailureModel(SimulationConfig config) {
         if (config.getFailureModel().getClusteringAlgorithm()
@@ -353,8 +389,10 @@ public final class SimulationRunner {
     }
 
     /**
-     * 受维护的研究入口只支持一种受控执行模型。为兼容 API，历史聚类和时间共享 VM 模式仍可
-     * 被构造；但它们与 ready-Job 调度器、任务结果和指标的交互不具有标准运行器回归契约。
+     * The maintained research entry point supports a single controlled execution model.
+     * Historical clustering and time-shared VM modes can still be constructed for API
+     * compatibility, but their interaction with the ready-Job scheduler, task results, and
+     * metrics carries no standard-runner regression contract.
      */
     private static void validateSupportedExecutionModel(SimulationConfig config, PlatformProfile platform) {
         if (config.getClusteringParameters().getClusteringMethod() != ClusteringMethod.NONE) {
@@ -372,7 +410,7 @@ public final class SimulationRunner {
         }
     }
 
-    /** BAT-E3（2026-10-27）：@return 平台剖面中是否存在任何声明了功率字段的 VM。 */
+    /** BAT-E3 (2026-10-27): @return whether the platform profile has any VM declaring power fields */
     private static boolean anyVmHasPowerModel(PlatformProfile platform) {
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
             if (spec.hasPowerModel()) {
@@ -383,17 +421,18 @@ public final class SimulationRunner {
     }
 
     /**
-     * BAT-D6（2026-10-29）：@return 平台剖面中是否存在任何"powered"VM——平面功率字段
-     * 或频档表任一声明（BAT-D2 powered 谓词，与
-     * {@code EnergyAccounting.fromFrozenMetrics} 的功率闸同源：频档表替代平面字段的
-     * 单一真源结构下，声明频档即产出真实能量账本）。注册轨道的 powerModelRequired
-     * 门槛消费此口径。
+     * BAT-D6 (2026-10-29): @return whether the platform profile has any "powered" VM -- a
+     * declaration of either flat power fields or a frequency-tier table (the BAT-D2 powered
+     * predicate, which shares its source with the power gate of
+     * {@code EnergyAccounting.fromFrozenMetrics}: under the single-source-of-truth structure
+     * where the tier table replaces the flat fields, declaring tiers is what produces a real
+     * energy ledger). The powerModelRequired gate of the registry track consumes this reading.
      */
     private static boolean anyVmPowered(PlatformProfile platform) {
         return anyVmHasPowerModel(platform) || anyVmHasFrequencyTiers(platform);
     }
 
-    /** BAT-D4（2026-10-29）：@return 平台剖面中是否存在任何声明了频档表的 VM。 */
+    /** BAT-D4 (2026-10-29): @return whether the platform profile has any VM declaring frequency tiers */
     private static boolean anyVmHasFrequencyTiers(PlatformProfile platform) {
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
             if (spec.hasFrequencyTiers()) {
@@ -404,22 +443,27 @@ public final class SimulationRunner {
     }
 
     /**
-     * BAT-D2（2026-10-29）：DVFS 频档维度的运行级前提。
+     * BAT-D2 (2026-10-29): run-level preconditions of the DVFS frequency-tier dimension.
      *
-     * <p>（1）非 DEFAULT 策略要求平台至少有一台 VM 声明频档表——在全无档平台上，
-     * MIN_POWER/EDP_HEURISTIC 会被静默忽略，产生"以为在研究 DVFS 实际在跑 v1"的
-     * 误导性结果；（2）任务×VM 成本矩阵与频档表互斥：STATIC 派发路径在数据中心提交
-     * 时以矩阵折算的 MI 为真源重构 Job 长度（{@code projectComputeExecutionLength}），
-     * 会覆盖派发时的频档缩放长度、静默丢弃变频减速（与 R8 审计 P1-1 矩阵×规划器
-     * 分叉同族）。两处都显式拒绝。</p>
+     * <p>(1) A non-DEFAULT policy requires at least one VM on the platform to declare a frequency
+     * tier table -- on an all-plain platform MIN_POWER/EDP_HEURISTIC would be ignored silently,
+     * producing the misleading outcome of "believing we study DVFS while actually running v1";
+     * (2) the task-by-VM cost matrix and the frequency tier table are mutually exclusive: the
+     * STATIC dispatch path re-derives the Job length at datacenter submission from the
+     * matrix-converted MI ({@code projectComputeExecutionLength}), which overwrites the
+     * tier-scaled length computed at dispatch and silently discards the frequency reduction (the
+     * same family as the R8 audit P1-1 matrix-versus-planner fork). Both cases are rejected
+     * explicitly.</p>
      */
     /**
-     * C1（2026-11-02）：碳感知延后引擎的声明前提。
+     * C1 (2026-11-02): declared precondition of the carbon-aware deferral engine.
      *
-     * <p>{@code CARBON_WINDOW_DEFER} 的全部决策来自平台声明的 {@code carbonWindows}；
-     * 没有窗口时它会如实退化成普通在线调度，但标签仍写着"碳感知"——这正是 BAT-D2
-     * 对"静默失效策略"的同一类问题（以为在研究 X，实际在跑 v1）。因此显式拒绝，
-     * 让调用方补窗口或换标签，而不是产出一份名不副实的证据。</p>
+     * <p>Every decision of {@code CARBON_WINDOW_DEFER} comes from the {@code carbonWindows}
+     * declared by the platform; without windows it degrades truthfully to ordinary online
+     * scheduling while the label still says "carbon-aware" -- exactly the same class of problem as
+     * the BAT-D2 "silently inert policy" (believing we study X while actually running v1). It is
+     * therefore rejected explicitly, so that the caller either supplies windows or changes the
+     * label instead of producing evidence whose name does not match its content.</p>
      */
     private static void validateCarbonDeferralDimension(SimulationConfig config, PlatformProfile platform) {
         if (config.getSchedulingAlgorithm() != SchedulingAlgorithm.CARBON_WINDOW_DEFER) {

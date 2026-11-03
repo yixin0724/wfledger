@@ -172,7 +172,7 @@ public final class ExperimentManifestWriter {
         }
         manifest.put("result", result(report));
         manifest.put("metrics", report.getMetrics());
-        // BAT-E2（2026-10-27）：energyMetrics section — 4 summary fields + per-VM map；
+        // BAT-E2 (2026-10-27): energyMetrics section -- 4 summary fields + per-VM map;
         // independently recomputable from the manifest's own vmMetrics busySeconds + platform power fields.
         Map<String, Object> energy = new LinkedHashMap<String, Object>();
         EnergyAccounting ea = report.getEnergyAccounting();
@@ -182,8 +182,10 @@ public final class ExperimentManifestWriter {
         energy.put("energyMakespanProductJouleSeconds", Double.valueOf(ea.getEnergyMakespanProductJouleSeconds()));
         energy.put("vmEnergyJoules", ea.getVmEnergyJoules());
         manifest.put("energyMetrics", energy);
-        // BAT-C2（2026-10-28）：carbonMetrics 条件导出——未声明两种碳模型时整节缺省
-        // （合法缺省≠全零，与能量节的恒在语义相区分并已在契约文档声明）。
+        // BAT-C2 (2026-10-28): conditional carbonMetrics export -- the whole section is absent
+        // when neither carbon model is declared (a legal omission is not all-zero; it stays
+        // distinct from the always-present energy section and is already declared in the
+        // contract document).
         CarbonAccounting ca = report.getCarbonAccounting();
         if (ca != null) {
             Map<String, Object> carbon = new LinkedHashMap<String, Object>();
@@ -210,22 +212,27 @@ public final class ExperimentManifestWriter {
      * @return the same configuration representation used in new manifests
      */
     /**
-     * BAT-R9（2026-10-27 第九轮审查）manifest 口径：配置基体 + 已解析输入路径覆写——
-     * 与 inputs[].path 同源，ordered-input-paths 不变量对任何喂法按构造成立；
-     * 全部遗留证据两数组本已同为绝对形式，语义零漂移。
+     * BAT-R9 (2026-10-27, ninth review round) manifest convention: configuration base plus a
+     * resolved-input-path override -- the same source as inputs[].path, so the
+     * ordered-input-paths invariant holds by construction for any way the run is fed; in all
+     * legacy evidence the two arrays were already both absolute, hence zero semantic drift.
      */
     private static Map<String, Object> configuration(SimulationReport report) {
         SimulationConfig config = report.getConfig();
         Map<String, Object> values = configuration(config);
-        // BAT-V4.2（2026-10-29 测试工程师对抗轮 / DVFS 第五轮，红→绿）：v1 无档运行的
-        // 配置节不得携带 frequencyPolicy 键。D4 起该键无条件发射（含 tierless+DEFAULT
-        // 的惰性值）——每一份 D4 前冻结的 v1 证据（power-v1/carbon-v1/standard-v1
-        // 基准的全部 bundle）在 EvidenceCoreDiffer 复跑时都会新增假核心分歧
-        // /configuration/frequencyPolicy &lt;missing&gt; vs "DEFAULT"，整批历史证据从
-        // IDENTICAL_CORE 退化为 DIVERGED（本轮对三套冻结基准的实证）。发射规则对齐
-        // tierMips/frequencyTiers/carbonWindows 的"声明→出现、缺省→键缺省"文化：
-        // 仅当策略行为活性（配置声明非 DEFAULT，或平台声明频档——tiered 平台上
-        // 策略是复跑语义的一部分，D5 三维基准的 DEFAULT 单元仍显式记录）才写。
+        // BAT-V4.2 (2026-10-29 adversarial test-engineer round / DVFS fifth round, red->green):
+        // the configuration section of a v1 tierless run must not carry the frequencyPolicy
+        // key. Since D4 that key is emitted unconditionally (including the inert tierless
+        // plus DEFAULT value) -- every v1 evidence bundle frozen before D4 (all bundles of the
+        // power-v1 / carbon-v1 / standard-v1 baselines) gains a spurious core difference when
+        // rerun through EvidenceCoreDiffer: /configuration/frequencyPolicy &lt;missing&gt; vs
+        // "DEFAULT", and the whole historical batch degrades from IDENTICAL_CORE to DIVERGED
+        // (verified in this round against the three frozen baselines). The emission rule
+        // follows the tierMips/frequencyTiers/carbonWindows culture of "declared -> present,
+        // default -> key absent": write only when the policy is behaviorally active (the
+        // configuration declares non-DEFAULT, or the platform declares frequency tiers -- on a
+        // tiered platform the policy is part of rerun semantics, and the DEFAULT cells of the
+        // D5 three-dimensional baseline are still recorded explicitly).
         if (!values.containsKey("frequencyPolicy") && anyFrequencyTiers(report.getPlatform())) {
             values.put("frequencyPolicy", config.getFrequencyPolicy().name());
         }
@@ -237,7 +244,11 @@ public final class ExperimentManifestWriter {
         return values;
     }
 
-    /** BAT-V4.2：@return 平台剖面中是否存在任何声明了频档表的 VM（配置节发射谓词）。 */
+    /**
+     * BAT-V4.2: configuration section emission predicate.
+     *
+     * @return whether the platform profile has any VM that declares a frequency tier table
+     */
     private static boolean anyFrequencyTiers(PlatformProfile platform) {
         if (platform == null || platform.getVms() == null) {
             return false;
@@ -254,7 +265,8 @@ public final class ExperimentManifestWriter {
         if (config == null) {
             throw new IllegalArgumentException("Configuration is required");
         }
-        // 快照口径 = legacy as-fed（该公开面服务配置比对，不入证据链第 ordered 项）。
+        // Snapshot convention = legacy as-fed (this public surface serves configuration
+        // comparison and does not enter the ordered item of the evidence chain).
         return configuration(config);
     }
 
@@ -291,21 +303,27 @@ public final class ExperimentManifestWriter {
         values.put("workflowArrivalSemantics", "PREDECLARED_AT_TIME_ZERO;SECONDS_FROM_SIMULATION_ZERO");
         values.put("taskCostMatrix", taskCostMatrix(config));
         values.put("schedulingAlgorithm", config.getSchedulingAlgorithm().name());
-        // BAT-3（2026-10-26）：注册算轨标签同层记录；证据身份不归属到 INVALID 枚举，
-        // 复跑比较以 identical contract 键继续按精确字段比较。
+        // BAT-3 (2026-10-26): the registered algorithm-track label is recorded at the same
+        // level; evidence identity is not attributed to the INVALID enum, and rerun comparison
+        // keeps comparing exact fields under the identical contract key.
         values.put(
                 "registeredSchedulingAlgorithm",
                 config.getRegisteredSchedulingAlgorithmProvider() == null
                         ? null
                         : config.getRegisteredSchedulingAlgorithmProvider().label());
-        // BAT-D5（2026-10-29，docs/advanced/DVFS_DIMENSION_DESIGN.md §2.2/D5 复现面）：配置级
-        // 频档策略入 manifest 配置节（跟随 registeredSchedulingAlgorithm 模式）——策略是
-        // 复跑语义的一部分。BAT-V4.2（2026-10-29 对抗轮修正）：发射规则收紧为"行为活性
-        // 才写"——非 DEFAULT 必写（任何平台：这是运行语义的非缺省声明）；DEFAULT 仅在
-        // tiered 平台上写（configuration(report) 视野补写）。v1 无档 + 缺省策略 = 键缺省
-        // ——D4 前历史证据的逐位形状（tierMips/frequencyTiers/carbonWindows 同款
-        // "声明→出现"文化；档表与策略的 manifest→平台重建仍是 D5 文档化的前向契约，
-        // tiered manifest 复跑按记录的红差异失败，不静默）。
+        // BAT-D5 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.2/D5
+        // reproduction surface): the configuration-level frequency tier policy enters the
+        // manifest configuration section (following the registeredSchedulingAlgorithm
+        // pattern) -- the policy is part of rerun semantics. BAT-V4.2 (2026-10-29 adversarial
+        // round correction): the emission rule is tightened to "write only when behaviorally
+        // active" -- non-DEFAULT is always written (on any platform: it is a non-default
+        // declaration of run semantics); DEFAULT is written only on a tiered platform
+        // (patched in the configuration(report) view). v1 tierless + default policy = key
+        // absent -- the bit-for-bit shape of pre-D4 historical evidence (the same
+        // "declared -> present" culture as tierMips/frequencyTiers/carbonWindows; the
+        // manifest->platform rebuild of tier tables and policy remains the forward contract
+        // documented in D5, and a tiered manifest rerun fails on the recorded red difference
+        // rather than silently).
         if (config.getFrequencyPolicy() != SimulationConfig.FrequencyPolicy.DEFAULT) {
             values.put("frequencyPolicy", config.getFrequencyPolicy().name());
         }
@@ -529,22 +547,31 @@ public final class ExperimentManifestWriter {
             value.put("imageSizeMb", vm.getImageSizeMb());
             value.put("vmm", vm.getVmm());
             value.put("schedulerMode", vm.getSchedulerMode().name());
-            // BAT-E4（2026-10-27）：每 VM 功率字段进入平台序列化。Python 审计器
-            // （verify-study-evidence.py）以 platform.vms[].idlePowerWatts/maxPowerWatts
-            // 判定 powered/unpowered 分支并复算能耗守恒律；此前 E2 导出缺这两个键，
-            // 带功率运行对审计器静默呈现为无功率，能耗复算被整体跳过（红→绿锚 =
-            // EnergyConservationLawTest.manifestPlatformSerializesPerVmPowerFields）。
+            // BAT-E4 (2026-10-27): per-VM power fields enter platform serialization. The Python
+            // auditor (verify-study-evidence.py) uses platform.vms[].idlePowerWatts/maxPowerWatts
+            // to decide the powered/unpowered branch and recompute the energy conservation
+            // law; before this the E2 export lacked these two keys, so a powered run silently
+            // appeared power-less to the auditor and the energy recompute was skipped entirely
+            // (red->green anchor =
+            // EnergyConservationLawTest.manifestPlatformSerializesPerVmPowerFields).
             value.put("idlePowerWatts", vm.getIdlePowerWatts());
             value.put("maxPowerWatts", vm.getMaxPowerWatts());
-            // BAT-D2 后续收口（2026-10-29，D3 前提）：每 VM 频档表仅非空时序列化（空表
-            // == v1 单档平台 == 未声明，legacy manifest 的平台节字节级不变）；键序固定
-            // mips/idlePowerWatts/maxPowerWatts，Python 审计器以同表复算扩展守恒律
-            // E_vm = P_idle(默认档)×T_sim + Σ档[(P_max(档)−P_idle(默认档))×busy(档)]
-            // （DVFS_DIMENSION_DESIGN.md §2.3/§2.4）。此前频档运行的平台节缺此键，tiered
-            // 运行对审计器静默呈现为无功率平台，逐档能耗复算被整体跳过（D2 提交时标记的
-            // 证据面缺口）。v1 平台功率与频档两路互斥（VmSpec 构造校验的单一真源），因此
-            // tiered VM 的平面功率字段恒为 0.0，不与此节冲突。红锚上移到本批：
-            // FrequencyTierAssignmentTest.manifestPlatformSerializesPerVmFrequencyTiers。
+            // BAT-D2 follow-up closure (2026-10-29, a prerequisite of D3): the per-VM frequency
+            // tier table is serialized only when non-empty (an empty table == v1 single-tier
+            // platform == undeclared, so the platform section of a legacy manifest stays
+            // byte-identical); key order is fixed as mips/idlePowerWatts/maxPowerWatts, and
+            // the Python auditor recomputes the extended conservation law with the same table
+            // E_vm = P_idle(default tier) * T_sim
+            //        + sum over tiers[(P_max(tier) - P_idle(default tier)) * busy(tier)]
+            // (DVFS_DIMENSION_DESIGN.md section 2.3/2.4). Previously the platform section of
+            // a tiered run lacked this key, so a tiered run silently appeared as a power-less
+            // platform to the auditor and the per-tier energy recompute was skipped entirely
+            // (the evidence-surface gap flagged when D2 was committed). On a v1 platform the
+            // flat power path and the frequency-tier path are mutually exclusive (the single
+            // source of truth of VmSpec construction validation), so the flat power fields of
+            // a tiered VM are constantly 0.0 and do not conflict with this section. The red
+            // anchor moved up into this batch:
+            // FrequencyTierAssignmentTest.manifestPlatformSerializesPerVmFrequencyTiers.
             if (vm.hasFrequencyTiers()) {
                 List<Map<String, Object>> frequencyTiers = new ArrayList<Map<String, Object>>();
                 for (PlatformProfile.FrequencyTier tier : vm.getFrequencyTiers()) {
@@ -556,9 +583,12 @@ public final class ExperimentManifestWriter {
                 }
                 value.put("frequencyTiers", frequencyTiers);
             }
-            // BAT-C2（2026-10-28）：强度键仅声明时序列化（缺键与 null 均等价于"未声明"，
-            // legacy manifest 的平台节字节级不变）；审计器以该键复算 grams = E/3.6e6 × I。
-            // 红锚同理：若缺此键，声明强度的运行对审计器静默呈现为无碳，复算被跳过。
+            // BAT-C2 (2026-10-28): the intensity key is serialized only when declared (a missing
+            // key and null both equal "undeclared", so the platform section of a legacy
+            // manifest stays byte-identical); the auditor recomputes grams = E/3.6e6 * I with
+            // that key. The red anchor is the same: without the key a run that declares
+            // intensity silently appears carbon-free to the auditor and the recompute is
+            // skipped.
             if (vm.getCarbonIntensityGramsPerKWh() != null) {
                 value.put("carbonIntensityGramsPerKWh", vm.getCarbonIntensityGramsPerKWh());
             }
@@ -574,8 +604,10 @@ public final class ExperimentManifestWriter {
         storage.put("maxTransferRateMbPerSecond", profile.getStorage().getMaxTransferRateMbPerSecond());
         values.put("storage", storage);
         values.put("costs", costs(profile.getCosts()));
-        // BAT-C2（2026-10-28）：预算模型窗口仅非空时序列化（空表==未声明）；键序固定
-        // start/end/green，Python 审计器以同列表重建舰队超额积分并校验排序/不重叠。
+        // BAT-C2 (2026-10-28): budget model windows are serialized only when non-empty (an
+        // empty list == undeclared); key order is fixed as start/end/green, and the Python
+        // auditor rebuilds the fleet excess integral from the same list and checks ordering
+        // and non-overlap.
         if (!profile.getCarbonWindows().isEmpty()) {
             List<Map<String, Object>> carbonWindows = new ArrayList<Map<String, Object>>();
             for (PlatformProfile.CarbonWindow window : profile.getCarbonWindows()) {
@@ -682,16 +714,19 @@ public final class ExperimentManifestWriter {
     }
 
     /**
-     * BAT-D2（2026-10-29）：JobOutcome 的结果清单序列化视图。
+     * BAT-D2 (2026-10-29): serialization view of the JobOutcome result list.
      *
-     * <p>v1 路径（没有任何 Job 携带频档）原样返回对象列表，manifest 字节级不变；
-     * 一旦任一 Job 携带非 null 的 {@code tierMips}（D2 起平台声明了频档表），改走
-     * Gson 树视图：基础字段由反射生成（字段名/序/值与 v1 路径同源），"tierMips"
-     * 键<b>仅在非 null 时追加</b>——null/缺键 = v1 legacy 的合法缺省（证据合同），
-     * 任务×D2 台账的档身份以 MIPS 值对平台 frequencyTiers 匹配复原。</p>
+     * <p>The v1 path (no Job carries a frequency tier) returns the object list as-is and the
+     * manifest stays byte-identical; as soon as any Job carries a non-null {@code tierMips}
+     * (since D2 the platform declares the frequency tier table), the view switches to a Gson
+     * tree: the base fields are generated by reflection (field names/order/values from the same
+     * source as the v1 path) and the "tierMips" key is <b>appended only when non-null</b> --
+     * null or a missing key is the legal v1 legacy default (evidence contract), and the tier
+     * identity of the task-by-D2 ledger is recovered by matching the MIPS value against the
+     * platform frequencyTiers.</p>
      *
-     * @param report 已完成仿真的不可变报告
-     * @return v1 惰性路径的 JobOutcome 列表，或逐 Job 的 JSON 树视图列表
+     * @param report immutable report of a completed simulation
+     * @return the JobOutcome list of the v1 lazy path, or a per-Job JSON tree view list
      */
     private static Object jobOutcomeSerializationView(SimulationReport report) {
         boolean anyTierAssignment = false;
@@ -704,7 +739,8 @@ public final class ExperimentManifestWriter {
         if (!anyTierAssignment) {
             return report.getJobs();
         }
-        // 反射默认 Gson（不序列化 null）——transient tierMips 由本视图显式追加。
+        // Reflective default Gson (does not serialize null) -- the transient tierMips is
+        // appended explicitly by this view.
         com.google.gson.Gson reflection = new com.google.gson.Gson();
         List<Object> view = new ArrayList<Object>();
         for (SimulationReport.JobOutcome job : report.getJobs()) {

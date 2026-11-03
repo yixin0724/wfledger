@@ -1,11 +1,12 @@
 package org.workflowsim.data;
 
 /**
- * 一次仿真运行使用的不可变文件传输时延契约。
+ * Immutable file-transfer delay contract used by one simulation run.
  *
- * <p>默认值严格保留 WorkflowSim 的历史传输计算。固定端点选项刻意采用
- * Job 内串行、Job 间无争用的抽象模型；它不表示分组网络、排队、共享链路
- * 竞争，也不表示经过现实数据校准的存储系统。</p>
+ * <p>The defaults strictly preserve the historical WorkflowSim transfer computation. The
+ * fixed-endpoint option deliberately adopts an abstract model with in-Job serialization and no
+ * inter-Job contention; it does not represent a packet-switched network, queueing, shared-link
+ * competition, or a storage system calibrated against real data.</p>
  */
 public final class DataMovementModel {
 
@@ -15,37 +16,44 @@ public final class DataMovementModel {
      * to the coherent V2/V3 lifecycles; members are ordered by contract generation.
      */
     public enum Kind {
-        /** 历史共享/本地文件传输计算。 */
+        /** Historical shared/local file-transfer computation. */
         LEGACY_WORKFLOWSIM_V1,
-        /** 固定端点链路、逐文件附加时延且不存在共享争用。 */
+        /** Fixed endpoint links, per-file added delay, and no shared contention. */
         FIXED_ENDPOINT_NO_CONTENTION_V1,
         /**
-         * 论文语义的执行前传输延迟模型（Topcuoglu TPDS 2002 类列表调度的
-         * 通信模型）：按各父任务完成时点估算输入到达；外部输入自 Job 就绪时开始，
-         * 可与目标 VM 的忙碌期重叠；VM 只被计算 MI 占用，传输不再折算进执行
-         * 信封。传输秒数沿用 {@link #LEGACY_WORKFLOWSIM_V1} 的带宽规则
-         * （SOURCE→VM 取目标 VM 带宽、VM→VM 取 {@code min(bw)}、副本本地
-         * 零传输）。
+         * Paper-semantics pre-execution transfer delay model (the communication model of list
+         * scheduling in the Topcuoglu TPDS 2002 class): input arrival is estimated from the
+         * completion instant of each parent task; external input starts when the Job becomes ready
+         * and may overlap the target VM busy period; the VM is occupied by computation MI only,
+         * and transfer seconds are no longer folded into the execution envelope. Transfer seconds
+         * follow the bandwidth rules of {@link #LEGACY_WORKFLOWSIM_V1} (SOURCE to VM uses the
+         * target VM bandwidth, VM to VM uses {@code min(bw)}, and a replica transfer is local with
+         * zero transfer).
          */
         PRE_EXECUTION_TRANSFER_DELAY_V1,
         /**
-         * 链路争用版执行前传输延迟模型：传输可与目标 VM 忙碌期重叠，
-         * 同一 VM 端点上的活动传输采用带名义上限的 max-min progressive filling。
-         * 所有传输组在所属 Job 数据就绪时统一开始，不追溯较早父任务的传输进度。
-         * 该起点规则不同于无争用 V1；规划侧仍按无争用 AST 估计。
-         * 分段积分在内部完成时点重分配容量；整个 DAG 的完成时间不承诺跨模型单调。
+         * Pre-execution transfer delay model with link contention: transfers may overlap the target
+         * VM busy period, and active transfers on the same VM endpoint use max-min progressive
+         * filling with a nominal cap. All transfer groups start together when the data of the
+         * owning Job becomes ready, without tracing back the transfer progress of earlier parent
+         * tasks. This start rule differs from the contention-free V1; the planning side still
+         * estimates with the contention-free AST. Segmented integration reallocates capacity at
+         * internal completion instants; makespan across the whole DAG is not promised to be
+         * monotonic across models.
          */
         PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1,
         /**
-         * Fat-tree 拓扑感知链路争用版执行前传输延迟模型：传输窗口语义与
-         * {@link #PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1} 相同，但争用
-         * 域从 VM 端点推广为确定性路由路径上的每条共享链路（Al-Fares k-Pod
-         * Fat-tree，流级 max-min progressive filling）；端点与链路容量同时生效，
-         * 通过逐步填充及瓶颈冻结分配速率。要求平台通过
-         * {@code PlatformProfile.networkTopology(...)} 声明拓扑（
-         * {@code org.workflowsim.network.NetworkTopologySpec}）。外部输入
-         * （SOURCE）流量 v1 不经过拓扑，只占用目标 VM 端点。原理与设计见
-         * {@code docs/research/FAT_TREE_DESIGN.md}。
+         * Fat-tree topology-aware pre-execution transfer delay model with link contention: the
+         * transfer-window semantics are the same as
+         * {@link #PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1}, but the contention domain is
+         * generalized from the VM endpoint to every shared link on the deterministic route path
+         * (Al-Fares k-Pod Fat-tree, flow-level max-min progressive filling); endpoint and link
+         * capacities apply simultaneously, allocating rates by progressive filling with bottleneck
+         * freezing. The platform must declare the topology through
+         * {@code PlatformProfile.networkTopology(...)}
+         * ({@code org.workflowsim.network.NetworkTopologySpec}). External input (SOURCE) traffic
+         * of v1 bypasses the topology and occupies only the target VM endpoint. Rationale and
+         * design are in {@code docs/research/FAT_TREE_DESIGN.md}.
          */
         PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1,
         /** Versioned per-file visible-source/actual-route lifecycle with shared capacities. */
@@ -129,64 +137,69 @@ public final class DataMovementModel {
     }
 
     /**
-     * 返回 P10 以前仿真行为所使用的严格兼容默认模型。
+     * Returns the strictly compatible default model used by simulation behavior before P10.
      *
-     * @return 历史 WorkflowSim 传输模型的共享不可变实例
+     * @return shared immutable instance of the historical WorkflowSim transfer model
      */
     public static DataMovementModel legacyWorkflowsimV1() {
         return LEGACY;
     }
 
     /**
-     * 返回论文语义的执行前传输延迟模型。
+     * Returns the paper-semantics pre-execution transfer delay model.
      *
-     * <p>计算 Job 的输入传输在数据就绪时开始并可与 VM 忙碌期重叠；VM 仅被计算占用。
-     * 这是 LOCAL_HEFT/LOCAL_CPOP/LOCAL_PEFT 复现 Topcuoglu TPDS 2002 与
-     * Arabnejad &amp; Barbosa TPDS 2014 调度语义所需的通信模型。</p>
+     * <p>The input transfer of a computed Job starts when its data becomes ready and may overlap
+     * the VM busy period; the VM is occupied by computation only. This is the communication model
+     * required by LOCAL_HEFT/LOCAL_CPOP/LOCAL_PEFT to reproduce the scheduling semantics of
+     * Topcuoglu TPDS 2002 and Arabnejad &amp; Barbosa TPDS 2014.</p>
      *
-     * @return 执行前传输延迟模型的共享不可变实例
+     * @return shared immutable instance of the pre-execution transfer delay model
      */
     public static DataMovementModel preExecutionTransferDelayV1() {
         return PRE_EXECUTION_TRANSFER_DELAY;
     }
 
     /**
-     * 返回链路争用版执行前传输延迟模型。
+     * Returns the pre-execution transfer delay model with link contention.
      *
-     * <p>传输可与 VM 忙碌期重叠，但所有父组在 Job 就绪时统一开始，不追溯父任务
-     * 更早完成的进度；VM端点使用max-min progressive filling，SOURCE无容量上限。</p>
+     * <p>Transfers may overlap the VM busy period, but all parent groups start together when the
+     * Job becomes ready, without tracing back progress of earlier parent completions; the VM
+     * endpoint uses max-min progressive filling, and SOURCE has no capacity cap.</p>
      *
-     * @return 链路争用模型的共享不可变实例
+     * @return shared immutable instance of the contention model
      */
     public static DataMovementModel preExecutionTransferDelayWithContentionV1() {
         return PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION;
     }
 
     /**
-     * 返回 Fat-tree 拓扑感知链路争用版执行前传输延迟模型。
+     * Returns the Fat-tree topology-aware pre-execution transfer delay model with link contention.
      *
-     * <p>传输窗口语义与 {@link #preExecutionTransferDelayWithContentionV1()}
-     * 相同；差异在于争用域推广为 Fat-tree 确定性路由路径上的每条共享链路 +
-     * VM 端点（流级 max-min 公平共享）。平台必须通过
-     * {@code PlatformProfile.Builder.networkTopology(...)} 声明拓扑。</p>
+     * <p>The transfer-window semantics are the same as
+     * {@link #preExecutionTransferDelayWithContentionV1()}; the difference is that the contention
+     * domain is generalized to every shared link on the deterministic Fat-tree route path plus the
+     * VM endpoint (flow-level max-min fair sharing). The platform must declare the topology through
+     * {@code PlatformProfile.Builder.networkTopology(...)}.</p>
      *
-     * @return Fat-tree 链路争用模型的共享不可变实例
+     * @return shared immutable instance of the Fat-tree contention model
      */
     public static DataMovementModel fatTreeContentionV1() {
         return FAT_TREE_CONTENTION;
     }
 
     /**
-     * 创建不含拓扑的固定端点模型。
+     * Creates a fixed-endpoint model without topology.
      *
-     * <p>每个非本地文件传输都在所属 Job 内串行处理，其耗时为固定时延加上
-     * 文件大小除以瓶颈速率；不同 Job 的同时传输不会竞争容量。</p>
+     * <p>Every non-local file transfer is processed serially within its owning Job, and its
+     * duration is a fixed delay plus the file size divided by the bottleneck rate; concurrent
+     * transfers of different Jobs do not compete for capacity.</p>
      *
-     * @param accessLinkBandwidthMbPerSecond 目标端点接入链路的每次传输速率上限，单位 MB/s
-     * @param accessLinkLatencySeconds 每个非本地文件传输附加的固定时延，单位秒
-     * @param sourceEndpointBandwidthMbPerSecond 外部源端点的传输速率上限，单位 MB/s
-     * @return 具有给定抽象端点参数的不可变数据移动模型
-     * @throws IllegalArgumentException 当带宽非正/非有限，或时延为负/非有限时抛出
+     * @param accessLinkBandwidthMbPerSecond per-transfer rate cap of the target endpoint access link, in MB/s
+     * @param accessLinkLatencySeconds fixed delay added to each non-local file transfer, in seconds
+     * @param sourceEndpointBandwidthMbPerSecond transfer rate cap of the external source endpoint, in MB/s
+     * @return immutable data movement model with the given abstract endpoint parameters
+     * @throws IllegalArgumentException when a bandwidth is non-positive or non-finite, or the latency is
+     *         negative or non-finite
      */
     public static DataMovementModel fixedEndpointNoContention(
             double accessLinkBandwidthMbPerSecond,

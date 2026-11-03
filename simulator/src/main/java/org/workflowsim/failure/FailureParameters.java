@@ -26,25 +26,29 @@ import org.workflowsim.utils.DistributionGenerator;
 import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 
 /**
- * 旧版故障注入和故障容错聚类 API 的会话级参数门面。
+ * Session-level parameter facade for the legacy failure-injection and failure-tolerant
+ * clustering API.
  *
- * <p>研究实验应通过 {@link FailureModelConfig} 和 {@code SimulationSession}
- * 安装配置，而不是跨运行直接保留本类的可变静态状态。</p>
+ * <p>Research experiments should install configuration through {@link FailureModelConfig}
+ * and {@code SimulationSession} instead of retaining this class's mutable static state
+ * across runs.</p>
  * @author chenweiwei
  */
 public class FailureParameters {
 
     /**
-     * 任务失效生成器矩阵。第一维为 VM 标识，第二维为任务深度；使用
-     * {@code FAILURE_JOB} 时第一维仅使用 0，使用 {@code FAILURE_VM} 时第二维仅使用 0。
+     * Task failure generator matrix. The first dimension is the VM identifier and the
+     * second is the task depth; with {@code FAILURE_JOB} only index 0 of the first
+     * dimension is used, and with {@code FAILURE_VM} only index 0 of the second dimension
+     * is used.
      *
      * @pre 0.0<= value <= 1.0
      */
     private static DistributionGenerator[][] generators;
-    /** 现代 VM 级配置的稀疏生成器行，以真实 VM ID 为键。 */
+    /** Sparse generator rows of the modern VM-level configuration, keyed by real VM ID. */
     private static Map<Integer, DistributionGenerator[]> generatorsByVmId;
     /**
-     * 容错聚类算法。
+     * Failure-tolerant clustering algorithm.
      */
     public enum FTCluteringAlgorithm {
         FTCLUSTERING_DC,
@@ -55,7 +59,7 @@ public class FailureParameters {
         FTCLUSTERING_VERTICAL
     }
     /**
-     * 容错监控模式。
+     * Failure monitoring mode.
      */
     public enum FTCMonitor {
         MONITOR_NONE,
@@ -65,7 +69,7 @@ public class FailureParameters {
         MONITOR_VM_JOB
     }
     /**
-     * 失效生成器模式。
+     * Failure generator mode.
      */
     public enum FTCFailure {
         FAILURE_NONE,
@@ -76,38 +80,38 @@ public class FailureParameters {
     }
 
     /**
-     * 当前容错聚类方法。
+     * Current failure-tolerant clustering method.
      */
     private static FTCluteringAlgorithm FTClusteringAlgorithm = FTCluteringAlgorithm.FTCLUSTERING_NOOP;
     /**
-     * 当前容错聚类监控模式。
+     * Current failure-tolerant clustering monitoring mode.
      */
     private static FTCMonitor monitorMode = FTCMonitor.MONITOR_NONE;
     /**
-     * 当前失效生成模式。
+     * Current failure generation mode.
      */
     private static FTCFailure failureMode = FTCFailure.FAILURE_NONE;
 
     /**
-     * 失效到达时间使用的分布族。
+     * Distribution family used for failure arrival times.
      */
     private static DistributionFamily distribution = DistributionFamily.WEIBULL;
-    /** -1 表示仅遗留静态 API 使用的无上限重试行为。 */
+    /** -1 denotes the unbounded retry behavior used only by the legacy static API. */
     private static int maxTotalRetryJobs = -1;
-    /** 现代配置安装的根随机种子，供 fail-fast 诊断关联重现实验。 */
+    /** Root random seed installed by the modern configuration, for fail-fast diagnostics to correlate a rerun. */
     private static long rootSeed;
     /**
-     * 旧版无效返回值标记。
+     * Legacy invalid return value marker.
      */
     private static final int INVALID = -1;
 
     /**
-     * 初始化当前模拟运行的故障参数。
+     * Initialize the failure parameters of the current simulation run.
      *
-     * @param fMethod 容错聚类算法
-     * @param monitor 容错监控模式
-     * @param failure 失效生成器模式
-     * @param failureGenerators 失效生成器矩阵
+     * @param fMethod failure-tolerant clustering algorithm
+     * @param monitor failure monitoring mode
+     * @param failure failure generator mode
+     * @param failureGenerators failure generator matrix
      */
     public static void init(
             FTCluteringAlgorithm fMethod,
@@ -118,15 +122,16 @@ public class FailureParameters {
     }
 
     /**
-     * 使用现代会话配置初始化故障参数及其有限重试预算。
+     * Initialize the failure parameters and their bounded retry budget from the modern
+     * session configuration.
      *
-     * @param fMethod 容错聚类算法
-     * @param monitor 故障监控粒度
-     * @param failure 故障生成器模式
-     * @param failureGenerators 失效生成器矩阵
-     * @param dist 分布族
-     * @param retryBudget 最大 retry Job 总数；禁用模型为 0
-     * @param seed 当前运行根种子
+     * @param fMethod failure-tolerant clustering algorithm
+     * @param monitor failure monitoring granularity
+     * @param failure failure generator mode
+     * @param failureGenerators failure generator matrix
+     * @param dist distribution family
+     * @param retryBudget maximum total number of retry Jobs; 0 for a disabled model
+     * @param seed root seed of the current run
      */
     public static void init(
             FTCluteringAlgorithm fMethod,
@@ -144,15 +149,16 @@ public class FailureParameters {
     }
 
     /**
-     * 使用现代会话配置初始化按真实 VM ID 键控的故障生成器行。
+     * Initialize failure generator rows keyed by real VM ID from the modern session
+     * configuration.
      *
-     * @param fMethod 容错聚类算法
-     * @param monitor 故障监控粒度
-     * @param failure 失效生成器模式，必须含 VM 维度
-     * @param failureGeneratorsByVmId VM ID 到任务深度生成器行的映射
-     * @param dist 分布族
-     * @param retryBudget 最大 retry Job 总数
-     * @param seed 当前运行根种子
+     * @param fMethod failure-tolerant clustering algorithm
+     * @param monitor failure monitoring granularity
+     * @param failure failure generator mode; must include the VM dimension
+     * @param failureGeneratorsByVmId map from VM ID to task-depth generator rows
+     * @param dist distribution family
+     * @param retryBudget maximum total number of retry Jobs
+     * @param seed root seed of the current run
      */
     public static void init(
             FTCluteringAlgorithm fMethod,
@@ -201,13 +207,14 @@ public class FailureParameters {
     }
 
     /**
-     * 使用指定分布族初始化当前模拟运行的故障参数。
+     * Initialize the failure parameters of the current simulation run with the given
+     * distribution family.
      *
-     * @param fMethod 容错聚类算法
-     * @param monitor 容错监控模式
-     * @param failure 失效生成器模式
-     * @param failureGenerators 失效生成器矩阵
-     * @param dist 失效到达时间的分布族
+     * @param fMethod failure-tolerant clustering algorithm
+     * @param monitor failure monitoring mode
+     * @param failure failure generator mode
+     * @param failureGenerators failure generator matrix
+     * @param dist distribution family of the failure arrival times
      */
     public static void init(
             FTCluteringAlgorithm fMethod,
@@ -222,7 +229,7 @@ public class FailureParameters {
         initInternal(fMethod, monitor, failure, failureGenerators, null, -1, 0L);
     }
 
-    /** 将故障模型恢复为禁用且未配置的状态。 */
+    /** Restore the failure model to the disabled and unconfigured state. */
     public static void reset() {
         generators = null;
         generatorsByVmId = null;
@@ -234,9 +241,9 @@ public class FailureParameters {
         rootSeed = 0L;
     }
     /**
-     * 获取当前运行的失效生成器矩阵。
+     * Get the failure generator matrix of the current run.
      *
-     * @return 失效生成器矩阵
+     * @return failure generator matrix
      * @pre $none
      * @post $none
      */
@@ -249,8 +256,8 @@ public class FailureParameters {
     }
 
     /**
-     * 获取生成器矩阵第一维的长度。
-     * @return 第一维长度
+     * Get the length of the first dimension of the generator matrix.
+     * @return length of the first dimension
      */
     public static int getFailureGeneratorsMaxFirstIndex() {
         requireGenerators();
@@ -261,8 +268,8 @@ public class FailureParameters {
     }
 
     /**
-     * 获取生成器矩阵第二维的长度。
-     * @return 第二维长度
+     * Get the length of the second dimension of the generator matrix.
+     * @return length of the second dimension
      */
     public static int getFailureGeneratorsMaxSecondIndex() {
         requireGenerators();
@@ -273,10 +280,10 @@ public class FailureParameters {
     }
 
     /**
-     * 按 VM 标识和任务深度获取对应的失效生成器。
-     * @param vmIndex VM 标识
-     * @param taskDepth 任务深度
-     * @return 对应的失效生成器
+     * Get the failure generator for the given VM identifier and task depth.
+     * @param vmIndex VM identifier
+     * @param taskDepth task depth
+     * @return the corresponding failure generator
      */
     public static DistributionGenerator getGenerator(int vmIndex, int taskDepth) {
         requireGenerators();
@@ -294,14 +301,15 @@ public class FailureParameters {
     }
 
     /**
-     * 按当前失效模式解析一个任务实际应使用的生成器。
+     * Resolve the generator a task actually uses under the current failure mode.
      *
-     * <p>名称中含 {@code JOB} 的模式按 DAG depth 选择，而不是按 Job ID 选择。该方法
-     * 是故障判定和 DR 估计共享的唯一坐标解释，防止两个路径各自使用不同矩阵下标。</p>
+     * <p>Modes whose name contains {@code JOB} select by DAG depth rather than by Job ID.
+     * This method is the single coordinate interpretation shared by failure verdict and DR
+     * estimation, preventing the two paths from using different matrix subscripts.</p>
      *
-     * @param vmId 任务尝试所在 VM 的真实 ID
-     * @param taskDepth 任务的 DAG 深度
-     * @return 当前失效范围对应的生成器
+     * @param vmId real ID of the VM on which the task attempt runs
+     * @param taskDepth DAG depth of the task
+     * @return the generator corresponding to the current failure scope
      */
     public static DistributionGenerator getGeneratorForFailureScope(int vmId, int taskDepth) {
         switch (failureMode) {
@@ -321,13 +329,15 @@ public class FailureParameters {
     }
 
     /**
-     * 在任何 Job 提交前，用解析出的实际深度和平台声明的 VM ID 校验故障生成器覆盖。
+     * Validate failure generator coverage before any Job is dispatched, using the parsed
+     * actual depth and the platform-declared VM IDs.
      *
-     * <p>该方法不抽样也不推进游标。对于 {@code FAILURE_VM_JOB}，会校验所有 VM ID 与
-     * 所有已观察深度的笛卡尔积，因为在线调度和重试都可能改变最终 VM 归属。</p>
+     * <p>The method neither samples nor advances a cursor. For {@code FAILURE_VM_JOB} it
+     * validates the Cartesian product of all VM IDs and all observed depths, because both
+     * online scheduling and retries can change the final VM ownership.</p>
      *
-     * @param tasks 已通过 DAG 校验并已写入深度的任务
-     * @param vmIds 平台声明的真实 VM ID
+     * @param tasks tasks that passed DAG validation and already carry their depth
+     * @param vmIds real VM IDs declared by the platform
      */
     public static void validateRuntimeCoverage(Collection<Task> tasks, Collection<Integer> vmIds) {
         if (failureMode == FTCFailure.FAILURE_NONE) {
@@ -435,9 +445,9 @@ public class FailureParameters {
     }
 
     /**
-     * 获取当前失效生成模式。
+     * Get the current failure generator mode.
      *
-     * @return 失效生成模式
+     * @return failure generator mode
      * @pre $none
      * @post $none
      */
@@ -446,9 +456,9 @@ public class FailureParameters {
     }
 
     /**
-     * 获取当前容错监控模式。
+     * Get the current failure monitoring mode.
      *
-     * @return 容错监控模式
+     * @return failure monitoring mode
      * @pre $none
      * @post $none
      */
@@ -457,9 +467,9 @@ public class FailureParameters {
     }
 
     /**
-     * 获取当前容错聚类方法。
+     * Get the current failure-tolerant clustering method.
      *
-     * @return 容错聚类方法
+     * @return failure-tolerant clustering method
      * @pre $none
      * @post $none
      */
@@ -468,19 +478,19 @@ public class FailureParameters {
     }
 
     /**
-     * 获取当前失效到达时间的分布族。
-     * @return 分布族
+     * Get the distribution family of the current failure arrival times.
+     * @return distribution family
      */
     public static DistributionFamily getFailureDistribution() {
         return distribution;
     }
 
-    /** @return 当前运行允许的 retry Job 总数；-1 仅表示遗留 API 的无上限兼容模式 */
+    /** @return retry Jobs allowed in the current run; -1 denotes the unbounded legacy compatibility mode */
     public static int getMaxTotalRetryJobs() {
         return maxTotalRetryJobs;
     }
 
-    /** @return 当前现代会话安装的根随机种子；遗留 API 未安装时为 0 */
+    /** @return root random seed installed by the modern session; 0 when the legacy API installed none */
     public static long getRootSeed() {
         return rootSeed;
     }

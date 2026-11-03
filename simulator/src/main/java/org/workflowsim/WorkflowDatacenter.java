@@ -1183,9 +1183,10 @@ public class WorkflowDatacenter extends Datacenter {
     }
 
     /**
-     * 返回共享存储列表中的最大有限正传输率。
+     * Return the largest finite positive transfer rate in the shared storage list.
      *
-     * <p>这是固定端点模型的受控简化：它不选择具体存储设备，也不模拟多文件竞争。
+     * <p>This is a controlled simplification of the fixed-endpoint model: it selects no
+     * concrete storage device and simulates no multi-file contention.
      */
     private double sharedStorageTransferRate() {
         double maxRate = 0.0;
@@ -1199,10 +1200,11 @@ public class WorkflowDatacenter extends Datacenter {
     }
 
     /**
-     * 计算固定端点模型下单文件传输秒数。
+     * Compute the single-file transfer seconds under the fixed-endpoint model.
      *
-     * <p>有效带宽为端点带宽和访问链路带宽的较小值，公式为
-     * {@code accessLinkLatencySeconds + fileSizeBytes / (1,000,000 * effectiveRateMbPerSecond)}。
+     * <p>The effective bandwidth is the smaller of the endpoint bandwidth and the access
+     * link bandwidth; the formula is
+     * {@code accessLinkLatencySeconds + fileSizeBytes / (1,000,000 * effectiveRateMbPerSecond)}.
      */
     private double fixedEndpointTransferSeconds(FileItem file, double endpointBandwidth, String endpoint) {
         double rate = Math.min(endpointBandwidth, dataMovementModel.getAccessLinkBandwidthMbPerSecond());
@@ -1214,31 +1216,39 @@ public class WorkflowDatacenter extends Datacenter {
     }
 
     /**
-     * 保留 WorkflowSim v1 的历史阶段输入估计行为。
+     * Retain the historical stage-in estimation behavior of WorkflowSim v1.
      *
-     * <p>共享文件系统取存储列表中的最大传输率；本地文件系统优先识别已在目标 VM 上的副本，
-     * 否则从可用来源中取最大带宽。该兼容路径不加入访问链路延迟、不模拟竞争或容量，且在
-     * 估算完成后只更新逻辑副本目录；不应将其解释为物理网络拓扑模型。
+     * <p>The shared file system takes the largest transfer rate in the storage list; the
+     * local file system first recognizes a replica already present on the target VM and
+     * otherwise takes the largest bandwidth among the available sources. This compatibility
+     * path adds no access link latency, simulates neither contention nor capacity, and
+     * only updates the logical replica directory after estimation; it must not be
+     * interpreted as a physical network topology model.
      *
-     * @param requiredFiles 候选输入文件
-     * @param job 目标计算 Job
-     * @return 历史规则得到的传输秒数
-     * @throws Exception 当副本或 VM 解析失败时抛出
+     * @param requiredFiles candidate input files
+     * @param job target compute Job
+     * @return transfer seconds produced by the historical rule
+     * @throws Exception when replica or VM resolution fails
      */
     private double legacyProcessDataStageInForComputeJob(List<FileItem> requiredFiles, Job job) throws Exception {
-        // 先按历史带宽规则估算全部真实输入文件的传输秒数，再把输入副本登记到目标 VM。
-        // 估算与登记的先后顺序不影响结果：单个文件的估算只读取该文件的副本目录。
+        // Estimate the transfer seconds of every real input file by the historical bandwidth
+        // rule first, then register the input replicas on the target VM. The order of
+        // estimation and registration does not affect the result: the estimate of a single
+        // file only reads that file's replica directory.
         double time = estimateTransferSecondsForFiles(requiredFiles, job);
         registerStageInReplicasForComputeJob(job);
         return time;
     }
 
     /**
-     * 推进所有 Host/VM 的 Cloudlet 处理，并在可预测完成时刻安排下一次数据中心事件。
+     * Advance Cloudlet processing on every Host/VM and schedule the next datacenter event
+     * at the predictable completion instant.
      *
-     * <p>启动阶段保留历史的 {@code 0.111} 时间阈值，确保初始处理循环不会被 CloudSim 的最小
-     * 事件间隔跳过；之后只在满足最小事件间隔时更新。该阈值是仿真事件兼容条件，不是任务运行
-     * 时间或数据移动模型的一部分。
+     * <p>The startup phase keeps the historical {@code 0.111} time threshold so that the
+     * initial processing loop is not skipped by the CloudSim minimum event interval; after
+     * that, updates occur only when the minimum event interval is satisfied. The threshold
+     * is a simulation-event compatibility condition, not part of the task run time or of
+     * the data movement model.
      */
     @Override
     protected void updateCloudletProcessing() {
@@ -1252,16 +1262,16 @@ public class WorkflowDatacenter extends Datacenter {
                 || CloudSim.clock() >= getLastProcessTime() + CloudSim.getMinTimeBetweenEvents()) {
             List<? extends Host> list = getVmAllocationPolicy().getHostList();
             double smallerTime = Double.MAX_VALUE;
-            // 遍历每个 Host，要求其 VM 推进到当前仿真时刻。
+            // Iterate every Host and require its VMs to advance to the current simulation time.
             for (Host host : list) {
-                // 通知 Host 下的 VM 更新执行状态。
+                // Notify the VMs of the Host to update their execution state.
                 double time = host.updateVmsProcessing(CloudSim.clock());
-                // 汇总最早的下一次 Cloudlet 完成预测时刻。
+                // Collect the earliest predicted completion instant of the next Cloudlet.
                 if (time < smallerTime) {
                     smallerTime = time;
                 }
             }
-            // 规范化为满足 CloudSim 最小事件间隔的完成时刻。
+            // Normalize to a completion instant that meets the CloudSim minimum event interval.
             if (smallerTime != Double.MAX_VALUE) {
                 smallerTime = SimulationTiming.earliestCloudletCompletionTime(
                         CloudSim.clock(), smallerTime, CloudSim.getMinTimeBetweenEvents());
@@ -1274,11 +1284,15 @@ public class WorkflowDatacenter extends Datacenter {
     }
 
     /**
-     * 取出所有 VM 调度器已完成的 Cloudlet，并将其返回给所属用户。
+     * Take every Cloudlet already finished by the VM schedulers and return it to its owning
+     * user.
      *
-     * <p>每个完成的 compute Job 会先按照其已记录的 Task 执行时间窗判定故障，再只登记
-     * 成功 Task 的输出文件副本。登记是逻辑目录更新，不代表物理数据复制或容量校验；失败
-     * Task 的输出不会进入目录。完成结果随后才通过 {@code CLOUDLET_RETURN} 返回给调度器。
+     * <p>Each completed compute Job first runs the failure verdict against its recorded Task
+     * execution time windows, and only then registers output file replicas of successful
+     * Tasks. Registration is a logical directory update; it represents neither physical data
+     * copying nor capacity validation, and output of a failed Task never enters the
+     * directory. Only afterwards is the completion result returned to the scheduler through
+     * {@code CLOUDLET_RETURN}.
      *
      * @pre $none
      * @post $none
@@ -1292,7 +1306,8 @@ public class WorkflowDatacenter extends Datacenter {
                     Cloudlet cl = vm.getCloudletScheduler().getNextFinishedCloudlet();
                     if (cl != null) {
                         if (cl instanceof Job && ((Job) cl).getClassType() == ClassType.COMPUTE.value) {
-                            // 必须在登记输出副本前完成故障判定，避免失败尝试污染副本目录。
+                            // The failure verdict must complete before output replicas are registered, so a
+                            // failed attempt cannot pollute the replica directory.
                             FailureGenerator.generate((Job) cl);
                         }
                         register(cl);
@@ -1303,15 +1318,19 @@ public class WorkflowDatacenter extends Datacenter {
         }
     }
     /**
-     * 将一个已完成 {@link Task}（包括其子类 {@link Job}）的成功输出登记为可用副本。
+     * Register the successful outputs of one completed {@link Task} (including its subclass
+     * {@link Job}) as available replicas.
      *
-     * <p>compute Job 按其包含的逻辑 Task 分别提交，只有状态为 {@link Cloudlet#SUCCESS}
-     * 的 Task 输出可见。这样可支持选择性重试：同一聚类 Job 中已经成功的 Task 可保留产物，
-     * 失败 Task 的产物则不会成为下游输入。共享文件系统登记数据中心名称，本地文件系统登记
-     * 执行 VM ID。该方法假定调用者已经验证 Cloudlet 属于 Task 层次；缺失 Host/VM 仍按原有
-     * 行为在访问时失败。
+     * <p>A compute Job submits each contained logical Task separately, and only output of
+     * Tasks whose status is {@link Cloudlet#SUCCESS} becomes visible. This supports
+     * selective retry: Tasks that already succeeded within the same clustered Job can keep
+     * their artifacts, while artifacts of failed Tasks do not become downstream input. The
+     * shared file system registers the datacenter name and the local file system registers
+     * the executing VM ID. The method assumes the caller has already verified that the
+     * Cloudlet belongs to the Task hierarchy; a missing Host/VM still fails on access
+     * according to the original behavior.
      *
-     * @param cl 已完成的工作流 Cloudlet
+     * @param cl completed workflow Cloudlet
      */
     private void register(Cloudlet cl) {
         if (!(cl instanceof Task)) {
@@ -1359,14 +1378,15 @@ public class WorkflowDatacenter extends Datacenter {
     }
 
     /**
-     * 将一个逻辑 Task 的输出提交到已确定的逻辑位置。
+     * Commit the outputs of one logical Task to the already resolved logical location.
      *
-     * <p>该方法是 package-private，以便核心语义测试直接验证失败 Task 不会污染副本目录。
-     * 调用方必须已经完成该 Task 的最终状态判定。</p>
+     * <p>The method is package-private so that core semantic tests can directly verify that
+     * a failed Task does not pollute the replica directory. The caller must already have
+     * completed the final status verdict for that Task.</p>
      *
-     * @param task 已完成并已判定状态的逻辑 Task
-     * @param storageLocation 输出副本的逻辑位置
-     * @return 新提交的输出文件数；失败 Task 时为零
+     * @param task logical Task that has completed and had its status judged
+     * @param storageLocation logical location of the output replicas
+     * @return number of newly committed output files; zero for a failed Task
      */
     static int registerSuccessfulTaskOutputs(Task task, String storageLocation) {
         if (task == null || storageLocation == null || storageLocation.trim().isEmpty()) {
@@ -1385,7 +1405,7 @@ public class WorkflowDatacenter extends Datacenter {
         return registered;
     }
 
-    /** 在传输提交、事件证据和聚合指标之间共享的不可变数据移动估计。 */
+    /** Immutable data movement estimate shared by transfer commits, event evidence, and aggregate metrics. */
     private static final class DataTransferEstimate {
         private final double transferSeconds;
         private final double requiredFileBytes;

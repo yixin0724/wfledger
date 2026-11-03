@@ -10,16 +10,20 @@ import java.util.TreeMap;
 import org.workflowsim.platform.PlatformProfile;
 
 /**
- * 碳维度的两种核算（BAT-C1，2026-10-28），全部骑在已过守恒律的能量量上。
- * 模型不可互换（docs/advanced/CARBON_DIMENSION_DESIGN.md v1 §1）：
+ * Two carbon-dimension accountings (BAT-C1, 2026-10-28), both riding on energy quantities that
+ * already passed the conservation laws. The models are not interchangeable
+ * (docs/advanced/CARBON_DIMENSION_DESIGN.md v1 section 1):
  *
- * <p><b>强度模型（CASPER 族）</b>：gCO₂ = 能耗 × 每 VM 声明碳强度。量纲自检可手算：
- * {@code grams_vm = E_vm[J] / 3.6e6 × I_vm[g/kWh]}（kWh = J/3.6e6）。</p>
+ * <p><b>Intensity model (CASPER family)</b>: gCO2 = energy x declared carbon intensity per VM.
+ * The dimensional self-check can be carried out by hand:
+ * {@code grams_vm = E_vm[J] / 3.6e6 * I_vm[g/kWh]} (kWh = J/3.6e6).</p>
  *
- * <p><b>预算模型（CWM/CaWoSched 族）</b>：t 时刻碳成本 = 舰队功率高于该窗口绿电功率
- * 的超额部分；CC = Σ_window ∫ max(0, P_fleet(t) − green) dt。舰队时间线由报告的
- * 计算 Job 区间重建（每 VM 并集——重试区间并集语义与能量链一致），功率 = Σ怠速 +
- * 活跃 VM 数 × 每 VM 动态功率（v1 舰队动态功率均一，见诚实边界）。</p>
+ * <p><b>Budget model (CWM/CaWoSched family)</b>: the carbon cost at time t is the excess of the
+ * fleet power over the green power of that window; CC = sum over windows of
+ * integral max(0, P_fleet(t) - green) dt. The fleet timeline is rebuilt from the compute Job
+ * intervals of the report (per-VM union -- the retry-interval union semantics match the energy
+ * chain), and power = sum idle + active VM count * per-VM dynamic power (v1 assumes uniform fleet
+ * dynamic power, see the honesty boundary).</p>
  */
 public final class CarbonAccounting {
 
@@ -45,52 +49,63 @@ public final class CarbonAccounting {
         this.windowExcessWattSeconds = windowExcessWattSeconds;
     }
 
-    /** @return 强度模型 gCO₂ 总量；未声明该模型时为 0（以 JSON 是否含该节为准） */
+    /**
+     * @return intensity model total gCO2; 0 when that model is not declared (governed by whether
+     *         the JSON contains that section)
+     */
     public double getTotalCarbonGrams() {
         return totalCarbonGrams;
     }
 
-    /** @return 强度模型逐 VM gCO₂；未声明为空映射 */
+    /** @return intensity model gCO2 per VM; an empty map when not declared */
     public Map<Integer, Double> getPerVmCarbonGrams() {
         return perVmCarbonGrams;
     }
 
-    /** @return 强度模型逐 VM 均值 */
+    /** @return intensity model per-VM mean */
     public double getMeanVmCarbonGrams() {
         return meanVmCarbonGrams;
     }
 
-    /** @return 碳×时长积 g·s（强度模型） */
+    /** @return carbon-times-duration product in g*s (intensity model) */
     public double getCarbonMakespanProductGramSeconds() {
         return carbonMakespanProductGramSeconds;
     }
 
-    /** @return 预算模型超额功率积分（W·s）；预算内为 0 */
+    /** @return budget model excess power integral in W*s; 0 while within budget */
     public double getTotalCarbonExcessWattSeconds() {
         return totalCarbonExcessWattSeconds;
     }
 
-    /** @return 预算模型逐窗口超额（W·s），键为窗口序号 */
+    /** @return budget model excess per window in W*s, keyed by window index */
     public Map<Integer, Double> getWindowExcessWattSeconds() {
         return windowExcessWattSeconds;
     }
 
     /**
-     * 强度模型。要求每台 VM 都已声明功率（平面字段<b>或</b>频档表——BAT-D1 单一真源
-     * 两路互斥，任一声明即 powered）与碳强度——半声明即 fail-fast（契约破坏而非零贡献）。
+     * Intensity model. Requires every VM to declare power (flat field <b>or</b> frequency tier
+     * table -- the BAT-D1 single source of truth with two mutually exclusive paths, any
+     * declaration means powered) and carbon intensity -- a half declaration fails fast (a
+     * contract violation, not a zero contribution).
      *
-     * <p>BAT-D4（2026-10-29）tiered ride-through 收口：gram 直接乘<b>已冻结的逐 VM 守恒
-     * 能量</b>（EnergyAccounting 按平面/逐档守恒律复算，SimulationReport 构造序先能量后
-     * 碳）——强度模型不另立能量复算面（同一乘法、同源 E，镜像 Python 审计器
-     * verify-study-evidence.py 的"强度乘 audited E"口径，docs/advanced/
-     * DVFS_DIMENSION_DESIGN.md §1.5/§2.4）。平面平台的逐位结果与此前内联式恒等
-     * （同一式同序求和）；tiered 平台的 E 为逐档守恒律值——此前该路径对 tiered 运行
-     * 整节 fail-fast（tiered VM 平面字段恒 0 被 BAT-C1 闸拒），D3 设计注记的前向缺口
-     * 本批补齐：tiered 平台自此可达真实 carbonMetrics。</p>
+     * <p>BAT-D4 (2026-10-29) tiered ride-through closure: the gram value multiplies the
+     * <b>already frozen per-VM conserved energy</b> directly (EnergyAccounting recomputes it under
+     * the flat/per-tier conservation laws, and SimulationReport constructs energy before carbon)
+     * -- the intensity model does not open a second energy recompute surface (the same
+     * multiplication, the same E source, mirroring the "intensity times audited E" convention of
+     * the Python auditor verify-study-evidence.py, docs/advanced/DVFS_DIMENSION_DESIGN.md
+     * section 1.5/2.4). On a flat platform the bitwise result is identical to the previous inline
+     * form (the same expression, the same summation order); on a tiered platform E is the
+     * per-tier conservation value -- that path previously failed the whole section fast for tiered
+     * runs (tiered VM flat fields are constantly 0 and were rejected by the BAT-C1 gate), and this
+     * batch closes the forward gap noted in the D3 design note: tiered platforms are reachable for
+     * real carbonMetrics from now on.</p>
      *
-     * @param profile 平台剖面（功率/频档/强度声明的事实源）
-     * @param verifiedEnergy 已按守恒律冻结的逐 VM 能量（同包 EnergyAccounting 输出）
-     * @param makespanSeconds 仿真结束秒（碳×时距乘积用）
+     * @param profile platform profile (the source of truth for the power/tier/intensity
+     *        declarations)
+     * @param verifiedEnergy per-VM energy already frozen under the conservation laws (output of the
+     *        same-package EnergyAccounting)
+     * @param makespanSeconds simulation end second (used for the carbon-times-duration product)
      */
     public static CarbonAccounting intensityModel(
             PlatformProfile profile, EnergyAccounting verifiedEnergy, double makespanSeconds) {
@@ -117,8 +132,10 @@ public final class CarbonAccounting {
     }
 
     /**
-     * 预算模型。从报告的计算 Job 区间重建每 VM 忙并集 → 舰队并发曲线 → 逐窗口
-     * 超额积分。舰队动态功率按 v1 约束取首 VM 的 ΔP（舰队均一，诚实边界已声明）。
+     * Budget model. Rebuilds the per-VM busy union from the compute Job intervals of the report,
+     * then the fleet concurrency curve, then the per-window excess integral. Following the v1
+     * constraint, the fleet dynamic power is the delta P of the first VM (uniform fleet, the
+     * honesty boundary is declared).
      */
     public static CarbonAccounting budgetModel(SimulationReport report, PlatformProfile profile) {
         List<PlatformProfile.CarbonWindow> windows = profile.getCarbonWindows();
@@ -126,9 +143,11 @@ public final class CarbonAccounting {
             throw new IllegalArgumentException("Budget carbon model requires declared carbonWindows (BAT-C1)");
         }
         double makespan = report.getMakespan();
-        // A2（2026-11-02）：频档平台 = 已声明功率（镜像 BAT-D2 的功率闸）。任一 VM 带档表
-        // 即走逐档舰队功率曲线；否则保持 v1 口径<b>逐位不变</b>（冻结碳基准的可重跑性
-        // 依赖这一点——两分支的功率代数不同，不能合并）。
+        // A2 (2026-11-02): a tiered platform counts as declared power (mirrors the BAT-D2 power
+        // gate). If any VM carries a tier table, the per-tier fleet-power curve is used; otherwise
+        // the v1 convention stays <b>bitwise unchanged</b> (the rerunnability of the frozen carbon
+        // baseline depends on it -- the two branches use different power algebra and cannot be
+        // merged).
         boolean anyTiered = false;
         for (PlatformProfile.VmSpec spec : profile.getVms()) {
             if (spec.hasFrequencyTiers()) {
@@ -147,20 +166,25 @@ public final class CarbonAccounting {
                 throw new IllegalArgumentException("Budget carbon model requires powered VMs (BAT-C1)");
             }
             idleSum += spec.getIdlePowerWatts();
-            // BAT-C2（2026-10-28 跨语言对齐）：舰队动态功率取<b>首台</b> VM 的 max−idle——
-            // v1 假设舰队动态功率均一（设计文档 §2.1 诚实边界）；此前循环体逐台覆盖，
-            // 实际生效的是末台，与 Python 审计器（verify-study-evidence.py）文档化的首台
-            // 口径在异质舰队上漂移，违反"Java 与 Python 审计量纲必须对齐"纪律，现两侧统一。
+            // BAT-C2 (2026-10-28 cross-language alignment): the fleet dynamic power takes the
+            // max - idle of the <b>first</b> VM -- v1 assumes uniform fleet dynamic power (design
+            // document section 2.1, honesty boundary); the loop body previously overwrote it per
+            // VM, so the last VM took effect and drifted on heterogeneous fleets from the first-VM
+            // convention documented in the Python auditor (verify-study-evidence.py), violating
+            // the discipline that the Java and Python audit dimensions must align; both sides are
+            // now unified.
             if (firstVm) {
                 dynamicPerVm = spec.getMaxPowerWatts() - spec.getIdlePowerWatts();
                 firstVm = false;
             }
         }
-        // 事件折叠：每 VM 忙并集的时间端点 → 舰队并发活跃 VM 数曲线。
+        // Event folding: the time endpoints of the per-VM busy union -> the fleet curve of the
+        // active VM count.
         TreeMap<Double, Integer> ends = new TreeMap<Double, Integer>();
         for (SimulationReport.JobOutcome job : report.getJobs()) {
             if (job.getClassType() != 2) {
-                continue; // 仅计算 Job 定义忙区间（stage-in 不占 SPACE_SHARED 执行区间）
+                continue; // Only compute Jobs define busy intervals (stage-in does not take the
+                // SPACE_SHARED execution interval)
             }
             double a = job.getStartTime();
             double b = job.getFinishTime();
@@ -169,7 +193,7 @@ public final class CarbonAccounting {
                 bump(ends, b, -1);
             }
         }
-        // 分段舰队功率（并发数在段上恒定）。
+        // Piecewise fleet power (the concurrency count is constant within a segment).
         List<double[]> segments = new ArrayList<double[]>();
         double concurrent = 0.0;
         double prev = 0.0;
@@ -184,7 +208,7 @@ public final class CarbonAccounting {
         if (prev < makespan) {
             segments.add(new double[] {prev, makespan, idleSum + concurrent * dynamicPerVm});
         }
-        // 逐窗口超额积分。
+        // Per-window excess integral.
         Map<Integer, Double> windowExcess = new LinkedHashMap<Integer, Double>();
         double total = 0.0;
         for (int j = 0; j < windows.size(); j++) {
@@ -206,17 +230,21 @@ public final class CarbonAccounting {
     }
 
     /**
-     * A2（2026-11-02）：频档平台的预算碳——逐档舰队功率曲线。
+     * A2 (2026-11-02): budget carbon for tiered platforms -- the per-tier fleet-power curve.
      *
-     * <p>契约（DVFS_DIMENSION_DESIGN.md §1.5 “per-tier fleet-power curve” §2.3）：逐时刻
-     * {@code P_fleet(t) = Σ_卡顿VM P_idle(默认档) + Σ_活跃Job (P_max(其档) − P_idle(默认档))}。
-     * 频档 VM 的静态分量取<b>默认档（表首档）</b>怠速功率，与守恒律
-     * {@code E_vm = P_idle(默认)×T_sim + Σ(P_max(档)−P_idle(默认))×busy(档)} 同源；flat VM
-     * 保持 v1 的 {@code max−idle} 贡献（混合舰队合法）。档身份取 Job 携带的
-     * {@code tierMips}（逐档守恒链已校验的同一归因），缺档归默认档。</p>
+     * <p>Contract (DVFS_DIMENSION_DESIGN.md section 1.5 "per-tier fleet-power curve",
+     * section 2.3): at every instant
+     * {@code P_fleet(t) = sum over all VMs of P_idle(default tier) + sum over active Jobs
+     * of (P_max(its tier) - P_idle(default tier))}. The static component of a tiered VM takes
+     * the idle power of the <b>default tier (the first tier in the table)</b>, sharing its source
+     * with the conservation law
+     * {@code E_vm = P_idle(default)*T_sim + sum(P_max(tier)-P_idle(default))*busy(tier)}; a flat VM
+     * keeps the v1 {@code max-idle} contribution (a mixed fleet is legal). The tier identity is
+     * the {@code tierMips} carried by the Job (the same attribution already checked by the
+     * per-tier conservation chain); a missing tier falls back to the default tier.</p>
      *
-     * <p>逐句镜像 {@code scripts/verify-study-evidence.py} 的 tiered budget 分支——
-     * Java 与 Python 审计口径必须对齐（AGENTS.md 第 10 条）。</p>
+     * <p>Mirrors the tiered budget branch of {@code scripts/verify-study-evidence.py} sentence by
+     * sentence -- the Java and Python audit conventions must align (AGENTS.md rule 10).</p>
      */
     private static CarbonAccounting budgetModelWithTiers(
             SimulationReport report, PlatformProfile profile, List<PlatformProfile.CarbonWindow> windows) {
@@ -227,11 +255,12 @@ public final class CarbonAccounting {
                     ? spec.getFrequencyTiers().get(0).getIdlePowerWatts()
                     : spec.getIdlePowerWatts();
         }
-        // 端点折叠：±该 Job 的动态瓦特（不是 ±1 计数——档间动态分量不同）。
+        // Endpoint folding: +/- the dynamic watts of that Job (not a +/-1 count -- the dynamic
+        // component differs between tiers).
         TreeMap<Double, Double> ends = new TreeMap<Double, Double>();
         for (SimulationReport.JobOutcome job : report.getJobs()) {
             if (job.getClassType() != 2) {
-                continue; // 仅计算 Job 定义忙区间（与 v1 分支同口径）
+                continue; // Only compute Jobs define busy intervals (same convention as the v1 branch)
             }
             double a = job.getStartTime();
             double b = job.getFinishTime();
@@ -282,12 +311,13 @@ public final class CarbonAccounting {
     }
 
     /**
-     * A2（2026-11-02）：单个作业在舰队功率曲线上的动态份额。
+     * A2 (2026-11-02): the dynamic share of a single job on the fleet-power curve.
      *
-     * <p>频档 VM：{@code P_max(其档) − P_idle(默认档)}，缺档归默认档；平铺 VM：
-     * {@code max − idle}（v1 贡献）。<b>跨语言对齐</b>：平铺 VM 上的作业携带
-     * {@code tierMips} 属于证据链断裂——Python 审计器同样拒收（"job on non-tiered VM
-     * carries tierMips"），两侧不得在同一份证据上给出不同结论。</p>
+     * <p>Tiered VM: {@code P_max(its tier) - P_idle(default tier)}, a missing tier falls back to
+     * the default tier; flat VM: {@code max - idle} (the v1 contribution). <b>Cross-language
+     * alignment</b>: a job carrying {@code tierMips} on a flat VM is a broken evidence chain --
+     * the Python auditor rejects it as well ("job on non-tiered VM carries tierMips"), and the
+     * two sides must not reach different conclusions on the same evidence.</p>
      */
     static double jobDynamicWatts(PlatformProfile.VmSpec spec, int jobId, Double tierMips) {
         if (spec.hasFrequencyTiers()) {
@@ -302,7 +332,10 @@ public final class CarbonAccounting {
         return spec.getMaxPowerWatts() - spec.getIdlePowerWatts();
     }
 
-    /** 按 MIPS 精确身份取档峰值功率（频档表降序唯一；与逐档守恒链同一身份规则）。 */
+    /**
+     * Returns the tier peak power by exact MIPS identity (the tier table is unique in descending
+     * order; the same identity rule as the per-tier conservation chain).
+     */
     private static double tierMaxWatts(PlatformProfile.VmSpec spec, double tierMips) {
         for (PlatformProfile.FrequencyTier tier : spec.getFrequencyTiers()) {
             if (Double.compare(tier.getMips(), tierMips) == 0) {

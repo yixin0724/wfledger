@@ -8,27 +8,38 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 端点公平共享的流体链路争用模型（R2）。
+ * Fluid link-contention model with fair sharing of endpoints (R2).
  *
- * <p>每个传输由占用资源键集合（端点或链路，字符串键）、字节量与无争用名义
- * 速率描述；已注册容量的资源（VM 端点为 {@code vm.getBw()} 折算字节/秒，
- * Fat-tree 链路见 {@code org.workflowsim.network.FatTreeTopology}）在其全部
- * 活动传输之间采用 progressive filling 的最大最小公平分配，受名义速率上限和
- * 所占全部资源容量共同约束；未注册资源（如 SOURCE）不设上限。某流受其他瓶颈
- * 限制时，其未使用份额继续分配给其他流。积分会在每个内部完成时点重分配速率，
- * 即使调用方一次推进跨过多个完成时点，也不会延迟容量回收。</p>
+ * <p>Each transfer is described by its set of occupied resource keys (endpoint or
+ * link, string keys), its byte count, and its contention-free nominal rate. A
+ * resource with a registered capacity (the VM endpoint is {@code vm.getBw()}
+ * converted to bytes/second; for Fat-tree links see
+ * {@code org.workflowsim.network.FatTreeTopology}) applies progressive-filling
+ * max-min fair allocation across all of its active transfers, bounded jointly by
+ * the nominal rate ceiling and the capacity of every resource it occupies; an
+ * unregistered resource (such as SOURCE) has no ceiling. When a flow is limited
+ * by another bottleneck, its unused share continues to be allocated to other
+ * flows. Integration redistributes rates at every internal completion instant, so
+ * even when a caller advances across several completion instants in one step,
+ * capacity reclamation is not delayed.</p>
  *
- * <p>双端点重载是资源集重载在 {@code [source, destination]} 上的特例，行为
- * 逐位一致。资源集内重复键按出现次数重复计数（调用方传入的路径键集合应
- * 无重复）。</p>
+ * <p>The two-endpoint overload is the special case of the resource-set overload
+ * on {@code [source, destination]}, with bit-for-bit identical behavior.
+ * A repeated key within a resource set is counted once per occurrence (the path
+ * key set supplied by the caller should contain no duplicates).</p>
  *
- * <p>本类不依赖 CloudSim：调用方在传输开始时 {@link #addTransfer}，并在每次
- * 时钟推进点调用 {@link #advance} 获取完成的传输与下一次预测完成时刻。状态
- * 迭代按插入顺序进行，全部计算为确定性。</p>
+ * <p>This class does not depend on CloudSim: the caller calls
+ * {@link #addTransfer} when a transfer starts, and calls {@link #advance} at
+ * each clock advance point to obtain the completed transfers and the next
+ * predicted completion instant. State iteration follows insertion order, and all
+ * computation is deterministic.</p>
  *
- * <p>诚实边界：这是抽象流体模型——没有分组、丢包、排队时延、链路拓扑或协议
- * 行为；端点容量是对 VM 网络接口的公平共享近似。它回答的是"并发传输互相
- * 减速多少"这类调度权衡问题，不回答真实网络的可观测细节。</p>
+ * <p>Honest boundary: this is an abstract fluid model -- no packets, no packet
+ * loss, no queueing delay, no link topology, and no protocol behavior; endpoint
+ * capacity is a fair-sharing approximation of the VM network interface. It
+ * answers scheduling trade-off questions such as "how much do concurrent
+ * transfers slow each other down", not the observable details of a real
+ * network.</p>
  */
 public final class TransferContentionEngine {
 
@@ -61,7 +72,7 @@ public final class TransferContentionEngine {
         }
     }
 
-    /** 一次 {@link #advance} 调用的结算结果。 */
+    /** Settlement result of one {@link #advance} call. */
     public static final class AdvanceResult {
         private final List<Long> completedTransferIds;
         private final Double nextCompletionTime;
@@ -82,21 +93,24 @@ public final class TransferContentionEngine {
             return completionObservations;
         }
 
-        /** 本次推进中完成的传输 ID：按完成时点排列，同刻按插入顺序排列。 */
+        /**
+         * Transfer IDs completed in this advance: ordered by completion instant, with
+         * insertion order for the same instant.
+         */
         public List<Long> getCompletedTransferIds() {
             return completedTransferIds;
         }
 
         /**
-         * 剩余活动传输的最早预测完成时刻（绝对仿真时间）；无活动传输时为
-         * {@code null}。
+         * Earliest predicted completion instant of the remaining active transfers
+         * (absolute simulation time); {@code null} when no transfer is active.
          */
         public Double getNextCompletionTime() {
             return nextCompletionTime;
         }
     }
 
-    /** 一个活动传输的流体状态。 */
+    /** Fluid state of one active transfer. */
     private static final class Transfer {
         private final double bytes;
         private final List<String> occupiedResources;
@@ -216,9 +230,9 @@ public final class TransferContentionEngine {
         }
     }
 
-    /** 端点容量表：未注册的端点视为容量无限。 */
+    /** Endpoint capacity table; an unregistered endpoint is treated as having infinite capacity. */
     private final Map<String, Double> endpointCapacitiesBytesPerSecond = new LinkedHashMap<String, Double>();
-    /** 活动传输表，按插入顺序迭代保证确定性。 */
+    /** Active transfer table, iterated in insertion order to guarantee determinism. */
     private final Map<Long, Transfer> activeTransfers = new LinkedHashMap<Long, Transfer>();
 
     private double lastAdvanceTime = 0.0;
@@ -382,10 +396,10 @@ public final class TransferContentionEngine {
     }
 
     /**
-     * 注册一个端点的容量。
+     * Register the capacity of one endpoint.
      *
-     * @param endpoint 端点键（如 {@code "VM:3"}）
-     * @param capacityBytesPerSecond 容量，字节/秒，必须为正有限值
+     * @param endpoint endpoint key (for example {@code "VM:3"})
+     * @param capacityBytesPerSecond capacity in bytes/second, must be positive and finite
      */
     public void setEndpointCapacity(String endpoint, double capacityBytesPerSecond) {
         if (endpoint == null || endpoint.isEmpty()) {
@@ -408,15 +422,18 @@ public final class TransferContentionEngine {
     }
 
     /**
-     * 登记一个新的传输并积分推进既有活动传输到 {@code now}。
+     * Register a new transfer and integrate the existing active transfers forward to
+     * {@code now}.
      *
-     * @param transferId 调用方保证唯一且不复用的传输 ID
-     * @param bytes 传输字节量，必须为正
-     * @param sourceEndpoint 源端点键（未注册容量视为无限）
-     * @param destinationEndpoint 目标端点键
-     * @param nominalRateBytesPerSecond 无争用名义速率，字节/秒，必须为正有限值
-     * @param now 当前仿真时间；不得早于上次推进时间
-     * @return 登记后的结算结果（新传输此刻尚未完成，除非积分恰好清空既有传输）
+     * @param transferId transfer ID guaranteed unique and never reused by the caller
+     * @param bytes transfer byte count, must be positive
+     * @param sourceEndpoint source endpoint key (unregistered capacity is treated as infinite)
+     * @param destinationEndpoint destination endpoint key
+     * @param nominalRateBytesPerSecond contention-free nominal rate in bytes/second, must be
+     *        positive and finite
+     * @param now current simulation time; must not be earlier than the last advance time
+     * @return settlement result after registration (the new transfer is not complete at this
+     *         instant unless the integration exactly empties the existing transfers)
      */
     public AdvanceResult addTransfer(
             long transferId,
@@ -459,17 +476,20 @@ public final class TransferContentionEngine {
     }
 
     /**
-     * 登记一个占用任意资源集（端点 + 链路键）的传输并积分推进既有活动传输到
-     * {@code now}。Fat-tree 拓扑感知争用模型使用本重载（资源集 = 两端点 +
-     * 确定性路由的全部链路键，见 {@code FatTreeTopology#route}）。
+     * Register a transfer that occupies an arbitrary resource set (endpoint plus link
+     * keys) and integrate the existing active transfers forward to {@code now}. The
+     * Fat-tree topology-aware contention model uses this overload (resource set = both
+     * endpoints plus every link key of the deterministic route, see
+     * {@code FatTreeTopology#route}).
      *
-     * @param transferId 调用方保证唯一且不复用的传输 ID
-     * @param bytes 传输字节量，必须为正
-     * @param occupiedResources 占用资源键列表（非 null，可为空 = 无争用约束；
-     *        重复键按出现次数重复计数）
-     * @param nominalRateBytesPerSecond 无争用名义速率，字节/秒，必须为正有限值
-     * @param now 当前仿真时间；不得早于上次推进时间
-     * @return 登记后的结算结果
+     * @param transferId transfer ID guaranteed unique and never reused by the caller
+     * @param bytes transfer byte count, must be positive
+     * @param occupiedResources occupied resource key list (non-null, may be empty = no
+     *        contention constraint; a repeated key is counted once per occurrence)
+     * @param nominalRateBytesPerSecond contention-free nominal rate in bytes/second, must be
+     *        positive and finite
+     * @param now current simulation time; must not be earlier than the last advance time
+     * @return settlement result after registration
      */
     public AdvanceResult addTransfer(
             long transferId, long bytes, List<String> occupiedResources, double nominalRateBytesPerSecond, double now) {
@@ -574,10 +594,12 @@ public final class TransferContentionEngine {
     }
 
     /**
-     * 积分推进全部活动传输到 {@code now}，结算完成的传输并重算剩余传输的速率。
+     * Integrate all active transfers forward to {@code now}, settle the completed
+     * transfers, and recompute the rates of the remaining transfers.
      *
-     * @param now 当前仿真时间；不得早于上次推进时间
-     * @return 完成的传输 ID 列表与剩余传输的最早预测完成时刻
+     * @param now current simulation time; must not be earlier than the last advance time
+     * @return list of completed transfer IDs and the earliest predicted completion instant
+     *         of the remaining transfers
      */
     public AdvanceResult advance(double now) {
         if (coherentChecked) {
@@ -609,7 +631,10 @@ public final class TransferContentionEngine {
         return new AdvanceResult(completed, earliestCompletion(now), observations);
     }
 
-    /** advanceInternal() 的积分主循环（速率面推进与服务段/完成事件次序逐字搬运转写）。 */
+    /**
+     * Integration main loop of advanceInternal() (verbatim extraction of the rate-plane
+     * advancement and of the service-segment/completion event ordering).
+     */
     private void integrateUntil(double now, List<Long> completed, List<CompletionObservation> observations) {
         while (!activeTransfers.isEmpty() && lastAdvanceTime < now) {
             double nextDuration = Double.POSITIVE_INFINITY;
@@ -676,7 +701,7 @@ public final class TransferContentionEngine {
         }
     }
 
-    /** integrateUntil() 的 settled 收集阶段（逐字搬运转写）。 */
+    /** Settled collection stage of integrateUntil() (verbatim extraction). */
     private List<Long> collectSettled() {
         List<Long> settled = new ArrayList<Long>();
         for (Map.Entry<Long, Transfer> entry : activeTransfers.entrySet()) {
@@ -687,7 +712,10 @@ public final class TransferContentionEngine {
         return settled;
     }
 
-    /** integrateUntil() 的完成结算阶段（trace 完成/coherent 观测/移除/率重算，逐字搬运转写）。 */
+    /**
+     * Completion settlement stage of integrateUntil() (trace completion, coherent
+     * observation, removal, rate recomputation; verbatim extraction).
+     */
     private void settleTransfers(
             List<Long> settled, List<CompletionObservation> observations, double now, List<Long> completed) {
         if (traceState != null) {
@@ -718,16 +746,17 @@ public final class TransferContentionEngine {
         }
     }
 
-    /** 当前活动传输数量。 */
+    /** Current number of active transfers. */
     public int activeTransferCount() {
         return activeTransfers.size();
     }
 
     /**
-     * 返回指定活动传输的当前有效速率（字节/秒），用于测试与证据记录。
+     * Return the current effective rate of the given active transfer in bytes/second, for
+     * tests and evidence records.
      *
-     * @param transferId 活动传输 ID
-     * @return 当前有效速率
+     * @param transferId active transfer ID
+     * @return current effective rate
      */
     public double currentRateBytesPerSecond(long transferId) {
         Transfer transfer = activeTransfers.get(transferId);
@@ -754,7 +783,10 @@ public final class TransferContentionEngine {
         }
     }
 
-    /** 残余容量和未冻结流占用数；同一资源的重复键按出现次数计费。 */
+    /**
+     * Remaining capacity and the count of not-yet-frozen flow occupancies; a repeated key
+     * of the same resource is charged once per occurrence.
+     */
     private static final class FillResource {
         private double remainingCapacity;
         private long growingOccupancy;
@@ -765,7 +797,7 @@ public final class TransferContentionEngine {
         }
     }
 
-    /** Progressive filling：回收已受其他瓶颈限制的流所留下的容量。 */
+    /** Progressive filling: reclaim capacity left over by flows already limited by another bottleneck. */
     private void recomputeRates() {
         if (coherentChecked && !shareResources) {
             for (Transfer transfer : activeTransfers.values()) {
@@ -959,7 +991,10 @@ public final class TransferContentionEngine {
         return new IllegalArgumentException("Unsupported coherent V2 service state: " + message);
     }
 
-    /** 剩余活动传输的最早预测完成时刻；无活动传输返回 null。 */
+    /**
+     * Earliest predicted completion instant of the remaining active transfers; returns
+     * null when no transfer is active.
+     */
     private Double earliestCompletion(double now) {
         Double earliest = null;
         for (Transfer transfer : activeTransfers.values()) {

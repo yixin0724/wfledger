@@ -238,23 +238,24 @@ public class WorkflowScheduler extends DatacenterBroker {
                 algorithm = new ReadyBatchRoundRobinSchedulingAlgorithm();
                 break;
             case RL_POLICY:
-                // R4 RL 轨道：策略经 RlPolicyRegistry 送达；episode 外运行显式失败。
+                // R4 RL track: the policy is delivered through RlPolicyRegistry; running outside an
+                // episode fails explicitly.
                 algorithm = new RlPolicySchedulingAlgorithm();
                 break;
             case MINMIN:
-                // 保留旧行为:SPT-fastest-idle 变体
+                // Preserves the legacy behavior: SPT-fastest-idle variant.
                 algorithm = new SptFastestIdleSchedulingAlgorithm();
                 break;
             case MAXMIN:
-                // 保留旧行为:LJF-fastest-idle 变体
+                // Preserves the legacy behavior: LJF-fastest-idle variant.
                 algorithm = new LjfFastestIdleSchedulingAlgorithm();
                 break;
             case MCT:
-                // 保留旧行为:贪心最快 VM
+                // Preserves the legacy behavior: greedy fastest VM.
                 algorithm = new FastestVmSchedulingAlgorithm();
                 break;
             case ROUNDROBIN:
-                // 保留旧行为:First-Fit-Idle
+                // Preserves the legacy behavior: First-Fit-Idle.
                 algorithm = new FirstFitIdleSchedulingAlgorithm();
                 break;
             case DATA:
@@ -274,16 +275,18 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 返回本次仿真保留的调度策略。
+     * Returns the scheduling policy retained for this simulation.
      *
-     * <p>ready-batch round robin 等有状态策略必须跨多个 Cloudlet 更新事件存活；若配置
-     * 算法值发生变化，则刻意创建新的策略实例。</p>
+     * <p>Stateful policies such as ready-batch round robin must survive multiple Cloudlet
+     * update events; when the configured algorithm value changes, a new policy instance is
+     * created deliberately.</p>
      *
-     * @return 当前活动调度策略
+     * @return current active scheduling policy
      */
     protected BaseSchedulingAlgorithm getSchedulingPolicy() {
-        // BAT-3（2026-10-26）：注册算轨优先于枚举分派；提供者策略跨事件存活，
-        // Parameters.reset() 负责其会话边界失效。既有枚举路径零改动。
+        // BAT-3 (2026-10-26): a registered algorithm track takes precedence over enum dispatch;
+        // the provider policy survives across events, and Parameters.reset() invalidates it at
+        // the session boundary. The existing enum path is unchanged.
         if (Parameters.getRegisteredSchedulingAlgorithmProvider() != null) {
             if (activeSchedulingPolicy == null || activeSchedulingPolicyType != SchedulingAlgorithm.INVALID) {
                 activeSchedulingPolicy =
@@ -301,12 +304,13 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 处理 VM 创建请求的确认事件。
+     * Processes the acknowledgement of a VM creation request.
      *
-     * <p>若所有候选数据中心均无法创建所请求的全部 VM，则显式失败，而不在资源退化的
-     * 平台上继续运行并产生难以比较的实验结果。</p>
+     * <p>If none of the candidate datacenters can create all requested VMs, fail explicitly
+     * instead of continuing on a platform with degraded resources and producing experimental
+     * results that are hard to compare.</p>
      *
-     * @param ev VM 创建确认事件
+     * @param ev VM creation acknowledgement event
      */
     @Override
     protected void processVmCreate(SimEvent ev) {
@@ -317,7 +321,8 @@ public class WorkflowScheduler extends DatacenterBroker {
 
         if (result == CloudSimTags.TRUE) {
             getVmsToDatacentersMap().put(vmId, datacenterId);
-            // 历史 CloudSim 路径可能返回未知 VM 编号，不能将 null 加入已创建列表。
+            // Historical CloudSim paths may return an unknown VM id; a null must not be added
+            // to the created list.
             if (VmList.getById(getVmList(), vmId) != null) {
                 getVmsCreatedList().add(VmList.getById(getVmList(), vmId));
                 CondorVM createdVm = (CondorVM) VmList.getById(getVmsCreatedList(), vmId);
@@ -336,31 +341,37 @@ public class WorkflowScheduler extends DatacenterBroker {
                         + createdVm.getHost().getId());
             }
         } else {
-            // 创建失败 ACK 是合法流程的一部分：legacy 多集群示例把同一批 VM 提交给
-            // 多个数据中心试放，失败方回 ACK FALSE（WorkflowSimMultipleClusterExample1）。
-            // 标准 SimulationRunner 路径下平台布局已预校验（PLAT-2/PLAT-5），VM 必可
-            // 放置，此处不会触发；若触发则条件计数永不满足，看门狗报停滞（R8 审计
-            // P1-6 评估后保留日志行为，fail-fast 会误伤多集群试放语义）。
+            // A failed creation ACK is part of a legitimate flow: the legacy multi-cluster
+            // example submits the same VM batch to several datacenters for trial placement, and
+            // the losing side replies ACK FALSE (WorkflowSimMultipleClusterExample1). Under the
+            // standard SimulationRunner path the platform layout has been preflight-validated
+            // (PLAT-2/PLAT-5), so the VMs are always placeable and this branch does not trigger;
+            // if it does trigger, the condition count is never satisfied and the watchdog reports
+            // a stall (R8 audit P1-6 kept the logging behavior after evaluation, because
+            // fail-fast would break the multi-cluster trial-placement semantics).
             Log.printLine(CloudSim.clock() + ": " + getName() + ": Creation of VM #" + vmId + " failed in Datacenter #"
                     + datacenterId);
         }
 
         incrementVmsAcks();
 
-        // 所有请求 VM 已创建后，才允许提交待调度作业。
+        // Pending Jobs may be submitted only after all requested VMs are created.
         if (getVmsCreatedList().size() == getVmList().size() - getVmsDestroyed()) {
             submitCloudlets();
-            // 冲刷早到的就绪作业：若引擎在 VM 创建完成前就释放了作业（例如 JOB_SUBMIT
-            // 幂等释放路径），这些作业已在就绪列表中等待；此处补发一次调度周期，
-            // 避免它们在无新提交事件驱动时静默停滞。标准顺序（作业后于 VM 到达）下
-            // 就绪列表为空，本补发是空转周期，不产生派发。
+            // Flush ready Jobs that arrived early: if the engine released Jobs before VM
+            // creation completed (for example the idempotent release path of JOB_SUBMIT), those
+            // Jobs are already waiting in the ready list; issue one scheduling cycle here so that
+            // they do not stall silently when no new submit event drives them. Under the standard
+            // order (Jobs arrive after the VMs) the ready list is empty and this flush is an idle
+            // cycle that dispatches nothing.
             if (!getCloudletList().isEmpty()) {
                 sendNow(this.getId(), WorkflowSimTags.CLOUDLET_UPDATE);
             }
         } else {
-            // 所有确认已到达但仍有 VM 创建失败时，尝试下一个尚未请求的数据中心。
+            // When all acks have arrived but some VM creation still failed, try the next
+            // datacenter that has not been requested yet.
             if (getVmsRequested() == getVmsAcks()) {
-                // 查找尚未尝试创建 VM 的下一个数据中心。
+                // Find the next datacenter in which VM creation has not been attempted yet.
                 for (int nextDatacenterId : getDatacenterIdsList()) {
                     if (!getDatacenterRequestedIdsList().contains(nextDatacenterId)) {
                         createVmsInDatacenter(nextDatacenterId);
@@ -368,7 +379,8 @@ public class WorkflowScheduler extends DatacenterBroker {
                     }
                 }
 
-                // 所有数据中心均已尝试，拒绝在退化资源规模下继续运行。
+                // Every datacenter has been tried; refuse to continue with a degraded resource
+                // scale.
                 throw new IllegalStateException(getName() + " could create only "
                         + getVmsCreatedList().size() + " of " + getVmList().size()
                         + " requested VMs; refusing to run on a degraded platform");
@@ -377,20 +389,23 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * 对当前就绪作业和已创建 VM 执行一次调度决策周期。
+     * Runs one scheduling decision cycle over the current ready Jobs and created VMs.
      *
-     * <p>该方法记录决策耗时、就绪/空闲数量和每个作业的派发决定。计时反映本机 Java
-     * 调度开销，不是模拟时间，也不能与不同硬件直接比较。</p>
+     * <p>The method records the decision latency, the ready/idle counts, and the dispatch
+     * decision of every Job. The timing reflects local Java scheduling overhead, not simulated
+     * time, and must not be compared directly across different hardware.</p>
      *
-     * @param ev Cloudlet 更新事件
+     * @param ev Cloudlet update event
      */
     protected void processCloudletUpdate(SimEvent ev) {
 
-        // VM 尚未全部创建完成时不能执行调度周期：调度算法在空（或不完整）VM 列表上
-        // 无法做出有效决策。此时就绪作业保留在就绪列表中，待 VM 创建完成后由
-        // processVmCreate 触发的调度周期统一冲刷（见该方法的 CLOUDLET_UPDATE 补发逻辑）。
-        // 该守卫使作业到达顺序不再依赖 VM 创建完成时刻（例如引擎在 JOB_SUBMIT 时
-        // 幂等释放就绪作业的场景）。
+        // A scheduling cycle cannot run while the VMs are not all created: the scheduling
+        // algorithm cannot make a valid decision on an empty (or incomplete) VM list. The ready
+        // Jobs stay in the ready list and are flushed together by the scheduling cycle triggered
+        // from processVmCreate once VM creation completes (see the CLOUDLET_UPDATE flush logic
+        // in that method). This guard makes the Job arrival order independent of the VM creation
+        // instant (for example the scenario where the engine idempotently releases ready Jobs
+        // during JOB_SUBMIT).
         if (getVmsCreatedList().size() < getVmList().size() - getVmsDestroyed()) {
             return;
         }
@@ -415,8 +430,9 @@ public class WorkflowScheduler extends DatacenterBroker {
         try {
             scheduler.run();
         } catch (SimulationConfigurationException exception) {
-            // R8 审计修复（P1-7）：配置类异常（如 RL_POLICY 未注册策略）不得
-            // 被包装成"调度算法失败"的执行语义。
+            // R8 audit fix (P1-7): configuration exceptions (such as RL_POLICY with no
+            // registered policy) must not be wrapped into the execution semantics of a
+            // "scheduling algorithm failed" error.
             throw exception;
         } catch (Exception exception) {
             throw new IllegalStateException(
@@ -434,19 +450,21 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     /**
-     * C1（2026-11-02）：延后策略的唤醒/死锁契约。
+     * C1 (2026-11-02): wake-up/deadlock contract of deferral policies.
      *
-     * <p>碳感知延后引擎会在"本轮一个都不派发"时保持就绪队列不变，并给出未来唤醒时刻；
-     * 调度器在此排一个 {@code CLOUDLET_UPDATE} 事件把仿真时钟推进过去，下一周期重新
-     * 调度。若策略既没派发、又拿不出未来时刻，就绪作业将永远等不到下一周期——这是
-     * 死锁，必须显式失败（守则：失败必须显式，禁止静默挂起）。</p>
+     * <p>The carbon-aware deferral engine keeps the ready queue unchanged when it dispatches
+     * nothing in the current round and supplies a future wake-up instant; the scheduler then
+     * queues a {@code CLOUDLET_UPDATE} event to advance the simulation clock to that instant and
+     * schedules again in the next cycle. If the policy dispatches nothing and also cannot supply
+     * a future instant, the ready Jobs never see the next cycle -- that is a deadlock and must
+     * fail explicitly (rule: failure must be explicit, silent suspension is forbidden).</p>
      */
     private void armDeferralWakeUp(BaseSchedulingAlgorithm policy, List<Cloudlet> scheduledList) {
         if (!(policy instanceof DeferralAwareSchedulingAlgorithm)) {
             return;
         }
         if (!scheduledList.isEmpty() || getCloudletList().isEmpty()) {
-            // 有派发，或已无可派发作业：无需唤醒。
+            // Something was dispatched, or nothing is left to dispatch: no wake-up needed.
             return;
         }
         DeferralAwareSchedulingAlgorithm deferral = (DeferralAwareSchedulingAlgorithm) policy;
@@ -462,7 +480,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         schedule(this.getId(), wakeSeconds - now, WorkflowSimTags.CLOUDLET_UPDATE);
     }
 
-    /** processCloudletUpdate 的调度周期事件阶段（事件键序原样）。 */
+    /** Scheduling-cycle event stage of processCloudletUpdate (event key order unchanged). */
     private void recordSchedulingCycle(int readyJobs, int idleVms, long decisionElapsed, List<Cloudlet> scheduledList) {
         eventRecorder.record(
                 SimulationEventType.SCHEDULING_CYCLE,
@@ -481,7 +499,10 @@ public class WorkflowScheduler extends DatacenterBroker {
                         decisionElapsed));
     }
 
-    /** processCloudletUpdate 的派发阶段（队列延迟→事件记录→CloudSim 事件次序逐字搬运转写）。 */
+    /**
+     * Dispatch stage of processCloudletUpdate (queue delay, event recording, and CloudSim event
+     * order, transcribed verbatim).
+     */
     private void dispatchScheduledJobs(List<Cloudlet> scheduledList) {
         for (Cloudlet cloudlet : scheduledList) {
             Job job = (Job) cloudlet;
@@ -499,10 +520,11 @@ public class WorkflowScheduler extends DatacenterBroker {
                             Parameters.getSchedulingAlgorithm().name(),
                             "queueDelaySeconds",
                             delay));
-            // BAT-D2（2026-10-29）：调度算法已敲定 VM 指派 → 本中心化派发点统一做
-            // 频档决策（所有 online/STATIC/注册算轨路径的 setVmId 都汇入本方法）。
-            // 置于事件记录之后：events v1 schema 不携带频档字段（F-006 领域裁决），
-            // 频档证据链走 JobOutcome.tierMips。
+            // BAT-D2 (2026-10-29): the scheduling algorithm has fixed the VM assignment -> this
+            // centralized dispatch point makes the frequency-tier decision uniformly (every setVmId
+            // on the online/STATIC/registered algorithm tracks funnels into this method). Placed
+            // after event recording: the events v1 schema carries no tier field (F-006 domain
+            // adjudication), and the tier evidence chain goes through JobOutcome.tierMips.
             assignFrequencyTier(job);
             schedule(getVmsToDatacentersMap().get(vmId), delay, CloudSimTags.CLOUDLET_SUBMIT, cloudlet);
             eventRecorder.record(
