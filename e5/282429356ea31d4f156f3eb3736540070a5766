@@ -1,0 +1,141 @@
+simulator/src/main/java/org/workflowsim/CondorVM.java
+  s_37e38a7ed4368c::t_69cf1fd896172b 24,26-28,37-38,43,45-51,57-58,60,69-70,76,81,84,87,90,94,96-104,118,124,126-138,161,166,171,176,182,184,190
+simulator/src/main/java/org/workflowsim/WorkflowInputReport.java
+  s_24f59fb6b2f10b::t_b880e2594537a1 8-9,11-14,18,24,36,38-41,52,57,62,67,73,75,85,87-90,97,102,117,122,127,132
+simulator/src/main/java/org/workflowsim/WorkflowSimTags.java
+  s_24f59fb6b2f10b::t_8822c38656c7e6 19,21-24,32,34,36,38,46-50,54-58,63-67,74
+simulator/src/main/java/org/workflowsim/clustering/BasicClustering.java
+  s_37e38a7ed4368c::t_ef1b8f316b37fa 31,33-35,44,48,52,56,60,64,69,71,79,91,93,101,103,111,113,121,123,130-131,147,153,155-156,165,167-168,177-178,196,226,232,240,247,253,262-263,269,283-284
+simulator/src/main/java/org/workflowsim/clustering/BlockClustering.java
+  s_64d7503d28f59d::t_5044ac03639f66 26,28-30,39,43,47,51,56,58-59,70,72,82,84-85,95-96,101,129-130,132-133,141,164,188,191,208
+simulator/src/main/java/org/workflowsim/clustering/balancing/BalancedClustering.java
+  s_37e38a7ed4368c::t_c482968abbcfd0 42-43,45-47,56,60,64,69,71,81,92,94-95,99,112,130-131,139,143,147,151,162,164,167-168,183,189,191-192,212,214-216,235,240-241,251-252,255,285,364,374,389,394,420
+simulator/src/main/java/org/workflowsim/clustering/balancing/methods/BalancingMethod.java
+  s_1bd856a819664d::t_6e36f90d04e966 29,37,41,44,48,50-52,61,63,70,72,79,88-89,91-92,97,102-103,108-112,126,142,149
+simulator/src/main/java/org/workflowsim/clustering/balancing/methods/HorizontalDistanceBalancing.java
+  s_24f59fb6b2f10b::t_340f055cf8bd61 31,33-34,43,45-47,54,65-66,68,81-82,86-87,92,94-95,98,103-104,106-109,113,132-133,163,188,198,200-201,210-211,253,276-277,279-282,304-306,308-310,360
+simulator/src/main/java/org/workflowsim/clustering/balancing/methods/HorizontalRuntimeBalancing.java
+  s_24f59fb6b2f10b::t_46544a2ebefefd 31,39,41-43,50,56,67,71,73,77,79,84,86,93,95,102,104-108,113-114,119,123
+simulator/src/main/java/org/workflowsim/data/v2/DataflowAssignmentValidator.java
+  s_1bd856a819664d::t_d97b52b41c5dd7 238,254-255,276-277,293-294,309-310,371-372,505-506,526-527,543-544,594,811-812,850-851,1377,1389,1401-1402
+simulator/src/main/java/org/workflowsim/exception/SimulationConfigurationException.java
+  s_24f59fb6b2f10b::t_6730a2a3debc61 4-5,7-11,13,15-20,23-24,26-28,33,35,42-43,45-46
+simulator/src/main/java/org/workflowsim/exception/SimulationExecutionException.java
+  s_24f59fb6b2f10b::t_1f98c333c5b568 4,6-7,9-13,16-19,21,23-26,32,34,41,43-44,51,53
+simulator/src/main/java/org/workflowsim/exception/WorkflowParsingException.java
+  s_24f59fb6b2f10b::t_907dca73e49381 4,6,8-12,15-16,27,29,37,39-40,48,50-52,60,62
+simulator/src/main/java/org/workflowsim/experiment/EnergyAccounting.java
+  s_24f59fb6b2f10b::t_671c089469370e 50-54,100-106,113-116,122-123,128,158-160,173-176
+simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactValidator.java
+  s_24f59fb6b2f10b::t_f0bb48547ef719 20-21,23-25,29,31,33,39-41,43-47,81-84,152-153,166,198,213-216,275-278,304,408-411,529-532,664
+simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactWriter.java
+  s_1bd856a819664d::t_583369212add07 18,21-24,32-34,36-37,39-46,54-55,57-65,138-139,192,194-196,198-201,257-260,281
+simulator/src/main/java/org/workflowsim/experiment/NetworkLedgerContextValidator.java
+  s_1bd856a819664d::t_9a59cf120d4971 43-46,100-101,133-134,191-192,262-263,282-283,305-306,335-336,359-360,401-402,455-456,484-485,499-502,579-580,667,676,685
+simulator/src/main/java/org/workflowsim/experiment/SeedPlan.java
+  s_24f59fb6b2f10b::t_428691a013382f 9,35,37-38,46-47,49,51-56,75,77-82
+simulator/src/main/java/org/workflowsim/experiment/WorkflowModelReference.java
+  s_24f59fb6b2f10b::t_920243c9395103 26-27,29-34,36-42,44-50,62-65,90-91,93-95,164-167,209-211,248-249
+simulator/src/main/java/org/workflowsim/experiment/WorkflowProfile.java
+  s_24f59fb6b2f10b::t_cbddd7791c7a5d 18,20-23,77-78,80-82,120-123,135,146,184-187,233-236,251-254,343-345,350
+simulator/src/main/java/org/workflowsim/experiment/registry/AlgorithmDeclaration.java
+  s_37e38a7ed4368c::t_63a9b91b6724b0 19-26,28-35,37-46,126,131,136-139,144-145,150,155,160-161,228,234,243,255-256,263-268,282-283,290-293
+simulator/src/main/java/org/workflowsim/failure/FailureGenerator.java
+  s_37e38a7ed4368c::t_1ade32e6d9eebd 33-34,36-38,47-49,52-55,61,63-65,92-93,109,116,126-127,146-147,152-153,157-159,168,190-191,194,199-202,219
+simulator/src/main/java/org/workflowsim/network/NetworkTopologySpec.java
+  s_24f59fb6b2f10b::t_6619142b49846a 8,10-13,15-17,21,23,47-49,51-54,61,63-68,75,77-86,129,134,139,144
+simulator/src/main/java/org/workflowsim/planning/LocalCpopPlanningAlgorithm.java
+  s_2cfbe2f01c4fa4::t_5b68af1b6c6f34 14-15,17-18,20-31,34-41,47,76-77,116,121,126,131,136-137,156-157,167-169,199-200,222-223
+simulator/src/main/java/org/workflowsim/planning/LocalHeftPlanningAlgorithm.java
+  s_24f59fb6b2f10b::t_bfc0683423fe54 11-12,14-19,21-27,29-39,41-45,47-52
+simulator/src/main/java/org/workflowsim/planning/PlanningContext.java
+  s_24f59fb6b2f10b::t_c8793f7db06f42 9-10,12-15,38-41,66-67,69-79
+simulator/src/main/java/org/workflowsim/planning/PsoParticle.java
+  s_24f59fb6b2f10b::t_a0527cc250a903 6-7,9-12,14-18,21-23,25,35,37-39,51,59,63,67,71,75,81,83-87,100-101,103
+simulator/src/main/java/org/workflowsim/planning/SharedStorageDagPlanTrace.java
+  s_64d7503d28f59d::t_a14c31f77e4cac 10,12-16,55-58,63-66,71,138,143,148,153,158,163,168,173,178,183,188,193,198,203
+simulator/src/main/java/org/workflowsim/planning/SharedStorageDagPlanner.java
+  s_24f59fb6b2f10b::t_6dbe10077aef8a 22-23,25-28,47-50,68-71,94-95,113-115,175-181,191-193,245,247-250,291,293-295,336,338-340,343-344,371-372,416-417,547-548,659-660,691,693-696,709-710
+simulator/src/main/java/org/workflowsim/platform/PlatformProfiles.java
+  s_dfd76f683cfd2c::t_dee41c10ab9f6e 3,9-10,12-13,15-18,34-35,37-46,48-49,51-56
+simulator/src/main/java/org/workflowsim/reclustering/ClusteringSizeEstimator.java
+  s_24f59fb6b2f10b::t_d60942200f0d61 21-22,24-26,35,37-43,51-52,54-59,68,70-75,86
+simulator/src/main/java/org/workflowsim/rl/RlObservation.java
+  s_24f59fb6b2f10b::t_bcfd5c0ce4e185 13,15-19,21-26,30,42,47,52,58,77,82,87,104,106-108,126,131,136
+simulator/src/main/java/org/workflowsim/rl/RlPolicy.java
+  s_dfd76f683cfd2c::t_72af3f0a4012f9 4-5,7-11,13,15-30,35,39,41-43
+simulator/src/main/java/org/workflowsim/scheduling/FrequencyTierSelector.java
+  s_24f59fb6b2f10b::t_39298fc769c1f5 9-11,13-22,24,26-39,42-46,51-52,54-58
+simulator/src/main/java/org/workflowsim/utils/DistributionSpec.java
+  s_64d7503d28f59d::t_91c6708c605d5d 6-7,9-12,39,41-44,52,54-60,73,77,81,85,89,93,99,101-102,129-130
+simulator/src/main/java/org/workflowsim/utils/OverheadModelConfig.java
+  s_24f59fb6b2f10b::t_aa3ec8c707f42e 9,11-14,48,53,59,61-63,65-66,82-85,89,93,97,101,105,111-112,114,177-178,189-192,198-201,207-210,216-219,225-228,234-237,244,246
+simulator/src/main/java/org/workflowsim/utils/OverheadParameters.java
+  s_37e38a7ed4368c::t_539a0e13051c64 26,28-31,39,41,43,45,47,49,53,55-61,78,83,88,93,98,103,109,111-113,138,140-142,168,170-172,185,198,200-202,221-222
+simulator/src/main/java/org/workflowsim/utils/PeriodicalDistributionGenerator.java
+  s_64d7503d28f59d::t_413394acfe8dfc 23-24,26-28,36,40,42-45,51-52,61,63-69,88-89,91-92,94-101,119,129,131-132
+simulator/src/main/java/org/workflowsim/utils/PeriodicalSignal.java
+  s_1bd856a819664d::t_a31c15e4b704c5 21,23-25,33,35,37,39,41,45,47-51,68,70-73,80-81,83-85,92,94-95,117,122,127,132,137
+simulator/src/main/java/org/workflowsim/utils/ReplicaCatalog.java
+  s_24f59fb6b2f10b::t_efada1c1bb903f 28,30-33,41,46,48,50,54,56,67,80,87,89-90,98,100-101,109,111-112,120,122-123,131,133-134
+simulator/src/main/java/org/workflowsim/utils/SimulationConstants.java
+  s_37e38a7ed4368c::t_aadacaef1d0d7e 4,6-7,9-11,14,16,19,21,30,32-35,37-39,41,43-44,47-49,54,56-59,61-64,66,69,72-74,79,81-84,86,88-90,94-96,101
+simulator/src/main/java/org/workflowsim/utils/TaskCostMatrix.java
+  s_2cfbe2f01c4fa4::t_635743b689a2ac 8-9,11-17,19-23,25,27-34,37,53,55,62,64,66-67,82,84,91,93-94,96-98,109,111,122,124,126,134,136-138,155,163,165,167-171,191,193-194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e5282429356ea31d4f156f3eb3736540070a5766",
+  "prompts": {},
+  "sessions": {
+    "s_1bd856a819664d": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "d43c7717-460b-4c9b-8587-78aceaf49dd9",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_2cfbe2f01c4fa4": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "c6817b20-632d-47c8-8480-284955b58b47",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_37e38a7ed4368c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19ef8-86bb-7911-83de-89bd1a1aee90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_64d7503d28f59d": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "21e882cf-11dd-41b1-9f99-f805fe0d1f6b",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_dfd76f683cfd2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18a73-43db-7ad2-a5c7-a77ef2d51736",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
