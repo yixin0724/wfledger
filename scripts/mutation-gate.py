@@ -148,6 +148,70 @@ REGISTRY = [
         old="            case ANY:\n                return true;",
         new="            case ANY:\n                return false;",
         killers="AlgorithmDeclarationTest,GradStudentSchedulerExerciseIntegrationTest"),
+    dict(
+        id="M12",
+        name="engine fork drops the shared retained-trace prefix",
+        file="simulator/src/main/java/org/workflowsim/data/TransferContentionEngine.java",
+        old="            copy.traceState.head = traceState.head;",
+        new="            copy.traceState.head = null;",
+        killers="TransferContentionEngineForkTraceTest"),
+    dict(
+        id="M13",
+        name="metric recompute mismatch check ignores the declared metrics value",
+        file="simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactValidator.java",
+        old="        if (Math.abs(declared - expected) > tolerance) {",
+        new="        if (false) {",
+        killers="ExperimentArtifactValidatorTest"),
+    dict(
+        id="M14",
+        name="Holm step-down drops the (familySize - rank) multiplier",
+        file="simulator/src/main/java/org/workflowsim/experiment/HolmStepDownCorrection.java",
+        old="            double adjusted = Math.max(previous, Math.min(1.0, (familySize - rank) * raw));",
+        new="            double adjusted = Math.max(previous, Math.min(1.0, raw));",
+        killers="HolmStepDownCorrectionTest,CampaignHolmFamilyIntegrationTest"),
+    dict(
+        id="M15",
+        name="event recorder cap admits one event beyond the budget",
+        file="simulator/src/main/java/org/workflowsim/experiment/SimulationEventRecorder.java",
+        old="        if (events.size() >= maxEvents) {",
+        new="        if (events.size() > maxEvents) {",
+        killers="SimulationEventRecorderTest"),
+    dict(
+        id="M16",
+        name="cost-caliber guard rejects homogeneous groups instead of mixed ones",
+        file="simulator/src/main/java/org/workflowsim/experiment/ExperimentPlan.java",
+        old="                    if (existingCaliber != null && existingCaliber != caliber) {",
+        new="                    if (existingCaliber != null && existingCaliber == caliber) {",
+        killers="ExperimentPlanCaliberGuardTest"),
+    dict(
+        id="M17",
+        name="deprecated-label bypass only throws when legacy aliases are enabled",
+        file="simulator/src/main/java/org/workflowsim/WorkflowScheduler.java",
+        old="        if (!Parameters.isLegacySchedulingAliasesEnabled()) {",
+        new="        if (Parameters.isLegacySchedulingAliasesEnabled()) {",
+        killers="WorkflowSchedulerLegacyAliasTest"),
+    dict(
+        id="M18",
+        name="finished lifecycle validator still accepts event feeding",
+        file="simulator/src/main/java/org/workflowsim/experiment/FileLifecycleContextValidator.java",
+        old="""        if (lifecycleFinished) {
+            throw new IllegalStateException(
+                    "Event feeding is rejected: this lifecycle validator already finished (single-use instance)");
+        }""",
+        new="""        if (false) {
+            throw new IllegalStateException(
+                    "Event feeding is rejected: this lifecycle validator already finished (single-use instance)");
+        }""",
+        killers="FileLifecycleArtifactIntegrationTest"),
+    dict(
+        id="M19",
+        name="INVALID label binds the FCFS policy instead of the static no-decision shell",
+        file="simulator/src/main/java/org/workflowsim/WorkflowScheduler.java",
+        old="""                // this case because the runner rejects INVALID first.
+                algorithm = new StaticSchedulingAlgorithm();""",
+        new="""                // this case because the runner rejects INVALID first.
+                algorithm = new FCFSSchedulingAlgorithm();""",
+        killers="WorkflowSchedulerExplicitBindingTest"),
 ]
 
 
