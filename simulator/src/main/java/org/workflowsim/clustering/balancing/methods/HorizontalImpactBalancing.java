@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.cloudbus.cloudsim.Log;
 import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 
@@ -80,7 +81,9 @@ public class HorizontalImpactBalancing extends BalancingMethod {
                 try {
                     job = getCandidateTastSet(jobList, set, clusters_size);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // AUD-F19: report through the controlled CloudSim log channel; the control
+                    // flow (including the historical null continuation) is unchanged.
+                    Log.printError("horizontal impact balancing: candidate task set selection failed", e);
                 }
                 addTaskSet2TaskSet(set, job);
                 job.addTask(set.getTaskList());
@@ -226,7 +229,9 @@ public class HorizontalImpactBalancing extends BalancingMethod {
         try {
             potential = getNextPotentialTaskSets(taskList, checkSet, clusters_size);
         } catch (Exception e) {
-            e.printStackTrace();
+            // AUD-F19: report through the controlled CloudSim log channel; the control flow
+            // (including the historical null continuation) is unchanged.
+            Log.printError("horizontal impact balancing: potential task sets unavailable", e);
         }
         TaskSet task = null;
         long max = Long.MIN_VALUE;

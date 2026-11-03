@@ -10,6 +10,8 @@ package org.cloudbus.cloudsim;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 
 /**
  * The Log class used for performing loggin of the simulation process. It provides the ability to
@@ -107,6 +109,28 @@ public class Log {
     public static void formatLine(String format, Object... args) {
         if (!isDisabled()) {
             printLine(String.format(format, args));
+        }
+    }
+
+    /**
+     * Prints an error message followed by the throwable's stack trace to the configured
+     * output. Both arguments are optional, and the call is silent while logging is
+     * disabled (AUD-F19).
+     *
+     * @param message the error message line, or null to print the stack trace only
+     * @param t the throwable whose stack trace is printed, or null to print the message only
+     */
+    public static void printError(String message, Throwable t) {
+        if (isDisabled()) {
+            return;
+        }
+        if (message != null) {
+            printLine(message);
+        }
+        if (t != null) {
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(getOutput()));
+            t.printStackTrace(writer);
+            writer.flush();
         }
     }
 
