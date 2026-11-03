@@ -1,0 +1,117 @@
+experiments/src/main/java/org/workflowsim/experiments/reference/p7/P7BaselineExecutor.java
+  s_37e38a7ed4368c::t_d5af8a09ecf528 83-85
+experiments/src/main/java/org/workflowsim/experiments/workbench/WorkbenchConfig.java
+  s_37e38a7ed4368c::t_34489f2fb9759d 56,85
+experiments/src/test/java/org/workflowsim/examples/CliProcessTestSupport.java
+  s_1bd856a819664d::t_4d065f9391decc 14,16-20,30,32-37,95,123
+experiments/src/test/java/org/workflowsim/experiments/fattree/FatTreeCampaignDagCompatibilityIntegrationTest.java
+  s_1bd856a819664d::t_25f8211dbf89a8 22-24,26-33,52,61,64,86-87,90-91
+experiments/src/test/java/org/workflowsim/experiments/fattree/FatTreeSchedulingCampaignExecutorTest.java
+  s_1bd856a819664d::t_95e81125fa19a7 183,193,199,223-226,233,249,268,271,292-293,299-302,324,328-330,332-333,359,381,388-391
+experiments/src/test/java/org/workflowsim/experiments/network/NetworkStudyIntegrationTest.java
+  s_74c394365f705a::t_0f5ecbe4769ef3 96,101
+experiments/src/test/java/org/workflowsim/experiments/registry/GradStudentSchedulerExerciseIntegrationTest.java
+  s_37e38a7ed4368c::t_84d30d1078b166 156,194
+experiments/src/test/java/org/workflowsim/experiments/rerun/EvidenceCoreDifferTest.java
+  s_37e38a7ed4368c::t_bd78afd5aca2dd 24-30,62,76,117,135,351-354,367
+experiments/src/test/java/org/workflowsim/experiments/rerun/ManifestConfigRebuilderTest.java
+  s_1bd856a819664d::t_468e07adbfd025 42-46,61,80-82,121-123,173-175,256-258,298,303-304,338,368,395,407
+experiments/src/test/java/org/workflowsim/experiments/rerun/RegisteredAxesRejectIntegrationTest.java
+  s_37e38a7ed4368c::t_7db68411f2c23f 15-17,19-23,69-71
+experiments/src/test/java/org/workflowsim/experiments/rerun/RegisteredPoweredRerunIntegrationTest.java
+  s_1bd856a819664d::t_3e09b6b977537e 26-28,30-36,58-59,67,78,88-89,96-97,108-109
+experiments/src/test/java/org/workflowsim/experiments/rerun/RerunDiffExecutorTest.java
+  s_1bd856a819664d::t_58641541dacac2 38-40,55-57,100-101,111-112,168-169,244-245,292-293,313-316,379-382
+experiments/src/test/java/org/workflowsim/experiments/rerun/RerunInputResolverTest.java
+  s_1bd856a819664d::t_2eac79a66c2ae2 24-27,66-67,81-83,120-122,157-159,188,215-218
+experiments/src/test/java/org/workflowsim/experiments/rerun/SeedSensitivityRerunIntegrationTest.java
+  s_1bd856a819664d::t_f201d73e32c8ff 35,37-41,44-46,49-51,87-90,101-104
+experiments/src/test/java/org/workflowsim/experiments/rerun/TmpSeedSensitivity.java
+  s_37e38a7ed4368c::t_773ab431ace977 21
+experiments/src/test/java/org/workflowsim/experiments/workbench/EnergyRetryConservationIntegrationTest.java
+  s_1bd856a819664d::t_9c83e230ba7eab 66-69,72-76,106-108
+experiments/src/test/java/org/workflowsim/experiments/workbench/FileLifecycleBrowserFixtures.java
+  s_74c394365f705a::t_7c845d4dc6dbd7 187-188,213,243-247
+experiments/src/test/java/org/workflowsim/experiments/workbench/NetworkBrowserFixtures.java
+  s_37e38a7ed4368c::t_9d6bce53b53c5f 133,155-156
+experiments/src/test/java/org/workflowsim/experiments/workbench/StorageLifecycleBrowserFixtures.java
+  s_74c394365f705a::t_2dcf2ee4c8dad7 259-260,304,383-387
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchBrowserFixtures.java
+  s_1bd856a819664d::t_6090a61bc67f8a 61,108-110,127-128,148-151,189-192,241
+simulator/src/main/java/org/workflowsim/utils/SimulationConstants.java
+  s_24f59fb6b2f10b::t_834f80204525cd 104
+simulator/src/test/java/org/workflowsim/WorkflowInputFileNamespaceTest.java
+  s_37e38a7ed4368c::t_c54f479f9401b3 22
+simulator/src/test/java/org/workflowsim/data/DataMovementModelTest.java
+  s_74c394365f705a::t_df286e556363b7 39-42
+simulator/src/test/java/org/workflowsim/experiment/ExperimentProvenanceTest.java
+  s_37e38a7ed4368c::t_05c355888a249d 12
+simulator/src/test/java/org/workflowsim/experiment/FrequencyTierManifestEmissionTest.java
+  s_1bd856a819664d::t_7e1f36ab2dee2e 26-27,29-40,42-44,46-51,73-76,95-98,138,151
+simulator/src/test/java/org/workflowsim/experiment/MetamorphicGapIntegrationTest.java
+  s_74c394365f705a::t_c0e4073885caa0 20,22-25,27-31,33-38,75-79,101,110-117,121,141,145-148,158-165,169-172
+simulator/src/test/java/org/workflowsim/experiment/MultiSeedSignificanceIntegrationTest.java
+  s_1bd856a819664d::t_5ede057e748c15 27-28,30-32,34-40,43-45,109-110,112-114,117
+simulator/src/test/java/org/workflowsim/experiment/NetworkEvidenceCaptureIntegrationTest.java
+  s_74c394365f705a::t_9811b4d0d13e4b 507-509
+simulator/src/test/java/org/workflowsim/experiment/PlannerDirectionalityIntegrationTest.java
+  s_74c394365f705a::t_9eca429831855e 19,21-27,29-32,35-38,42,45,57-61,64-65,68-69,89
+simulator/src/test/java/org/workflowsim/experiment/SupportedAlgorithmExecutionIntegrationTest.java
+  s_37e38a7ed4368c::t_ace4caec05452b 37
+simulator/src/test/java/org/workflowsim/experiment/registry/AlgorithmDeclarationTest.java
+  s_1bd856a819664d::t_11b0ccc2059505 69,77,83,108-110,129-130,158-159,175,189-192,204-205,211-213,226-228,246,261-263,278-279
+simulator/src/test/java/org/workflowsim/experiment/registry/SelectorTierDvfsTestSchedulerProvider.java
+  s_37e38a7ed4368c::t_c5d288425ffe88 12-15,17-23,49
+simulator/src/test/java/org/workflowsim/failure/FailureParametersCoverageTest.java
+  s_37e38a7ed4368c::t_fe3572eaf4f2a3 19
+simulator/src/test/java/org/workflowsim/planning/LocalCommPlanningExtensionsTest.java
+  s_37e38a7ed4368c::t_ad084e081d1dfa 26-28,30-34,54-59,72,75-79,93,103-104,123
+simulator/src/test/java/org/workflowsim/planning/SharedStorageDlsPlanningAlgorithmTest.java
+  s_37e38a7ed4368c::t_863897f78e9c41 36-38
+simulator/src/test/java/org/workflowsim/rl/RlPolicyContractTest.java
+  s_1bd856a819664d::t_2ee735394e2738 20-22,33-34,38,40,44-45,51-52,57,62-63,71,76-77,81-82,87-88,92,97,101-102,108,116,121
+simulator/src/test/java/org/workflowsim/scheduling/ReadyBatchMCTSchedulingAlgorithmTest.java
+  s_37e38a7ed4368c::t_e8e14ba2c37126 16,18-19,21-24,46-47,57,62-64,73,79,91,93
+simulator/src/test/java/org/workflowsim/utils/OverheadParametersProbeTest.java
+  s_1bd856a819664d::t_90d3962a9d1cb3 18-19,21-27,53-55,59,67-69,73,107-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3c3946190f21d584af35807baef23043bcb9fea8",
+  "prompts": {},
+  "sessions": {
+    "s_1bd856a819664d": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "d43c7717-460b-4c9b-8587-78aceaf49dd9",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_37e38a7ed4368c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19ef8-86bb-7911-83de-89bd1a1aee90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
