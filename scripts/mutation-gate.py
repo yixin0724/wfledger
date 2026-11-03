@@ -65,8 +65,8 @@ REGISTRY = [
         id="M4",
         name="fat-tree aggregation picks halfK instead of availableAggregateCount",
         file="simulator/src/main/java/org/workflowsim/network/FatTreeTopology.java",
-        old="        int agg = src[1] % availableAggregateCount;",
-        new="        int agg = src[1] % halfK;",
+        old="            int agg = srcEdge % availableAggregates;",
+        new="            int agg = srcEdge % halfK;",
         killers="FatTreeTopologyTest"),
     dict(
         id="M5",

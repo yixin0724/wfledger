@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.workflowsim.network.FatTreeTopology;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -620,20 +622,11 @@ final class FileLifecycleValidator {
                 return;
             }
             Placement src = placements.get(srcHost), dst = placements.get(dstHost);
-            resources.add(link("ACC:" + srcHost, src.edgeName()));
-            if (src.pod != dst.pod || src.edge != dst.edge) {
-                int availableAggregates = (cores + half - 1) / half;
-                int agg = src.edge % availableAggregates;
-                resources.add(link(src.edgeName(), "AGG:" + src.pod + ":" + agg));
-                if (src.pod != dst.pod) {
-                    int uplinks = Math.min(half, cores - agg * half);
-                    int core = agg * half + (src.edge + dst.edge + src.pod + dst.pod) % uplinks;
-                    resources.add(link("AGG:" + src.pod + ":" + agg, "CORE:" + core));
-                    resources.add(link("CORE:" + core, "AGG:" + dst.pod + ":" + agg));
-                }
-                resources.add(link("AGG:" + dst.pod + ":" + agg, dst.edgeName()));
-            }
-            resources.add(link(dst.edgeName(), "ACC:" + dstHost));
+            // AUD-F12: the deterministic fat-tree rules have one Java source -- the same
+            // static decision the runtime route() delegates to; the Python auditor keeps an
+            // independent recompute (cross-language dual implementation is the evidence design).
+            resources.addAll(
+                    FatTreeTopology.routingLinks(srcHost, src.pod, src.edge, dstHost, dst.pod, dst.edge, cores, half));
         }
 
         private static String link(String from, String to) {

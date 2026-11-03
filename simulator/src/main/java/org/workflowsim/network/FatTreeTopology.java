@@ -20,7 +20,7 @@ import org.workflowsim.data.TransferContentionEngine;
  * m &lt; k^2/4 means oversubscription, with oversubscription ratio (k^2/4)/m. Bandwidth
  * conservation layer by layer (the link totals of edge-&gt;agg, agg-&gt;core, core downlink, and
  * host access are all k^3/4) yields full bisection bandwidth; see
- * {@code docs/research/FAT_TREE_DESIGN.md} for details.</p>
+ * {@code docs/advanced/FAT_TREE_DESIGN.md} for details.</p>
  *
  * <p><b>Deterministic routing (v1 rules, all written into auditable evidence)</b>:</p>
  * <ul>
@@ -42,7 +42,7 @@ import org.workflowsim.data.TransferContentionEngine;
  * <p>Honest boundaries: forwarding inside a switch has no capacity constraint (only links and
  * endpoints are constrained); uniform link bandwidth; link delay is not modelled; no adaptive
  * routing, ECMP hashing, or link failure. For the rationale and trade-offs see the model
- * boundaries of {@code docs/research/FAT_TREE_DESIGN.md}.</p>
+ * boundaries of {@code docs/advanced/FAT_TREE_DESIGN.md}.</p>
  */
 public final class FatTreeTopology {
 
@@ -216,28 +216,58 @@ public final class FatTreeTopology {
     public List<String> route(int srcHostId, int dstHostId) {
         int[] src = requirePlaced(srcHostId);
         int[] dst = requirePlaced(dstHostId);
+        return routingLinks(srcHostId, src[0], src[1], dstHostId, dst[0], dst[1], coreSwitchCount, halfK);
+    }
+
+    /**
+     * Pure routing decision -- the single Java source of the deterministic v1 rules (AUD-F12):
+     * returns the ordered topology link resource keys of a host-to-host transfer, computed from
+     * the placement coordinates, the declared core switch count, and k/2. The runtime path
+     * ({@link #route}) and the V2/V3 evidence validators ({@code FileLifecycleValidator}) both
+     * call this method, so the runtime route and the recomputed evidence route cannot drift
+     * apart within Java. The Python auditors keep an independent recompute of the same frozen
+     * formula -- the cross-language dual implementation is the evidence design; see
+     * {@code docs/advanced/FILE_LIFECYCLE_V2_FORMAT.md} for the frozen contract.
+     *
+     * @param srcHostId source host ID
+     * @param srcPod source Pod index
+     * @param srcEdge source edge-switch index within the Pod
+     * @param dstHostId destination host ID
+     * @param dstPod destination Pod index
+     * @param dstEdge destination edge-switch index within the Pod
+     * @param coreSwitchCount declared core switch count (k^2/4 when fully populated)
+     * @param halfK k/2
+     * @return ordered link resource keys; empty list for the same host
+     */
+    public static List<String> routingLinks(
+            int srcHostId,
+            int srcPod,
+            int srcEdge,
+            int dstHostId,
+            int dstPod,
+            int dstEdge,
+            int coreSwitchCount,
+            int halfK) {
         List<String> path = new ArrayList<String>();
         if (srcHostId == dstHostId) {
             return path;
         }
-        String srcEdge = "EDGE:" + src[0] + ":" + src[1];
-        String dstEdge = "EDGE:" + dst[0] + ":" + dst[1];
-        path.add("LINK:ACC:" + srcHostId + "->" + srcEdge);
-        if (srcEdge.equals(dstEdge)) {
-            path.add("LINK:" + dstEdge + "->ACC:" + dstHostId);
-            return path;
+        String srcEdgeName = "EDGE:" + srcPod + ":" + srcEdge;
+        String dstEdgeName = "EDGE:" + dstPod + ":" + dstEdge;
+        path.add("LINK:ACC:" + srcHostId + "->" + srcEdgeName);
+        if (!srcEdgeName.equals(dstEdgeName)) {
+            int availableAggregates = (coreSwitchCount + halfK - 1) / halfK;
+            int agg = srcEdge % availableAggregates;
+            path.add("LINK:" + srcEdgeName + "->AGG:" + srcPod + ":" + agg);
+            if (srcPod != dstPod) {
+                int uplinks = Math.min(halfK, coreSwitchCount - agg * halfK);
+                int core = agg * halfK + (srcEdge + dstEdge + srcPod + dstPod) % uplinks;
+                path.add("LINK:AGG:" + srcPod + ":" + agg + "->CORE:" + core);
+                path.add("LINK:CORE:" + core + "->AGG:" + dstPod + ":" + agg);
+            }
+            path.add("LINK:AGG:" + dstPod + ":" + agg + "->" + dstEdgeName);
         }
-        int agg = src[1] % availableAggregateCount;
-        path.add("LINK:" + srcEdge + "->AGG:" + src[0] + ":" + agg);
-        if (src[0] != dst[0]) {
-            int uplinks = coreUplinkCount(agg);
-            int j = (src[1] + dst[1] + src[0] + dst[0]) % uplinks;
-            int core = agg * halfK + j;
-            path.add("LINK:AGG:" + src[0] + ":" + agg + "->CORE:" + core);
-            path.add("LINK:CORE:" + core + "->AGG:" + dst[0] + ":" + agg);
-        }
-        path.add("LINK:AGG:" + dst[0] + ":" + agg + "->" + dstEdge);
-        path.add("LINK:" + dstEdge + "->ACC:" + dstHostId);
+        path.add("LINK:" + dstEdgeName + "->ACC:" + dstHostId);
         return path;
     }
 
