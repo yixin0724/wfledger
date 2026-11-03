@@ -83,6 +83,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-mutation-gate.py
 
 Exit codes: 0, all mutants killed; 1, survivors or a build failure; 2, anchor drift (the ledger must be fixed first). Dry-run mode and the self-test do not invoke Maven.
 
+CI runs the full battery on every push and pull request as a dedicated `mutation-gate` job (AUD-F02, 2026-11-03); the clean checkout satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run rule, and the JSON report is uploaded as an artifact. Local runs remain the entry point for ledger work and the `--dry-run` anchor preflight.
+
 ## Documentation checks
 
 ```bash

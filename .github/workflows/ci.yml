@@ -198,3 +198,39 @@ jobs:
       # a missing required input fails instead of being skipped silently.
       # The remaining large corpora do not ship with the repository and serve only extended
       # experiments run after the corpus has been prepared explicitly.
+
+  mutation-gate:
+    name: Mutation gate (registered zero-survival battery)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # AUD-F02 (2026-11-03): the registered-mutant gate previously ran only locally via
+      # `make mutation-gate`; CI executes the full battery on every push and pull request so a
+      # test battery that stops killing a registered canary fails the build. The clean
+      # checkout satisfies the clean-tree precondition and the dedicated runner satisfies the
+      # exclusive-run rule.
+      - name: Run the registered-mutant zero-survival gate
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/mutation-gate.py --output output/mutation-gate/mutation-gate-ci.json
+
+      - name: Preserve mutation-gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-gate-evidence
+          retention-days: 7
+          path: output/mutation-gate/

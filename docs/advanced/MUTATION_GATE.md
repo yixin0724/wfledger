@@ -57,6 +57,12 @@ stale (source drifted; the ledger must be updated first). The report is JSON, wr
 to a path that does not yet exist (never-overwrite semantics, same discipline as the
 independent auditors).
 
+CI runs the full battery on every push and pull request as a dedicated `mutation-gate` job
+([ci.yml](<../../.github/workflows/ci.yml>), AUD-F02 2026-11-03). The job's clean checkout
+satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run
+rule, and the JSON report is uploaded as a build artifact. Local runs remain the entry
+point for ledger work and the `--dry-run` anchor preflight.
+
 ## Execution model and safety
 
 - Each mutant is applied **in place** to the working tree; every target file is restored
