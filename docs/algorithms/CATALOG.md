@@ -166,7 +166,12 @@ Scope and boundaries:
 
 `SPT`, `LJF`, `FASTEST_VM`, and `FIRST_FIT_IDLE` are not current scheduling enum names;
 retained implementation classes must not be treated as new runnable labels on that basis.
-The rejection behavior of legacy labels is covered by the
+The four deprecated scheduling enums additionally bind their historical policies in
+WorkflowScheduler only after the explicit `Parameters.enableLegacySchedulingAliases()`
+declaration (AUD-F10): `ExampleCliSupport.begin` makes that declaration on behalf of the
+historical examples, a direct `Parameters.init` caller gets an explicit failure naming the
+actual policy instead of a silently mislabeled run, and the standard runner keeps rejecting
+the labels. The rejection behavior of legacy labels is covered by the
 [standard entry-point test](<../../simulator/src/test/java/org/workflowsim/experiment/SimulationRunnerAlgorithmContractTest.java>).
 Migration must declare the decision layer and model; do not relabel old results as
 evidence about another algorithm.

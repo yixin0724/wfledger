@@ -48,25 +48,29 @@ public class Parameters {
         // binary and configuration compatibility.
         /**
          * @deprecated The actual behavior is SPT-fastest-idle, not classic Min-Min.
-         *             Use READY_BATCH_MINMIN instead
+         *             Use READY_BATCH_MINMIN instead. AUD-F10: WorkflowScheduler binds this
+         *             label only after Parameters.enableLegacySchedulingAliases()
          */
         @Deprecated
         MINMIN,
         /**
          * @deprecated The actual behavior is LJF-fastest-idle, not classic Max-Min.
-         *             Use READY_BATCH_MAXMIN instead
+         *             Use READY_BATCH_MAXMIN instead. AUD-F10: WorkflowScheduler binds this
+         *             label only after Parameters.enableLegacySchedulingAliases()
          */
         @Deprecated
         MAXMIN,
         /**
          * @deprecated The actual behavior is greedy fastest VM, not classic MCT.
-         *             Use READY_BATCH_MCT instead
+         *             Use READY_BATCH_MCT instead. AUD-F10: WorkflowScheduler binds this
+         *             label only after Parameters.enableLegacySchedulingAliases()
          */
         @Deprecated
         MCT,
         /**
          * @deprecated vmIndex is dead code; the actual behavior is First-Fit-Idle.
-         *             Use READY_BATCH_ROUNDROBIN instead
+         *             Use READY_BATCH_ROUNDROBIN instead. AUD-F10: WorkflowScheduler binds
+         *             this label only after Parameters.enableLegacySchedulingAliases()
          */
         @Deprecated
         ROUNDROBIN,
@@ -213,6 +217,12 @@ public class Parameters {
      */
     private static org.workflowsim.experiment.registry.SchedulingAlgorithmProvider
             registeredSchedulingAlgorithmProvider;
+
+    /**
+     * AUD-F10: whether this session explicitly declared that the deprecated scheduling
+     * labels run with their historical label-to-policy bindings.
+     */
+    private static boolean legacySchedulingAliasesEnabled;
 
     /** Current planning mode. */
     private static PlanningAlgorithm planningAlgorithm;
@@ -468,6 +478,23 @@ public class Parameters {
         return registeredSchedulingAlgorithmProvider;
     }
 
+    /**
+     * AUD-F10: declares that this session runs the historical examples that still name the
+     * deprecated scheduling labels.
+     *
+     * <p>The declaration is session state cleared by {@link #reset()}. It only unlocks the
+     * historical label-to-policy bindings in WorkflowScheduler; it changes neither the
+     * maintained labels nor the SimulationRunner rejection of the deprecated labels.</p>
+     */
+    public static void enableLegacySchedulingAliases() {
+        legacySchedulingAliasesEnabled = true;
+    }
+
+    /** @return AUD-F10: whether the deprecated scheduling labels are explicitly declared legacy */
+    public static boolean isLegacySchedulingAliasesEnabled() {
+        return legacySchedulingAliasesEnabled;
+    }
+
     /** @return current planning algorithm */
     public static PlanningAlgorithm getPlanningAlgorithm() {
         return planningAlgorithm;
@@ -593,6 +620,7 @@ public class Parameters {
         SOURCE = "source";
         schedulingAlgorithm = SchedulingAlgorithm.INVALID;
         registeredSchedulingAlgorithmProvider = null;
+        legacySchedulingAliasesEnabled = false;
         planningAlgorithm = PlanningAlgorithm.INVALID;
         reduceMethod = null;
         vmNum = 0;

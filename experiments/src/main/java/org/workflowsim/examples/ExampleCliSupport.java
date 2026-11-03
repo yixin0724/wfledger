@@ -88,6 +88,11 @@ public final class ExampleCliSupport {
      * Begin a historical teaching scenario and install the root seed explicitly supplied by the
      * caller.
      *
+     * <p>The historical examples name the deprecated scheduling labels, so this entry point
+     * also declares the legacy alias set of {@code Parameters} (AUD-F10); the declaration is
+     * what lets the scheduler bind those labels to their historical policies again, and it is
+     * cleared by the same legacy state reset that ends the scenario.</p>
+     *
      * @param exampleId stable and non-empty example identifier from the catalog
      * @param rootSeed root seed to record and replay for this scenario
      */
@@ -97,6 +102,7 @@ public final class ExampleCliSupport {
         }
         resetLegacyState();
         Parameters.setRandomSeed(rootSeed);
+        Parameters.enableLegacySchedulingAliases();
         ACTIVE_EXAMPLE_ID.set(exampleId);
     }
 

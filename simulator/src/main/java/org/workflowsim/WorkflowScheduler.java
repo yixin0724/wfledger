@@ -209,9 +209,11 @@ public class WorkflowScheduler extends DatacenterBroker {
      * Creates the runtime scheduling policy from the configuration.
      *
      * <p>The mapping must stay consistent with the public experiment semantics of
-     * {@link Parameters.SchedulingAlgorithm}. The four deprecated enums still bind their
-     * historical policies and only serve compatibility with existing callers; research runs
-     * should select an explicitly maintained ready-batch or static policy.</p>
+     * {@link Parameters.SchedulingAlgorithm}. The four deprecated enums bind their
+     * historical policies only after the explicit legacy declaration
+     * ({@link Parameters#enableLegacySchedulingAliases()}); without that declaration the
+     * binding fails fast and names the actual policy, because SimulationRunner already
+     * rejects the deprecated labels for research evidence (AUD-F10).</p>
      *
      * @param name scheduling algorithm enum
      * @return the corresponding scheduling policy
@@ -244,18 +246,22 @@ public class WorkflowScheduler extends DatacenterBroker {
                 break;
             case MINMIN:
                 // Preserves the legacy behavior: SPT-fastest-idle variant.
+                requireLegacyAliasDeclaration(name, "SPT-fastest-idle");
                 algorithm = new SptFastestIdleSchedulingAlgorithm();
                 break;
             case MAXMIN:
                 // Preserves the legacy behavior: LJF-fastest-idle variant.
+                requireLegacyAliasDeclaration(name, "LJF-fastest-idle");
                 algorithm = new LjfFastestIdleSchedulingAlgorithm();
                 break;
             case MCT:
                 // Preserves the legacy behavior: greedy fastest VM.
+                requireLegacyAliasDeclaration(name, "fastest-VM");
                 algorithm = new FastestVmSchedulingAlgorithm();
                 break;
             case ROUNDROBIN:
                 // Preserves the legacy behavior: First-Fit-Idle.
+                requireLegacyAliasDeclaration(name, "First-Fit-Idle");
                 algorithm = new FirstFitIdleSchedulingAlgorithm();
                 break;
             case DATA:
@@ -272,6 +278,27 @@ public class WorkflowScheduler extends DatacenterBroker {
                 break;
         }
         return algorithm;
+    }
+
+    /**
+     * AUD-F10: refuses to silently bind a deprecated label to its historical policy.
+     *
+     * <p>The four deprecated labels never name their actual policies, so the historical
+     * binding is refused without the explicit legacy declaration; the message names the
+     * actual policy, the maintained replacement family, and the declaration path.</p>
+     *
+     * @param name deprecated scheduling label that was configured
+     * @param actualPolicy the historical policy the label actually binds
+     */
+    private static void requireLegacyAliasDeclaration(SchedulingAlgorithm name, String actualPolicy) {
+        if (!Parameters.isLegacySchedulingAliasesEnabled()) {
+            throw new IllegalStateException("SchedulingAlgorithm." + name + " is a deprecated "
+                    + "compatibility label: WorkflowScheduler binds the " + actualPolicy
+                    + " policy, not classic " + name + ", and SimulationRunner already rejects "
+                    + "it. Use the maintained READY_BATCH_* labels for research evidence, or "
+                    + "call Parameters.enableLegacySchedulingAliases() before Parameters.init "
+                    + "when running the historical examples (AUD-F10).");
+        }
     }
 
     /**
