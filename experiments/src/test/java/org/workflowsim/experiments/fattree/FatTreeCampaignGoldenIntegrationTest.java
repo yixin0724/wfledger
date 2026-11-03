@@ -17,15 +17,19 @@ import org.workflowsim.data.DataMovementModel;
 import org.workflowsim.utils.Parameters;
 
 /**
- * 当前模型下的 campaign 抽样数值、重复运行和结构性契约回归。
+ * Campaign sampling values, repeated-run and structural-contract regression under the
+ * current model.
  *
- * <p>装置使用 DAX 归一化工作量、无显式成本矩阵、seed 91 和声明的 3/4 主机平台；
- * 不与 simulator 的论文成本矩阵夹具混用。以下数值、排名、单调和恒等断言仅适用于
- * 各测试的输入及参数，不能推出所有 DAG 的不变量或完整历史研究的新排名。</p>
+ * <p>The fixture uses DAX-normalized workload, no explicit cost matrix, seed 91 and the
+ * declared 3/4 host platforms; it is not mixed with the simulator's paper cost-matrix
+ * fixture. The value, ranking, monotonicity and identity assertions below apply only to
+ * the inputs and parameters of each test; they do not entail invariants for all DAGs or
+ * new rankings for the complete historical study.</p>
  *
- * <p>历史参数与保留结果来源见
- * {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}。
- * 本测试维护当前回归值，不覆盖该目录中的历史数值工件。</p>
+ * <p>For the historical parameters and the provenance of the retained results see
+ * {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}.
+ * This test maintains the current regression values and does not overwrite the
+ * historical numeric artifacts in that directory.</p>
  */
 class FatTreeCampaignGoldenIntegrationTest {
 
@@ -46,7 +50,7 @@ class FatTreeCampaignGoldenIntegrationTest {
     private static final String BASELINE = "baseline-k4-full";
     private static final String A4 = "A4-k4-full-link10x";
 
-    /** 论文例 12 组合黄金 makespan（秒，campaign 配置）。 */
+    /** Golden makespan of the 12 paper-example combinations (seconds, campaign configuration). */
     @Test
     void paperExampleGoldenMakespansMatchCampaignConfiguration() throws Exception {
         Log.disable();
@@ -63,10 +67,11 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertMakespan(results, HEFT_EXAMPLE, PSO, V1, 6132.1);
         assertMakespan(results, HEFT_EXAMPLE, PSO, R2, 6254.1);
         assertMakespan(results, HEFT_EXAMPLE, PSO, R6, 7262.1);
-        // R10沿用R8的0.125/1.25 MB/s参数；CPOP和争用列按修正后的实际执行锁定。
+        // R10 reuses the R8 parameters 0.125/1.25 MB/s; the CPOP and contention columns
+        // are locked against the corrected actual execution.
     }
 
-    /** 争用把 cybershake 的逐 DAG 第一名翻转为 PSO；论文例保持 HEFT。 */
+    /** Contention flips the per-DAG winner of cybershake to PSO; the paper example keeps HEFT. */
     @Test
     void contentionFlipsCybershakeWinnersToPso() throws Exception {
         Log.disable();
@@ -85,11 +90,16 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertEquals(PSO, winners.get(R2).get(CYBERSHAKE_N100));
         assertEquals(PSO, winners.get(R6).get(CYBERSHAKE_N100));
         for (String model : new String[] {V1, R2, R6}) {
-            assertEquals(HEFT, winners.get(model).get(HEFT_EXAMPLE), model + ": 论文例第一名应始终为 LOCAL_HEFT");
+            assertEquals(
+                    HEFT,
+                    winners.get(model).get(HEFT_EXAMPLE),
+                    model + ": the paper example winner must always be LOCAL_HEFT");
         }
-        // 黄金 makespan（翻转的直接数值证据，秒）。再标定后 N50 PSO 的 R6 恢复
-        // 束缚链路的小幅减速（587921.6099 &lt; R2 587924.0247，噪声级交叉已入
-        // 弱单调诊断）；N100 PSO 的 R6 恰与 R2 相等（链路层对该映射无附加约束）。
+        // Golden makespans (the direct numeric evidence of the flip, seconds). After
+        // re-calibration, R6 for N50 PSO recovers a small slowdown of the binding link
+        // (587921.6099 &lt; R2 587924.0247, a noise-level crossing already covered by the
+        // weak-monotonicity diagnostic); for N100 PSO, R6 equals R2 exactly (the link
+        // layer adds no further constraint on that mapping).
         assertMakespan(results, CYBERSHAKE_N50, PSO, R2, 587924.0247);
         assertMakespan(results, CYBERSHAKE_N50, PSO, R6, 587921.1503);
         assertMakespan(results, CYBERSHAKE_N50, HEFT, R2, 588010.008326);
@@ -98,7 +108,7 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertMakespan(results, CYBERSHAKE_N100, CPOP, V1, 1155577.5672);
     }
 
-    /** 弱单调性：论文例子集严格成立；子集内交叉必须为噪声级。 */
+    /** Weak monotonicity: strict on the paper example; crossings inside the subset must be noise-level. */
     @Test
     void weakMonotonicityStrictOnPaperExampleAndNoiseLevelElsewhere() throws Exception {
         Log.disable();
@@ -107,66 +117,86 @@ class FatTreeCampaignGoldenIntegrationTest {
             double a = results.makespan(HEFT_EXAMPLE, planner, V1);
             double b = results.makespan(HEFT_EXAMPLE, planner, R2);
             double c = results.makespan(HEFT_EXAMPLE, planner, R6);
-            assertTrue(b >= a && c >= b, planner + ": 论文例上必须严格弱单调 " + a + "/" + b + "/" + c);
+            assertTrue(
+                    b >= a && c >= b,
+                    planner + ": weak monotonicity must be strict on the paper example " + a + "/" + b + "/" + c);
         }
         for (Map<String, Object> violation : results.monotonicityDiagnostics()) {
             double deviation = ((Double) violation.get("maxRelativeDeviation")).doubleValue();
-            assertTrue(deviation <= 1.0e-4, "子集内弱单调性交叉必须为噪声级（≤1e-4 相对偏差）: " + violation);
+            assertTrue(
+                    deviation <= 1.0e-4,
+                    "weak-monotonicity crossings inside the subset must be noise-level "
+                            + "(<= 1e-4 relative deviation): " + violation);
         }
     }
 
-    /** 确定性：同配置双跑，主矩阵记录逐位一致。 */
+    /** Determinism: two runs of the same configuration yield bit-identical main-matrix records. */
     @Test
     void subsetRunsAreDeterministic() throws Exception {
         Log.disable();
         FatTreeSchedulingCampaignExecutor.CampaignResults first = runSubset(false, false);
         FatTreeSchedulingCampaignExecutor.CampaignResults second = runSubset(false, false);
-        assertEquals(first.mainMatrix, second.mainMatrix, "双跑主矩阵必须逐位一致");
+        assertEquals(first.mainMatrix, second.mainMatrix, "the two runs must yield a bit-identical main matrix");
     }
 
     /**
-     * 3 主机敏感性：基线 ≡ 主矩阵 R6；结构轴（A1/A2/A3/A5）实测恒等
-     * （3 主机平台任意并发流必共享端点主机——物理退化，非链路参数效应）；
-     * 带宽比轴 A4（链路 1.25 MB/s &gt; 端点 1 MB/s，非束缚）精确收敛回
-     * 主矩阵 R2——再标定后该轴恢复"链路远宽于端点时收敛回端点主导"的设计语义。
+     * 3-host sensitivity: the baseline is identical to main-matrix R6; the structural axes
+     * (A1/A2/A3/A5) are measured identical (on the 3-host platform every concurrent flow
+     * must share the endpoint host -- physical degeneracy, not a link-parameter effect);
+     * the bandwidth-ratio axis A4 (link 1.25 MB/s &gt; endpoint 1 MB/s, non-binding)
+     * converges exactly back to main-matrix R2 -- after re-calibration this axis restores
+     * the design semantics "converge to endpoint dominance when the link is far wider
+     * than the endpoint".
      */
     @Test
     void sensitivityLocksDegenerateStructureAxesAndConvergingBandwidthAxis() throws Exception {
         Log.disable();
         FatTreeSchedulingCampaignExecutor.CampaignResults results = runSubset(true, false);
-        assertEquals(36, results.mainMatrix.size(), "主矩阵记录数 = 3 DAG × 12 组合");
-        assertEquals(12, results.sensitivity.size(), "敏感性记录数 = 2 规划器 × 6 拓扑变体（仅论文例）");
+        assertEquals(36, results.mainMatrix.size(), "main-matrix record count = 3 DAGs x 12 combinations");
+        assertEquals(
+                12,
+                results.sensitivity.size(),
+                "sensitivity record count = 2 planners x 6 topology variants (paper example only)");
         for (String planner : new String[] {HEFT, CPOP}) {
             double baseline = results.sensitivityMakespan(HEFT_EXAMPLE, planner, BASELINE);
             assertEquals(
-                    results.makespan(HEFT_EXAMPLE, planner, R6), baseline, 1.0e-9, planner + ": 敏感性基线拓扑必须与主矩阵 R6 运行恒等");
+                    results.makespan(HEFT_EXAMPLE, planner, R6),
+                    baseline,
+                    1.0e-9,
+                    planner + ": the sensitivity baseline topology must be identical " + "to the main-matrix R6 run");
             for (String variant :
                     new String[] {"A1-k4-oversub2x", "A2-k8-full", "A3-k8-oversub2x", "A5-k4-full-same-edge-pair"}) {
                 assertEquals(
                         baseline,
                         results.sensitivityMakespan(HEFT_EXAMPLE, planner, variant),
                         1.0e-9,
-                        planner + " × " + variant + ": 3 主机下结构轴应退化恒等");
+                        planner + " x " + variant + ": structural axes must degenerate to identity on 3 hosts");
             }
             assertEquals(
                     results.makespan(HEFT_EXAMPLE, planner, R2),
                     results.sensitivityMakespan(HEFT_EXAMPLE, planner, A4),
                     1.0e-9,
-                    planner + ": A4（链路 10×）应精确收敛回主矩阵 R2 值");
+                    planner + ": A4 (link 10x) must converge exactly back to the main-matrix R2 value");
         }
     }
 
     /**
-     * 4 主机结构块：结构轴（A1/A2/A3/A5）恒等——交叉流从未并发经过差异链路；
-     * 带宽轴 A4（链路 1.25 MB/s 非束缚）严格降低 makespan，与 simulator 慢链路
-     * 探针（FatTreeContentionIntegrationTest，0.25 MB/s → 588.1 &gt; 284.1）共同
-     * 证明链路争用模型在束缚链路下正确生效。R8 再标定后该契约恢复原设计形态。
+     * 4-host structural block: the structural axes (A1/A2/A3/A5) are identical -- crossing
+     * flows never traverse the differing link concurrently; the bandwidth axis A4 (link
+     * 1.25 MB/s, non-binding) strictly lowers the makespan, which together with the
+     * simulator slow-link probe (FatTreeContentionIntegrationTest, 0.25 MB/s -> 588.1
+     * &gt; 284.1) proves that the link-contention model takes effect correctly on a
+     * binding link. After the R8 re-calibration this contract restores its original
+     * design shape.
      */
     @Test
     void structuralBlockLocksFourHostDegeneracyAndBandwidthEffect() throws Exception {
         Log.disable();
         FatTreeSchedulingCampaignExecutor.CampaignResults results = runSubset(false, true);
-        assertEquals(12, results.structural.size(), "结构敏感性记录数 = 2 规划器 × 6 拓扑变体（仅论文例）");
+        assertEquals(
+                12,
+                results.structural.size(),
+                "structural-sensitivity record count = 2 planners x 6 topology variants (paper example only)");
         for (String planner : new String[] {HEFT, CPOP}) {
             double baseline = results.structuralMakespan(HEFT_EXAMPLE, planner, BASELINE);
             for (String variant :
@@ -175,11 +205,11 @@ class FatTreeCampaignGoldenIntegrationTest {
                         baseline,
                         results.structuralMakespan(HEFT_EXAMPLE, planner, variant),
                         1.0e-9,
-                        planner + " × " + variant + ": 4 主机下结构轴仍恒等");
+                        planner + " x " + variant + ": structural axes stay identical on 4 hosts");
             }
             assertTrue(
                     results.structuralMakespan(HEFT_EXAMPLE, planner, A4) < baseline,
-                    planner + ": A4（链路 1.25 MB/s 非束缚）应严格降低 makespan");
+                    planner + ": A4 (link 1.25 MB/s, non-binding) must strictly lower the makespan");
         }
         assertEquals(5718.1, results.structuralMakespan(HEFT_EXAMPLE, HEFT, BASELINE), 1.0e-6);
         assertEquals(5718.1, results.structuralMakespan(HEFT_EXAMPLE, CPOP, BASELINE), 1.0e-6);
@@ -187,7 +217,10 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertEquals(5186.1, results.structuralMakespan(HEFT_EXAMPLE, CPOP, A4), 1.0e-6);
     }
 
-    /** 敏感性/结构块仅跑论文例（其余 DAG 由全量 campaign 覆盖），主矩阵跑子集。 */
+    /**
+     * The sensitivity and structural blocks run the paper example only (the other DAGs are
+     * covered by the full campaign); the main matrix runs the subset.
+     */
     private static FatTreeSchedulingCampaignExecutor.CampaignResults runSubset(
             boolean includeSensitivity, boolean includeStructural) throws Exception {
         Set<String> wanted = new HashSet<String>(Arrays.asList(HEFT_EXAMPLE, CYBERSHAKE_N50, CYBERSHAKE_N100));
@@ -204,8 +237,8 @@ class FatTreeCampaignGoldenIntegrationTest {
                 sensitivitySubset.add(dag);
             }
         }
-        assertEquals(3, subset.size(), "子集必须包含论文例 + cybershake-n50/n100");
-        assertEquals(1, sensitivitySubset.size(), "核心 DAG 集必须包含 HEFT 论文例");
+        assertEquals(3, subset.size(), "the subset must contain the paper example + cybershake-n50/n100");
+        assertEquals(1, sensitivitySubset.size(), "the core DAG set must contain the HEFT paper example");
         FatTreeSchedulingCampaignExecutor.CampaignResults main =
                 FatTreeSchedulingCampaignExecutor.runCampaign(datasetsRoot(), subset, false, false);
         if (includeSensitivity) {
@@ -233,7 +266,7 @@ class FatTreeCampaignGoldenIntegrationTest {
                 expected,
                 results.makespan(dax, planner, modelKind),
                 expected > 1000.0 ? 1.0e-3 : 1.0e-6,
-                dax + " × " + planner + " × " + modelKind + " 黄金 makespan");
+                dax + " x " + planner + " x " + modelKind + " golden makespan");
     }
 
     private static java.nio.file.Path datasetsRoot() {

@@ -24,24 +24,28 @@ import org.workflowsim.platform.PlatformProfiles;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 
 /**
- * C01+C02：会话状态矩阵与休眠全局围栏（审查工程 Phase 1 机械可靠性）。
+ * C01+C02: session state matrix and dormant-global fence (review engineering Phase 1, mechanical
+ * reliability).
  *
- * <p>契约（守恒律）：同一 JVM 串行执行两次标准 {@link SimulationRunner} 全流程后，
- * 全部可变静态字段构成的状态必须与<b>第一循环结束时刻完全一致</b>——任何跨 run
- * 累积/残留都是 campaign 研究执行器的静默污染源（H-1/H-2 类陷阱的机械检测器）。</p>
+ * <p>Contract (conservation law): after two serial full {@link SimulationRunner} runs in the same
+ * JVM, the state formed by every mutable static field must be <b>exactly identical to the state at
+ * the end of the first cycle</b> -- any cross-run accumulation or residue is a silent contamination
+ * source for the campaign research executor (the mechanical detector for the H-1/H-2 class of
+ * traps).</p>
  *
- * <p>围栏（F-002/F-003）：标准 runner 声明的模型范围不触碰
- * {@code CloudSim.NetworkTopology}（Fat-tree 为自研独立实现）与
- * {@code Consts.MILLION}、{@code Parameters.SOURCE}——这些字段在两次运行前后
- * 必须保持<b>初始值</b>。</p>
+ * <p>Fence (F-002/F-003): the model scope declared by the standard runner does not touch
+ * {@code CloudSim.NetworkTopology} (the Fat-tree implementation is an independent in-house one) or
+ * {@code Consts.MILLION}, {@code Parameters.SOURCE} -- these fields must keep their <b>initial
+ * values</b> before and after both runs.</p>
  *
- * <p>审计类清单与字段全集来自 2026-10 审查工程的机械扫描产出（清单已固化为下方
- * {@code AUDIT_CLASSES}；该临时工作区已整体清除，快照见 git 6db21f1）；
- * 快照值用确定性深度表示（Map 排序、identity 兜底），仅用于相等性判定。</p>
+ * <p>The audit class list and the field universe come from the mechanical scan output of the 2026-10
+ * review engineering (the list is frozen below as {@code AUDIT_CLASSES}; that temporary workspace has
+ * been removed entirely, snapshot at git 6db21f1); snapshot values use a deterministic deep
+ * representation (sorted maps, identity fallback) and serve equality comparison only.</p>
  */
 class SessionResetMatrixTest {
 
-    /** 审计范围内全部含可变静态字段的类。 */
+    /** Every class in the audit scope that declares a mutable static field. */
     private static final List<String> AUDIT_CLASSES = Arrays.asList(
             "org.workflowsim.utils.Parameters",
             "org.cloudbus.cloudsim.core.CloudSim",
@@ -56,7 +60,7 @@ class SessionResetMatrixTest {
             "org.workflowsim.utils.SimulationSession",
             "org.cloudbus.cloudsim.Consts");
 
-    /** 必须保持初始值（永不触碰）的类.字段。 */
+    /** Class.field pairs that must keep their initial values (never touched). */
     private static final List<String> VIRGIN_FENCE = Arrays.asList(
             "org.cloudbus.cloudsim.NetworkTopology.*",
             "org.cloudbus.cloudsim.Consts.MILLION",
@@ -77,18 +81,30 @@ class SessionResetMatrixTest {
             SimulationReport second = runOnce(workflow, SchedulingAlgorithm.READY_BATCH_MCT);
             Map<String, String> afterSecond = snapshot();
 
-            assertTrue(first.getMetrics().isAllLogicalTasksCompletedSuccessfully(), "第一轮（FCFS）仿真必须完整成功，状态审计才有意义");
-            assertTrue(second.getMetrics().isAllLogicalTasksCompletedSuccessfully(), "第二轮（MCT）仿真必须完整成功，状态审计才有意义");
+            assertTrue(
+                    first.getMetrics().isAllLogicalTasksCompletedSuccessfully(),
+                    "the first round (FCFS) run must complete successfully, otherwise the state audit"
+                            + " is meaningless");
+            assertTrue(
+                    second.getMetrics().isAllLogicalTasksCompletedSuccessfully(),
+                    "the second round (MCT) run must complete successfully, otherwise the state audit"
+                            + " is meaningless");
 
-            // 泄漏检测：两个完整生命周期后，状态与第一循环结束时刻逐字段一致。
+            // Leak detection: after two full lifecycles the state must match the end of the first
+            // cycle field by field.
             List<String> unstable = diff("afterFirst", afterFirst, "afterSecond", afterSecond);
-            assertTrue(unstable.isEmpty(), "连续两次标准运行后可变静态状态发生漂移（跨 run 泄漏）：\n" + String.join("\n", unstable));
+            assertTrue(
+                    unstable.isEmpty(),
+                    "mutable static state drifted after two consecutive standard runs (cross-run leak):\n"
+                            + String.join("\n", unstable));
 
-            // 围栏检测：休眠字段必须从未被触碰（与最初基线一致）。
+            // Fence detection: dormant fields must never have been touched (still at the original baseline).
             List<String> fenceBroken = diffViolations(virgin, afterSecond);
             assertTrue(
                     fenceBroken.isEmpty(),
-                    "标准 runner 触碰了声明范围外的休眠全局（F-002/F-003 类陷阱）：\n" + String.join("\n", fenceBroken));
+                    "the standard runner touched a dormant global outside its declared scope (F-002/F-003"
+                            + " class trap):\n"
+                            + String.join("\n", fenceBroken));
         } finally {
             Log.setDisabled(logWasDisabled);
         }
@@ -107,7 +123,7 @@ class SessionResetMatrixTest {
         return new SimulationRunner().run(config, platform);
     }
 
-    /** 4 任务纯链 DAX（runtime 100 秒 ×2，无文件）——最小标准合法输入。 */
+    /** Pure-chain 4-task DAX (runtime 100 s each, no files) -- the minimal legal standard input. */
     private Path minimalChainDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -126,9 +142,9 @@ class SessionResetMatrixTest {
         return path;
     }
 
-    // ---- 状态快照与比较 ----
+    // ---- state snapshot and comparison ----
 
-    /** 类.字段 → 确定性深度表示。 */
+    /** Class.field -> deterministic deep representation. */
     private static Map<String, String> snapshot() throws Exception {
         Map<String, String> state = new TreeMap<String, String>();
         for (String className : AUDIT_CLASSES) {
@@ -137,7 +153,8 @@ class SessionResetMatrixTest {
                 if (!Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {
                     continue;
                 }
-                // 排除 JaCoCo 等织入的合成字段：仪表探针不是产品的声明状态。
+                // Exclude synthetic fields woven in by JaCoCo and similar tools: instrumentation
+                // probes are not declared product state.
                 if (field.isSynthetic() || field.getName().startsWith("$")) {
                     continue;
                 }
@@ -149,7 +166,10 @@ class SessionResetMatrixTest {
         return state;
     }
 
-    /** 确定性表示：null/原始值直书；集合保序；Map 键排序；对象 identity 兜底；深度封顶。 */
+    /**
+     * Deterministic representation: null and primitive values are spelled out; collections keep their
+     * order; map keys are sorted; object identity is the fallback; depth is capped.
+     */
     private static String canonical(Object value, int depth) {
         if (value == null) {
             return "null";
@@ -213,7 +233,7 @@ class SessionResetMatrixTest {
         return value.getClass().getName() + "@" + System.identityHashCode(value);
     }
 
-    /** 抽查所有 snapshot 键的不同项。 */
+    /** Report the differing entries of every snapshot key. */
     private static List<String> diff(
             String leftLabel, Map<String, String> left, String rightLabel, Map<String, String> right) {
         List<String> diffs = new ArrayList<String>();
@@ -227,7 +247,10 @@ class SessionResetMatrixTest {
         return diffs;
     }
 
-    /** 围栏校验：指定字段必须等于 virgin 基线（规则支持 Class.* 前缀或精确字段）。 */
+    /**
+     * Fence check: the named fields must equal the virgin baseline (a rule matches either a
+     * Class.* prefix or an exact field).
+     */
     private static List<String> diffViolations(Map<String, String> virgin, Map<String, String> current) {
         List<String> violations = new ArrayList<String>();
         for (String rule : VIRGIN_FENCE) {

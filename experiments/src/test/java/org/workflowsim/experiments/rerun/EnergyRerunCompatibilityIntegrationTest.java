@@ -28,17 +28,22 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
- * 能耗维度复跑兼容性测试（BAT-E4.1，2026-10-27，先红后绿）。
+ * Energy-dimension rerun compatibility test (BAT-E4.1, 2026-10-27, red first then green).
  *
- * <p>审查发现的两个真实缺陷的行为锚：</p>
+ * <p>Behavioral anchors for the two real defects found in review:</p>
  * <ol>
- *   <li><b>带功率复跑</b>：ManifestConfigRebuilder 曾经不转发 idlePowerWatts/maxPowerWatts，
- *       复跑重建的平台无功率 → energyMetrics 全零 vs 原始带能量 → 核心量 DIVERGED。
- *       修复后必须 IDENTICAL_CORE（同一引擎同一种子 → 忙区间逐位一致 → 焦耳逐位一致）。</li>
- *   <li><b>历史证据兼容</b>：E4 起新 manifest 无条件带 energyMetrics（合法全零）与
- *       platform.vms 功率键；留存的能耗前证据两者皆无。复跑时旧侧缺键、新侧为零值，
- *       键并集比对会假红。修复后缺键≡规范零值（仅零值豁免；非零必须逐位相等），
- *       历史证据保持 IDENTICAL_CORE。</li>
+ *   <li><b>Powered rerun</b>: ManifestConfigRebuilder used not to forward
+ *       idlePowerWatts/maxPowerWatts, so the rebuilt rerun platform had no power ->
+ *       energyMetrics all zero vs. the original carrying energy -> core quantities
+ *       DIVERGED. After the fix it must be IDENTICAL_CORE (same engine, same seed ->
+ *       busy intervals bit-identical -> joules bit-identical).</li>
+ *   <li><b>Historical evidence compatibility</b>: since E4 every new manifest carries
+ *       energyMetrics (legitimately all zero) and per-VM power keys under platform.vms;
+ *       retained pre-energy evidence has neither. On rerun the legacy side lacks the keys
+ *       and the new side has zero values, so a key-union comparison reports a false red.
+ *       After the fix a missing key equals the canonical zero value (only zero values are
+ *       exempt; nonzero values must be bit-identical), and historical evidence stays
+ *       IDENTICAL_CORE.</li>
  * </ol>
  */
 class EnergyRerunCompatibilityIntegrationTest {
@@ -65,7 +70,8 @@ class EnergyRerunCompatibilityIntegrationTest {
         Path run = fixture(true), output = directory.resolve("powered-repeat");
         RerunReport result = RerunDiffExecutor.execute(run, output);
         assertEquals(RerunVerdict.IDENTICAL_CORE, result.getVerdict(), result.toJson());
-        // 复跑侧的能耗必须逐位复制（守恒律由同一引擎保证）
+        // Energy on the rerun side must be copied bit for bit (the conservation law holds
+        // because the same engine runs)
         JsonObject original = read(run.resolve("result.manifest.json")).getAsJsonObject("energyMetrics");
         JsonObject repeat = read(output.resolve("rerun/result.manifest.json")).getAsJsonObject("energyMetrics");
         assertEquals(original.get("totalEnergyJoules"), repeat.get("totalEnergyJoules"));
@@ -82,8 +88,10 @@ class EnergyRerunCompatibilityIntegrationTest {
 
     @Test
     void nonzeroEnergyIsNeverTreatedAsAbsentEquivalent() throws Exception {
-        // BAT-E4.1 豁免面边界锁：原始侧带非零能耗、复跑侧"丢能量"（缺节）绝不允许
-        // 被缺位等价吞掉——若等价逻辑被误读到非零侧，此测试当场红。
+        // BAT-E4.1 exemption-surface boundary lock: a nonzero original energy against a
+        // rerun side that "dropped energy" (missing section) must never be swallowed by the
+        // absence equivalence -- if the equivalence logic were misread onto the nonzero
+        // side, this test turns red immediately.
         Path original = fixture(true), rerun = fixture(true);
         stripEnergyDimension(rerun);
         RerunEvidence a = RerunEvidenceReader.read(original);
@@ -100,11 +108,12 @@ class EnergyRerunCompatibilityIntegrationTest {
 
     @Test
     void adversariallyCorruptedZeroSectionsStayDivergent() throws Exception {
-        // 豁免面压力测试：缺席侧遇"部分非零"的 energyMetrics 绝不允许被判等价——
-        // jsonTreeIsAllZeroNumbers 必须递归看穿每个数值叶子（含 vmEnergyJoules 映射）。
+        // Exemption-surface stress test: an absent side facing a "partially nonzero"
+        // energyMetrics must never be judged equivalent -- jsonTreeIsAllZeroNumbers must
+        // recurse through every numeric leaf (including the vmEnergyJoules mapping).
         Path original = fixture(false), rerun = fixture(true);
         stripEnergyDimension(original);
-        // 结果：original 无能耗节；rerun 的 totalEnergyJoules 非零 → 必须分歧。
+        // Result: original has no energy section; the rerun totalEnergyJoules is nonzero -> must diverge.
         RerunEvidence a = RerunEvidenceReader.read(original);
         RerunEvidence b = RerunEvidenceReader.read(rerun);
         boolean diverged = false;
@@ -119,7 +128,8 @@ class EnergyRerunCompatibilityIntegrationTest {
 
     @Test
     void rebuilderRejectsStringTypedAndHalfDeclaredPower() throws Exception {
-        // 字符串化功率必须显式拒绝（不是静默 0，也不是 NumberFormatException 裸跑）。
+        // String-typed power must be rejected explicitly (not a silent 0, and not a bare
+        // NumberFormatException escape).
         Path run = fixture(false);
         Path manifest = run.resolve("result.manifest.json");
         JsonObject root = read(manifest);
@@ -130,8 +140,9 @@ class EnergyRerunCompatibilityIntegrationTest {
                 .addProperty("idlePowerWatts", "250");
         Files.write(manifest, root.toString().getBytes(StandardCharsets.UTF_8));
         RerunEvidence stringTyped = RerunEvidenceReader.read(run);
-        // 契约：重建拒绝走 RECONSTRUCTION_REJECTED 包装（RerunFailureException），
-        // 字段名诊断必须透传到表层消息 —— 研究者在 CLI 上看到的是它。
+        // Contract: a rebuild refusal travels through the RECONSTRUCTION_REJECTED wrapper
+        // (RerunFailureException), and the field-name diagnostic must reach the top-level
+        // message -- that is what the researcher sees on the CLI.
         RerunFailureException stringRejection = assertThrows(
                 RerunFailureException.class,
                 () -> ManifestConfigRebuilder.rebuild(stringTyped, RerunInputResolver.resolve(stringTyped)));
@@ -140,7 +151,8 @@ class EnergyRerunCompatibilityIntegrationTest {
                 "rejection must cite the field through the wrapper: " + stringRejection.getMessage());
         assertEquals(RerunVerdict.RECONSTRUCTION_REJECTED, stringRejection.getVerdict());
 
-        // 半声明（idle 在场、max 缺→0）由 VmSpec 校验兜底拒绝。
+        // Half-declaration (idle present, max absent -> 0) is rejected by VmSpec validation
+        // as the fallback.
         Path run2 = fixture(false);
         Path manifest2 = run2.resolve("result.manifest.json");
         JsonObject root2 = read(manifest2);
@@ -161,8 +173,9 @@ class EnergyRerunCompatibilityIntegrationTest {
 
     @Test
     void jsonNullPowerFieldsReadAsUnpoweredLegacyForm() throws Exception {
-        // BAT-R3 增补（Round-2 遗留的"已核未锁"面）：显式 JSON null 功率键必须按
-        // 未声明（0.0）读取并完成合法复跑，而非抛错或误读为功率已声明。
+        // BAT-R3 addition (the "verified but unlocked" surface left over from Round 2): an
+        // explicit JSON null power key must read as undeclared (0.0) and still complete a
+        // legal rerun, rather than throwing or being misread as power declared.
         Path run = fixture(false), output = directory.resolve("null-power-repeat");
         Path manifest = run.resolve("result.manifest.json");
         JsonObject root = read(manifest);
@@ -183,7 +196,7 @@ class EnergyRerunCompatibilityIntegrationTest {
 
     // ---- fixtures ----
 
-    /** 生成一份简单双 VM 证据；powered=true 时每 VM 携 250/400 W。 */
+    /** Build a simple two-VM evidence set; with powered=true each VM carries 250/400 W. */
     private Path fixture(boolean powered) throws Exception {
         Path run = directory.resolve("study-" + (serial++) + "/runs/original");
         Path input = run.getParent().getParent().resolve("inputs/flow.dax");
@@ -238,7 +251,10 @@ class EnergyRerunCompatibilityIntegrationTest {
         return run;
     }
 
-    /** 把 manifest 剥回能耗前形态（模拟留存的旧证据）：删 energyMetrics 节与每 VM 功率键。 */
+    /**
+     * Strip the manifest back to its pre-energy form (simulating retained legacy evidence):
+     * remove the energyMetrics section and the per-VM power keys.
+     */
     private static void stripEnergyDimension(Path run) throws Exception {
         Path manifest = run.resolve("result.manifest.json");
         JsonObject root = read(manifest);

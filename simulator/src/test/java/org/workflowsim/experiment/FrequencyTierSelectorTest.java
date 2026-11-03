@@ -29,17 +29,24 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * BAT-D6（2026-10-29，docs/advanced/DVFS_DIMENSION_DESIGN.md §2.2 注册面）：逐 Job
- * 频档指派第一类调度时刻 API（{@link org.workflowsim.scheduling.FrequencyTierSelector}）
- * 的行为合同——优先级、证据面、fail-fast 语义三件套。
+ * BAT-D6 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.2 registration
+ * surface): behaviour contract of the first-class scheduling-time API for per-Job
+ * frequency-tier assignment
+ * ({@link org.workflowsim.scheduling.FrequencyTierSelector}) -- precedence, evidence
+ * surface and fail-fast semantics.
  *
- * <p>期望值来源（AGENTS 三源之"契约文档"）：设计文档 §2.2 声明"注册 DVFS-aware
- * 算法可以通过调度时刻 API 逐 Job 指派频档"——活动策略实例实现 selector 时，逐 Job
- * 档选择权归算法，会话级策略退为无 selector 算法的缺省斜切；指派必须是"候选表内的
- * 声明档"（空档/表外档按证据链断裂显式拒绝，D2 tierByMips 条款的调度侧对应）。</p>
+ * <p>Source of the expected values (the "contract documents" of the AGENTS three
+ * sources): design document section 2.2 states that "a registered DVFS-aware algorithm
+ * may assign a frequency tier per Job through the scheduling-time API" -- when the active
+ * policy instance implements the selector, the per-Job tier choice belongs to the
+ * algorithm, and the session-level policy degrades to the default for algorithms without
+ * a selector; an assignment must be a "declared tier inside the candidate table" (an
+ * empty tier or an off-table tier is rejected explicitly as an evidence-chain break, the
+ * scheduling-side counterpart of the D2 tierByMips clause).</p>
  *
- * <p>测试用三个 test-registry 提供者（SPI 注册于 simulator test classpath）驱动真实
- * 运行：合法面（恒取末档）/ 破坏面一（返回 null）/ 破坏面二（表外档 mips=1500）。</p>
+ * <p>The test drives real runs through three test-registry providers (SPI registered on
+ * the simulator test classpath): the legal face (always picks the last tier) / break face
+ * one (returns null) / break face two (off-table tier mips=1500).</p>
  */
 class FrequencyTierSelectorTest {
 
@@ -59,7 +66,7 @@ class FrequencyTierSelectorTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    /** 1. 优先级：selector（算法侧逐 Job 决策）压过会话级 DEFAULT 策略。 */
+    /** 1. Precedence: the selector (algorithm-side per-Job decision) overrides the session DEFAULT policy. */
     @Test
     void selectorPrecedenceOverSessionDefaultPolicy() throws Exception {
         SimulationReport report = run(null, () -> registeredConfig(SelectorTierDvfsTestSchedulerProvider.LABEL));
@@ -77,13 +84,14 @@ class FrequencyTierSelectorTest {
             assertEquals(
                     500.0, tier.doubleValue(), 0.0, "selector picks the LAST tier, not the session DEFAULT (first)");
         }
-        // 台账面：fleet per-tier ledger 的最低档键即 selector 指派的末档。
+        // Ledger face: the lowest tier key of the fleet per-tier ledger is exactly the last tier the selector assigns.
         assertEquals(
                 Double.valueOf(500.0),
                 Double.valueOf(java.util.Collections.min(
                         report.getMetrics().getFleetPerTierBusySeconds().keySet())),
                 "the fleet per-tier ledger must reflect the selector's tier (500)");
-        // 对照臂：内置 FCFS + 同一 3 档平台 + 会话 DEFAULT → 首档 2000（无 selector 的缺省面）。
+        // Control arm: built-in FCFS + the same 3-tier platform + session DEFAULT -> first
+        // tier 2000 (the default face without a selector).
         SimulationReport builtin = run(null, () -> builtInConfig(SchedulingAlgorithm.FCFS));
         for (SimulationReport.JobOutcome job : builtin.getJobs()) {
             if (job.getClassType() == ClassType.COMPUTE.value) {
@@ -96,13 +104,19 @@ class FrequencyTierSelectorTest {
         }
     }
 
-    /** 2. 破坏面一：selector 返回 null → 显式失败，引用"派发时刻恰好一档"条款。 */
+    /**
+     * 2. Break face one: the selector returns null -> explicit failure citing the
+     * "exactly one tier at admission" clause.
+     */
     @Test
     void nullSelectorOutputFailsFastCitingAdmissionClause() throws Exception {
         expectRunFailureContaining(SelectorNullTierDvfsTestSchedulerProvider.LABEL, "returned no tier for Job");
     }
 
-    /** 3. 破坏面二：表外档（mips 1500 ∉ {2000,1000,500}）→ 显式失败，引用证据链条款。 */
+    /**
+     * 3. Break face two: off-table tier (mips 1500 not in {2000, 1000, 500}) -> explicit
+     * failure citing the evidence-chain clause.
+     */
     @Test
     void undeclaredTierSelectionFailsFastCitingEvidenceChainClause() throws Exception {
         expectRunFailureContaining(
@@ -110,7 +124,7 @@ class FrequencyTierSelectorTest {
     }
 
     // ------------------------------------------------------------------
-    // fixture 与运行装配
+    // Fixtures and run assembly
     // ------------------------------------------------------------------
 
     private interface ConfigSupplier {
@@ -122,8 +136,10 @@ class FrequencyTierSelectorTest {
     }
 
     /**
-     * 失败必须显式且可归因：注册破坏面提供者的真实运行必须抛出，且异常链（含 CloudSim
-     * 事件循环可能的包装）中能找到 BAT-D6 子句——不静默继续、不产出伪档证据。
+     * Failure must be explicit and attributable: the real run of a registered break-face
+     * provider must throw, and the BAT-D6 clause must be found in the exception chain
+     * (including any wrapping by the CloudSim event loop) -- no silent continuation, no
+     * fabricated tier evidence.
      */
     private void expectRunFailureContaining(String label, String expectedClause) throws Exception {
         try {
@@ -134,7 +150,7 @@ class FrequencyTierSelectorTest {
         }
     }
 
-    /** 递归异常链匹配。 */
+    /** Recursive exception-chain match. */
     private static void assertCauseChainContains(Throwable failure, String clause) {
         Throwable current = failure;
         int depth = 0;
@@ -171,7 +187,10 @@ class FrequencyTierSelectorTest {
                 .build();
     }
 
-    /** 无依赖 bag（40/30/95/35 秒——E5 对照位）：4 个计算 Job 同时就绪。 */
+    /**
+     * Dependency-free bag (40/30/95/35 seconds -- the E5 control slots): 4 compute Jobs
+     * become ready at once.
+     */
     private Path bagDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<adag count=\"4\">\n");
@@ -191,7 +210,10 @@ class FrequencyTierSelectorTest {
         return path;
     }
 
-    /** 2-VM/2-Host 平台，每 VM 基频 1000、降序 3 档（2000/1000/500——与 D2 测试同表）。 */
+    /**
+     * 2-VM/2-Host platform, base frequency 1000 per VM, 3 tiers in descending order
+     * (2000/1000/500 -- the same table as the D2 test).
+     */
     private static PlatformProfile threeTierPlatform() {
         List<PlatformProfile.FrequencyTier> tiers = new ArrayList<PlatformProfile.FrequencyTier>();
         tiers.add(new PlatformProfile.FrequencyTier(2000.0, 250.0, 400.0));

@@ -16,10 +16,12 @@ import org.apache.commons.math3.stat.inference.WilcoxonSignedRankTest;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link PairedWilcoxonSignificance} 的语义测试。
+ * Semantic tests for {@link PairedWilcoxonSignificance}.
  *
- * <p>覆盖：可用性状态机（样本不足 / 全零差值 / 单非零差值 / 精确与近似两条计算路径）、
- * 显著性判定的方向性正确性、与 commons-math3 直接调用的一致性、以及输入校验。</p>
+ * <p>Coverage: the availability state machine (too few samples / all-zero differences /
+ * a single non-zero difference / the exact and approximate computation paths), the
+ * directional correctness of the significance verdict, agreement with a direct
+ * commons-math3 invocation, and input validation.</p>
  */
 class PairedWilcoxonSignificanceTest {
 
@@ -65,7 +67,8 @@ class PairedWilcoxonSignificanceTest {
 
     @Test
     void consistentShiftIsSignificantWithExactDistribution() {
-        // 候选一致快 20 秒：全部差值为负，精确分布下 p 必须很小。
+        // The candidate is consistently 20 seconds faster: every difference is negative, so
+        // p must be very small under the exact distribution.
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 20; index++) {
@@ -79,12 +82,13 @@ class PairedWilcoxonSignificanceTest {
         assertTrue(result.getPValue().doubleValue() < 0.05);
         assertTrue(result.isSignificantAtDefaultAlpha());
         assertEquals(20, result.getEffectiveSampleCount());
-        assertTrue(result.getMedianDifference().doubleValue() < 0.0, "差值中位数应为负（候选更快）");
+        assertTrue(result.getMedianDifference().doubleValue() < 0.0, "median difference negative (candidate faster)");
     }
 
     @Test
     void alternatingSignSmallDifferencesAreNotSignificant() {
-        // 差值 ±1 交替，符号接近对半：不应拒绝零假设。
+        // Differences alternate between +/-1 with nearly balanced signs: the null hypothesis
+        // must not be rejected.
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 12; index++) {
@@ -96,14 +100,17 @@ class PairedWilcoxonSignificanceTest {
         assertEquals("AVAILABLE_WILCOXON_SIGNED_RANK_EXACT", result.getStatus());
         assertFalse(result.isSignificantAtDefaultAlpha());
         assertTrue(result.getPValue().doubleValue() > 0.05);
-        // R8 审计回归（P1）：库的精确双侧 p 无上限截断，包装层必须钳制到 [0,1]。
-        assertTrue(result.getPValue().doubleValue() <= 1.0, "p 值不得超过 1");
+        // R8 audit regression (P1): the library's exact two-sided p has no upper cap, so the
+        // wrapper must clamp it to [0,1].
+        assertTrue(result.getPValue().doubleValue() <= 1.0, "p-value must not exceed 1");
     }
 
     @Test
     void zeroDifferencesAreExcludedFromTheRankStatistic() {
-        // 前 6 对为零差值、后 12 对一致快 20 秒：p 值必须与"仅非零子样本"
-        // 直接调库完全一致（R8 审计修复 P1：此前全数组传入使零差值占据最低秩）。
+        // The first 6 pairs have zero difference and the last 12 are consistently 20
+        // seconds faster: the p-value must match a direct library call on the non-zero
+        // subsample exactly (R8 audit fix P1: previously the whole array was passed,
+        // so zero differences occupied the lowest ranks).
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 6; index++) {
@@ -126,14 +133,15 @@ class PairedWilcoxonSignificanceTest {
             nonzeroY[index] = candidate.get(6 + index).doubleValue();
         }
         double subset = new WilcoxonSignedRankTest().wilcoxonSignedRankTest(nonzeroX, nonzeroY, true);
-        assertEquals(subset, result.getPValue().doubleValue(), 0.0, "p 值必须等于剔零子样本的直接检验结果");
+        assertEquals(subset, result.getPValue().doubleValue(), 0.0, "p-value must match the zero-excluded direct test");
     }
 
     @Test
     void moreThanThirtyPairsWithZeroDifferencesDoNotCrash() {
-        // R8 审计回归（P1）：31 对、仅 20 个非零差值。修复前库按完整 N>30
-        // 抛 NumberIsTooLargeException 击穿 campaign 汇总；修复后按非零数选
-        // 精确路径（20 ≤ 25 < 30）安全出结果。
+        // R8 audit regression (P1): 31 pairs with only 20 non-zero differences. Before the
+        // fix the library threw NumberIsTooLargeException for the full N>30 and broke the
+        // campaign aggregation; after the fix the exact path is selected by the non-zero
+        // count (20 <= 25 < 30), so a result is produced safely.
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 11; index++) {
@@ -155,8 +163,10 @@ class PairedWilcoxonSignificanceTest {
 
     @Test
     void allPositiveExactPValueIsLockedToTwoOverTwoToTheN() {
-        // 20 对差值全为正：W 取满总秩和，秩和≥W 的子集仅全集一个，
-        // 精确 p = 2/2^20。数值锁定防公式回归（R8 审计测试强度补强）。
+        // All 20 paired differences are positive: W reaches the full total rank sum, the
+        // only subset with rank sum >= W is the full set, so the exact p = 2/2^20. The
+        // numeric lock guards against formula regression (R8 audit, test-strength
+        // reinforcement).
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 20; index++) {
@@ -171,7 +181,7 @@ class PairedWilcoxonSignificanceTest {
 
     @Test
     void largeSamplesUseTheNormalApproximation() {
-        // 有效非零差值 40 个 > 25，走正态近似路径。
+        // 40 effective non-zero differences > 25, so the normal-approximation path is taken.
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         Random random = new Random(42L);

@@ -19,27 +19,34 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 大规模工作流（Montage 1000 任务）的算法轨道规模回归测试。
+ * Scale regression test of the algorithm tracks on a large workflow (Montage with 1000 tasks).
  *
- * <p>动机：既有算法语义测试全部使用 ≤ 24 任务的小规模 fixture，科研实验通常在数百到
- * 数千任务规模上进行。本测试把千任务级执行纳入回归门禁，验证三个代表性轨道在大规模
- * 下的正确性与数值稳定性：</p>
+ * <p>Motivation: the existing algorithm semantics tests all use small fixtures of at most 24
+ * tasks, whereas research experiments usually run at hundreds to thousands of tasks. This test
+ * brings thousand-task execution into the regression gate and verifies the correctness and
+ * numerical stability of three representative tracks at scale:</p>
  * <ul>
- *   <li>通信感知静态 DAG 规划（LOCAL_HEFT，LOCAL 文件系统 + 执行前传输延迟模型）；</li>
- *   <li>在线 ready-batch 调度（READY_BATCH_MINMIN 与 FCFS，SHARED 文件系统）；</li>
- *   <li>同配置重复运行的确定性（黄金值 + 重跑逐位一致）。</li>
+ *   <li>Communication-aware static DAG planning (LOCAL_HEFT, LOCAL file system plus
+ *       pre-execution transfer delay model);</li>
+ *   <li>Online ready-batch scheduling (READY_BATCH_MINMIN and FCFS, SHARED file system);</li>
+ *   <li>Determinism of repeated runs with the same configuration (golden value plus bit-identical
+ *       reruns).</li>
  * </ul>
  *
- * <p><b>断言口径</b>：黄金 makespan 以精确 double 相等锁定（确定性仿真下任何数值漂移
- * 都构成回归）；同时断言全部逻辑任务成功完成、无失败 Job、VM 映射在合法范围内。黄金
- * 值是本平台当前语义下的观察值，不构成对论文或真实平台的复现声明。</p>
+ * <p><b>Assertion basis</b>: the golden makespan is locked by exact double equality (under a
+ * deterministic simulation any numerical drift constitutes a regression); the test also asserts
+ * that every logical task completes successfully, that no Job fails, and that VM mappings stay
+ * within the legal range. The golden values are observations under the current platform semantics
+ * and do not constitute a claim of reproduction of the paper or of a real platform.</p>
  *
- * <p><b>数据集选择</b>：在线调度轨道使用 {@code datasets/dax/montage/n1000/Montage_1000.dax}
- * （Pegasus 标准 DAX，1000 任务，随仓库提交）。LOCAL 规划器轨道使用
- * {@code datasets/dax/epigenomics/n997/Epigenomics_997.dax}：Pegasus Montage DAX 的扁平
- * 文件命名空间下存在大量同名文件尺寸冲突（如各 mDiffFit 任务各自的 {@code fit.txt}），
- * LOCAL 规划器的严格尺寸守卫会拒绝，这是刻意平台边界而非缺陷；Epigenomics_997 文件名
- * 唯一、零冲突。</p>
+ * <p><b>Dataset selection</b>: the online scheduling tracks use
+ * {@code datasets/dax/montage/n1000/Montage_1000.dax} (the Pegasus standard DAX, 1000 tasks,
+ * committed with the repository). The LOCAL planner track uses
+ * {@code datasets/dax/epigenomics/n997/Epigenomics_997.dax}: under the flat file namespace of the
+ * Pegasus Montage DAX many same-name files declare conflicting sizes (for example each mDiffFit
+ * task has its own {@code fit.txt}), which the strict size guard of the LOCAL planner rejects -- a
+ * deliberate platform boundary rather than a defect; Epigenomics_997 has unique file names and
+ * zero conflicts.</p>
  */
 final class LargeWorkflowScaleRegressionTest {
 
@@ -50,9 +57,9 @@ final class LargeWorkflowScaleRegressionTest {
      * guards this value rather than merely accepting a newly observed golden.
      */
     private static final double LOCAL_HEFT_GOLDEN_MAKESPAN = 253528.51872582204;
-    /** 黄金值：READY_BATCH_MINMIN + SHARED 文件系统，16 VM，seed 42。 */
+    /** Golden value: READY_BATCH_MINMIN + SHARED file system, 16 VMs, seed 42. */
     private static final double READY_BATCH_MINMIN_GOLDEN_MAKESPAN = 1223.7949999999978;
-    /** 黄金值：FCFS + SHARED 文件系统，16 VM，seed 42。 */
+    /** Golden value: FCFS + SHARED file system, 16 VMs, seed 42. */
     private static final double FCFS_GOLDEN_MAKESPAN = 1223.8519999999985;
 
     private static final int VM_COUNT = 16;
@@ -71,7 +78,7 @@ final class LargeWorkflowScaleRegressionTest {
         Log.enable();
     }
 
-    /** 稳健定位仓库根：Maven surefire 的 user.dir 是 simulator/ 模块目录。 */
+    /** Robustly locate the repository root: user.dir under Maven surefire is the simulator/ module directory. */
     static String datasetWorkflowPath() throws Exception {
         if (workflowPath == null) {
             Path root =
@@ -93,10 +100,11 @@ final class LargeWorkflowScaleRegressionTest {
 
     @Test
     void localHeftCompletesEpigenomics997WithGoldenMakespan() throws Exception {
-        // Montage_1000 不适用于 LOCAL 规划器：Pegasus Montage DAX 的扁平文件命名空间下
-        // 大量同名文件（如各 mDiffFit 任务各自的 fit.txt）尺寸声明冲突，规划器的
-        // 严格尺寸守卫会拒绝（这是刻意平台边界，见 AbstractLocalCommPlanningAlgorithm）。
-        // Epigenomics_997 文件名唯一、零冲突，作为 LOCAL 轨道的大规模样本。
+        // Montage_1000 does not apply to the LOCAL planner: under the flat file namespace of the
+        // Pegasus Montage DAX many same-name files (such as each mDiffFit task's own fit.txt) declare
+        // conflicting sizes, which the planner's strict size guard rejects (a deliberate platform
+        // boundary, see AbstractLocalCommPlanningAlgorithm). Epigenomics_997 has unique file names
+        // and zero conflicts, so it serves as the large-scale sample of the LOCAL track.
         SimulationConfig config = SimulationConfig.builder(epigenomicsPath(), VM_COUNT)
                 .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
@@ -107,10 +115,14 @@ final class LargeWorkflowScaleRegressionTest {
 
         SimulationReport report = new SimulationRunner().run(config, platform());
 
-        // 逻辑任务 997 个；作业数 = 997 + 1 个历史 stage-in 引导作业（COMM-2 已知边界）。
+        // 997 logical tasks; Job count = 997 + 1 historical stage-in bootstrap Job (the known COMM-2
+        // boundary).
         assertCompleteWorkflow(report, EPIGENOMICS_997_TASK_COUNT);
         assertLocalComputeConservation(report);
-        assertEquals(LOCAL_HEFT_GOLDEN_MAKESPAN, report.getMakespan(), "LOCAL_HEFT Epigenomics_997 makespan 黄金值漂移");
+        assertEquals(
+                LOCAL_HEFT_GOLDEN_MAKESPAN,
+                report.getMakespan(),
+                "LOCAL_HEFT Epigenomics_997 makespan" + " golden value drift");
         assertVmMappingsInPlatformRange(report);
     }
 
@@ -124,12 +136,13 @@ final class LargeWorkflowScaleRegressionTest {
 
         SimulationReport report = new SimulationRunner().run(config, platform());
 
-        // 逻辑任务 1000 个；作业数 = 1000 + 1 个历史 stage-in 引导作业（COMM-2 已知边界）。
+        // 1000 logical tasks; Job count = 1000 + 1 historical stage-in bootstrap Job (the known COMM-2
+        // boundary).
         assertCompleteWorkflow(report, MONTAGE_1000_TASK_COUNT);
         assertEquals(
                 READY_BATCH_MINMIN_GOLDEN_MAKESPAN,
                 report.getMakespan(),
-                "READY_BATCH_MINMIN Montage_1000 makespan 黄金值漂移");
+                "READY_BATCH_MINMIN Montage_1000 makespan golden value drift");
         assertVmMappingsInPlatformRange(report);
     }
 
@@ -144,7 +157,7 @@ final class LargeWorkflowScaleRegressionTest {
         SimulationReport report = new SimulationRunner().run(config, platform());
 
         assertCompleteWorkflow(report, MONTAGE_1000_TASK_COUNT);
-        assertEquals(FCFS_GOLDEN_MAKESPAN, report.getMakespan(), "FCFS Montage_1000 makespan 黄金值漂移");
+        assertEquals(FCFS_GOLDEN_MAKESPAN, report.getMakespan(), "FCFS Montage_1000 makespan golden value drift");
         assertVmMappingsInPlatformRange(report);
     }
 
@@ -159,13 +172,15 @@ final class LargeWorkflowScaleRegressionTest {
         SimulationReport first = new SimulationRunner().run(config, platform());
         SimulationReport second = new SimulationRunner().run(config, platform());
 
-        assertEquals(first.getMakespan(), second.getMakespan(), "重跑 makespan 必须逐位一致");
+        assertEquals(first.getMakespan(), second.getMakespan(), "rerun makespan must be bit-identical");
         assertEquals(first.getTotalJobs(), second.getTotalJobs());
         assertEquals(first.getSuccessfulJobs(), second.getSuccessfulJobs());
         assertEquals(first.getTasks().size(), second.getTasks().size());
         for (int i = 0; i < first.getJobs().size(); i++) {
             assertEquals(
-                    first.getJobs().get(i).getVmId(), second.getJobs().get(i).getVmId(), "Job " + i + " 的 VM 映射在重跑间漂移");
+                    first.getJobs().get(i).getVmId(),
+                    second.getJobs().get(i).getVmId(),
+                    "VM mapping of Job " + i + " drifted across reruns");
         }
     }
 
@@ -221,7 +236,8 @@ final class LargeWorkflowScaleRegressionTest {
 
     private static void assertCompleteWorkflow(SimulationReport report, int expectedTaskCount) {
         assertEquals(expectedTaskCount, report.getTasks().size());
-        // 作业数 = 逻辑任务数 + 1 个历史 stage-in 引导作业（COMM-2 已知边界，不计入逻辑任务）。
+        // Job count = logical task count + 1 historical stage-in bootstrap Job (the known COMM-2
+        // boundary; not counted as a logical task).
         assertEquals(expectedTaskCount + 1, report.getTotalJobs());
         assertEquals(expectedTaskCount + 1, report.getSuccessfulJobs());
         assertEquals(0, report.getFailedJobs());
@@ -230,7 +246,9 @@ final class LargeWorkflowScaleRegressionTest {
 
     private static void assertVmMappingsInPlatformRange(SimulationReport report) {
         for (SimulationReport.JobOutcome job : report.getJobs()) {
-            assertTrue(job.getVmId() >= 0 && job.getVmId() < VM_COUNT, "Job VM 映射超出平台范围: " + job.getVmId());
+            assertTrue(
+                    job.getVmId() >= 0 && job.getVmId() < VM_COUNT,
+                    "Job VM mapping outside the platform" + " range: " + job.getVmId());
         }
     }
 }

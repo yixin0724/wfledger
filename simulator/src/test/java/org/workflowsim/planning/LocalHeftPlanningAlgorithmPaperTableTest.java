@@ -22,32 +22,41 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * C04：LOCAL_HEFT 的论文算例锚与分配不变量（审查工程 Phase 1 文献黄金表审计）。
+ * C04: the paper worked-example anchor and allocation invariants for LOCAL_HEFT (review
+ * engineering Phase 1 literature golden-table audit).
  *
- * <p>数据源：Topcuoglu, Hariri &amp; Wu（IEEE TPDS 2002）十任务、三处理器算例的
- * 成本矩阵与边权——与 {@code LocalCpopPlanningAlgorithmTest} 的论文表同源；期望
- * rank 值为矩阵与边权的独立手算（HEFT 向上 rank：w̄ + max(c̄ + rank_u(child))），
- * 不在测试中复写递推算法本身。</p>
+ * <p>Data source: the ten-task, three-processor worked example of Topcuoglu, Hariri &amp;
+ * Wu (IEEE TPDS 2002), i.e. its cost matrix and edge weights -- the same source as the
+ * paper table of {@code LocalCpopPlanningAlgorithmTest}; the expected rank values are an
+ * independent hand derivation from the matrix and the edge weights (HEFT upward rank:
+ * w_bar + max(c_bar + rank_u(child))), and the test does not restate the recurrence
+ * algorithm itself.</p>
  *
- * <p>分配断言分层（军规：契约与守恒律，非实现镜像）：
- * ①论文表 rank 逐任务精确锚定；②首任务（最高 rank 的入口任务）的 VM 选择与
- * 完成时刻可平凡手算（EST=0、三 VM 成本 14/16/9 → 最小 EFT=vm2@9）；③全部任务
- * 的规划区间满足两条守恒律——<b>同一 VM 上的预留区间互不重叠</b>、
- * <b>跨 VM 依赖的起始不早于 父完成＋边通信</b>（同 VM 依赖不早于父完成）。</p>
+ * <p>Allocation assertions are layered (the iron rule: contracts and conservation laws,
+ * not an implementation mirror): (1) the paper-table rank is anchored exactly per task;
+ * (2) the VM choice and finish time of the first task (the entry task with the highest
+ * rank) are trivially hand-derived (EST=0, three-VM costs 14/16/9 -> minimal EFT=vm2@9);
+ * (3) the planning intervals of all tasks satisfy two conservation laws -- <b>reserved
+ * intervals on the same VM never overlap</b>, and <b>a cross-VM dependency starts no
+ * earlier than parent finish plus edge communication</b> (a same-VM dependency starts no
+ * earlier than parent finish).</p>
  */
 class LocalHeftPlanningAlgorithmPaperTableTest {
 
     private static final double EPSILON = 1.0e-9;
-    /** 根 stage-in Job（110 MI）在 1 MIPS VM 上折算 110 秒 + 最小事件间隔 0.1。 */
+    /**
+     * The root stage-in Job (110 MI) comes to 110 seconds on a 1 MIPS VM plus the 0.1
+     * minimum event interval.
+     */
     private static final double BOOTSTRAP = 110.1;
 
-    /** 论文成本矩阵：costs[task][vm]，单位秒（成本投影 × 1 MIPS VM）。 */
+    /** Paper cost matrix: costs[task][vm] in seconds (cost projection x 1 MIPS VM). */
     private static final double[][] COSTS = {
         {14, 16, 9}, {13, 19, 18}, {11, 13, 19}, {13, 8, 17}, {12, 13, 10},
         {13, 16, 9}, {7, 15, 11}, {5, 11, 14}, {18, 12, 20}, {21, 7, 16}
     };
 
-    /** 论文边权：{父(1 起), 子(1 起), 平均通信秒}。 */
+    /** Paper edge weights: {parent (1-based), child (1-based), average communication seconds}. */
     private static final int[][] EDGES = {
         {1, 2, 18}, {1, 3, 12}, {1, 4, 9}, {1, 5, 11}, {1, 6, 14},
         {2, 8, 19}, {2, 9, 16}, {3, 7, 23}, {4, 8, 27}, {4, 9, 23},
@@ -60,14 +69,15 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
 
         fixture.planner.run();
 
-        // HEFT 向上 rank 的独立手算（与 CPOP 测试共用同一论文表，公式独立推导）。
+        // Independent hand derivation of the HEFT upward rank (shares the paper table with
+        // the CPOP test; the formula is derived independently).
         double[] upward = {108, 77, 80, 80, 69, 190.0 / 3.0, 128.0 / 3.0, 107.0 / 3.0, 133.0 / 3.0, 44.0 / 3.0};
         for (int i = 0; i < fixture.tasks.length; i++) {
             assertEquals(
                     upward[i],
                     fixture.planner.upwardRankOf(fixture.tasks[i]),
                     EPSILON,
-                    "论文表任务 " + (i + 1) + " 的向上 rank 必须等于手推值");
+                    "paper-table task " + (i + 1) + " upward rank must equal the hand-derived value");
         }
     }
 
@@ -78,10 +88,11 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
 
         fixture.planner.run();
 
-        // 入口任务 EST=0；三 VM 成本 14/16/9 → 最小 EFT 在 vm2，finish=9（平凡手算）。
-        assertEquals(2, entry.getVmId(), "入口任务应选择最小 EFT 的 vm2（成本 9 秒）");
-        assertEquals(BOOTSTRAP, entry.getStaticScheduleStartTime(), EPSILON, "入口任务的计划开始应为根 stage-in 完成时刻");
-        assertEquals(BOOTSTRAP + 9.0, fixture.planner.plannedFinishOf(entry), EPSILON, "入口任务在 vm2 上的计划完成应为 9 秒");
+        // Entry task EST=0; three-VM costs 14/16/9 -> the minimal EFT is on vm2, finish=9
+        // (trivial hand derivation).
+        assertEquals(2, entry.getVmId(), "the entry task must choose vm2, the minimal-EFT VM (cost 9 s)");
+        assertEquals(BOOTSTRAP, entry.getStaticScheduleStartTime(), EPSILON, "start is the root stage-in finish");
+        assertEquals(BOOTSTRAP + 9.0, fixture.planner.plannedFinishOf(entry), EPSILON, "vm2 planned finish is 9 s");
     }
 
     @Test
@@ -90,12 +101,13 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
 
         fixture.planner.run();
 
-        // ① 同 VM 区间互不重叠（按开始排序，前一区间完成不得晚于后一区间开始）。
+        // (1) Same-VM intervals never overlap (sorted by start: an earlier interval must not
+        // finish after the following one starts).
         Map<Integer, List<double[]>> perVm = new LinkedHashMap<Integer, List<double[]>>();
         for (Task task : fixture.tasks) {
             double start = task.getStaticScheduleStartTime();
             double finish = fixture.planner.plannedFinishOf(task);
-            assertTrue(finish > start, "任务 " + task.getCloudletId() + " 规划区间非空");
+            assertTrue(finish > start, "task " + task.getCloudletId() + " has a non-empty planning interval");
             List<double[]> intervals = perVm.get(task.getVmId());
             if (intervals == null) {
                 intervals = new ArrayList<double[]>();
@@ -109,28 +121,29 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
             for (int i = 1; i < intervals.size(); i++) {
                 assertTrue(
                         intervals.get(i)[0] >= intervals.get(i - 1)[1] - EPSILON,
-                        "vm" + entry.getKey() + " 上预留区间重叠: "
-                                + Arrays.toString(intervals.get(i - 1)) + " 与 "
+                        "overlapping reserved intervals on vm" + entry.getKey() + ": "
+                                + Arrays.toString(intervals.get(i - 1)) + " and "
                                 + Arrays.toString(intervals.get(i)));
             }
         }
-        // ② 依赖就绪：start(t) ≥ finish(p) +（跨 VM 时边通信秒）。
+        // (2) Dependency readiness: start(t) >= finish(p) + (edge communication seconds when
+        // crossing VMs).
         for (int[] edge : EDGES) {
             Task parent = fixture.tasks[edge[0] - 1];
             Task child = fixture.tasks[edge[1] - 1];
             double childStart = child.getStaticScheduleStartTime();
             double parentFinish = fixture.planner.plannedFinishOf(parent);
             if (parent.getVmId() == child.getVmId()) {
-                assertTrue(childStart >= parentFinish - EPSILON, "同 VM 依赖 " + edge[0] + "→" + edge[1] + " 的子任务过早开始");
+                assertTrue(childStart >= parentFinish - EPSILON, "child early on same VM: " + edge[0] + "->" + edge[1]);
             } else {
                 assertTrue(
                         childStart >= parentFinish + edge[2] - EPSILON,
-                        "跨 VM 依赖 " + edge[0] + "→" + edge[1] + " 的子任务开始早于父完成+通信");
+                        "cross-VM dependency " + edge[0] + "->" + edge[1] + " starts before parent finish + link");
             }
         }
     }
 
-    // ---- 夹具 ----
+    // ---- fixtures ----
 
     private static final class Fixture {
         final LocalHeftPlanningAlgorithm planner;
@@ -155,7 +168,8 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
         for (int[] edge : EDGES) {
             connect(tasks[edge[0] - 1], tasks[edge[1] - 1], edge[2]);
         }
-        // 故意逆序登记：HEFT 的调度序必须由 rank 递推恢复，与输入顺序无关。
+        // Deliberately registered in reverse order: the HEFT scheduling order must be
+        // recovered by the rank recurrence and be independent of the input order.
         List<Task> reversed = new ArrayList<Task>(Arrays.asList(tasks));
         Collections.reverse(reversed);
         return new Fixture(planner(reversed, 2, 0, 1), tasks);

@@ -20,27 +20,32 @@ import org.workflowsim.failure.FailureParameters;
 import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 
 /**
- * R3：故障到达分布的 Kolmogorov-Smirnov 拟合优度检验。
+ * R3: Kolmogorov-Smirnov goodness-of-fit test for the failure arrival distribution.
  *
- * <p>检验对象是平台"声称的分布契约"：{@link DistributionGenerator} 按
- * （scale, shape）参数采样 LOGNORMAL/GAMMA/WEIBULL/NORMAL 四个分布族，故障到达
- * 过程是其样本的逐段累计和。本测试验证三件事：</p>
+ * <p>The object under test is the distribution contract the platform claims: {@link DistributionGenerator}
+ * samples the four families LOGNORMAL/GAMMA/WEIBULL/NORMAL from (scale, shape) parameters, and the
+ * failure arrival process is the piecewise cumulative sum of its samples. The test verifies three
+ * things:</p>
  * <ol>
- *   <li><b>族契约</b>：四个分布族各 1500 个样本通过对其理论分布的 KS 检验
- *       （p &gt; 10⁻⁴，保守阈值；随机流按名称播种，结果逐位确定、无抖动）；</li>
- *   <li><b>参数映射</b>：样本均值与族的理论矩一致（Weibull βΓ(1+1/α)、
- *       Gamma αβ、LogNormal e^{μ+σ²/2}、Normal μ）；</li>
- *   <li><b>故障接线</b>：经 {@link FailureGenerator} 全区间扫描消费的到达时刻
- *       恰为累计样本前缀，其到达间隔通过 Weibull KS 检验——故障到达过程服从
- *       配置声称的分布；同时给出敏感性对照（把 Weibull 样本拿去拟合 Gamma 会被
- *       显著拒绝），证明检验本身有效力而非恒真。</li>
+ *   <li><b>Family contract</b>: 1500 samples of each family pass the KS test against their theoretical
+ *       distribution (p &gt; 10^-4, a conservative threshold; the random streams are seeded by name, so
+ *       the result is bit-deterministic with no jitter);</li>
+ *   <li><b>Parameter mapping</b>: the sample mean agrees with the theoretical moment of the family
+ *       (Weibull beta*Gamma(1+1/alpha), Gamma alpha*beta, LogNormal e^{mu+sigma^2/2}, Normal mu);</li>
+ *   <li><b>Failure wiring</b>: the arrival instants consumed by a full-horizon scan through
+ *       {@link FailureGenerator} are exactly the cumulative sample prefix, and their inter-arrival
+ *       times pass the Weibull KS test -- the failure arrival process follows the distribution the
+ *       configuration claims; a sensitivity control is included as well (fitting a Weibull sample with
+ *       a Gamma is rejected significantly), proving the test itself has power rather than always
+ *       passing.</li>
  * </ol>
  */
 class DistributionGeneratorKsTest {
 
-    /** KS 判定阈值：p 大于它即接受"样本来自该分布"。随机流确定，无抖动。 */
+    /** KS acceptance threshold: a p above it accepts "the sample comes from this distribution".
+     * The random streams are deterministic, with no jitter. */
     private static final double MIN_ACCEPT_P = 1.0e-4;
-    /** 检验效力对照的拒绝阈值：交叉拟合的 p 必须低于它。 */
+    /** Rejection threshold of the test-power control: the cross-fit p must lie below it. */
     private static final double MAX_CROSS_FIT_P = 1.0e-6;
 
     @AfterEach
@@ -72,17 +77,20 @@ class DistributionGeneratorKsTest {
 
     @Test
     void distributionSpecWiringMatchesFamilyContract() {
-        // DistributionSpec.of(WEIBULL, scale, shape) 是故障模型配置的入口；其生成器
-        // 的样本必须通过 Weibull(alpha=shape, beta=scale) 的 KS 检验。
+        // DistributionSpec.of(WEIBULL, scale, shape) is the entry point of the failure-model
+        // configuration; its generator's samples must pass the KS test against Weibull(alpha=shape, beta=scale).
         DistributionGenerator generator =
                 DistributionSpec.of(DistributionFamily.WEIBULL, 100.0, 2.0).createGenerator("r3.ks.spec.wiring");
         double p = kolmogorovSmirnovP(generator, new WeibullDistribution(2.0, 100.0));
-        assertTrue(p > MIN_ACCEPT_P, "DistributionSpec 接线样本应服从 Weibull(alpha=2, beta=100)，实际 p=" + p);
+        assertTrue(
+                p > MIN_ACCEPT_P,
+                "DistributionSpec wiring samples must follow Weibull(alpha=2, beta=100), actual p=" + p);
     }
 
     @Test
     void sampleMeansMatchFamilyMoments() {
-        // 每族 1500 个确定性样本的均值与理论矩的相对偏差应在 5% 以内。
+        // The mean of 1500 deterministic samples per family must stay within 5% relative deviation
+        // from the theoretical moment.
         assertMeanNear(
                 DistributionFamily.WEIBULL, 100.0, 1.5, "r3.ks.moments.weibull", 100.0 * Gamma.gamma(1.0 + 1.0 / 1.5));
         assertMeanNear(DistributionFamily.GAMMA, 2.0, 3.0, "r3.ks.moments.gamma", 3.0 * 2.0);
@@ -93,22 +101,23 @@ class DistributionGeneratorKsTest {
 
     @Test
     void ksTestHasPowerToRejectWrongFamily() {
-        // 效力对照：用 Weibull(1.5, 100) 的样本去拟合均值相近的 Gamma，
-        // p 必须极小——否则 KS 判定形同虚设。
+        // Power control: fitting a Weibull(1.5, 100) sample with a Gamma of similar mean
+        // must yield a tiny p -- otherwise the KS verdict would be vacuous.
         DistributionGenerator generator =
                 new DistributionGenerator(DistributionFamily.WEIBULL, 100.0, 1.5, "r3.ks.power");
         double weibullMean = 100.0 * Gamma.gamma(1.0 + 1.0 / 1.5);
-        // Gamma(alpha=9, beta=mean/9) 与 Weibull 均值相同、形状不同。
+        // Gamma(alpha=9, beta=mean/9) has the same mean as the Weibull but a different shape.
         double crossP = kolmogorovSmirnovP(generator, new GammaDistribution(9.0, weibullMean / 9.0));
-        assertTrue(crossP < MAX_CROSS_FIT_P, "KS 检验应拒绝错误族拟合，实际 p=" + crossP);
+        assertTrue(crossP < MAX_CROSS_FIT_P, "KS test must reject a wrong-family fit, actual p=" + crossP);
     }
 
     @Test
     void failureArrivalProcessFollowsConfiguredWeibullDistribution() throws Exception {
-        // 故障到达 = 分布样本的累计和。以 Weibull(1.5, 100) 初始化故障模型，
-        // 用连续窗口扫描消费到达流，然后验证：
-        // (a) 消费的到达时刻恰为累计样本前缀（接线恒等）；
-        // (b) 到达间隔（即分布样本）通过 Weibull KS 检验。
+        // Failure arrival = cumulative sum of the distribution samples. Initialise the failure model
+        // with Weibull(1.5, 100), consume the arrival stream through a continuous window scan, then
+        // verify:
+        // (a) the consumed arrival instants are exactly the cumulative sample prefix (wiring identity);
+        // (b) the inter-arrival times (that is, the distribution samples) pass the Weibull KS test.
         double scale = 100.0;
         double shape = 1.5;
         DistributionGenerator generator =
@@ -127,38 +136,49 @@ class DistributionGeneratorKsTest {
             FailureGenerator.generate(jobWithWindow(start, start + step));
         }
         int consumed = generator.getConsumedSampleCount();
-        assertTrue(consumed > 20, "扫描应消费足够多的到达样本，实际 " + consumed);
-        // (a) 接线恒等：消费边界与扫描地平线一致——最后一个已消费到达 ≤ horizon，
-        // 第一个未消费到达 > horizon；且到达时刻严格递增。
+        assertTrue(consumed > 20, "the scan must consume enough arrival samples, actual " + consumed);
+        // (a) Wiring identity: the consumed boundary matches the scan horizon -- the last consumed
+        // arrival <= horizon, the first unconsumed arrival > horizon; and the arrival instants are
+        // strictly increasing.
         double[] cumulative = generator.getCumulativeSamples();
         assertTrue(
                 cumulative[consumed - 1] <= horizon,
-                "最后一个已消费到达 " + cumulative[consumed - 1] + " 应 ≤ horizon " + horizon);
+                "last consumed arrival " + cumulative[consumed - 1] + " must be <= horizon " + horizon);
         if (consumed < cumulative.length) {
-            assertTrue(cumulative[consumed] > horizon, "第一个未消费到达 " + cumulative[consumed] + " 应 > horizon " + horizon);
+            assertTrue(
+                    cumulative[consumed] > horizon,
+                    "first unconsumed arrival " + cumulative[consumed] + " must be > horizon " + horizon);
         }
         for (int i = 0; i < consumed; i++) {
-            assertTrue(i == 0 || cumulative[i] > cumulative[i - 1], "Weibull 到达时刻必须严格递增");
+            assertTrue(
+                    i == 0 || cumulative[i] > cumulative[i - 1],
+                    "Weibull arrival instants must be strictly increasing");
         }
-        // (b) 到达间隔的分布检验。
+        // (b) Distribution test on the inter-arrival times.
         double[] interArrivals = new double[consumed];
         for (int i = 0; i < consumed; i++) {
             interArrivals[i] = i == 0 ? cumulative[0] : cumulative[i] - cumulative[i - 1];
         }
         double p = kolmogorovSmirnovP(interArrivals, new WeibullDistribution(shape, scale));
-        assertTrue(p > MIN_ACCEPT_P, "故障到达间隔应服从 Weibull(alpha=1.5, beta=100)，实际 p=" + p);
+        assertTrue(
+                p > MIN_ACCEPT_P,
+                "failure inter-arrival times must follow Weibull(alpha=1.5, beta=100), actual p=" + p);
     }
 
-    /** 族契约断言：生成器样本通过其自身理论分布的 KS 检验。 */
+    /** Family-contract assertion: the generator samples pass the KS test against their own
+     * theoretical distribution. */
     private static void assertSamplesFollowDistribution(
             DistributionFamily family, double scale, double shape, String stream) {
         DistributionGenerator generator = new DistributionGenerator(family, scale, shape, stream);
         double p = kolmogorovSmirnovP(generator, generator.getDistribution(scale, shape));
-        assertTrue(p > MIN_ACCEPT_P, family + "(" + scale + ", " + shape + ") 样本 KS p=" + p + " 应大于 " + MIN_ACCEPT_P);
-        assertEquals(1500, generator.getSamples().length, "首批样本量必须为 1500");
+        assertTrue(
+                p > MIN_ACCEPT_P,
+                family + "(" + scale + ", " + shape + ") sample KS p=" + p + " must exceed " + MIN_ACCEPT_P);
+        assertEquals(1500, generator.getSamples().length, "the first batch must contain 1500 samples");
     }
 
-    /** 样本均值与理论矩的相对偏差断言（5% 容差，1500 确定性样本）。 */
+    /** Relative-deviation assertion of the sample mean against the theoretical moment
+     * (5% tolerance, 1500 deterministic samples). */
     private static void assertMeanNear(
             DistributionFamily family, double scale, double shape, String stream, double theoreticalMean) {
         DistributionGenerator generator = new DistributionGenerator(family, scale, shape, stream);
@@ -171,7 +191,8 @@ class DistributionGeneratorKsTest {
         double relativeError = Math.abs(mean - theoreticalMean) / theoreticalMean;
         assertTrue(
                 relativeError < 0.05,
-                family + " 样本均值 " + mean + " 与理论矩 " + theoreticalMean + " 的相对偏差 " + relativeError + " 应小于 5%");
+                family + " sample mean " + mean + " vs theoretical moment " + theoreticalMean
+                        + " has relative deviation " + relativeError + " that must be below 5%");
     }
 
     private static double kolmogorovSmirnovP(DistributionGenerator generator, RealDistribution theoretical) {
@@ -179,10 +200,11 @@ class DistributionGeneratorKsTest {
     }
 
     /**
-     * 单样本 KS 渐近 p 值（自实现，避免依赖 commons-math3 3.3+ 的
-     * KolmogorovSmirnovTest——仓库锁定 3.2）。D = sup|F_n − F|，λ = √n·D，
-     * p ≈ Q(λ) = 2·Σ_{k≥1} (−1)^{k−1} exp(−2k²λ²)（Kolmogorov 渐近分布的
-     * 互补 CDF 级数）。全部运算为确定性浮点运算，同一样本任何平台给出同一结果。
+     * Single-sample KS asymptotic p-value (self-implemented to avoid the commons-math3 3.3+
+     * KolmogorovSmirnovTest -- the repository pins 3.2). D = sup|F_n - F|, lambda = sqrt(n)*D,
+     * p ~ Q(lambda) = 2*sum_{k>=1} (-1)^{k-1} exp(-2k^2 lambda^2) (the complementary CDF series of
+     * the Kolmogorov asymptotic distribution). All operations are deterministic floating point, so
+     * the same sample yields the same result on any platform.
      */
     private static double kolmogorovSmirnovP(double[] samples, RealDistribution theoretical) {
         double[] sorted = samples.clone();

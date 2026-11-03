@@ -20,41 +20,55 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
 /**
- * Fat-tree × 调度联合实验的规划器兼容性契约测试。
+ * Planner compatibility contract test for the Fat-tree x scheduling joint experiment.
  *
- * <p>研究问题"网络争用如何改变调度算法相对优劣"要求同一 DAG 在多个规划器 ×
- * 多个数据移动模型（无争用 V1 / R2 端点争用 / R6 Fat-tree 链路争用）下可比。
- * 本测试实证哪些组合合法且端到端健康，哪些被配置契约拒绝——探测结果直接
- * 界定 campaign 对照矩阵（见 experiments/studies/fattree-scheduling-campaign/RETENTION.md）。</p>
+ * <p>The research question "how network contention changes the relative ranking of
+ * scheduling algorithms" requires the same DAG to be comparable across multiple planners x
+ * multiple data movement models (no contention V1 / R2 endpoint contention / R6 Fat-tree
+ * link contention). This test establishes empirically which combinations are legal and
+ * end-to-end healthy and which are rejected by the configuration contract -- the probe
+ * results directly define the campaign comparison matrix (see
+ * experiments/studies/fattree-scheduling-campaign/RETENTION.md).</p>
  *
- * <p>fixture 与 {@link FatTreeContentionIntegrationTest} 相同：HEFT 论文例 ×
- * 3 主机（默认轮转放置）× k=4 满配 Fat-tree、链路 1 MB/s。RANDOM/PSO 是通信
- * 无感知规划器，作为争用不敏感基线参与对照；LOCAL_HEFT/LOCAL_CPOP 是通信
- * 感知规划器。在线调度器（FCFS/DATA）要求 INVALID 规划层，与全部
- * preExecution 家族模型互斥，属于已知平台边界。</p>
+ * <p>The fixture is identical to {@link FatTreeContentionIntegrationTest}: the HEFT paper
+ * example x 3 hosts (default round-robin placement) x a full k=4 Fat-tree with 1 MB/s
+ * links. RANDOM/PSO are communication-oblivious planners and serve as
+ * contention-insensitive baselines; LOCAL_HEFT/LOCAL_CPOP are communication-aware
+ * planners. Online schedulers (FCFS/DATA) require an INVALID planning layer and are
+ * mutually exclusive with every preExecution-family model, which is a known platform
+ * boundary.</p>
  */
 class FatTreePlannerCompatibilityIntegrationTest {
 
-    /** 论文成本矩阵（与 FatTreeContentionIntegrationTest / LocalHeftPaperReproductionTest 相同）。 */
+    /** Paper cost matrix (same as FatTreeContentionIntegrationTest / LocalHeftPaperReproductionTest). */
     private static final double[][] PAPER_COST_SECONDS = {
         {14, 16, 9}, {13, 19, 18}, {11, 13, 19}, {13, 8, 17}, {12, 13, 10},
         {13, 16, 9}, {7, 15, 11}, {5, 11, 14}, {18, 12, 20}, {21, 7, 16}
     };
 
-    /** campaign 对照矩阵的规划器集合：两个通信感知 + 两个通信无感知基线。 */
+    /**
+     * Planner set of the campaign comparison matrix: two communication-aware planners plus
+     * two communication-oblivious baselines.
+     */
     private static final List<Parameters.PlanningAlgorithm> CAMPAIGN_PLANNERS = Arrays.asList(
             Parameters.PlanningAlgorithm.LOCAL_HEFT,
             Parameters.PlanningAlgorithm.LOCAL_CPOP,
             Parameters.PlanningAlgorithm.RANDOM,
             Parameters.PlanningAlgorithm.PSO);
 
-    /** 对照矩阵的数据移动模型：无争用基线、R2 端点争用、R6 Fat-tree 链路争用。 */
+    /**
+     * Data movement models of the comparison matrix: the no-contention baseline, R2 endpoint
+     * contention, and R6 Fat-tree link contention.
+     */
     private static final List<DataMovementModel> CAMPAIGN_MODELS = Arrays.asList(
             DataMovementModel.preExecutionTransferDelayV1(),
             DataMovementModel.preExecutionTransferDelayWithContentionV1(),
             DataMovementModel.fatTreeContentionV1());
 
-    /** 全部 campaign 规划器 × 全部模型组合都必须端到端健康——对照矩阵的合法性。 */
+    /**
+     * Every campaign planner x model combination must be end-to-end healthy -- the legality
+     * of the comparison matrix.
+     */
     @Test
     void everyCampaignPlannerRunsHealthyUnderEveryMovementModel() throws Exception {
         Log.disable();
@@ -85,7 +99,7 @@ class FatTreePlannerCompatibilityIntegrationTest {
                             .append(exception.getMessage())
                             .append('\n');
                     System.out.println("[compatibility-probe]\n" + table);
-                    throw new AssertionError(label + " 运行失败: " + exception, exception);
+                    throw new AssertionError(label + " failed to run: " + exception, exception);
                 }
                 table.append(label).append(" -> makespan ").append(makespan).append('\n');
             }
@@ -94,8 +108,9 @@ class FatTreePlannerCompatibilityIntegrationTest {
     }
 
     /**
-     * 争用语义的弱单调性不变量：约束域逐级扩大（端点 → 端点+路径链路），
-     * 同一规划器同一映射的 makespan 不得下降。
+     * Weak-monotonicity invariant of the contention semantics: as the constraint domain
+     * expands step by step (endpoint -> endpoint plus path links), the makespan of the same
+     * planner under the same mapping must not decrease.
      */
     @Test
     void contentionModelsNeverReduceMakespanForAnyCampaignPlanner() throws Exception {
@@ -121,18 +136,24 @@ class FatTreePlannerCompatibilityIntegrationTest {
             }
             assertTrue(
                     makespans[1] >= makespans[0] - 1.0e-9,
-                    planner + ": R2 端点争用 makespan " + makespans[1] + " 不得低于无争用 " + makespans[0]);
+                    planner + ": R2 endpoint contention makespan " + makespans[1] + " must not be below "
+                            + makespans[0]);
             assertTrue(
                     makespans[2] >= makespans[1] - 1.0e-9,
-                    planner + ": Fat-tree 链路争用 makespan " + makespans[2] + " 不得低于 R2 端点争用 " + makespans[1]);
+                    planner + ": Fat-tree link contention makespan " + makespans[2]
+                            + " must not be below R2 endpoint contention " + makespans[1]);
         }
     }
 
-    /** 平台边界：共享存储家族要求遗留模型；在线调度器要求 INVALID 规划层。 */
+    /**
+     * Platform boundary: the shared-storage family requires the legacy model; online
+     * schedulers require an INVALID planning layer.
+     */
     @Test
     void knownIncompatibleCombinationsAreRejectedUpFront() throws Exception {
         String workflow = resourcePath("/dax/heft-paper-example.dax");
-        // SHARED_STORAGE 家族 + Fat-tree 模型：规划侧传输估计只对齐遗留模型。
+        // SHARED_STORAGE family + Fat-tree model: the planning-side transfer estimate is
+        // aligned with the legacy model only.
         IllegalArgumentException shared =
                 assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
                         .planningAlgorithm(Parameters.PlanningAlgorithm.SHARED_STORAGE_HEFT)
@@ -141,7 +162,8 @@ class FatTreePlannerCompatibilityIntegrationTest {
                         .dataMovementModel(DataMovementModel.fatTreeContentionV1())
                         .build());
         assertNotNull(shared.getMessage());
-        // 在线调度器（FCFS/DATA）要求 INVALID 规划层，与 preExecution 家族互斥。
+        // Online schedulers (FCFS/DATA) require an INVALID planning layer and are mutually
+        // exclusive with the preExecution family.
         for (Parameters.SchedulingAlgorithm online :
                 Arrays.asList(Parameters.SchedulingAlgorithm.FCFS, Parameters.SchedulingAlgorithm.DATA)) {
             assertThrows(
@@ -151,7 +173,8 @@ class FatTreePlannerCompatibilityIntegrationTest {
                             .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                             .dataMovementModel(DataMovementModel.fatTreeContentionV1())
                             .build(),
-                    "在线调度器 " + online + " 应因 INVALID 规划层被 Fat-tree 模型拒绝");
+                    "online scheduler " + online + " must be rejected under the Fat-tree model"
+                            + " because of the INVALID planning layer");
         }
     }
 
@@ -163,7 +186,10 @@ class FatTreePlannerCompatibilityIntegrationTest {
         return Paths.get(url.toURI()).toString();
     }
 
-    /** 与论文例相同的平台：3 主机 3 VM（mips=1.0、带宽 1 MB/s），可选拓扑声明。 */
+    /**
+     * Platform identical to the paper example: 3 hosts and 3 VMs (mips=1.0, bandwidth
+     * 1 MB/s), with an optional topology declaration.
+     */
     private static PlatformProfile paperPlatform(NetworkTopologySpec topology) {
         PlatformProfile.Builder builder = PlatformProfile.builder("compat-paper-platform");
         for (int id = 0; id < 3; id++) {

@@ -22,14 +22,17 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * C1（2026-11-02）：碳感知延后引擎的行为契约。
+ * C1 (2026-11-02): behavior contract of the carbon-aware deferral engine.
  *
- * <p>引擎把就绪批次压后到"绿色功率严格更高"的下一个窗口再执行（每个作业至多一次）。
- * 本测试用<b>手推场景</b>锚定三件事：压后真的发生（作业起点落在干净窗口内）、
- * 预算碳超额真的下降（对照碳无关的 FCFS）、无窗口声明时行为不漂移。</p>
+ * <p>The engine postpones a ready batch to the next window whose green power is strictly higher (at
+ * most once per job). This test uses <b>hand-derived scenarios</b> to anchor three things: deferral
+ * really happens (job start times land inside the clean window), the budget carbon excess really
+ * drops (against the carbon-agnostic FCFS), and behavior does not drift when no window is
+ * declared.</p>
  *
- * <p>期望值来源：{@code CARBON_DIMENSION_DESIGN.md} §2.3 的预算模型定义
- * （excess = ∫max(0, P_fleet(t) − green(t))dt）+ 本测试显式声明的窗口与功率。</p>
+ * <p>Source of expected values: the budget model definition in
+ * {@code CARBON_DIMENSION_DESIGN.md} Section 2.3 (excess = integral of max(0, P_fleet(t) -
+ * green(t)) dt) plus the windows and power levels this test declares explicitly.</p>
  */
 class CarbonWindowDeferSchedulingIntegrationTest {
 
@@ -85,9 +88,10 @@ class CarbonWindowDeferSchedulingIntegrationTest {
     }
 
     /**
-     * 复核轮（2026-11-02）：无窗口平台上的延后引擎必须<b>显式拒绝</b>，不得静默退化为
-     * 普通在线调度——标签写着碳感知而一个作业都没延后，正是 BAT-D2 对"静默失效策略"
-     * 的同族问题（以为在研究时间平移，实际在跑 FCFS）。
+     * Review round (2026-11-02): the deferral engine on a windowless platform must <b>explicitly
+     * reject</b> and must not silently degrade into ordinary online scheduling -- a carbon-aware label
+     * with not a single job deferred is the same family of BAT-D2 "silently ineffective policy"
+     * problems (believing the study is about time shifting while it actually runs FCFS).
      */
     @Test
     void windowlessPlatformsAreRejectedInsteadOfSilentlyDegrading() throws Exception {
@@ -104,14 +108,15 @@ class CarbonWindowDeferSchedulingIntegrationTest {
     }
 
     /**
-     * 对抗面 1（防饥饿）：两个作业各被压后<b>一次</b>后必须全部完成，且不再被二次推迟——
-     * 若"每作业至多一次"的闸失效，引擎会在窗口 [100,400) 内继续寻找"更干净"的窗口而
-     * 反复压后（或无窗口可找时空转），完成时间会越过 100+工作量 的上界。
+     * Adversarial side 1 (starvation prevention): after each of the two jobs is deferred <b>once</b>
+     * they must both complete and must not be postponed a second time -- if the "at most once per job"
+     * gate failed, the engine would keep looking for a "cleaner" window inside [100,400) and defer
+     * repeatedly (or spin when no window is left), pushing completion past the 100 + work upper bound.
      */
     @Test
     void eachJobIsDeferredAtMostOnceSoTheWorkflowCannotStarve() throws Exception {
         SimulationReport deferred = run(SchedulingAlgorithm.CARBON_WINDOW_DEFER, true);
-        double upperBound = 100.0 + 60.0; // 压后到 100，两个作业串行 30+20 秒，留 10 秒簿记余量
+        double upperBound = 100.0 + 60.0; // deferred to 100; two jobs run 30+20 s serially; 10 s bookkeeping margin
         assertTrue(
                 deferred.getMakespan() <= upperBound,
                 "one deferral per Job bounds the makespan near the clean-window start + work: "
@@ -119,8 +124,9 @@ class CarbonWindowDeferSchedulingIntegrationTest {
     }
 
     /**
-     * 对抗面 2（不该动就不动）：当前窗口已是最高绿色功率时，引擎必须<b>不</b>延后——
-     * 否则会把"已经很干净"的运行拖长，属于无收益的坏行为。
+     * Adversarial side 2 (do not move what should not move): when the current window already has the
+     * highest green power, the engine must <b>not</b> defer -- otherwise it stretches an already clean
+     * run, which is bad behavior with no benefit.
      */
     @Test
     void alreadyCleanWindowsAreNotDeferred() throws Exception {
@@ -133,9 +139,10 @@ class CarbonWindowDeferSchedulingIntegrationTest {
     }
 
     /**
-     * 残留污染（H-1/H-2 类、本仓库点名的陷阱）：同一 JVM 里先跑一次<b>带窗口</b>的
-     * 延后运行，再跑一次<b>不带窗口</b>的运行——窗口表不得越过会话边界残留。若残留，
-     * 第二次运行会莫名其妙地停到 100 秒（第二次平台根本没声明窗口）。
+     * Residual pollution (the H-1/H-2 class, a trap this repository calls out by name): in one JVM,
+     * first run a deferral run <b>with windows</b>, then run one <b>without windows</b> -- the window
+     * table must not survive across the session boundary. If it did, the second run would
+     * inexplicably stall to 100 seconds (its platform declares no window at all).
      */
     @Test
     void carbonWindowsDoNotLeakIntoTheNextRun() throws Exception {
@@ -155,9 +162,10 @@ class CarbonWindowDeferSchedulingIntegrationTest {
     }
 
     /**
-     * 诚实边界（C1）：延后只削减<b>动态</b>份额，削不掉<b>怠速地板</b>。两台 VM 怠速合计
-     * 200 W 高于脏窗绿电 120 W 时，即使作业全部延后，脏窗超额仍等于怠速超额
-     * 80 W × 100 s = 8000 W·s——引擎不可能把已声明平台的静态功耗变没。
+     * Honest boundary (C1): deferral only removes the <b>dynamic</b> share; it cannot remove the
+     * <b>idle floor</b>. When two VMs idle at 200 W together, above the 120 W green power of the dirty
+     * window, the dirty-window excess equals the idle excess 80 W x 100 s = 8000 W-s even if every job
+     * is deferred -- the engine cannot make the declared static power of the platform disappear.
      */
     @Test
     void deferralCannotGoBelowTheIdleFloorOfADirtyWindow() throws Exception {
@@ -175,7 +183,10 @@ class CarbonWindowDeferSchedulingIntegrationTest {
                 "deferral must still remove the dynamic share that FCFS burns in the dirty window");
     }
 
-    /** 两 VM 夹具：怠速合计 200 W > 首窗绿电 120 W（制造怠速地板）。 */
+    /**
+     * Two-VM fixture: 200 W total idle power > 120 W green power of the first window (creates the idle
+     * floor).
+     */
     private SimulationReport runTwoVms(SchedulingAlgorithm algorithm) throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "floor-" + algorithm + ".dax");
         Files.write(
@@ -216,8 +227,9 @@ class CarbonWindowDeferSchedulingIntegrationTest {
     }
 
     /**
-     * 可复现性（复核轮）：同一输入连跑两次，作业起点、完工时间与超额必须逐位一致——
-     * 延后引擎的状态（已压后集合、唤醒时刻）不得跨运行残留或受浮点迭代序影响。
+     * Reproducibility (review round): running the same input twice must give bit-identical job start
+     * times, finish times, and excess -- the deferral engine state (deferred set, wake-up instants)
+     * must not survive across runs or depend on floating-point iteration order.
      */
     @Test
     void repeatedRunsProduceIdenticalDeferralDecisions() throws Exception {
@@ -246,12 +258,15 @@ class CarbonWindowDeferSchedulingIntegrationTest {
     }
 
     /**
-     * 变异补强（复核轮）：三窗阶梯上"每作业至多一次"的闸才有判别力，而且它约束的是
-     * <b>单个作业</b>，不是整条工作流——后继作业是新作业，各自仍可合法地再跳一跳。
+     * Mutation hardening (review round): only on the three-window ladder does the "at most once per
+     * job" gate become discriminating, and what it constrains is a <b>single job</b>, not the whole
+     * workflow -- successor jobs are new jobs and may each legally hop again.
      *
-     * <p>观测事实（打点确认）：首作业 0.1 s 就绪 → 压到 100 s；它在 130 s 完成后，
-     * 新就绪的两个后继在第二窗（300 W）内合法地再压到第三窗（500 W，200 s）。因此
-     * 本测试断言的是"首作业恰好只跳一跳"（start=100），并给整条链一个终止上界。</p>
+     * <p>Observed fact (confirmed by instrumentation): the first job becomes ready at 0.1 s and is
+     * deferred to 100 s; after it completes at 130 s, the two newly ready successors legally hop from
+     * the second window (300 W) to the third (500 W, 200 s). This test therefore asserts that "the
+     * first job hops exactly once" (start=100) and gives the whole chain a termination upper
+     * bound.</p>
      */
     @Test
     void theOneDeferralBoundAppliesPerJobNotPerWorkflow() throws Exception {
@@ -270,7 +285,7 @@ class CarbonWindowDeferSchedulingIntegrationTest {
                         + " chain would land past 300 s; observed " + report.getMakespan());
     }
 
-    /** 三窗阶梯夹具：100 W（脏）→ 300 W → 500 W，单 VM。 */
+    /** Three-window ladder fixture: 100 W (dirty) -> 300 W -> 500 W on a single VM. */
     private SimulationReport runLadder() throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "ladder.dax");
         Files.write(
@@ -308,12 +323,17 @@ class CarbonWindowDeferSchedulingIntegrationTest {
         return new SimulationRunner().run(config, builder.build());
     }
 
-    /** 运行夹具：单 VM（idle 100 / max 300），窗口 [0,100)=120W 脏、[100,400)=400W 干净。 */
+    /**
+     * Run fixture: single VM (idle 100 / max 300), windows [0,100)=120W dirty and [100,400)=400W clean.
+     */
     private SimulationReport run(SchedulingAlgorithm algorithm, boolean declareWindows) throws Exception {
         return run(algorithm, declareWindows, 120.0);
     }
 
-    /** 首窗绿色功率可调：400W 时首窗即最干净（引擎不应延后）。 */
+    /**
+     * Adjustable green power of the first window: at 400W the first window is already the cleanest (the
+     * engine must not defer).
+     */
     private SimulationReport run(SchedulingAlgorithm algorithm, boolean declareWindows, double firstGreen)
             throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "defer-" + algorithm + ".dax");

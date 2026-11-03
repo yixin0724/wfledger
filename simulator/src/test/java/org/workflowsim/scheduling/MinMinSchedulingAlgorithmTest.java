@@ -13,12 +13,13 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * MinMin 调度算法 oracle 测试。
+ * Oracle tests for the MinMin scheduling algorithm.
  *
- * 注意:当前实现是"在线 SPT-fastest-idle"变体,不是经典 Min-Min。
- * 经典 Min-Min:先计算每个任务在所有 VM 上的最小完成时间(MCT),
- * 再从候选中选全局最小者。当前实现:先选最短任务,再选最快空闲 VM。
- * 这些测试验证的是当前实际行为,不是经典定义。
+ * Note: the current implementation is an "online SPT-fastest-idle" variant, not the
+ * classical Min-Min. Classical Min-Min: first compute each task's minimum completion time
+ * (MCT) over all VMs, then pick the global minimum among the candidates. Current
+ * implementation: pick the shortest task first, then pick the fastest idle VM. These
+ * tests verify the current actual behavior, not the classical definition.
  */
 class MinMinSchedulingAlgorithmTest {
 
@@ -40,14 +41,15 @@ class MinMinSchedulingAlgorithmTest {
 
     @Test
     void shortestTaskGoesToFastestIdleVm() {
-        // 2 个任务、2 个 VM:一次 run() 只能调度 min(tasks, vms) 个
-        // 因为 VM 分配后标记 BUSY,后续任务找不到 idle VM 就 break
+        // 2 tasks, 2 VMs: one run() can schedule only min(tasks, vms) of them
+        // because a VM is marked BUSY once assigned, and later tasks break when no idle
+        // VM is found
         Task shorter = new Task(1, 1000);
         Task longer = new Task(2, 3000);
-        cloudlets.add(longer); // 故意不按长度顺序放入
+        cloudlets.add(longer); // deliberately inserted out of length order
         cloudlets.add(shorter);
 
-        // 2 个 VM:慢(500 MIPS)、快(1000 MIPS)
+        // 2 VMs: slow (500 MIPS), fast (1000 MIPS)
         CondorVM slow = createVm(0, 500);
         CondorVM fast = createVm(1, 1000);
         vms.add(slow);
@@ -57,21 +59,22 @@ class MinMinSchedulingAlgorithmTest {
         scheduler.setVmList(vms);
         scheduler.run();
 
-        // 2 个任务 2 个 VM,都能调度
+        // 2 tasks and 2 VMs, so both can be scheduled
         assertEquals(2, scheduler.getScheduledList().size());
-        // 第一个被调度的应该是最短任务(id=1, 1000 MI),分配到最快 VM(id=1)
+        // The first scheduled must be the shortest task (id=1, 1000 MI), placed on the
+        // fastest VM (id=1)
         Cloudlet first = (Cloudlet) scheduler.getScheduledList().get(0);
-        assertEquals(1, first.getCloudletId(), "第一个被调度的应是最短任务");
-        assertEquals(1, first.getVmId(), "最短任务应分配到最快 VM");
-        // 第二个是最长任务,分配到剩余的最快 idle VM
+        assertEquals(1, first.getCloudletId(), "the first scheduled task must be the shortest");
+        assertEquals(1, first.getVmId(), "the shortest task must go to the fastest VM");
+        // The second is the longest task, placed on the remaining fastest idle VM
         Cloudlet second = (Cloudlet) scheduler.getScheduledList().get(1);
         assertEquals(2, second.getCloudletId());
-        assertEquals(0, second.getVmId(), "最长任务分配到剩余 idle VM(500 MIPS)");
+        assertEquals(0, second.getVmId(), "the longest task goes to the remaining idle VM (500 MIPS)");
     }
 
     @Test
     void scheduledCountIsCappedByVmCount() {
-        // 5 个任务、3 个 VM → run() 最多调度 3 个
+        // 5 tasks, 3 VMs -> run() schedules at most 3
         for (int i = 1; i <= 5; i++) {
             cloudlets.add(new Task(i, i * 1000));
         }

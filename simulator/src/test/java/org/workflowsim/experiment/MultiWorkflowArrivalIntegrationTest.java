@@ -14,34 +14,41 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * R5 多工作流并发与动态到达的端到端验收：错峰提交门控、每工作流流时证据、
- * WORKFLOW_ARRIVED 事件、确定性，以及全零到达与历史单时刻提交的行为一致性。
+ * End-to-end acceptance for R5 multi-workflow concurrency and dynamic arrival: staggered-submission
+ * gating, per-workflow flow-time evidence, WORKFLOW_ARRIVED events, determinism, and behavioral
+ * consistency between an all-zero arrival and the historical single-instant submission.
  *
- * <p>fixture 与 HEFT 论文例同源（{@code /dax/heft-paper-example.dax}，10 任务，
- * 在线 FCFS 轨道，3 台 mips=1.0 VM 共享）。两份相同输入经多输入命名空间隔离
- * （workflow-0/workflow-1）合并为一个 20 任务 DAG；到达门控按任务编号区间归属。</p>
+ * <p>The fixture originates from the HEFT paper example ({@code /dax/heft-paper-example.dax},
+ * 10 tasks, online FCFS track, 3 shared VMs with mips=1.0). Two identical inputs are merged into
+ * one 20-task DAG through multi-input namespace isolation (workflow-0/workflow-1); arrival gating
+ * is attributed by task-id range.</p>
  */
 class MultiWorkflowArrivalIntegrationTest {
 
-    /** 全零到达（默认）黄金 makespan：两份 10 任务 HEFT 例并发共享 3 VM。 */
+    /**
+     * Golden makespan for all-zero arrival (the default): two 10-task HEFT examples running
+     * concurrently on 3 shared VMs.
+     */
     private static final double SIMULTANEOUS_GOLDEN_MAKESPAN = 8118.1;
     /**
-     * 错峰到达 [0, 50] 黄金 makespan（R8 审计 P0-1 修复后重录 2026-09-16）。
-     * 修复前统一 stage-in Job（ID=N）被错误归属到最后工作流、门控到 50 秒，
-     * 早到工作流被静默推迟 50 秒，该黄金值曾污染锁定为 8168.0。修复后
-     * stage-in 为 t=0 平台准备、各根 Job 按自身归属门控：3 VM 全程饱和下
-     * 晚到 50 秒不改变总 makespan，故与同时提交逐位相等。
+     * Golden makespan for staggered arrival [0, 50] (re-recorded on 2026-09-16 after the R8 audit
+     * P0-1 fix). Before the fix the single stage-in Job (ID=N) was mis-attributed to the last
+     * workflow and gated to 50 seconds, silently deferring the early workflow by 50 seconds; that
+     * golden value had been locked in as 8168.0 while polluted. After the fix stage-in is t=0
+     * platform preparation and each root Job is gated by its own attribution: with 3 VMs saturated
+     * throughout, a 50-second late arrival does not change the total makespan, so it is bit-identical
+     * to simultaneous submission.
      */
     private static final double STAGGERED_GOLDEN_MAKESPAN = 8118.1;
-    /** 错峰到达下工作流 1 的黄金流时（完成 − 提交时刻 50）。 */
+    /** Golden flow time of workflow 1 under staggered arrival (completion - submission instant 50). */
     private static final double STAGGERED_GOLDEN_FLOW_W1 = 8068.1;
 
     @Test
     void simultaneousArrivalsShareVmsAndReportPerWorkflowOutcomes() throws Exception {
         SimulationReport report = run(Arrays.asList(0.0, 0.0));
-        assertEquals(SIMULTANEOUS_GOLDEN_MAKESPAN, report.getMakespan(), 0.0, "全零到达黄金 makespan");
+        assertEquals(SIMULTANEOUS_GOLDEN_MAKESPAN, report.getMakespan(), 0.0, "golden makespan for all-zero arrival");
         List<SimulationReport.WorkflowOutcome> outcomes = report.getWorkflowOutcomes();
-        assertEquals(2, outcomes.size(), "两个输入各产生一份每工作流结果");
+        assertEquals(2, outcomes.size(), "each of the two inputs yields one per-workflow outcome");
         assertEquals(10, outcomes.get(0).getTaskCount());
         assertEquals(10, outcomes.get(1).getTaskCount());
         assertEquals(1, outcomes.get(0).getFirstTaskId());
@@ -50,7 +57,7 @@ class MultiWorkflowArrivalIntegrationTest {
         assertEquals(20, outcomes.get(1).getLastTaskId());
         assertEquals(0.0, outcomes.get(0).getArrivalSecond(), 0.0);
         assertEquals(0.0, outcomes.get(1).getArrivalSecond(), 0.0);
-        // 全零到达时流时等于最大成功完成时刻。
+        // With all-zero arrival the flow time equals the latest successful finish instant.
         assertEquals(
                 outcomes.get(0).getLastSuccessFinishSecond(), outcomes.get(0).getFlowTimeSeconds(), 0.0);
         assertTrue(outcomes.get(0).getFlowTimeSeconds() > 0.0);
@@ -61,43 +68,54 @@ class MultiWorkflowArrivalIntegrationTest {
     void staggeredArrivalGatesSecondWorkflowAndReportsFlowTime() throws Exception {
         SimulationReport report = run(Arrays.asList(0.0, 50.0));
         List<SimulationReport.WorkflowOutcome> outcomes = report.getWorkflowOutcomes();
-        assertEquals(STAGGERED_GOLDEN_MAKESPAN, report.getMakespan(), 0.0, "错峰到达黄金 makespan");
+        assertEquals(STAGGERED_GOLDEN_MAKESPAN, report.getMakespan(), 0.0, "golden makespan for staggered arrival");
         assertEquals(50.0, outcomes.get(1).getArrivalSecond(), 0.0);
-        assertEquals(STAGGERED_GOLDEN_FLOW_W1, outcomes.get(1).getFlowTimeSeconds(), 0.0, "工作流 1 黄金流时");
+        assertEquals(
+                STAGGERED_GOLDEN_FLOW_W1,
+                outcomes.get(1).getFlowTimeSeconds(),
+                0.0,
+                "golden flow time of" + " workflow 1");
         assertEquals(
                 outcomes.get(1).getLastSuccessFinishSecond() - 50.0,
                 outcomes.get(1).getFlowTimeSeconds(),
                 0.0,
-                "流时 = 最大完成 − 提交时刻");
-        // 到达门控：工作流 1 的任何任务都不得在提交时刻之前开始。
+                "flow time = latest finish - submission instant");
+        // Arrival gating: no task of workflow 1 may start before its submission instant.
         for (SimulationReport.TaskOutcome task : report.getTasks()) {
             if (task.getTaskId() >= 11 && task.getTaskId() <= 20) {
-                assertTrue(task.getStartTime() >= 50.0, "任务 " + task.getTaskId() + " 在到达时刻前开始: " + task.getStartTime());
+                assertTrue(
+                        task.getStartTime() >= 50.0,
+                        "task " + task.getTaskId() + " started before its arrival instant: " + task.getStartTime());
             }
         }
-        // 晚到不会提前：错峰 makespan 不小于同时提交。
+        // A late arrival never advances the schedule: the staggered makespan is not smaller than the
+        // one of simultaneous submission.
         SimulationReport simultaneous = run(Arrays.asList(0.0, 0.0));
-        assertTrue(report.getMakespan() >= simultaneous.getMakespan(), "错峰到达不得早于同时提交完成");
-        // R8 审计回归（P0-1）：早到不得被推迟——双向门控。工作流 0 的最后成功
-        // 完成时刻必须与同时提交下逐位一致（修复前 stage-in 被扣到 50 秒，
-        // 早到工作流被静默推迟，此断言即其回归锁）。
+        assertTrue(
+                report.getMakespan() >= simultaneous.getMakespan(),
+                "staggered arrival must not complete" + " earlier than simultaneous submission");
+        // R8 audit regression (P0-1): an early arrival must not be deferred -- gating is
+        // bidirectional. The latest successful finish instant of workflow 0 must be bit-identical to
+        // simultaneous submission (before the fix stage-in was held to 50 seconds and the early
+        // workflow was silently deferred; this assertion is the regression lock for that defect).
         assertEquals(
                 simultaneous.getWorkflowOutcomes().get(0).getLastSuccessFinishSecond(),
                 outcomes.get(0).getLastSuccessFinishSecond(),
                 0.0,
-                "早到工作流不得被晚到工作流的到达时刻推迟");
+                "an early workflow must not be deferred by the arrival instant of a later workflow");
     }
 
     @Test
     void arrivalIsDeterministicAndEmitsArrivalEvidence() throws Exception {
         SimulationReport first = run(Arrays.asList(0.0, 50.0));
         SimulationReport second = run(Arrays.asList(0.0, 50.0));
-        assertEquals(first.getMakespan(), second.getMakespan(), 0.0, "确定性");
+        assertEquals(first.getMakespan(), second.getMakespan(), 0.0, "determinism");
         assertEquals(
                 first.getWorkflowOutcomes().get(1).getFlowTimeSeconds(),
                 second.getWorkflowOutcomes().get(1).getFlowTimeSeconds(),
                 0.0);
-        // WORKFLOW_ARRIVED 证据：每个工作流恰好一次，提交时刻与配置一致。
+        // WORKFLOW_ARRIVED evidence: exactly one event per workflow, with the submission instant matching
+        // the configuration.
         int arrived0 = 0;
         int arrived1 = 0;
         for (SimulationEvent event : first.getEvents()) {
@@ -111,12 +129,14 @@ class MultiWorkflowArrivalIntegrationTest {
                 } else if (Integer.valueOf(1).equals(index)) {
                     arrived1++;
                     assertEquals(50.0, ((Number) arrival).doubleValue(), 0.0);
-                    assertTrue(event.getSimulationTime() >= 50.0, "到达证据时刻不得早于提交时刻");
+                    assertTrue(
+                            event.getSimulationTime() >= 50.0,
+                            "arrival evidence must not be timestamped" + " before the submission instant");
                 }
             }
         }
-        assertEquals(1, arrived0, "工作流 0 恰好一条到达证据");
-        assertEquals(1, arrived1, "工作流 1 恰好一条到达证据");
+        assertEquals(1, arrived0, "exactly one arrival evidence event for workflow 0");
+        assertEquals(1, arrived1, "exactly one arrival evidence event for workflow 1");
     }
 
     @Test
@@ -124,7 +144,10 @@ class MultiWorkflowArrivalIntegrationTest {
         SimulationConfig config = SimulationConfig.builder(workflowPath(), 3).build();
         SimulationReport report = new SimulationRunner().run(config, paperPlatform());
         for (SimulationEvent event : report.getEvents()) {
-            assertFalse(event.getType() == SimulationEventType.WORKFLOW_ARRIVED, "单输入全零到达不得产生新事件（历史轨迹逐位一致）");
+            assertFalse(
+                    event.getType() == SimulationEventType.WORKFLOW_ARRIVED,
+                    "a single-input all-zero arrival"
+                            + " must not emit new events (the historical trace stays bit-identical)");
         }
         List<SimulationReport.WorkflowOutcome> outcomes = report.getWorkflowOutcomes();
         assertEquals(1, outcomes.size());
@@ -142,7 +165,7 @@ class MultiWorkflowArrivalIntegrationTest {
         return new SimulationRunner().run(config, paperPlatform());
     }
 
-    /** 与 HEFT 论文复现同构的平台：3 台 VM，mips=1.0。 */
+    /** Platform isomorphic to the HEFT paper reproduction: 3 VMs, mips=1.0. */
     private static PlatformProfile paperPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("multi-arrival-platform");
         for (int id = 0; id < 3; id++) {

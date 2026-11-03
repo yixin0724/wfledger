@@ -27,54 +27,63 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
 /**
- * Fat-tree 拓扑感知链路争用模型的端到端语义验收（HEFT 论文例 fixture）。
+ * End-to-end semantic acceptance of the Fat-tree topology-aware link contention model (HEFT paper
+ * example fixture).
  *
- * <p>与 R2 端点争用模型（{@link LinkContentionSemanticsTest}，黄金值 284.1）同一
- * fixture、同一平台，差异只在数据移动模型与平台拓扑声明：k=4 Fat-tree，默认轮转
- * 放置把 3 台主机分到 (pod0,edge0)、(pod0,edge1)、(pod1,edge0)。两个链路带宽场景：</p>
+ * <p>This test uses the same fixture and the same platform as the R2 endpoint contention model
+ * ({@link LinkContentionSemanticsTest}, golden value 284.1); only the data movement model and the
+ * platform topology declaration differ: a k=4 Fat-tree, whose default round-robin placement spreads
+ * the 3 hosts over (pod0,edge0), (pod0,edge1), and (pod1,edge0). Two link bandwidth scenarios:</p>
  * <ul>
- *   <li><b>对称场景（链路 = 端点 = 1 MB/s）</b>：R8 审计修复（F1 单位契约）后链路
- *       容量按声明值 MB/s 解释，与 VM 端点同量级——单流永远不会因链路慢于端点，
- *       Fat-tree makespan 与 R2 逐位相等（284.1）。该等式是单位契约的端到端回归锁：
- *       修复前同一声明值链路只有端点的 1/8（÷8 单位 bug），makespan 被推到 1032.1。</li>
- *   <li><b>慢链路场景（链路 0.25 MB/s = 端点 1/4）</b>：链路成为真实瓶颈，共享
- *       链路的并发流进一步减速，makespan 严格大于 R2——锁定"链路争用语义确实
- *       生效"，防止模型退化为纯端点争用。</li>
+ *   <li><b>Symmetric scenario (link = endpoint = 1 MB/s)</b>: after the R8 audit fix (F1 unit
+ *       contract), link capacity is interpreted in the declared MB/s, on the same scale as the VM
+ *       endpoints -- a single flow is never slowed by the link, so the Fat-tree makespan is
+ *       bit-identical to R2 (284.1). That equality is the end-to-end regression lock on the unit
+ *       contract: before the fix the same declared value made links 1/8 of the endpoint (the
+ *       division-by-8 unit bug) and pushed the makespan to 1032.1.</li>
+ *   <li><b>Slow-link scenario (link 0.25 MB/s = 1/4 of the endpoint)</b>: the link becomes the real
+ *       bottleneck and concurrent flows sharing a link slow down further, so the makespan is
+ *       strictly greater than R2 -- locking in that "link contention semantics really take effect"
+ *       and preventing the model from degenerating into pure endpoint contention.</li>
  * </ul>
  *
- * <p>断言结构：</p>
+ * <p>Assertion structure:</p>
  * <ul>
- *   <li>速率约束是 R2 端点约束的超集（端点 + 路径链路取最小），因此 Fat-tree
- *       makespan ≥ R2 黄金值 284.1，且严格大于无争用基线 190.1；</li>
- *   <li>两个场景黄金值锁定 + 确定性复跑逐位一致；</li>
- *   <li>证据链：DATA_STAGE_IN_MODELED 携带新模型 kind 与 fatTreePathLinkCount；</li>
- *   <li>健康不变量：全部逻辑任务成功完成、Job 数守恒；</li>
- *   <li>配置契约：SHARED fs / INVALID 规划 / 非 NONE 聚类 / 故障启用 / 非零
- *       开销拒绝；LOCAL_HEFT 允许；运行器双向契约——模型无拓扑声明拒绝、
- *       拓扑声明无模型拒绝。</li>
+ *   <li>The rate constraint is a superset of the R2 endpoint constraint (the minimum of endpoint and
+ *       path link), so the Fat-tree makespan is >= the R2 golden value 284.1 and strictly greater
+ *       than the no-contention baseline 190.1;</li>
+ *   <li>Both scenario golden values are locked and deterministic reruns are bit-identical;</li>
+ *   <li>Evidence chain: DATA_STAGE_IN_MODELED carries the new model kind and fatTreePathLinkCount;</li>
+ *   <li>Health invariants: all logical tasks complete successfully and the Job count is conserved;</li>
+ *   <li>Configuration contract: SHARED fs / INVALID planning / non-NONE clustering / enabled failure
+ *       / non-zero overhead are rejected; LOCAL_HEFT is allowed; the runner contract is
+ *       bidirectional -- a model without a topology declaration is rejected, and a topology
+ *       declaration without a model is rejected.</li>
  * </ul>
  */
 class FatTreeContentionIntegrationTest {
 
-    /** 无争用基线 makespan（论文 80 + 引导偏移 110.1）。 */
+    /** No-contention baseline makespan (paper 80 + bootstrap offset 110.1). */
     private static final double NO_CONTENTION_BASELINE = 190.1;
-    /** R2 端点争用黄金值（LinkContentionSemanticsTest）：Fat-tree 的下界。 */
+    /** R2 endpoint contention golden value (LinkContentionSemanticsTest): the lower bound for Fat-tree. */
     private static final double R2_ENDPOINT_GOLDEN = 284.1;
     /**
-     * 对称场景黄金值（R8 审计 F1 修复后重录 2026-09-16，复跑逐位稳定）：
-     * 链路 1 MB/s = 端点 1 MB/s，链路永不束缚单流，R6 与 R2 逐位相等。
-     * 该等式即单位契约的端到端锁（修复前链路被 ÷8，同一场景为 1032.1）。
+     * Symmetric scenario golden value (re-recorded on 2026-09-16 after the R8 audit F1 fix, reruns are
+     * bit-stable): link 1 MB/s = endpoint 1 MB/s, the link never binds a single flow, and R6 equals R2
+     * bit for bit. That equality is the end-to-end lock on the unit contract (before the fix links were
+     * divided by 8 and the same scenario produced 1032.1).
      */
     private static final double FAT_TREE_GOLDEN_MAKESPAN = 284.1;
-    /** 慢链路场景链路带宽（MB/s）：端点 1 MB/s 的 1/4。 */
+    /** Slow-link scenario link bandwidth (MB/s): 1/4 of the 1 MB/s endpoint. */
     private static final double SLOW_LINK_BANDWIDTH_MB = 0.25;
     /**
-     * 慢链路场景黄金值：由本 fixture 实测锁定（R8 审计重录 2026-09-16），复跑
-     * 逐位稳定。链路慢于端点时共享链路的并发流被限速，makespan 严格大于 R2。
+     * Slow-link scenario golden value: locked from measurements on this fixture (re-recorded in the R8
+     * audit on 2026-09-16) and bit-stable across reruns. When links are slower than endpoints,
+     * concurrent flows sharing a link are throttled and the makespan is strictly greater than R2.
      */
     private static final double SLOW_LINK_GOLDEN_MAKESPAN = 588.1;
 
-    /** 论文成本矩阵（与 LocalHeftPaperReproductionTest 相同）。 */
+    /** Paper cost matrix (the same as in LocalHeftPaperReproductionTest). */
     private static final double[][] PAPER_COST_SECONDS = {
         {14, 16, 9}, {13, 19, 18}, {11, 13, 19}, {13, 8, 17}, {12, 13, 10},
         {13, 16, 9}, {7, 15, 11}, {5, 11, 14}, {18, 12, 20}, {21, 7, 16}
@@ -85,20 +94,32 @@ class FatTreeContentionIntegrationTest {
         SimulationReport report = runFatTree(1.0);
         assertTrue(
                 report.getMakespan() > NO_CONTENTION_BASELINE,
-                "Fat-tree makespan " + report.getMakespan() + " 应严格大于无争用基线 " + NO_CONTENTION_BASELINE);
+                "Fat-tree makespan " + report.getMakespan()
+                        + " must be strictly greater than the no-contention baseline " + NO_CONTENTION_BASELINE);
         assertTrue(
                 report.getMakespan() >= R2_ENDPOINT_GOLDEN,
-                "Fat-tree makespan " + report.getMakespan() + " 应不小于 R2 端点争用黄金值 " + R2_ENDPOINT_GOLDEN
-                        + "（约束超集：端点 + 路径链路取最小）");
+                "Fat-tree makespan " + report.getMakespan()
+                        + " must be at least the R2 endpoint contention golden value " + R2_ENDPOINT_GOLDEN
+                        + " (superset constraint: the minimum of endpoint and path link)");
     }
 
     @Test
     void fatTreeGoldenMakespanIsLocked() throws Exception {
         SimulationReport report = runFatTree(1.0);
         assertEquals(
-                FAT_TREE_GOLDEN_MAKESPAN, report.getMakespan(), 0.0, "Fat-tree 黄金值漂移：fixture、拓扑、单位契约或争用语义发生变化，须显式审查");
-        // 单位契约：对称供给下 R6 与 R2 逐位相等（链路不束缚任何单流）。
-        assertEquals(R2_ENDPOINT_GOLDEN, report.getMakespan(), 0.0, "链路=端点带宽时 R6 必须与 R2 端点争用逐位相等");
+                FAT_TREE_GOLDEN_MAKESPAN,
+                report.getMakespan(),
+                0.0,
+                "Fat-tree golden value drifted: the "
+                        + "fixture, topology, unit contract, or contention semantics changed and require"
+                        + " explicit review");
+        // Unit contract: with symmetric supply R6 equals R2 bit for bit (the link binds no single flow).
+        assertEquals(
+                R2_ENDPOINT_GOLDEN,
+                report.getMakespan(),
+                0.0,
+                "with link bandwidth equal to endpoint"
+                        + " bandwidth, R6 must be bit-identical to R2 endpoint contention");
     }
 
     @Test
@@ -106,8 +127,14 @@ class FatTreeContentionIntegrationTest {
         SimulationReport report = runFatTree(SLOW_LINK_BANDWIDTH_MB);
         assertTrue(
                 report.getMakespan() > R2_ENDPOINT_GOLDEN,
-                "慢链路 makespan " + report.getMakespan() + " 应严格大于 R2 端点争用 " + R2_ENDPOINT_GOLDEN + "（链路成为真实瓶颈）");
-        assertEquals(SLOW_LINK_GOLDEN_MAKESPAN, report.getMakespan(), 0.0, "慢链路黄金值漂移：拓扑、单位契约或争用语义发生变化，须显式审查");
+                "slow-link makespan " + report.getMakespan() + " must be strictly greater than R2 endpoint"
+                        + " contention " + R2_ENDPOINT_GOLDEN + " (the link is the real bottleneck)");
+        assertEquals(
+                SLOW_LINK_GOLDEN_MAKESPAN,
+                report.getMakespan(),
+                0.0,
+                "slow-link golden value drifted:"
+                        + " the topology, unit contract, or contention semantics changed and require explicit review");
     }
 
     @Test
@@ -120,7 +147,7 @@ class FatTreeContentionIntegrationTest {
                     computeFinish(first, taskId),
                     computeFinish(second, taskId),
                     0.0,
-                    "task " + taskId + " 的完成时刻在复跑间必须逐位一致");
+                    "task " + taskId + " finish time must be bit-identical across reruns");
         }
     }
 
@@ -138,11 +165,14 @@ class FatTreeContentionIntegrationTest {
                     "PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1",
                     event.getAttributes().get("dataMovementModel"));
             Object linkCount = event.getAttributes().get("fatTreePathLinkCount");
-            assertNotNull(linkCount, "Fat-tree 证据必须携带路径链路计数");
+            assertNotNull(linkCount, "Fat-tree evidence must carry the path link count");
             totalPathLinks += ((Number) linkCount).intValue();
         }
         assertEquals(10, observed);
-        assertTrue(totalPathLinks > 0, "VM→VM 传输组必须路由经过拓扑链路，总链路计数应大于 0");
+        assertTrue(
+                totalPathLinks > 0,
+                "VM->VM transfer groups must be routed over topology links, so the"
+                        + " total link count must be greater than 0");
     }
 
     @Test
@@ -157,7 +187,7 @@ class FatTreeContentionIntegrationTest {
     @Test
     void configurationContractRejectsInvalidCombinations() throws Exception {
         String workflow = resourcePath("/dax/heft-paper-example.dax");
-        // SHARED 文件系统：VM→VM 通信仅在 LOCAL 下建模。
+        // SHARED file system: VM->VM communication is modeled only under LOCAL.
         IllegalArgumentException shared =
                 assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
                         .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
@@ -167,7 +197,7 @@ class FatTreeContentionIntegrationTest {
                         .dataMovementModel(DataMovementModel.fatTreeContentionV1())
                         .build());
         assertTrue(shared.getMessage().contains("LOCAL"), shared.getMessage());
-        // INVALID 规划层：就绪时刻没有目标 VM，路径不可知。
+        // INVALID planning layer: no target VM is known at readiness time, so the path is unknown.
         IllegalArgumentException unmapped =
                 assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
                         .schedulingAlgorithm(Parameters.SchedulingAlgorithm.MINMIN)
@@ -175,7 +205,7 @@ class FatTreeContentionIntegrationTest {
                         .dataMovementModel(DataMovementModel.fatTreeContentionV1())
                         .build());
         assertTrue(unmapped.getMessage().contains("planning algorithm"), unmapped.getMessage());
-        // 非 NONE 聚类：Job 与逻辑任务不再一一对应。
+        // Non-NONE clustering: Jobs no longer correspond one-to-one with logical tasks.
         IllegalArgumentException clustered =
                 assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
                         .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
@@ -187,7 +217,7 @@ class FatTreeContentionIntegrationTest {
                         .dataMovementModel(DataMovementModel.fatTreeContentionV1())
                         .build());
         assertTrue(clustered.getMessage().contains("clustering method NONE"), clustered.getMessage());
-        // 故障模型启用：fat-tree 路径要求确定性无故障语义。
+        // Failure model enabled: fat-tree paths require deterministic failure-free semantics.
         Map<Integer, DistributionSpec[]> failureRows = new LinkedHashMap<Integer, DistributionSpec[]>();
         for (int vmId = 0; vmId < 3; vmId++) {
             failureRows.put(Integer.valueOf(vmId), new DistributionSpec[] {
@@ -209,7 +239,7 @@ class FatTreeContentionIntegrationTest {
                         .failureModel(enabledFailure)
                         .build());
         assertTrue(failure.getMessage().contains("failure model to be disabled"), failure.getMessage());
-        // 非零开销：与 LOCAL 静态 DAG 轨道同一前提。
+        // Non-zero overhead: the same precondition as the LOCAL static DAG track.
         IllegalArgumentException overhead = assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(
                         workflow, 3)
                 .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
@@ -220,7 +250,8 @@ class FatTreeContentionIntegrationTest {
                 .overheadModel(OverheadModelConfig.builder().bandwidth(1.0).build())
                 .build());
         assertTrue(overhead.getMessage().contains("OverheadModelConfig.none()"), overhead.getMessage());
-        // LOCAL_HEFT + Fat-tree 争用：允许（规划侧无争用 AST、运行期链路争用）。
+        // LOCAL_HEFT + Fat-tree contention: allowed (no contention-aware AST on the planning side, link
+        // contention at runtime).
         assertNotNull(SimulationConfig.builder(workflow, 3)
                 .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
@@ -240,12 +271,13 @@ class FatTreeContentionIntegrationTest {
                 .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                 .dataMovementModel(DataMovementModel.fatTreeContentionV1())
                 .build();
-        // 模型声明但平台无拓扑 → 拒绝。
+        // Model declared but the platform has no topology -> rejected.
         SimulationConfigurationException missing =
                 assertThrows(SimulationConfigurationException.class, () -> new SimulationRunner()
                         .run(fatTreeConfig, paperPlatform(null)));
         assertTrue(missing.getMessage().contains("networkTopology"), missing.getMessage());
-        // 平台声明拓扑但模型不使用 → 拒绝（避免声明被静默忽略）。
+        // Platform declares a topology but the model does not use it -> rejected (a declaration must not be
+        // silently ignored).
         SimulationConfig legacyConfig = SimulationConfig.builder(workflow, 3)
                 .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
@@ -271,7 +303,10 @@ class FatTreeContentionIntegrationTest {
         return new SimulationRunner().run(config, paperPlatform(NetworkTopologySpec.fatTree(4, linkBandwidthMb)));
     }
 
-    /** 与论文例相同的平台：3 主机 3 VM（mips=1.0、带宽 1 MB/s），可选拓扑声明。 */
+    /**
+     * Platform matching the paper example: 3 hosts and 3 VMs (mips=1.0, bandwidth 1 MB/s), with an
+     * optional topology declaration.
+     */
     private static PlatformProfile paperPlatform(NetworkTopologySpec topology) {
         PlatformProfile.Builder builder = PlatformProfile.builder("fat-tree-paper-platform");
         for (int id = 0; id < 3; id++) {

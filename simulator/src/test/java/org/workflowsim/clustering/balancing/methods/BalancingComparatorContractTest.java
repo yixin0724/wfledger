@@ -12,13 +12,16 @@ import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * F-005（审查工程 C15）：平衡聚类运行长度比较器的序守恒契约。
+ * F-005 (review engineering C15): order-conservation contract of the balancing-clustering
+ * runtime-length comparator.
  *
- * <p>军规来源（守恒律）：升序比较器必须满足——按该比较器排序后，列表
- * <b>相邻元素比较结果非降</b>；任何两个不同运行时长的 TaskSet 不得被报告为
- * "相等"。历史实现 {@code (int)(long 差) } 窄化取低 32 位，差恰为 2^32 倍数时
- * 判"相等"。真实影响案例：大型聚类 runtime（MIPS 缩放 MI）超越 int 域时比较塌缩、
- * LPT 装箱退化为输入序。</p>
+ * <p>Project-rule source (conservation law): an ascending comparator must satisfy -- after
+ * sorting with that comparator, the <b>comparison result of adjacent elements is
+ * non-decreasing</b>; any two TaskSets with different runtimes must not be reported as
+ * "equal". The historical implementation narrowed {@code (int)(long difference)} to the
+ * low 32 bits, so a difference that is an exact multiple of 2^32 was judged "equal". Real
+ * impact case: for large clustering runtimes (MIPS scaling MI) beyond the int domain the
+ * comparison collapses and LPT bin packing degrades to the input order.</p>
  */
 class BalancingComparatorContractTest {
 
@@ -32,18 +35,24 @@ class BalancingComparatorContractTest {
     void runtimeIncreasingSortsInExactAscendingOrder() {
         List<TaskSet> list =
                 new ArrayList<TaskSet>(Arrays.asList(runtime(1_000L), runtime(3000L), runtime(500L), runtime(2_000L)));
-        // 先注入"输入序与目标序相反"的排布，防止比较器全零时靠稳定性侥幸通过。
+        // First inject an arrangement whose input order is the reverse of the target order,
+        // so an all-zero comparator cannot pass by stability alone.
         Collections.reverse(list);
         List<TaskSet> sorted = new ArrayList<TaskSet>(list);
         Collections.sort(sorted, HorizontalRuntimeBalancing.RUNTIME_INCREASING);
-        assertEquals(Arrays.asList(500L, 1_000L, 2_000L, 3_000L), runtimes(sorted), "升序排序结果必须严格按运行时长排列");
+        assertEquals(
+                Arrays.asList(500L, 1_000L, 2_000L, 3_000L),
+                runtimes(sorted),
+                "the ascending sort must order strictly by runtime length");
     }
 
     @Test
     void runtimeIncreasingDistinguishesIntWrapAroundDifferences() {
-        // F-005 红用例：(int)(1 - 2^32) 取低 32 位 == 1（方向恰好正确纯属巧合），
-        // 而 (int)(2^32 - 1) == -1 方向错误。守恒律要求：任何可区分的运行时长
-        // 顺序都必须正确。用 1 而非 0 作为基线：Cloudlet 对 ≤0 长度静默保持默认 1。
+        // F-005 red case: (int)(1 - 2^32) keeps the low 32 bits == 1 (the direction being
+        // correct is a coincidence), while (int)(2^32 - 1) == -1 has the wrong direction.
+        // The conservation law requires: every distinguishable runtime order must be
+        // correct. Use 1 rather than 0 as the baseline: Cloudlet silently keeps the
+        // default 1 for lengths <= 0.
         List<TaskSet> pair = new ArrayList<TaskSet>(Arrays.asList(runtime(4294967296L), runtime(1L)));
         Collections.sort(pair, HorizontalRuntimeBalancing.RUNTIME_INCREASING);
         assertEquals(Arrays.asList(1L, 4294967296L), runtimes(pair), "差为 2^32 的两个运行时长必须可区分（红测 F-005：窄化回绕）");

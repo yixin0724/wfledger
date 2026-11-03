@@ -14,41 +14,50 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.platform.PlatformProfile;
 
 /**
- * BAT-V1（2026-10-29 测试工程师对抗轮，DVFS 第五轮）：频档入参面的恶意模糊——
- * 期望值三源：D1 数据档契约（mips&gt;0、idle≥0、max≥idle、全有限、表序严格降序）
- * + 单一真源互斥（BAT-D1）+ v1 退化恒等（空/null 表 = 无档 = v1，DVFS_DIMENSION_
- * DESIGN.md §2.4）。quality-of-rejection 检查：拒绝消息必须指名字段（宽匹配可区分
- * "静默吞掉"），不是只看异常类——鏡像碳维度 T 系（CarbonInputFuzzTest）的红→绿纪律。
+ * BAT-V1 (2026-10-29 test-engineer adversarial round, DVFS round 5): adversarial fuzzing
+ * of the frequency-tier input surface -- expected values from three sources: the D1 data
+ * tier contract (mips&gt;0, idle>=0, max>=idle, all finite, strictly descending table
+ * order) + single-source-of-truth mutual exclusion (BAT-D1) + v1 degenerate identity
+ * (empty/null table = no tier = v1, DVFS_DIMENSION_DESIGN.md section 2.4). The
+ * quality-of-rejection check: a rejection message must name the field (a broad match is
+ * distinguishable from "silently swallowed"), not merely the exception class -- the
+ * red-to-green discipline of the mirror carbon dimension T series (CarbonInputFuzzTest).
  *
- * <p>诚实披露（本攻击类的实测结论，非实现抄录）：
- * <b>单元素档表与 null/空 Java 表是合法面</b>——设计把"单档"锚定为 v1 线性律的
- * 精确退化（§2.4"单档链表（或空）在语义上退化为 v1 的线性律"），"声明边界"的
- * declared-but-empty 拒绝发生在<b>受声明语义约束的两处入口</b>：workbench JSON
- * （空数组）与证据 manifest（Python 审计器 BAT-D3 条款）；Java 进程内空表 =
- * v1 退化模式是设计行为（WorkbenchDvfsFuzzTest/BAT-V1 同轮锁 JSON 面）。</p>
+ * <p>Honest disclosure (the measured conclusion of this attack class, not an
+ * implementation transcription): <b>a single-element tier table and a null/empty Java
+ * table are legal surface</b> -- the design anchors "single tier" as the exact
+ * degeneration of the v1 linear law (section 2.4 "a single-tier chain (or an empty one)
+ * degenerates semantically to the v1 linear law"); the declared-but-empty rejection of a
+ * "declared boundary" happens at the <b>two entries constrained by declared
+ * semantics</b>: workbench JSON (empty array) and the evidence manifest (Python auditor
+ * BAT-D3 clause); an empty table inside the Java process = v1 degenerate mode is designed
+ * behavior (WorkbenchDvfsFuzzTest/BAT-V1 locks the JSON face in the same round).</p>
  */
 class FrequencyTierInputFuzzTest {
 
     // ------------------------------------------------------------------
-    // 数值域：NaN/±Inf 逐字段 × 三字段独立注入（现有 FrequencyTierTest 只锚了
-    // mips=0/负 idle/max&lt;idle/NaN-mips 四点，本类补齐全部 Inf 组合与其余字段）
+    // Numeric domain: NaN/+/-Inf per field, injected independently into the three fields
+    // (the existing FrequencyTierTest anchors only four points -- mips=0/negative idle/
+    // max&lt;idle/NaN mips; this class completes every Inf combination and the remaining
+    // fields)
     // ------------------------------------------------------------------
 
     @Test
     void nanAndInfinityOnEveryFieldAreRejectedWithFieldNaming() {
-        // mips 字段：NaN / +Inf / -Inf（+Inf 通过 mips>0，必须由 finite 条款拦下）。
+        // mips field: NaN / +Inf / -Inf (+Inf passes mips>0, so the finite clause must stop it).
         mustCite(() -> new PlatformProfile.FrequencyTier(Double.NaN, 100.0, 200.0), "mips", "NaN mips");
         mustCite(() -> new PlatformProfile.FrequencyTier(Double.POSITIVE_INFINITY, 100.0, 200.0), "mips", "+Inf mips");
         mustCite(() -> new PlatformProfile.FrequencyTier(Double.NEGATIVE_INFINITY, 100.0, 200.0), "mips", "-Inf mips");
-        // idle 字段：NaN / +Inf / -Inf（-Inf 由 idle>=0 拦、+Inf 由 finite 拦）。
+        // idle field: NaN / +Inf / -Inf (-Inf is stopped by idle>=0, +Inf by finite).
         mustCite(() -> new PlatformProfile.FrequencyTier(1000.0, Double.NaN, 200.0), "idle", "NaN idle");
         mustCite(() -> new PlatformProfile.FrequencyTier(1000.0, Double.POSITIVE_INFINITY, 200.0), "idle", "+Inf idle");
         mustCite(() -> new PlatformProfile.FrequencyTier(1000.0, Double.NEGATIVE_INFINITY, 200.0), "idle", "-Inf idle");
-        // max 字段：NaN / +Inf / -Inf（-Inf 由 max>=idle 拦、+Inf 由 finite 拦）。
+        // max field: NaN / +Inf / -Inf (-Inf is stopped by max>=idle, +Inf by finite).
         mustCite(() -> new PlatformProfile.FrequencyTier(1000.0, 100.0, Double.NaN), "max", "NaN max");
         mustCite(() -> new PlatformProfile.FrequencyTier(1000.0, 100.0, Double.POSITIVE_INFINITY), "max", "+Inf max");
         mustCite(() -> new PlatformProfile.FrequencyTier(1000.0, 100.0, Double.NEGATIVE_INFINITY), "max", "-Inf max");
-        // 有限条款名面：消息必须引用域规则（mips>0, idle>=0, max>=idle, all finite）。
+        // Finite-clause naming: the message must cite the domain rule (mips>0, idle>=0,
+        // max>=idle, all finite).
         IllegalArgumentException finite = assertThrows(
                 IllegalArgumentException.class,
                 () -> new PlatformProfile.FrequencyTier(
@@ -60,14 +69,15 @@ class FrequencyTierInputFuzzTest {
 
     @Test
     void degenerateFiniteValuesAreRejectedWithFieldNaming() {
-        // mips=0（零速档：无意义 P-state）与负 mips。
+        // mips=0 (zero-speed tier: a meaningless P-state) and negative mips.
         mustCite(() -> new PlatformProfile.FrequencyTier(0.0, 100.0, 200.0), "mips", "zero mips");
         mustCite(() -> new PlatformProfile.FrequencyTier(-1000.0, 100.0, 200.0), "mips", "negative mips");
-        // 负怠速功率。
+        // Negative idle power.
         mustCite(() -> new PlatformProfile.FrequencyTier(1000.0, -0.5, 200.0), "idle", "negative idle");
-        // max<idle 倒置。
+        // Inverted max<idle.
         mustCite(() -> new PlatformProfile.FrequencyTier(1000.0, 250.0, 200.0), "max", "reversed max<idle");
-        // max==idle（边界合法：零动态余量档）——不得拒（边界语义见 Boundary 类）。
+        // max==idle (legal boundary: zero dynamic-headroom tier) -- must not be rejected
+        // (boundary semantics are covered by the Boundary class).
         assertEquals(
                 250.0,
                 new PlatformProfile.FrequencyTier(1000.0, 250.0, 250.0).getMaxPowerWatts(),
@@ -76,8 +86,10 @@ class FrequencyTierInputFuzzTest {
     }
 
     // ------------------------------------------------------------------
-    // 表级：恰等 mips 双档（重复档）必须被"严格降序"条款拦下——现有测试只锚了
-    // 升序 (500,1000)，"重复"是升序的边界孪生（对相邻比较 >= 而非 >）
+    // Table level: a two-tier table with exactly equal mips (duplicate tier) must be
+    // stopped by the "strictly descending" clause -- the existing test anchors only
+    // ascending (500,1000); a "duplicate" is the boundary twin of ascending (comparing
+    // >= instead of >)
     // ------------------------------------------------------------------
 
     @Test
@@ -94,7 +106,8 @@ class FrequencyTierInputFuzzTest {
         assertTrue(
                 duplicate.getMessage().contains("mips"),
                 "rejection must cite the mips field: " + duplicate.getMessage());
-        // 三档中部重复（首尾不同、中档与前档等 mips）。
+        // A duplicate in the middle of a three-tier table (first and last differ; the
+        // middle tier has the same mips as the tier before it).
 
         IllegalArgumentException middle = assertThrows(
                 IllegalArgumentException.class,
@@ -107,7 +120,8 @@ class FrequencyTierInputFuzzTest {
     }
 
     // ------------------------------------------------------------------
-    // 单一真源：档表 + 平面功率并存必须拒绝并同时引用两处字段（D1 条款）
+    // Single source of truth: a tier table and flat power together must be rejected, and
+    // both faces must be cited (D1 clause)
     // ------------------------------------------------------------------
 
     @Test
@@ -137,8 +151,9 @@ class FrequencyTierInputFuzzTest {
     }
 
     // ------------------------------------------------------------------
-    // v1 平台在 Java 各构造入参下保持合法（缺省即 v1）：null 表 / 空 List /
-    // 13 参与 12/11 参委托——每一台 VM 无档、无频档序列化、能量走 v1 律
+    // The v1 platform stays legal under every Java constructor input (absent means v1):
+    // null table / empty List / 13-arg and 12/11-arg delegation -- each VM has no tier,
+    // no frequency-tier serialization, and energy follows the v1 law
     // ------------------------------------------------------------------
 
     @Test
@@ -146,7 +161,7 @@ class FrequencyTierInputFuzzTest {
         for (PlatformProfile.VmSpec spec : Arrays.asList(
                 v1Spec(null),
                 v1Spec(new ArrayList<PlatformProfile.FrequencyTier>()),
-                // 12 参/11 参委托：缺省 tiers=null → v1
+                // 12-arg/11-arg delegation: absent tiers=null -> v1
                 new PlatformProfile.VmSpec(
                         0,
                         1000.0,
@@ -175,19 +190,25 @@ class FrequencyTierInputFuzzTest {
             assertFalse(spec.hasFrequencyTiers(), "tierless construction must stay v1");
             assertTrue(spec.getFrequencyTiers().isEmpty(), "no tier table");
             assertTrue(spec.hasPowerModel(), "v1 flat power works through the same constructor");
-            // v1 面没有默认档：访问器只允许 hasFrequencyTiers() 为真的台。
-            // （defaultFrequencyTier() 的契约即"调用方须先验 hasFrequencyTiers"。）
+            // The v1 face has no default tier: the accessor is allowed only on a platform where
+            // hasFrequencyTiers() is true.
+            // (The contract of defaultFrequencyTier() is "the caller must verify
+            // hasFrequencyTiers first".)
         }
         try {
             v1Spec(null).defaultFrequencyTier();
             org.junit.jupiter.api.Assertions.fail(
                     "tierless VmSpec.defaultFrequencyTier() must fail loudly, not fabricate a tier");
         } catch (IndexOutOfBoundsException | IllegalStateException expected) {
-            // 显式失败（无档莫造档）；不吞静默值即契约。
+            // Explicit failure (never fabricate a tier when none exists); not swallowing a
+            // silent value is the contract.
         }
     }
 
-    /** 单元素档表合法 = v1 退化（D1 恒等），且默认档=该唯一档。 */
+    /**
+     * A single-element tier table is legal = v1 degeneration (D1 identity), and the
+     * default tier is that only tier.
+     */
     @Test
     void singleElementTierListIsTheLegalV1DegenerationNotARejection() {
         PlatformProfile.VmSpec single =
@@ -199,7 +220,7 @@ class FrequencyTierInputFuzzTest {
 
     // ---- helpers ----
 
-    /** 档表构造面：平面功率字段恒 0（单一真源）。 */
+    /** Tier-table construction face: the flat power fields are constantly 0 (single source of truth). */
     private static PlatformProfile.VmSpec spec(List<PlatformProfile.FrequencyTier> tiers) {
         return new PlatformProfile.VmSpec(
                 0,
@@ -217,7 +238,7 @@ class FrequencyTierInputFuzzTest {
                 tiers);
     }
 
-    /** v1 无档面：平面功率 250/400（真功率声明）+ null/空档表。 */
+    /** v1 tierless face: flat power 250/400 (a real power declaration) + null/empty tier table. */
     private static PlatformProfile.VmSpec v1Spec(List<PlatformProfile.FrequencyTier> tiers) {
         if (tiers != null && !tiers.isEmpty()) {
             throw new IllegalArgumentException("v1Spec is the tierless face; use spec() for tier tables");
@@ -250,7 +271,8 @@ class FrequencyTierInputFuzzTest {
         boolean cites =
                 java.util.Arrays.stream(needle.toLowerCase().split("[| ]")).anyMatch(message::contains);
         assertTrue(cites, what + " rejection must cite the field [" + needle + "]: " + message);
-        // 宽域名面：D1 值消息包含域清单（required: ...），可索引到修复路径。
+        // Broad-domain face: the D1 value message contains the domain list (required: ...),
+        // which indexes the fix path.
         assertTrue(
                 message.contains("required") || message.contains("descending") || message.contains("source of truth"),
                 what + " rejection must state the violated domain rule: " + message);

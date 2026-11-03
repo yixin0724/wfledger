@@ -17,37 +17,47 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
 /**
- * R2 链路争用带宽模型的端到端语义验收（HEFT 论文例 fixture）。
+ * End-to-end semantic acceptance of the R2 link contention bandwidth model (HEFT paper example
+ * fixture).
  *
- * <p>fixture 选择理由：论文例的受控调度（见 {@link LocalHeftPaperReproductionTest}）
- * 中存在真实并发传输——t2（18 MB）与 t4（9 MB）的输入传输都在父任务 t1 完成时刻
- * （110.1+9.0=119.1 s）同时开始，且共享源端点 vm2 的 1 MB/s 网卡。无争用模型下两
- * 条传输各自按全额速率进行；争用模型下两条传输公平共享 vm2 出口容量（各 0.5 MB/s），
- * 完成时刻被推迟，makespan 严格增大——这正是数据感知调度研究关心的权衡信号。</p>
+ * <p>Fixture rationale: in the controlled schedule of the paper example (see
+ * {@link LocalHeftPaperReproductionTest}) there is genuine concurrent transfer -- the input
+ * transfers of t2 (18 MB) and t4 (9 MB) both start at the completion instant of the parent task t1
+ * (110.1+9.0=119.1 s) and share the 1 MB/s NIC of the source endpoint vm2. Without a contention
+ * model the two transfers each proceed at the full rate; with the contention model the two
+ * transfers fairly share the vm2 egress capacity (0.5 MB/s each), their completion instants are
+ * deferred and the makespan strictly increases -- exactly the trade-off signal that data-aware
+ * scheduling research cares about.</p>
  *
- * <p>断言结构：</p>
+ * <p>Assertion structure:</p>
  * <ul>
- *   <li>争用 makespan 严格大于无争用基线 190.1（并发传输互相减速的直接证据）；</li>
- *   <li>黄金值锁定：争用 makespan 与逐任务完成时刻逐位稳定（确定性复跑）；</li>
- *   <li>证据链：DATA_STAGE_IN_MODELED 携带争用传输组计数与新模型 kind；</li>
- *   <li>配置边界：INVALID 规划层 + 争用模型被拒绝（就绪时刻无目标 VM）；
- *       LOCAL_HEFT + 争用模型被允许（规划侧无争用估计、运行期争用，偏差由文档声明）。</li>
+ *   <li>The contention makespan is strictly greater than the no-contention baseline 190.1 (direct
+ *       evidence that concurrent transfers slow each other down);</li>
+ *   <li>Golden values are locked: the contention makespan and the per-task finish instants are
+ *       bit-stable (deterministic reruns);</li>
+ *   <li>Evidence chain: DATA_STAGE_IN_MODELED carries the contended transfer group count and the new
+ *       model kind;</li>
+ *   <li>Configuration boundaries: INVALID planning tier + contention model is rejected (at the ready
+ *       instant there is no target VM); LOCAL_HEFT + contention model is allowed (no contention
+ *       estimate on the planning side, contention at run time, deviation declared by the
+ *       documentation).</li>
  * </ul>
  */
 class LinkContentionSemanticsTest {
 
-    /** 无争用基线 makespan（论文 80 + 引导偏移 110.1，见 LocalHeftPaperReproductionTest）。 */
+    /** No-contention baseline makespan (paper 80 + bootstrap offset 110.1, see LocalHeftPaperReproductionTest). */
     private static final double NO_CONTENTION_BASELINE = 190.1;
 
     /**
-     * 争用黄金值：由本 fixture 实测锁定（2026-09-14），复跑逐位稳定。手算佐证：
-     * t2（18 MB）与 t4（9 MB）共享源端点 vm2（1 MB/s）各得 0.5 MB/s——t4 完成于
-     * 119.1+18=137.1，t2 此后恢复全额再需 9 秒（146.1），后续传输链依次推迟，
-     * 总 makespan 从无争用 190.1 增至 284.1。
+     * Contention golden value: measured and locked from this fixture (2026-09-14), bit-stable across
+     * reruns. Hand-derived corroboration: t2 (18 MB) and t4 (9 MB) share the source endpoint vm2
+     * (1 MB/s) and get 0.5 MB/s each -- t4 completes at 119.1+18=137.1, t2 then resumes the full rate
+     * and needs 9 more seconds (146.1), the subsequent transfer chain is deferred in turn, and the
+     * total makespan grows from the no-contention 190.1 to 284.1.
      */
     private static final double CONTENTION_GOLDEN_MAKESPAN = 284.1;
 
-    /** 论文成本矩阵（与 LocalHeftPaperReproductionTest 相同）。 */
+    /** Paper cost matrix (identical to LocalHeftPaperReproductionTest). */
     private static final double[][] PAPER_COST_SECONDS = {
         {14, 16, 9}, {13, 19, 18}, {11, 13, 19}, {13, 8, 17}, {12, 13, 10},
         {13, 16, 9}, {7, 15, 11}, {5, 11, 14}, {18, 12, 20}, {21, 7, 16}
@@ -58,13 +68,19 @@ class LinkContentionSemanticsTest {
         SimulationReport report = runWithContention();
         assertTrue(
                 report.getMakespan() > NO_CONTENTION_BASELINE,
-                "争用 makespan " + report.getMakespan() + " 应严格大于无争用基线 " + NO_CONTENTION_BASELINE);
+                "contention makespan " + report.getMakespan() + " must be strictly greater than the no-contention"
+                        + " baseline " + NO_CONTENTION_BASELINE);
     }
 
     @Test
     void contentionGoldenMakespanIsLocked() throws Exception {
         SimulationReport report = runWithContention();
-        assertEquals(CONTENTION_GOLDEN_MAKESPAN, report.getMakespan(), 0.0, "争用黄金值漂移：fixture 或争用模型语义发生变化，须显式审查");
+        assertEquals(
+                CONTENTION_GOLDEN_MAKESPAN,
+                report.getMakespan(),
+                0.0,
+                "contention golden value drift: the"
+                        + " fixture or contention model semantics changed and require explicit review");
     }
 
     @Test
@@ -77,7 +93,7 @@ class LinkContentionSemanticsTest {
                     computeFinish(first, taskId),
                     computeFinish(second, taskId),
                     0.0,
-                    "task " + taskId + " 的完成时刻在复跑间必须逐位一致");
+                    "task " + taskId + " finish instant must be bit-identical across reruns");
         }
     }
 
@@ -93,16 +109,20 @@ class LinkContentionSemanticsTest {
             assertEquals(
                     "PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1",
                     event.getAttributes().get("dataMovementModel"));
-            assertNotNull(event.getAttributes().get("contentionTransferGroupCount"), "争用模型证据必须携带传输组计数");
+            assertNotNull(
+                    event.getAttributes().get("contentionTransferGroupCount"),
+                    "contention model evidence" + " must carry the transfer group count");
         }
-        // 10 个计算任务全部记录传输证据（与无争用模型证据覆盖一致）。
+        // All 10 compute tasks record transfer evidence (the same evidence coverage as the no-contention
+        // model).
         assertEquals(10, observed);
     }
 
     @Test
     void contentionModelConfigurationBoundaries() throws Exception {
         String workflow = resourcePath("/dax/heft-paper-example.dax");
-        // INVALID 规划层 + 争用模型：就绪时刻没有目标 VM，无法确定传输端点。
+        // INVALID planning tier + contention model: there is no target VM at the ready instant, so the
+        // transfer endpoints cannot be determined.
         IllegalArgumentException unmapped =
                 assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
                         .schedulingAlgorithm(Parameters.SchedulingAlgorithm.MINMIN)
@@ -110,7 +130,8 @@ class LinkContentionSemanticsTest {
                         .dataMovementModel(DataMovementModel.preExecutionTransferDelayWithContentionV1())
                         .build());
         assertTrue(unmapped.getMessage().contains("INVALID"), unmapped.getMessage());
-        // SHARED_STORAGE_HEFT + 争用模型：共享存储轨道要求 legacy 模型对齐。
+        // SHARED_STORAGE_HEFT + contention model: the shared-storage track requires alignment with the
+        // legacy model.
         IllegalArgumentException shared =
                 assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
                         .planningAlgorithm(Parameters.PlanningAlgorithm.SHARED_STORAGE_HEFT)
@@ -119,7 +140,8 @@ class LinkContentionSemanticsTest {
                         .dataMovementModel(DataMovementModel.preExecutionTransferDelayWithContentionV1())
                         .build());
         assertTrue(shared.getMessage().contains("legacyWorkflowsimV1"), shared.getMessage());
-        // LOCAL_HEFT + 争用模型：允许（规划侧无争用 AST、运行期公平共享，偏差由文档声明）。
+        // LOCAL_HEFT + contention model: allowed (no contention AST on the planning side, fair sharing at
+        // run time, the deviation is declared by the documentation).
         assertNotNull(SimulationConfig.builder(workflow, 3)
                 .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
@@ -141,7 +163,10 @@ class LinkContentionSemanticsTest {
         return new SimulationRunner().run(config, contentionPlatform());
     }
 
-    /** 与论文例相同的平台：3 台 VM，mips=1.0、带宽 1 MB/s（争用容量 1e6 字节/秒）。 */
+    /**
+     * Platform identical to the paper example: 3 VMs, mips=1.0, bandwidth 1 MB/s (contention capacity
+     * 1e6 bytes/second).
+     */
     private static PlatformProfile contentionPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("link-contention-platform");
         for (int id = 0; id < 3; id++) {

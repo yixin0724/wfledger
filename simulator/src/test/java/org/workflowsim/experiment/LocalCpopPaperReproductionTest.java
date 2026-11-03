@@ -15,18 +15,23 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
 /**
- * CPOP 论文例（Critical-Path-on-a-Processor，与 HEFT 同出 Topcuoglu, Hariri &amp;
- * Wu, IEEE TPDS 2002）在受控 LOCAL 执行模型上的复现回归，与
- * {@link LocalHeftPaperReproductionTest} 使用同一份核实过的论文算例数据。
+ * Reproduction regression of the CPOP paper example (Critical-Path-on-a-Processor, from
+ * the same Topcuoglu, Hariri &amp; Wu, IEEE TPDS 2002 paper as HEFT) on the controlled
+ * LOCAL execution model, using the same verified paper example data as
+ * {@link LocalHeftPaperReproductionTest}.
  *
- * <p><b>按经典 CPOP rank 公式手算的受控模型结果（引导偏移 110.1）</b></p>
+ * <p><b>Controlled-model result hand-derived with the classical CPOP rank formula
+ * (bootstrap offset 110.1)</b></p>
  * <ul>
- *   <li>关键路径 = {n1, n2, n9, n10}，平均路径长度为 108；向下 rank 从入口
- *       沿前驱累加前驱计算成本与入边通信成本，关键路径节点的 r_u + r_d 均为 108；</li>
- *   <li>关键路径处理器 p_CP = vm1（关键路径计算总秒数：vm0=66、vm1=54、vm2=63），
- *       全部四个关键路径任务绑定该 VM；</li>
- *   <li>去除完整引导偏移后的 makespan 为 86（绝对 196.1），与论文 makespan 86
- *       一致；每任务映射、区间与传输量按该 fixture 的插入式 EFT 规则分别锁定。</li>
+ *   <li>Critical path = {n1, n2, n9, n10}, average path length 108; the downward rank
+ *       accumulates predecessor computation cost and incoming-edge communication cost
+ *       from the entry, and r_u + r_d equals 108 for every critical-path node;</li>
+ *   <li>Critical-path processor p_CP = vm1 (total critical-path computation seconds:
+ *       vm0=66, vm1=54, vm2=63), and all four critical-path tasks bind to that VM;</li>
+ *   <li>The makespan after removing the complete bootstrap offset is 86 (absolute
+ *       196.1), consistent with the paper makespan 86; the per-task mapping, intervals
+ *       and transfer volumes are pinned separately by the insertion-based EFT rule of
+ *       this fixture.</li>
  * </ul>
  */
 class LocalCpopPaperReproductionTest {
@@ -37,17 +42,21 @@ class LocalCpopPaperReproductionTest {
     };
     private static final double BOOTSTRAP_OFFSET = 110.1;
 
-    /** 经典 CPOP rank、关键路径绑定和插入式 EFT 下独立推导的每任务 VM 映射。 */
+    /** Per-task VM mapping derived independently under the classical CPOP rank,
+     * critical-path binding and insertion-based EFT. */
     private static final int[] CONTROLLED_VM_BY_TASK = {-1, 1, 1, 0, 2, 1, 2, 0, 2, 1, 1};
-    /** 受控模型的运行时开始时刻（绝对秒），下标 = 任务 ID。 */
+    /** Runtime start instants of the controlled model (absolute seconds), indexed by
+     * task ID. */
     private static final double[] CONTROLLED_STARTS = {
         0.0, BOOTSTRAP_OFFSET, 126.1, 138.1, 135.1, 145.1, 152.1, 149.1, 164.1, 175.1, 189.1
     };
-    /** 受控模型的运行时完成时刻（绝对秒），下标 = 任务 ID。 */
+    /** Runtime finish instants of the controlled model (absolute seconds), indexed by
+     * task ID. */
     private static final double[] CONTROLLED_FINISHES = {
         0.0, 126.1, 145.1, 149.1, 152.1, 158.1, 161.1, 156.1, 178.1, 187.1, 196.1
     };
-    /** 每任务实际建模传输秒数（副本已在目标 VM 上为零；跨 VM = 边权）。 */
+    /** Actually modeled transfer seconds per task (zero when the replica is already on
+     * the target VM; cross-VM = edge weight). */
     private static final double[] CONTROLLED_TRANSFER_SECONDS = {
         0.0, 0.0, 0.0, 12.0, 9.0, 0.0, 14.0, 0.0, 19.0, 23.0, 28.0
     };
@@ -65,15 +74,14 @@ class LocalCpopPaperReproductionTest {
             }
             computeCount++;
             int taskId = job.getTaskIds().get(0).intValue();
-            assertEquals(CONTROLLED_VM_BY_TASK[taskId], job.getVmId(), "task " + taskId + " 的 VM 映射");
-            assertEquals(CONTROLLED_STARTS[taskId], job.getStartTime(), 1.0e-9, "task " + taskId + " 的开始时刻（规划 == 运行时）");
-            assertEquals(
-                    CONTROLLED_FINISHES[taskId], job.getFinishTime(), 1.0e-9, "task " + taskId + " 的完成时刻（规划 == 运行时）");
+            assertEquals(CONTROLLED_VM_BY_TASK[taskId], job.getVmId(), "VM mapping for task " + taskId);
+            assertEquals(CONTROLLED_STARTS[taskId], job.getStartTime(), 1.0e-9, "runtime start of task " + taskId);
+            assertEquals(CONTROLLED_FINISHES[taskId], job.getFinishTime(), 1.0e-9, "runtime finish of task " + taskId);
         }
         assertEquals(10, computeCount);
-        // 关键路径处理器绑定：全部四个关键路径任务同在 p_CP = vm1。
+        // Critical-path processor binding: all four critical-path tasks share p_CP = vm1.
         for (int taskId : new int[] {1, 2, 9, 10}) {
-            assertEquals(1, computeJobForTask(report, taskId).getVmId(), "关键路径任务 " + taskId + " 应绑定关键路径处理器 vm1");
+            assertEquals(1, computeJobForTask(report, taskId).getVmId(), "critical-path task " + taskId + " on vm1");
         }
     }
 
@@ -86,7 +94,7 @@ class LocalCpopPaperReproductionTest {
                     CONTROLLED_TRANSFER_SECONDS[taskId],
                     ((Number) event.getAttributes().get("modeledTransferSeconds")).doubleValue(),
                     1.0e-9,
-                    "task " + taskId + " 的建模传输秒数");
+                    "modeled transfer seconds for task " + taskId);
         }
         assertEquals(105.0, first.getMetrics().getTotalModeledDataTransferSeconds(), 1.0e-9);
         assertEquals(10, first.getMetrics().getDataStageInModelObservationCount());
@@ -128,7 +136,7 @@ class LocalCpopPaperReproductionTest {
         return new SimulationRunner().run(config, paperPlatform());
     }
 
-    /** 复现平台：3 台 VM，mips=1.0、带宽 1 MB/s、SPACE_SHARED。 */
+    /** Reproduction platform: 3 VMs, mips=1.0, bandwidth 1 MB/s, SPACE_SHARED. */
     private static PlatformProfile paperPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("cpop-paper-platform");
         for (int id = 0; id < 3; id++) {

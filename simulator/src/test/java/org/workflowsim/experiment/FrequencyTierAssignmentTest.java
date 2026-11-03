@@ -34,14 +34,18 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationConfig.FrequencyPolicy;
 
 /**
- * BAT-D2（2026-10-29）——每作业频档指派 + 证据链 + 逐档守恒台账的红→绿集成测试。
+ * BAT-D2 (2026-10-29) -- red->green integration test for per-job frequency-tier
+ * assignment + the evidence chain + the per-tier conservation ledger.
  *
- * <p>期望值合法来源（三源）：①扩展守恒律
- * {@code E_vm = P_idle(default)×T_sim + Σ档[(P_max(档)−P_idle(默认))×busy(档)]}
- * （docs/advanced/DVFS_DIMENSION_DESIGN.md §2.3）；②D2 任务契约的 EDP 估计式
- * {@code EDP_t = (P_max(t)·T_t + P_idle(default)·makespan_est) × T_t}（§2.2），
- * 数字由测试注释手推；③退化恒等（无档/单档 = v1 律，BAT-D1 已锚）。禁止把实现
- * 输出当期望值——所有守恒断言都对台账（metrics 逐档忙秒 + 平台功率表）按律复算。</p>
+ * <p>Legal sources for the expectations (three sources): (1) the extended conservation law
+ * {@code E_vm = P_idle(default)*T_sim + sum over tiers[(P_max(tier)-P_idle(default))*busy(tier)]}
+ * (docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.3); (2) the EDP estimator of the D2
+ * task contract
+ * {@code EDP_t = (P_max(t)*T_t + P_idle(default)*makespan_est) * T_t} (section 2.2),
+ * with numbers hand-derived in the test comments; (3) degenerate identities
+ * (tierless/single-tier = the v1 law, already anchored by BAT-D1). Copying implementation
+ * output as an expected value is forbidden -- every conservation assertion recomputes
+ * from the ledger (per-tier busy seconds in metrics + the platform power table) by the law.</p>
  */
 class FrequencyTierAssignmentTest {
 
@@ -63,15 +67,19 @@ class FrequencyTierAssignmentTest {
     }
 
     // ------------------------------------------------------------------
-    // 1. DEFAULT：首档指派 + 逐档台账分账 + 全默认档时两种口径恒等
+    // 1. DEFAULT: first-tier assignment + per-tier ledger partition + both accountings
+    //    agree when every job runs at the default tier
     // ------------------------------------------------------------------
 
     /**
-     * SHARED_STORAGE_HEFT 两任务链 DAG（10s/30s @1000 参考吞吐 → 10000/30000 MI），
-     * 2-VM 舰队，3 档平台（自基频 1000 降序 2000/1000/500）。断言：每个计算
-     * JobOutcome 携带非 null tierMips；逐档忙秒之和==该 VM busy 并集；舰队合计
-     * ==逐 VM 合计；逐档守恒律手算==报告能量；全默认档时逐档口径与 D1"整段
-     * 默认档"口径相等（区别恒等分支）。
+     * SHARED_STORAGE_HEFT two-task chain DAG (10s/30s @1000 reference throughput ->
+     * 10000/30000 MI), a 2-VM fleet, and a 3-tier platform (2000/1000/500 descending from
+     * the 1000 base frequency). Assertions: every compute JobOutcome carries a non-null
+     * tierMips; the per-tier busy seconds sum to that VM's busy union; the fleet total
+     * equals the sum over VMs; the hand-computed per-tier conservation law equals the
+     * reported energy; when every job runs at the default tier, the per-tier accounting
+     * equals the D1 "whole-run default tier" accounting (the distinguishable identity
+     * branch).
      */
     @Test
     void defaultPolicyAssignsFirstTierWithPerTierLedgerPartition() throws Exception {
@@ -88,7 +96,7 @@ class FrequencyTierAssignmentTest {
             }
         }
 
-        // 台账分账恒等：每 VM 逐档忙秒之和 == 该 VM 总 busy 并集秒。
+        // Ledger partition identity: per-VM per-tier busy seconds sum == that VM's busy-union seconds.
         double fleetSumsFromLedger = 0.0;
         for (Map.Entry<Integer, SimulationMetrics.VmMetrics> entry :
                 report.getMetrics().getVmMetrics().entrySet()) {
@@ -117,14 +125,15 @@ class FrequencyTierAssignmentTest {
                 1e-9,
                 "fleet per-tier aggregate must equal the per-VM ledger sums");
 
-        // 守恒律（§2.3）按台账手算 vs 报告能量。
+        // Conservation law (section 2.3) hand-recomputed from the ledger vs the reported energy.
         ManualEnergy hand = handConservation(report, platform);
         assertEquals(
                 hand.perTierTotal,
                 report.getEnergyAccounting().getTotalEnergyJoules(),
                 1e-6,
                 "per-tier conservation law hand recompute");
-        // 全默认档运行：逐档口径与 D1 全默认档口径相等（可证明的恒等分支）。
+        // All-default-tier run: the per-tier accounting equals the D1 all-at-default
+        // accounting (a provable identity branch).
         assertEquals(
                 hand.allAtDefaultTotal,
                 hand.perTierTotal,
@@ -137,14 +146,17 @@ class FrequencyTierAssignmentTest {
     }
 
     // ------------------------------------------------------------------
-    // 2. MIN_POWER：末档指派 + 明显拉长 + 逐档口径与全默认档口径可区分
+    // 2. MIN_POWER: last-tier assignment + clearly longer runtime + per-tier accounting
+    //    distinguishable from the all-at-default accounting
     // ------------------------------------------------------------------
 
     /**
-     * 同一 3 档平台：MIN_POWER 全部跑末档（500）→ 每 MI 工作墙钟翻倍
-     * （exec = work/500，档律手推：10000 MI→20s、30000 MI→60s），makespan 显著
-     * 大于 DEFAULT 运行（×4 vs ×0.5 速度）；任一作业在非默认档时，逐档守恒与
-     * D1 全默认档口径必然不同——区别由两条独立手算公式给出，不背书实现值。
+     * Same 3-tier platform: MIN_POWER runs everything at the last tier (500) -> wall clock
+     * per MI doubles (exec = work/500, by the tier law: 10000 MI -> 20s, 30000 MI -> 60s),
+     * and the makespan is clearly larger than the DEFAULT run (x4 vs x0.5 speed); whenever
+     * any job runs at a non-default tier, per-tier conservation and the D1 all-at-default
+     * accounting necessarily differ -- the difference comes from two independent hand
+     * formulas, not from endorsing implementation values.
      */
     @Test
     void minPowerRunsAtLowestTierTakesNoticeablyLongerAndSplitsConservation() throws Exception {
@@ -156,7 +168,7 @@ class FrequencyTierAssignmentTest {
         for (SimulationReport.JobOutcome job : min.getJobs()) {
             if (isCompute(job)) {
                 assertEquals(500.0, job.getTierMips().doubleValue(), 0.0, "MIN_POWER = LAST tier");
-                // 档律：exec = work/500（CloudSim 最小事件间隔 0.1s 的精度预算）。
+                // Tier law: exec = work/500 (the precision budget of the 0.1s minimum CloudSim event interval).
                 double expectedExec = job.getTaskIds().contains(Integer.valueOf(1)) ? 20.0 : 60.0;
                 assertEquals(
                         expectedExec,
@@ -170,8 +182,10 @@ class FrequencyTierAssignmentTest {
                 "MIN_POWER (0.5x speed) must have a clearly larger makespan than DEFAULT (2x speed): min="
                         + min.getMakespan() + " default=" + def.getMakespan());
 
-        // 台账键面：未指派的非计算尝试（簿记信封）按平台默认档归因——合法键只有
-        // 末档（计算工作）与首档（簿记），任何其他键都是证据链断裂。
+        // Ledger key surface: unassigned non-compute attempts (bookkeeping envelopes) are
+        // attributed to the platform default tier -- the only legal keys are the last tier
+        // (compute work) and the first tier (bookkeeping); any other key is a broken
+        // evidence chain.
         for (Map<Double, Double> tiers :
                 min.getMetrics().getPerTierBusySecondsByVm().values()) {
             for (double keyMips : tiers.keySet()) {
@@ -181,7 +195,8 @@ class FrequencyTierAssignmentTest {
                                 + tiers);
             }
         }
-        // 台账值面：每 VM 的末档忙秒 == 该 VM 上计算 Job 执行秒之和（簿记秒落默认档）。
+        // Ledger value surface: per-VM last-tier busy seconds == the sum of compute-job
+        // execution seconds on that VM (bookkeeping seconds land in the default tier).
         Map<Integer, Double> computeBusyPerVm = new java.util.LinkedHashMap<Integer, Double>();
         for (SimulationReport.JobOutcome job : min.getJobs()) {
             if (isCompute(job)) {
@@ -213,23 +228,27 @@ class FrequencyTierAssignmentTest {
     }
 
     // ------------------------------------------------------------------
-    // 3. EDP_HEURISTIC：功率非对称档表上的手推中档选择（三机制身份区分）
+    // 3. EDP_HEURISTIC: hand-derived middle-tier choice on a power-asymmetric tier table
+    //    (three mechanism identities distinguished)
     // ------------------------------------------------------------------
 
     /**
-     * 功率非对称档表（2000@max4000W / 1000@280W / 500@260W，默认档怠速 250W）。
-     * EDP 手推（D2 契约公式 EDP_t=(P_max(t)·T_t + P_idle(default)·(clock+T_t))×T_t）：
+     * Power-asymmetric tier table (2000@max4000W / 1000@280W / 500@260W, default tier idle
+     * 250W). EDP hand derivation (D2 contract formula
+     * EDP_t=(P_max(t)*T_t + P_idle(default)*(clock+T_t))*T_t):
      *
-     * <p>t1（10000 MI，派发时刻 clock≈0）：A(2000):T=5, E=4000×5+250×5=21250→EDP
-     * 106250；B(1000):T=10, E=280×10+250×10=5300→EDP 53000；C(500):T=20,
-     * E=260×20+250×20=10200→EDP 204000 ⇒ B。</p>
+     * <p>t1 (10000 MI, dispatch clock~0): A(2000):T=5, E=4000*5+250*5=21250->EDP 106250;
+     * B(1000):T=10, E=280*10+250*10=5300->EDP 53000; C(500):T=20, E=260*20+250*20=10200
+     * ->EDP 204000 => B.</p>
      *
-     * <p>t2（30000 MI，t1 完成后派发 clock≈10）：A:T=15, E=4000×15+250×25=66250
-     * →EDP 993750；B:T=30, E=280×30+250×40=18400→EDP 552000；C:T=60,
-     * E=260×60+250×70=33100→EDP 1986000 ⇒ B。</p>
+     * <p>t2 (30000 MI, dispatched after t1 completes, clock~10): A:T=15,
+     * E=4000*15+250*25=66250->EDP 993750; B:T=30, E=280*30+250*40=18400->EDP 552000;
+     * C:T=60, E=260*60+250*70=33100->EDP 1986000 => B.</p>
      *
-     * <p>两作业都取中档 1000——EDP 与 DEFAULT（首档 2000）、MIN_POWER（末档 500）
-     * 在同一平台上做出三种不同选择，机制身份可区分；运行完整完成是前提。</p>
+     * <p>Both jobs take the middle tier 1000 -- EDP, DEFAULT (first tier 2000) and
+     * MIN_POWER (last tier 500) make three different choices on the same platform, so the
+     * mechanism identities are distinguishable; full completion of the run is a
+     * prerequisite.</p>
      */
     @Test
     void edpHeuristicPicksHandComputedMiddleTierOnPowerAsymmetricTable() throws Exception {
@@ -250,17 +269,20 @@ class FrequencyTierAssignmentTest {
                 assertEquals(1000.0, job.getTierMips().doubleValue(), 0.0, "hand-computed EDP winner");
             }
         }
-        // 机制身份三脚架（同平台不同策略 → 不同档）：
+        // Mechanism-identity tripod (same platform, different policies -> different tiers):
         assertEquals(2000.0, firstComputeTier(run(platform, FrequencyPolicy.DEFAULT)), 0.0, "DEFAULT picks first");
         assertEquals(500.0, firstComputeTier(run(platform, FrequencyPolicy.MIN_POWER)), 0.0, "MIN_POWER picks last");
         assertEquals(1000.0, firstComputeTier(edp), 0.0, "EDP_HEURISTIC picks the hand-computed middle");
     }
 
     // ------------------------------------------------------------------
-    // 4. 退化：未配置策略 = DEFAULT；单档平台 = v1 能量
+    // 4. Degeneration: unset policy = DEFAULT; single-tier platform = v1 energy
     // ------------------------------------------------------------------
 
-    /** 未调用 frequencyPolicy 的配置必须与显式 DEFAULT 逐位同轨（缺省即 DEFAULT）。 */
+    /**
+     * A configuration that never calls frequencyPolicy must track an explicit DEFAULT bit
+     * for bit (absent means DEFAULT).
+     */
     @Test
     void unsetPolicyBehavesExactlyLikeExplicitDefault() throws Exception {
         PlatformProfile platform = threeTierPlatform();
@@ -279,9 +301,11 @@ class FrequencyTierAssignmentTest {
     }
 
     /**
-     * 每台 VM 只声明单档（=把 v1 功率写进频档表，BAT-D1 的单档退化律）：运行序列
-     * 与 v1 平面功率平台逐位一致（缩放因子 1.0），能量恒等；差异仅在证据面
-     * （tierMips=1000 记录在案 vs v1 缺键）。
+     * Each VM declares a single tier (= writing v1 power into the frequency tier table,
+     * the BAT-D1 single-tier degeneration law): the run sequence matches the v1 flat-power
+     * platform bit for bit (scale factor 1.0) and the energy is identical; the only
+     * difference is on the evidence surface (tierMips=1000 recorded vs the key missing in
+     * v1).
      */
     @Test
     void singleTierPerVmPlatformDegeneratesToV1Energy() throws Exception {
@@ -307,7 +331,7 @@ class FrequencyTierAssignmentTest {
                 assertNull(job.getTierMips(), "v1 plain platform carries no tier evidence");
             }
         }
-        // 台账仍分账成立（全部落在唯一档）。
+        // The ledger partition still holds (everything falls into the single tier).
         for (Map<Double, Double> tiers :
                 tiered.getMetrics().getPerTierBusySecondsByVm().values()) {
             assertEquals(1, tiers.size(), "single tier platform ledger");
@@ -315,13 +339,15 @@ class FrequencyTierAssignmentTest {
     }
 
     // ------------------------------------------------------------------
-    // 5. 证据面：manifest 的 jobs 区 tierMips 仅在非 null 时出现
+    // 5. Evidence surface: tierMips appears in the manifest jobs section only when non-null
     // ------------------------------------------------------------------
 
     /**
-     * tierMips 在结果清单中的合同：非 null → 键出现且取指派值；null（非计算尝试）
-     * → 键缺省；v1 平台运行 → jobs 序列化面原样（identity 快路径）且全文不含
-     * "tierMips" 键（外层 Gson serializeNulls 不因此产生 null 键）。
+     * tierMips contract in the result manifest: non-null -> the key appears with the
+     * assigned value; null (non-compute attempt) -> the key is absent; a v1 platform run
+     * -> the jobs serialization surface is unchanged (identity fast path) and contains no
+     * "tierMips" key at all (the outer Gson serializeNulls does not therefore produce a
+     * null key).
      */
     @Test
     void manifestCarriesTierMipsOnlyWhenAssigned() throws Exception {
@@ -358,18 +384,22 @@ class FrequencyTierAssignmentTest {
     }
 
     // ------------------------------------------------------------------
-    // 5b. 证据面：manifest 平台节的 frequencyTiers（D3 前提，Python 审计器消费）
+    // 5b. Evidence surface: frequencyTiers in the manifest platform section (a D3
+    //     prerequisite, consumed by the Python auditor)
     // ------------------------------------------------------------------
 
     /**
-     * BAT-D2 后续收口（2026-10-29）：平台节逐 VM 序列化频档表。tiered 运行 →
-     * {@code platform.vms[].frequencyTiers} 为表序（声明降序）的
-     * {@code {mips,idlePowerWatts,maxPowerWatts}} 三元组列表——与声明表逐值相等（期望值
-     * 三源：契约 DVFS_DIMENSION_DESIGN.md §2.5 的档表 schema × 测试声明的平台表，非实现
-     * 输出抄录）；v1 平面功率运行 → 全文不含 "frequencyTiers" 键（legacy 平台节逐位不变，
-     * 与 carbonWindows 的"仅非空时序列化"同款键缺省合同）。tiered VM 的平面
-     * idlePowerWatts/maxPowerWatts 恒为 0.0（单一真源），同步锚定——审计器据此区分
-     * powered 的两路真源。
+     * BAT-D2 follow-up close-out (2026-10-29): the platform section serializes the per-VM
+     * frequency tier table. tiered run -> {@code platform.vms[].frequencyTiers} is a list
+     * of {@code {mips,idlePowerWatts,maxPowerWatts}} triples in table order (declared
+     * descending) and equals the declared table value by value (three sources for the
+     * expectation: the tier table schema of contract DVFS_DIMENSION_DESIGN.md section 2.5
+     * x the platform table declared by the test, not a transcription of implementation
+     * output); v1 flat-power run -> no "frequencyTiers" key anywhere (the legacy platform
+     * section is bit-for-bit unchanged, the same key-absence contract as the carbonWindows
+     * "serialized only when non-empty" rule). A tiered VM's flat
+     * idlePowerWatts/maxPowerWatts are always 0.0 (one source of truth), anchored in the
+     * same test -- the auditor uses this to tell the two powered sources apart.
      */
     @Test
     void manifestPlatformSerializesPerVmFrequencyTiers() throws Exception {
@@ -403,7 +433,8 @@ class FrequencyTierAssignmentTest {
                         0.0,
                         "tier maxPowerWatts");
             }
-            // 单一真源：tiered VM 的平面功率字段在平台节必须为 0（两路互斥由 VmSpec 保证）。
+            // One source of truth: a tiered VM's flat power fields must be 0 in the platform
+            // section (VmSpec guarantees the two sources are mutually exclusive).
             assertEquals(
                     0.0,
                     ((Number) vm.get("idlePowerWatts")).doubleValue(),
@@ -430,10 +461,11 @@ class FrequencyTierAssignmentTest {
     }
 
     // ------------------------------------------------------------------
-    // 6. 前提拒绝：非 DEFAULT 策略不可在全无档平台上静默失效
+    // 6. Prerequisite rejection: a non-DEFAULT policy must not silently go inert on an
+    //    all-tierless platform
     // ------------------------------------------------------------------
 
-    /** MIN_POWER + 全平面功率平台 → 显式拒绝并引用 frequencyTiers 条款（不静默 v1）。 */
+    /** MIN_POWER + all-flat-power platform -> explicit rejection citing the frequencyTiers clause (no silent v1). */
     @Test
     void nonDefaultPolicyOnPlainPlatformFailsFast() throws Exception {
         SimulationConfigurationException rejection = assertThrows(
@@ -449,12 +481,15 @@ class FrequencyTierAssignmentTest {
     // fixtures
     // ------------------------------------------------------------------
 
-    /** 2-VM/2-Host 平台，每 VM 基频 1000、3 档（2000/1000/500）。 */
+    /** 2-VM/2-Host platform, each VM at base frequency 1000 with 3 tiers (2000/1000/500). */
     private static PlatformProfile threeTierPlatform() {
         return tierPlatform(new double[][] {{2000.0, 250.0, 400.0}, {1000.0, 220.0, 280.0}, {500.0, 210.0, 260.0}});
     }
 
-    /** EDP 功率非对称档表（首档满载 4000W——择档有真实权衡）。 */
+    /**
+     * EDP power-asymmetric tier table (the first tier draws 4000W at full load -- tier
+     * selection has a real tradeoff).
+     */
     private static PlatformProfile edpAsymmetricTierPlatform() {
         return tierPlatform(new double[][] {{2000.0, 250.0, 4000.0}, {1000.0, 220.0, 280.0}, {500.0, 210.0, 260.0}});
     }
@@ -472,12 +507,12 @@ class FrequencyTierAssignmentTest {
         return builder.build();
     }
 
-    /** 单档 VM（1000/250/400）——D1 单档退化律的运行级对应。 */
+    /** Single-tier VM (1000/250/400) -- the run-level counterpart of the D1 single-tier degeneration law. */
     private static PlatformProfile singleTierPlatform() {
         return tierPlatform(new double[][] {{1000.0, 250.0, 400.0}});
     }
 
-    /** v1 平面功率平台（250/400）——与单档平台功率对相同。 */
+    /** v1 flat-power platform (250/400) -- the same power pair as the single-tier platform. */
     private static PlatformProfile plainPoweredPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("dvfs-plain-test");
         builder.addHost(new PlatformProfile.HostSpec(0, 2, 2000.0, 2048, 10_000L, 1_000_000L));
@@ -521,8 +556,8 @@ class FrequencyTierAssignmentTest {
     }
 
     /**
-     * 串行链 DAG：t1（10s）→ t2（30s）。runtime 秒 ×参考吞吐 1000 → 10000/30000
-     * MI 的每 PE 声明工作。
+     * Serial chain DAG: t1 (10s) -> t2 (30s). runtime seconds x reference throughput 1000
+     * -> 10000/30000 MI of declared work per PE.
      */
     private Path chainDax() throws Exception {
         if (workflowDax == null) {
@@ -539,7 +574,7 @@ class FrequencyTierAssignmentTest {
         return workflowDax;
     }
 
-    /** 真实运行：SimulationRunner + SimulationConfig + 声明了频档的平台。 */
+    /** Real run: SimulationRunner + SimulationConfig + a platform that declares frequency tiers. */
     private SimulationReport run(PlatformProfile platform, FrequencyPolicy policy) throws Exception {
         SimulationConfig.Builder builder = SimulationConfig.builder(chainDax().toString(), 2)
                 .planningAlgorithm(PlanningAlgorithm.SHARED_STORAGE_HEFT)
@@ -576,7 +611,10 @@ class FrequencyTierAssignmentTest {
         return tiers;
     }
 
-    /** §2.3 扩展守恒律的手工复算结果对：逐档口径 vs D1 整段默认档口径。 */
+    /**
+     * Hand-recomputed result pair of the section 2.3 extended conservation law: per-tier
+     * accounting vs the D1 whole-run all-at-default accounting.
+     */
     private static final class ManualEnergy {
         final double perTierTotal;
         final double allAtDefaultTotal;
@@ -588,9 +626,10 @@ class FrequencyTierAssignmentTest {
     }
 
     /**
-     * 从台账（metrics 逐档忙秒 + VmMetrics 并集 + 平台功率表）按两条独立公式
-     * 手推能量：perTier = idle(默认)×T + Σ档(P_max(档)−idle(默认))×busy(档)；
-     * allAtDefault = idle(默认)×T + (P_max(默认)−idle(默认))×busy(总)。
+     * Hand-derive the energy from the ledger (per-tier busy seconds in metrics + the
+     * VmMetrics busy union + the platform power table) with two independent formulas:
+     * perTier = idle(default)*T + sum over tiers (P_max(tier)-idle(default))*busy(tier);
+     * allAtDefault = idle(default)*T + (P_max(default)-idle(default))*busy(total).
      */
     private static ManualEnergy handConservation(SimulationReport report, PlatformProfile platform) {
         double makespan = report.getMakespan();

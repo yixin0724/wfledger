@@ -22,11 +22,15 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * BAT-G 系列（2026-10-28 测试工程师第二轮）：边界语义深探——窗口端点与忙区间
- * 精确相切、超视界截断、全闲舰队的解析期望、以及 64-VM 大舰队 Java/Python 平价。
+ * BAT-G series (2026-10-28, test-engineer second round): deep probe of boundary
+ * semantics -- a window endpoint exactly tangent to a busy interval, truncation beyond
+ * the horizon, the analytic expectation of a fully idle fleet, and Java/Python parity on
+ * a 64-VM large fleet.
  *
- * <p>期望值来源：预算模型的逐窗积分公式（设计文档 §1.2）+ 同一强度下克数比例
- * 恒等式 g_i/g_j = E_i/E_j（乘同系数不改变比例——测"能量是否被逐 VM 账目混串"）。</p>
+ * <p>Source of expected values: the per-window integral formula of the budget model
+ * (design document §1.2) + the grams-proportion identity g_i/g_j = E_i/E_j under one
+ * intensity (multiplying by the same coefficient leaves the proportion unchanged -- this
+ * probes whether energy is mixed across the per-VM ledger).</p>
  */
 class CarbonBoundaryAuditTest {
 
@@ -49,14 +53,18 @@ class CarbonBoundaryAuditTest {
 
     @Test
     void allIdleFleetUnderBudgetHasAnalyticExcess() throws Exception {
-        // 无后继任务的单任务 DAG：TOTAL 1 个计算 Job（占比极小）——舰队基本全程 P≈idleSum。
-        // 手算主轴：若窗口绿电 < idleSum，超额 = (idleSum−green)×窗长；绿电 ≥ idleSum 则零。
+        // Single-task DAG with no successors: TOTAL 1 compute Job (a negligible share) --
+        // the fleet runs at P ~ idleSum almost the whole time.
+        // Hand-derivation axis: if the window green power < idleSum, excess =
+        // (idleSum-green) x window length; if green power >= idleSum, zero.
         SimulationReport report = run(2, null, null, new double[][] {{0.0, 1000.0, 100.0}});
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertNotNull(carbon, "budget must account");
         double idleSum = 2 * 250.0;
-        // busy 段贡献动态项但整段恒在窗内：期望下界 ≥ (idleSum+Δ×busy−green)×覆盖——
-        // 简化为对照积分精确值：按公式直接重演（Java 侧同源独立算一遍对比）。
+        // The busy segment contributes a dynamic term but always lies inside the window:
+        // the expected lower bound is >= (idleSum+delta x busy-green) x coverage --
+        // simplified here to comparing the exact integral: replay the formula directly
+        // (an independent recomputation on the Java side for comparison).
         double expected = integrateAnalytic(report, lastProfile, 0.0, 1000.0, 100.0);
         assertEquals(
                 expected,
@@ -68,8 +76,9 @@ class CarbonBoundaryAuditTest {
 
     @Test
     void excessClampsAtHorizonNotBeyond() throws Exception {
-        // 窗口视界 [0,10s) 远短于 makespan（两 ~30s 任务 + 引导 ≈ 60s+）：
-        // 超额绝不能在 10s 之后继续累计——总积分必须 ≤ (峰值−green)×10。
+        // The window horizon [0,10s) is far shorter than the makespan (two ~30s tasks +
+        // bootstrap ~ 60s+): the excess must never keep accumulating after 10s -- the
+        // total integral must be <= (peak-green) x 10.
         SimulationReport report = run(2, null, null, new double[][] {{0.0, 10.0, 100.0}});
         CarbonAccounting carbon = report.getCarbonAccounting();
         double peakFleet = 2 * 250.0 + 2 * 150.0;
@@ -81,7 +90,8 @@ class CarbonBoundaryAuditTest {
 
     @Test
     void perVmCarbonProportionsMatchEnergyProportionsExactly() throws Exception {
-        // 3-VM 异构 MIPS（不同忙占比同跑）：同一强度下 g_i/g_j 必须 == E_i/E_j（逐位近等）。
+        // 3-VM heterogeneous MIPS (different busy shares running concurrently): under one
+        // intensity g_i/g_j must == E_i/E_j (bitwise near-equality).
         SimulationReport report = run(3, 380.0, null, null);
         CarbonAccounting carbon = report.getCarbonAccounting();
         double g0 = carbon.getPerVmCarbonGrams().get(0);
@@ -97,15 +107,17 @@ class CarbonBoundaryAuditTest {
                 ea.getTotalEnergyJoules() / 3.6e6 * 380.0,
                 carbon.getTotalCarbonGrams(),
                 1e-6,
-                "total = E_total/3.6e6 × I");
+                "total = E_total/3.6e6 x I");
     }
 
     // ---- helpers ----
 
     private static double integrateAnalytic(
             SimulationReport report, PlatformProfile profile, double ws, double we, double green) {
-        // 与 CarbonAccounting 同公式独立重演（不讹 getter）：舰队段功率由作业区间重导。
-        // 视界钳制：窗口可声明长于仿真——超额只在仿真时钟内存在（无舰队即无功率/碳）。
+        // Independent replay of the same formula as CarbonAccounting (rather than trusting
+        // the getters): the fleet-segment power is re-derived from the job intervals.
+        // Horizon clamp: a window may be declared longer than the simulation -- excess
+        // exists only within the simulation clock (no fleet means no power/carbon).
         double horizon = Math.min(we, report.getMakespan());
         we = horizon;
         java.util.TreeMap<Double, Integer> ends = new java.util.TreeMap<Double, Integer>();

@@ -23,22 +23,27 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * R4 RL 轨道的端到端 episode 验收：环境闭环、确定性、奖励契约、决策轨迹恒等
- * 与错误路径显式失败。
+ * End-to-end episode acceptance for the R4 RL track: environment closed loop,
+ * determinism, reward contract, decision-trace identity, and explicit failure on error
+ * paths.
  *
- * <p>fixture 与 HEFT 论文例同源（{@code /dax/heft-paper-example.dax}，3 台
- * mips=1.0 VM），但走在线调度轨道（规划层 INVALID、默认 SHARED 文件系统、
- * 遗留数据移动模型）：RL_POLICY 与 FCFS/MINMIN 同属 ready-batch 在线层，
- * 不依赖任何静态映射前提。</p>
+ * <p>The fixture shares its source with the HEFT paper example
+ * ({@code /dax/heft-paper-example.dax}, 3 VMs with mips=1.0) but runs on the online
+ * scheduling track (INVALID planning layer, default SHARED file system, legacy data
+ * movement model): RL_POLICY belongs to the ready-batch online layer together with
+ * FCFS/MINMIN and does not depend on any static mapping premise.</p>
  */
 class RlEnvironmentEpisodeIntegrationTest {
 
     /**
-     * 贪心基线在论文例 fixture 上的 episode makespan（确定性黄金值）。
+     * Episode makespan of the greedy baseline on the paper-example fixture (a deterministic
+     * golden value).
      *
-     * <p>该值与静态 HEFT 复现的 190.1 不可比：本 episode 走在线调度轨道
-     * （INVALID 规划、遗留数据移动模型、默认 SHARED 文件系统），DAX 运行时直接
-     * 折算 MI，无成本矩阵引导——它锁定的是 RL 环境的闭环行为，不是论文成绩。</p>
+     * <p>This value is not comparable with the 190.1 of the static HEFT reproduction: this
+     * episode runs on the online scheduling track (INVALID planning, legacy data movement
+     * model, default SHARED file system), where the DAX runtime maps directly to MI with no
+     * cost-matrix guidance -- it pins down the closed-loop behavior of the RL environment,
+     * not the paper result.</p>
      */
     private static final double GREEDY_EPISODE_GOLDEN_MAKESPAN = 5116.1;
 
@@ -46,39 +51,41 @@ class RlEnvironmentEpisodeIntegrationTest {
     void rlEpisodeIsDeterministicAndRewardIsNegativeMakespan() throws Exception {
         RlEpisodeResult first = runEpisode(new EarliestFinishGreedyPolicy());
         RlEpisodeResult second = runEpisode(new EarliestFinishGreedyPolicy());
-        assertEquals(first.getMakespan(), second.getMakespan(), 0.0, "确定性策略的 episode 必须逐位可复现");
-        assertEquals(GREEDY_EPISODE_GOLDEN_MAKESPAN, first.getMakespan(), 0.0, "贪心 episode 黄金 makespan");
-        assertEquals(-first.getMakespan(), first.getReward(), 0.0, "奖励契约 reward = −makespan");
-        assertTrue(first.getStepCount() >= 1, "至少一次策略查询");
-        assertNotNull(first.getReport(), "episode 必须携带完整证据报告");
+        assertEquals(first.getMakespan(), second.getMakespan(), 0.0, "deterministic episode must be bit-identical");
+        assertEquals(GREEDY_EPISODE_GOLDEN_MAKESPAN, first.getMakespan(), 0.0, "greedy-episode golden makespan");
+        assertEquals(-first.getMakespan(), first.getReward(), 0.0, "reward contract: reward = -makespan");
+        assertTrue(first.getStepCount() >= 1, "at least one policy query");
+        assertNotNull(first.getReport(), "the episode must carry a complete evidence report");
     }
 
     @Test
     void decisionTraceMatchesFinalReportAssignments() throws Exception {
         RlEpisodeResult episode = runEpisode(new EarliestFinishGreedyPolicy());
         SimulationReport report = episode.getReport();
-        // 每个 Job 恰好被分派一次，且决策轨迹与报告中的最终 VM 分配逐一致。
-        assertEquals(report.getTotalJobs(), episode.getDecisions().size(), "决策轨迹必须覆盖每个 Job 恰好一次");
+        // Every Job is dispatched exactly once, and the decision trace agrees element by
+        // element with the final VM assignment in the report.
+        assertEquals(report.getTotalJobs(), episode.getDecisions().size(), "decisions cover each Job exactly once");
         Set<Integer> seen = new HashSet<Integer>();
         for (RlDecision decision : episode.getDecisions()) {
-            assertTrue(seen.add(decision.getJobId()), "Job " + decision.getJobId() + " 被重复分派");
+            assertTrue(seen.add(decision.getJobId()), "Job " + decision.getJobId() + " is dispatched twice");
             SimulationReport.JobOutcome outcome = jobById(report, decision.getJobId());
-            assertEquals(decision.getVmId(), outcome.getVmId(), "Job " + decision.getJobId() + " 的决策 VM 必须等于最终分配");
-            assertTrue(decision.getTime() >= 0.0, "决策时刻非负");
+            assertEquals(decision.getVmId(), outcome.getVmId(), "decision VM must equal the report assignment");
+            assertTrue(decision.getTime() >= 0.0, "decision time is non-negative");
         }
     }
 
     @Test
     void rlPolicyWithoutEnvironmentFailsExplicitly() throws Exception {
-        // 绕过 RlEnvironment 直接用 SimulationRunner 运行 RL_POLICY：注册表无策略，
-        // 必须显式失败并指向正确入口。R8 审计修复（P1-7）后配置类异常不再被
-        // 包装成"调度算法失败"的 IllegalStateException，而是以
-        // SimulationConfigurationException 直达调用方。
+        // Running RL_POLICY directly through SimulationRunner, bypassing RlEnvironment:
+        // the registry has no policy, so this must fail explicitly and point at the correct
+        // entry point. After the R8 audit fix (P1-7), configuration-class exceptions are no
+        // longer wrapped into an IllegalStateException about "scheduling algorithm failure"
+        // but reach the caller as SimulationConfigurationException.
         SimulationConfigurationException failure = assertThrows(
                 SimulationConfigurationException.class, () -> new SimulationRunner().run(rlConfig(), paperPlatform()));
         assertTrue(
                 chainMentions(failure, SimulationConfigurationException.class, "RlEnvironment"),
-                "失败链必须指向 RlEnvironment.runEpisode，实际: " + failure);
+                "failure chain must point at RlEnvironment.runEpisode, actual: " + failure);
     }
 
     @Test
@@ -94,11 +101,12 @@ class RlEnvironmentEpisodeIntegrationTest {
 
     @Test
     void policyContractViolationsAbortTheEpisode() {
-        // 动作数组长度错误：契约违反必须中止（调度器包为统一 ISE，真实原因在 cause 链）。
+        // Wrong action-array length: a contract violation must abort (the scheduler wraps it
+        // into a uniform ISE, and the real cause lives in the cause chain).
         IllegalStateException wrongLength = assertThrows(IllegalStateException.class, () -> new RlEnvironment()
                 .runEpisode(rlConfig(), paperPlatform(), observation -> new int[0]));
         assertTrue(chainMentions(wrongLength, IllegalStateException.class, "action(s)"), wrongLength.toString());
-        // 动作越界：显式失败。
+        // Action out of range: explicit failure.
         RlPolicy outOfRange = observation -> {
             int[] actions = new int[observation.getReadyJobs().size()];
             java.util.Arrays.fill(actions, observation.getVms().size());
@@ -107,7 +115,8 @@ class RlEnvironmentEpisodeIntegrationTest {
         IllegalStateException range = assertThrows(IllegalStateException.class, () -> new RlEnvironment()
                 .runEpisode(rlConfig(), paperPlatform(), outOfRange));
         assertTrue(chainMentions(range, IllegalStateException.class, "out-of-range"), range.toString());
-        // 永不分配：停滞由平台看门狗显式拦截，而非静默残缺报告。
+        // Never assigning: the stall is intercepted explicitly by the platform watchdog
+        // rather than producing a silently incomplete report.
         SimulationExecutionException stalled =
                 assertThrows(SimulationExecutionException.class, () -> new RlEnvironment()
                         .runEpisode(rlConfig(), paperPlatform(), observation -> {
@@ -121,7 +130,10 @@ class RlEnvironmentEpisodeIntegrationTest {
                 stalled.getMessage());
     }
 
-    /** cause 链中是否存在指定类型且消息包含关键词的异常。 */
+    /**
+     * Whether the cause chain contains an exception of the given type whose message contains
+     * the keyword.
+     */
     private static boolean chainMentions(Throwable top, Class<? extends Throwable> type, String keyword) {
         Throwable current = top;
         while (current != null) {
@@ -146,7 +158,7 @@ class RlEnvironmentEpisodeIntegrationTest {
                 .build();
     }
 
-    /** 与 HEFT 论文复现同构的平台：3 台 VM，mips=1.0。 */
+    /** Platform isomorphic to the HEFT paper reproduction: 3 VMs with mips=1.0. */
     private static PlatformProfile paperPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("rl-episode-platform");
         for (int id = 0; id < 3; id++) {

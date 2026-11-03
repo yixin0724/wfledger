@@ -24,22 +24,26 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * R9 运行时路径探测：开销 × 故障 × 成本模型在标准 {@link SimulationRunner} 上的
- * 组合开关最小 fixture。
+ * R9 runtime-path probe: minimal fixture for the overhead x failure x cost-model
+ * combination switches on the standard {@link SimulationRunner}.
  *
- * <p>随机模型集成测试已分别锁定故障重试与队列开销的单通道路径；本类补齐三个
- * 组合缺口：① 后处理延迟（{@code OverheadParameters.getPostDelay} 在
- * WorkflowScheduler 作业返回路径的消费）端到端行为；② 故障模型与队列开销叠加时
- * 重试谱系与延迟采样仍逐位可重放；③ VM 级成本计费与后处理开销叠加时计费口径
- * 不被开销扰动。全部断言基于固定种子下的实测运行。</p>
+ * <p>The random-model integration tests already pin the single-channel paths of failure
+ * retry and queue overhead separately; this class closes three combination gaps:
+ * (1) end-to-end behaviour of post-processing delay (consumption of
+ * {@code OverheadParameters.getPostDelay} on the WorkflowScheduler job-return path);
+ * (2) retry lineage and delay sampling remain bitwise replayable when the failure model
+ * and queue overhead are stacked; (3) VM-level cost billing is not perturbed by
+ * post-processing overhead when the two are stacked. All assertions rest on measured runs
+ * under fixed seeds.</p>
  */
 class RuntimeModelCombinationProbeIntegrationTest {
 
     private static final long OVERHEAD_SEED = 77L;
     /**
-     * 组合配置的实测种子：队列开销会平移执行窗口，随机模型测试的 20260902 在
-     * 叠加开销后不再触发失效；20260904 经 51 种子扫描实测触发 3 次失败/3 次重试
-     * （makespan 5.600810343783252）。
+     * Measured seed for the combined configuration: queue overhead shifts the execution
+     * window, so seed 20260902 from the random-model tests no longer triggers a failure
+     * once overhead is stacked; 20260904 was measured over a 51-seed scan to trigger
+     * 3 failures / 3 retries (makespan 5.600810343783252).
      */
     private static final long FAILURE_SEED = 20260904L;
 
@@ -71,15 +75,15 @@ class RuntimeModelCombinationProbeIntegrationTest {
         SimulationReport second = runner.run(withOverhead, PlatformProfiles.homogeneousLocal("post-delay-probe", 1));
 
         List<Double> firstDelays = postDelays(first);
-        assertFalse(firstDelays.isEmpty(), "每个返回的 compute 作业都应记录后处理延迟");
+        assertFalse(firstDelays.isEmpty(), "every returned compute job must record a post-processing delay");
         for (Double delay : firstDelays) {
-            assertTrue(delay.doubleValue() > 0.0, "深度 0 默认项必须抽出正延迟");
+            assertTrue(delay.doubleValue() > 0.0, "the depth-0 default entry must draw a positive delay");
         }
         for (Double delay : postDelays(baseline)) {
-            assertEquals(0.0, delay.doubleValue(), 0.0, "无开销配置的后处理延迟必须为零");
+            assertEquals(0.0, delay.doubleValue(), 0.0, "post-processing delay must be zero without overhead");
         }
-        assertTrue(first.getMakespan() > baseline.getMakespan(), "后处理延迟延后作业回传，makespan 必须增大");
-        assertEquals(postDelays(first), postDelays(second), "固定种子下延迟采样必须逐位重放");
+        assertTrue(first.getMakespan() > baseline.getMakespan(), "post-delay postpones job return: makespan rises");
+        assertEquals(postDelays(first), postDelays(second), "delay sampling must replay bitwise under a fixed seed");
         assertEquals(first.getMakespan(), second.getMakespan(), 0.0);
     }
 
@@ -110,12 +114,12 @@ class RuntimeModelCombinationProbeIntegrationTest {
         SimulationReport first = runner.run(combined, PlatformProfiles.homogeneousLocal("failure-overhead", 1));
         SimulationReport second = runner.run(combined, PlatformProfiles.homogeneousLocal("failure-overhead", 1));
 
-        assertTrue(first.getFailedJobs() > 0, "固定种子 fixture 必须触发至少一次重试");
-        assertEquals(3, first.getFailedJobs(), "种子扫描实测黄金值：3 个失败 compute 作业");
-        assertEquals(3, first.getMetrics().getRetryJobCreatedCount(), "种子扫描实测黄金值：3 次重试");
-        assertEquals(5.600810343783252, first.getMakespan(), 1.0e-9, "种子扫描实测黄金值：组合配置 makespan");
+        assertTrue(first.getFailedJobs() > 0, "the fixed-seed fixture must trigger at least one retry");
+        assertEquals(3, first.getFailedJobs(), "seed-scan measured golden value: 3 failed compute jobs");
+        assertEquals(3, first.getMetrics().getRetryJobCreatedCount(), "seed-scan measured golden value: 3 retries");
+        assertEquals(5.600810343783252, first.getMakespan(), 1.0e-9, "seed-scan measured golden value: makespan");
         for (Double delay : queueDelays(first)) {
-            assertTrue(delay.doubleValue() > 0.0, "故障与开销叠加时队列延迟仍必须生效");
+            assertTrue(delay.doubleValue() > 0.0, "queue delay must still hold with failure and overhead");
         }
         assertEquals(first.getMakespan(), second.getMakespan(), 0.0);
         assertEquals(
@@ -149,9 +153,10 @@ class RuntimeModelCombinationProbeIntegrationTest {
         SimulationReport withOverhead = runner.run(vmCostWithOverhead, platform);
 
         assertEquals(costOnly.getJobs().size(), withOverhead.getJobs().size());
-        // 后处理开销只延后回传，不改变作业在 VM 上的 CPU 占用与计费速率。
+        // Post-processing overhead only postpones the return; it does not change the job's
+        // CPU occupation on the VM nor the billing rate.
         for (SimulationReport.JobOutcome job : withOverhead.getJobs()) {
-            assertEquals(job.getCpuTime() * 5.0, job.getModeledProcessingCost(), 1.0e-12, "VM 计费速率必须保持 5.0，不受开销模型影响");
+            assertEquals(job.getCpuTime() * 5.0, job.getModeledProcessingCost(), 1.0e-12, "VM billing rate stays 5.0");
         }
         for (Double delay : postDelays(withOverhead)) {
             assertTrue(delay.doubleValue() > 0.0);

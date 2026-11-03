@@ -11,24 +11,25 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.Parameters;
 
 /**
- * 验证作业 VM 队列等待时间/响应时间/减速比指标的计算正确性。
+ * Verifies that the job VM queue waiting time / response time / slowdown ratio metrics are computed
+ * correctly.
  *
- * <p>时间线模型（VM 队列等待）：
+ * <p>Timeline model (VM queue waiting):
  * <pre>
- * submissionTime → startTime → finishTime
+ * submissionTime -> startTime -> finishTime
  *       |&lt;-vmQueue-&gt;|&lt;-execution-&gt;|
  *       |&lt;------response--------&gt;|
  * </pre>
- * <p><strong>注意：</strong>此测试验证的是 VM 队列等待时间
- * ({@code getMeanJobVmQueueWaitingTimeSeconds()})，在 WorkflowSim 中通常为 0。
- * 真实调度等待时间由 {@code getMeanComputeTotalWaitingTimeSeconds()} 测量，
- * 需要 JOB_READY 事件支持。
+ * <p><strong>Note:</strong> this test verifies the VM queue waiting time
+ * ({@code getMeanJobVmQueueWaitingTimeSeconds()}), which is usually 0 in WorkflowSim.
+ * The real scheduling waiting time is measured by {@code getMeanComputeTotalWaitingTimeSeconds()}
+ * and requires JOB_READY event support.
  */
 class JobWaitingTimeMetricsTest {
 
     @Test
     void jobOutcomeDerivesWaitingExecutionAndResponseTimes() {
-        // 提交=2.0，开始=5.0，完成=15.0
+        // submission=2.0, start=5.0, finish=15.0
         SimulationReport.JobOutcome job = job(1, 2.0, 5.0, 15.0);
 
         assertEquals(2.0, job.getSubmissionTime(), 1e-9);
@@ -39,7 +40,7 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void negativeIntervalsAreClampedToZeroForIncompleteJobs() {
-        // 异常时间戳（如失败作业 finishTime < startTime）不产生负值
+        // Anomalous timestamps (e.g. a failed job with finishTime < startTime) must not yield negatives
         SimulationReport.JobOutcome job = job(1, 10.0, 5.0, 3.0);
 
         assertEquals(0.0, job.getWaitingTime(), 1e-9);
@@ -49,7 +50,7 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void zeroSubmissionTimeYieldsWaitingEqualToStartTime() {
-        // submissionTime = 0（仿真开始即提交）
+        // submissionTime = 0 (submitted at simulation start)
         SimulationReport.JobOutcome job = job(1, 0.0, 4.0, 9.0);
 
         assertEquals(4.0, job.getWaitingTime(), 1e-9);
@@ -58,8 +59,8 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void metricsAggregateMeanWaitingResponseAndSlowdown() {
-        // 作业 A：提交 0，开始 2，完成 6 → waiting=2, response=6, exec=4, slowdown=1.5
-        // 作业 B：提交 1，开始 5,  完成 9 → waiting=4, response=8, exec=4, slowdown=2.0
+        // Job A: submission 0, start 2, finish 6 -> waiting=2, response=6, exec=4, slowdown=1.5
+        // Job B: submission 1, start 5, finish 9 -> waiting=4, response=8, exec=4, slowdown=2.0
         java.util.List<SimulationReport.JobOutcome> jobs =
                 java.util.Arrays.asList(job(10, 0.0, 2.0, 6.0), job(11, 1.0, 5.0, 9.0));
         java.util.List<SimulationReport.TaskOutcome> tasks =
@@ -84,7 +85,7 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void slowdownExcludesJobsWithNearZeroExecutionTime() {
-        // 作业 A：exec=4，slowdown=1.5；作业 B：exec=0（被排除）
+        // Job A: exec=4, slowdown=1.5; job B: exec=0 (excluded)
         java.util.List<SimulationReport.JobOutcome> jobs =
                 java.util.Arrays.asList(job(10, 0.0, 2.0, 6.0), job(11, 1.0, 5.0, 5.0)); // exec = 0
         java.util.List<SimulationReport.TaskOutcome> tasks =
@@ -102,19 +103,19 @@ class JobWaitingTimeMetricsTest {
                 config(),
                 platform());
 
-        assertEquals(1.5, metrics.getMeanJobVmLevelSlowdown(), 1e-9); // 仅作业 A
+        assertEquals(1.5, metrics.getMeanJobVmLevelSlowdown(), 1e-9); // job A only
     }
 
     @Test
     void trueSlowdownUsesReadyTimeFromEvents() {
-        // 作业 A：ready=0, start=3, finish=13 → wait=3, exec=10, boundedExec=10, trueSlowdown=(3+10)/10=1.3
-        // 作业 B：ready=1, start=5, finish=9  → wait=4, exec=4,  boundedExec=10, trueSlowdown=(4+4)/10=0.8
+        // Job A: ready=0, start=3, finish=13 -> wait=3, exec=10, boundedExec=10, trueSlowdown=(3+10)/10=1.3
+        // Job B: ready=1, start=5, finish=9 -> wait=4, exec=4, boundedExec=10, trueSlowdown=(4+4)/10=0.8
         java.util.List<SimulationReport.JobOutcome> jobs = java.util.Arrays.asList(
-                job(10, 2.0, 3.0, 13.0), // submission=2（不影响 trueSlowdown）
+                job(10, 2.0, 3.0, 13.0), // submission=2 (does not affect trueSlowdown)
                 job(11, 4.0, 5.0, 9.0));
         java.util.List<SimulationEvent> events = java.util.Arrays.asList(
-                event(SimulationEventType.JOB_READY, 0.0, 10), // 作业 10 ready=0
-                event(SimulationEventType.JOB_READY, 1.0, 11)); // 作业 11 ready=1
+                event(SimulationEventType.JOB_READY, 0.0, 10), // job 10 ready=0
+                event(SimulationEventType.JOB_READY, 1.0, 11)); // job 11 ready=1
         java.util.List<SimulationReport.TaskOutcome> tasks =
                 java.util.Arrays.asList(task(1, 10, 0.0, 13.0), task(2, 11, 0.0, 9.0));
         java.util.List<org.workflowsim.Task> sourceTasks =
@@ -123,16 +124,16 @@ class JobWaitingTimeMetricsTest {
         SimulationMetrics metrics =
                 SimulationMetrics.calculate(13.0, jobs, summaries(), events, tasks, sourceTasks, config(), platform());
 
-        // 作业 A：wait=3, exec=10, bounded=10 → (3+10)/10=1.3 → max(1.3, 1.0)=1.3
-        // 作业 B：wait=4, exec=4,  bounded=10 → (4+4)/10=0.8  → max(0.8, 1.0)=1.0（下界钳制）
+        // Job A: wait=3, exec=10, bounded=10 -> (3+10)/10=1.3 -> max(1.3, 1.0)=1.3
+        // Job B: wait=4, exec=4, bounded=10 -> (4+4)/10=0.8 -> max(0.8, 1.0)=1.0 (lower-bound clamp)
         assertEquals(1.15, metrics.getMeanComputeTrueSlowdown(), 1e-9); // (1.3 + 1.0)/2
         assertEquals(2, metrics.getTrueSlowdownObservationCount());
     }
 
     @Test
     void trueSlowdownBoundsExecutionTimeToTenSeconds() {
-        // 极短作业：ready=0, start=0.5, finish=0.6 → wait=0.5, exec=0.1, boundedExec=10
-        // trueSlowdown = (0.5 + 0.1) / 10 = 0.06（而非 6.0，防止爆炸）
+        // Very short job: ready=0, start=0.5, finish=0.6 -> wait=0.5, exec=0.1, boundedExec=10
+        // trueSlowdown = (0.5 + 0.1) / 10 = 0.06 (instead of 6.0, which prevents an explosion)
         java.util.List<SimulationReport.JobOutcome> jobs = java.util.Collections.singletonList(job(10, 0.4, 0.5, 0.6));
         java.util.List<SimulationEvent> events =
                 java.util.Collections.singletonList(event(SimulationEventType.JOB_READY, 0.0, 10));
@@ -143,18 +144,18 @@ class JobWaitingTimeMetricsTest {
         SimulationMetrics metrics =
                 SimulationMetrics.calculate(0.6, jobs, summaries(), events, tasks, sourceTasks, config(), platform());
 
-        // wait=0.5, exec=0.1, bounded=10 → (0.5+0.1)/10=0.06 → max(0.06, 1.0)=1.0（下界钳制）
+        // wait=0.5, exec=0.1, bounded=10 -> (0.5+0.1)/10=0.06 -> max(0.06, 1.0)=1.0 (lower-bound clamp)
         assertEquals(1.0, metrics.getMeanComputeTrueSlowdown(), 1e-9);
         assertEquals(1, metrics.getTrueSlowdownObservationCount());
     }
 
     @Test
     void trueSlowdownExcludesJobsWithoutReadyEvent() {
-        // 作业 A 有 ready 事件，作业 B 没有（被排除）
+        // Job A has a ready event, job B does not (excluded)
         java.util.List<SimulationReport.JobOutcome> jobs =
                 java.util.Arrays.asList(job(10, 0.0, 2.0, 6.0), job(11, 1.0, 5.0, 9.0));
         java.util.List<SimulationEvent> events =
-                java.util.Collections.singletonList(event(SimulationEventType.JOB_READY, 0.0, 10)); // 仅作业 10
+                java.util.Collections.singletonList(event(SimulationEventType.JOB_READY, 0.0, 10)); // job 10 only
         java.util.List<SimulationReport.TaskOutcome> tasks =
                 java.util.Arrays.asList(task(1, 10, 0.0, 6.0), task(2, 11, 0.0, 9.0));
         java.util.List<org.workflowsim.Task> sourceTasks =
@@ -163,16 +164,17 @@ class JobWaitingTimeMetricsTest {
         SimulationMetrics metrics =
                 SimulationMetrics.calculate(9.0, jobs, summaries(), events, tasks, sourceTasks, config(), platform());
 
-        // 作业 A: wait=2, exec=4, bounded=10 → (2+4)/10=0.6 → max(0.6, 1.0)=1.0（下界钳制）
+        // Job A: wait=2, exec=4, bounded=10 -> (2+4)/10=0.6 -> max(0.6, 1.0)=1.0 (lower-bound clamp)
         assertEquals(1.0, metrics.getMeanComputeTrueSlowdown(), 1e-9);
         assertEquals(1, metrics.getTrueSlowdownObservationCount());
     }
 
     @Test
     void duplicateSchedulingDecisionEventFailsExplicitly() {
-        // 契约 L154（CONTRACTS.md）："重复关键事件会显式失败"——链 B 审计补锁
-        // （S-B1：此前声明无测试锁定）。同一 Job 的第二个 SCHEDULING_DECISION
-        // 事件必须在指标计算入口显式抛错，不得静默取首个/末个决策时刻。
+        // Contract L154 (CONTRACTS.md): "duplicate key events fail explicitly" -- the chain-B
+        // audit ratchet (S-B1: previously declared without a test lock). A second SCHEDULING_DECISION
+        // event for the same Job must fail explicitly at the metrics entry point and must never
+        // silently take the first or the last decision time.
         java.util.List<SimulationReport.JobOutcome> jobs = java.util.Arrays.asList(job(10, 0.0, 2.0, 6.0));
         java.util.List<SimulationReport.TaskOutcome> tasks = java.util.Arrays.asList(task(1, 10, 0.0, 6.0));
         java.util.List<org.workflowsim.Task> sourceTasks = java.util.Arrays.asList(new org.workflowsim.Task(1, 1000));
@@ -187,12 +189,13 @@ class JobWaitingTimeMetricsTest {
                         6.0, jobs, summaries(), events, tasks, sourceTasks, config(), platform()));
         assertTrue(
                 failure.getMessage().contains("Duplicate SCHEDULING_DECISION"),
-                "错误消息应指明重复决策事件，实际: " + failure.getMessage());
+                "the error message must name the duplicate decision event, actual: " + failure.getMessage());
     }
 
     @Test
     void duplicateReadyEventAlsoFailsExplicitly() {
-        // 同一契约语义的邻位：同一 Job 重复 JOB_READY 亦不得静默。
+        // Adjacent position under the same contract semantics: a duplicate JOB_READY for the same
+        // Job must not stay silent either.
         java.util.List<SimulationReport.JobOutcome> jobs = java.util.Arrays.asList(job(10, 0.0, 2.0, 6.0));
         java.util.List<SimulationReport.TaskOutcome> tasks = java.util.Arrays.asList(task(1, 10, 0.0, 6.0));
         java.util.List<org.workflowsim.Task> sourceTasks = java.util.Arrays.asList(new org.workflowsim.Task(1, 1000));
@@ -205,7 +208,7 @@ class JobWaitingTimeMetricsTest {
                         6.0, jobs, summaries(), events, tasks, sourceTasks, config(), platform()));
         assertTrue(
                 failure.getMessage() != null && !failure.getMessage().isEmpty(),
-                "重复 ready 必须显式失败：" + failure.getMessage());
+                "a duplicate ready event must fail explicitly: " + failure.getMessage());
     }
 
     private static SimulationEvent event(SimulationEventType type, double time, Integer jobId) {
@@ -214,9 +217,9 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void totalWaitingTimeIsComputedFromJobReadyEvents() {
-        // 作业 A：ready=0.5，start=2.0 → totalWaiting=1.5
-        // 作业 B：ready=1.0，start=5.0 → totalWaiting=4.0
-        // 平均总等待时间 = (1.5 + 4.0) / 2 = 2.75
+        // Job A: ready=0.5, start=2.0 -> totalWaiting=1.5
+        // Job B: ready=1.0, start=5.0 -> totalWaiting=4.0
+        // Mean total waiting time = (1.5 + 4.0) / 2 = 2.75
         java.util.List<SimulationReport.JobOutcome> jobs =
                 java.util.Arrays.asList(job(10, 0.0, 2.0, 6.0), job(11, 1.0, 5.0, 9.0));
         java.util.List<SimulationReport.TaskOutcome> tasks =
@@ -234,7 +237,7 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void totalWaitingTimeIgnoresJobsWithoutReadyEvent() {
-        // 作业 A 有 ready 事件，作业 B 没有 → 仅统计作业 A
+        // Job A has a ready event, job B does not -> job A only
         java.util.List<SimulationReport.JobOutcome> jobs =
                 java.util.Arrays.asList(job(10, 0.0, 2.0, 6.0), job(11, 1.0, 5.0, 9.0));
         java.util.List<SimulationReport.TaskOutcome> tasks =
@@ -242,7 +245,7 @@ class JobWaitingTimeMetricsTest {
         java.util.List<org.workflowsim.Task> sourceTasks =
                 java.util.Arrays.asList(new org.workflowsim.Task(1, 1000), new org.workflowsim.Task(2, 1000));
         java.util.List<SimulationEvent> events =
-                java.util.Arrays.asList(event(1, 0.5, SimulationEventType.JOB_READY, 10)); // 仅作业 10
+                java.util.Arrays.asList(event(1, 0.5, SimulationEventType.JOB_READY, 10)); // job 10 only
 
         SimulationMetrics metrics =
                 SimulationMetrics.calculate(9.0, jobs, summaries(), events, tasks, sourceTasks, config(), platform());
@@ -250,13 +253,14 @@ class JobWaitingTimeMetricsTest {
         assertEquals(1.5, metrics.getMeanComputeTotalWaitingTimeSeconds(), 1e-9); // 2.0 - 0.5
     }
 
-    // ── 指标增强：分布统计 / success-only / Jain 公平性 / 重试放大率 ──
+    // -- metric extensions: distribution statistics / success-only / Jain fairness / retry
+    //    amplification --
 
     @Test
     void distributionStatsTrackWaitingAndSlowdownSamples() {
-        // 作业 A：ready=0.5, start=2.0, finish=12.0 → wait=1.5, exec=10 → slowdown=(1.5+10)/10=1.15
-        // 作业 B：ready=1.0, start=5.0, finish=9.0  → wait=4.0, exec=4  → slowdown=(4+4)/10=0.8→钳制1.0
-        // 作业 C：ready=2.0, start=3.0, finish=23.0 → wait=1.0, exec=20 → slowdown=(1+20)/20=1.05
+        // Job A: ready=0.5, start=2.0, finish=12.0 -> wait=1.5, exec=10 -> slowdown=(1.5+10)/10=1.15
+        // Job B: ready=1.0, start=5.0, finish=9.0 -> wait=4.0, exec=4 -> slowdown=(4+4)/10=0.8->clamp1.0
+        // Job C: ready=2.0, start=3.0, finish=23.0 -> wait=1.0, exec=20 -> slowdown=(1+20)/20=1.05
         java.util.List<SimulationReport.JobOutcome> jobs =
                 java.util.Arrays.asList(job(10, 0.0, 2.0, 12.0), job(11, 1.0, 5.0, 9.0), job(12, 1.5, 3.0, 23.0));
         java.util.List<SimulationEvent> events = java.util.Arrays.asList(
@@ -273,12 +277,12 @@ class JobWaitingTimeMetricsTest {
         SimulationMetrics metrics =
                 SimulationMetrics.calculate(23.0, jobs, summaries(), events, tasks, sourceTasks, config(), platform());
 
-        // 等待样本排序后 [1.0, 1.5, 4.0]：中位数 rank=ceil(0.5·3)=2 → 1.5；P95 rank=3 → 4.0
+        // Waiting samples sorted [1.0, 1.5, 4.0]: median rank=ceil(0.5*3)=2 -> 1.5; P95 rank=3 -> 4.0
         assertEquals(3, metrics.getTotalWaitingTimeObservationCount());
         assertEquals(1.5, metrics.getMedianComputeTotalWaitingTimeSeconds(), 1e-9);
         assertEquals(4.0, metrics.getP95ComputeTotalWaitingTimeSeconds(), 1e-9);
         assertEquals(4.0, metrics.getMaxComputeTotalWaitingTimeSeconds(), 1e-9);
-        // 减速比样本排序后 [1.0, 1.05, 1.15]：中位数 1.05；P95/最大 1.15
+        // Slowdown samples sorted [1.0, 1.05, 1.15]: median 1.05; P95/max 1.15
         assertEquals(1.05, metrics.getMedianComputeTrueSlowdown(), 1e-9);
         assertEquals(1.15, metrics.getP95ComputeTrueSlowdown(), 1e-9);
         assertEquals(1.15, metrics.getMaxComputeTrueSlowdown(), 1e-9);
@@ -286,7 +290,7 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void distributionStatsAreZeroWhenNoObservationsExist() {
-        // 无 JOB_READY 事件 → 观测数为 0，分位数返回 0.0（与空集约定一致）
+        // No JOB_READY event -> observation count 0, quantiles 0.0 (consistent with the empty-set convention)
         java.util.List<SimulationReport.JobOutcome> jobs = java.util.Collections.singletonList(job(10, 0.0, 2.0, 6.0));
         java.util.List<SimulationReport.TaskOutcome> tasks = java.util.Collections.singletonList(task(1, 10, 0.0, 6.0));
         java.util.List<org.workflowsim.Task> sourceTasks =
@@ -314,8 +318,8 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void successOnlyVariantsExcludeFailedAttempts() {
-        // 作业 A 成功 wait=1.5，作业 B 失败 wait=4.0。
-        // 总体均值含失败尝试 = (1.5+4.0)/2 = 2.75；success-only = 1.5（n=1）。
+        // Job A succeeded with wait=1.5, job B failed with wait=4.0.
+        // Overall mean including failed attempts = (1.5+4.0)/2 = 2.75; success-only = 1.5 (n=1).
         java.util.List<SimulationReport.JobOutcome> jobs = java.util.Arrays.asList(
                 jobWithStatus(10, Cloudlet.SUCCESS, 0.0, 2.0, 12.0), jobWithStatus(11, Cloudlet.FAILED, 1.0, 5.0, 9.0));
         java.util.List<SimulationEvent> events = java.util.Arrays.asList(
@@ -331,14 +335,14 @@ class JobWaitingTimeMetricsTest {
         assertEquals(2.75, metrics.getMeanComputeTotalWaitingTimeSeconds(), 1e-9);
         assertEquals(1.5, metrics.getSuccessOnlyMeanComputeTotalWaitingTimeSeconds(), 1e-9);
         assertEquals(1, metrics.getSuccessOnlyWaitingObservationCount());
-        // success-only 减速比仅含作业 A：(1.5+10)/10 = 1.15
+        // success-only slowdown covers job A only: (1.5+10)/10 = 1.15
         assertEquals(1.15, metrics.getSuccessOnlyMeanComputeTrueSlowdown(), 1e-9);
     }
 
     @Test
     void jainFairnessIndexCapturesVmUtilizationImbalance() {
-        // VM0 繁忙 [0,10]（利用率 1.0），VM1 繁忙 [0,5]（利用率 0.5），makespan=10。
-        // Jain = (1.0+0.5)² / (2·(1.0²+0.5²)) = 2.25/2.5 = 0.9
+        // VM0 busy [0,10] (utilization 1.0), VM1 busy [0,5] (utilization 0.5), makespan=10.
+        // Jain = (1.0+0.5)^2 / (2*(1.0^2+0.5^2)) = 2.25/2.5 = 0.9
         java.util.Map<Integer, SimulationReport.VmSummary> summaries =
                 new java.util.LinkedHashMap<Integer, SimulationReport.VmSummary>();
         summaries.put(0, new SimulationReport.VmSummary(0, 1, 1, 0, 10.0, 10.0));
@@ -366,8 +370,8 @@ class JobWaitingTimeMetricsTest {
 
     @Test
     void retryAmplificationRatioCountsAllAttemptsPerLogicalTask() {
-        // 逻辑任务 1：首次失败（job 10）+ 再次尝试（job 11 成功）= 2 次尝试；
-        // 逻辑任务 2：一次成功（job 12）。放大率 = 3/2 = 1.5。
+        // Logical task 1: first attempt failed (job 10) + retry (job 11 succeeded) = 2 attempts;
+        // logical task 2: one success (job 12). Amplification = 3/2 = 1.5.
         java.util.List<SimulationReport.JobOutcome> jobs = java.util.Arrays.asList(
                 jobWithStatus(10, Cloudlet.FAILED, 0.0, 1.0, 3.0),
                 jobWithStatus(11, Cloudlet.SUCCESS, 3.0, 4.0, 6.0),
@@ -414,7 +418,7 @@ class JobWaitingTimeMetricsTest {
         assertEquals(1.0, metrics.getRetryAmplificationRatio(), 1e-9);
     }
 
-    // ── 测试辅助 ──
+    // -- test helpers --
 
     private static SimulationReport.JobOutcome jobWithStatus(
             int id, int status, double submission, double start, double finish) {

@@ -9,17 +9,22 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 /**
- * M5 杀手（审查工程 Phase 3：变异试点存活的针对性回归）。
+ * M5 killer (review engineering Phase 3: targeted regression for a surviving mutation
+ * pilot).
  *
- * <p>变异试点实证：将 {@code TransferContentionEngine} 完成判定的字节数容差从
- * {@code 1e-9*bytes} 放大到 {@code 1e-6*bytes}（放大 1000 倍）后，<b>全部 1024
- * 个既有测试无一失败</b>——完成判定边界此前是测试盲区。</p>
+ * <p>Mutation-pilot evidence: after widening the byte tolerance of the
+ * {@code TransferContentionEngine} completion verdict from {@code 1e-9*bytes} to
+ * {@code 1e-6*bytes} (a factor of 1000), <b>none of the 1024 existing tests
+ * failed</b> -- the completion-verdict boundary was previously a test blind spot.</p>
  *
- * <p>契约锚定（不抄实现镜像）：完成判定必须把"还剩可观字节"的流视为未完成，
- * 迟到完成会压缩 FCT 并偷走争用容量。本测试选用 10⁶ 字节流，推导边界：
- * 合同容差 = max(1e-9×bytes, 4×ulp(bytes)) = 10⁻³ 字节；推到<b>剩余 0.5 字节</b>
- * 时点（介于 10⁻³ 与变异容差 1.0 之间）：合法实现必须仍判定未完成并在
- * 下次推进结算；变异实现会提前判完成——两条路在时序上可观测分离。</p>
+ * <p>Contract anchoring (no mirroring of the implementation): the completion verdict must
+ * treat a flow with "significant bytes remaining" as incomplete; a premature completion
+ * verdict compresses the FCT and steals contention capacity. This test uses a 1e6-byte
+ * flow and derives the boundary: contract tolerance = max(1e-9 x bytes, 4 x ulp(bytes))
+ * = 1e-3 bytes; advanced to the point where <b>0.5 bytes remain</b> (between 1e-3 and
+ * the mutation tolerance 1.0): a legal implementation must still report incomplete and
+ * settle at the next advance, while the mutant reports completion early -- the two paths
+ * are observably separated in time.</p>
  */
 class TransferCompletionToleranceBoundaryTest {
 
@@ -31,32 +36,42 @@ class TransferCompletionToleranceBoundaryTest {
         double rate = 1000.0;
 
         TransferContentionEngine.AdvanceResult admit = engine.addTransfer(1L, bytes, Arrays.asList("VM:0"), rate, 0.0);
-        assertTrue(admit.getCompletedTransferIds().isEmpty(), "满容量单流不得在准入时刻完成");
+        assertTrue(
+                admit.getCompletedTransferIds().isEmpty(),
+                "a single flow at full capacity must not complete at admission time");
 
-        // 推进到剩余恰为 0.5 字节（> 合同容差 10⁻³，< 变异容差 1.0）。
+        // Advance until exactly 0.5 bytes remain (> the contract tolerance 1e-3, < the mutation tolerance 1.0).
         double partialSeconds = (bytes - 0.5) / rate;
         TransferContentionEngine.AdvanceResult partial = engine.advance(partialSeconds);
         assertTrue(
                 partial.getCompletedTransferIds().isEmpty(),
-                "剩余 0.5 字节远超合同容差 max(1e-9*bytes, 4*ulp) = 1e-3 字节，" + "不得提前判定完成（变异 M5 会在此判完成）");
+                "0.5 bytes remaining far exceeds the contract tolerance "
+                        + "max(1e-9*bytes, 4*ulp) = 1e-3 bytes; completion must not be "
+                        + "declared early (mutation M5 would declare it here)");
         Double next = partial.getNextCompletionTime();
-        assertNotNull(next, "未完成的流必须报告下一次完成时刻");
-        assertTrue(next > partialSeconds, "下一次完成时刻必须晚于当前推进点");
+        assertNotNull(next, "an incomplete flow must report its next completion time");
+        assertTrue(next > partialSeconds, "the next completion time must be later than the current advance point");
 
         TransferContentionEngine.AdvanceResult settled = engine.advance(next);
-        assertFalse(settled.getCompletedTransferIds().isEmpty(), "到达真实完成时刻后必须结算");
+        assertFalse(
+                settled.getCompletedTransferIds().isEmpty(),
+                "settlement must occur once the true completion time is reached");
     }
 
     @Test
     void completionJudgeNeverTreatsAnUntouchedPositiveFlowAsComplete() {
         TransferContentionEngine engine = new TransferContentionEngine();
         engine.setEndpointCapacity("VM:0", 1.0);
-        // 小负载流：bytes*0.5 分支主导容差（min(0.05, max(1e-4,4ulp)) = 1e-4）。
+        // Small-payload flow: the bytes*0.5 branch dominates the tolerance (min(0.05, max(1e-4,4ulp)) = 1e-4).
         double bytes = 10.0;
         TransferContentionEngine.AdvanceResult admit = engine.addTransfer(2L, bytes, Arrays.asList("VM:0"), 1.0, 0.0);
-        assertTrue(admit.getCompletedTransferIds().isEmpty(), "未服务过任何时间的正负载流不得被判完成（容差是相对舍入防护，不是免费额度）");
+        assertTrue(
+                admit.getCompletedTransferIds().isEmpty(),
+                "a positive-payload flow that has never been served must not be judged "
+                        + "complete (the tolerance is a relative rounding guard, not a "
+                        + "free allowance)");
         Double next = admit.getNextCompletionTime();
         assertNotNull(next);
-        assertTrue(next > 0.0, "10 字节 / 1 B/s 的完成时刻必须是正时刻");
+        assertTrue(next > 0.0, "10 bytes at 1 B/s must complete at a positive time");
     }
 }

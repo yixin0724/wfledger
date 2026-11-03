@@ -15,18 +15,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * C03：影响度深链传播的规模安全边界（审查工程 Phase 1 机械可靠性）。
+ * C03: scale-safety boundary of impact-factor deep-chain propagation (review engineering Phase 1,
+ * mechanical reliability).
  *
- * <p>契约来源（守恒律，不抄实现输出）：
- * {@code WorkflowPlanner.processImpactFactors} 沿出口任务向父边均分回传影响度。
- * 对一条<b>纯链</b>（单出口、每任务恰一父）：出口获得 1/1=1.0，每次回传 impact/size=1.0，
- * 因此<b>每个任务的影响度必须恰好为 1.0</b>（二进制精确相等，无舍入路径）。</p>
+ * <p>Contract source (conservation law, not copied from implementation output):
+ * {@code WorkflowPlanner.processImpactFactors} sends the impact factor back from the exit task and
+ * splits it evenly along the parent edges. On a <b>pure chain</b> (single exit, every task with
+ * exactly one parent): the exit obtains 1/1=1.0 and every return step passes on
+ * impact/size=1.0, so <b>every task's impact must be exactly 1.0</b> (binary-exact equality, no
+ * rounding path).</p>
  *
- * <p>规模契约：解析器/parser 层未声明任何 DAG 深度上限，扫描性测试
- * （WorkflowDagScalabilityTest）与 V2 计划（DataflowFilePlan 已显式改为迭代遍历）
- * 都表明深 DAG 属于支持范围。因此 50 000 深度的链上，影响度计算必须
- * <b>完成且不抛 StackOverflowError</b>——当前实现为递归（addImpact），本测试
- * 即对该边界给出实证结论。</p>
+ * <p>Scale contract: the parser layer declares no DAG depth limit, and both the scan test
+ * (WorkflowDagScalabilityTest) and the V2 plan (DataflowFilePlan already switched to an iterative
+ * traversal) show that deep DAGs are supported scope. Therefore, on a chain 50 000 deep, the impact
+ * computation must <b>complete without throwing StackOverflowError</b> -- the current implementation
+ * is recursive (addImpact), and this test states the empirical conclusion on that boundary.</p>
  */
 class PlannerImpactDeepChainTest {
 
@@ -45,7 +48,7 @@ class PlannerImpactDeepChainTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    /** 构造一条 depth 长度的纯链任务（id 1..depth，长度与文件由最小默认充当）。 */
+    /** Build a pure-chain task list of the given depth (ids 1..depth; length and files take the minimal defaults). */
     private static List<Task> chain(int depth) {
         List<Task> tasks = new ArrayList<Task>(depth);
         Task previous = null;
@@ -67,7 +70,8 @@ class PlannerImpactDeepChainTest {
         try {
             method.invoke(planner, tasks);
         } catch (InvocationTargetException invocation) {
-            // 保留原始控制流证据（StackOverflowError 等）而非吞成反射包装。
+            // Preserve the original control-flow evidence (StackOverflowError and the like) instead of
+            // swallowing it into a reflection wrapper.
             Throwable cause = invocation.getCause();
             if (cause instanceof RuntimeException) {
                 throw (RuntimeException) cause;
@@ -85,7 +89,11 @@ class PlannerImpactDeepChainTest {
         List<Task> tasks = chain(16);
         runImpactPropagation(planner, tasks);
         for (Task task : tasks) {
-            assertEquals(1.0, task.getImpact(), 0.0, "链上任务 " + task.getCloudletId() + " 的影响度必须精确为 1.0");
+            assertEquals(
+                    1.0,
+                    task.getImpact(),
+                    0.0,
+                    "the impact of task " + task.getCloudletId() + " on the chain must be exactly 1.0");
         }
     }
 
@@ -94,19 +102,26 @@ class PlannerImpactDeepChainTest {
         final int depth = 50_000;
         WorkflowPlanner planner = new WorkflowPlanner("impact-deep", 1);
         List<Task> tasks = chain(depth);
-        // 递归实现的失败形态即 StackOverflowError 直接上抛（JUnit 判红 = F-004 证据）；
-        // 迭代化修复后本用例转绿，且不影响下方精确不变量。
+        // The failure mode of the recursive implementation is a directly rethrown
+        // StackOverflowError (JUnit red = F-004 evidence); after the iterative fix this case
+        // turns green and leaves the exact invariants below unaffected.
         runImpactPropagation(planner, tasks);
         for (int i = 0; i < depth; i += (i < 4 || i >= depth - 4) ? 1 : 997) {
-            assertEquals(1.0, tasks.get(i).getImpact(), 0.0, "深度 " + (i + 1) + " 处任务的影响度必须精确为 1.0");
+            assertEquals(
+                    1.0,
+                    tasks.get(i).getImpact(),
+                    0.0,
+                    "the impact of the task at depth " + (i + 1) + " must be exactly 1.0");
         }
     }
 
     /**
-     * 位序保持差分：随机小 DAG 上，制品（帧栈迭代）与"契约文档递归语义的直译参考
-     * 实现"必须<b>逐位</b>一致。参考实现按类 Javadoc 描述编写（出口均分、沿父边
-     * 声明顺序递归），与制品的显式帧栈结构无关，用以锁定浮点累加顺序不因
-     * F-004 迭代化改写而漂移。
+     * Bit-order-preserving differential check: on random small DAGs, the artifact (an explicit frame
+     * stack iteration) and a "literal reference implementation of the documented recursive semantics"
+     * must agree <b>bit by bit</b>. The reference implementation follows the class Javadoc (even split
+     * at the exits, recursion along the parent edges in declaration order) and is independent of the
+     * artifact's explicit frame stack; it locks the floating-point accumulation order against drift
+     * introduced by the F-004 iterative rewrite.
      */
     @Test
     void randomDagImpactsMatchDocumentedRecursiveSemanticsBitwise() throws Exception {
@@ -124,12 +139,16 @@ class PlannerImpactDeepChainTest {
                 assertEquals(
                         Double.doubleToRawLongBits(reference.get(i).getImpact()),
                         Double.doubleToRawLongBits(production.get(i).getImpact()),
-                        "DAG#" + graph + " 任务 " + production.get(i).getCloudletId() + " 的影响度必须与文档语义直译逐位一致");
+                        "DAG#" + graph + " task " + production.get(i).getCloudletId()
+                                + " impact must match the literal documented semantics bit for bit");
             }
         }
     }
 
-    /** 层次随机 DAG 的父表规格：节点 i 的父集合取自更小下标（保证无环），每点至多 3 父。 */
+    /**
+     * Parent-table spec of a layered random DAG: node i draws its parent set from smaller indices
+     * (which guarantees acyclicity), with at most 3 parents per node.
+     */
     private static java.util.List<int[]> randomParentSpec(java.util.Random random, int size) {
         java.util.List<int[]> spec = new ArrayList<int[]>(size);
         for (int i = 0; i < size; i++) {
@@ -148,7 +167,7 @@ class PlannerImpactDeepChainTest {
         return spec;
     }
 
-    /** 按父表规格构造新任务图（两套互不共享对象）。 */
+    /** Build a fresh task graph from the parent-table spec (the two graphs share no objects). */
     private static List<Task> materialise(java.util.List<int[]> parentSpec) {
         List<Task> tasks = new ArrayList<Task>(parentSpec.size());
         for (int i = 0; i < parentSpec.size(); i++) {
@@ -164,7 +183,7 @@ class PlannerImpactDeepChainTest {
         return tasks;
     }
 
-    /** 契约 Javadoc 的直译参考实现（仅本测试内使用，声明顺序递归）。 */
+    /** Literal reference implementation of the contract Javadoc (test-local only, recursion in declaration order). */
     private static void runReferenceImpactPropagation(List<Task> tasks) {
         List<Task> exits = new ArrayList<Task>();
         for (Task task : tasks) {

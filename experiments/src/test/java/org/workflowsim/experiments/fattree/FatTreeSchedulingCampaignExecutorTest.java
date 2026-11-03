@@ -25,10 +25,11 @@ import org.workflowsim.experiments.fattree.FatTreeSchedulingCampaignExecutor.Top
 import org.workflowsim.utils.Parameters;
 
 /**
- * campaign 执行器纯逻辑单测（不跑仿真）：变体契约、DAG 发现、结果汇总
- * （排名/第一名/单调性诊断/配对统计）、工件序列化。仿真路径由
- * {@code FatTreeCampaignGoldenIntegrationTest} 与
- * {@code FatTreeCampaignDagCompatibilityIntegrationTest} 覆盖。
+ * Pure-logic unit tests for the campaign executor (no simulation run): variant contract,
+ * DAG discovery, result aggregation (rankings / winners / monotonicity diagnostics /
+ * paired statistics), and artifact serialization. The simulation path is covered by
+ * {@code FatTreeCampaignGoldenIntegrationTest} and
+ * {@code FatTreeCampaignDagCompatibilityIntegrationTest}.
  */
 class FatTreeSchedulingCampaignExecutorTest {
 
@@ -46,10 +47,13 @@ class FatTreeSchedulingCampaignExecutorTest {
     private static final List<String> PLANNER_NAMES = Arrays.asList(HEFT, CPOP, RANDOM, PSO);
 
     // ------------------------------------------------------------------
-    // 拓扑变体契约
+    // Topology variant contract
     // ------------------------------------------------------------------
 
-    /** 3 主机敏感性与 4 主机结构块：6 变体、同序、A5 放置按主机数覆盖。 */
+    /**
+     * The 3-host sensitivity and 4-host structural blocks: 6 variants, the same order, and
+     * A5 placement covering by host count.
+     */
     @Test
     void sensitivityAndStructuralVariantContracts() {
         List<String> expectedIds = Arrays.asList(
@@ -60,7 +64,7 @@ class FatTreeSchedulingCampaignExecutorTest {
             assertEquals(expectedIds.get(i), sensitivity.get(i).id);
         }
         assertEquals("A5-k4-full-same-edge-pair", sensitivity.get(5).id);
-        // 3 主机 A5：host0/host1 同 edge0，host2 放 edge2。
+        // 3-host A5: host0/host1 share edge0, host2 sits on edge2.
         Map<Integer, Integer> three = sensitivity.get(5).spec.getHostEdgePlacements();
         assertEquals(3, three.size());
         assertEquals(Integer.valueOf(0), three.get(Integer.valueOf(0)));
@@ -73,23 +77,26 @@ class FatTreeSchedulingCampaignExecutorTest {
             assertEquals(expectedIds.get(i), structural.get(i).id);
         }
         assertEquals("A5-k4-full-same-edge-pairs", structural.get(5).id);
-        // 4 主机 A5：两个同 edge 主机对 {0→0,1→0,2→2,3→2}。
+        // 4-host A5: two host pairs share an edge {0->0, 1->0, 2->2, 3->2}.
         Map<Integer, Integer> four = structural.get(5).spec.getHostEdgePlacements();
         assertEquals(4, four.size());
         assertEquals(Integer.valueOf(0), four.get(Integer.valueOf(0)));
         assertEquals(Integer.valueOf(0), four.get(Integer.valueOf(1)));
         assertEquals(Integer.valueOf(2), four.get(Integer.valueOf(2)));
         assertEquals(Integer.valueOf(2), four.get(Integer.valueOf(3)));
-        // 前 5 个变体无显式放置（null = 默认轮转）。
+        // The first 5 variants declare no explicit placement (null = default round-robin).
         assertEquals(null, sensitivity.get(0).spec.getHostEdgePlacements());
         assertEquals(null, structural.get(4).spec.getHostEdgePlacements());
     }
 
     // ------------------------------------------------------------------
-    // DAG 发现
+    // DAG discovery
     // ------------------------------------------------------------------
 
-    /** 真实数据集：10 个核心 DAG，montage/sipht 被 LOCAL 通信规划族排除。 */
+    /**
+     * Real dataset: 10 core DAGs; montage/sipht are excluded by the LOCAL
+     * communication-planning family.
+     */
     @Test
     void discoverCoreDagsReturnsTenExpectedInstances() throws IOException {
         Path datasetsRoot = Paths.get("..", "datasets").toAbsolutePath().normalize();
@@ -98,8 +105,8 @@ class FatTreeSchedulingCampaignExecutorTest {
         List<String> ids = new ArrayList<String>();
         for (DagScenario dag : dags) {
             ids.add(dag.id);
-            assertTrue(Files.exists(dag.daxPath), "DAX 必须存在: " + dag.daxPath);
-            assertTrue(dag.id.startsWith(dag.family), "id 必须携带家族前缀: " + dag.id);
+            assertTrue(Files.exists(dag.daxPath), "DAX must exist: " + dag.daxPath);
+            assertTrue(dag.id.startsWith(dag.family), "id must carry the family prefix: " + dag.id);
         }
         assertEquals(
                 Arrays.asList(
@@ -116,17 +123,20 @@ class FatTreeSchedulingCampaignExecutorTest {
                 ids);
     }
 
-    /** 畸形数据集根：空目录与多 DAX 目录都被显式拒绝。 */
+    /**
+     * Malformed dataset roots: an empty directory and a directory with multiple DAX files
+     * are both rejected explicitly.
+     */
     @Test
     void discoverCoreDagsRejectsMalformedDatasetRoots(@TempDir Path tempRoot) throws IOException {
-        // 空 scale 目录 → "No .dax file"。
+        // Empty scale directory -> "No .dax file".
         Path empty = tempRoot.resolve("empty");
         prepareHeftExample(empty);
         Files.createDirectories(empty.resolve("dax/epigenomics/n24"));
         IllegalStateException noDax = assertThrows(
                 IllegalStateException.class, () -> FatTreeSchedulingCampaignExecutor.discoverCoreDags(empty));
         assertTrue(noDax.getMessage().contains("No .dax file"), noDax.getMessage());
-        // 同目录多 DAX → "Multiple .dax files"。
+        // Multiple DAX files in the same directory -> "Multiple .dax files".
         Path multiple = tempRoot.resolve("multiple");
         prepareHeftExample(multiple);
         Path scale = multiple.resolve("dax/epigenomics/n24");
@@ -145,10 +155,13 @@ class FatTreeSchedulingCampaignExecutorTest {
     }
 
     // ------------------------------------------------------------------
-    // 结果汇总（合成 fixture，不跑仿真）
+    // Result aggregation (synthetic fixtures, no simulation run)
     // ------------------------------------------------------------------
 
-    /** 干净 fixture：严格弱单调、平均排名与逐 DAG 第一名、诊断为空。 */
+    /**
+     * Clean fixture: strict weak monotonicity, average rankings and per-DAG winners, and
+     * empty diagnostics.
+     */
     @Test
     void cleanFixtureComputesRankingsWinnersAndStrictMonotonicity() {
         CampaignResults results = fixture(false);

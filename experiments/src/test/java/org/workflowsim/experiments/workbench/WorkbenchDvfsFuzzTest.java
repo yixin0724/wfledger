@@ -25,23 +25,29 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 /**
- * BAT-V1（2026-10-29 测试工程师对抗轮，DVFS 第五轮）：workbench JSON 频档入参面的
- * 恶意模糊——declared-but-empty、"非数组"塑形、字符串档、未知策略标签
- * （SPEED_RUNNER）、严格 JSON 的 NaN 常量；v1 平台在每一入参下保持合法。
- * quality-of-rejection：消息必须指名字段（镜像 BAT-D4 既有拒绝面的纪律）。
+ * BAT-V1 (2026-10-29 adversarial test-engineer round, DVFS fifth round): malicious
+ * fuzzing of the workbench JSON frequency-tier input surface -- declared-but-empty,
+ * "non-array" shapes, string tiers, the unknown policy label (SPEED_RUNNER), and the NaN
+ * constant of strict JSON; the v1 platform stays legal under every input. Quality of
+ * rejection: the message must name the field (mirroring the discipline of the existing
+ * BAT-D4 rejection surface).
  *
- * <p>诚实披露（本类锁定的实测语义，非抄录）：
+ * <p>Honest disclosure (measured semantics pinned by this class, not transcribed):
  * <ul>
- *   <li><b>空数组（declared-but-empty）→ 拒绝</b>（ BAT-D4："must be a non-empty array"，
- *       给出"删键即 v1"的最短修复路径）；</li>
- *   <li><b>单元素档表 → 合法</b>（v1 退化恒等的 workbench 面；MIN_POWER 可用）；</li>
- *   <li><b>NaN/Inf 家族在 JSON 面死于严格句法层</b>（RFC 8259 非法常量，先于任何
- *       域校验——与 Python 审计器 _constant 条款同语义），不存在"字段级"回执；
- *       域级有限消息（"must be finite"）保留给域层（数值大但有限的域外值仍见域层
- *       消息）。</li>
+ *   <li><b>empty array (declared-but-empty) -> rejected</b> (BAT-D4: "must be a non-empty
+ *       array", which gives the shortest repair path: "delete the key, i.e. v1");</li>
+ *   <li><b>single-element tier table -> legal</b> (the workbench face of the v1
+ *       degenerate identity; MIN_POWER is usable);</li>
+ *   <li><b>the NaN/Inf family dies at the strict syntax layer on the JSON face</b>
+ *       (an RFC 8259 illegal constant, before any domain validation -- the same
+ *       semantics as the Python auditor's _constant clause); there is no "field-level"
+ *       receipt; the domain-level finite message ("must be finite") is reserved for the
+ *       domain layer (large but finite out-of-domain values still get the domain-layer
+ *       message).</li>
  * </ul>
- * （频率档数值域正/负/倒置与表序消息面已由 WorkbenchConfigTest.
- * platformFrequencyTiersRoundTripAndValidate 锚定，本类不重复。）</p>
+ * (The positive/negative/inverted frequency-tier numeric domain and the table-order
+ * message surface are already pinned by WorkbenchConfigTest.
+ * platformFrequencyTiersRoundTripAndValidate; this class does not repeat them.)</p>
  */
 class WorkbenchDvfsFuzzTest {
 
@@ -126,7 +132,7 @@ class WorkbenchDvfsFuzzTest {
     @Test
     void unknownPolicyLabelSPEED_RUNNERIsRejectedEvenOnTierlessPlatforms() throws Exception {
         Path workflow = workflow(directory, "flow.dax", false);
-        // 有档 + 未知标签 → 拒，引用 frequencyPolicy 与合法标签集。
+        // Tiers present + unknown label -> rejected, citing frequencyPolicy and the legal label set.
         JsonObject tiered = configuration(workflow.toString(), 2);
         tiered.getAsJsonObject("platform").add("frequencyTiers", tiers(2000.0, 250.0, 400.0));
         tiered.getAsJsonObject("platform").addProperty("frequencyPolicy", "SPEED_RUNNER");
@@ -137,8 +143,8 @@ class WorkbenchDvfsFuzzTest {
                 tieredRejection.getMessage().contains("frequencyPolicy")
                         && tieredRejection.getMessage().contains("SPEED_RUNNER"),
                 "unknown policy must cite the field and the given label: " + tieredRejection.getMessage());
-        // 无档 + 未知标签 → 同一致拒绝（不静默回落 DEFAULT）：字段级顺序（valueOf 先于
-        // 策略×表复合校验）。
+        // No tiers + unknown label -> rejected the same way (no silent fallback to DEFAULT):
+        // field-level ordering (valueOf precedes the policy x table composite check).
         JsonObject tierless = configuration(workflow.toString(), 2);
         tierless.getAsJsonObject("platform").addProperty("frequencyPolicy", "SPEED_RUNNER");
         IllegalArgumentException tierlessRejection = assertThrows(
@@ -153,23 +159,26 @@ class WorkbenchDvfsFuzzTest {
     void rawNanTierValueDiesAtTheStrictJsonSyntaxLayer() throws Exception {
         Path workflow = workflow(directory, "flow.dax", false);
         JsonObject nanTier = configuration(workflow.toString(), 2);
-        // NaN 不能作为合法 JSON 常量构造（Gson JsonPrimitive 也不接受非有限双精度的
-        // JSON 序列化语义）——手写原始文档把非法常量直接喂进严格模式的 reader。
+        // NaN cannot be constructed as a legal JSON constant (Gson JsonPrimitive likewise
+        // rejects the JSON serialization semantics of non-finite doubles) -- the raw document
+        // is hand-written so the illegal constant is fed straight into the strict reader.
         Path raw = directory.resolve("nan-raw.json");
         String template = json(directory.resolve("nan-template.json"), nanTier).toString();
         String mutated = template.replaceFirst(
                 "\"platform\"\\s*:\\s*\\{",
                 "\"platform\": {\"frequencyTiers\": [{\"mips\": NaN,\"idlePowerWatts\": 1,\"maxPowerWatts\": 2}],");
         Files.write(raw, mutated.getBytes(StandardCharsets.UTF_8));
-        // 严格 reader 把非标常量映射为 IllegalArgumentException（"配置必须是严格 JSON 对象"，
-        // BAM-D4/Wso strict face）——句法层击杀发生在任何域校验之前（与 Python 审计器
-        // _study_audit._constant 条款同语义），不存在字段级回执，也不得静默回落 DEFAULT。
+        // The strict reader maps a non-standard constant to IllegalArgumentException ("the
+        // configuration must be a strict JSON object", BAM-D4/Wso strict face) -- the
+        // syntax-layer kill happens before any domain validation (the same semantics as the
+        // Python auditor's _study_audit._constant clause); there is no field-level receipt
+        // and no silent fallback to DEFAULT.
         IllegalArgumentException syntax = assertThrows(
                 IllegalArgumentException.class, () -> WorkbenchConfig.read(raw), "NaN literal must not parse");
         assertTrue(
                 syntax.getMessage() != null && !syntax.getMessage().isEmpty(),
                 "syntax-layer rejection must carry a diagnostic: " + syntax.getMessage());
-        // 大但有限的域外值（负 mips）→ 域层字段级消息（不靠句法层兜底）。
+        // Large but finite out-of-domain value (negative mips) -> domain-layer field message (no fallback).
         JsonObject negative = configuration(workflow.toString(), 2);
         negative.getAsJsonObject("platform").add("frequencyTiers", tiers(-5.0, 1.0, 2.0));
         IllegalArgumentException domain = assertThrows(

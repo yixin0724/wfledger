@@ -27,21 +27,28 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * C06：LOCAL_HEFT 规划→执行镜像端到端契约（审查工程 Phase 2，H-9 系统化）。
+ * C06: end-to-end contract for the LOCAL_HEFT planning -> execution mirror
+ * (review engineering Phase 2, H-9 systematization).
  *
- * <p>契约（docs 对 LOCAL 家族的宣称）：LOCAL 规划器的估算器"逐位镜像"运行时
- * pre-execution 传输模型。既有测试分别锚定规划公式（rank/插入）与执行侧
- * （本地可用性）；本测试把两侧接到<b>同一次完整仿真的任务窗口</b>：</p>
+ * <p>Contract (the docs claim for the LOCAL family): the LOCAL planner's estimator
+ * "bitwise mirrors" the runtime pre-execution transfer model. The existing tests pin the
+ * planning formula (rank/insertion) and the execution side (local availability)
+ * separately; this test joins the two sides at <b>the task windows of one single full
+ * simulation</b>:</p>
  * <ol>
- *   <li>标准 SimulationRunner 完整运行（LOCAL + PRE_EXECUTION_TRANSFER_DELAY_V1
- *       + LOCAL_HEFT + STATIC，无开销/故障）；</li>
- *   <li>同一 DAX 独立重解析 + 独立 LocalHeftPlanningAlgorithm 复规划（全新对象）；</li>
- *   <li>逐任务断言：VM 绑定、计划开始时刻、计划完成时刻与运行时
- *       {@link SimulationReport.TaskOutcome} 窗口<b>0 容差相等</b>。</li>
+ *   <li>a full run of the standard SimulationRunner (LOCAL +
+ *       PRE_EXECUTION_TRANSFER_DELAY_V1 + LOCAL_HEFT + STATIC, no overhead/failure);</li>
+ *   <li>an independent reparse of the same DAX plus an independent
+ *       LocalHeftPlanningAlgorithm replanning (fresh objects);</li>
+ *   <li>per-task assertions: VM binding, planned start time and planned finish time
+ *       <b>equal the runtime {@link SimulationReport.TaskOutcome} window with 0
+ *       tolerance</b>.</li>
  * </ol>
  *
- * <p>两侧使用同一物理常量体系（同一 PlanningContext 构造路径）；任何一侧公式、
- * 时序或换算漂移都会使本镜像断言红——相对比较不依赖手推绝对值。</p>
+ * <p>Both sides use the same physical constant system (the same PlanningContext
+ * construction path); any formula, timing or conversion drift on either side turns this
+ * mirror assertion red -- the relative comparison does not depend on hand-derived
+ * absolute values.</p>
  */
 class PlannerRuntimeMirrorIntegrationTest {
 
@@ -68,22 +75,29 @@ class PlannerRuntimeMirrorIntegrationTest {
         mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm.LOCAL_HEFT);
     }
 
-    /** 链 F 扩展（S-F1）：CPOP 的 0 容差镜像——关键处理器逻辑不破坏端到端恒等。 */
+    /**
+     * Chain F extension (S-F1): 0-tolerance mirror for CPOP -- the critical-processor
+     * logic does not break the end-to-end identity.
+     */
     @Test
     void localCpopPlannedWindowsMirrorActualRuntimeWindowsExactly() throws Exception {
         mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm.LOCAL_CPOP);
     }
 
-    /** 链 F 扩展（S-F1）：PEFT 的 0 容差镜像——OCT 评分路径不破坏端到端恒等。 */
+    /**
+     * Chain F extension (S-F1): 0-tolerance mirror for PEFT -- the OCT scoring path does
+     * not break the end-to-end identity.
+     */
     @Test
     void localPeftPlannedWindowsMirrorActualRuntimeWindowsExactly() throws Exception {
         mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm.LOCAL_PEFT);
     }
 
     /**
-     * 通用镜像驱动：完整 SimulationRunner 运行 vs 独立重解析+复规划，
-     * 逐任务断言 VM 绑定/计划开始/计划完成 0 容差镜像
-     * （LOCAL_HEFT / LOCAL_CPOP / LOCAL_PEFT，AbstractLocalCommPlanningAlgorithm 家族）。
+     * Generic mirror driver: full SimulationRunner run vs. independent reparse plus
+     * replanning; asserts the VM binding, planned start and planned finish per task with
+     * 0-tolerance mirroring (LOCAL_HEFT / LOCAL_CPOP / LOCAL_PEFT, the
+     * AbstractLocalCommPlanningAlgorithm family).
      */
     private void mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm algorithm) throws Exception {
         Path workflow = layeredDax();
@@ -97,7 +111,10 @@ class PlannerRuntimeMirrorIntegrationTest {
                 .build();
 
         SimulationReport report = new SimulationRunner().run(config, platform);
-        assertEquals(true, report.getMetrics().isAllLogicalTasksCompletedSuccessfully(), "镜像基线要求仿真完整成功：" + algorithm);
+        assertEquals(
+                true,
+                report.getMetrics().isAllLogicalTasksCompletedSuccessfully(),
+                "mirror baseline requires a fully successful simulation: " + algorithm);
 
         List<Task> reparsed = reparse(workflow, algorithm);
         org.workflowsim.planning.BasePlanningAlgorithm planner =
@@ -111,23 +128,26 @@ class PlannerRuntimeMirrorIntegrationTest {
         planner.run();
 
         List<SimulationReport.TaskOutcome> outcomes = report.getTasks();
-        assertEquals(reparsed.size(), outcomes.size(), "任务数必须一致（同一 DAX）：" + algorithm);
+        assertEquals(reparsed.size(), outcomes.size(), "task counts must agree (same DAX): " + algorithm);
         org.workflowsim.planning.AbstractLocalCommPlanningAlgorithm localPlanner =
                 (org.workflowsim.planning.AbstractLocalCommPlanningAlgorithm) planner;
         for (SimulationReport.TaskOutcome outcome : outcomes) {
             Task planned = findById(reparsed, outcome.getTaskId());
             assertEquals(
-                    planned.getVmId(), outcome.getVmId(), 0, algorithm + " 任务 " + outcome.getTaskId() + " 的 VM 绑定必须镜像");
+                    planned.getVmId(),
+                    outcome.getVmId(),
+                    0,
+                    algorithm + " task " + outcome.getTaskId() + " VM binding must mirror");
             assertEquals(
                     planned.getStaticScheduleStartTime(),
                     outcome.getStartTime(),
                     ZERO_TOLERANCE,
-                    algorithm + " 任务 " + outcome.getTaskId() + " 计划开始必须逐位镜像");
+                    algorithm + " task " + outcome.getTaskId() + " planned start must mirror bitwise");
             assertEquals(
                     localPlanner.plannedFinishOf(planned).doubleValue(),
                     outcome.getFinishTime(),
                     ZERO_TOLERANCE,
-                    algorithm + " 任务 " + outcome.getTaskId() + " 计划完成必须逐位镜像");
+                    algorithm + " task " + outcome.getTaskId() + " planned finish must mirror bitwise");
         }
     }
 
@@ -141,13 +161,16 @@ class PlannerRuntimeMirrorIntegrationTest {
             case LOCAL_PEFT:
                 return new org.workflowsim.planning.LocalPeftPlanningAlgorithm(context);
             default:
-                throw new IllegalArgumentException("镜像驱动不支持规划算法 " + algorithm);
+                throw new IllegalArgumentException("mirror driver does not support planning algorithm " + algorithm);
         }
     }
 
-    // ---- 夹具 ----
+    // ---- Fixtures ----
 
-    /** 6 任务 3 层 DAG，边带通信文件（层1→层2→层3），桥接文件 4MB/秒带宽八进制换算。 */
+    /**
+     * 6-task 3-layer DAG with communication files on the edges (layer 1 -> layer 2 ->
+     * layer 3); bridge files use 4 MB/s bandwidth with unit conversion.
+     */
     private Path layeredDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -174,7 +197,7 @@ class PlannerRuntimeMirrorIntegrationTest {
                 dax.append("  </job>\n");
             }
         }
-        // 层间依赖：1,2 → 3,4 → 5,6（交错父子）。
+        // Inter-layer dependencies: 1,2 -> 3,4 -> 5,6 (interleaved parent/child).
         dax.append("  <child ref=\"t3\"><parent ref=\"t1\"/></child>\n");
         dax.append("  <child ref=\"t4\"><parent ref=\"t1\"/></child>\n");
         dax.append("  <child ref=\"t4\"><parent ref=\"t2\"/></child>\n");
@@ -218,6 +241,6 @@ class PlannerRuntimeMirrorIntegrationTest {
                 return task;
             }
         }
-        throw new AssertionError("复规划结果缺少任务 " + taskId);
+        throw new AssertionError("the replanning result is missing task " + taskId);
     }
 }

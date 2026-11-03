@@ -23,8 +23,9 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 碳维度 C1 守恒/恒等测试（BAT-C1，2026-10-28，红→绿锚）。期望值合法性来源：
- * 量纲换算律与预算超额积分公式（docs/advanced/CARBON_DIMENSION_DESIGN.md §1）。
+ * Carbon-dimension C1 conservation/identity test (BAT-C1, 2026-10-28, red-to-green anchor).
+ * Legal sources for the expected values: the dimensional conversion law and the budget excess
+ * integral formula (docs/advanced/CARBON_DIMENSION_DESIGN.md §1).
  */
 class CarbonAccountingTest {
 
@@ -76,9 +77,11 @@ class CarbonAccountingTest {
 
     @Test
     void budgetExcessIntegratesAndMatchesAHandCase() throws Exception {
-        // 两窗口（绿 300W / 绿 100W）覆盖 [0,120s)。忙时 fleet P = 250 + 150 = 400W。
-        // 窗一超 100×busy_in_window1；窗二超 300×busy_in_window2。手推导演在断言内做：
-        // 由于确切忙区间未知，先验证窗口和==总量与恒正，再以已知公式对总积分做交叉核算。
+        // Two windows (green 300 W / green 100 W) cover [0, 120 s). Busy fleet P = 250 + 150 = 400 W.
+        // Window one exceeds by 100 x busy_in_window1; window two exceeds by 300 x busy_in_window2.
+        // The hand derivation is performed inside the assertions: because the exact busy intervals are
+        // unknown, first verify window sum == total and strict positivity, then cross-check the total
+        // integral against the known formula.
         SimulationReport report = run(true, null, new double[][] {{0.0, 60.0, 300.0}, {60.0, 120.0, 100.0}});
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertTrue(carbon != null, "declared windows must produce an accounting");
@@ -90,19 +93,20 @@ class CarbonAccountingTest {
         assertTrue(
                 carbon.getTotalCarbonExcessWattSeconds() > 0.0,
                 "green 300/100 below active 400 must yield positive excess");
-        // 依赖声明的硬核验证：每个窗口超 (P−green)×重叠时长 ≥ 0 且结构正确。
+        // Hard-core verification of the declared dependence: each window excess (P - green) x overlap duration >= 0
+        // and structurally correct.
         assertEquals(
                 0, Double.compare(0.0, carbon.getTotalCarbonGrams()), "budget model leaves intensity family untouched");
     }
 
     @Test
     void unpoweredIntensityIsRejectedAndPlainStaysAbsent() {
-        // 未声明任何碳模型 → null（合法缺省，非全零）。
+        // No carbon model declared -> null (a legal default, not all zeros).
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> {
             SimulationReport plain = run(true, null, null);
             assertNull(plain.getCarbonAccounting(), "no carbon declaration => absent accounting");
         });
-        // 无功率平台 + 强度声明 → 构造函数 fail-fast。
+        // Unpowered platform + declared intensity -> constructor fail-fast.
         IllegalArgumentException rejection = assertThrows(
                 IllegalArgumentException.class,
                 () -> run(false, 380.0, null),
@@ -125,13 +129,16 @@ class CarbonAccountingTest {
 
     @Test
     void tieredPlatformIntensityRidesTheConservedPerTierEnergy() throws Exception {
-        // BAT-D4（2026-10-29）tiered ride-through 红→绿锚。频档平台（平面功率恒 0，BAT-D1
-        // 单一真源）是已声明功率的剖面：强度碳乘<b>逐档守恒能量</b>
-        // （docs/advanced/DVFS_DIMENSION_DESIGN.md §1.5/§2.4）。此前该路径被 BAT-C1
-        // 平面字段闸整节 fail-fast（tiered 运行无法产出真实 carbonMetrics——D3 设计
-        // 注记的前向缺口）。期望值合法性来源：§2.3 逐档守恒律 × 量纲换算律，输入取
-        // 频档表 + 逐档台账（与能量节同源），TreeMap 升序求和序与 EnergyAccounting
-        // 镜像（浮点决定性纪律），不拷贝碳节自身输出。
+        // BAT-D4 (2026-10-29) tiered ride-through red-to-green anchor. A frequency-tier platform
+        // (flat power identically 0, BAT-D1 single source of truth) is a profile of declared power:
+        // intensity carbon multiplies the <b>per-tier conserved energy</b>
+        // (docs/advanced/DVFS_DIMENSION_DESIGN.md §1.5/§2.4). Previously this path was failed fast
+        // as a whole by the BAT-C1 flat-field gate (a tiered run could not produce real carbonMetrics
+        // -- the forward gap noted in the D3 design). Legal sources for the expected value: the §2.3
+        // per-tier conservation law x the dimensional conversion law, with inputs taken from the
+        // frequency-tier table + the per-tier ledger (the same source as the energy section) and the
+        // TreeMap ascending summation order mirroring EnergyAccounting (floating-point determinism
+        // discipline), without copying the carbon section's own output.
         java.nio.file.Path workflow = java.nio.file.Paths.get(tempDir.toFile().getAbsolutePath(), "dvfs.dax");
         Files.write(
                 workflow,
@@ -173,7 +180,8 @@ class CarbonAccountingTest {
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertTrue(carbon != null, "tiered platform + declared intensity must produce an accounting");
         assertEquals(1, carbon.getPerVmCarbonGrams().size(), "per-VM map completeness");
-        // §2.3 逐档守恒律：E = P_idle(默认档)×T + Σ档(P_max(档)−P_idle(默认档))×busy(档)
+        // §2.3 per-tier conservation law: E = P_idle(default tier) x T
+        // + sum over tiers of (P_max(tier) - P_idle(default tier)) x busy(tier)
         double defaultIdle = 250.0;
         double expectedEnergy = defaultIdle * report.getMakespan();
         java.util.Map<Double, Double> ledger =
@@ -201,14 +209,17 @@ class CarbonAccountingTest {
     }
 
     /**
-     * A2 红→绿锚（2026-11-02）：频档平台 + 碳窗口 = 预算碳。此前 {@code budgetModel}
-     * 只认平铺功率字段，频档 VM（平铺恒 0，BAT-D1）直接 fail-fast，所以"5 档 P-state
-     * × 绿色预算"这一维交叉无法产生真实 carbonMetrics；Python 审计器早已实现该分支
-     * （DVFS_DIMENSION_DESIGN §2.3 的前向契约）。
+     * A2 red-to-green anchor (2026-11-02): frequency-tier platform + carbon window = budget carbon.
+     * Previously {@code budgetModel} honoured only the flat power fields, so a tiered VM (flat fields
+     * identically 0, BAT-D1) failed fast outright, and the dimension crossing "5-tier P-state x green
+     * budget" could not produce real carbonMetrics; the Python auditor had long implemented that branch
+     * (the forward contract of DVFS_DIMENSION_DESIGN §2.3).
      *
-     * <p>期望值合法性来源：契约律本身（Python 侧文档化口径的逐句镜像）——逐时刻舰队
-     * 功率 = Σ卡顿 VM 默认档 idle + Σ活跃 Job (P_max(其档) − P_idle(默认档))；本测试
-     * 在断言内按该律独立重算，不拷贝实现输出。</p>
+     * <p>Legal source for the expected value: the contract law itself (a sentence-by-sentence mirror of
+     * the documented Python-side convention) -- per-instant fleet power = sum over stalled VMs of the
+     * default-tier idle + sum over active Jobs of (P_max(their tier) - P_idle(default tier)); this test
+     * independently recomputes by that law inside the assertions and does not copy implementation
+     * output.</p>
      */
     @Test
     void tieredPlatformBudgetCarbonUsesThePerTierFleetPowerCurve() throws Exception {
@@ -216,7 +227,8 @@ class CarbonAccountingTest {
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertTrue(carbon != null, "tiered platform + declared windows must now produce an accounting");
 
-        // 契约律独立重算：端点折叠 ±dyn，段内舰队功率 = idle_sum + Σ活跃 dyn。
+        // Independent recomputation of the contract law: endpoint folding by +/-dyn,
+        // in-segment fleet power = idle_sum + sum of the active dyn terms.
         PlatformProfile profile = lastProfile;
         double defaultIdle = 250.0;
         double idleSum = 0.0;
@@ -249,14 +261,16 @@ class CarbonAccountingTest {
                 Double.compare(expectedTotal, carbon.getTotalCarbonExcessWattSeconds()),
                 "tiered budget law: expected=" + expectedTotal + " actual=" + carbon.getTotalCarbonExcessWattSeconds());
         assertTrue(expectedTotal > 0.0, "the fixture must produce a positive excess (green below active power)");
-        // 预算族不产克数（两族互斥）：克数字段保持 0，与强度族区分。
+        // The budget family produces no grams (the two families are mutually exclusive):
+        // the gram fields stay 0, which distinguishes them from the intensity family.
         assertEquals(0, Double.compare(0.0, carbon.getTotalCarbonGrams()));
     }
 
     /**
-     * A2 跨语言对抗（2026-11-02）：平铺 VM 上的作业携带 tierMips 属于证据链断裂——
-     * Java 必须与 Python 审计器同律拒收，而不是静默按平铺功率算出一个"看起来正常"
-     * 的数值（那会让同一份证据在两侧给出不同结论）。
+     * A2 cross-language adversarial case (2026-11-02): a Job on a flat VM carrying tierMips is a broken
+     * evidence chain -- Java must reject it under the same law as the Python auditor, rather than
+     * silently compute a "plausible-looking" value from the flat power (that would let the same piece
+     * of evidence yield different verdicts on the two sides).
      */
     @Test
     void flatVmJobCarryingTierIdentityIsRejectedLikeThePythonAuditor() {
@@ -307,7 +321,8 @@ class CarbonAccountingTest {
                 "a low tier may draw less than the default-tier idle (118.75−250)");
     }
 
-    /** 契约律重算：逐档舰队功率曲线的窗口超额（与实现独立走一遍文档化口径）。 */
+    /** Contract-law recomputation: the window excess of the per-tier fleet power curve
+     * (an independent pass over the documented convention). */
     private static double expectedTieredExcess(SimulationReport report, PlatformProfile profile) {
         double defaultIdleOfTiered = 0.0;
         double idleSum = 0.0;
@@ -368,8 +383,9 @@ class CarbonAccountingTest {
     }
 
     /**
-     * A2 对抗面：混合舰队（一台分档 VM + 一台平铺 VM）在同一预算窗口下必须走同一
-     * 舰队功率曲线——分档贡献取默认档 idle + 逐档动态，平铺贡献保持 v1 的 max−idle。
+     * A2 adversarial surface: a mixed fleet (one tiered VM + one flat VM) must follow the same fleet
+     * power curve under one budget window -- the tiered contribution takes the default-tier idle plus
+     * the per-tier dynamics, while the flat contribution keeps the v1 max-idle.
      */
     @Test
     void mixedFleetBudgetCarbonMixesTieredAndFlatContributions() throws Exception {
@@ -384,7 +400,7 @@ class CarbonAccountingTest {
         assertTrue(expected > 0.0, "the fixture must yield a positive excess");
     }
 
-    /** 混合舰队夹具：VM0 分档（默认档 idle 250），VM1 平铺（idle 120 / max 300）。 */
+    /** Mixed-fleet fixture: VM0 is tiered (default-tier idle 250), VM1 is flat (idle 120 / max 300). */
     private SimulationReport runMixedFleetBudget() throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "mixed.dax");
         Files.write(
@@ -442,7 +458,8 @@ class CarbonAccountingTest {
         return new SimulationRunner().run(config, lastProfile);
     }
 
-    /** 频档平台 + 单窗口预算碳夹具：MIN_POWER 把作业压到低档，功率曲线沿档变化。 */
+    /** Frequency-tier platform + single-window budget-carbon fixture: MIN_POWER pushes the Job to a
+     * low tier, so the power curve follows the tier. */
     private SimulationReport runTieredBudget() throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "tiered-budget.dax");
         Files.write(
@@ -485,7 +502,8 @@ class CarbonAccountingTest {
         return new SimulationRunner().run(config, lastProfile);
     }
 
-    /** BAT-D4：按 MIPS 精确身份查档功率（频档表降序唯一；同 VmSpec.tierByMips 契约）。 */
+    /** BAT-D4: look up the tier power by exact MIPS identity (the frequency-tier table is unique in
+     * descending order; the same contract as VmSpec.tierByMips). */
     private static double tierMaxOf(PlatformProfile.VmSpec spec, double mips) {
         for (PlatformProfile.FrequencyTier tier : spec.getFrequencyTiers()) {
             if (Double.compare(tier.getMips(), mips) == 0) {

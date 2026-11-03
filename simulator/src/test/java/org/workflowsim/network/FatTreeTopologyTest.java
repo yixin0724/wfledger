@@ -15,13 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.data.TransferContentionEngine;
 
 /**
- * Al-Fares k-Pod Fat-tree 拓扑的结构、放置与确定性路由单测。
+ * Structural, placement, and deterministic-routing unit tests for the Al-Fares k-Pod Fat-tree topology.
  *
- * <p>黄金值全部来自 {@code docs/research/FAT_TREE_DESIGN.md} 所述结构与路由的手工推导：
- * k=2 最小拓扑（2 主机、5 交换机、1 core）与 k=4 拓扑（16 主机容量、20 交换机、
- * 4 core）。路由键序列按 v1 确定性规则手算：上行 aggregate = srcEdge mod availA；
- * 跨 Pod core 选择 j = (srcEdge + dstEdge + srcPod + dstPod) mod 该 aggregate 的
- * 可用 core 数。</p>
+ * <p>All golden values are hand-derived from the structure and routing described in
+ * {@code docs/research/FAT_TREE_DESIGN.md}: the k=2 minimal topology (2 hosts, 5 switches, 1 core) and
+ * the k=4 topology (16-host capacity, 20 switches, 4 cores). Route key sequences are computed by hand
+ * under the v1 deterministic rules: the uplink aggregate = srcEdge mod availA; the cross-Pod core
+ * choice j = (srcEdge + dstEdge + srcPod + dstPod) mod the number of available cores of that
+ * aggregate.</p>
  */
 public class FatTreeTopologyTest {
 
@@ -33,7 +34,7 @@ public class FatTreeTopologyTest {
         return ids;
     }
 
-    /** k=2 最小结构：2 主机、5 交换机（1 core + 2 Pod × 2 台）、12 个链路资源键。 */
+    /** k=2 minimal structure: 2 hosts, 5 switches (1 core + 2 Pods x 2 each), 12 link resource keys. */
     @Test
     public void minimalK2StructureMatchesHandComputedCounts() {
         FatTreeTopology topology = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(2, 100.0), hosts(2));
@@ -43,18 +44,18 @@ public class FatTreeTopologyTest {
         assertEquals(2, topology.getHostCapacity());
         assertEquals(2, topology.getPlacedHostCount());
         assertEquals(1.0, topology.getOversubscriptionRatio(), 0.0);
-        // 接入 2×2 + Pod 内 edge↔agg 2 Pod×1×1×2 + agg↔core 2 Pod×1×2 = 12。
+        // Access 2x2 + intra-Pod edge<->agg 2 Pods x 1 x 1 x 2 + agg<->core 2 Pods x 1 x 2 = 12.
         assertEquals(12, topology.getLinkResourceCount());
-        // 单位契约：声明 100 MB/s = 100×10⁶ 字节/秒（与 VM 端点容量
-        // vm.getBw()×10⁶ 同一惯例，无 ÷8；R8 审计回归测试）。
+        // Unit contract: a declared 100 MB/s means 100x10^6 bytes per second (the same convention as
+        // VM endpoint capacity vm.getBw() x 10^6, with no division by 8; R8 audit regression test).
         assertEquals(100.0 * 1_000_000.0, topology.getLinkBandwidthBytesPerSecond(), 1.0e-6);
-        // 默认轮转放置：host0 → Pod0，host1 → Pod1（各 1 台 edge）。
+        // Default round-robin placement: host0 -> Pod0, host1 -> Pod1 (one edge switch each).
         Map<Integer, int[]> placements = topology.getHostPlacements();
         assertEquals(0, placements.get(Integer.valueOf(0))[0]);
         assertEquals(1, placements.get(Integer.valueOf(1))[0]);
     }
 
-    /** k=2 跨 Pod 路由黄金值：6 个资源键，经唯一 core。 */
+    /** k=2 cross-Pod route golden value: 6 resource keys through the single core. */
     @Test
     public void crossPodRouteOnMinimalTopology() {
         FatTreeTopology topology = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(2, 100.0), hosts(2));
@@ -67,11 +68,13 @@ public class FatTreeTopologyTest {
                         "LINK:AGG:1:0->EDGE:1:0",
                         "LINK:EDGE:1:0->ACC:1"),
                 topology.route(0, 1));
-        // 同主机：本地交换，不占拓扑链路。
+        // Same host: switched locally, consuming no topology link.
         assertEquals(Collections.emptyList(), topology.route(0, 0));
     }
 
-    /** k=4 满配结构：20 交换机、16 主机容量、80 链路资源键（8 主机放置）。 */
+    /**
+     * k=4 fully populated structure: 20 switches, 16-host capacity, 80 link resource keys (8 hosts placed).
+     */
     @Test
     public void fullK4StructureMatchesHandComputedCounts() {
         FatTreeTopology topology = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0), hosts(8));
@@ -79,9 +82,9 @@ public class FatTreeTopologyTest {
         assertEquals(20, topology.getSwitchCount());
         assertEquals(16, topology.getHostCapacity());
         assertEquals(1.0, topology.getOversubscriptionRatio(), 0.0);
-        // 接入 8×2 + Pod 内 4×2×2×2 + agg↔core 4 Pod×2 agg×2 core×2 方向 = 80。
+        // Access 8x2 + intra-Pod 4x2x2x2 + agg<->core 4 Pods x 2 aggs x 2 cores x 2 directions = 80.
         assertEquals(80, topology.getLinkResourceCount());
-        // 默认轮转：host i → edgeSwitchIndex i mod 8 → pod=i/2, edge=i%2。
+        // Default round-robin: host i -> edgeSwitchIndex i mod 8 -> pod=i/2, edge=i%2.
         Map<Integer, int[]> placements = topology.getHostPlacements();
         for (int i = 0; i < 8; i++) {
             assertEquals(i / 2, placements.get(Integer.valueOf(i))[0], "host " + i + " pod");
@@ -89,14 +92,14 @@ public class FatTreeTopologyTest {
         }
     }
 
-    /** k=4 同 edge / 同 Pod 跨 edge / 跨 Pod 三类路由黄金值。 */
+    /** k=4 golden routes for the three classes: same edge, same Pod across edges, and cross-Pod. */
     @Test
     public void routeClassesOnK4() {
-        // 9 台主机 → host0 与 host8 轮转到同一 edge (0,0)。
+        // 9 hosts -> host0 and host8 round-robin onto the same edge (0,0).
         FatTreeTopology topology = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0), hosts(9));
-        // 同 edge（2 键）。
+        // Same edge (2 keys).
         assertEquals(Arrays.asList("LINK:ACC:0->EDGE:0:0", "LINK:EDGE:0:0->ACC:8"), topology.route(0, 8));
-        // 同 Pod 跨 edge：host0 (0,0) → host1 (0,1)，agg = 0%2 = 0（4 键）。
+        // Same Pod across edges: host0 (0,0) -> host1 (0,1), agg = 0%2 = 0 (4 keys).
         assertEquals(
                 Arrays.asList(
                         "LINK:ACC:0->EDGE:0:0",
@@ -104,8 +107,8 @@ public class FatTreeTopologyTest {
                         "LINK:AGG:0:0->EDGE:0:1",
                         "LINK:EDGE:0:1->ACC:1"),
                 topology.route(0, 1));
-        // 跨 Pod：host0 (0,0) → host2 (1,0)。agg = 0；uplinks = min(2, 4−0) = 2；
-        // j = (0+0+0+1) mod 2 = 1 → core 1（6 键）。
+        // Cross-Pod: host0 (0,0) -> host2 (1,0). agg = 0; uplinks = min(2, 4-0) = 2;
+        // j = (0+0+0+1) mod 2 = 1 -> core 1 (6 keys).
         assertEquals(
                 Arrays.asList(
                         "LINK:ACC:0->EDGE:0:0",
@@ -117,7 +120,7 @@ public class FatTreeTopologyTest {
                 topology.route(0, 2));
     }
 
-    /** 路由确定性：同参数两次构造给出逐位相同的路径。 */
+    /** Routing determinism: two constructions with the same parameters yield bit-identical paths. */
     @Test
     public void routingIsDeterministicAcrossConstructions() {
         FatTreeTopology first = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0), hosts(9));
@@ -125,7 +128,7 @@ public class FatTreeTopologyTest {
         for (int src = 0; src < 9; src++) {
             for (int dst = 0; dst < 9; dst++) {
                 assertEquals(first.route(src, dst), second.route(src, dst));
-                // 路由键全部为已注册容量的物理链路（registerCapacities 覆盖性）。
+                // Every route key is a physical link with a registered capacity (registerCapacities coverage).
                 TransferContentionEngine engine = new TransferContentionEngine();
                 first.registerCapacities(engine);
                 engine.addTransfer(1L, 1000L, first.route(src, dst), 1.0e12, 0.0);
@@ -134,24 +137,27 @@ public class FatTreeTopologyTest {
                         expected,
                         engine.currentRateBytesPerSecond(1L),
                         1.0e-6,
-                        "route " + src + "->" + dst + " 的单流速率应为链路带宽（无共享）");
+                        "route " + src + "->" + dst + " single-flow rate must equal the link bandwidth (no sharing)");
             }
         }
     }
 
-    /** 超收敛：core 减量收敛比正确、路由仍确定性、无 core 上行的 aggregate 不被使用。 */
+    /**
+     * Oversubscription: the reduced core count yields the correct ratio, routing stays deterministic,
+     * and aggregates without core uplinks are not used.
+     */
     @Test
     public void oversubscribedCoreReduction() {
-        // k=4, m=3：availA = ceil(2×3/4) = 2；agg0 有 core {0,1}，agg1 有 core {2}。
+        // k=4, m=3: availA = ceil(2x3/4) = 2; agg0 owns cores {0,1}, agg1 owns core {2}.
         FatTreeTopology topology = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0, 3), hosts(8));
         assertEquals(4.0 / 3.0, topology.getOversubscriptionRatio(), 1.0e-12);
-        // 交换机 = core 3 + k Pod × k 台 = 19。
+        // Switches = 3 cores + k Pods x k switches = 19.
         assertEquals(19, topology.getSwitchCount());
-        // agg↔core 链路资源数：4 Pod × (agg0 2 core + agg1 1 core) × 2 方向 = 24；
-        // 接入 16 + Pod 内 32 + 24 = 72。
+        // agg<->core link resources: 4 Pods x (agg0 2 cores + agg1 1 core) x 2 directions = 24;
+        // access 16 + intra-Pod 32 + 24 = 72.
         assertEquals(72, topology.getLinkResourceCount());
-        // host1 (0,1) → host3 (1,1)：agg = 1%2 = 1；uplinks(1) = min(2, 3−2) = 1；
-        // j = (1+1+0+1) mod 1 = 0 → core 2。
+        // host1 (0,1) -> host3 (1,1): agg = 1%2 = 1; uplinks(1) = min(2, 3-2) = 1;
+        // j = (1+1+0+1) mod 1 = 0 -> core 2.
         assertEquals(
                 Arrays.asList(
                         "LINK:ACC:1->EDGE:0:1",
@@ -161,38 +167,39 @@ public class FatTreeTopologyTest {
                         "LINK:AGG:1:1->EDGE:1:1",
                         "LINK:EDGE:1:1->ACC:3"),
                 topology.route(1, 3));
-        // k=4, m=2：availA = ceil(4/4) = 1 → 全部流量走 agg0；收敛比 2.0。
+        // k=4, m=2: availA = ceil(4/4) = 1 -> all traffic goes through agg0; oversubscription ratio 2.0.
         FatTreeTopology heavy = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0, 2), hosts(8));
         assertEquals(2.0, heavy.getOversubscriptionRatio(), 0.0);
         assertEquals("LINK:EDGE:0:1->AGG:0:0", heavy.route(1, 3).get(1));
     }
 
     /**
-     * 结构轴契约（campaign 敏感性设计依据）：4 主机下 k/超收敛/放置确实
-     * 改变交叉流（0→2 与 1→3，不共享端点主机）的链路共享格局——基线不共享、
-     * 2× 超收敛共享 2 条 core 链路、k=8 单 Pod 化为 4 链路同 Pod 路径、
-     * 同 edge 主机对使交叉流共享两端 ACC 接入链路之外的全部中间链路。
+     * Structural-axis contract (basis for the campaign sensitivity design): on 4 hosts, k,
+     * oversubscription, and placement do reshape how the cross flows (0->2 and 1->3, which share no
+     * endpoint host) share links -- the baseline shares nothing, 2x oversubscription shares 2 core
+     * links, k=8 collapses to a single Pod with 4-link intra-Pod paths, and same-edge host pairs make
+     * the cross flows share every intermediate link except the two ends' ACC access links.
      */
     @Test
     public void structuralVariantsReshapeCrossFlowSharingOnFourHosts() {
-        // 基线 k=4 满配：轮转放置 (0,0),(0,1),(1,0),(1,1)；交叉流各走各的
-        // aggregate/core，路径完全不相交。
+        // Baseline k=4 fully populated: round-robin placement (0,0),(0,1),(1,0),(1,1); the cross flows
+        // take their own aggregates/cores, so the paths are fully disjoint.
         FatTreeTopology baseline = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0), hosts(4));
         List<String> cross02 = baseline.route(0, 2);
         List<String> cross13 = baseline.route(1, 3);
         assertEquals(6, cross02.size());
         assertEquals(6, cross13.size());
-        assertTrue(Collections.disjoint(cross02, cross13), "基线下交叉流 0→2 与 1→3 不应共享链路");
+        assertTrue(Collections.disjoint(cross02, cross13), "baseline cross flows 0->2 and 1->3 must not share links");
 
-        // A1：k=4、m=2（2× 超收敛）→ availA = ceil(2×2/4) = 1，全部流量走
-        // agg0；交叉流在 AGG:0:0↔CORE:1 两条链路上共享。
+        // A1: k=4, m=2 (2x oversubscription) -> availA = ceil(2x2/4) = 1, all traffic goes through
+        // agg0; the cross flows share the two AGG:0:0<->CORE:1 links.
         FatTreeTopology oversub = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0, 2), hosts(4));
         List<String> shared = new ArrayList<String>(oversub.route(0, 2));
         shared.retainAll(oversub.route(1, 3));
         assertEquals(Arrays.asList("LINK:AGG:0:0->CORE:1", "LINK:CORE:1->AGG:1:0"), shared);
 
-        // A2：k=8 → 4 台主机轮转索引 0..3 全落 pod0（halfK=4），无跨 Pod
-        // 流量，交叉流变为 4 链路同 Pod 路径且互不共享。
+        // A2: k=8 -> the round-robin indices 0..3 of the 4 hosts all land in pod0 (halfK=4), there is no
+        // cross-Pod traffic, and the cross flows become disjoint 4-link intra-Pod paths.
         FatTreeTopology k8 = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(8, 100.0), hosts(4));
         List<String> k8Cross02 = k8.route(0, 2);
         assertEquals(
@@ -202,10 +209,10 @@ public class FatTreeTopologyTest {
                         "LINK:AGG:0:0->EDGE:0:2",
                         "LINK:EDGE:0:2->ACC:2"),
                 k8Cross02);
-        assertTrue(Collections.disjoint(k8Cross02, k8.route(1, 3)), "k=8 单 Pod 下交叉流仍不应共享链路");
+        assertTrue(Collections.disjoint(k8Cross02, k8.route(1, 3)), "k=8 single Pod cross flows must not share links");
 
-        // A5：同 edge 主机对 {0→0,1→0,2→2,3→2}：0→1 缩短为 2 链路同 edge
-        // 路径；交叉流 0→2 与 1→3 除两端 ACC 接入链路外共享中间全部 4 条链路。
+        // A5: same-edge host pairs {0->0,1->0,2->2,3->2}: 0->1 shortens to a 2-link same-edge path;
+        // the cross flows 0->2 and 1->3 share all 4 intermediate links except the two ends' ACC access links.
         Map<Integer, Integer> pairs = new LinkedHashMap<Integer, Integer>();
         pairs.put(Integer.valueOf(0), Integer.valueOf(0));
         pairs.put(Integer.valueOf(1), Integer.valueOf(0));
@@ -223,36 +230,37 @@ public class FatTreeTopologyTest {
                         "LINK:CORE:1->AGG:1:0",
                         "LINK:AGG:1:0->EDGE:1:0"),
                 pairShared,
-                "同 edge 主机对下交叉流应共享两端 ACC 之外的全部中间链路");
+                "same-edge host pairs must make the cross flows share every intermediate link except the"
+                        + " two ends' ACC links");
     }
 
-    /** 显式放置：覆盖、容量与未知主机校验。 */
+    /** Explicit placement: coverage, capacity, and unknown-host validation. */
     @Test
     public void explicitPlacementValidation() {
-        // 显式放置：host0/host1 同放 edge0（k=4 每 edge 容量 2，合法）。
+        // Explicit placement: host0 and host1 share edge0 (at k=4 each edge has capacity 2, so this is legal).
         Map<Integer, Integer> placement = new LinkedHashMap<Integer, Integer>();
         placement.put(Integer.valueOf(0), Integer.valueOf(0));
         placement.put(Integer.valueOf(1), Integer.valueOf(0));
         FatTreeTopology topology =
                 FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0, null, placement), hosts(2));
         assertEquals(0, topology.getHostPlacements().get(Integer.valueOf(1))[1]);
-        // 同 edge 路由（2 键）。
+        // Same-edge route (2 keys).
         assertEquals(2, topology.route(0, 1).size());
-        // 缺失主机覆盖 → 拒绝。
+        // Incomplete host coverage -> rejected.
         Map<Integer, Integer> partial = new LinkedHashMap<Integer, Integer>();
         partial.put(Integer.valueOf(0), Integer.valueOf(0));
         IllegalArgumentException missing = assertThrows(
                 IllegalArgumentException.class,
                 () -> FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0, null, partial), hosts(2)));
         assertTrue(missing.getMessage().contains("must cover host 1"), missing.getMessage());
-        // 未知主机 → 拒绝。
+        // Unknown host -> rejected.
         Map<Integer, Integer> unknown = new LinkedHashMap<Integer, Integer>(placement);
         unknown.put(Integer.valueOf(99), Integer.valueOf(0));
         IllegalArgumentException unknownEx = assertThrows(
                 IllegalArgumentException.class,
                 () -> FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0, null, unknown), hosts(2)));
         assertTrue(unknownEx.getMessage().contains("unknown host 99"), unknownEx.getMessage());
-        // k=2 每 edge 容量 1：两台主机同 edge → 拒绝。
+        // k=2 gives each edge a capacity of 1: two hosts on the same edge -> rejected.
         Map<Integer, Integer> overCapacity = new LinkedHashMap<Integer, Integer>();
         overCapacity.put(Integer.valueOf(0), Integer.valueOf(0));
         overCapacity.put(Integer.valueOf(1), Integer.valueOf(0));
@@ -263,10 +271,11 @@ public class FatTreeTopologyTest {
     }
 
     /**
-     * 闭包契约（R8 审计 F8）：任意主机对的路由键必须全部落在已注册容量的
-     * 链路键集合内——防止路由命名与容量注册两侧独立演化后出现"路由经过
-     * 未注册链路 → 引擎视其为无限容量"的静默失真。覆盖基线轮转、超收敛
-     * 与显式同 edge 放置三类配置。
+     * Closure contract (R8 audit F8): the route keys of any host pair must all fall inside the set of
+     * link keys with a registered capacity -- this prevents the silent distortion in which route naming
+     * and capacity registration evolve independently and a route crosses an unregistered link that the
+     * engine then treats as having infinite capacity. Covers three configurations: baseline
+     * round-robin, oversubscription, and explicit same-edge placement.
      */
     @Test
     public void everyRouteLinkIsARegisteredCapacityKey() {
@@ -286,35 +295,43 @@ public class FatTreeTopologyTest {
             for (Integer src : topology.getHostPlacements().keySet()) {
                 for (Integer dst : topology.getHostPlacements().keySet()) {
                     for (String link : topology.route(src.intValue(), dst.intValue())) {
-                        assertTrue(linkIds.contains(link), "route " + src + "->" + dst + " 使用未注册链路键 " + link);
+                        assertTrue(
+                                linkIds.contains(link),
+                                "route " + src + "->" + dst + " uses unregistered link key " + link);
                     }
                 }
             }
         }
     }
 
-    /** 引擎级组合：重叠路径公平共享半速，不相交路径零干扰（无阻塞性质）。 */
+    /**
+     * Engine-level combination: overlapping paths fairly share at half rate, and disjoint paths do not
+     * interfere (no-blocking property).
+     */
     @Test
     public void sharedAndDisjointRoutesFairSharing() {
         FatTreeTopology topology = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0), hosts(8));
         TransferContentionEngine engine = new TransferContentionEngine();
         topology.registerCapacities(engine);
         double linkBw = 100.0 * 1_000_000.0;
-        // 流 1（host0→host2，跨 Pod）与流 2（host5→host7，跨 Pod）路由不相交：
-        // 各得全额链路速率。
+        // Flow 1 (host0->host2, cross-Pod) and flow 2 (host5->host7, cross-Pod) have disjoint routes:
+        // each gets the full link rate.
         engine.addTransfer(1L, 1000L, topology.route(0, 2), 1.0e12, 0.0);
         engine.addTransfer(2L, 1000L, topology.route(5, 7), 1.0e12, 0.0);
         assertEquals(linkBw, engine.currentRateBytesPerSecond(1L), 1.0e-6);
         assertEquals(linkBw, engine.currentRateBytesPerSecond(2L), 1.0e-6);
-        // 流 3 与流 1 完全同路：共享链路上两流各得半速；流 2 不受影响。
+        // Flow 3 follows exactly the same route as flow 1: both get half rate on the shared links;
+        // flow 2 is unaffected.
         engine.addTransfer(3L, 1000L, topology.route(0, 2), 1.0e12, 0.0);
         assertEquals(linkBw / 2.0, engine.currentRateBytesPerSecond(1L), 1.0e-6);
         assertEquals(linkBw / 2.0, engine.currentRateBytesPerSecond(3L), 1.0e-6);
         assertEquals(linkBw, engine.currentRateBytesPerSecond(2L), 1.0e-6);
     }
 
-    /** 构造与声明校验：k 奇偶、带宽（含 NaN/Inf）、core 范围、放置项 null/负索引、
-     *  主机数上限、重复/空/null 主机、未放置路由。 */
+    /**
+     * Construction and spec validation: k parity, bandwidth (including NaN/Inf), core range, null or
+     * negative placement entries, host count limit, duplicate/empty/null hosts, and unplaced routing.
+     */
     @Test
     public void specAndConstructionValidation() {
         assertThrows(IllegalArgumentException.class, () -> NetworkTopologySpec.fatTree(3, 100.0));
@@ -329,7 +346,7 @@ public class FatTreeTopologyTest {
                 IllegalArgumentException.class,
                 () -> NetworkTopologySpec.fatTree(
                         2, 100.0, null, Collections.singletonMap(Integer.valueOf(0), Integer.valueOf(2))));
-        // 显式放置：null 键/值与负索引 → 拒绝。
+        // Explicit placement: null keys/values and negative indices -> rejected.
         Map<Integer, Integer> nullValue = new LinkedHashMap<Integer, Integer>();
         nullValue.put(Integer.valueOf(0), null);
         IllegalArgumentException nullEntry = assertThrows(
@@ -343,12 +360,12 @@ public class FatTreeTopologyTest {
                 () -> NetworkTopologySpec.fatTree(
                         2, 100.0, null, Collections.singletonMap(Integer.valueOf(0), Integer.valueOf(-1))));
         assertTrue(negativeIdx.getMessage().contains("k*k/2"), negativeIdx.getMessage());
-        // 主机数超过 k³/4 → 拒绝。
+        // Host count above k^3/4 -> rejected.
         IllegalArgumentException tooMany = assertThrows(
                 IllegalArgumentException.class,
                 () -> FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(2, 100.0), hosts(3)));
         assertTrue(tooMany.getMessage().contains("k^3/4"), tooMany.getMessage());
-        // 重复主机 ID → 拒绝；空/null 主机列表 → 拒绝。
+        // Duplicate host IDs -> rejected; empty or null host list -> rejected.
         assertThrows(
                 IllegalArgumentException.class,
                 () -> FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0), Arrays.asList(0, 0, 1)));
@@ -359,11 +376,11 @@ public class FatTreeTopologyTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0), null));
-        // 未放置主机的路由 → 拒绝。
+        // Routing for an unplaced host -> rejected.
         FatTreeTopology topology = FatTreeTopology.fromSpec(NetworkTopologySpec.fatTree(4, 100.0), hosts(4));
         IllegalArgumentException unplaced = assertThrows(IllegalArgumentException.class, () -> topology.route(0, 77));
         assertTrue(unplaced.getMessage().contains("not placed"), unplaced.getMessage());
-        // 非 FAT_TREE 声明 / null → 拒绝；null 引擎注册 → 拒绝。
+        // Non-FAT_TREE spec or null -> rejected; null engine registration -> rejected.
         assertThrows(IllegalArgumentException.class, () -> FatTreeTopology.fromSpec(null, hosts(2)));
         IllegalArgumentException nullEngine =
                 assertThrows(IllegalArgumentException.class, () -> topology.registerCapacities(null));

@@ -29,16 +29,23 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * BAT-H2 (2026-10-28, 测试工程师第四轮收口) — риск失败重试 × 碳预算窗口跨界的并集碳核算。
+ * BAT-H2 (2026-10-28, test-engineer round-four close-out) -- union carbon accounting
+ * across the risky-failure retry x carbon-budget window boundary.
  *
- * <p>R8 已证明能量守恒在重试下闭合（union 语义——失败尝试+重试都在积分里，无一秒双计）。
- * 本探针是同一并集纪律在碳侧的跨界：带绿窗声明的失败重试运行，Python 独立重建
- * 舰队时间线（含失败+重试作业区间）→ 逐窗超额复算 → 与发布值逐对匹配。任何双计会立刻
- * 击穿窗和==总量或逐叶复算。证据留在稳定目录供 shell 侧 Python 全审计。</p>
+ * <p>R8 already proved that energy conservation closes under retries (union semantics --
+ * failed attempts and retries are both inside the integral, and not a single second is
+ * double-counted). This probe carries the same union discipline across the boundary on
+ * the carbon side: a failing-retry run with green-window declarations, an independent
+ * Python rebuild of the fleet timeline (including failed and retried job intervals) ->
+ * per-window excess recomputation -> pairwise match against the published values. Any
+ * double counting would immediately break either window sum == total or the per-leaf
+ * recompute. The evidence stays in a stable directory for the shell-side Python full
+ * audit.</p>
  */
 class CarbonRetryStraddleIntegrationTest {
 
-    /** 稳定目录证据（R8 纪律——输入必须与证据同存，Junit 临时目录不可用）。 */
+    /** Evidence in a stable directory (R8 discipline -- the inputs must coexist with the
+     * evidence; the JUnit temporary directory is not usable). */
     static final Path PROBE_DIR = Paths.get("target", "carbon-retry-straddle");
 
     @TempDir
@@ -90,12 +97,13 @@ class CarbonRetryStraddleIntegrationTest {
                     retried = candidate;
                 }
             } catch (RuntimeException budgetOrFailure) {
-                // 猎种——耗尽预算或失败的种子跳过，末断言把空猎败态定为硬失败。
+                // Seed hunt -- skip seeds that exhaust the budget or fail; the final assertion turns
+                // an empty hunt into a hard failure.
             }
         }
-        assertTrue(retried != null, "必须找到真重试且成功的运行（空猎=硬失败）");
-        assertTrue(retried.getMetrics().getRetryJobCreatedCount() >= 1, "有机重试存在");
-        assertTrue(retried.getCarbonAccounting() != null, "预算模型已声明=核算必须");
+        assertTrue(retried != null, "must find a run that really retried and succeeded (empty hunt = hard failure)");
+        assertTrue(retried.getMetrics().getRetryJobCreatedCount() >= 1, "organic retries exist");
+        assertTrue(retried.getCarbonAccounting() != null, "budget model declared = accounting required");
 
         CarbonAccounting cab = retried.getCarbonAccounting();
         double total = 0.0;
@@ -103,7 +111,7 @@ class CarbonRetryStraddleIntegrationTest {
             total += v;
         }
         assertTrue(
-                Math.abs(total - cab.getTotalCarbonExcessWattSeconds()) < 1e-9, "窗和==总量恒等（含重试的独立重演在 Python 审计中另行验证）");
+                Math.abs(total - cab.getTotalCarbonExcessWattSeconds()) < 1e-9, "window sum == total excess identity");
 
         ExperimentArtifactWriter.ExperimentArtifacts artifacts =
                 ExperimentArtifactWriter.write(retried, PROBE_DIR, "result");
@@ -113,7 +121,7 @@ class CarbonRetryStraddleIntegrationTest {
                 "probe bundle staged for shell-side Python audit");
         assertTrue(
                 !cab.getWindowExcessWattSeconds().isEmpty() || cab.getTotalCarbonExcessWattSeconds() >= 0.0,
-                "预算族非平凡（正超额在至少一个窗口或資源下于绿电）");
+                "budget family non-trivial (positive excess in some window or resource under green power)");
     }
 
     private static String bagDax() {
@@ -126,7 +134,7 @@ class CarbonRetryStraddleIntegrationTest {
                 + "</adag>\n";
     }
 
-    /** 双绿窗跨失败重试域。 */
+    /** Two green windows spanning the failure-retry domain. */
     private static PlatformProfile poweredBudgetPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("carbon-retry");
         int[] ids = {0, 1};
@@ -147,7 +155,7 @@ class CarbonRetryStraddleIntegrationTest {
                             null))
                     .pinVmToHost(ids[i], 800 + i);
         }
-        // 绿窗低于怠速和——保证非平凡超额。
+        // Green windows sit below the idle sum -- this guarantees a non-trivial excess.
         builder.carbonWindow(0.0, 30.0, 100.0).carbonWindow(30.0, 120.0, 500.0);
         return builder.build();
     }

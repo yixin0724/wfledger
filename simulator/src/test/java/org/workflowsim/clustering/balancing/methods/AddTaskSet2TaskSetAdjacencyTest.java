@@ -11,16 +11,20 @@ import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * M7 杀手（审查工程 Phase 3：变异试点存活的针对性回归）。
+ * M7 killer (review-engineering Phase 3: targeted regression for a mutation-pilot
+ * survivor).
  *
- * <p>变异试点实证：{@code BalancingMethod.addTaskSet2TaskSet} 子侧重接循环丢失
- * {@code taskSet.getParentList().remove(tail)} 后，<b>全部 1024 个既有测试无一失败</b>
- * ——合并原语的邻接解除契约此前被下游 {@code updateTaskSetDependencies()} 的整体重建
- * 掩护（表现为"污垢被后续阶段洗白"），单调用语义无任何测试锚。</p>
+ * <p>The mutation pilot demonstrated that after {@code BalancingMethod.addTaskSet2TaskSet}
+ * loses {@code taskSet.getParentList().remove(tail)} in its child-side rewiring loop,
+ * <b>none of the 1024 existing tests fails</b> -- the adjacency-release contract of the
+ * merge primitive was previously covered up by the wholesale rebuild in the downstream
+ * {@code updateTaskSetDependencies()} (the dirt is laundered by a later stage), so the
+ * single-call semantics had no test anchor at all.</p>
  *
- * <p>本测试直接对合并原语建立<b>邻接闭包契约</b>（守恒律，不抄实现）：
- * tail 并入 head 后，所有原 tail 邻居的邻接表必须<b>只指向 head 而不再指向
- * tail</b>；tail 自身三表清空。</p>
+ * <p>This test establishes an <b>adjacency-closure contract</b> directly on the merge
+ * primitive (a conservation law, not copied from the implementation): after tail is
+ * merged into head, every original tail neighbour's adjacency list must <b>point only to
+ * head and no longer to tail</b>; tail's own three lists are emptied.</p>
  */
 class AddTaskSet2TaskSetAdjacencyTest {
 
@@ -38,7 +42,7 @@ class AddTaskSet2TaskSetAdjacencyTest {
         tail.addTask(tailTask);
         taskMap.put(tailTask, tail);
 
-        // 图：grandparent → tail → child（tail 两侧各一邻居）。
+        // Graph: grandparent -> tail -> child (tail has one neighbour on each side).
         grandparent.getChildList().add(tail);
         tail.getParentList().add(grandparent);
         tail.getChildList().add(child);
@@ -46,30 +50,31 @@ class AddTaskSet2TaskSetAdjacencyTest {
 
         method.addTaskSet2TaskSet(tail, head);
 
-        // head 接管 tail 的全部邻接。
-        assertTrue(head.getParentList().contains(grandparent), "head 必须接管父侧邻接");
-        assertTrue(head.getChildList().contains(child), "head 必须接管子侧邻接");
-        assertTrue(head.getTaskList().contains(tailTask), "head 必须接收任务成员");
-        assertTrue(taskMap.get(tailTask) == head, "任务映射必须改指 head");
+        // head takes over every adjacency of tail.
+        assertTrue(head.getParentList().contains(grandparent), "head must take over the parent-side adjacency");
+        assertTrue(head.getChildList().contains(child), "head must take over the child-side adjacency");
+        assertTrue(head.getTaskList().contains(tailTask), "head must receive the task membership");
+        assertTrue(taskMap.get(tailTask) == head, "task map must now point to head");
 
-        // 邻居必须解除对 tail 的引用（M7 变异丢失该解除——本组断言即杀手）。
-        assertFalse(child.getParentList().contains(tail), "child 的父表不得残留 tail（丢失 remove(tail) 的变异在此暴露）");
-        assertFalse(grandparent.getChildList().contains(tail), "grandparent 的子表不得残留 tail");
+        // Neighbours must release their references to tail (the M7 mutation loses that
+        // release -- this assertion group is the killer).
+        assertFalse(child.getParentList().contains(tail), "child parent must not retain tail (missing remove(tail))");
+        assertFalse(grandparent.getChildList().contains(tail), "grandparent's child list must not retain tail");
         assertTrue(child.getParentList().contains(head));
         assertTrue(grandparent.getChildList().contains(head));
 
-        // tail 三表清空。
+        // All three lists of tail are emptied.
         assertTrue(
                 tail.getTaskList().isEmpty()
                         && tail.getParentList().isEmpty()
                         && tail.getChildList().isEmpty(),
-                "被并集合的三张表必须清空");
+                "the three lists of the merged set must be emptied");
     }
 
     @Test
     void mergingIntoDirectChildKeepsHeadFreeOfSelfLoops() {
-        // F-008 回归隔壁位：tail → head 是父子关系时（VerticalBalancing 场景），
-        // head 不得获得自环。
+        // F-008 regression for the adjacent case: when tail -> head is a parent-child
+        // relation (VerticalBalancing scenario), head must not acquire a self-loop.
         Map levelMap = new HashMap();
         Map<Task, TaskSet> taskMap = new HashMap<>();
         BalancingMethod method = new BalancingMethod(levelMap, taskMap, 4);
@@ -84,9 +89,9 @@ class AddTaskSet2TaskSetAdjacencyTest {
 
         method.addTaskSet2TaskSet(tail, head);
 
-        assertFalse(head.getParentList().contains(head), "head 不得成为自身的父");
-        assertFalse(head.getChildList().contains(head), "head 不得成为自身的子");
-        assertTrue(head.getChildList().contains(downstream), "第二个子侧邻居必须正常重接");
+        assertFalse(head.getParentList().contains(head), "head must not become its own parent");
+        assertFalse(head.getChildList().contains(head), "head must not become its own child");
+        assertTrue(head.getChildList().contains(downstream), "second child-side neighbour must be rewired");
         assertFalse(downstream.getParentList().contains(tail));
     }
 }

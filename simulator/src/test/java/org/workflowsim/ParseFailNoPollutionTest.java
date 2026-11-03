@@ -14,16 +14,19 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * C12：解析器拒绝不得留下半提交状态（审查工程 Phase 3 污染探针）。
+ * C12: a parser rejection must not leave half-committed state (review-engineering Phase 3
+ * pollution probe).
  *
- * <p>军规来源（事务性守恒律）：一次失败的解析是<b>未发生</b>的输入——它对
- * {@link ReplicaCatalog} 的任何写入都属于污染：同 JVM 内重试解析另一个工作流时，
- * "first-declared size"规则会用被污染条目的旧尺寸<b>静默替换</b>新声明的尺寸，
- * 造成传输字节模型偏差且无任何报警。</p>
+ * <p>Hard-rule basis (transactional conservation law): a failed parse is an input that <b>did not
+ * happen</b> -- any write it makes to {@link ReplicaCatalog} is pollution: when another workflow is
+ * parsed in a retry within the same JVM, the "first-declared size" rule would <b>silently replace</b>
+ * the newly declared size with the stale size of the polluted entry, biasing the transferred-byte
+ * model with no alert at all.</p>
  *
- * <p>现有的 DOCTYPE/XXE/结构拒绝行为已由 WorkflowParserStrictValidationTest 覆盖；
- * 本类专攻<b>失败时点的全局状态洁净度</b>：每个非法样本被拒绝之后，目录必须
- * 不含任何由该次解析登记的文件。</p>
+ * <p>The existing DOCTYPE/XXE/structural rejection behavior is already covered by
+ * WorkflowParserStrictValidationTest; this class targets <b>global-state cleanliness at the failure
+ * instant</b>: after every illegal sample is rejected, the catalog must contain no file registered
+ * by that parse.</p>
  */
 class ParseFailNoPollutionTest {
 
@@ -37,7 +40,7 @@ class ParseFailNoPollutionTest {
         Parameters.reset();
     }
 
-    /** 与既有严格校验测试同一驱动配方：写入文件 → Parameters.init → parse()。 */
+    /** Same driver recipe as the existing strict-validation tests: write file -> Parameters.init -> parse(). */
     private void parseFile(Path input) throws Exception {
         Parameters.init(
                 2,
@@ -59,7 +62,10 @@ class ParseFailNoPollutionTest {
         return path;
     }
 
-    /** C12-1：第二个 job 无效（负 runtime）时，第一个 job 已解析的输入不得残留目录。 */
+    /**
+     * C12-1: when the second job is invalid (negative runtime), inputs already parsed for the first
+     * job must not linger in the catalog.
+     */
     @Test
     void invalidSecondJobLeavesNoHalfCommittedInputs() throws Exception {
         Path dax = write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -71,11 +77,19 @@ class ParseFailNoPollutionTest {
                 + "  <job id=\"bad-second\" name=\"b\" runtime=\"-5\"/>\n"
                 + "</adag>\n");
         assertThrows(WorkflowValidationException.class, () -> parseFile(dax));
-        assertTrue(!ReplicaCatalog.containsFile("early-input.bin"), "拒绝后的目录不得残留首个 job 已登记的输入（半提交）");
-        assertTrue(!ReplicaCatalog.containsFile("early-output.bin"), "输出文件名不得被登记（输出走条款注册而非文件登记）");
+        assertTrue(
+                !ReplicaCatalog.containsFile("early-input.bin"),
+                "the catalog after rejection must not retain" + " an input the first job registered (half commit)");
+        assertTrue(
+                !ReplicaCatalog.containsFile("early-output.bin"),
+                "output file names must not be registered"
+                        + " (outputs go through clause registration, not file registration)");
     }
 
-    /** C12-2：依赖缺失（child 引用不存在父）在任何 job 注册之后才失败。 */
+    /**
+     * C12-2: the missing-dependency case (a child references a nonexistent parent) fails only after
+     * jobs were registered.
+     */
     @Test
     void missingDependencyReferenceLeavesNoInputs() throws Exception {
         Path dax = write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -87,12 +101,14 @@ class ParseFailNoPollutionTest {
                 + "  <child ref=\"j2\"><parent ref=\"nonexistent\"/></child>\n"
                 + "</adag>\n");
         assertThrows(WorkflowValidationException.class, () -> parseFile(dax));
-        assertTrue(!ReplicaCatalog.containsFile("f1.bin"), "依赖校验失败后目录必须保持洁净");
+        assertTrue(!ReplicaCatalog.containsFile("f1.bin"), "catalog must stay clean after dependency failure");
     }
 
     /**
-     * C12-3：污染的可观测危害链——失败解析登记的旧尺寸必须不影响后续成功解析。
-     * （成功样本声明的同名文件尺寸与失败样本不同；成功解析后登记的必须是新尺寸。）
+     * C12-3: the observable harm chain of pollution -- a stale size registered by a failed parse
+     * must not affect a subsequent successful parse. (The successful sample declares a different size
+     * for the same file name than the failed sample does; after the successful parse the newly
+     * declared size must be the one registered.)
      */
     @Test
     void failedParseMustNotSwapSizesForSubsequentSuccessfulParse() throws Exception {
@@ -114,15 +130,19 @@ class ParseFailNoPollutionTest {
         assertThrows(WorkflowValidationException.class, () -> parseFile(bad));
         parseFile(good);
         org.workflowsim.FileItem item = ReplicaCatalog.getFile("same-name.bin");
-        assertTrue(item != null, "成功重试解析后文件应存在");
+        assertTrue(item != null, "the file must exist after the successful retry parse");
         double wrongSize = Double.parseDouble("300000");
         double expectedSize = Double.parseDouble("700000");
         assertTrue(
                 item.getSize() == expectedSize && item.getSize() != wrongSize,
-                "污染危害链：失败解析的旧尺寸不得替换成功解析的新声明（当前=" + item.getSize() + "）");
+                "pollution harm chain: a stale size from a failed parse must not replace the new declaration of a"
+                        + " successful parse (current=" + item.getSize() + ")");
     }
 
-    /** C12-4：重复 job id 在第二个重复项失败——首个 job 的输入同样不得残留。 */
+    /**
+     * C12-4: a duplicate job id fails at the second duplicate -- inputs of the first job must not
+     * linger either.
+     */
     @Test
     void duplicateJobIdLeavesNoInputs() throws Exception {
         Path dax = write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -133,10 +153,10 @@ class ParseFailNoPollutionTest {
                 + "  <job id=\"dup\" name=\"b\" runtime=\"10\"/>\n"
                 + "</adag>\n");
         assertThrows(WorkflowValidationException.class, () -> parseFile(dax));
-        assertTrue(!ReplicaCatalog.containsFile("dup-input.bin"), "重复 ID 拒绝后目录必须洁净");
+        assertTrue(!ReplicaCatalog.containsFile("dup-input.bin"), "catalog stays clean after a duplicate-ID rejection");
     }
 
-    /** C12-5：DAG 存在环（非法图）时拒绝后目录洁净。 */
+    /** C12-5: when the DAG has a cycle (illegal graph), the catalog is clean after rejection. */
     @Test
     void cyclicDagRejectionLeavesNoInputs() throws Exception {
         Path dax = write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -149,10 +169,10 @@ class ParseFailNoPollutionTest {
                 + "  <child ref=\"y\"><parent ref=\"x\"/></child>\n"
                 + "</adag>\n");
         assertThrows(WorkflowValidationException.class, () -> parseFile(dax));
-        assertTrue(!ReplicaCatalog.containsFile("cycle-input.bin"), "环拒绝后目录必须洁净");
+        assertTrue(!ReplicaCatalog.containsFile("cycle-input.bin"), "catalog stays clean after a cycle rejection");
     }
 
-    /** WfCommons JSON 路径同口径：非法实例拒绝后目录洁净。 */
+    /** Same scope for the WfCommons JSON path: the catalog is clean after an illegal instance is rejected. */
     @Test
     void invalidJsonInstanceLeavesNoInputs() throws Exception {
         Path json = tempDir.resolve("bad-instance.json");
@@ -171,12 +191,15 @@ class ParseFailNoPollutionTest {
                                 + "  \"execution\": { \"tasks\": [ { \"id\": \"t1\", \"runtimeInSeconds\": 1 } ] }\n"
                                 + "}\n")
                         .getBytes(StandardCharsets.UTF_8));
-        // t2 无 runtime → 拒绝。
+        // t2 has no runtime -> rejected.
         assertThrows(Exception.class, () -> new WfCommonsJsonParser().parse(json.toString(), 0, 1));
-        assertTrue(!ReplicaCatalog.containsFile("f.json"), "JSON 拒绝后目录必须洁净");
+        assertTrue(!ReplicaCatalog.containsFile("f.json"), "the catalog must be clean after a JSON rejection");
     }
 
-    /** 成功路径稳健性基线：合法解析仍然登记（防止修复做成"从不注册"）。 */
+    /**
+     * Robustness baseline of the success path: a legal parse still registers (so the fix does not
+     * become "never register").
+     */
     @Test
     void successfulParseStillRegistersInputs() throws Exception {
         Path dax = write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -189,6 +212,8 @@ class ParseFailNoPollutionTest {
                 + "</adag>\n");
         parseFile(dax);
         org.workflowsim.FileItem item = ReplicaCatalog.getFile("ok-input.bin");
-        assertTrue(item != null, "成功解析必须登记输入文件（基线：修复不得矫枉过正）");
+        assertTrue(
+                item != null,
+                "a successful parse must register the input file (baseline: the fix" + " must not overcorrect)");
     }
 }
