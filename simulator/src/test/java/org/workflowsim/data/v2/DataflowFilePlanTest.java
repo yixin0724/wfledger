@@ -287,17 +287,17 @@ class DataflowFilePlanTest {
 
     @Test
     void fileIdentityOrderingAndEqualityUseExactScopeAndName() {
-        DataflowFilePlan.FileId a = id(0, "节点/a"), copy = id(0, "节点/a"), other = id(1, "节点/a");
+        DataflowFilePlan.FileId a = id(0, "☃☀/a"), copy = id(0, "☃☀/a"), other = id(1, "☃☀/a");
         assertEquals(a, copy);
         assertEquals(a.hashCode(), copy.hashCode());
         assertNotEquals(a, other);
-        assertNotEquals(a, "节点/a");
+        assertNotEquals(a, "☃☀/a");
         assertNotEquals(a, null);
         assertTrue(a.compareTo(other) < 0);
         assertTrue(id(0, "a").compareTo(id(0, "z")) < 0);
         assertEquals(0, a.getWorkflowInputIndex());
-        assertEquals("节点/a", a.getName());
-        assertTrue(a.toString().contains("节点/a"));
+        assertEquals("☃☀/a", a.getName());
+        assertTrue(a.toString().contains("☃☀/a"));
     }
 
     private static DataflowFilePlan capture(Task... tasks) {

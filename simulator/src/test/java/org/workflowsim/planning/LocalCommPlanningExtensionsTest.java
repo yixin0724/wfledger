@@ -23,13 +23,15 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * LOCAL 轨道基类扩展（PEFT 基础设施）契约测试：按 VM 对的通信秒数与乐观
- * （EFT + OCT）分配；不启动 CloudSim。
+ * Contract test for the LOCAL track base-class extensions (PEFT infrastructure):
+ * communication seconds per VM pair and optimistic (EFT + OCT) allocation; CloudSim is
+ * not started.
  *
- * <p>通过 {@link LocalHeftPlanningAlgorithm} 作为 {@code AbstractLocalCommPlanningAlgorithm}
- * 的载体实例调用包内方法。fixture 约定与 {@code LocalCpopPlanningAlgorithmTest} 一致：
- * VM mips=1.0，{@code connect(parent, child, c)} 生成 c×10⁶ 字节文件，bw=1 时跨 VM
- * 传输恰为 c 秒。</p>
+ * <p>Package-private methods are invoked through {@link LocalHeftPlanningAlgorithm} as the
+ * carrier instance of {@code AbstractLocalCommPlanningAlgorithm}. The fixture convention
+ * matches {@code LocalCpopPlanningAlgorithmTest}: VM mips=1.0,
+ * {@code connect(parent, child, c)} creates a c * 10^6 byte file, so with bw=1 a cross-VM
+ * transfer takes exactly c seconds.</p>
  */
 class LocalCommPlanningExtensionsTest {
 
@@ -49,8 +51,12 @@ class LocalCommPlanningExtensionsTest {
 
         assertEquals(7.0, planner.communicationSeconds(entry, exit, first, second), EPSILON);
         assertEquals(7.0, planner.communicationSeconds(entry, exit, second, first), EPSILON);
-        assertEquals(0.0, planner.communicationSeconds(entry, exit, first, first), EPSILON, "同 VM 传输为零");
-        assertEquals(0.0, planner.communicationSeconds(entry, sibling, first, second), EPSILON, "边上无共享文件时通信秒数为零");
+        assertEquals(0.0, planner.communicationSeconds(entry, exit, first, first), EPSILON, "same-VM transfer is zero");
+        assertEquals(
+                0.0,
+                planner.communicationSeconds(entry, sibling, first, second),
+                EPSILON,
+                "communication seconds are zero when the edge shares no file");
     }
 
     @Test
@@ -63,10 +69,14 @@ class LocalCommPlanningExtensionsTest {
         LocalHeftPlanningAlgorithm planner = planner(Arrays.asList(entry, exit), slow, fast);
         planner.prepare();
 
-        // 8×10⁶ 字节 / (10⁶ × min(2, 4)) = 4.0 秒；方向对称。
+        // 8 * 10^6 bytes / (10^6 * min(2, 4)) = 4.0 seconds; the direction is symmetric.
         assertEquals(4.0, planner.communicationSeconds(entry, exit, slow, fast), EPSILON);
         assertEquals(4.0, planner.communicationSeconds(entry, exit, fast, slow), EPSILON);
-        assertEquals(4.0, planner.meanCommunicationSeconds(entry, exit), EPSILON, "按对约定应与既有跨对平均约定同源（均匀对时相等）");
+        assertEquals(
+                4.0,
+                planner.meanCommunicationSeconds(entry, exit),
+                EPSILON,
+                "the per-pair convention must match the cross-pair mean convention (equal for uniform pairs)");
     }
 
     @Test
@@ -80,7 +90,7 @@ class LocalCommPlanningExtensionsTest {
         planner.prepare();
         double stageIn = planner.stageInFinishTime();
 
-        // 对照组：EFT 平局下 allocate 取较小 VM ID（既有行为不变）。
+        // Control group: on an EFT tie, allocate picks the smaller VM ID (existing behavior unchanged).
         double entryFinish = planner.allocate(entry, null, stageIn);
         assertEquals(3, entry.getVmId());
         assertEquals(stageIn + 4.0, entryFinish, EPSILON);
@@ -90,8 +100,8 @@ class LocalCommPlanningExtensionsTest {
         oct.put(second, Double.valueOf(0.0));
         double exitFinish = planner.allocateOptimistic(exit, oct, stageIn);
 
-        assertEquals(8, exit.getVmId(), "OCT 惩罚应把任务从较小 ID VM 上移开");
-        assertEquals(stageIn + 6.0, exitFinish, EPSILON, "返回值是 EFT 完成时刻，不含 OCT 项");
+        assertEquals(8, exit.getVmId(), "the OCT penalty must move the task off the smaller-ID VM");
+        assertEquals(stageIn + 6.0, exitFinish, EPSILON, "finish time is EFT, excluding the OCT term");
         assertEquals(stageIn + 4.0, exit.getStaticScheduleStartTime(), EPSILON);
         assertEquals(stageIn + 6.0, planner.plannedFinishOf(exit), EPSILON);
     }
@@ -110,7 +120,7 @@ class LocalCommPlanningExtensionsTest {
         oct.put(second, Double.valueOf(5.0));
         planner.allocateOptimistic(entry, oct, stageIn);
 
-        assertEquals(3, entry.getVmId(), "评分平局取较小 VM ID");
+        assertEquals(3, entry.getVmId(), "a score tie picks the smaller VM ID");
         assertEquals(stageIn + 2.0, planner.plannedFinishOf(entry), EPSILON);
     }
 

@@ -39,10 +39,11 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 /**
- * 阶段 3 验收：manifest → {@link SimulationConfig} + {@link PlatformProfile} 的
- * 逆向重建逐字段忠实（经真实仿真产出的 v4 证据做 round-trip），任何校验失败
- * 都映射为 {@code RECONSTRUCTION_REJECTED}；workflowPaths 一律替换为阶段 2 已
- * 核对哈希的定位路径。
+ * Phase 3 acceptance: reverse reconstruction from a manifest to {@link SimulationConfig}
+ * plus {@link PlatformProfile} is faithful field by field (round-tripped through v4
+ * evidence produced by a real simulation); every validation failure maps to
+ * {@code RECONSTRUCTION_REJECTED}, and the workflowPaths are always replaced by the located
+ * paths whose hashes Phase 2 already verified.
  */
 class ManifestConfigRebuilderTest {
 
@@ -57,7 +58,7 @@ class ManifestConfigRebuilderTest {
         RerunTestSupport.generateEvidence(fixtureRun);
     }
 
-    // ---- round-trip 忠实性 ----
+    // ---- round-trip fidelity ----
 
     @Test
     void rebuildsSimpleFixtureFaithfully() throws Exception {
@@ -76,8 +77,9 @@ class ManifestConfigRebuilderTest {
 
     @Test
     void rebuildForwardsPerVmPowerFields() throws Exception {
-        // BAT-E4.1（2026-10-27）：功率字段必须经重建往返逐位保留——此前重建器只调用
-        // 9 参 VmSpec 构造器，把 250/400 W 静默降级为 0/0（红→绿锚）。
+        // BAT-E4.1 (2026-10-27): the power fields must survive the rebuild round-trip bit for
+        // bit -- the rebuilder previously called only the 9-argument VmSpec constructor and
+        // silently degraded 250/400 W to 0/0 (red->green anchor).
         Path run = Files.createDirectories(tempDir.resolve("powered-rebuild"));
         String dax = RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax");
         SimulationConfig config = SimulationConfig.builder(dax, 2)
@@ -116,8 +118,9 @@ class ManifestConfigRebuilderTest {
     void rebuildsRichStaticPlannerRunFaithfully() throws Exception {
         Path run = Files.createDirectories(tempDir.resolve("rich-static"));
         String dax = RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax");
-        // fat-tree 竞争 DMM 与 overhead 模型互斥（isNoOverhead 校验），overhead
-        // 的 round-trip 由 rebuildsOverheadModelRunFaithfully 单独覆盖。
+        // The fat-tree contention DMM and the overhead model are mutually exclusive (the
+        // isNoOverhead check); the overhead round-trip is covered separately by
+        // rebuildsOverheadModelRunFaithfully.
         SimulationConfig expected = SimulationConfig.builder(dax, 4)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC)
                 .planningAlgorithm(PlanningAlgorithm.PSO)
@@ -167,8 +170,9 @@ class ManifestConfigRebuilderTest {
     void rebuildsFailureModelRunFaithfully() throws Exception {
         Path run = Files.createDirectories(tempDir.resolve("failure-replay"));
         String dax = RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax");
-        // 温和故障率（WEIBULL(5000,1.0)）：保证 dax 全部任务在预算内完成，
-        // 本用例只验证故障模型配置的 round-trip 忠实性，不验证重试动力学。
+        // Mild failure rate (WEIBULL(5000,1.0)): every dax task still completes within the
+        // retry budget; this case verifies only the round-trip fidelity of the failure-model
+        // configuration, not the retry dynamics.
         FailureModelConfig failure = FailureModelConfig.builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP)
                 .monitorMode(FailureParameters.FTCMonitor.MONITOR_NONE)
@@ -249,8 +253,9 @@ class ManifestConfigRebuilderTest {
 
     @Test
     void rejectsTaskCostMatrixWithNonStaticScheduling() throws Exception {
-        // ManifestV4Validator 先于 rebuilder 拦截该组合（EVIDENCE_INVALID）；此处
-        // 用内存 manifest 直接驱动 rebuilder，验证其自身对不合法组合的防御。
+        // ManifestV4Validator intercepts this combination before the rebuilder
+        // (EVIDENCE_INVALID); an in-memory manifest drives the rebuilder directly here to
+        // verify its own defense against the illegal combination.
         Path run = copyFixtureTo("bad-matrix");
         JsonObject manifest = readManifest(run);
         JsonObject configuration = manifest.getAsJsonObject("configuration");
@@ -290,12 +295,13 @@ class ManifestConfigRebuilderTest {
         assertEquals(Double.valueOf(14.0), costs.get(Integer.valueOf(4)).get(Integer.valueOf(0)));
     }
 
-    // ---- 定位路径替换 ----
+    // ---- located path substitution ----
 
     @Test
     void usesResolvedInputPathsInsteadOfRecordedOnes() throws Exception {
         Path run = studyLayoutRun();
-        // 记录路径指向不存在的原机器位置；同名文件在 <study>/inputs/ 下（tier 1）。
+        // The recorded path points at a nonexistent original-machine location; a file of the
+        // same name sits under <study>/inputs/ (tier 1).
         Path studyInput = run.getParent().getParent().resolve("inputs").resolve("reproducibility-workflow.dax");
         Files.createDirectories(studyInput.getParent());
         JsonObject manifest = readManifest(run);
@@ -329,7 +335,7 @@ class ManifestConfigRebuilderTest {
         return builder.build();
     }
 
-    /** fixture 的 6 个任务 × 3 台 VM 的完整矩阵；cost = 10 + taskId + vmId。 */
+    /** Complete 6-task x 3-VM matrix for the fixture; cost = 10 + taskId + vmId. */
     private static JsonObject completeMatrix() {
         JsonObject matrix = new JsonObject();
         matrix.addProperty("unit", "EXECUTION_SECONDS");
@@ -359,7 +365,7 @@ class ManifestConfigRebuilderTest {
         return run;
     }
 
-    /** 构造 {@code <study>/runs/<run>} 布局并复制证据。 */
+    /** Build the {@code <study>/runs/<run>} layout and copy the evidence into it. */
     private Path studyLayoutRun() throws Exception {
         Path study = Files.createDirectories(tempDir.resolve("study-" + System.nanoTime()));
         Path run = Files.createDirectories(study.resolve("runs/fixture-run"));
@@ -386,7 +392,7 @@ class ManifestConfigRebuilderTest {
         Files.write(run.resolve("result.manifest.json"), gson.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /** 同步改写 inputs/workflowPaths/workflowOutcomes 三处路径（v4 交叉校验要求）。 */
+    /** Rewrite the path in inputs, workflowPaths and workflowOutcomes together (v4 cross-check). */
     private static void rewriteInputPathIn(JsonObject manifest, String newPath) {
         manifest.getAsJsonArray("inputs").get(0).getAsJsonObject().addProperty("path", newPath);
         JsonArray workflowPaths = manifest.getAsJsonObject("configuration").getAsJsonArray("workflowPaths");
@@ -398,7 +404,7 @@ class ManifestConfigRebuilderTest {
                 .addProperty("path", newPath);
     }
 
-    // ---- 字段级比较 ----
+    // ---- field-level comparison ----
 
     private static void assertConfigEquals(SimulationConfig expected, SimulationConfig actual) {
         assertEquals(expected.getWorkflowPaths(), actual.getWorkflowPaths());

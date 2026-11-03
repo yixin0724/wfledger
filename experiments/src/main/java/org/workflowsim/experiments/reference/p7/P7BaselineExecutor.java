@@ -80,9 +80,9 @@ public final class P7BaselineExecutor {
                     .resolve("p7-output")
                     .resolve("run-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(new java.util.Date()));
             args = new String[] {defaultDatasets.toString(), defaultOutput.toString()};
-            System.out.println("[P7] 未提供参数，使用默认路径：");
-            System.out.println("[P7]   数据集根目录 = " + args[0]);
-            System.out.println("[P7]   输出目录     = " + args[1]);
+            System.out.println("[P7] no arguments given; using default paths:");
+            System.out.println("[P7]   datasets root = " + args[0]);
+            System.out.println("[P7]   output directory = " + args[1]);
         }
         if (args.length != 2) {
             throw new IllegalArgumentException(

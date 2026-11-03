@@ -65,8 +65,10 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,
                 PlanningAlgorithm.LOCAL_PEFT);
-        // R9：历史 HEFT/DHEFT 标签已随其未对齐实现一并移除，遗留分区为空集；
-        // 分区断言继续守住"每个枚举标签都被显式分类"的契约。
+        // R9: the historical HEFT/DHEFT labels were removed together with their
+        // unaligned implementations, so the legacy partition is the empty set; the
+        // partition assertion still guards the contract that every enum label is
+        // explicitly classified.
         EnumSet<PlanningAlgorithm> legacy = EnumSet.noneOf(PlanningAlgorithm.class);
 
         assertExactPartition(PlanningAlgorithm.class, supported, legacy);
@@ -116,7 +118,8 @@ class AlgorithmSupportMatrixTest {
         }
         return SimulationConfig.builder("workflow.dax", 1)
                 .schedulingAlgorithm(algorithm)
-                // DATA 算法的局部性判定要求 LOCAL 文件系统模式（PLAT-7 校验）。
+                // The locality verdict of the DATA algorithm requires LOCAL file system
+                // mode (PLAT-7 validation).
                 .fileSystem(
                         algorithm == SchedulingAlgorithm.DATA
                                 ? ReplicaCatalog.FileSystem.LOCAL
@@ -135,8 +138,9 @@ class AlgorithmSupportMatrixTest {
                 .planningAlgorithm(algorithm)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC);
         if (localComm) {
-            // LOCAL_HEFT/LOCAL_CPOP/LOCAL_PEFT 的通信建模要求 LOCAL 文件系统模式与
-            // 执行前传输延迟数据移动模型（配置层校验）。
+            // Communication modelling for LOCAL_HEFT/LOCAL_CPOP/LOCAL_PEFT requires
+            // LOCAL file system mode plus the pre-execution transfer delay data movement
+            // model (configuration-layer validation).
             builder.fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                     .dataMovementModel(DataMovementModel.preExecutionTransferDelayV1());
         } else {

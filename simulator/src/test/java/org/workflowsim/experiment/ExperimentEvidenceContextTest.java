@@ -16,9 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * {@link ExperimentEvidenceContext} 研究身份契约的全分支测试：字段必填与
- * 去空白、数据集根的绝对性/存在性校验、协议文件可用性对 sha256 指纹的
- * 影响、asMap 输出形状。
+ * Full-branch test of the research identity contract of {@link ExperimentEvidenceContext}:
+ * required fields and whitespace trimming, dataset root absolute/existence validation, the
+ * effect of protocol file availability on the sha256 fingerprint, and the asMap output shape.
  */
 class ExperimentEvidenceContextTest {
 
@@ -47,7 +47,7 @@ class ExperimentEvidenceContextTest {
 
     @Test
     void buildRejectsPartiallyConfiguredContext() {
-        // 缺 artifact。
+        // Missing artifact.
         IllegalStateException noArtifact =
                 assertThrows(IllegalStateException.class, () -> ExperimentEvidenceContext.builder("study-x")
                         .driver(ExperimentEvidenceContextTest.class, "src")
@@ -55,7 +55,7 @@ class ExperimentEvidenceContextTest {
                         .datasetRoot(datasetRoot)
                         .build());
         assertTrue(noArtifact.getMessage().contains("required"), noArtifact.getMessage());
-        // 缺 datasetRoot。
+        // Missing datasetRoot.
         assertThrows(IllegalStateException.class, () -> ExperimentEvidenceContext.builder("study-x")
                 .artifact("g", "a", "1.0")
                 .driver(ExperimentEvidenceContextTest.class, "src")
@@ -89,7 +89,7 @@ class ExperimentEvidenceContextTest {
 
     @Test
     void protocolFingerprintReflectsFileAvailability() throws IOException {
-        // 协议文件缺失 → available=false、sha256=null。
+        // Protocol file missing -> available=false, sha256=null.
         Map<String, Object> missing = fullBuilder().build().asMap();
         @SuppressWarnings("unchecked")
         Map<String, Object> missingProtocol = (Map<String, Object>) missing.get("protocol");
@@ -97,14 +97,14 @@ class ExperimentEvidenceContextTest {
         assertEquals(Boolean.FALSE, missingProtocol.get("available"));
         assertNull(missingProtocol.get("sha256"));
 
-        // 目录路径不是常规文件 → 同样视为不可用。
+        // A directory path is not a regular file -> also treated as unavailable.
         Map<String, Object> directory =
                 fullBuilder().protocol("protocol-1", datasetRoot).build().asMap();
         @SuppressWarnings("unchecked")
         Map<String, Object> directoryProtocol = (Map<String, Object>) directory.get("protocol");
         assertEquals(Boolean.FALSE, directoryProtocol.get("available"));
 
-        // 真实协议文件 → available=true、sha256 为 64 位十六进制。
+        // Real protocol file -> available=true, sha256 is 64 hexadecimal digits.
         Path protocolFile = datasetRoot.resolve("PROTOCOL.md");
         Files.write(protocolFile, "# protocol".getBytes(StandardCharsets.UTF_8));
         Map<String, Object> present =

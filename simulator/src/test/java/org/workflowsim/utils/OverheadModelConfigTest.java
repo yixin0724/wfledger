@@ -16,9 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 
 /**
- * {@link OverheadModelConfig} 全分支契约：构建器数值校验、延迟映射校验
- * （null 映射/深度键/分布、NORMAL 拒绝）、legacy 桥复制语义、生成器重建
- * 与不可变性。
+ * Full-branch contract of {@link OverheadModelConfig}: builder numeric validation,
+ * delay-map validation (null maps, depth keys, distributions, NORMAL rejection),
+ * legacy-bridge copy semantics, generator rebuild, and immutability.
  */
 class OverheadModelConfigTest {
 
@@ -45,7 +45,7 @@ class OverheadModelConfigTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> OverheadModelConfig.builder().bandwidth(-0.001).build());
-        // 边界接受：零间隔与零带宽合法。
+        // Boundary acceptance: a zero interval and zero bandwidth are legal.
         OverheadModelConfig zero = OverheadModelConfig.builder()
                 .workflowEngineDelayInterval(0)
                 .bandwidth(0.0)
@@ -132,7 +132,7 @@ class OverheadModelConfigTest {
         assertNotNull(depthZero);
         assertEquals(DistributionFamily.WEIBULL, depthZero.getFamily());
         assertNotNull(params.getQueueDelay().get(2));
-        // 未配置的映射仍为 null（历史语义：null = 无该开销）。
+        // A map left unconfigured stays null (historical semantics: null = no such overhead).
         assertNull(params.getWEDDelay());
     }
 
@@ -142,10 +142,10 @@ class OverheadModelConfigTest {
         mutableInput.put(0, weibull(3.0));
         OverheadModelConfig config =
                 OverheadModelConfig.builder().postDelays(mutableInput).build();
-        // 构建后修改输入映射不影响已构建配置。
+        // Mutating the input map after construction does not affect the built configuration.
         mutableInput.put(5, weibull(99.0));
         assertEquals(1, config.getPostDelays().size());
-        // 返回的映射不可修改。
+        // The returned map is unmodifiable.
         assertThrows(UnsupportedOperationException.class, () -> config.getPostDelays()
                 .put(1, weibull(1.0)));
     }

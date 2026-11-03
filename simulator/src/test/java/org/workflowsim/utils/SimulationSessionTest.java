@@ -26,7 +26,8 @@ class SimulationSessionTest {
 
     @Test
     void isolatesSequentialConfigurationsAndClearsGlobalStateOnClose() {
-        // 第一段会话安装单输入配置；关闭后必须撤销所有遗留静态状态，不能泄漏给下一次运行。
+        // The first session installs a single-input configuration; closing it must revoke
+        // every leftover static state, which must not leak into the next run.
         SimulationConfig first = SimulationConfig.builder("first.dax", 2)
                 .schedulingAlgorithm(SchedulingAlgorithm.READY_BATCH_MINMIN)
                 .randomSeed(17L)
@@ -53,7 +54,8 @@ class SimulationSessionTest {
         assertThrows(IllegalStateException.class, () -> FailureMonitor.analyze(0, 0));
         assertThrows(IllegalStateException.class, FailureParameters::getFailureGenerators);
 
-        // 第二段会话改用多输入配置，以验证它不会继承第一段会话的单输入路径。
+        // The second session switches to a multi-input configuration to verify that it does
+        // not inherit the single-input path of the first session.
         SimulationConfig second = SimulationConfig.builder(Arrays.asList("second.dax", "third.json"), 3)
                 .planningAlgorithm(PlanningAlgorithm.RANDOM)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC)

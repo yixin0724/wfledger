@@ -23,9 +23,12 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * BAT-C5.1（2026-10-28 第二轮）——带碳证据的复跑红→绿锚（R7 型缺口：重建器曾丢碳字段，
- * 复跑会现 /carbonMetrics 缺节分歧）。红修复前 DIVERGED；转发修复后须 IDENTICAL_CORE 且
- * 碳指标逐位回放。断言能量守恒证据不变侧作回归对照组。
+ * BAT-C5.1 (2026-10-28, second round) -- rerun red->green anchor with carbon evidence
+ * (an R7-type gap: the rebuilder used to drop the carbon fields, so a rerun showed a
+ * missing-section divergence in /carbonMetrics). The red case DIVERGED before the fix;
+ * after the forwarding fix it must be IDENTICAL_CORE and replay the carbon metrics
+ * bit-exactly. The assertion on the unchanged side of the energy-conservation evidence
+ * serves as the regression control.
  */
 class CarbonRerunIntegrationTest {
 

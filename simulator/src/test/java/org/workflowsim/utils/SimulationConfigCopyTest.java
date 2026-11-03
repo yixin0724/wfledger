@@ -16,7 +16,8 @@ class SimulationConfigCopyTest {
 
     @Test
     void withRandomSeedCopiesEveryOtherConfigurationValue() {
-        // 有意设置所有可复制的非默认选项，避免新增字段在 withRandomSeed 中被静默遗漏。
+        // Deliberately sets every copyable non-default option so that a field added later cannot be
+        // silently dropped in withRandomSeed.
         SimulationConfig original = SimulationConfig.builder(Arrays.asList("first.dax", "second.dax"), 2)
                 .overheadModel(OverheadModelConfig.none())
                 .clusteringParameters(new ClusteringParameters(0, 0, ClusteringParameters.ClusteringMethod.NONE, null))

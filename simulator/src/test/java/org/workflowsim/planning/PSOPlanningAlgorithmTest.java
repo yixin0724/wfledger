@@ -13,15 +13,16 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.SimulationRandom;
 
 /**
- * PSO 规划器回归测试（论文复现轮）。
+ * PSO planner regression test (paper-reproduction round).
  *
- * <p>适应度期望值全部手算自参考实现（meysamhit/workflowsim-pso）的公式：
- * price = mips/1000；VM 负载 = 顺序执行时间之和；
- * fitness = 0.8·totalCost + 0.2·makespan。</p>
+ * <p>Every expected fitness value is hand-computed from the formulas of the reference
+ * implementation (meysamhit/workflowsim-pso):
+ * price = mips/1000; VM load = sum of sequential execution times;
+ * fitness = 0.8*totalCost + 0.2*makespan.</p>
  */
 class PSOPlanningAlgorithmTest {
 
-    /** 期望容差。 */
+    /** Expected tolerance. */
     private static final double EPS = 1e-9;
 
     @Test
@@ -29,11 +30,11 @@ class PSOPlanningAlgorithmTest {
         List<Task> tasks = Arrays.asList(new Task(1, 1000), new Task(2, 2000));
         List<CondorVM> vms = Arrays.asList(vm(0, 1000.0), vm(1, 2000.0));
 
-        // [0,0]: cost=1+2=3, makespan=3 → 0.8*3+0.2*3
+        // [0,0]: cost=1+2=3, makespan=3 -> 0.8*3+0.2*3
         assertEquals(3.0, PsoFitnessFunction.evaluate(new int[] {0, 0}, tasks, vms, 0.8), EPS);
         // [1,1]: exec 0.5/1.0, cost=0.5*2+1.0*2=3, makespan=1.5
         assertEquals(0.8 * 3.0 + 0.2 * 1.5, PsoFitnessFunction.evaluate(new int[] {1, 1}, tasks, vms, 0.8), EPS);
-        // [0,1]: cost=1.0*1+1.0*2=3, makespan=1.0（全局最优）
+        // [0,1]: cost=1.0*1+1.0*2=3, makespan=1.0 (global optimum)
         assertEquals(0.8 * 3.0 + 0.2 * 1.0, PsoFitnessFunction.evaluate(new int[] {0, 1}, tasks, vms, 0.8), EPS);
         // [1,0]: cost=0.5*2+2.0*1=3, makespan=2.0
         assertEquals(0.8 * 3.0 + 0.2 * 2.0, PsoFitnessFunction.evaluate(new int[] {1, 0}, tasks, vms, 0.8), EPS);
@@ -52,7 +53,7 @@ class PSOPlanningAlgorithmTest {
 
         assertEquals(PSOPlanningAlgorithm.MAX_ITERATIONS, planner.getLastIterationCount());
         assertEquals(0.8 * 3.0 + 0.2 * 1.0, planner.getLastBestFitness(), EPS);
-        // 唯一全局最优：task1→vm0，task2→vm1
+        // Unique global optimum: task1 -> vm0, task2 -> vm1
         assertEquals(0, tasks.get(0).getVmId());
         assertEquals(1, tasks.get(1).getVmId());
         assertEquals(2, planner.getLastMapping().size());
@@ -97,7 +98,7 @@ class PSOPlanningAlgorithmTest {
         assertTrue(planner.getLastMapping().isEmpty());
     }
 
-    /** R8 审计（算法通道 P2-3）：非正/非有限 MIPS 必须入口 fail-fast，不得 NPE。 */
+    /** R8 audit (algorithm channel P2-3): non-positive/non-finite MIPS must fail fast at entry, never NPE. */
     @Test
     void nonPositiveVmMipsFailsFastAtEntry() {
         SimulationRandom.reset(5L);
@@ -111,10 +112,11 @@ class PSOPlanningAlgorithmTest {
     }
 
     /**
-     * R8 审计（算法通道 P2-1）：方向性契约——在同一固定景观上，PSO 收敛的
-     * 全局最优适应度不得劣于同种子 RANDOM 规划器映射按同一公式评估的适应度。
-     * PSO 以全局最优为下界，RANDOM 是无信息基线：若该断言失败说明 PSO
-     * 实现劣于随机搜索（方向性回归）。
+     * R8 audit (algorithm channel P2-1): directionality contract -- on the same fixed landscape
+     * the global-optimum fitness that PSO converges to must be no worse than the fitness of the
+     * same-seed RANDOM planner mapping evaluated by the same formula. PSO takes the global
+     * optimum as its lower bound while RANDOM is the uninformed baseline: if this assertion
+     * fails, the PSO implementation is worse than random search (a directionality regression).
      */
     @Test
     void psoFitnessIsNoWorseThanSameSeedRandomFitness() {
@@ -146,7 +148,9 @@ class PSOPlanningAlgorithmTest {
         double randomFitness =
                 PsoFitnessFunction.evaluate(randomPosition, randomTasks, vms, PSOPlanningAlgorithm.COST_WEIGHT);
 
-        assertTrue(psoFitness <= randomFitness + EPS, "PSO 适应度 " + psoFitness + " 不得劣于同种子 RANDOM 适应度 " + randomFitness);
+        assertTrue(
+                psoFitness <= randomFitness + EPS,
+                "PSO fitness " + psoFitness + " must not be worse than same-seed RANDOM fitness " + randomFitness);
     }
 
     private static List<Task> tasks() {

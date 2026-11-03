@@ -128,7 +128,9 @@ class P7BaselineExecutorTest {
             throws Exception {
         Path datasetRoot = datasetRoot();
         Log.disable();
-        // 通过正式 CLI 覆盖参数校验、日志恢复和完整冻结矩阵，而不是绕过入口直接调用实现。
+        // Drive the production CLI so that argument validation, log restoration, and the complete
+        // frozen matrix stay covered, instead of bypassing the entry point and calling the
+        // implementation directly.
         P7BaselineExecutor.main(new String[] {datasetRoot.toString(), outputDirectory.toString()});
 
         Path indexPath = outputDirectory.resolve(P7BaselineExecutor.BASELINE_INDEX_FILE_NAME);
@@ -176,10 +178,10 @@ class P7BaselineExecutorTest {
 
     @Test
     void commandLineRequiresExactlyTwoArgumentsOrUsesDefaults() {
-        // 无参数时使用默认值，不再抛异常（支持 IDE 直接运行）
-        // P7BaselineExecutor.main(new String[0]); // 现在会使用默认路径
+        // With no arguments the defaults are used instead of throwing (supports running from an IDE)
+        // P7BaselineExecutor.main(new String[0]); // now uses the default paths
 
-        // 只有一个参数仍然抛异常
+        // A single argument still throws
         assertThrows(IllegalArgumentException.class, () -> P7BaselineExecutor.main(new String[] {"datasets"}));
     }
 

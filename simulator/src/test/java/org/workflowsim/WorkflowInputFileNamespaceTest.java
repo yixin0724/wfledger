@@ -19,7 +19,7 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/** 验证一次多工作流提交不会因裸文件名而意外共享数据。 */
+/** Verifies that a multi-workflow submission does not accidentally share data through bare file names. */
 class WorkflowInputFileNamespaceTest {
 
     @TempDir

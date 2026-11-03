@@ -53,8 +53,9 @@ class DataMovementIntegrationTest {
         SimulationReport legacyReport = runner.run(explicitLegacy, platform);
         SimulationReport fixedReport = runner.run(fixed, platform);
 
-        // 30 MB 输入在历史共享存储模型中按 20 MB/s 为 1.5 秒；固定端点模型受 10 MB/s
-        // 访问链路限制，并加入 0.5 秒延迟，故数学判定基准为 3.5 秒。
+        // The 30 MB input takes 1.5 seconds in the legacy shared-storage model at 20 MB/s; the
+        // fixed-endpoint model is capped by the 10 MB/s access link and adds 0.5 seconds of latency,
+        // so the hand-derived baseline for the assertion is 3.5 seconds.
         assertEquals(legacyTransferSeconds(defaultReport), legacyTransferSeconds(legacyReport), 0.0);
         assertEquals(defaultReport.getMakespan(), legacyReport.getMakespan(), 0.0);
         assertEquals(1.5, legacyTransferSeconds(defaultReport), 1.0e-12);
@@ -140,7 +141,8 @@ class DataMovementIntegrationTest {
         Log.disable();
         SimulationReport report = new SimulationRunner().run(config, twoVmPlatform());
 
-        // 子 Job 跨 VM 读取父任务副本时，端点带宽仍受 10 MB/s 访问链路限制：0.5 + 30/10 = 3.5 秒。
+        // When the child Job reads the parent task replica across VMs, endpoint bandwidth is still
+        // capped by the 10 MB/s access link: 0.5 + 30 / 10 = 3.5 seconds.
         SimulationEvent childTransfer = largestTransferEvent(report);
         assertEquals(
                 3.5, ((Number) childTransfer.getAttributes().get("modeledTransferSeconds")).doubleValue(), 1.0e-12);
@@ -193,8 +195,9 @@ class DataMovementIntegrationTest {
                 "The child intentionally returns to the failed attempt VM to expose replica pollution");
         assertNotEquals(successfulRetry.getVmId(), child.getVmId());
 
-        // 失败 parent 曾在 child VM 上执行，但只有成功 retry 的输出可读，故 child 需要跨
-        // VM 获取 30 MB：0.5 + 30 / 10 = 3.5 秒；错误目录污染时该值会被低估为零。
+        // The failed parent once executed on the child VM, but only the successful retry output is
+        // readable, so the child must fetch 30 MB across VMs: 0.5 + 30 / 10 = 3.5 seconds; with a
+        // polluted directory that value would be underestimated as zero.
         assertEquals(
                 3.5, ((Number) childTransfer.getAttributes().get("modeledTransferSeconds")).doubleValue(), 1.0e-12);
         assertTrue(report.getMetrics().isWorkflowCompletedSuccessfully());

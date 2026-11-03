@@ -25,20 +25,23 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * BAT-R9（2026-10-27 第九轮审查）——相对路径输入的可审计不变量（红→绿锚）。
+ * BAT-R9 (ninth-round review, 2026-10-27) -- auditable invariant for relative-path feeds
+ * (red-to-green anchor).
  *
- * <p>R8 探针发现的纸级缺陷：{@code SimulationConfig} 接受相对路径完全合法，但
- * manifest 里 {@code configuration.workflowPaths} 记"如所喂"、"inputs[].path}
- * 记"已解析绝对"，二者不等 → 独立审计器的 ordered-input-paths 条款击杀——
- * 合法运行产出不可审计证据。修复在写入侧归一（以 inputs 的已解析路径覆写），
- * 绝不弱化审计器。</p>
+ * <p>Paper-level defect found by the R8 probe: {@code SimulationConfig} accepted a
+ * relative path as perfectly legal, yet the manifest recorded "as fed" in
+ * {@code configuration.workflowPaths} and "resolved absolute" in {@code inputs[].path};
+ * the two differ, so the independent auditor's ordered-input-paths clause kills the run --
+ * a legal run produced un-auditable evidence. The fix normalizes on the write side
+ * (overwrite with the resolved path from inputs) and never weakens the auditor.</p>
  *
- * <p>断言形态与 Python 条款逐字等价：configuration.workflowPaths 与
- * inputs[].path 两列表完全相等。证据同时留存在稳定目录供 shell 侧 Python 全审计。</p>
+ * <p>The assertion shape is literally equivalent to the Python clause:
+ * configuration.workflowPaths and inputs[].path must form identical lists. The evidence is
+ * also left in a stable directory for the shell-side full Python audit.</p>
  */
 class RelativeFeedAuditInvariantIntegrationTest {
 
-    /** 稳定探针目录（测试结束后仍在，供 shell 侧 Python 审计）。 */
+    /** Stable probe directory (still present after the test, for the shell-side Python audit). */
     static final Path PROBE_DIR = Paths.get("target", "relative-feed-probe");
 
     @TempDir
@@ -60,19 +63,21 @@ class RelativeFeedAuditInvariantIntegrationTest {
     @Test
     void relativeWorkflowFeedWritesAnAuditableManifest() throws Exception {
         Files.createDirectories(PROBE_DIR);
-        // 输入耐久（R8 教训）：与证据同目录；路径以"
-        // 相对于 CWD"形式喂给 SimulationConfig——这正是本不变量要保护的使用方式。
-        // 注意 CWD 是模块根（experiments/），相对路径必须从该锚出发。
+        // Input durability (R8 lesson): same directory as the evidence; the path is fed to
+        // SimulationConfig in a form "relative to the CWD" -- exactly the usage this
+        // invariant protects. Note that the CWD is the module root (experiments/), so a
+        // relative path must start from that anchor.
         Path absoluteInput = PROBE_DIR.resolve("relative-feed.dax");
         Files.write(absoluteInput, dax().getBytes(StandardCharsets.UTF_8));
         String relativeFeed = tempDir.relativize(tempDir).toString().isEmpty()
                 ? "target/relative-feed-probe/relative-feed.dax"
                 : "target/relative-feed-probe/relative-feed.dax";
-        // 用显式相对形式；CWD=模块根，故先确认锚定成立：
+        // Use the explicit relative form; CWD is the module root, so first confirm the anchor holds:
         Path cwdCheck = Paths.get(relativeFeed);
         if (!Files.isRegularFile(cwdCheck)) {
-            // 兜底：不同运行器 CWD 下按绝对路径内容相同地重锚（记录原样相对形式失败即跳过
-            // ——这是测试自身的 CWD 假设修正，不掩盖产品行为）。
+            // Fallback: under a different runner CWD, re-anchor with the same content via
+            // the absolute path (recording that the as-is relative form failed and skipping --
+            // this corrects the test's own CWD assumption and does not mask product behavior).
             org.junit.jupiter.api.Assumptions.assumeTrue(false, "CWD anchor mismatch");
         }
         SimulationConfig config = SimulationConfig.builder(relativeFeed, 2)

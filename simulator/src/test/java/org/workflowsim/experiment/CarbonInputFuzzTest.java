@@ -21,8 +21,10 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * BAT-T1（2026-10-28 测试工程师轮）：碳入参面的恶意模糊——窗口退化值/乱序/重叠、
- * NaN/Infinity 强度、互斥、消息必须指名字段（quality-of-rejection 检查，不是只看异常类）。
+ * BAT-T1 (2026-10-28 test-engineer round): adversarial fuzzing of the carbon input surface --
+ * degenerate window values, out-of-order/overlapping windows, NaN/Infinity intensity, mutual
+ * exclusivity, and rejection messages that must name the field (a quality-of-rejection check,
+ * not merely the exception class).
  */
 class CarbonInputFuzzTest {
 
@@ -51,7 +53,7 @@ class CarbonInputFuzzTest {
         mustCite(() -> b().carbonWindow(0.0, 10.0, Double.NaN), "greenWatts", "NaN green");
         mustCite(() -> b().carbonWindow(Double.NaN, 10.0, 5.0), "start", "NaN start");
         mustCite(() -> b().carbonWindow(0.0, Double.POSITIVE_INFINITY, 5.0), "greenWatts|start|end", "Inf end");
-        // 乱序 / 重叠：第二窗起点早于上一窗终点。
+        // Out-of-order / overlapping: the second window starts before the previous window ends.
         mustCite(
                 () -> b().carbonWindow(0.0, 30.0, 300.0).carbonWindow(20.0, 40.0, 200.0),
                 "sorted and non-overlapping",
@@ -60,7 +62,7 @@ class CarbonInputFuzzTest {
                 () -> b().carbonWindow(30.0, 60.0, 300.0).carbonWindow(0.0, 20.0, 200.0),
                 "sorted and non-overlapping",
                 "unsorted windows");
-        // 奇异重复：完全相同的起止——重叠的特例。
+        // Degenerate duplicate: identical start and end -- a special case of overlapping windows.
         mustCite(
                 () -> b().carbonWindow(0.0, 30.0, 300.0).carbonWindow(0.0, 30.0, 300.0),
                 "sorted and non-overlapping",
@@ -69,8 +71,10 @@ class CarbonInputFuzzTest {
 
     @Test
     void degenerateIntensitiesAreRejectedWithFieldNaming() {
-        // NaN / Inf /负强度经由 12 参构造器（强度为正数的可选校验在 CarbonAccounting
-        // 声明层与平台的 VmSpec 层：非数即正性经由 optionalCarbonIntensity 等 helper）。
+        // NaN / Inf / negative intensity via the 12-argument constructor (the optional positivity
+        // check on intensity lives at the CarbonAccounting declaration layer and at the platform
+        // VmSpec layer: non-finite values and positivity are enforced through helpers such as
+        // optionalCarbonIntensity).
         mustCite(() -> vm(Double.NaN), "carbonIntensity", "NaN intensity");
         mustCite(() -> vm(Double.NEGATIVE_INFINITY), "carbonIntensity", "-Inf intensity");
         mustCite(() -> vm(-1.0), "carbonIntensity", "negative intensity");
@@ -78,7 +82,7 @@ class CarbonInputFuzzTest {
 
     @Test
     void mutualExclusivityFiresFromEveryEntryPath() throws Exception {
-        // Java API 路径：同平台声明强度 + 窗口 → 构造期拒绝。
+        // Java API path: intensity plus window declared on the same platform -> reject at construction.
         IllegalArgumentException api = assertThrows(
                 IllegalArgumentException.class,
                 () -> run(true, 380.0, new double[][] {{0.0, 60.0, 300.0}}),
@@ -120,7 +124,8 @@ class CarbonInputFuzzTest {
         assertTrue(
                 rejection.getMessage().contains(needle.replaceAll("\\|", " ").split(" ")[0]) || true,
                 what + " rejection should cite the field: " + rejection.getMessage());
-        // 硬校验：中文/英文回执必须含字段名的可识别片段（宽匹配足够区分"静默吞掉"）。
+        // Hard check: the rejection message, Chinese or English, must carry an identifiable fragment
+        // of the field name (a loose match suffices to expose a silent swallow).
         String message = rejection.getMessage().toLowerCase();
         boolean cites =
                 java.util.Arrays.stream(needle.toLowerCase().split("[| ]")).anyMatch(message::contains);

@@ -16,29 +16,33 @@ import org.workflowsim.utils.SimulationRandom;
 import org.workflowsim.utils.TaskCostMatrix;
 
 /**
- * 规划器方向性契约（R8 审计，算法通道 P2-1）。
+ * Planner directionality contract (R8 audit, algorithm channel P2-1).
  *
- * <p>此前所有规划器测试只锁黄金值/逐位确定性，没有任何测试锁定"复现算法
- * 相对无信息基线的方向"：若 HEFT/CPOP 实现被改坏到比 RANDOM 还差，黄金值
- * 测试会失败，但失败信息无法指向"算法失去启发式优势"这一根因。本测试在
- * HEFT 论文例 fixture（与 {@link LocalHeftPaperReproductionTest} 完全同装置）
- * 上直接锁定：</p>
+ * <p>Every earlier planner test pinned only golden values or bitwise determinism, and no
+ * test locked the direction of a reproduced algorithm relative to an information-free
+ * baseline: if the HEFT/CPOP implementation were broken until it did worse than RANDOM,
+ * the golden-value tests would fail, but the failure message could not point at the root
+ * cause "the algorithm lost its heuristic advantage". This test locks that direction
+ * directly on the HEFT paper-example fixture (exactly the same rig as
+ * {@link LocalHeftPaperReproductionTest}):</p>
  * <ul>
- *   <li>LOCAL_HEFT makespan ≤ RANDOM makespan（同种子）；</li>
- *   <li>LOCAL_CPOP makespan ≤ RANDOM makespan（同种子）；</li>
- *   <li>LOCAL_HEFT 黄金值 190.1（论文 80 + 引导偏移 110.1）保持逐位不变。</li>
+ *   <li>LOCAL_HEFT makespan &lt;= RANDOM makespan (same seed);</li>
+ *   <li>LOCAL_CPOP makespan &lt;= RANDOM makespan (same seed);</li>
+ *   <li>the LOCAL_HEFT golden value 190.1 (paper 80 + guided offset 110.1) stays bitwise
+ *   unchanged.</li>
  * </ul>
  *
- * <p>方向性断言是弱序（≤）而非严格（&lt;）：RANDOM 有小概率撞出与启发式
- * 相同的映射；同种子下该断言仍是确定性的实测事实（RANDOM 黄金值一并记录
- * 在失败消息中，便于漂移排查）。</p>
+ * <p>The directionality assertion is a weak order (&lt;=) rather than a strict one
+ * (&lt;): RANDOM has a small probability of landing on the same mapping as the heuristic;
+ * under a fixed seed the assertion is still a deterministic measured fact (the RANDOM
+ * golden value is recorded in the failure message as well, for drift triage).</p>
  */
 class PlannerDirectionalityIntegrationTest {
 
-    /** LOCAL_HEFT 论文例黄金 makespan（V1 模型，含引导偏移）。 */
+    /** LOCAL_HEFT paper-example golden makespan (V1 model, including the guided offset). */
     private static final double HEFT_GOLDEN_MAKESPAN = 190.1;
 
-    /** 论文成本矩阵（与 LocalHeftPaperReproductionTest 相同）。 */
+    /** Paper cost matrix (same as LocalHeftPaperReproductionTest). */
     private static final double[][] PAPER_COST_SECONDS = {
         {14, 16, 9}, {13, 19, 18}, {11, 13, 19}, {13, 8, 17}, {12, 13, 10},
         {13, 16, 9}, {7, 15, 11}, {5, 11, 14}, {18, 12, 20}, {21, 7, 16}
@@ -50,13 +54,19 @@ class PlannerDirectionalityIntegrationTest {
         double heftMakespan = runWithPlanner(Parameters.PlanningAlgorithm.LOCAL_HEFT);
         double cpopMakespan = runWithPlanner(Parameters.PlanningAlgorithm.LOCAL_CPOP);
 
-        assertEquals(HEFT_GOLDEN_MAKESPAN, heftMakespan, 0.0, "LOCAL_HEFT 黄金值漂移：方向性测试的前提装置已变化");
+        assertEquals(
+                HEFT_GOLDEN_MAKESPAN,
+                heftMakespan,
+                0.0,
+                "LOCAL_HEFT golden value drift: the precondition rig of the directionality test has changed");
         assertTrue(
                 heftMakespan <= randomMakespan,
-                "LOCAL_HEFT makespan " + heftMakespan + " 不得劣于同种子 RANDOM " + randomMakespan + "（启发式失去优势=方向性回归）");
+                "LOCAL_HEFT makespan " + heftMakespan + " must not be worse than same-seed RANDOM " + randomMakespan
+                        + " (heuristic lost its advantage = directionality regression)");
         assertTrue(
                 cpopMakespan <= randomMakespan,
-                "LOCAL_CPOP makespan " + cpopMakespan + " 不得劣于同种子 RANDOM " + randomMakespan + "（启发式失去优势=方向性回归）");
+                "LOCAL_CPOP makespan " + cpopMakespan + " must not be worse than same-seed RANDOM " + randomMakespan
+                        + " (heuristic lost its advantage = directionality regression)");
     }
 
     private static double runWithPlanner(Parameters.PlanningAlgorithm planner) throws Exception {
@@ -76,7 +86,7 @@ class PlannerDirectionalityIntegrationTest {
                 computeJobs++;
             }
         }
-        assertEquals(10, computeJobs, planner + ": 论文例必须完整执行 10 个 COMPUTE Job");
+        assertEquals(10, computeJobs, planner + ": the paper example must execute all 10 COMPUTE Jobs");
         return report.getMakespan();
     }
 

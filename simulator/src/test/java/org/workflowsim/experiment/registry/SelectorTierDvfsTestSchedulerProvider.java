@@ -9,14 +9,18 @@ import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
 import org.workflowsim.scheduling.FrequencyTierSelector;
 
 /**
- * BAT-D6（2026-10-29）测试域注册提供者：逐 Job 频档指派 API
- * {@link FrequencyTierSelector} 的合法消费面——每 Job 固定取表<b>末档</b>（与
- * MIN_POWER 同档但来源不同：算法侧逐 Job 决策，而非会话级策略）。
+ * BAT-D6 (2026-10-29) test-domain registration provider: the legal consumption surface of
+ * the per-Job frequency-tier assignment API {@link FrequencyTierSelector} -- every Job
+ * fixed to the <b>last tier</b> of the table (the same tier as MIN_POWER, but from a
+ * different source: an algorithm-side per-Job decision rather than a session-level policy).
  *
- * <p>测试用它钉死优先级：同一运行会话策略保持 DEFAULT（首档），若活动策略实例实现
- * selector，则 JobOutcome.tierMips 必须是末档而非首档——证明"算法侧逐 Job 档选择
- * 上移"真实生效，而不是复述会话策略。VM 放置刻意继承 FCFS（最低编号空闲兼容 VM），
- * 使其与内置 FCFS 对照臂只差频档决策一轴。</p>
+ * <p>The test uses it to pin down precedence: the same run keeps its session policy at
+ * DEFAULT (first tier), so if the active policy instance implements the selector,
+ * JobOutcome.tierMips must be the last tier rather than the first -- proving that
+ * "algorithm-side per-Job tier selection moves up" genuinely takes effect instead of
+ * restating the session policy. VM placement deliberately inherits FCFS (lowest-numbered
+ * idle compatible VM), so the only axis on which it differs from the built-in FCFS control
+ * arm is the frequency-tier decision.</p>
  */
 public final class SelectorTierDvfsTestSchedulerProvider implements SchedulingAlgorithmProvider {
 
@@ -42,7 +46,7 @@ public final class SelectorTierDvfsTestSchedulerProvider implements SchedulingAl
                 .build();
     }
 
-    /** FCFS 放置 + 逐 Job 恒取末档的 selector。 */
+    /** FCFS placement plus a selector that always returns the last tier for each Job. */
     static final class SelectorLastSchedulingAlgorithm extends FCFSSchedulingAlgorithm
             implements FrequencyTierSelector {
 

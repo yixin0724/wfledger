@@ -53,7 +53,7 @@ public final class WorkbenchConfig {
     public static WorkbenchConfig read(Path path) throws IOException {
         JsonObject root = readJsonDocument(path);
         validateConfigurationFields(root);
-        String name = text(root, "name", "工作流实验");
+        String name = text(root, "name", "Workflow Experiment");
         if (name.length() > 128) {
             throw new IllegalArgumentException("Experiment name is too long");
         }
@@ -82,7 +82,7 @@ public final class WorkbenchConfig {
                 throw new IllegalArgumentException("Trailing JSON content");
             }
         } catch (RuntimeException | com.google.gson.stream.MalformedJsonException | java.io.EOFException error) {
-            throw new IllegalArgumentException("配置必须是严格 JSON 对象，字段不能重复", error);
+            throw new IllegalArgumentException("Configuration must be a strict JSON object with unique fields", error);
         }
         return root;
     }

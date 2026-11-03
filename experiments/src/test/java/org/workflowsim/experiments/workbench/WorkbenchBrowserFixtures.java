@@ -58,7 +58,7 @@ public final class WorkbenchBrowserFixtures {
         Files.write(
                 input, "<adag version=\"3.3\"><job id=\"one\" runtime=\"1\"/></adag>".getBytes(StandardCharsets.UTF_8));
         JsonObject exact = configuration(input, 1, "FCFS", false);
-        exact.addProperty("name", "精确种子 </script><img src=x onerror=alert(1)>");
+        exact.addProperty("name", "exact seeds </script><img src=x onerror=alert(1)>");
         JsonArray exactSeeds = new JsonArray();
         for (long seed : new long[] {9007199254740992L, 9007199254740993L, Long.MAX_VALUE, Long.MIN_VALUE}) {
             exactSeeds.add(seed);
@@ -105,8 +105,9 @@ public final class WorkbenchBrowserFixtures {
         StorageLifecycleBrowserFixtures.append(output, reports, online.resolve("runs/fcfs-s42/result.manifest.json"));
         DataflowAssignmentBrowserFixtures.append(output, reports, online.resolve("runs/fcfs-s42/result.manifest.json"));
 
-        // BAT-E7（2026-10-28）：能耗面板浏览器夹具——带功率平台的真实 Workbench 运行，
-        // 让验收工具能验证能耗面板文本来自 energyMetrics 且面板保持可见可篡改感知。
+        // BAT-E7 (2026-10-28): energy-panel browser fixture -- a real Workbench run on a
+        // powered platform, so the acceptance tool can verify that the energy-panel text
+        // comes from energyMetrics and that the panel stays visible and tamper-aware.
         {
             Path energyInput = output.resolve("energy-panel.dax");
             Files.write(
@@ -123,7 +124,8 @@ public final class WorkbenchBrowserFixtures {
             ExperimentArtifactWriter.writeJson(energyConfigPath, energyConfig);
             Path energyExperiment = Workbench.run(energyConfigPath, output.resolve("energy"));
             reports.add(describe("energy-powered", energyExperiment));
-            // 独立报告夹具：定位能耗实验 UUID 目录内的 manifest（Workbench 输出布局）。
+            // Standalone report fixture: locate the manifest inside the energy experiment UUID
+            // directory (Workbench output layout).
             java.util.List<Path> energyManifests = new ArrayList<>();
             try (java.util.stream.Stream<Path> walk = Files.walk(energyExperiment)) {
                 walk.filter(f -> f.getFileName().toString().equals("result.manifest.json"))
@@ -143,9 +145,10 @@ public final class WorkbenchBrowserFixtures {
             reports.add(energyStandaloneSpec);
         }
 
-        // 碳维度面板夹具（2026-11-02）：带强度声明的真实运行。数值必须来自清单
-        // carbonMetrics（强度乘数链），验收工具据此断言面板文本逐位相等——面板重算
-        // 或批量取整都会被测试抓住。
+        // Carbon-dimension panel fixture (2026-11-02): a real run with an intensity declaration.
+        // The values must come from the manifest carbonMetrics (the intensity-multiplier chain),
+        // and the acceptance tool asserts digit-for-digit equality of the panel text on that
+        // basis -- a panel recompute or any bulk rounding is caught by the test.
         {
             Path carbonInput = output.resolve("carbon-panel.dax");
             Files.write(
@@ -183,8 +186,10 @@ public final class WorkbenchBrowserFixtures {
             reports.add(carbonStandaloneSpec);
         }
 
-        // DVFS 逐档面板夹具（2026-11-02）：三档平台 + EDP 启发式指派，让逐档归因真实
-        // 落到非默认档——面板的"Σ档忙秒 = VM 总忙并集"对账徽章才有判别力。
+        // DVFS per-tier panel fixture (2026-11-02): a three-tier platform plus EDP heuristic
+        // assignment, so the per-tier attribution genuinely lands on a non-default tier --
+        // only then does the panel's "sum of tier busy seconds = VM busy-seconds union"
+        // reconciliation badge become discriminating.
         {
             Path dvfsInput = output.resolve("dvfs-panel.dax");
             Files.write(
@@ -233,7 +238,7 @@ public final class WorkbenchBrowserFixtures {
         System.out.println("BROWSER_FIXTURES " + output.resolve("browser-fixtures.json"));
     }
 
-    /** DVFS 档三元组（mips / 空闲功率 / 峰值功率），严格降序由平台校验兜底。 */
+    /** DVFS tier triple (mips / idle power / max power); strict descending order falls back to platform validation. */
     private static JsonObject tier(double mips, double idle, double max) {
         JsonObject tier = new JsonObject();
         tier.addProperty("mips", mips);

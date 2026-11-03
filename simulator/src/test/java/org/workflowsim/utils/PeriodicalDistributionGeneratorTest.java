@@ -8,7 +8,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** 验证周期性信号和分布生成器在缓存扩展后仍保持同一模型语义。 */
+/**
+ * Verifies that the periodical signal and the distribution generator retain the same model
+ * semantics after the sample cache is extended.
+ */
 class PeriodicalDistributionGeneratorTest {
 
     @BeforeEach

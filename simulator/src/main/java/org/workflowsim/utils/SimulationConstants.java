@@ -101,6 +101,6 @@ public final class SimulationConstants {
      * Private constructor; prevents instantiation.
      */
     private SimulationConstants() {
-        throw new AssertionError("SimulationConstants 是常量类，不应被实例化");
+        throw new AssertionError("SimulationConstants is a constants class and must not be instantiated");
     }
 }

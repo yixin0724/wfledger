@@ -11,13 +11,14 @@ import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 
 /**
- * 回归测试（R8 审计，算法通道 P1-1）：任务成本矩阵 × SHARED_STORAGE_* 规划器
- * 的组合必须在配置层被拒绝。
+ * Regression test (R8 audit, algorithm channel P1-1): the combination of a task cost
+ * matrix with a SHARED_STORAGE_* planner must be rejected at the configuration layer.
  *
- * <p>背景：SharedStorageDagPlanner 的规划侧执行时间只用原始 DAX 长度、不消费
- * 成本矩阵，而 STATIC 派发路径会在运行时按矩阵折算 MI——两侧语义静默分叉会
- * 产生错误的规划顺序且无任何报错。合法组合（LOCAL_HEFT/LOCAL_CPOP + 矩阵）
- * 保持可用。</p>
+ * <p>Background: on the planning side, SharedStorageDagPlanner derives execution time
+ * only from the raw DAX length and does not consume the cost matrix, whereas the STATIC
+ * dispatch path scales MI by the matrix at run time -- a silent divergence between the
+ * two sides produces a wrong planning order with no error reported. Valid combinations
+ * (LOCAL_HEFT/LOCAL_CPOP plus a matrix) remain available.</p>
  */
 class SimulationConfigCostMatrixValidationTest {
 
@@ -39,7 +40,7 @@ class SimulationConfigCostMatrixValidationTest {
                             .schedulingAlgorithm(SchedulingAlgorithm.STATIC)
                             .taskCostMatrix(matrix())
                             .build(),
-                    planner + " + 成本矩阵必须被拒绝");
+                    planner + " + task cost matrix must be rejected");
             assertTrue(failure.getMessage().contains(planner.toString()), failure.getMessage());
             assertTrue(failure.getMessage().contains("task cost matrix"), failure.getMessage());
         }

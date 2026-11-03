@@ -256,7 +256,8 @@ final class StorageLifecycleBrowserFixtures {
         String name = "storage-lifecycle-state-switch";
         Path target = output.resolve(name + ".html");
         requireNew(target);
-        HtmlReports.experiment("V3 / V2 / V1 / OFF / 无验证结果 / 零正复制 状态切换", rows, target);
+        HtmlReports.experiment(
+                "V3 / V2 / V1 / OFF / no validated result / zero positive-byte copies - state switch", rows, target);
         reports.add(spec(name, target, rows, expected));
     }
 
@@ -300,7 +301,7 @@ final class StorageLifecycleBrowserFixtures {
                     decode(huge));
         }
 
-        String hostile = "</script><img src=x onerror=alert(1)>节点\"'\u2028\u2029@@DATA@@";
+        String hostile = "</script><img src=x onerror=alert(1)>node\"'\u2028\u2029@@DATA@@";
         List<Task> tasks = new ArrayList<>();
         Map<Integer, Double> capacities = new LinkedHashMap<>();
         Map<Integer, Integer> hosts = new LinkedHashMap<>();
@@ -379,7 +380,11 @@ final class StorageLifecycleBrowserFixtures {
         String name = "storage-lifecycle-typed-stress";
         Path target = output.resolve(name + ".html");
         requireNew(target);
-        HtmlReports.experiment("独立 V3 存储显示夹具 · 不绑定所附 CPU 运行上下文 · 非流体服务记账", rows, target);
+        HtmlReports.experiment(
+                "Standalone V3 storage display fixture - not bound to the attached CPU run context"
+                        + " - not fluid-service accounting",
+                rows,
+                target);
         reports.add(spec(name, target, rows, expected));
     }
 

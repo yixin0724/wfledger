@@ -23,14 +23,17 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * BAT-R7 (2026-10-27, 第七轮审查) — 跨缝组合链：注册标签算法 × 带功率平台 × 复跑路径，
- * 三者没有任何一轮审查串联测过（R1-R6 各守自己的缝隙）。
+ * BAT-R7 (2026-10-27, seventh review round) -- cross-seam combination chain: registered-label
+ * algorithm x powered platform x rerun path. No earlier review round exercised the three in
+ * series (R1-R6 each guarded its own seam).
  *
- * <p>关键问题：注册接口的 powerModelRequired 校验、manifest 功率序列化、
- * EvidenceCoreDiffer 的能耗缺位等价、ManifestConfigRebuilder 的功率转发——
- * 缝各自绿不等于链全程绿。本测试用注册的 ENERGY_LPT_FIRST 提供者（宿在
- * experiments 测试域，SPI 可见）跑一份带功率运行，再全链 RerunDiffExecutor 复跑：
- * 判决必须 IDENTICAL_CORE 且复跑侧能耗逐位等于原始。</p>
+ * <p>Key question: the registration interface's powerModelRequired validation, the manifest's
+ * power serialization, EvidenceCoreDiffer's energy-absence equivalence, and
+ * ManifestConfigRebuilder's power forwarding -- each seam being green does not mean the whole
+ * chain is green. This test runs one powered run with the registered ENERGY_LPT_FIRST provider
+ * (hosted in the experiments test domain, visible through SPI), then reruns it through the
+ * whole-chain RerunDiffExecutor: the verdict must be IDENTICAL_CORE and the rerun-side energy
+ * consumption must equal the original bit for bit.</p>
  */
 class RegisteredPoweredRerunIntegrationTest {
 
@@ -52,7 +55,8 @@ class RegisteredPoweredRerunIntegrationTest {
 
     @Test
     void registeredPoweredAlgorithmRerunsIdenticallyEndToEnd() throws Exception {
-        // 1. 通过注册面（ServiceLoader）找到提供者——不允许直接 new 绕过接口。
+        // 1. Locate the provider through the registration surface (ServiceLoader) -- constructing
+        // it directly with new would bypass the interface.
         SchedulingAlgorithmProvider provider =
                 org.workflowsim.experiment.registry.AlgorithmRegistry.find("ENERGY_LPT_FIRST");
         assertEquals(
@@ -60,7 +64,7 @@ class RegisteredPoweredRerunIntegrationTest {
                 provider.getClass(),
                 "the SPI must surface the E5 provider in this classpath");
 
-        // 2. 原始运行：注册算法 × 带功率平台。
+        // 2. Original run: registered algorithm x powered platform.
         Path run = directory.resolve("study/runs/original");
         Path input = run.getParent().getParent().resolve("inputs/bag.dax");
         Files.createDirectories(input.getParent());
@@ -71,7 +75,7 @@ class RegisteredPoweredRerunIntegrationTest {
                 .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                 .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
                 .randomSeed(20261027L)
-                .deadline(400) // BAT-R9：死线并入注册链（R8 立目标时被砍掉的一轴）
+                .deadline(400) // BAT-R9: deadline joins the registration chain (an axis cut when R8 set its goal)
                 .registeredSchedulingAlgorithm(provider)
                 .build();
         PlatformProfile platform = poweredPlatform();
@@ -81,14 +85,16 @@ class RegisteredPoweredRerunIntegrationTest {
         }
         ExperimentArtifactWriter.write(report, run, "result");
 
-        // 3. 全链复跑：重建（读注册标签 + 功率）→ 重跑 → 核心量比对。
+        // 3. Whole-chain rerun: rebuild (read the registered label + power) -> rerun -> compare
+        // core quantities.
         Path output = directory.resolve("study/runs/rerun");
         RerunReport result = RerunDiffExecutor.execute(run, output);
         java.nio.file.Files.write(
                 directory.resolve("verdict.json"), result.toJson().getBytes(StandardCharsets.UTF_8));
         assertEquals(RerunVerdict.IDENTICAL_CORE, result.getVerdict(), result.toJson());
 
-        // 4. 能耗逐位回放：复跑侧总能量与原始侧完全一致（守恒律由同一引擎保证）。
+        // 4. Bit-exact energy replay: the rerun side's total energy equals the original side
+        // exactly (the conservation law is guaranteed by the same engine).
         com.google.gson.JsonObject original = com.google.gson.JsonParser.parseString(
                         new String(Files.readAllBytes(run.resolve("result.manifest.json")), StandardCharsets.UTF_8))
                 .getAsJsonObject();
@@ -99,7 +105,8 @@ class RegisteredPoweredRerunIntegrationTest {
                 original.getAsJsonObject("energyMetrics").get("totalEnergyJoules"),
                 repeat.getAsJsonObject("energyMetrics").get("totalEnergyJoules"),
                 "energy must replay bit-exactly across the registered-algorithm rerun");
-        // 注册标签必须原样出现在两份 manifest 里（不是 INVALID 枚举字符串上等价）。
+        // The registered label must appear verbatim in both manifests (equivalence on the INVALID
+        // enum string is not enough).
         assertEquals(
                 original.getAsJsonObject("configuration").get("registeredSchedulingAlgorithm"),
                 repeat.getAsJsonObject("configuration").get("registeredSchedulingAlgorithm"));

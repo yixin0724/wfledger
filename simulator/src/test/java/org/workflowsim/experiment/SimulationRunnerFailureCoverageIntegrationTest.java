@@ -22,7 +22,10 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/** 验证标准运行器在派发前执行故障矩阵覆盖校验，并支持真实 VM ID 键控配置。 */
+/**
+ * Verifies that the standard runner enforces failure-matrix coverage validation before
+ * dispatch and supports configuration keyed by real VM IDs.
+ */
 class SimulationRunnerFailureCoverageIntegrationTest {
 
     @AfterEach
@@ -106,7 +109,8 @@ class SimulationRunnerFailureCoverageIntegrationTest {
     }
 
     private static DistributionSpec spec() {
-        // 极低的抽象故障强度仅让测试覆盖 generator 选择，不依赖 retry 结果。
+        // The extremely low abstract failure intensity only exercises generator selection;
+        // the test does not depend on retry outcomes.
         return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 1.0e9, 1.0);
     }
 

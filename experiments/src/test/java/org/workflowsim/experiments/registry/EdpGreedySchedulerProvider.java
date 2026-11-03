@@ -86,9 +86,10 @@ public final class EdpGreedySchedulerProvider implements SchedulingAlgorithmProv
 
         @Override
         public PlatformProfile.FrequencyTier selectFrequencyTier(Job job, List<PlatformProfile.FrequencyTier> tiers) {
-            // 长度分裂（文档化的示范规则，勿当优化器阅读）：声明工作 ≥ 阈值 → 末档
-            // （MIN_POWER 之档）；短任务 → 首档（平台声明的默认档）。档身份经调度器
-            // 的声明档成员校验（BAT-D6），此处只返回表内档。
+            // Length-based split (a documented demonstrator rule, not an optimizer): declared
+            // work >= the threshold -> the last tier (the MIN_POWER tier); short jobs -> the
+            // first tier (the platform-declared default). Tier identity passes the scheduler's
+            // declared-tier membership check (BAT-D6); only in-table tiers are returned here.
             long workMi = job.getEffectiveExecutionLengthMi();
             return workMi >= LONG_JOB_THRESHOLD_MI ? tiers.get(tiers.size() - 1) : tiers.get(0);
         }

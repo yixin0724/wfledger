@@ -18,7 +18,7 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** 临时：随机失败重试场景下的 seed 敏感性（用后即删）。 */
+/** Temporary: seed sensitivity under the random failure-retry scenario (delete after use). */
 public final class TmpSeedSensitivity {
     private TmpSeedSensitivity() {}
 

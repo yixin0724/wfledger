@@ -21,8 +21,9 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * BAT-H1/H2（2026-10-28 测试工程师第三轮）：预算族的规模化平价（32-64 VM 上的
- * 独立解析重演 + 守恒锁定），与三次失败重试窗跨界的并集碳核算。
+ * BAT-H1/H2 (2026-10-28, test engineer round 3): scale parity of the budget family
+ * (independent analytic replay plus conservation locking on 32-64 VMs), and the union
+ * carbon accounting across the boundaries of three failure-retry windows.
  */
 class CarbonScaleAndRetryTest {
 
@@ -46,7 +47,8 @@ class CarbonScaleAndRetryTest {
 
     @Test
     void budgetAt32VmsMatchesIndependentIntegration() throws Exception {
-        // 32-VM 均匀舰队（ΔP 从首 VM 取 150——v1 均一假设在夹具里写死：250/400 每台）。
+        // 32-VM uniform fleet (the delta P is taken from the first VM as 150 -- the v1 uniform
+        // assumption is pinned in the fixture: 250/400 per VM).
         SimulationReport report = run(32, null, new double[][] {{0.0, 400.0, 3000.0}, {400.0, 800.0, 1000.0}});
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertNotNull(carbon, "budget must account at scale");
@@ -55,7 +57,7 @@ class CarbonScaleAndRetryTest {
         });
         assertEquals(
                 expected, carbon.getTotalCarbonExcessWattSeconds(), 1e-6, "32-VM independent integration must match");
-        // 全部克拉伯窗口和恒等
+        // The sum over all carbon windows is identical to the total.
         double sum = 0.0;
         for (double v : carbon.getWindowExcessWattSeconds().values()) {
             sum += v;
@@ -65,7 +67,10 @@ class CarbonScaleAndRetryTest {
 
     // ---- helpers ----
 
-    /** 独立重演：与 CarbonAccounting 同公式但从 Job 列表二次推导（round-2 方法规模化）。 */
+    /**
+     * Independent replay: same formula as CarbonAccounting but re-derived from the Job list (the
+     * round-2 method at scale).
+     */
     private static double integrate(
             java.util.List<SimulationReport.JobOutcome> jobs,
             double makespan,
@@ -96,7 +101,7 @@ class CarbonScaleAndRetryTest {
         }
         double cc = 0.0;
         for (double[] w : windows) {
-            double we = Math.min(w[1], makespan); // 视界钳制（round-2 定性）
+            double we = Math.min(w[1], makespan); // horizon clamp (round-2 semantics)
             for (double[] seg : segments) {
                 double lo = Math.max(seg[0], w[0]);
                 double hi = Math.min(seg[1], we);

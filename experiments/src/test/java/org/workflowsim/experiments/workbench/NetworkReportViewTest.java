@@ -246,7 +246,7 @@ class NetworkReportViewTest {
 
     @Test
     void hostileLabelsRemainLiteralEscapedDisplayData() throws Exception {
-        String label = "</script><img src=x onerror=alert(1)>节点\"'\u2028\u2029@@DATA@@";
+        String label = "</script><img src=x onerror=alert(1)>☃☀\"'\u2028\u2029@@DATA@@";
         TransferContentionEngine engine = new TransferContentionEngine(BUDGET);
         engine.addTransfer(1, 1, Collections.singletonList(label), 1, 0);
         engine.advance(1);

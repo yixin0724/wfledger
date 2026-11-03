@@ -22,9 +22,11 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 /**
- * 阶段 4 验收：完整复跑流水线（读取 → 定位 → 重建 → 仿真 → 写出新三件套）。
- * 新三件套自身必须是可通过结构校验的 v4 证据；核心量（makespan）与原 run
- * 一致；非空输出目录被拒绝；输入定位失败按 verdict 上抛且不落盘 rerun 产物。
+ * Phase 4 acceptance: the complete rerun pipeline (read -> locate -> rebuild -> simulate ->
+ * write the new artifact trio). The new artifact trio must itself be v4 evidence that passes
+ * structural validation; the core quantity (makespan) agrees with the original run; a
+ * non-empty output directory is refused; an input location failure is propagated as its
+ * verdict and writes no rerun artifact.
  */
 class RerunExecutorTest {
 
@@ -58,11 +60,12 @@ class RerunExecutorTest {
         assertTrue(Files.exists(execution.getArtifacts().getMetrics()));
         assertTrue(Files.exists(execution.getArtifacts().getEvents()));
 
-        // 新三件套本身必须是可通过结构校验的 v4 证据包。
+        // The new artifact trio must itself be a v4 evidence bundle that passes structural
+        // validation.
         RerunEvidence rerunEvidence = RerunEvidenceReader.read(rerunDir);
         assertTrue(rerunEvidence.getEventCount() > 0);
 
-        // rerun manifest 的 inputs 记录的是阶段 2 定位后的路径。
+        // The rerun manifest inputs record the paths resolved by phase 2.
         String rerunInputPath = rerunEvidence
                 .getManifest()
                 .getAsJsonArray("inputs")
@@ -72,7 +75,8 @@ class RerunExecutorTest {
                 .getAsString();
         assertEquals(execution.getInputs().get(0).getResolvedPath().toString(), rerunInputPath);
 
-        // 核心量抽查：同种子、同机器下 makespan 必须逐位一致。
+        // Core-quantity spot check: with the same seed and the same machine, makespan must match
+        // bit for bit.
         assertEquals(
                 metricsMakespan(fixtureRun.resolve("result.metrics.json")),
                 metricsMakespan(execution.getArtifacts().getMetrics()));
@@ -127,7 +131,10 @@ class RerunExecutorTest {
         Files.write(run.resolve("result.manifest.json"), gson.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /** 同步改写 inputs/workflowPaths/workflowOutcomes 三处路径（v4 交叉校验要求）。 */
+    /**
+     * Rewrite the path in all three places (inputs / workflowPaths / workflowOutcomes), as v4
+     * cross-validation requires.
+     */
     private static void rewriteInputPath(Path run, String newPath) throws Exception {
         JsonObject manifest = readManifest(run);
         manifest.getAsJsonArray("inputs").get(0).getAsJsonObject().addProperty("path", newPath);

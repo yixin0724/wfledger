@@ -1136,7 +1136,7 @@ class StorageLifecycleCodecTest {
 
     @Test
     void exactMultiWorkflowNamesAndZeroReferencesNeverAlias() {
-        String name = "input[0]/shared::名/<literal>";
+        String name = "input[0]/shared::☂/<literal>";
         Task a = task(1, in(name, 0)), b = task(2, in(name, 0)), c = task(3, in(name, 0));
         Map<Integer, Integer> scopes = new LinkedHashMap<>();
         scopes.put(1, 0);
@@ -1156,7 +1156,7 @@ class StorageLifecycleCodecTest {
         payload(wrong, "INPUT_RESOLVED", 1).getAsJsonObject("fileId").addProperty("workflowInputIndex", 0);
         bad(wrong);
         wrong = root.deepCopy();
-        payload(wrong, "INPUT_RESOLVED", 2).getAsJsonObject("fileId").addProperty("name", "shared::名/<literal>");
+        payload(wrong, "INPUT_RESOLVED", 2).getAsJsonObject("fileId").addProperty("name", "shared::☂/<literal>");
         bad(wrong);
         wrong = root.deepCopy();
         payload(wrong, "INPUT_RESOLVED", 0).addProperty("resolution", "LOCAL");

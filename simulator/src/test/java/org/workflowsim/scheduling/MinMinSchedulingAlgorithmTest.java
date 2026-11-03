@@ -86,13 +86,13 @@ class MinMinSchedulingAlgorithmTest {
         scheduler.setVmList(vms);
         scheduler.run();
 
-        // 前 3 个最短的任务被调度,第 4 个找不到 idle VM 时 break
+        // The first 3 shortest tasks are scheduled; the 4th breaks when no idle VM is left
         assertEquals(3, scheduler.getScheduledList().size());
     }
 
     @Test
     void stopsWhenNoIdleVm() {
-        // 3 个任务但只有 1 个 VM → run() 只调度 1 个就 break
+        // 3 tasks but only 1 VM -> run() schedules 1 and then breaks
         cloudlets.add(new Task(1, 1000));
         cloudlets.add(new Task(2, 2000));
         cloudlets.add(new Task(3, 3000));
@@ -102,13 +102,13 @@ class MinMinSchedulingAlgorithmTest {
         scheduler.setVmList(vms);
         scheduler.run();
 
-        // VM 被标记 BUSY 后,后续任务找不到 idle VM,break
+        // Once the VM is marked BUSY, later tasks find no idle VM and break
         assertEquals(1, scheduler.getScheduledList().size());
     }
 
     @Test
     void taskOrderIsShortestFirst() {
-        // 5 个任务、5 个 VM → 全部可调度,验证调度顺序按任务长度升序
+        // 5 tasks and 5 VMs -> all of them can be scheduled; verifies ascending task length
         cloudlets.add(new Task(1, 5000));
         cloudlets.add(new Task(2, 1000));
         cloudlets.add(new Task(3, 3000));
@@ -125,7 +125,7 @@ class MinMinSchedulingAlgorithmTest {
         scheduler.run();
 
         List<Cloudlet> scheduled = (List<Cloudlet>) scheduler.getScheduledList();
-        // 调度顺序应该按任务长度升序: 1000, 2000, 3000, 4000, 5000
+        // The scheduling order must follow ascending task length: 1000, 2000, 3000, 4000, 5000
         assertEquals(2, scheduled.get(0).getCloudletId()); // 1000 MI
         assertEquals(4, scheduled.get(1).getCloudletId()); // 2000 MI
         assertEquals(3, scheduled.get(2).getCloudletId()); // 3000 MI

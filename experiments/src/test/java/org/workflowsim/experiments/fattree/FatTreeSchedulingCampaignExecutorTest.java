@@ -180,7 +180,7 @@ class FatTreeSchedulingCampaignExecutorTest {
         assertEquals(Arrays.asList(100.0, 101.0), results.makespans(HEFT, V1));
     }
 
-    /** 噪声级交叉 fixture：诊断记录完整、严格断言拒绝。 */
+    /** Noise-level crossing fixture: the diagnostics record it in full and the strict assertion rejects it. */
     @Test
     void violationFixtureIsDiagnosedAndStrictAssertRejects() {
         CampaignResults results = fixture(true);
@@ -190,13 +190,13 @@ class FatTreeSchedulingCampaignExecutorTest {
         assertEquals("dag-b", violation.get("dax"));
         assertEquals(PSO, violation.get("planner"));
         double deviation = ((Double) violation.get("maxRelativeDeviation")).doubleValue();
-        assertTrue(deviation > 0.0 && deviation <= 1.0e-4, "交叉必须为噪声级: " + deviation);
+        assertTrue(deviation > 0.0 && deviation <= 1.0e-4, "crossing must remain noise-level: " + deviation);
         assertEquals(121.0, ((Double) violation.get("v1MakespanSeconds")).doubleValue(), 1e-9);
         IllegalStateException thrown = assertThrows(IllegalStateException.class, results::assertWeakMonotonicity);
         assertTrue(thrown.getMessage().contains("Weak-monotonicity violation"));
     }
 
-    /** 配对统计形状：3 模型 × 3 规划器对 + 4 规划器 × 3 跨模型对比。 */
+    /** Paired-statistics shape: 3 models x 3 planner pairs + 4 planners x 3 cross-model comparisons. */
     @Test
     void pairedStatisticsCoversPlannerAndModelAxes() {
         CampaignResults results = fixture(false);
@@ -220,14 +220,17 @@ class FatTreeSchedulingCampaignExecutorTest {
         assertTrue(axes.contains("model-r6-vs-v1@" + HEFT));
     }
 
-    /** 扫描块统计：恒等变体报全零差值状态，A4 报可用精确检验与中位差。 */
+    /**
+     * Scan-block statistics: identity variants report the all-zero-difference status; A4 reports an
+     * available exact test and a median difference.
+     */
     @Test
     void scanStatisticsSeparatesDegenerateAndEffectiveAxes() {
         CampaignResults results = fixture(false);
         for (String block : new String[] {"sensitivity", "structural"}) {
             List<Map<String, Object>> statistics =
                     "sensitivity".equals(block) ? results.sensitivityStatistics() : results.structuralStatistics();
-            assertEquals(10, statistics.size(), block + ": 2 规划器 × 5 非基线变体");
+            assertEquals(10, statistics.size(), block + ": 2 planners x 5 non-baseline variants");
             for (Map<String, Object> record : statistics) {
                 String axis = (String) record.get("axis");
                 assertTrue(axis.startsWith(block + "@"), axis);
@@ -243,7 +246,7 @@ class FatTreeSchedulingCampaignExecutorTest {
         }
     }
 
-    /** 记录查找：命中返回值，缺失显式抛错并携带块名。 */
+    /** Record lookup: a hit returns the value; a miss fails loudly and carries the block name. */
     @Test
     void recordLookupsFailLoudlyOnMissingEntries() {
         CampaignResults results = fixture(false);
@@ -262,10 +265,10 @@ class FatTreeSchedulingCampaignExecutorTest {
     }
 
     // ------------------------------------------------------------------
-    // 工件序列化
+    // Artifact serialization
     // ------------------------------------------------------------------
 
-    /** JSON 契约：schema 键、块存在性、统计条件键。 */
+    /** JSON contract: schema key, block presence, conditional statistics keys. */
     @Test
     void jsonArtifactCarriesSchemaAndConditionalStatistics() {
         CampaignResults full = fixture(false);
@@ -286,13 +289,17 @@ class FatTreeSchedulingCampaignExecutorTest {
         assertTrue(json.containsKey("sensitivityStatistics"));
         assertTrue(json.containsKey("structuralSensitivityStatistics"));
 
-        // 空扫描块：条件统计键必须缺席（IT 子集运行形态）。
+        // Empty scan blocks: the conditional statistics keys must be absent (integration-test
+        // subset run shape).
         Map<String, Object> mainOnly = mainOnlyFixture().toJson();
         assertFalse(mainOnly.containsKey("sensitivityStatistics"));
         assertFalse(mainOnly.containsKey("structuralSensitivityStatistics"));
     }
 
-    /** Markdown 契约：全量块章节齐全；仅主矩阵时敏感性章节缺席。 */
+    /**
+     * Markdown contract: all sections are present for the full block set; the sensitivity sections
+     * are absent in the main-matrix-only shape.
+     */
     @Test
     void markdownArtifactAdaptsToBlockPresence() {
         String full = fixture(false).toMarkdown();
@@ -314,16 +321,16 @@ class FatTreeSchedulingCampaignExecutorTest {
     }
 
     // ------------------------------------------------------------------
-    // fixture 构造
+    // Fixture construction
     // ------------------------------------------------------------------
 
     /**
-     * 合成 fixture：2 DAG × 4 规划器 × 3 模型主矩阵（HEFT 100 < CPOP 110 <
-     * PSO 120 < RANDOM 500，模型增量 V1+0/R2+10/R6+20）+ 两块扫描记录
-     * （结构变体恒等、A4 = 基线 − 10）。
+     * Synthetic fixture: a 2 DAG x 4 planner x 3 model main matrix (HEFT 100 < CPOP 110 <
+     * PSO 120 < RANDOM 500, with model increments V1+0/R2+10/R6+20) plus two scan-record
+     * blocks (structural variants are identity, A4 = baseline - 10).
      *
-     * @param withViolation true 时把 dag-b × PSO 的 R6 压到 R2 之下 0.001
-     *                      （噪声级交叉）
+     * @param withViolation when true, pushes the R6 value of dag-b x PSO 0.001 below R2
+     *                      (a noise-level crossing)
      */
     private static CampaignResults fixture(boolean withViolation) {
         List<DagScenario> dags = new ArrayList<DagScenario>();
@@ -349,7 +356,7 @@ class FatTreeSchedulingCampaignExecutorTest {
                             && "dag-b".equals(dag.id)
                             && PSO.equals(planner.getKey())
                             && R6.equals(model.getKey())) {
-                        // 压到同 DAG 的 R2 值（base + 10 + dagAddition）之下 0.001。
+                        // Push 0.001 below the R2 value of the same DAG (base + 10 + dagAddition).
                         value = planner.getValue().doubleValue() + 10.0 + dagAddition - 0.001;
                     }
                     Map<String, Object> record = new LinkedHashMap<String, Object>();
@@ -371,14 +378,17 @@ class FatTreeSchedulingCampaignExecutorTest {
         return new CampaignResults(dags, mainMatrix, sensitivity, structural);
     }
 
-    /** 仅主矩阵的 fixture（IT 子集运行形态）。 */
+    /** Main-matrix-only fixture (integration-test subset run shape). */
     private static CampaignResults mainOnlyFixture() {
         CampaignResults full = fixture(false);
         return new CampaignResults(
                 full.dags, full.mainMatrix, new ArrayList<Map<String, Object>>(), new ArrayList<Map<String, Object>>());
     }
 
-    /** 扫描块记录：基线 = R6 值（120/130），结构变体恒等，A4 = 基线 − 10。 */
+    /**
+     * Scan-block records: baseline = R6 value (120/130), structural variants are identity,
+     * A4 = baseline - 10.
+     */
     private static List<Map<String, Object>> scanRecords(List<DagScenario> dags, List<TopologyVariant> variants) {
         List<Map<String, Object>> records = new ArrayList<Map<String, Object>>();
         for (DagScenario dag : dags) {

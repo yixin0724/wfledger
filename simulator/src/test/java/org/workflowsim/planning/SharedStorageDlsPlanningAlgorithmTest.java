@@ -33,9 +33,9 @@ class SharedStorageDlsPlanningAlgorithmTest {
         assertEquals("DLS", trace.getStrategy());
         assertEquals(0.21, trace.getStageInFinishSeconds(), 1.0e-12);
 
-        // 静态 b-level：root 为 1.5 秒，其余 Task 为 0.75 秒。DLS 先选 root：
-        // 1.5 - 0.21 = 1.29；随后选择 VM 1 上的独立 Task：0.75 - 0.21 = 0.54。
-        // 子 Task 必须等 root 至 1.21，故动态层为 0.75 - 1.21 = -0.46。
+        // Static b-level: root is 1.5 s, every other Task is 0.75 s. DLS selects root first:
+        // 1.5 - 0.21 = 1.29; then the independent Task on VM 1: 0.75 - 0.21 = 0.54.
+        // The child Task must wait for root until 1.21, so its dynamic level is 0.75 - 1.21 = -0.46.
         assertEquals(1.5, trace.getTaskPlan(1).getUpwardRankSeconds(), 1.0e-12);
         assertEquals(1.29, trace.getTaskPlan(1).getDlsDynamicLevelAtSelection(), 1.0e-12);
         assertEquals(0.54, trace.getTaskPlan(2).getDlsDynamicLevelAtSelection(), 1.0e-12);

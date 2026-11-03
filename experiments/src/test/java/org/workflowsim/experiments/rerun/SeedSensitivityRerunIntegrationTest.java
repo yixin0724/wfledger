@@ -32,19 +32,23 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
- * 审查轮（2026-11-02）：随机性敏感负载下的重跑契约。
+ * Review round (2026-11-02): the rerun contract under a randomness-sensitive workload.
  *
- * <p>此前的重跑模糊测试发现"篡改 rootSeed 仍判 IDENTICAL_CORE"，一度疑为漏洞；实测证明
- * 那是<b>对随机性不敏感</b>的负载：重跑忠实复现了被篡改的记录条件，两侧 seed 相同。
- * 本测试用随机失败重试的负载把这条性质钉死：</p>
+ * <p>An earlier rerun fuzz test observed that "tampering with rootSeed still yields
+ * IDENTICAL_CORE", which was briefly suspected to be a defect; measurement showed that the
+ * workload was <b>insensitive to randomness</b>: the rerun faithfully reproduced the tampered
+ * record conditions, so both sides carried the same seed. This test pins that property down
+ * with a workload of stochastic failure retries:</p>
  *
  * <ol>
- *   <li>同 seed 重跑 → IDENTICAL_CORE（记录条件可复现）；</li>
- *   <li>篡改 rootSeed → DIVERGED（seed 是科学条件，负载对其敏感时必须分歧）。</li>
+ *   <li>same seed rerun -> IDENTICAL_CORE (the record conditions are reproducible);</li>
+ *   <li>tampered rootSeed -> DIVERGED (the seed is a scientific condition, and a workload
+ *       sensitive to it must diverge).</li>
  * </ol>
  *
- * <p>期望值来源：RERUN_DIFF_CONTRACT.md 的核心比较域（configuration 在域内，
- * 仅 algorithmContract 与 workflowPaths 是白名单）。</p>
+ * <p>Expected-value provenance: the core comparison domain of RERUN_DIFF_CONTRACT.md
+ * (configuration is inside the domain; only algorithmContract and workflowPaths are
+ * whitelisted).</p>
  */
 class SeedSensitivityRerunIntegrationTest {
 
@@ -80,8 +84,10 @@ class SeedSensitivityRerunIntegrationTest {
                 RerunVerdict.DIVERGED,
                 changedSeed.getVerdict(),
                 "a stochastic workload must diverge when the recorded seed changes: " + changedSeed.toJson());
-        // 分歧出现在结果面而非配置面：重建从（被篡改的）记录条件出发，两侧 configuration
-        // 因此相同，但不同 seed 会改变随机失败/重试的走向，结果必须大红。
+        // Divergence lands on the result face, not the configuration face: the rebuild starts
+        // from the (tampered) record conditions, so both sides carry the same configuration,
+        // but a different seed changes the course of stochastic failures and retries, so the
+        // result face must go red.
         assertFalse(
                 changedSeed.getCoreDivergences().isEmpty(),
                 "a changed seed must produce core divergences in the result face: " + pointers(changedSeed));
@@ -92,7 +98,10 @@ class SeedSensitivityRerunIntegrationTest {
                 "the divergence must land on recomputed results: " + pointers(changedSeed));
     }
 
-    /** 随机失败重试负载：FAILURE_JOB + 威布尔分布，seed 决定哪些作业失败与何时重试。 */
+    /**
+     * Stochastic failure-retry workload: FAILURE_JOB plus a Weibull distribution; the seed
+     * decides which jobs fail and when they retry.
+     */
     private Path writeStochasticRun(Path study, long seed) throws Exception {
         Path workflow = study.resolve("inputs/seed.dax");
         Files.createDirectories(workflow.getParent());

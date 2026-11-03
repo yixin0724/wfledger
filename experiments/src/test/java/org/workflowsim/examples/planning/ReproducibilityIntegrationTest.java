@@ -25,7 +25,8 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 用同一配置完整运行三次解析、事件循环和结果收集链路，验证运行快照完全一致。
+ * Runs the parse, event-loop, and result-collection chain three times with an identical configuration,
+ * and verifies that the run snapshots are exactly the same.
  */
 class ReproducibilityIntegrationTest extends WorkflowSimBasicExample1 {
 

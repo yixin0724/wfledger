@@ -12,8 +12,8 @@ import org.workflowsim.scheduling.MinMinSchedulingAlgorithm;
 import org.workflowsim.scheduling.RoundRobinSchedulingAlgorithm;
 
 /**
- * 重复运行一致性测试:同一 JVM 内,相同配置跑两次,结果必须逐位相同。
- * 这是可复现实验的基础保证。
+ * Reproducibility test: within a single JVM, the same configuration run twice must produce
+ * bit-identical results. This is the baseline guarantee for reproducible experiments.
  */
 class ReproducibilityTest {
 
@@ -42,7 +42,7 @@ class ReproducibilityTest {
 
     @Test
     void minMinSameInputSameOutput() {
-        // 第一次运行
+        // First run.
         MinMinSchedulingAlgorithm s1 = new MinMinSchedulingAlgorithm();
         List<Cloudlet> c1 = buildCloudlets();
         List<Vm> v1 = buildVms();
@@ -50,7 +50,7 @@ class ReproducibilityTest {
         s1.setVmList(v1);
         s1.run();
 
-        // 第二次运行(全新对象,但相同配置)
+        // Second run: fresh objects, same configuration.
         MinMinSchedulingAlgorithm s2 = new MinMinSchedulingAlgorithm();
         List<Cloudlet> c2 = buildCloudlets();
         List<Vm> v2 = buildVms();
@@ -58,13 +58,13 @@ class ReproducibilityTest {
         s2.setVmList(v2);
         s2.run();
 
-        // 断言两次调度结果一致
+        // Both scheduling runs must agree.
         assertEquals(s1.getScheduledList().size(), s2.getScheduledList().size());
         for (int i = 0; i < s1.getScheduledList().size(); i++) {
             Cloudlet a = (Cloudlet) s1.getScheduledList().get(i);
             Cloudlet b = (Cloudlet) s2.getScheduledList().get(i);
-            assertEquals(a.getCloudletId(), b.getCloudletId(), "第 " + i + " 个调度的任务 ID 不一致");
-            assertEquals(a.getVmId(), b.getVmId(), "第 " + i + " 个调度的 VM 分配不一致");
+            assertEquals(a.getCloudletId(), b.getCloudletId(), "task ID mismatch at scheduled position " + i);
+            assertEquals(a.getVmId(), b.getVmId(), "VM assignment mismatch at scheduled position " + i);
         }
     }
 

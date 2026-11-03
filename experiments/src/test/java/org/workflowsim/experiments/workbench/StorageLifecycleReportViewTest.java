@@ -1236,7 +1236,7 @@ class StorageLifecycleReportViewTest {
 
     @Test
     void hostileFileNamesStayLiteralPlainTextWithoutEmbeddingRawPayloads() {
-        String name = "</script><img src=x onerror=alert(1)>节点\"'\u2028\u2029@@DATA@@";
+        String name = "</script><img src=x onerror=alert(1)>☃☀\"'\u2028\u2029@@DATA@@";
         CoherentDataflowRuntime r = runtime(true, true, plan(task(1, in(name, 10))));
         r.requestJob(11, one(1), 7, 0);
         Map<String, Object> projection = StorageLifecycleReportView.fromDecoded(decoded(r), false);

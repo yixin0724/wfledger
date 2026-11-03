@@ -153,7 +153,7 @@ class GradStudentSchedulerExerciseIntegrationTest {
                         }
                     }
                 }
-                // 当前没有空闲兼容 VM，剩余 Job 留待后续调度事件。
+                // No idle compatible VM is left: the remaining Jobs wait for a later scheduling event.
                 if (best == null) {
                     break;
                 }
@@ -191,7 +191,7 @@ class GradStudentSchedulerExerciseIntegrationTest {
         }
     }
 
-    // ---- 夹具 ----
+    // ---- Fixtures ----
 
     /** Two-layer four-task DAG with inter-layer files. */
     private Path exerciseDax() throws Exception {

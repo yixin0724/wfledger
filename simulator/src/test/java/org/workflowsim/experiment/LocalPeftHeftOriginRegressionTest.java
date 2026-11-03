@@ -16,14 +16,14 @@ import org.workflowsim.utils.TaskCostMatrix;
 /**
  * PEFT on the retained HEFT-origin ten-task fixture, not the PEFT article Figure 1.
  * Correct successor-cost Eq. (7), exit zero and insertion scheduling were independently
- * evaluated on this unchanged input: compute makespan85, bootstrap110.1, total195.1.
+ * evaluated on this unchanged input: compute makespan 85, bootstrap 110.1, total 195.1.
  * Mapping, intervals, per-task transfers and repeated-run assertions remain covered.
- * The former class name and its attribution of76/80 to the PEFT article were incorrect;
- * primary-source PEFT122/HEFT133 evidence lives in LocalPeftPrimarySourcePaperTest.
+ * The former class name and its attribution of 76/80 to the PEFT article were incorrect;
+ * primary-source PEFT 122/HEFT 133 evidence lives in LocalPeftPrimarySourcePaperTest.
  */
 class LocalPeftHeftOriginRegressionTest {
 
-    /** 保留HEFT-origin输入的计算矩阵；不是PEFT文章Figure1。 */
+    /** Computation matrix of the retained HEFT-origin input; not Figure 1 of the PEFT article. */
     private static final double[][] HEFT_ORIGIN_COST_SECONDS = {
         {14, 16, 9}, // t1 = n1
         {13, 19, 18}, // t2 = n2
@@ -37,24 +37,30 @@ class LocalPeftHeftOriginRegressionTest {
         {21, 7, 16}, // t10 = n10
     };
 
-    /** stage-in 引导偏移：stage-in Job（110 MI，mips=1.0）完成 110.0 + 内核间隔 0.1。 */
+    /** Stage-in bootstrap offset: stage-in Job (110 MI, mips=1.0) completes at 110.0 + kernel gap 0.1. */
     private static final double BOOTSTRAP_OFFSET = 110.1;
 
-    /** 独立Eq7推导的每任务映射，VM ID为0基。 */
+    /** Per-task mapping derived independently from Eq7; VM IDs are zero-based. */
     private static final int[] CONTROLLED_VM_BY_TASK = {-1, 1, 1, 0, 1, 2, 0, 0, 0, 1, 1};
-    /** 受控模型的运行时开始时刻（绝对秒），下标 = 任务 ID；独立Eq7区间 + 引导偏移110.1。 */
+    /**
+     * Runtime start times of the controlled model (absolute seconds), index = task ID;
+     * independent Eq7 intervals + bootstrap offset 110.1.
+     */
     private static final double[] CONTROLLED_STARTS = {
         0.0, BOOTSTRAP_OFFSET, 134.1, 138.1, 126.1, 137.1, 149.1, 162.1, 172.1, 160.1, 188.1
     };
-    /** 受控模型的运行时完成时刻（绝对秒），下标 = 任务 ID；独立Eq7区间 + 引导偏移110.1。 */
+    /**
+     * Runtime finish times of the controlled model (absolute seconds), index = task ID;
+     * independent Eq7 intervals + bootstrap offset 110.1.
+     */
     private static final double[] CONTROLLED_FINISHES = {
         0.0, 126.1, 153.1, 149.1, 134.1, 147.1, 162.1, 169.1, 177.1, 172.1, 195.1
     };
     /**
-     * 由新映射与原HEFT-origin边权独立求和：
-     * n8=19(n2,VM1→0)+27(n4,VM1→0)+0(n6本地)=46；
-     * n9=0(n2本地)+0(n4本地)+13(n5,VM2→1)=13；
-     * n10=17(n7,VM0→1)+11(n8,VM0→1)+0(n9本地)=28。
+     * Summed independently from the new mapping and the original HEFT-origin edge weights:
+     * n8 = 19 (n2, VM1->0) + 27 (n4, VM1->0) + 0 (n6 local) = 46;
+     * n9 = 0 (n2 local) + 0 (n4 local) + 13 (n5, VM2->1) = 13;
+     * n10 = 17 (n7, VM0->1) + 11 (n8, VM0->1) + 0 (n9 local) = 28.
      */
     private static final double[] CONTROLLED_TRANSFER_SECONDS = {
         0.0, 0.0, 0.0, 12.0, 0.0, 11.0, 14.0, 0.0, 46.0, 13.0, 28.0
@@ -63,7 +69,7 @@ class LocalPeftHeftOriginRegressionTest {
     @Test
     void peftHeftOriginExampleReproducesControlledScheduleAndMapping() throws Exception {
         SimulationReport report = runHeftOriginFixture();
-        // Independent Eq7 result on this HEFT-origin input is85, not the PEFT paper's122.
+        // Independent Eq7 result on this HEFT-origin input is 85, not the PEFT paper's 122.
         assertEquals(195.1, report.getMakespan(), 1.0e-9);
         assertEquals(85.0, report.getMakespan() - BOOTSTRAP_OFFSET, 1.0e-9);
         int computeCount = 0;
@@ -74,10 +80,17 @@ class LocalPeftHeftOriginRegressionTest {
             }
             computeCount++;
             int taskId = job.getTaskIds().get(0).intValue();
-            assertEquals(CONTROLLED_VM_BY_TASK[taskId], job.getVmId(), "task " + taskId + " 的 VM 映射");
-            assertEquals(CONTROLLED_STARTS[taskId], job.getStartTime(), 1.0e-9, "task " + taskId + " 的开始时刻（规划 == 运行时）");
+            assertEquals(CONTROLLED_VM_BY_TASK[taskId], job.getVmId(), "VM mapping of task " + taskId);
             assertEquals(
-                    CONTROLLED_FINISHES[taskId], job.getFinishTime(), 1.0e-9, "task " + taskId + " 的完成时刻（规划 == 运行时）");
+                    CONTROLLED_STARTS[taskId],
+                    job.getStartTime(),
+                    1.0e-9,
+                    "start time of task " + taskId + " (planning == runtime)");
+            assertEquals(
+                    CONTROLLED_FINISHES[taskId],
+                    job.getFinishTime(),
+                    1.0e-9,
+                    "finish time of task " + taskId + " (planning == runtime)");
         }
         assertEquals(10, computeCount);
     }
@@ -85,14 +98,15 @@ class LocalPeftHeftOriginRegressionTest {
     @Test
     void peftHeftOriginScheduleIsCommunicationAware() throws Exception {
         SimulationReport report = runHeftOriginFixture();
-        // n2/n4/n7与其父任务同VM；其他传输按保留输入的边权逐项求和。
+        // n2/n4/n7 share a VM with their parent tasks; the other transfers are summed term
+        // by term from the retained input edge weights.
         for (int taskId = 1; taskId <= 10; taskId++) {
             SimulationEvent event = transferEventForTask(report, taskId);
             assertEquals(
                     CONTROLLED_TRANSFER_SECONDS[taskId],
                     ((Number) event.getAttributes().get("modeledTransferSeconds")).doubleValue(),
                     1.0e-9,
-                    "task " + taskId + " 的建模传输秒数");
+                    "modeled transfer seconds of task " + taskId);
         }
         assertEquals(124.0, report.getMetrics().getTotalModeledDataTransferSeconds(), 1.0e-9);
         assertEquals(10, report.getMetrics().getDataStageInModelObservationCount());
@@ -130,7 +144,10 @@ class LocalPeftHeftOriginRegressionTest {
         return new SimulationRunner().run(config, controlledPlatform());
     }
 
-    /** 受控HEFT-origin平台：3台VM，MIPS=1、带宽1 MB/s，整数成本无MI舍入损失。 */
+    /**
+     * Controlled HEFT-origin platform: 3 VMs, MIPS=1, bandwidth 1 MB/s, integer costs with
+     * no MI rounding loss.
+     */
     private static PlatformProfile controlledPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("peft-heft-origin-regression");
         for (int id = 0; id < 3; id++) {

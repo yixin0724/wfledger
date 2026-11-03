@@ -63,14 +63,17 @@ class EnergyRetryConservationIntegrationTest {
 
     @Test
     void poweredRunWithRealRetriesSatisfiesTheConservationLaw() throws Exception {
-        // 输入文件必须与证据同存于稳定目录（BAT-R8）：放 JUnit 临时目录会让
-        // manifest 记录的输入路径在测试结束后消失，Python 审计器的原始输入重解析
-        // 无法定位——证据链的第一环（输入）不可是易失的。
+        // Input durability (BAT-R8): the input must live in a stable directory alongside the
+        // evidence -- a JUnit temp directory would make the input path recorded in the manifest
+        // vanish once the test ends, so the Python auditor could not re-resolve the original
+        // input; the first link of the evidence chain (the input) must not be volatile.
         Files.createDirectories(PROBE_DIR);
         Path input = PROBE_DIR.resolve("retry-bag.dax").toAbsolutePath().normalize();
-        // 注意（BAT-R8 发现）：喂相对路径时 configuration.workflowPaths 记“如所喂”
-        // 而 inputs[].path 记“已解析绝对”——审计器 ordered-input-paths 条款要求两者
-        // 逐项相等，故证据链纪律要求绝对路径输入（已立产品级归一化提案，见提交说明）。
+        // Note (BAT-R8 finding): with a relative path, configuration.workflowPaths records the
+        // form "as fed" while inputs[].path records "resolved absolute" -- the auditor's
+        // ordered-input-paths clause requires the two to match item by item, so evidence-chain
+        // discipline requires an absolute-path input (a product-level normalization proposal is
+        // filed; see the commit message).
         Files.write(input, bagDax().getBytes(StandardCharsets.UTF_8));
         FailureModelConfig failure = new FailureModelConfig.Builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP)
@@ -100,8 +103,9 @@ class EnergyRetryConservationIntegrationTest {
                     retried = candidate;
                 }
             } catch (RuntimeException retryBudgetOrFailure) {
-                // 该猎种寻找"带重试且成功"的运行；耗尽预算或失败的种子合法跳过
-                // （末尾断言把空猎败态定为硬失败，跳过不等于吞错）。
+                // The seed hunt looks for a run that retried and succeeded; a seed that exhausts the
+                // retry budget or fails is legitimately skipped (the assertion at the end makes an
+                // empty hunt a hard failure, so a skip does not swallow the error).
             }
         }
         assertTrue(retried != null, "the bounded seed domain must produce a successful true retry");

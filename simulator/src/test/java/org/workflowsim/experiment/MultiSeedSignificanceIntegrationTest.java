@@ -24,20 +24,25 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * R1 验收：真实算法对在多 seed 故障模型下的配对显著性检验端到端可用。
+ * R1 acceptance: the paired significance test is usable end to end for real algorithm
+ * pairs under a multi-seed failure model.
  *
- * <p>FCFS（基线）对 READY_BATCH_MCT（候选）在同一共享根种子计划下各跑 10 次。
- * 场景刻意选择两算法必然分歧的组合：</p>
+ * <p>FCFS (baseline) and READY_BATCH_MCT (candidate) each run 10 times under the same
+ * common-root-seed plan. The scenario deliberately picks a combination on which the two
+ * algorithms must diverge:</p>
  * <ul>
- * <li><b>异构平台</b>（16 VM，MIPS 800–2300）：同构平台上所有在线调度器的完成
- * 时间全等会退化为同一调度，配对差值恒为零，显著性检验不可用；</li>
- * <li><b>千任务规模</b>（Montage_1000）：小规模 fixture 上多数在线调度器同样收敛；</li>
- * <li><b>故障模型</b>（Weibull 到达、重试预算 64）：提供跨 seed 的随机性方差。</li>
+ * <li><b>heterogeneous platform</b> (16 VMs, MIPS 800-2300): on a homogeneous platform the
+ * completion times of all online schedulers coincide and degenerate into the same schedule,
+ * so every paired difference is zero and the significance test is unavailable;</li>
+ * <li><b>thousand-task scale</b> (Montage_1000): on a small fixture most online schedulers
+ * converge as well;</li>
+ * <li><b>failure model</b> (Weibull arrivals, retry budget 64): supplies randomness
+ * variance across seeds.</li>
  * </ul>
  *
- * <p>campaign 汇总的 {@code ComparisonSummary.getPairedSignificance()} 必须给出
- * 可用状态、有限 p 值与一致的显著性判定。本测试证明"带 p 值的算法对比报告"
- * 能力真实落地。</p>
+ * <p>The campaign summary's {@code ComparisonSummary.getPairedSignificance()} must report
+ * a usable status, a finite p-value and a consistent significance verdict. This test proves
+ * that algorithm comparison reports carrying p-values are genuinely delivered.</p>
  */
 class MultiSeedSignificanceIntegrationTest {
 
@@ -101,12 +106,15 @@ class MultiSeedSignificanceIntegrationTest {
         PairedWilcoxonSignificance significance = comparison.getPairedSignificance();
         assertNotNull(significance);
         assertEquals(REPLICATIONS, significance.getPairedSampleCount());
-        // 异构平台 + 千任务规模下两算法调度必然分歧，差值不应全为零。
+        // On a heterogeneous platform at thousand-task scale the two schedules must diverge,
+        // so the paired differences cannot all be zero.
         assertTrue(
-                significance.getStatus().startsWith("AVAILABLE_"), "验收场景必须产生可用的配对检验，实际状态：" + significance.getStatus());
+                significance.getStatus().startsWith("AVAILABLE_"),
+                "the acceptance scenario must produce a usable paired test, actual status: "
+                        + significance.getStatus());
         assertNotNull(significance.getPValue());
         double p = significance.getPValue().doubleValue();
-        assertTrue(p >= 0.0 && p <= 1.0, "p 值必须在 [0,1] 区间，实际：" + p);
+        assertTrue(p >= 0.0 && p <= 1.0, "p-value must lie in [0,1], actual: " + p);
         assertEquals(p < PairedWilcoxonSignificance.DEFAULT_ALPHA, significance.isSignificantAtDefaultAlpha());
         assertTrue(significance.getEffectiveSampleCount() >= 2);
         System.out.println("[R1] status=" + significance.getStatus()

@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.Task;
 
 /**
- * 手算微型 DAG 结构测试:验证 Task 的父子关系、深度语义。
- * 这些测试不启动 CloudSim 引擎,只验证模型层行为。
+ * Hand-derived micro-DAG structure tests: verify Task parent-child links and depth semantics.
+ * These tests do not start the CloudSim engine; they verify model-layer behavior only.
  */
 class TaskDagTest {
 
@@ -19,7 +19,7 @@ class TaskDagTest {
 
     @BeforeEach
     void setUp() {
-        // 3 个任务:A(1000 MI), B(2000 MI), C(3000 MI)
+        // Three tasks: A (1000 MI), B (2000 MI), C (3000 MI)
         taskA = new Task(1, 1000);
         taskB = new Task(2, 2000);
         taskC = new Task(3, 3000);

@@ -23,7 +23,10 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** CPOP 的手算 rank、真实关键路径及确定性规划契约；不启动 CloudSim。 */
+/**
+ * Hand-derived CPOP ranks, the actual critical path, and the deterministic planning contract; no
+ * CloudSim run is started.
+ */
 class LocalCpopPlanningAlgorithmTest {
 
     private static final double EPSILON = 1.0e-9;
@@ -40,13 +43,14 @@ class LocalCpopPlanningAlgorithmTest {
 
         planner.run();
 
-        // 最长路径 = 2 + 7 + 3 + 11 + 5 = 28；向下 rank 不包含本任务成本。
+        // Longest path = 2 + 7 + 3 + 11 + 5 = 28; the downward rank excludes this task's own cost.
         assertRanks(planner, entry, 28.0, 0.0, 28.0);
         assertRanks(planner, middle, 19.0, 9.0, 28.0);
         assertRanks(planner, exit, 5.0, 23.0, 28.0);
         assertEquals(Arrays.asList(1, 2, 3), planner.getCriticalPathTaskIds());
         assertEquals(Integer.valueOf(3), planner.getCriticalProcessorVmId());
-        // 关键路径同 VM 执行，rank 中的平均通信成本不进入其实际本地传输时间。
+        // The critical path executes on a single VM, so the averaged communication cost inside
+        // the rank never enters its actual local transfer time.
         assertEquals(BOOTSTRAP, entry.getStaticScheduleStartTime(), EPSILON);
         assertEquals(BOOTSTRAP + 2.0, middle.getStaticScheduleStartTime(), EPSILON);
         assertEquals(BOOTSTRAP + 5.0, exit.getStaticScheduleStartTime(), EPSILON);
@@ -82,18 +86,20 @@ class LocalCpopPlanningAlgorithmTest {
         Collections.reverse(reversed);
         LocalCpopPlanningAlgorithm planner = planner(reversed, 2, 0, 1);
 
-        // 来自给定矩阵与边权的独立手算；不在测试中复写 rank 的递归算法。
+        // Independent hand derivation from the given matrix and edge weights; the rank recursion
+        // is not re-implemented in this test.
         double[] upward = {108, 77, 80, 80, 69, 190.0 / 3.0, 128.0 / 3.0, 107.0 / 3.0, 133.0 / 3.0, 44.0 / 3.0};
         double[] downward = {0, 31, 25, 22, 24, 27, 187.0 / 3.0, 200.0 / 3.0, 191.0 / 3.0, 280.0 / 3.0};
         double[] priority = {108, 108, 105, 102, 93, 271.0 / 3.0, 105, 307.0 / 3.0, 108, 108};
         int[] vmByTask = {1, 1, 0, 2, 1, 2, 0, 2, 1, 1};
         double[] relativeStarts = {0, 16, 28, 25, 35, 42, 39, 54, 65, 79};
         double[] relativeFinishes = {16, 35, 39, 42, 48, 51, 46, 68, 77, 86};
-        // 第二次复用同一实例：rank、预留区间和已演进的跨 VM 文件副本必须重建。
+        // Second reuse of the same instance: ranks, reserved intervals, and the evolved cross-VM
+        // file replicas must all be rebuilt.
         for (int run = 0; run < 2; run++) {
             planner.run();
             assertEquals(Arrays.asList(1, 2, 9, 10), planner.getCriticalPathTaskIds());
-            // CP 计算成本 vm0=66、vm1=54、vm2=63，故选择 vm1。
+            // Critical-path compute cost is vm0=66, vm1=54, vm2=63, so vm1 is selected.
             assertEquals(Integer.valueOf(1), planner.getCriticalProcessorVmId());
             for (int i = 0; i < tasks.length; i++) {
                 assertRanks(planner, tasks[i], upward[i], downward[i], priority[i]);
@@ -115,7 +121,8 @@ class LocalCpopPlanningAlgorithmTest {
         Task lowerIdBranch = new Task(20, 4);
         Task higherIdBranch = new Task(30, 4);
         Task exit = new Task(40, 3);
-        // 故意先登记高 ID 分支，不能由相邻表顺序决定关键路径。
+        // The high-ID branch is registered first on purpose: adjacency-table order must not
+        // decide the critical path.
         connect(entry, higherIdBranch, 0.0);
         connect(entry, lowerIdBranch, 0.0);
         connect(higherIdBranch, exit, 0.0);
@@ -131,7 +138,11 @@ class LocalCpopPlanningAlgorithmTest {
         assertEquals(Arrays.asList(10, 20, 40), planner.getCriticalPathTaskIds());
         assertEquals(Integer.valueOf(3), planner.getCriticalProcessorVmId());
         assertEquals(3, lowerIdBranch.getVmId());
-        assertEquals(8, higherIdBranch.getVmId(), "另一个等长分支应按 EFT 使用空闲 VM，不应把所有同优先级节点都固定到关键 VM");
+        assertEquals(
+                8,
+                higherIdBranch.getVmId(),
+                "an equally long branch must take an idle VM by EFT, "
+                        + "not pin every equal-priority node to the critical-path VM");
 
         planner.setTaskList(Arrays.asList(lowerIdBranch, entry, exit, higherIdBranch));
         planner.setVmList(Arrays.asList(vm(3), vm(8)));
@@ -148,14 +159,14 @@ class LocalCpopPlanningAlgorithmTest {
         Task shortcutTarget = new Task(3, 1);
         Task secondBranch = new Task(4, 1);
         Task exit = new Task(5, 1);
-        // 两条最长路径均为 100：1-2-5 = 1+8+1+89+1；
-        // 1-4-3-5 = 1+38+1+38+1+20+1。五个节点的优先级都为 100。
+        // Both longest paths equal 100: 1-2-5 = 1+8+1+89+1;
+        // 1-4-3-5 = 1+38+1+38+1+20+1. All five nodes have priority 100.
         connect(entry, firstBranch, 8.0);
         connect(firstBranch, exit, 89.0);
         connect(entry, secondBranch, 38.0);
         connect(secondBranch, shortcutTarget, 38.0);
         connect(shortcutTarget, exit, 20.0);
-        // 若只检查 successor 的优先级，较小 ID=3 会被选中，得到长度仅为 33 的捷径。
+        // Checking only the successor priority would pick the smaller ID 3 and yield a shortcut of length 33.
         connect(firstBranch, shortcutTarget, 1.0);
         List<Task> tasks = Arrays.asList(exit, shortcutTarget, secondBranch, firstBranch, entry);
         LocalCpopPlanningAlgorithm planner = planner(tasks, 8, 3);
@@ -216,7 +227,10 @@ class LocalCpopPlanningAlgorithmTest {
         assertRanks(planner, exit, 3.0, 15.0, 18.0);
         assertEquals(BOOTSTRAP + 4.0, exit.getStaticScheduleStartTime(), EPSILON);
         assertEquals(BOOTSTRAP + 7.0, planner.plannedFinishOf(exit), EPSILON);
-        assertEquals(Arrays.asList(1, 2), firstPath, "已返回的路径快照不应在后续 run 中被清空或修改");
+        assertEquals(
+                Arrays.asList(1, 2),
+                firstPath,
+                "a returned path snapshot must not be cleared or mutated by a later run");
     }
 
     private static void assertRanks(

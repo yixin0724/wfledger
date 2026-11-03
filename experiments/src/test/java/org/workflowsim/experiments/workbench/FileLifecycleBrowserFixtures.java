@@ -184,7 +184,8 @@ final class FileLifecycleBrowserFixtures {
         expected.add(expect(full.decoded, true));
         String name = "file-lifecycle-state-switch";
         Path target = output.resolve(name + ".html");
-        HtmlReports.experiment("V2 / V1 / OFF / 无验证结果 / 零正字节拷贝 状态切换", rows, target);
+        HtmlReports.experiment(
+                "V2 / V1 / OFF / no validated result / zero positive-byte copies - state switch", rows, target);
         reports.add(spec(name, target, rows, expected));
     }
 
@@ -209,7 +210,7 @@ final class FileLifecycleBrowserFixtures {
         finish(huge, 22, 2, 42, 1, 1);
         typed(rows, expected, cpu, "typed-v2-beyond-double-sum", decode(huge));
 
-        String hostile = "</script><img src=x onerror=alert(1)>节点\"'\u2028\u2029@@DATA@@";
+        String hostile = "</script><img src=x onerror=alert(1)>node\"'\u2028\u2029@@DATA@@";
         String longName =
                 hostile + repeat('x', LABEL_PREVIEW_LIMIT - "input[0]/".length() - hostile.length() - 1) + "😀tail";
         List<Task> tasks = new ArrayList<>();
@@ -239,7 +240,11 @@ final class FileLifecycleBrowserFixtures {
 
         String name = "file-lifecycle-typed-stress";
         Path target = output.resolve(name + ".html");
-        HtmlReports.experiment("独立 V2 生命周期显示夹具 · 与所附 CPU 运行上下文不绑定 · 不是流体服务记账", rows, target);
+        HtmlReports.experiment(
+                "Standalone V2 lifecycle display fixture - not bound to the attached CPU run context"
+                        + " - not fluid-service accounting",
+                rows,
+                target);
         reports.add(spec(name, target, rows, expected));
     }
 

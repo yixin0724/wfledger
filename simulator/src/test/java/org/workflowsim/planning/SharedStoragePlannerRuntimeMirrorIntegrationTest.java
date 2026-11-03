@@ -104,7 +104,9 @@ class SharedStoragePlannerRuntimeMirrorIntegrationTest {
                 .build();
 
         SimulationReport report = new SimulationRunner().run(config, platform);
-        assertTrue(report.getMetrics().isAllLogicalTasksCompletedSuccessfully(), "镜像基线要求仿真完整成功：" + algorithm);
+        assertTrue(
+                report.getMetrics().isAllLogicalTasksCompletedSuccessfully(),
+                "mirror baseline requires every logical task to complete: " + algorithm);
 
         List<Task> reparsed = reparse(workflow);
         BasePlanningAlgorithm planner = createPlanner(algorithm, new PlanningContext(config, platform));
@@ -126,22 +128,25 @@ class SharedStoragePlannerRuntimeMirrorIntegrationTest {
         planner.run();
 
         List<SimulationReport.TaskOutcome> outcomes = report.getTasks();
-        assertEquals(reparsed.size(), outcomes.size(), "任务数必须一致（同一 DAX）：" + algorithm);
+        assertEquals(reparsed.size(), outcomes.size(), "task count must match (same DAX): " + algorithm);
         SharedStorageDagPlanTrace trace = lastPlanTrace(planner);
         for (SimulationReport.TaskOutcome outcome : outcomes) {
             SharedStorageDagPlanTrace.TaskPlan plan = trace.getTaskPlan(outcome.getTaskId());
             assertEquals(
-                    plan.getVmId(), outcome.getVmId(), 0, algorithm + " 任务 " + outcome.getTaskId() + " 的 VM 绑定必须镜像");
+                    plan.getVmId(),
+                    outcome.getVmId(),
+                    0,
+                    algorithm + " task " + outcome.getTaskId() + " VM binding must mirror");
             assertEquals(
                     plan.getPlannedComputeStartSeconds(),
                     outcome.getStartTime(),
                     ZERO_TOLERANCE,
-                    algorithm + " 任务 " + outcome.getTaskId() + " 计划计算窗口开始必须逐位镜像");
+                    algorithm + " task " + outcome.getTaskId() + " planned compute start must mirror bit-exactly");
             assertEquals(
                     plan.getPlannedFinishSeconds(),
                     outcome.getFinishTime(),
                     ZERO_TOLERANCE,
-                    algorithm + " 任务 " + outcome.getTaskId() + " 计划信封完成必须逐位镜像");
+                    algorithm + " task " + outcome.getTaskId() + " planned envelope finish must mirror bit-exactly");
         }
     }
 
@@ -161,7 +166,8 @@ class SharedStoragePlannerRuntimeMirrorIntegrationTest {
         if (planner instanceof SharedStoragePeftPlanningAlgorithm) {
             return ((SharedStoragePeftPlanningAlgorithm) planner).getLastPlanTrace();
         }
-        throw new IllegalArgumentException("规划器未暴露计划轨迹: " + planner.getClass().getSimpleName());
+        throw new IllegalArgumentException(
+                "planner exposes no plan trace: " + planner.getClass().getSimpleName());
     }
 
     private static BasePlanningAlgorithm createPlanner(PlanningAlgorithm algorithm, PlanningContext context) {
@@ -177,7 +183,7 @@ class SharedStoragePlannerRuntimeMirrorIntegrationTest {
             case SHARED_STORAGE_PEFT:
                 return new SharedStoragePeftPlanningAlgorithm(context);
             default:
-                throw new IllegalArgumentException("镜像驱动不支持规划算法 " + algorithm);
+                throw new IllegalArgumentException("mirror driver does not support planning algorithm " + algorithm);
         }
     }
 
@@ -198,10 +204,10 @@ class SharedStoragePlannerRuntimeMirrorIntegrationTest {
                 return task;
             }
         }
-        throw new IllegalArgumentException("未找到任务 " + taskId);
+        throw new IllegalArgumentException("no task with id " + taskId);
     }
 
-    // ---- 夹具 ----
+    // ---- Fixtures ----
 
     /** Four-task two-layer DAG with inter-layer files for the shared-storage latency model. */
     private Path sharedDax() throws Exception {

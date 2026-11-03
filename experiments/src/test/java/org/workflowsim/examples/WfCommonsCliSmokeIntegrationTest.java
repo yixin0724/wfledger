@@ -20,11 +20,12 @@ import org.workflowsim.examples.wfcommons.WfCommonsJsonParserValidationExample;
 import org.workflowsim.examples.wfcommons.WfCommonsSimulationExample1;
 
 /**
- * WfCommons JSON 命令行入口的进程级 smoke 测试。
+ * Process-level smoke test for the WfCommons JSON command-line entry points.
  *
- * <p>覆盖一个 WfGen 合成 WfFormat 输入和一个 P7 冻结的 WfInstances 真实执行派生输入。
- * 后者仅经当前抽象 DAG 转换和标准 WorkflowSim 流程验证，不构成 trace replay 或观测
- * makespan 的复现声明。</p>
+ * <p>Covers one WfGen synthetic WfFormat input and one P7-frozen WfInstances real-execution-derived
+ * input. The latter is verified only through the current abstract DAG conversion and the standard
+ * WorkflowSim pipeline; it does not constitute a trace replay or a reproduction claim for an
+ * observed makespan.</p>
  */
 class WfCommonsCliSmokeIntegrationTest {
 
@@ -106,7 +107,7 @@ class WfCommonsCliSmokeIntegrationTest {
         return workspaceRoot;
     }
 
-    /** 一个需要保持来源边界的固定 JSON 冒烟输入。 */
+    /** A fixed JSON smoke input that must preserve its provenance boundary. */
     private static final class InputCase {
         private final String id;
         private final String relativePath;
@@ -121,9 +122,10 @@ class WfCommonsCliSmokeIntegrationTest {
             if (!result.startsWith(root)) {
                 throw new IllegalStateException("Invalid JSON smoke input path: " + result);
             }
-            // R9 常驻语料守门：两个冒烟输入（montage-100-000.json 145 KB、
-            // blast-chameleon-small-001.json 103 KB）已入库（见 .gitignore 反选），
-            // 本测试在标准构建中必须执行，缺失即失败而非跳过。
+            // R9 resident corpus gate: both smoke inputs (montage-100-000.json, 145 KB;
+            // blast-chameleon-small-001.json, 103 KB) are checked in (see the .gitignore
+            // negation); this test must run in the standard build, and a missing file is a
+            // failure rather than a skip.
             if (!Files.isRegularFile(result)) {
                 throw new IllegalStateException("Resident JSON corpus must be present at " + result);
             }

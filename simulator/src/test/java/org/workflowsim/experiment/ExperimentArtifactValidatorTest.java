@@ -93,8 +93,9 @@ class ExperimentArtifactValidatorTest {
     }
 
     /**
-     * 复核轮（2026-11-02）：清单自报的事件序号边界必须与事件流绑定——篡改 lastSequence
-     * 必须被拒。此前两侧都只核对 eventCount，边界声明无人验证。
+     * Review round (2026-11-02): the event-sequence bound self-declared by the manifest must be
+     * bound to the event stream -- a tampered lastSequence must be rejected. Previously both sides
+     * only checked eventCount, and nobody verified the declared bound.
      */
     @Test
     void rejectsADeclaredSequenceBoundThatDoesNotMatchTheStream(@TempDir Path output) throws Exception {
@@ -257,7 +258,8 @@ class ExperimentArtifactValidatorTest {
         ExperimentArtifactWriter.ExperimentArtifacts artifacts =
                 ExperimentArtifactWriter.write(report, output, "schema-v2-run");
 
-        // 变体 1：v1 schema（旧字段名契约）必须被拒绝，不能静默通过。
+        // Variant 1: a v1 schema (the legacy field-name contract) must be rejected, not silently
+        // accepted.
         JsonObject sidecar = JsonParser.parseString(
                         new String(Files.readAllBytes(artifacts.getMetrics()), StandardCharsets.UTF_8))
                 .getAsJsonObject();
@@ -267,7 +269,7 @@ class ExperimentArtifactValidatorTest {
                 java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
         assertTrue(schemaException.getMessage().contains("Unsupported metrics schema"));
 
-        // 变体 2：schema 正确但缺少 v2 关键字段时必须被拒绝。
+        // Variant 2: a correct schema missing a required v2 field must be rejected.
         sidecar.addProperty("schema", "workflowsim-simulation-metrics-v2");
         sidecar.getAsJsonObject("metrics").remove("meanComputeTrueSlowdown");
         rewriteMetricsSidecar(artifacts, sidecar);
@@ -276,7 +278,7 @@ class ExperimentArtifactValidatorTest {
         assertTrue(fieldException.getMessage().contains("meanComputeTrueSlowdown"));
     }
 
-    /** 重写 metrics sidecar 并同步 manifest 中对应工件的校验和与大小。 */
+    /** Rewrite the metrics sidecar and sync the checksum and size of the matching manifest artifact. */
     private static void rewriteMetricsSidecar(
             ExperimentArtifactWriter.ExperimentArtifacts artifacts, JsonObject sidecar) throws Exception {
         Files.write(artifacts.getMetrics(), JSON.toJson(sidecar).getBytes(StandardCharsets.UTF_8));

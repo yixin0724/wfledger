@@ -35,8 +35,9 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 /**
- * D2 阶段 6 验收（夹具级）：{@link RerunDiffExecutor} 端到端——每个 verdict 一个
- * 手工构造的小样本（契约 §测试要求），报告双格式落盘，退出码与 verdict 一一对应。
+ * D2 stage 6 acceptance at fixture level: {@link RerunDiffExecutor} end to end -- one
+ * hand-built small sample per verdict (the contract's test requirement), both report formats
+ * written to disk, and the exit code in one-to-one correspondence with the verdict.
  */
 class RerunDiffExecutorTest {
 
@@ -51,8 +52,9 @@ class RerunDiffExecutorTest {
         fixtureRun = Files.createTempDirectory("rerun-diff-fixture");
         RerunTestSupport.generateEvidence(fixtureRun);
 
-        // 故障模型夹具：WEIBULL(5000,1.0)+预算 16 可正常完成；
-        // 篡改 scale→0.1 后复跑必然耗尽预算（用于"执行阶段失败"映射用例）。
+        // Failure-model fixture: WEIBULL(5000,1.0) plus a budget of 16 completes normally; after
+        // tampering with scale -> 0.1, the rerun necessarily exhausts the budget (used by the
+        // "execution-stage failure" mapping case).
         failureFixtureRun = Files.createTempDirectory("rerun-diff-failure-fixture");
         FailureModelConfig failure = FailureModelConfig.builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP)
@@ -95,7 +97,8 @@ class RerunDiffExecutorTest {
         assertEquals(0, json.get("exitCode").getAsInt());
         assertEquals(0, json.getAsJsonArray("coreDivergences").size());
 
-        // inputResolution：夹具 dax 走记录绝对路径层（tier 2），sha256 核对通过。
+        // inputResolution: the fixture dax takes the recorded-absolute-path tier (tier 2), and the
+        // sha256 check passes.
         JsonArray inputs = json.getAsJsonArray("inputResolution");
         assertEquals(1, inputs.size());
         JsonObject entry = inputs.get(0).getAsJsonObject();
@@ -105,7 +108,8 @@ class RerunDiffExecutorTest {
                 entry.get("recordedPath").getAsString(),
                 entry.get("resolvedPath").getAsString());
 
-        // 代码身份：同一源码树复跑，两侧哈希相同且非空。
+        // Code identity: rerunning on the same source tree yields identical, non-empty hashes on
+        // both sides.
         String originalHash = json.get("originalSourceTreeSha256").getAsString();
         String rerunHash = json.get("rerunSourceTreeSha256").getAsString();
         assertFalse(originalHash.isEmpty());
@@ -161,7 +165,8 @@ class RerunDiffExecutorTest {
 
         assertEquals(RerunVerdict.DIVERGED, report.getVerdict());
         assertEquals(1, report.getExitCode());
-        // 分歧不妨碍复跑本身：rerun 三件套仍然落盘。
+        // Divergence does not hinder the rerun itself: the three rerun artifacts (manifest, metrics,
+        // events) are still written to disk.
         assertTrue(Files.exists(tempDir.resolve("tampered-out/rerun/result.manifest.json")));
         assertEquals(1, report.getCoreDivergences().size());
         assertEquals(
@@ -236,7 +241,8 @@ class RerunDiffExecutorTest {
         assertEquals(4, report.getExitCode());
         assertTrue(report.getFailureReason().contains("NOT_AN_ALGORITHM"));
         assertFalse(Files.exists(tempDir.resolve("bad-enum-out/rerun")));
-        // 失败路径仍保留原始侧身份信息，但无法比较代码身份。
+        // The failure path still retains the original-side identity information, but code identity
+        // cannot be compared.
         assertNotNull(report.getOriginalSourceTreeSha256());
         assertNull(report.getRerunSourceTreeSha256());
         assertNull(report.getCodeIdentityNote());
@@ -283,7 +289,8 @@ class RerunDiffExecutorTest {
         Path run = Files.createDirectories(tempDir.resolve("sim-failure"));
         RerunTestSupport.copyEvidenceFiles(failureFixtureRun, run);
         JsonObject manifest = readManifest(run);
-        // WEIBULL scale 5000.0 → 0.1：重建仍能通过，但复跑必然耗尽重试预算。
+        // WEIBULL scale 5000.0 -> 0.1: reconstruction still passes, but the rerun necessarily
+        // exhausts the retry budget.
         rewriteDistributionScale(manifest.getAsJsonObject("configuration").getAsJsonObject("failureModel"), 0.1);
         writeManifest(run, manifest);
 
@@ -303,9 +310,10 @@ class RerunDiffExecutorTest {
     }
 
     /**
-     * 一致性篡改 makespan：同步改写 manifest 内联 metrics、metrics sidecar 与
-     * artifacts 哈希/大小。阶段 1 读取器的跨文件校验因此仍然通过，篡改才会到达
-     * 差异比对环节——只改 manifest 会被 EVIDENCE_INVALID 提前拦截。
+     * Consistent makespan tampering: rewrites the inline manifest metrics, the metrics sidecar and
+     * the artifacts hash/size in step. The cross-file validation of the stage 1 reader therefore
+     * still passes, and the tampering reaches the diff comparison stage -- rewriting only the
+     * manifest would be intercepted early as EVIDENCE_INVALID.
      */
     private static void tamperMakespanConsistently(Path run, double newMakespan) throws Exception {
         JsonObject manifest = readManifest(run);
@@ -368,7 +376,10 @@ class RerunDiffExecutorTest {
         Files.write(run.resolve("result.manifest.json"), gson.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /** 同步改写 inputs/workflowPaths/workflowOutcomes 三处路径（v4 交叉校验要求）。 */
+    /**
+     * Rewrites the path in inputs/workflowPaths/workflowOutcomes in step
+     * (v4 cross-validation requirement).
+     */
     private static void rewriteInputPath(Path run, String newPath) throws Exception {
         JsonObject manifest = readManifest(run);
         manifest.getAsJsonArray("inputs").get(0).getAsJsonObject().addProperty("path", newPath);

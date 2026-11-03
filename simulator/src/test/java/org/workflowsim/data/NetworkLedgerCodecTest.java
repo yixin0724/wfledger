@@ -445,8 +445,8 @@ class NetworkLedgerCodecTest {
     @Test
     void lexicalParserPreservesEscapesAndRejectsDecodedKeyCollisions() {
         JsonObject value =
-                NetworkLedgerCodec.parseDocument("\ufeff {\"s\":\"a\\\"b\\\\c\\n\\u4e2d\",\"v\":[true,false,null]}");
-        assertEquals("a\"b\\c\n中", value.get("s").getAsString());
+                NetworkLedgerCodec.parseDocument("\ufeff {\"s\":\"a\\\"b\\\\c\\n\\u2601\",\"v\":[true,false,null]}");
+        assertEquals("a\"b\\c\n☁", value.get("s").getAsString());
         assertTrue(value.getAsJsonArray("v").get(0).getAsBoolean());
         assertFalse(value.getAsJsonArray("v").get(1).getAsBoolean());
         assertTrue(value.getAsJsonArray("v").get(2).isJsonNull());
@@ -498,7 +498,7 @@ class NetworkLedgerCodecTest {
 
     @Test
     void hostileAndUnicodeResourceLabelsRemainLiteralData() {
-        String key = "<img src=x onerror=alert(1)>/节点\\\"";
+        String key = "<img src=x onerror=alert(1)>/☃☀\\\"";
         TransferContentionEngine engine = new TransferContentionEngine(10);
         engine.addTransfer(1, 1, Collections.singletonList(key), 1, 0);
         engine.advance(1);

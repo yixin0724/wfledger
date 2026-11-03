@@ -9,8 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 
 /**
- * {@link DistributionSpec} 校验与生成器创建的全分支契约：参数有限性、
- * NORMAL 尺度豁免、先验参数"全有或全无"、生成器与随机流绑定。
+ * Full-branch contract for {@link DistributionSpec} validation and generator creation:
+ * parameter finiteness, the NORMAL scale exemption, all-or-nothing priors, and the binding
+ * of the generator to the named random stream.
  */
 class DistributionSpecTest {
 
@@ -38,8 +39,8 @@ class DistributionSpecTest {
 
     @Test
     void priorsMustBeSuppliedTogetherAndBeFinite() {
-        // 公开 API 的 withPriors 接收 primitive，"部分先验"分支不可达；
-        // 可达的拒绝路径是"全有但非有限"。
+        // The public withPriors API takes primitives, so the "partial priors" branch is unreachable;
+        // the reachable rejection path is "all supplied but not finite".
         assertThrows(
                 IllegalArgumentException.class,
                 () -> DistributionSpec.withPriors(DistributionFamily.GAMMA, 1.0, 1.0, Double.NaN, 3.0, 1.0));
@@ -51,7 +52,7 @@ class DistributionSpecTest {
                 IllegalArgumentException.class,
                 () -> DistributionSpec.withPriors(
                         DistributionFamily.GAMMA, 1.0, 1.0, 2.0, 3.0, Double.NEGATIVE_INFINITY));
-        // 全有且有限 → 接受并原样读出。
+        // All supplied and finite -> accepted and read back unchanged.
         DistributionSpec spec = DistributionSpec.withPriors(DistributionFamily.GAMMA, 1.5, 2.5, 3.5, 4.5, 0.25);
         assertEquals(3.5, spec.getPriorShape(), 0.0);
         assertEquals(4.5, spec.getPriorScale(), 0.0);

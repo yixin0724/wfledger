@@ -66,7 +66,7 @@ class AlgorithmDeclarationTest {
 
     @Test
     void energyFieldsDefaultOffAndImplicationsAreEnforced() {
-        // 默认全关——既有注册零影响
+        // Off by default -- zero impact on existing registrations
         AlgorithmDeclaration plain = new AlgorithmDeclaration.Builder()
                 .allowDataMovementKind("LEGACY_WORKFLOWSIM_V1")
                 .build();
@@ -74,13 +74,13 @@ class AlgorithmDeclarationTest {
         assertFalse(plain.isPowerModelRequired());
         assertTrue(plain.getEnergyObjectiveWeight() == 0.0);
 
-        // powerModelRequired 蕴含 energyAware
+        // powerModelRequired implies energyAware
         AlgorithmDeclaration required =
                 new AlgorithmDeclaration.Builder().powerModelRequired(true).build();
         assertTrue(required.isPowerModelRequired());
         assertTrue(required.isEnergyAware());
 
-        // 正权重蕴含 energyAware
+        // A positive weight implies energyAware
         AlgorithmDeclaration weighted =
                 new AlgorithmDeclaration.Builder().energyObjectiveWeight(1.5).build();
         assertTrue(weighted.isEnergyAware());
@@ -105,8 +105,9 @@ class AlgorithmDeclarationTest {
 
     @Test
     void carbonFieldsDefaultOffAndImplicationsAreEnforced() {
-        // BAT-C5（2026-10-28）：默认全关——既有注册零影响；正权重蕴含 carbonAware 且
-        // 因 v1 两种碳核算都骑在能量链上（设计文档 §2.2）同时蕴含 energyAware。
+        // BAT-C5 (2026-10-28): off by default -- zero impact on existing registrations; a
+        // positive weight implies carbonAware and, because both v1 carbon accounting modes ride
+        // the energy chain (design document section 2.2), also implies energyAware.
         AlgorithmDeclaration plain = new AlgorithmDeclaration.Builder()
                 .allowDataMovementKind("LEGACY_WORKFLOWSIM_V1")
                 .build();
@@ -125,7 +126,8 @@ class AlgorithmDeclarationTest {
         assertTrue(weighted.isEnergyAware(), "positive carbon weight rides the energy chain");
         assertTrue(weighted.getCarbonObjectiveWeight() == 1.0);
 
-        // 声明链接：注册演示器 = powerModelRequired + carbonObjectiveWeight 1.0 + energyAware
+        // Declaration link: the registration demonstrator = powerModelRequired + carbonObjectiveWeight
+        // 1.0 + energyAware
         AlgorithmDeclaration demonstrator = new AlgorithmDeclaration.Builder()
                 .powerModelRequired(true)
                 .carbonObjectiveWeight(1.0)
@@ -153,8 +155,8 @@ class AlgorithmDeclarationTest {
 
     @Test
     void registryRejectsPowerRequiredAlgorithmOnUnpoweredPlatform() {
-        // SPI 注册的 EnergyTestSchedulerProvider（simulator 测试 classpath）声明 powerModelRequired=true.
-        // 无功率平台 → powerModelRequired 拒绝
+        // EnergyTestSchedulerProvider, registered through SPI (simulator test classpath), declares
+        // powerModelRequired=true. Unpowered platform -> powerModelRequired is rejected.
         IllegalArgumentException unpowered = assertThrows(
                 IllegalArgumentException.class,
                 () -> AlgorithmRegistry.validate(
@@ -170,7 +172,7 @@ class AlgorithmDeclarationTest {
         assertTrue(
                 unpowered.getMessage().contains("powerModelRequired"),
                 "message must cite the power clause: " + unpowered.getMessage());
-        // 带功率平台 → 放行
+        // Powered platform -> accepted
         AlgorithmRegistry.validate(
                 "ENERGY-TEST-REQUIRED",
                 new AlgorithmRegistry.ValidationInput(
@@ -184,9 +186,10 @@ class AlgorithmDeclarationTest {
 
     @Test
     void dvfsFieldsDefaultOffAndImplicationLatticeIsEnforced() {
-        // BAT-D4（2026-10-29，docs/advanced/DVFS_DIMENSION_DESIGN.md §2.6）：默认全关——
-        // 既有注册零影响；frequencyTiersRequired 蕴含 dvfsAware（与
-        // powerModelRequired⇒energyAware 同构的蕴含格：required 标志拉起 aware 标志）。
+        // BAT-D4 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.6): off by
+        // default -- zero impact on existing registrations; frequencyTiersRequired implies
+        // dvfsAware (an implication lattice isomorphic to powerModelRequired => energyAware:
+        // the required flag pulls the aware flag up).
         AlgorithmDeclaration plain = new AlgorithmDeclaration.Builder()
                 .allowDataMovementKind("LEGACY_WORKFLOWSIM_V1")
                 .build();
@@ -198,14 +201,16 @@ class AlgorithmDeclarationTest {
         assertTrue(required.isFrequencyTiersRequired());
         assertTrue(required.isDvfsAware(), "frequencyTiersRequired must pull dvfsAware up");
 
-        // dvfsAware 单独声明不要求平台频档表（描述性标志，非门槛——门槛语义在 required 上）
+        // Declaring dvfsAware alone does not require a platform frequency-tier table (a
+        // descriptive flag, not a gate -- the gate semantics live on required)
         AlgorithmDeclaration awareOnly =
                 new AlgorithmDeclaration.Builder().dvfsAware(true).build();
         assertTrue(awareOnly.isDvfsAware());
         assertFalse(awareOnly.isFrequencyTiersRequired());
 
-        // 声明链接完整对应面：dvfsAware + frequencyTiersRequired（+ 频档算法通常同时
-        // 消费能量链——powerModelRequired 组合不被蕴含格阻碍）
+        // Full declaration-link counterpart face: dvfsAware + frequencyTiersRequired (a
+        // frequency-tier algorithm usually also consumes the energy chain -- the
+        // powerModelRequired combination is not blocked by the implication lattice)
         AlgorithmDeclaration demonstrator = new AlgorithmDeclaration.Builder()
                 .powerModelRequired(true)
                 .dvfsAware(true)
@@ -218,8 +223,9 @@ class AlgorithmDeclarationTest {
 
     @Test
     void registryRejectsFrequencyTiersRequiredAlgorithmOnTierlessPlatform() {
-        // SPI 注册的 DvfsTestSchedulerProvider（simulator 测试 classpath）声明
-        // frequencyTiersRequired=true。无频档平台 → frequencyTiersRequired 拒绝（引用条款）
+        // DvfsTestSchedulerProvider, registered through SPI (simulator test classpath), declares
+        // frequencyTiersRequired=true. Tierless platform -> frequencyTiersRequired is rejected
+        // (the clause is cited).
         IllegalArgumentException tierless = assertThrows(
                 IllegalArgumentException.class,
                 () -> AlgorithmRegistry.validate(
@@ -237,7 +243,7 @@ class AlgorithmDeclarationTest {
                 tierless.getMessage().contains("frequencyTiersRequired")
                         && tierless.getMessage().contains("frequencyTiers"),
                 "message must cite the tier clause and the platform field face: " + tierless.getMessage());
-        // 带频档平台 → 放行（all-green 对应面）
+        // Platform with frequency tiers -> accepted (the all-green counterpart face)
         AlgorithmRegistry.validate(
                 "DVFS-TEST-REQUIRED",
                 new AlgorithmRegistry.ValidationInput(
@@ -252,8 +258,9 @@ class AlgorithmDeclarationTest {
 
     @Test
     void legacyValidationInputConstructorsDefaultTiersToFalse() throws Exception {
-        // BAT-D4：6 参/5 参遗留委托面保留——频档缺省 false，既有调用方零影响；
-        // 7 参完整构造显式携带频档事实。
+        // BAT-D4: the 6-arg / 5-arg legacy delegation faces are retained -- tiers default to
+        // false, so existing callers are unaffected; the full 7-arg constructor carries the
+        // tier fact explicitly.
         org.workflowsim.utils.SimulationConfig config =
                 org.workflowsim.utils.SimulationConfig.builder("legacy.dax", 1).build();
         AlgorithmRegistry.ValidationInput fromConfig = new AlgorithmRegistry.ValidationInput(config);
@@ -268,7 +275,8 @@ class AlgorithmDeclarationTest {
         assertTrue(
                 legacySix.isPlatformPowerDeclared() && !legacySix.isPlatformFrequencyTiersDeclared(),
                 "6-arg legacy keeps power fact, tiers default false");
-        // DVFS-TEST-REQUIRED 在默认 false 的遗留输入上必须被拒（与显式 false 同拒）
+        // DVFS-TEST-REQUIRED must be rejected on legacy input that defaults to false (rejected
+        // exactly as with an explicit false)
         assertThrows(
                 IllegalArgumentException.class,
                 () -> AlgorithmRegistry.validate("DVFS-TEST-REQUIRED", legacyFive),

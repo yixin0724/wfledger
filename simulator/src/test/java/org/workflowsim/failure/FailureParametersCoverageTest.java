@@ -16,7 +16,7 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** 验证失效模式在任务派发前按真实 depth 与 VM ID 检查生成器覆盖。 */
+/** Verify that failure-mode coverage is checked by actual depth and VM ID before task dispatch. */
 class FailureParametersCoverageTest {
 
     @AfterEach

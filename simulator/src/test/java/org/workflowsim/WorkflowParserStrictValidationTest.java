@@ -42,17 +42,18 @@ class WorkflowParserStrictValidationTest {
 
     @Test
     void rejectsUnsupportedFileLinksButToleratesConflictingInputSizes() throws Exception {
-        // 不支持的 link 类型仍然拒绝
+        // Unsupported link types are still rejected
         assertThrows(
                 WorkflowValidationException.class,
                 () -> parse(dax(
                         "<job id=\"a\" runtime=\"1\"><uses name=\"x\" link=\"temporary\" size=\"1\"/>" + "</job>")));
 
-        // 不一致的 input size 现在只记录警告，不再抛异常（放宽校验以支持真实工作流）
+        // Inconsistent input sizes now only log a warning instead of throwing (validation
+        // relaxed to support real workflows)
         parse(dax("<job id=\"a\" runtime=\"1\"><uses name=\"x\" link=\"input\" size=\"1\"/>"
                 + "</job><job id=\"b\" runtime=\"1\"><uses name=\"x\" link=\"input\" size=\"2\"/>"
                 + "</job>"));
-        // 如果上面的 parse 成功返回，说明没有抛异常，符合预期
+        // If the parse above returns, no exception was thrown, as expected
     }
 
     @Test

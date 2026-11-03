@@ -45,7 +45,8 @@ class WorkflowSchedulerPolicyLifecycleTest {
         assertSame(first, second);
         assertTrue(first instanceof ReadyBatchRoundRobinSchedulingAlgorithm);
 
-        // 同一个 Scheduler 在算法类型改变后必须丢弃已缓存的有状态策略实例。
+        // The same Scheduler must discard the cached stateful policy instance once the algorithm type
+        // changes.
         Parameters.init(
                 1,
                 (String) null,

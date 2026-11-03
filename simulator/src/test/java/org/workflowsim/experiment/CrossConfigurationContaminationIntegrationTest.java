@@ -18,14 +18,16 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 同 JVM 串行跨配置交叉污染 IT：在同一 JVM 内依次运行互不相同的配置
- * （DAG 规划器 / 随机规划器 / 在线调度器、不同 DAX、不同平台、不同种子），
- * 然后重跑先前的配置——任何静态状态泄漏（副本目录、随机流注册表、
- * 全局参数、CloudSim 时钟）都会让重跑结果偏离首次运行。
+ * Same-JVM serial cross-configuration contamination IT: runs mutually distinct
+ * configurations back to back inside one JVM (DAG planner / random planner / online
+ * scheduler, different DAX, different platform, different seed), then reruns the earlier
+ * configurations -- any static state leak (replica catalog, random stream registry,
+ * global parameters, CloudSim clock) makes a rerun drift from the first run.
  *
- * <p>已有 {@code repeatedDaxRunsProduceEquivalentAuditableReports} 只覆盖
- * 相邻同配置双跑；本 IT 覆盖"不同配置夹在中间"的交替顺序
- * A→B→C→A'→B'→C'，这是研究者实际批量实验的真实形态。</p>
+ * <p>The existing {@code repeatedDaxRunsProduceEquivalentAuditableReports} covers only
+ * adjacent double runs of the same configuration; this IT covers the alternating order
+ * A->B->C->A'->B'->C', in which different configurations sit in between, which is the
+ * real shape of a researcher's batch experiments.</p>
  */
 class CrossConfigurationContaminationIntegrationTest {
 
@@ -137,7 +139,7 @@ class CrossConfigurationContaminationIntegrationTest {
         return result.toString();
     }
 
-    /** 确定性重放有意排除墙钟决策耗时。 */
+    /** Deterministic replay deliberately excludes wall-clock decision cost. */
     private static String logicalEventFingerprint(SimulationReport report) {
         StringBuilder result = new StringBuilder();
         for (SimulationEvent event : report.getEvents()) {

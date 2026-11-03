@@ -23,25 +23,32 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationConfig.FrequencyPolicy;
 
 /**
- * BAT-V4.2（2026-10-29 测试工程师对抗轮，DVFS 第五轮）：配置节 frequencyPolicy 键的
- * 发射口径红→绿。
+ * BAT-V4.2 (2026-10-29 test-engineer adversarial round, DVFS round 5): red -> green
+ * on the emission shape of the frequencyPolicy key in the configuration section.
  *
- * <p>攻击背景（本轮实证发现）：D4 让 {@code ExperimentManifestWriter} 无条件写
- * {@code configuration.frequencyPolicy}——包括 v1 无档平台的 DEFAULT（惰性）值。于是
- * <b>每一份 D4 前冻结的 v1 证据</b>（power-v1 / carbon-v1 / standard-v1 三套基准、
- * 全部历史 bundle）在 EvidenceCoreDiffer 下复跑时都新增一个核心量分歧
- * {@code /configuration/frequencyPolicy <missing> vs "DEFAULT"} → 整批历史证据
- * 从 IDENTICAL_CORE 退化为 DIVERGED——证据配偶（e-prior evidence）与
- * "v1 manifest 逐位不变"（D3 平台节的同款纪律："key omitted when empty"）之间的契约
- * 被 D4 的一行发射破坏。红锚：对 v1 运行断言序列化面不含 {@code frequencyPolicy}。</p>
+ * <p>Attack background (empirical finding of this round): D4 made
+ * {@code ExperimentManifestWriter} write {@code configuration.frequencyPolicy}
+ * unconditionally -- including the DEFAULT (lazy) value of a v1 tierless platform.
+ * Consequently <b>every v1 evidence bundle frozen before D4</b> (the power-v1 /
+ * carbon-v1 / standard-v1 baselines, and all historical bundles) gains one core
+ * divergence on rerun under EvidenceCoreDiffer,
+ * {@code /configuration/frequencyPolicy <missing> vs "DEFAULT"} -> the whole body
+ * of historical evidence degrades from IDENTICAL_CORE to DIVERGED. The contract
+ * between the e-prior evidence and "v1 manifest bit-for-bit unchanged" (the same
+ * discipline as the D3 platform section: "key omitted when empty") is broken by a
+ * single emission line of D4. Red anchor: assert that the serialized surface of a
+ * v1 run carries no {@code frequencyPolicy}.</p>
  *
- * <p>修复后的发射规则（镜像 tierMips/frequencyTiers/carbonWindows 的
- * "声明→出现、缺省→键缺省"文化）：</p>
+ * <p>Emission rules after the fix (mirroring the
+ * "declared -> present, absent -> key omitted" culture of
+ * tierMips/frequencyTiers/carbonWindows):</p>
  * <ul>
- *   <li>v1 无档平台（策略只能是 DEFAULT——运行器 BAT-D2 门拒绝其他）：键缺省；</li>
- *   <li>非 DEFAULT 策略：必写（任何平台）；</li>
- *   <li>档表声明（tiered 平台）：必写（复跑语义需要，D5 三维基准的 DEFAULT 单元
- *       保留显式标签）。</li>
+ *   <li>v1 tierless platform (the policy can only be DEFAULT -- the runner's BAT-D2
+ *       gate rejects anything else): key omitted;</li>
+ *   <li>non-DEFAULT policy: always written (any platform);</li>
+ *   <li>declared tier table (tiered platform): always written (required by rerun
+ *       semantics; the DEFAULT cells of the D5 three-dimensional baseline keep an
+ *       explicit label).</li>
  * </ul>
  */
 class FrequencyTierManifestEmissionTest {
@@ -63,7 +70,10 @@ class FrequencyTierManifestEmissionTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    /** 红锚（本轮修复前为红）：v1 无档运行的全序列化面不含 frequencyPolicy 键。 */
+    /**
+     * Red anchor (red before this round's fix): the full serialized surface of a v1
+     * tierless run carries no frequencyPolicy key.
+     */
     @Test
     void v1TierlessManifestOmitsTheFrequencyPolicyKeyEntirely() throws Exception {
         SimulationReport plain = run(plainPoweredPlatform(), null);
@@ -82,7 +92,10 @@ class FrequencyTierManifestEmissionTest {
                         + " into a fake core divergence): " + excerpt(serialized));
     }
 
-    /** tiered 运行必写频率策略（复跑语义的一部分；D5 基准 DEFAULT 单元同款）。 */
+    /**
+     * A tiered run must write the frequency policy (part of the rerun semantics; same
+     * as the DEFAULT cells of the D5 baseline).
+     */
     @Test
     void tieredManifestRecordsTheFrequencyPolicy() throws Exception {
         SimulationReport tiered = run(twoTierPlatform(), FrequencyPolicy.DEFAULT);
@@ -122,7 +135,7 @@ class FrequencyTierManifestEmissionTest {
         return new SimulationRunner().run(builder.build(), platform);
     }
 
-    /** 2 档平台（2000 默认 / 500 末档）。 */
+    /** Two-tier platform (2000 default / 500 last tier). */
     private static PlatformProfile twoTierPlatform() {
         java.util.List<PlatformProfile.FrequencyTier> tiers = new ArrayList<PlatformProfile.FrequencyTier>();
         tiers.add(new PlatformProfile.FrequencyTier(2000.0, 250.0, 400.0));
@@ -135,7 +148,7 @@ class FrequencyTierManifestEmissionTest {
         return builder.build();
     }
 
-    /** v1 平面功率平台（250/400，无档）。 */
+    /** v1 flat-power platform (250/400, tierless). */
     private static PlatformProfile plainPoweredPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("v4-emit-plain");
         builder.addHost(new PlatformProfile.HostSpec(0, 2, 2000.0, 2048, 10_000L, 1_000_000L));

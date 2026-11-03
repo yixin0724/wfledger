@@ -19,15 +19,18 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * campaign DAG 集兼容性契约：LOCAL 通信感知规划族（campaign 主角规划器
- * LOCAL_HEFT/LOCAL_CPOP 所属家族）对全部候选 DAX 的通过/拒绝分类。
+ * Compatibility contract of the campaign DAG set: the pass/reject classification of every
+ * candidate DAX by the LOCAL communication-aware planning family (the family that owns the
+ * campaign's primary planners LOCAL_HEFT/LOCAL_CPOP).
  *
- * <p>背景：原始 Pegasus/WfCommons DAX 允许同名文件在不同 Job 中声明不同
- * 尺寸；{@code AbstractLocalCommPlanningAlgorithm} 将副本视为单一实体并严格
- * 拒绝尺寸不一致。实测分类（2026-09-15 探测）：Epigenomics/CyberShake/
- * Inspiral 全部规模通过；Montage 与 Sipht 全部规模被拒绝（分别因
- * fit.txt 与 Seq_NC_0025AG05 的尺寸冲突）。campaign 最终 DAG 集 = 通过集
- * （10 个），设计文档 §2.1 的排除声明以本测试为实证依据。</p>
+ * <p>Background: a raw Pegasus/WfCommons DAX allows the same file name to declare different
+ * sizes in different jobs; {@code AbstractLocalCommPlanningAlgorithm} treats a replica as a
+ * single entity and strictly rejects inconsistent size declarations. Measured classification
+ * (2026-09-15 probe): Epigenomics/CyberShake/Inspiral pass at every scale; Montage and Sipht
+ * are rejected at every scale (because of the size conflict on fit.txt and on
+ * Seq_NC_0025AG05 respectively). The final campaign DAG set equals the passing set (10
+ * entries); the exclusion statement in section 2.1 of the design document is backed by this
+ * test as its empirical evidence.</p>
  */
 class FatTreeCampaignDagCompatibilityIntegrationTest {
 
@@ -46,7 +49,7 @@ class FatTreeCampaignDagCompatibilityIntegrationTest {
     private static final List<String> EXPECTED_REJECTED =
             Arrays.asList("montage-n25", "montage-n50", "montage-n100", "sipht-n30", "sipht-n60", "sipht-n100");
 
-    /** campaign DAG 集 = 兼容性通过集，逐元素精确。 */
+    /** The campaign DAG set equals the compatibility passing set, element for element. */
     @Test
     void campaignDagSetIsExactlyTheCompatibleSet() throws Exception {
         List<FatTreeSchedulingCampaignExecutor.DagScenario> dags =
@@ -55,10 +58,10 @@ class FatTreeCampaignDagCompatibilityIntegrationTest {
         for (FatTreeSchedulingCampaignExecutor.DagScenario dag : dags) {
             ids.add(dag.id);
         }
-        assertEquals(EXPECTED_PASSED, ids, "campaign DAG 集必须与兼容性通过集一致");
+        assertEquals(EXPECTED_PASSED, ids, "The campaign DAG set must equal the compatibility passing set");
     }
 
-    /** 全部 16 个候选 DAX 的分类必须与探测实证逐元素一致。 */
+    /** The classification of all 16 candidate DAX must match the probed partition element for element. */
     @Test
     void localCommFamilyClassificationMatchesTheProbedPartition() throws Exception {
         Log.disable();
@@ -80,11 +83,12 @@ class FatTreeCampaignDagCompatibilityIntegrationTest {
                 rejected.add(candidate.id);
                 assertTrue(
                         rootCauseMessage(exception).contains("inconsistent size declarations"),
-                        candidate.id + ": 拒绝原因必须是文件尺寸不一致，实际 " + rootCauseMessage(exception));
+                        candidate.id + ": the rejection reason must be inconsistent file sizes, actual "
+                                + rootCauseMessage(exception));
             }
         }
-        assertEquals(EXPECTED_PASSED, passed, "通过集逐元素一致");
-        assertEquals(EXPECTED_REJECTED, rejected, "拒绝集逐元素一致");
+        assertEquals(EXPECTED_PASSED, passed, "The passing set must match element for element");
+        assertEquals(EXPECTED_REJECTED, rejected, "The rejected set must match element for element");
     }
 
     private static List<CandidateDag> allCandidates() throws IOException {

@@ -173,8 +173,9 @@ class EdpGreedyRegistryIntegrationTest {
                 .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                 .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
                 .randomSeed(20261029L)
-                // 会话策略保持 DEFAULT：逐 Job 档决策通过调度时刻 API（FrequencyTierSelector）
-                // 归算法——任何 500 档 Job 都是算法的决策，不是会话斜切。
+                // The session policy stays DEFAULT: per-Job tier decisions belong to the algorithm
+                // through the scheduling-time API (FrequencyTierSelector) -- any 500-tier Job is
+                // the algorithm's decision, not a session-level policy selection.
                 .frequencyPolicy(SimulationConfig.FrequencyPolicy.DEFAULT)
                 .registeredSchedulingAlgorithm(provider)
                 .build();
@@ -406,7 +407,10 @@ class EdpGreedyRegistryIntegrationTest {
     // fixtures
     // ------------------------------------------------------------------
 
-    /** 无依赖 bag（40/30/95/35 秒——E5/碳示范同族）：4 个计算 Job 同时就绪。 */
+    /**
+     * Dependency-free bag (40/30/95/35 s -- the same family as the E5/carbon demonstrator):
+     * four compute Jobs are ready simultaneously.
+     */
     private Path bagDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<adag count=\"4\">\n");

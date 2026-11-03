@@ -31,9 +31,11 @@ class P7WfInstancesPilotMatrixTest {
         Path root = datasetRoot();
         List<P7WfInstancesPilotMatrix.Scenario> scenarios = P7WfInstancesPilotMatrix.scenarios();
         assertEquals(4, scenarios.size());
-        // R9 常驻语料守门：4 个 pilot 场景引用的 WfInstances 文件（33–111 KB）已入库
-        // （见 .gitignore 反选），本测试在标准构建中必须执行，不再允许跳过。注意这里
-        // 必须直接拼路径：scenario.resolve(root) 自带严格校验，文件缺失时会先抛异常。
+        // R9 resident-corpus guard: the WfInstances files (33-111 KB) referenced by the 4
+        // pilot scenarios are committed (see the .gitignore negation); this test must run
+        // in the standard build and may no longer be skipped. The path must be assembled
+        // directly here: scenario.resolve(root) carries strict validation of its own and
+        // throws first when a file is missing.
         for (P7WfInstancesPilotMatrix.Scenario scenario : scenarios) {
             assertTrue(
                     Files.isRegularFile(root.resolve(scenario.getRelativePath()).normalize()),

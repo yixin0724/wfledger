@@ -55,20 +55,30 @@ class BalancingComparatorContractTest {
         // default 1 for lengths <= 0.
         List<TaskSet> pair = new ArrayList<TaskSet>(Arrays.asList(runtime(4294967296L), runtime(1L)));
         Collections.sort(pair, HorizontalRuntimeBalancing.RUNTIME_INCREASING);
-        assertEquals(Arrays.asList(1L, 4294967296L), runtimes(pair), "差为 2^32 的两个运行时长必须可区分（红测 F-005：窄化回绕）");
+        assertEquals(
+                Arrays.asList(1L, 4294967296L),
+                runtimes(pair),
+                "two runtimes differing by 2^32 must be distinguishable (red test F-005: narrowing wrap-around)");
 
-        // 偏差不对称性探针：0 与 2^32+1 的差窄化为 1（方向碰巧正确），
-        // 但 0 与 2^32-1 的差窄化为 -1（方向错误）——同一缺陷的另一面。
+        // Asymmetric deviation probe: the difference between 0 and 2^32+1 narrows to 1 (the
+        // direction happens to be correct), but the difference between 0 and 2^32-1 narrows to
+        // -1 (the direction is wrong) -- the other face of the same defect.
         List<TaskSet> asymmetric = new ArrayList<TaskSet>(Arrays.asList(runtime(4294967295L), runtime(1L)));
         Collections.sort(asymmetric, HorizontalRuntimeBalancing.RUNTIME_INCREASING);
-        assertEquals(Arrays.asList(1L, 4294967295L), runtimes(asymmetric), "0 与 2^32-1 的比较方向也必须正确（窄化回绕的另一面）");
+        assertEquals(
+                Arrays.asList(1L, 4294967295L),
+                runtimes(asymmetric),
+                "the direction for 0 vs 2^32-1 must also be correct (the other face of the narrowing wrap-around)");
     }
 
     @Test
     void runtimeDecreasingSortsInExactDescendingOrderAndMirrorsWrapAround() {
         List<TaskSet> list = new ArrayList<TaskSet>(Arrays.asList(runtime(4294967296L), runtime(1L), runtime(1_000L)));
         Collections.sort(list, HorizontalRuntimeBalancing.RUNTIME_DECREASING);
-        assertEquals(Arrays.asList(4294967296L, 1_000L, 1L), runtimes(list), "降序排序必须在含大运行时长时保持正确（含 2^32 回绕红测）");
+        assertEquals(
+                Arrays.asList(4294967296L, 1_000L, 1L),
+                runtimes(list),
+                "the descending sort must stay correct with large runtimes (including the 2^32 wrap-around red test)");
     }
 
     private static List<Long> runtimes(List<TaskSet> sets) {

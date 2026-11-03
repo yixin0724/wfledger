@@ -30,10 +30,10 @@ class WorkflowModelReferenceTest {
 
         assertTrue(reference.isAvailable());
         assertEquals(WorkflowModelReference.CONTROLLED_SHARED_STORAGE_SCOPE, reference.getScope());
-        // max(110 MI / 2000 MIPS, 0.1 秒事件间隔 + 0.01 秒安全量子)
-        // 再加一个 0.1 秒 Workflow Engine 根任务释放间隔，
-        // 加 1000 MI / 2000 MIPS，
-        // 加 (2000 MI + 2000 MI 数据 stage-in) / 2000 MIPS。
+        // max(110 MI / 2000 MIPS, 0.1 s minimum event interval + 0.01 s completion guard)
+        // plus one 0.1 s Workflow Engine root-task release interval,
+        // plus 1000 MI / 2000 MIPS,
+        // plus (2000 MI + 2000 MI of data stage-in) / 2000 MIPS.
         assertEquals(2.71, reference.getCriticalPathLowerBoundSeconds(), 1.0e-12);
         assertEquals(2, reference.getSourceTaskCount());
     }
@@ -64,8 +64,8 @@ class WorkflowModelReferenceTest {
                 Arrays.asList(fastParent, slowParent, join), controlledConfig(), oneFastVmPlatform());
 
         assertTrue(reference.isAvailable());
-        // 根任务释放为 max(110/2000, 0.1+0.01)+0.1=0.21；3000 MI 父任务在 1.71 完成，
-        // 汇合任务还需 2000/2000=1.0 秒。
+        // The root task is released at max(110/2000, 0.1+0.01)+0.1=0.21; the 3000 MI parent
+        // finishes at 1.71, and the join task still needs 2000/2000=1.0 s.
         assertEquals(2.71, reference.getCriticalPathLowerBoundSeconds(), 1.0e-12);
         assertEquals(3, reference.getSourceTaskCount());
     }

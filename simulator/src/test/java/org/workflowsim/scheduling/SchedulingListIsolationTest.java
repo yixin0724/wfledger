@@ -13,19 +13,20 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Job;
 
 /**
- * 回归测试（PLAT-6）：调度算法不得改写调用方传入的就绪队列。
+ * Regression test (PLAT-6): a scheduling algorithm must not rewrite the caller-supplied ready queue.
  *
- * <p>背景：{@link BaseSchedulingAlgorithm#setCloudletList(List)} 历史上直接持有
- * 调度器就绪队列的真实引用，而 {@link FirstFitIdleSchedulingAlgorithm} 会在
- * {@code run()} 内按 Cloudlet ID 排序该列表——排序残留泄漏回调度器队列，
- * 破坏跨调度周期的到达序（FCFS 语义）。修复后 setCloudletList 做防御性复制，
- * 本测试固定该行为。</p>
+ * <p>Background: {@link BaseSchedulingAlgorithm#setCloudletList(List)} historically held a real
+ * reference to the scheduler's ready queue, while {@link FirstFitIdleSchedulingAlgorithm} sorts
+ * that list by Cloudlet ID inside {@code run()} -- the leftover sort order leaked back into the
+ * scheduler queue and broke arrival order across scheduling cycles (FCFS semantics). The fix makes
+ * setCloudletList take a defensive copy, and this test pins that behavior.</p>
  */
 class SchedulingListIsolationTest {
 
     @Test
     void firstFitIdleSortingDoesNotLeakIntoCallerReadyList() {
-        // 到达序刻意与 Cloudlet ID 升序相反：FirstFitIdle 内部会重排为 ID 升序。
+        // Arrival order is deliberately the reverse of ascending Cloudlet ID: FirstFitIdle reorders to
+        // ascending ID internally.
         Job laterArrival = job(30);
         Job middleArrival = job(20);
         Job firstArrival = job(10);
@@ -37,13 +38,13 @@ class SchedulingListIsolationTest {
         scheduler.setVmList(Arrays.asList(vm(1), vm(2), vm(3)));
         scheduler.run();
 
-        // 调用方列表必须保持原始到达序，不受算法内部排序影响。
+        // The caller's list must keep its original arrival order, unaffected by the in-algorithm sort.
         assertEquals(
                 Arrays.<Cloudlet>asList(laterArrival, middleArrival, firstArrival),
                 callerReadyList,
                 "Algorithm-side sorting must not mutate the caller's ready list");
 
-        // 算法自身仍按 ID 升序派发（FirstFitIdle 的既定语义）。
+        // The algorithm itself still dispatches in ascending ID order (established FirstFitIdle semantics).
         assertEquals(3, scheduler.getScheduledList().size());
         assertEquals(firstArrival, scheduler.getScheduledList().get(0));
         assertEquals(middleArrival, scheduler.getScheduledList().get(1));
@@ -66,7 +67,7 @@ class SchedulingListIsolationTest {
                 Arrays.asList(higherId, lowerId),
                 callerVmList,
                 "Algorithm-side VM sorting must not mutate the caller's VM list");
-        // FirstFitIdle 按 VM ID 升序选第一个空闲 VM。
+        // FirstFitIdle picks the first idle VM in ascending VM ID order.
         assertEquals(3, job.getVmId());
     }
 

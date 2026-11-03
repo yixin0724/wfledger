@@ -36,19 +36,20 @@ class SharedStorageCpopPlanningAlgorithmTest {
 
         planner.run();
 
-        // root -> criticalMiddle -> tail 是 CPOP 关键路径，VM 1 对整条路径的模型执行
-        // 总代价最小，因而被选为关键处理器。
+        // root -> criticalMiddle -> tail is the CPOP critical path; VM 1 has the smallest total
+        // model duration over the whole path and is therefore selected as the critical processor.
         assertEquals(1, root.getVmId());
         assertEquals(1, criticalMiddle.getVmId());
         assertEquals(1, tail.getVmId());
-        // stage-in 按最小 VM ID 分派；随后 CPOP 在选定的关键处理器上启动关键路径。
+        // The stage-in is dispatched to the smallest VM ID; CPOP then starts the critical path on
+        // the selected critical processor.
         assertEquals(0.21, root.getStaticScheduleStartTime(), 1.0e-12);
         assertEquals(0.71, criticalMiddle.getStaticScheduleStartTime(), 1.0e-12);
         assertEquals(2.71, tail.getStaticScheduleStartTime(), 1.0e-12);
 
         SharedStorageDagPlanTrace trace = planner.getLastPlanTrace();
-        // 在 1000/2000 MIPS 上平均的模型时长依次为 0.75、3.0、0.75、0.375 秒；
-        // 关键链的优先级为 4.5。
+        // The model durations averaged over 1000/2000 MIPS are 0.75, 3.0, 0.75 and 0.375 seconds
+        // in that order; the critical-chain priority is 4.5.
         assertEquals(4.5, trace.getTaskPlan(1).getUpwardRankSeconds(), 1.0e-12);
         assertEquals(0.75, trace.getTaskPlan(2).getCpopDownwardRankSeconds(), 1.0e-12);
         assertEquals(4.5, trace.getTaskPlan(3).getCpopPrioritySeconds(), 1.0e-12);

@@ -15,12 +15,16 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.Job;
 
 /**
- * R9 运行时路径探测：{@link OverheadParameters} 深度采样分支的最小确定性 fixture。
+ * R9 runtime-path probe: minimal deterministic fixture for the depth-sampling
+ * branches of {@link OverheadParameters}.
  *
- * <p>该类此前只有队列延迟通道被测试 JVM 内的集成测试覆盖（16.2% 指令覆盖）；
- * 后处理/聚类/引擎延迟通道的深度命中、深度 0 默认、无条目、空映射、空批次与空作业
- * 分支只被独立 JVM 的遗留示例间接执行，对 jacoco 不可见。本测试以最小 Job fixture
- * 在测试 JVM 内逐一锁定每个分支的语义。</p>
+ * <p>Previously only the queue-delay channel of this class was covered, by
+ * integration tests inside the test JVM (16.2% instruction coverage); the
+ * post-processing/clustering/engine delay channels -- depth hit, depth 0 default,
+ * absent entry, null maps, empty batch and null job -- were executed only
+ * indirectly by a legacy example in a separate JVM, hence invisible to jacoco.
+ * This test locks down the semantics of each branch one by one with a minimal Job
+ * fixture inside the test JVM.</p>
  */
 class OverheadParametersProbeTest {
 
@@ -46,13 +50,13 @@ class OverheadParametersProbeTest {
         OverheadParameters op = new OverheadParameters(7, delayMap(2), delayMap(2), delayMap(2), delayMap(2), 42.0);
         Job job = jobWithDepth(2);
 
-        assertTrue(op.getClustDelay(job) > 0.0, "深度命中的聚类延迟必须为正采样");
-        assertTrue(op.getQueueDelay(job) > 0.0, "深度命中的队列延迟必须为正采样");
-        assertTrue(op.getPostDelay(job) > 0.0, "深度命中的后处理延迟必须为正采样");
+        assertTrue(op.getClustDelay(job) > 0.0, "a depth hit on the clustering delay must sample a positive value");
+        assertTrue(op.getQueueDelay(job) > 0.0, "a depth hit on the queue delay must sample a positive value");
+        assertTrue(op.getPostDelay(job) > 0.0, "a positive sample is required on a post-processing depth hit");
 
         List<Job> batch = new ArrayList<Job>();
         batch.add(job);
-        assertTrue(op.getWEDDelay(batch) > 0.0, "深度命中的引擎延迟必须为正采样");
+        assertTrue(op.getWEDDelay(batch) > 0.0, "a depth hit on the engine delay must sample a positive value");
     }
 
     @Test
@@ -60,13 +64,13 @@ class OverheadParametersProbeTest {
         OverheadParameters op = new OverheadParameters(0, delayMap(0), delayMap(0), delayMap(0), delayMap(0), 0.0);
         Job job = jobWithDepth(3);
 
-        assertTrue(op.getClustDelay(job) > 0.0, "缺少深度项时应回退到深度 0 默认项");
-        assertTrue(op.getQueueDelay(job) > 0.0, "缺少深度项时应回退到深度 0 默认项");
-        assertTrue(op.getPostDelay(job) > 0.0, "缺少深度项时应回退到深度 0 默认项");
+        assertTrue(op.getClustDelay(job) > 0.0, "a missing depth entry must fall back to the depth 0 default entry");
+        assertTrue(op.getQueueDelay(job) > 0.0, "a missing depth entry must fall back to the depth 0 default entry");
+        assertTrue(op.getPostDelay(job) > 0.0, "a missing depth entry must fall back to the depth 0 default entry");
 
         List<Job> batch = new ArrayList<Job>();
         batch.add(job);
-        assertTrue(op.getWEDDelay(batch) > 0.0, "缺少深度项时应回退到深度 0 默认项");
+        assertTrue(op.getWEDDelay(batch) > 0.0, "a missing depth entry must fall back to the depth 0 default entry");
     }
 
     @Test
@@ -100,7 +104,8 @@ class OverheadParametersProbeTest {
     void nullJobAndEmptyBatchLogUnsupportedAndYieldZero() {
         OverheadParameters op = new OverheadParameters(0, delayMap(0), delayMap(0), delayMap(0), delayMap(0), 0.0);
 
-        // 空作业/空批次的历史语义是打印 "Not yet supported" 并返回 0；静音控制台。
+        // The historical semantics of a null job / empty batch is to print
+        // "Not yet supported" and return 0; mute the console.
         Log.disable();
         assertEquals(0.0, op.getClustDelay(null), 0.0);
         assertEquals(0.0, op.getQueueDelay(null), 0.0);

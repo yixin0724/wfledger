@@ -21,10 +21,12 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 配置矩阵综合测试：验证多种配置组合的可运行性。
+ * Configuration-matrix integration test: verifies that a range of configuration
+ * combinations can run.
  *
- * <p>该测试确保常见配置组合（调度算法×数据移动模型×文件系统×故障模型等）都能
- * 成功执行，避免配置交互导致的隐藏问题。</p>
+ * <p>This test ensures that common configuration combinations (scheduling algorithm x data
+ * movement model x file system x failure model, and others) execute successfully, avoiding
+ * hidden problems caused by configuration interaction.</p>
  */
 class ConfigurationMatrixIntegrationTest {
 
@@ -70,7 +72,7 @@ class ConfigurationMatrixIntegrationTest {
 
     @Test
     void staticPlannersWorkWithSharedAndLocalFileSystem() throws Exception {
-        // 独立任务规划器需要无依赖的 DAX
+        // Independent-task planners require a dependency-free DAX.
         String independentWorkflow =
                 getClass().getResource("/dax/independent-tasks.dax").getPath();
         List<Parameters.PlanningAlgorithm> independentPlanners = new ArrayList<>();
@@ -100,7 +102,7 @@ class ConfigurationMatrixIntegrationTest {
             }
         }
 
-        // SHARED_STORAGE_HEFT 支持 DAG 且只支持 SHARED 文件系统
+        // SHARED_STORAGE_HEFT supports DAGs and only the SHARED file system.
         String dagWorkflow =
                 getClass().getResource("/dax/reproducibility-workflow.dax").getPath();
         SimulationConfig heftConfig = SimulationConfig.builder(dagWorkflow, 2)
@@ -143,15 +145,15 @@ class ConfigurationMatrixIntegrationTest {
         try {
             report = runner.run(config, platform);
         } catch (org.workflowsim.failure.RetryLimitExceededException e) {
-            // 故障模型可能耗尽重试预算，这是正常的语义
+            // The failure model may exhaust the retry budget; this is expected semantics.
             assertTrue(e.getMessage().contains("maxTotalRetryJobs"));
             return;
         }
 
-        // 如果成功完成，应有一些失败和重试（但不一定触发）
+        // If the run completes, some failures and retries should be recorded (not necessarily triggered).
         assertTrue(report.getMetrics().getRetryJobCreatedCount() >= 0, "Should track retry count");
         assertTrue(report.getMetrics().getFailedComputeJobOutcomeCount() >= 0, "Should track failures");
-        // 最终应完成或达到重试限制
+        // The run should either complete or hit the retry limit.
         assertTrue(report.getMetrics().getLogicalTaskCompletionStatus().equals("COMPLETED_SUCCESSFULLY")
                 || report.getMetrics().getLogicalTasksNotYetSuccessfullyCompletedCount() > 0);
     }
@@ -179,7 +181,7 @@ class ConfigurationMatrixIntegrationTest {
             makespans.add(report.getMetrics().getMakespanSeconds());
         }
 
-        // 更大的 scale 应导致更长的 makespan
+        // A larger runtime scale should yield a longer makespan.
         assertTrue(makespans.get(0) < makespans.get(1), "scale=0.5 should have shorter makespan than scale=1.0");
         assertTrue(makespans.get(1) < makespans.get(2), "scale=1.0 should have shorter makespan than scale=2.0");
     }
@@ -192,7 +194,7 @@ class ConfigurationMatrixIntegrationTest {
         Log.disable();
         SimulationRunner runner = new SimulationRunner();
 
-        // 测试宽松 deadline
+        // Loose deadline case.
         SimulationConfig configLoose = SimulationConfig.builder(workflow, 3)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
                 .deadline(10000L)
@@ -209,7 +211,7 @@ class ConfigurationMatrixIntegrationTest {
                 0.001,
                 "Loose deadline should have zero tardiness");
 
-        // 测试紧张 deadline
+        // Tight deadline case.
         SimulationConfig configTight = SimulationConfig.builder(workflow, 3)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
                 .deadline(1L)
@@ -220,7 +222,7 @@ class ConfigurationMatrixIntegrationTest {
         assertTrue(
                 reportTight.getMetrics().getDeadlineTardinessSeconds() > 0,
                 "Tight deadline should have positive tardiness");
-        // Slack 在 missed 时为负，不应断言为 0
+        // Slack is negative when the deadline is missed, so it must not be asserted as 0.
         assertTrue(reportTight.getMetrics().getDeadlineSlackSeconds() < 0, "Tight deadline should have negative slack");
     }
 
@@ -243,7 +245,7 @@ class ConfigurationMatrixIntegrationTest {
         assertTrue(
                 report.getMetrics().getLogicalTaskCompletionStatus().equals("COMPLETED_SUCCESSFULLY"),
                 "DATA scheduler should complete successfully");
-        // DATA 算法应减少数据传输
+        // The DATA algorithm should reduce data transfer.
         assertTrue(report.getMetrics().getTotalModeledDataTransferSeconds() >= 0);
     }
 }

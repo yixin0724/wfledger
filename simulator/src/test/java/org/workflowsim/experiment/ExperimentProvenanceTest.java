@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** 验证不依赖 JVM 工作目录的 Maven 模块源码定位规则。 */
+/** Verifies that Maven module source-root resolution does not depend on the JVM working directory. */
 class ExperimentProvenanceTest {
 
     @Test

@@ -9,10 +9,12 @@ import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
 import org.workflowsim.scheduling.FrequencyTierSelector;
 
 /**
- * BAT-D6（2026-10-29）测试域破坏面之二：selector 返回表外档（mips 1500.0 不在
- * 声明表 2000/1000/500 内，数值恰好居间自欺性强）。档按 MIPS 唯一身份入证据链
- * （JobOutcome.tierMips → Python 审计 tierByMips 同条款），表外档必须显式拒绝，
- * 不允许"最近的声明档"式静默圆整。
+ * BAT-D6 (2026-10-29) test-domain breakage face two: the selector returns an off-table tier
+ * (mips 1500.0 is not in the declared table 2000/1000/500; the value sits exactly in between,
+ * which makes the self-deception compelling). A tier enters the evidence chain with MIPS as
+ * its unique identity (JobOutcome.tierMips -> Python audit tierByMips, same clause); an
+ * off-table tier must be rejected explicitly, never silently rounded to the "nearest
+ * declared tier".
  */
 public final class SelectorUndeclaredTierDvfsTestSchedulerProvider implements SchedulingAlgorithmProvider {
 
@@ -41,7 +43,7 @@ public final class SelectorUndeclaredTierDvfsTestSchedulerProvider implements Sc
     static final class SelectorUndeclaredSchedulingAlgorithm extends FCFSSchedulingAlgorithm
             implements FrequencyTierSelector {
 
-        /** 表外档：mips=1500（居声明档 2000/1000 之间），功率对构造合法但档身份未声明。 */
+        /** Off-table tier: mips=1500 (between declared 2000/1000); power pair well-formed, tier identity undeclared. */
         private static final PlatformProfile.FrequencyTier UNDECLARED_TIER =
                 new PlatformProfile.FrequencyTier(1500.0, 205.0, 300.0);
 

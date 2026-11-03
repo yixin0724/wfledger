@@ -41,8 +41,8 @@ class SharedStorageHeftPlanningAlgorithmTest {
 
         planner.run();
 
-        // 模型生成的 110 MI stage-in Job 先执行；middle Task 随后包含 1 秒 CPU 和
-        // 20 MB / 20 MB/s 的共享存储输入。
+        // The model-generated 110 MI stage-in Job executes first; the middle Task then
+        // comprises 1 second of CPU plus a 20 MB / 20 MB/s shared-storage input.
         assertEquals(0, root.getVmId());
         assertEquals(0.21, root.getStaticScheduleStartTime(), 1.0e-12);
         assertEquals(1.21, middle.getStaticScheduleStartTime(), 1.0e-12);
@@ -71,9 +71,9 @@ class SharedStorageHeftPlanningAlgorithmTest {
         SharedStorageDagPlanTrace trace = planner.getLastPlanTrace();
         assertEquals("HEFT", trace.getStrategy());
         assertEquals(0.21, trace.getStageInFinishSeconds(), 1.0e-12);
-        // CloudSim SpaceShared 对多 PE Cloudlet 并行执行（墙钟时间 = length/capacity，
-        // 与 PE 数无关）；因此双 PE 子 Task 10,000 MI 在 1000 MIPS 上耗时 10 秒，
-        // 即 r_u(root) = 1 + 10。
+        // CloudSim SpaceShared runs a multi-PE Cloudlet in parallel (wall-clock time =
+        // length/capacity, independent of the PE count); therefore the dual-PE child Task of
+        // 10,000 MI takes 10 seconds at 1000 MIPS, i.e. r_u(root) = 1 + 10.
         assertEquals(11.0, trace.getTaskPlan(1).getUpwardRankSeconds(), 1.0e-12);
         assertEquals(10.0, trace.getTaskPlan(2).getUpwardRankSeconds(), 1.0e-12);
         assertEquals(1.0, trace.getTaskPlan(3).getUpwardRankSeconds(), 1.0e-12);
@@ -82,8 +82,8 @@ class SharedStorageHeftPlanningAlgorithmTest {
         assertEquals(1, trace.getTaskPlan(2).getVmId());
         assertEquals(1, trace.getTaskPlan(3).getVmId());
         assertEquals(1.21, trace.getTaskPlan(2).getPlannedStartSeconds(), 1.0e-12);
-        // Task 3 的 rank 低于 Task 2、后被考虑，但可插入 VM 1 上 Task 2 尚未依赖就绪前的
-        // 保留空隙。
+        // Task 3 has a lower rank than Task 2 and is considered later, yet it can fill the
+        // reservation gap on VM 1 that precedes Task 2's dependency-ready point.
         assertEquals(0.21, trace.getTaskPlan(3).getPlannedStartSeconds(), 1.0e-12);
         assertEquals(1.21, trace.getTaskPlan(3).getPlannedFinishSeconds(), 1.0e-12);
         assertNull(trace.getTaskPlan(1).getDlsDynamicLevelAtSelection());

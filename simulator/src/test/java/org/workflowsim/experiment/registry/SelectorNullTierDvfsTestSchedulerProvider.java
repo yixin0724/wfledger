@@ -9,9 +9,11 @@ import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
 import org.workflowsim.scheduling.FrequencyTierSelector;
 
 /**
- * BAT-D6（2026-10-29）测试域破坏面之一：selector 返回 {@code null}——派发时刻
- * 指派必须是"恰好一个声明档"，空指派按证据链断裂显式拒绝（fail-fast），不允许
- * 静默回退默认档。该提供者永不产出有效证据，仅供拒绝测试消费。
+ * BAT-D6 (2026-10-29) test-domain breakage face one: the selector returns {@code null} --
+ * the assignment at dispatch time must be "exactly one declared tier", and an empty
+ * assignment is rejected explicitly as an evidence-chain break (fail-fast); a silent
+ * fallback to the default tier is not allowed. This provider never produces valid
+ * evidence and is consumed only by the rejection tests.
  */
 public final class SelectorNullTierDvfsTestSchedulerProvider implements SchedulingAlgorithmProvider {
 

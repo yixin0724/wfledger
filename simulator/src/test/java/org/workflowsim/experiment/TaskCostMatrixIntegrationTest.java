@@ -21,12 +21,15 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
 /**
- * 任务×VM 异构成本矩阵（论文复现支撑能力）的端到端语义测试。
+ * End-to-end semantic test of the task x VM heterogeneous cost matrix (a paper-reproduction
+ * support capability).
  *
- * <p>覆盖三个契约：(1) 矩阵条目精确驱动运行时执行时间；(2) 配置层拒绝静默
- * 退化的组合（非 STATIC 派发、非 NONE 聚类）；(3) 覆盖缺口在任何派发前
- * fail-fast。另外验证 LOCAL 模式下任务间通信（中间文件跨 VM 传输）按
- * {@code min(bw_src, bw_dst)} 建模并可从证据事件观测。</p>
+ * <p>Covers three contracts: (1) matrix entries drive the runtime execution time exactly;
+ * (2) the configuration layer rejects combinations that would degrade silently (non-STATIC
+ * dispatch, non-NONE clustering); (3) a coverage gap fails fast before any dispatch. It
+ * additionally verifies that in LOCAL mode inter-task communication (intermediate files
+ * transferred across VMs) is modeled as {@code min(bw_src, bw_dst)} and is observable from
+ * the evidence events.</p>
  */
 class TaskCostMatrixIntegrationTest {
 
@@ -64,7 +67,7 @@ class TaskCostMatrixIntegrationTest {
         Log.disable();
         SimulationRunner runner = new SimulationRunner();
         assertRuntimeMatchesMatrix(runner.run(config, platform), matrix);
-        // 确定性：同配置重跑得到完全相同的执行时间。
+        // Determinism: rerunning the same configuration yields exactly the same execution times.
         assertRuntimeMatchesMatrix(runner.run(config, platform), matrix);
     }
 
@@ -94,7 +97,8 @@ class TaskCostMatrixIntegrationTest {
     void coverageGapFailsFastBeforeAnyDispatch() throws Exception {
         String workflow = resourcePath("/dax/independent-tasks.dax");
         PlatformProfile platform = PlatformProfiles.homogeneousLocal("cost-matrix-gap-platform", 3);
-        // 矩阵只覆盖 VM 0/1，平台有 3 台 VM——必须在解析投影阶段失败。
+        // The matrix covers only VM 0/1 while the platform has 3 VMs -- it must fail in the
+        // resolve/projection phase.
         TaskCostMatrix partial = TaskCostMatrix.builder()
                 .put(1, 0, 2.0)
                 .put(1, 1, 3.0)
@@ -138,7 +142,8 @@ class TaskCostMatrixIntegrationTest {
             }
         }
         assertEquals(2, taskVm.size());
-        // 同构平台 VM 带宽均为 1000 MB/s；跨 VM 传输 30 MB = 0.03 秒，同 VM 为 0。
+        // On the homogeneous platform every VM bandwidth is 1000 MB/s; a 30 MB cross-VM
+        // transfer is 0.03 s, while a same-VM transfer is 0.
         double expectedTransfer =
                 taskVm.get(Integer.valueOf(1)).equals(taskVm.get(Integer.valueOf(2))) ? 0.0 : 30.0 / 1000.0;
         SimulationEvent childTransfer = transferEventForTask(report, 2);
@@ -147,7 +152,8 @@ class TaskCostMatrixIntegrationTest {
                 ((Number) childTransfer.getAttributes().get("modeledTransferSeconds")).doubleValue(),
                 1.0e-12);
         assertEquals("LEGACY_WORKFLOWSIM_V1", childTransfer.getAttributes().get("dataMovementModel"));
-        // 子任务信封执行时间 = 计算 1.0 秒 + stage-in MI 表示的传输时间。
+        // Child envelope execution time = 1.0 s of compute + the transfer time expressed as
+        // stage-in MI.
         SimulationReport.JobOutcome child = computeJobForTask(report, 2);
         assertEquals(1.0 + expectedTransfer, child.getExecutionTime(), 1.0e-9);
         assertEquals(2, report.getMetrics().getDataStageInModelObservationCount());

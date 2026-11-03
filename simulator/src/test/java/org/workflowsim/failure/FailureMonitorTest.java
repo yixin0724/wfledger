@@ -14,7 +14,7 @@ import org.workflowsim.Task;
 import org.workflowsim.reclustering.ReclusteringEngine;
 import org.workflowsim.utils.Parameters.ClassType;
 
-/** 验证故障监视器按声明的 VM/深度粒度隔离观测。 */
+/** Verifies that the failure monitor isolates observations at the declared VM/depth granularity. */
 class FailureMonitorTest {
 
     @AfterEach
@@ -50,7 +50,8 @@ class FailureMonitorTest {
                 FailureParameters.FTCFailure.FAILURE_NONE,
                 null);
         FailureMonitor.init();
-        // VM 0 已有失败观测；VM 2 没有。DC 必须为 VM 2 保持一整个三任务重试簇。
+        // VM 0 already carries a failure observation; VM 2 carries none. DC must keep one whole
+        // three-task retry cluster for VM 2.
         FailureMonitor.postFailureRecord(new FailureRecord(1.0, 1, 1, 3, 0, 0, 0));
         Job failed = computeJob(40, 2, task(1, 100L), task(2, 200L), task(3, 300L));
 

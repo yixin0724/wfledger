@@ -130,7 +130,7 @@ final class NetworkBrowserFixtures {
         tiny.addTransfer(1, 1, Collections.singletonList("tiny"), 1, 0);
         tiny.advance(Double.MIN_VALUE);
         typed(rows, expected, cpuManifest, "typed-subnormal", decode(tiny));
-        String hostile = "</script><img src=x onerror=alert(1)>节点\"'\u2028\u2029";
+        String hostile = "</script><img src=x onerror=alert(1)>node\"'\u2028\u2029";
         TransferContentionEngine many = new TransferContentionEngine(BUDGET);
         List<String> path = Collections.nCopies(NetworkReportView.LIST_LIMIT + 1, hostile);
         for (int i = 0; i <= NetworkReportView.FLOW_LIMIT; i++) {
@@ -152,7 +152,8 @@ final class NetworkBrowserFixtures {
         reuse.advance(3);
         typed(rows, expected, cpuManifest, "typed-reused-id", decode(reuse));
         Path target = output.resolve("network-typed-stress.html");
-        HtmlReports.experiment("独立流体投影显示夹具 · 非运行网络上下文", rows, target);
+        HtmlReports.experiment(
+                "Standalone fluid projection display fixture - not a live network context", rows, target);
         reports.add(spec("network-typed-stress", target, rows, expected));
     }
 

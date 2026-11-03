@@ -82,7 +82,8 @@ public final class Workbench {
                                 .get("logicalTaskCompletionStatus")
                                 .getAsString());
                 evidence.attachTo(row);
-                HtmlReports.experiment("单次仿真实验", java.util.Collections.singletonList(row), target);
+                HtmlReports.experiment(
+                        "Single simulation experiment", java.util.Collections.singletonList(row), target);
                 return;
             default:
                 throw new IllegalArgumentException("Unknown command: " + args[0]);
@@ -227,14 +228,17 @@ public final class Workbench {
         }
         List<Map<String, Object>> records = new ArrayList<Map<String, Object>>();
         StringBuilder html =
-                new StringBuilder("<!doctype html><html lang=\"zh-CN\"><meta charset=\"utf-8\"><meta name=\"viewport\" "
+                new StringBuilder("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" "
                         + "content=\"width=device-width, initial-scale=1\"><title>WorkflowSim "
-                        + "实验历史</title><style>body{font:16px/1.7 system-ui;background:#f3f6f8;color:#142b40;max-"
+                        + "Experiment history</title><style>body{font:16px/1.7 system-ui;background:#f3f6f8;"
+                        + "color:#142b40;max-"
                         + "width:1100px;margin:45px auto;padding:20px}table{background:white;width:100%;border-c"
                         + "ollapse:collapse}td,th{padding:15px;text-align:left;border-bottom:1px solid "
-                        + "#dce5ea}a{color:#087f8c}.hint{color:#536b7c}</style><h1>实验历史</h1><p "
-                        + "class=\"hint\">每次实验独立保留。运行中状态也可能表示进程被中断，请检查该实验记录。</p><table><tr><th>实验</th><th>状态</th"
-                        + "><th>成功 / 计划</th><th>开始时间</th></tr>");
+                        + "#dce5ea}a{color:#087f8c}.hint{color:#536b7c}</style><h1>Experiment history</h1><p "
+                        + "class=\"hint\">Each experiment is retained independently. A running status may also "
+                        + "mean the process was interrupted; check that experiment record.</p><table><tr>"
+                        + "<th>Experiment</th><th>Status</th"
+                        + "><th>Successful / planned</th><th>Started at</th></tr>");
         for (Path directory : directories) {
             Map<String, Object> record = new LinkedHashMap<String, Object>();
             String relative = directory.getFileName().toString();
@@ -277,7 +281,7 @@ public final class Workbench {
                 record.put("error", invalid.getMessage());
                 html.append("<tr><td>")
                         .append(HtmlReports.escape(relative))
-                        .append("</td><td>记录损坏</td><td>—</td><td>—</td></tr>");
+                        .append("</td><td>Record damaged</td><td>-</td><td>-</td></tr>");
             }
             records.add(record);
         }

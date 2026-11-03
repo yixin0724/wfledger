@@ -11,12 +11,13 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 以独立 JVM 运行教学 CLI 的测试辅助类。
+ * Test support that runs the teaching CLI in a separate JVM.
  *
- * <p>WorkflowSim 的旧式入口依赖 CloudSim 和多个 WorkflowSim 静态状态。测试不能在
- * 同一 JVM 内依次调用这些 {@code main} 方法，否则一个入口的状态可能掩盖另一个入口的
- * 初始化缺陷。该辅助类复用示例聚合器的运行时类路径策略，但把每次子进程输出留在 JUnit
- * 临时目录中，便于失败时提供可诊断的尾部日志。</p>
+ * <p>The legacy WorkflowSim entry points depend on CloudSim and on several WorkflowSim static
+ * states. A test must not call these {@code main} methods sequentially inside one JVM, because
+ * the state left by one entry point can mask an initialization defect of another. This helper
+ * reuses the runtime classpath strategy of the examples aggregator but keeps every child-process
+ * output in the JUnit temporary directory, so that a failure can supply a diagnosable log tail.</p>
  */
 final class CliProcessTestSupport {
 
@@ -26,14 +27,14 @@ final class CliProcessTestSupport {
     private CliProcessTestSupport() {}
 
     /**
-     * 从项目根目录启动一个主类，并将 stdout/stderr 合并写入临时日志。
+     * Starts a main class from the project root and merges stdout/stderr into a temporary log.
      *
-     * @param workspaceRoot 包含 {@code datasets/} 的项目根目录
-     * @param logDirectory JUnit 管理的临时日志目录
-     * @param mainClass 要执行的完整主类名
-     * @param arguments 传给主类的命令行参数
-     * @return 子进程的退出、超时和输出信息
-     * @throws IOException 当子进程或日志文件无法创建时
+     * @param workspaceRoot project root that contains {@code datasets/}
+     * @param logDirectory temporary log directory managed by JUnit
+     * @param mainClass fully qualified name of the main class to execute
+     * @param arguments command-line arguments passed to the main class
+     * @return exit, timeout and output information of the child process
+     * @throws IOException when the child process or the log file cannot be created
      */
     static ProcessResult runMain(Path workspaceRoot, Path logDirectory, String mainClass, String... arguments)
             throws IOException {
@@ -91,7 +92,7 @@ final class CliProcessTestSupport {
         return new File(System.getProperty("java.home"), "bin/java").getPath();
     }
 
-    /** 一个已终止子进程的不可变测试结果。 */
+    /** Immutable test result of a terminated child process. */
     static final class ProcessResult {
         private final String mainClass;
         private final Path outputPath;
@@ -119,7 +120,7 @@ final class CliProcessTestSupport {
             return output;
         }
 
-        /** 返回包含日志路径和尾部输出的断言诊断信息。 */
+        /** Returns assertion diagnostics that carry the log path and the output tail. */
         String diagnostic() {
             String tail = output;
             if (tail.length() > DIAGNOSTIC_OUTPUT_LIMIT) {

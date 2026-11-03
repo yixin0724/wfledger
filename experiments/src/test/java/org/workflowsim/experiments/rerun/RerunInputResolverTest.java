@@ -21,9 +21,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
- * 阶段 2 验收：三级输入定位顺序正确；命中即核对 sha256+sizeBytes；不符即终止
- * （绝不静默降级或替换）；全部落空时报告 {@code INPUT_UNRESOLVED} 并列出全部
- * 尝试过的候选路径。
+ * Phase 2 acceptance: the three-tier input resolution order is correct; a hit is verified
+ * against sha256+sizeBytes at once; a mismatch terminates (never a silent downgrade or
+ * substitution); when every tier misses, {@code INPUT_UNRESOLVED} is reported together with
+ * every attempted candidate path.
  */
 class RerunInputResolverTest {
 
@@ -62,7 +63,8 @@ class RerunInputResolverTest {
     @Test
     void prefersStudyInputsDirectory() throws Exception {
         Path run = studyLayoutRun();
-        // 记录路径指向不存在的位置；同名文件放在 <study>/inputs/ 下。
+        // The recorded path points at a nonexistent location; a file of the same name sits
+        // under <study>/inputs/.
         Path studyInput = run.getParent().getParent().resolve("inputs").resolve("reproducibility-workflow.dax");
         Files.createDirectories(studyInput.getParent());
         Files.copy(Paths.get(inputPath(readManifest(run))), studyInput);
@@ -76,8 +78,9 @@ class RerunInputResolverTest {
     @Test
     void rebasesAgainstRecordedWorkingDirectory() throws Exception {
         Path run = copyFixtureTo("rebase");
-        // 伪造原机器根：记录路径 = fakeRoot/datasets/fixture.dax，fakeRoot 不存在；
-        // 重定位根下准备同内容文件，并把 workingDirectory 改写为 fakeRoot。
+        // Fabricate the original machine root: recorded path = fakeRoot/datasets/fixture.dax
+        // while fakeRoot does not exist; stage a file of the same content under the rebasing
+        // root, and rewrite workingDirectory to fakeRoot.
         Path rebasingRoot = Files.createDirectories(tempDir.resolve("rebase-root"));
         Path relocated = rebasingRoot.resolve("datasets/fixture.dax");
         Files.createDirectories(relocated.getParent());
@@ -114,8 +117,9 @@ class RerunInputResolverTest {
 
     @Test
     void tierOneHashMismatchDoesNotFallThroughToTierTwo() throws Exception {
-        // study inputs/ 下有同名但内容不同的文件；记录的绝对路径本身完好。
-        // 契约：tier 1 命中即校验，不符即终止，不允许静默改用 tier 2。
+        // A file of the same name sits under <study>/inputs/ (tier 1) with different content,
+        // while the recorded absolute path itself is intact. Contract: a tier 1 hit is verified
+        // immediately, a mismatch terminates, and a silent switch to tier 2 is not allowed.
         Path run = studyLayoutRun();
         Path studyInput = run.getParent().getParent().resolve("inputs").resolve("reproducibility-workflow.dax");
         Files.createDirectories(studyInput.getParent());
@@ -150,8 +154,9 @@ class RerunInputResolverTest {
 
     @Test
     void missingWorkingDirectorySkipsTierThree() throws Exception {
-        // 直接驱动 resolver（不经 reader）：v4 校验器强制 workingDirectory 存在，
-        // 此用例验证 resolver 自身对缺失字段的防御行为。
+        // Drive the resolver directly (bypassing the reader): the v4 validator enforces that
+        // workingDirectory is present, so this case exercises the resolver's own defensive
+        // behavior on the missing field.
         JsonObject manifest = minimalManifest("/no/such/file.dax", null);
         Path run = Files.createDirectories(tempDir.resolve("defensive"));
         RerunFailureException failure =
@@ -180,7 +185,7 @@ class RerunInputResolverTest {
         return run;
     }
 
-    /** 构造 {@code <study>/runs/<run>} 布局并复制证据。 */
+    /** Build a {@code <study>/runs/<run>} layout and copy the evidence into it. */
     private Path studyLayoutRun() throws Exception {
         Path study = Files.createDirectories(tempDir.resolve("study-" + System.nanoTime()));
         Path run = Files.createDirectories(study.resolve("runs/fixture-run"));
@@ -207,7 +212,10 @@ class RerunInputResolverTest {
         Files.write(run.resolve("result.manifest.json"), gson.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /** 同步改写 inputs/workflowPaths/workflowOutcomes 三处路径（v4 交叉校验要求）。 */
+    /**
+     * Rewrite the three paths in lockstep -- inputs/workflowPaths/workflowOutcomes (required by
+     * v4 cross-validation).
+     */
     private void rewriteInputPath(Path run, String newPath) throws Exception {
         JsonObject manifest = readManifest(run);
         rewriteInputPathIn(manifest, newPath);

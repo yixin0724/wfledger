@@ -18,13 +18,13 @@ import org.workflowsim.WfCommonsJsonParser;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/** DAX/WfCommons JSON 解析路径的教程性对照测试。 */
+/** Tutorial cross-validation test for the DAX/WfCommons JSON parsing path. */
 class ParserCrossValidationTest {
 
     private static final String WF_JSON_RELATIVE_PATH = "wfformat/montage/n100/montage-100-000.json";
     private static Path workflowPath;
 
-    /** 初始化解析器所需静态状态，并验证 Maven 显式注入的测试数据集。 */
+    /** Initializes the static state required by the parser and validates the Maven-injected test dataset. */
     @BeforeAll
     static void setUp() {
         Parameters.init(
@@ -52,8 +52,8 @@ class ParserCrossValidationTest {
         if (!workflowPath.startsWith(datasetRoot.normalize())) {
             throw new IllegalStateException("Invalid tutorial input path: " + workflowPath);
         }
-        // R9 常驻语料守门：montage-100-000.json（145 KB）已入库（见 .gitignore 反选），
-        // 本测试在标准构建中必须执行，不再允许跳过。
+        // R9 resident-corpus guard: montage-100-000.json (145 KB) is committed (see the .gitignore
+        // negation); this test must run in the standard build and may no longer be skipped.
         assertTrue(Files.isRegularFile(workflowPath), "Resident WfCommons corpus must be present at " + workflowPath);
     }
 
@@ -63,7 +63,7 @@ class ParserCrossValidationTest {
 
         assertNotNull(result);
         List<Task> tasks = result.getTasks();
-        assertFalse(tasks.isEmpty(), "Montage-100 JSON 应解析出任务");
+        assertFalse(tasks.isEmpty(), "Montage-100 JSON must parse into at least one task");
     }
 
     @Test
@@ -75,7 +75,7 @@ class ParserCrossValidationTest {
                 assertTrue(
                         child.getParentList().contains(task),
                         String.format(
-                                "Task %d 是 Task %d 的 child,但 Task %d 的 parentList 不含 %d",
+                                "Task %d is a child of Task %d, but the parentList of Task %d does not contain %d",
                                 child.getCloudletId(),
                                 task.getCloudletId(),
                                 child.getCloudletId(),
@@ -87,21 +87,21 @@ class ParserCrossValidationTest {
     @Test
     void wfCommonsTasksHavePositiveDepth() throws IOException {
         for (Task task : parse().getTasks()) {
-            assertTrue(task.getDepth() >= 1, "Task " + task.getCloudletId() + " depth 应 >= 1,实际 " + task.getDepth());
+            assertTrue(task.getDepth() >= 1, "Task " + task.getCloudletId() + " depth must be >= 1");
         }
     }
 
     @Test
     void wfCommonsTasksHavePositiveCloudletLength() throws IOException {
         for (Task task : parse().getTasks()) {
-            assertTrue(task.getCloudletLength() > 0, "Task " + task.getCloudletId() + " length 应 > 0");
+            assertTrue(task.getCloudletLength() > 0, "Task " + task.getCloudletId() + " length must be > 0");
         }
     }
 
     @Test
     void wfCommonsNextTaskIdIsConsistent() throws IOException {
         WfCommonsJsonParser.ParseResult result = parse();
-        assertEquals(result.getTasks().size(), result.getNextTaskId(), "nextTaskId 应等于任务总数(从 firstTaskId=0 开始)");
+        assertEquals(result.getTasks().size(), result.getNextTaskId(), "nextTaskId must equal the task count from 0");
     }
 
     private static WfCommonsJsonParser.ParseResult parse() throws IOException {

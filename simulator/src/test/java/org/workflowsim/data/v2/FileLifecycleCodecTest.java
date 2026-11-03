@@ -154,7 +154,7 @@ class FileLifecycleCodecTest {
 
     @Test
     void zeroLocalAndExactMultiWorkflowNamesNeverAlias() {
-        String name = "input[0]/shared::名/<literal>";
+        String name = "input[0]/shared::☂/<literal>";
         Task a = task(1, in(name, 0)), b = task(2, in(name, 0)), c = task(3, in(name, 0)), d = task(4, in(name, 0));
         Map<Integer, Integer> scopes = new LinkedHashMap<>();
         scopes.put(1, 0);

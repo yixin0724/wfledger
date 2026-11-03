@@ -12,19 +12,20 @@ import org.workflowsim.Job;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * 回归测试（PLAT-1）：legacy "最快 VM" 算法必须按单 PE 速度 getMips() 选择 VM，
- * 而不是总 MIPS（mips × PE 数）。
+ * Regression test (PLAT-1): the legacy "fastest VM" algorithm must select a VM by the
+ * per-PE speed getMips(), not by total MIPS (mips x PE count).
  *
- * <p>背景：作业固定占用 1 个 PE，实际执行速率只取决于单 PE MIPS。历史实现比较
- * getCurrentRequestedTotalMips()，在多 PE 异构配置下会系统性选错 VM：
- * 例如 2PE@500MIPS（总 1000）会胜过 1PE@800MIPS（总 800），但作业在前者
- * 实际只以 500 MIPS 运行。本测试固定该修复的行为。</p>
+ * <p>Background: a Job always occupies 1 PE, so its actual execution rate depends only on
+ * the per-PE MIPS. The historical implementation compared getCurrentRequestedTotalMips()
+ * and systematically picked the wrong VM under heterogeneous multi-PE configurations:
+ * for example 2PE@500MIPS (total 1000) beat 1PE@800MIPS (total 800), although the Job
+ * actually ran at only 500 MIPS on the former. This test pins the behavior of that fix.</p>
  */
 class FastestVmMipsSelectionTest {
 
-    /** 2 PE @ 500 MIPS/PE：总 MIPS=1000，但单 PE 只有 500。 */
+    /** 2 PE @ 500 MIPS/PE: total MIPS=1000, but a single PE provides only 500. */
     private static final int MANY_PE_SLOW_VM_ID = 1;
-    /** 1 PE @ 800 MIPS/PE：总 MIPS=800，但单 PE 速度更快。 */
+    /** 1 PE @ 800 MIPS/PE: total MIPS=800, but the per-PE speed is higher. */
     private static final int FAST_SINGLE_PE_VM_ID = 2;
 
     @Test

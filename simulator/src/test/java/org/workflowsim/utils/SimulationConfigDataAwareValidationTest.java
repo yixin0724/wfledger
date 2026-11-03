@@ -10,11 +10,14 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 
 /**
- * 回归测试（PLAT-7）：DATA 调度算法与 SHARED 文件系统模式的组合必须在配置层被拒绝。
+ * Regression test (PLAT-7): the combination of the DATA scheduling algorithm and the
+ * SHARED file system mode must be rejected at the configuration layer.
  *
- * <p>背景：DATA 算法的局部性判定按 VM ID 匹配副本站点，而 SHARED 模式的副本按
- * 数据中心名注册，两者永不匹配——DATA 会静默退化为 first-fit-idle，产生误导性
- * 实验结果。修复后 {@link SimulationConfig.Builder#build()} 直接拒绝该组合。</p>
+ * <p>Background: the DATA algorithm matches replica sites by VM ID for its locality
+ * verdict, whereas replicas in SHARED mode are registered by datacenter name, so the two
+ * never match -- DATA silently degrades to first-fit-idle and produces misleading
+ * experimental results. After the fix, {@link SimulationConfig.Builder#build()} rejects
+ * this combination outright.</p>
  */
 class SimulationConfigDataAwareValidationTest {
 
@@ -44,7 +47,7 @@ class SimulationConfigDataAwareValidationTest {
 
     @Test
     void acceptsSharedFileSystemWithOtherAlgorithms() {
-        // SHARED 模式对其他在线算法不受影响。
+        // SHARED mode does not affect the other online algorithms.
         assertDoesNotThrow(() -> SimulationConfig.builder(Collections.singletonList("workflow.dax"), 2)
                 .schedulingAlgorithm(SchedulingAlgorithm.FCFS)
                 .fileSystem(ReplicaCatalog.FileSystem.SHARED)

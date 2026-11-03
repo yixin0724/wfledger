@@ -33,9 +33,10 @@ class SimulationRunnerAlgorithmContractTest {
         assertLegacySchedulerRejected(SchedulingAlgorithm.ROUNDROBIN);
     }
 
-    // R9：历史 HEFT/DHEFT 规划器标签已随其未对齐实现一并移除，
-    // 原 standardRunnerRejectsLegacyDagPlannersWithUnalignedExecutionModels
-    // 的拒绝契约不再适用（枚举中已无遗留 DAG 规划器标签）。
+    // R9: the historical HEFT/DHEFT planner labels were removed together with their
+    // unaligned implementations, so the rejection contract of the former
+    // standardRunnerRejectsLegacyDagPlannersWithUnalignedExecutionModels no longer applies
+    // (the enum contains no legacy DAG planner label).
 
     @Test
     void standardRunnerRejectsLegacyFailureReclustering() {

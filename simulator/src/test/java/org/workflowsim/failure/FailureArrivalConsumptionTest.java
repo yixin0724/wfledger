@@ -12,7 +12,10 @@ import org.workflowsim.Job;
 import org.workflowsim.Task;
 import org.workflowsim.utils.DistributionGenerator;
 
-/** 验证共享故障到达流不会把同一累计到达重复归因给多个执行窗口。 */
+/**
+ * Verifies that the shared failure arrival stream never attributes the same cumulative
+ * arrival to more than one execution window.
+ */
 class FailureArrivalConsumptionTest {
 
     @AfterEach
@@ -24,7 +27,7 @@ class FailureArrivalConsumptionTest {
 
     @Test
     void consumesExpiredAndMatchedArrivalsThroughTheirActualCumulativeIndices() {
-        // 原始 intervals 为 [2, 3, 5]，累计 arrival 为 [2, 5, 10]。
+        // The raw intervals are [2, 3, 5], so the cumulative arrivals are [2, 5, 10].
         FixedDistributionGenerator generator = new FixedDistributionGenerator(2.0, 3.0, 5.0);
         FailureParameters.init(
                 FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP,
@@ -34,17 +37,18 @@ class FailureArrivalConsumptionTest {
         FailureMonitor.init();
         FailureGenerator.init();
 
-        // 第一个窗口跳过 arrival=2，保留未来的 arrival=5。
+        // The first window skips arrival=2 and keeps the future arrival=5.
         assertFalse(FailureGenerator.generate(jobWithWindow(1, 3.0, 4.0)));
         assertEquals(1, generator.getConsumedSampleCount());
 
-        // 第二个窗口只消费 arrival=5，第三个窗口再消费 arrival=10。
+        // The second window consumes only arrival=5; the third then consumes arrival=10.
         assertTrue(FailureGenerator.generate(jobWithWindow(2, 4.0, 6.0)));
         assertEquals(2, generator.getConsumedSampleCount());
         assertTrue(FailureGenerator.generate(jobWithWindow(3, 9.0, 11.0)));
         assertEquals(3, generator.getConsumedSampleCount());
 
-        // DR 的历史估计读取同一游标；它现在覆盖真实经过的全部三段间隔，而非前两段。
+        // The historical DR estimate reads the same cursor; it now covers all three
+        // elapsed intervals rather than the first two.
         assertEquals(10.0 / 3.0, generator.getMean(), 0.0);
     }
 
@@ -60,7 +64,7 @@ class FailureArrivalConsumptionTest {
         return job;
     }
 
-    /** 固定 arrival 序列使游标语义不依赖随机采样。 */
+    /** A fixed arrival sequence makes the cursor semantics independent of random sampling. */
     private static final class FixedDistributionGenerator extends DistributionGenerator {
 
         private FixedDistributionGenerator(double... values) {

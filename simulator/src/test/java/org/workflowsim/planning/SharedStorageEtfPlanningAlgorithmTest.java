@@ -34,9 +34,11 @@ class SharedStorageEtfPlanningAlgorithmTest {
 
         SharedStorageDagPlanTrace trace = planner.getLastPlanTrace();
         assertEquals("ETF", trace.getStrategy());
-        // 所有根 Task 的最早开始时间均为 0.21 秒时，root 以更高的静态 b-level 先被选择。
-        // root 在 VM 0 保留后，Task 3 可在 VM 1 的 0.21 秒开始，而 Task 2 必须等到 root
-        // 在 1.21 秒完成。因此 ETF 第二个选择 Task 3，尽管 Task 2 的静态 b-level 更大。
+        // With every root Task having an earliest start of 0.21 seconds, root is selected
+        // first because it has the higher static b-level. Once root is reserved on VM 0,
+        // Task 3 can start at 0.21 seconds on VM 1, whereas Task 2 must wait until root
+        // completes at 1.21 seconds. ETF therefore selects Task 3 second, even though the
+        // static b-level of Task 2 is larger.
         assertTrue(trace.getTaskPlan(2).getUpwardRankSeconds()
                 > trace.getTaskPlan(3).getUpwardRankSeconds());
         assertEquals(0.21, trace.getTaskPlan(1).getEtfEarliestStartAtSelection(), 1.0e-12);

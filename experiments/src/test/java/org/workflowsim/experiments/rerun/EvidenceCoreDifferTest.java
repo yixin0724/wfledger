@@ -21,10 +21,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
- * 阶段 5 验收：核心量逐位比对。同一证据自比零分歧；篡改核心量（manifest 内嵌
- * metrics、configuration 种子、事件 simulationTime、事件总数、result 数组长度）
- * 必须精确检出并给出 JSON 指针；白名单易变量（provenance/runtime/artifacts 哈希/
- * 绝对路径/事件墙钟属性）豁免且仅记录，不误伤判定；身份信息单独提取。
+ * Phase 5 acceptance: bit-for-bit comparison of core quantities. Comparing an evidence
+ * chain against itself yields zero divergence; tampering with a core quantity (metrics
+ * embedded in the manifest, configuration seed, event simulationTime, total event count,
+ * result array length) must be detected exactly and reported with a JSON pointer;
+ * whitelisted volatile quantities (provenance, runtime, artifacts hashes, absolute paths,
+ * event wall-clock attributes) are exempt and merely noted, without disturbing the
+ * verdict; identity information is extracted separately.
  */
 class EvidenceCoreDifferTest {
 
@@ -56,7 +59,7 @@ class EvidenceCoreDifferTest {
     void detectsTamperedCoreManifestFieldsWithPointers() throws Exception {
         RerunEvidence clean = RerunEvidenceReader.read(fixtureRun);
         JsonObject manifest = readManifest(fixtureRun);
-        // 篡改两个核心量：内嵌 metrics 的 makespan 与配置种子。
+        // Tamper with two core quantities: the makespan embedded in metrics and the configuration seed.
         manifest.getAsJsonObject("metrics").addProperty("makespanSeconds", 9999.5);
         manifest.getAsJsonObject("configuration").addProperty("rootSeed", 92L);
         RerunEvidence tampered = inMemoryManifest(fixtureRun, manifest);
@@ -70,7 +73,7 @@ class EvidenceCoreDifferTest {
                 2,
                 result.getCoreDivergences().size(),
                 result.getCoreDivergences().toString());
-        // 分歧记录双侧值。
+        // A divergence records the values from both sides.
         Divergence seed = find(result.getCoreDivergences(), "/configuration/rootSeed");
         assertEquals("92", seed.getOriginalValue());
         assertEquals("91", seed.getRerunValue());
@@ -111,7 +114,7 @@ class EvidenceCoreDifferTest {
         List<String> lines = Files.readAllLines(fixtureRun.resolve("result.events.jsonl"), StandardCharsets.UTF_8);
         assertFalse(lines.isEmpty());
 
-        // 只改墙钟属性：零分歧。
+        // Change only wall-clock attributes: zero divergence.
         List<String> clockOnly = new ArrayList<String>();
         for (String line : lines) {
             JsonObject event = JsonParser.parseString(line).getAsJsonObject();
@@ -129,7 +132,7 @@ class EvidenceCoreDifferTest {
         DiffResult exempted = EvidenceCoreDiffer.compare(clean, inMemoryEvents(fixtureRun, clockOnlyPath));
         assertTrue(exempted.isIdenticalCore(), exempted.getCoreDivergences().toString());
 
-        // 同时改 simulationTime：必须检出。
+        // Also change simulationTime: this must be detected.
         List<String> tampered = new ArrayList<String>();
         for (int i = 0; i < clockOnly.size(); i++) {
             JsonObject event = JsonParser.parseString(clockOnly.get(i)).getAsJsonObject();
@@ -345,7 +348,10 @@ class EvidenceCoreDifferTest {
                 .getAsJsonObject();
     }
 
-    /** 用内存 manifest 替换磁盘内容构造证据（绕过 reader 的落盘哈希语义）。 */
+    /**
+     * Build evidence with an in-memory manifest that replaces the on-disk content,
+     * bypassing the reader's on-disk hash semantics.
+     */
     private static RerunEvidence inMemoryManifest(Path run, JsonObject manifest) throws Exception {
         int eventCount = Files.readAllLines(run.resolve("result.events.jsonl"), StandardCharsets.UTF_8)
                 .size();
@@ -358,7 +364,7 @@ class EvidenceCoreDifferTest {
                 manifest);
     }
 
-    /** 用替换后的 events 文件构造证据。 */
+    /** Build evidence with a substituted events file. */
     private static RerunEvidence inMemoryEvents(Path run, Path eventsFile) throws Exception {
         JsonObject manifest = readManifest(run);
         int eventCount = Files.readAllLines(eventsFile, StandardCharsets.UTF_8).size();

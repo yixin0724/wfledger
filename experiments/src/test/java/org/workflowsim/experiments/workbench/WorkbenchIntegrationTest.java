@@ -437,7 +437,7 @@ class WorkbenchIntegrationTest {
         assertEquals("RUNNING", running.get("status").getAsString());
         assertEquals(0, running.get("successfulRuns").getAsInt());
         String html = text(index);
-        assertTrue(html.contains("记录损坏") && html.contains("unfinished experiment"));
+        assertTrue(html.contains("Record damaged") && html.contains("unfinished experiment"));
         assertFalse(html.contains("experiment-running/report.html"), "do not link a report that was never written");
         assertEquals("keep this file", text(root.resolve("experiment-not-a-directory")));
     }

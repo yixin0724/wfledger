@@ -54,7 +54,8 @@ class WorkbenchConfigTest {
 
     @Test
     void platformPowerFieldsRoundTripAndValidate() throws Exception {
-        // BAT-E4.2（2026-10-27）：均一功率声明 → 每台 VmSpec 携带功耗字段；缺省不带；倒置/负数拒绝。
+        // BAT-E4.2 (2026-10-27): a uniform power declaration -> every VmSpec carries the power
+        // fields; absent means no power model; inverted/negative values are rejected.
         Path workflow = workflow(directory, "flow.dax", false);
         JsonObject powered = configuration(workflow.toString(), 2);
         powered.getAsJsonObject("platform").addProperty("idlePowerWatts", 250.0);
@@ -88,8 +89,10 @@ class WorkbenchConfigTest {
     }
 
     /**
-     * C1 复核（2026-11-02）：工作台在<b>校验期</b>就拒绝碳延后标签——窗口声明不进 v1
-     * 工作台面，若放行会让用户 validate 通过、run 到一半才失败。拒绝信息必须指路。
+     * C1 re-verification (2026-11-02): the workbench rejects the carbon deferral label already at
+     * <b>validation time</b> -- the window declaration never enters the v1 workbench surface, and
+     * admitting it would let a user pass validate and then fail halfway through run. The refusal
+     * message must point the way.
      */
     @Test
     void workbenchRejectsTheCarbonDeferralLabelWithAPointer() throws Exception {
@@ -112,9 +115,12 @@ class WorkbenchConfigTest {
 
     @Test
     void platformCarbonIntensityUniformRoundTripAndValidate() throws Exception {
-        // BAT-C3（2026-10-28）：均一碳强度 380 gCO₂/kWh → 每 VmSpec 携带该值；缺省→null
-        // （合法缺报≠全零）；负数拒绝；碳无功率 → 前置拒绝并引用两处字段（碳乘能量链，
-        // 无功率剖面真空化，与报告端 fail-fast 同口径）；v1 工作台不接受 carbonWindows。
+        // BAT-C3 (2026-10-28): a uniform carbon intensity of 380 gCO2/kWh -> every VmSpec carries
+        // that value; absent -> null (a legitimate missing report is not an all-zero claim); negative
+        // rejected; carbon without power -> rejected up front, citing both fields (carbon
+        // multiplies the energy chain, so an unpowered profile makes the accounting vacuous --
+        // the same rule as the report-side fail-fast); the v1 workbench does not accept
+        // carbonWindows.
         Path workflow = workflow(directory, "flow.dax", false);
         JsonObject powered = configuration(workflow.toString(), 2);
         powered.getAsJsonObject("platform").addProperty("idlePowerWatts", 250.0);
@@ -133,7 +139,8 @@ class WorkbenchConfigTest {
                 .getVms()) {
             assertTrue(spec.getCarbonIntensityGramsPerKWh() == null, "no carbon declaration -> null intensity");
         }
-        // 碳声明无功率 → 前置拒绝（两字段都要引用，不留静默零碳）
+        // carbon declaration without power -> rejected up front (both fields must be cited; never
+        // leave a silent zero carbon)
         JsonObject orphan = configuration(workflow.toString(), 2);
         orphan.getAsJsonObject("platform").addProperty("carbonIntensityGramsPerKWh", 380.0);
         IllegalArgumentException orphanRejection = assertThrows(
@@ -143,7 +150,7 @@ class WorkbenchConfigTest {
                 orphanRejection.getMessage().contains("carbonIntensityGramsPerKWh")
                         && orphanRejection.getMessage().contains("idlePowerWatts"),
                 "rejection must cite both fields: " + orphanRejection.getMessage());
-        // 负强度 → 拒绝（非负有限域）
+        // negative intensity -> rejected (non-negative finite domain)
         JsonObject negative = configuration(workflow.toString(), 2);
         negative.getAsJsonObject("platform").addProperty("idlePowerWatts", 250.0);
         negative.getAsJsonObject("platform").addProperty("maxPowerWatts", 400.0);
@@ -151,7 +158,8 @@ class WorkbenchConfigTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> WorkbenchConfig.read(json(directory.resolve("negative-carbon.json"), negative)));
-        // v1 工作台面不接受预算窗口（研究驱动器按协议声明，见 CARBON_DIMENSION_DESIGN §2.5）
+        // the v1 workbench surface does not accept budget windows (research drivers declare them by
+        // protocol, see CARBON_DIMENSION_DESIGN §2.5)
         JsonObject windows = configuration(workflow.toString(), 2);
         windows.getAsJsonObject("platform").addProperty("idlePowerWatts", 250.0);
         windows.getAsJsonObject("platform").addProperty("maxPowerWatts", 400.0);
@@ -172,11 +180,14 @@ class WorkbenchConfigTest {
 
     @Test
     void platformFrequencyTiersRoundTripAndValidate() throws Exception {
-        // BAT-D4（2026-10-29，docs/advanced/DVFS_DIMENSION_DESIGN.md §2.5）：工作台频档声明面。
-        // 3 档 round-trip（每台 VmSpec 携带同表，默认档=表首档）；频档表与平面功率字段
-        // 互斥（单一真源，拒绝同时引用两处字段）；非 DEFAULT 策略无频档表拒绝（引用
-        // policy 与 frequencyTiers 两字段）；未知策略标签拒绝；策略传播 SimulationConfig；
-        // v1 配置（无任何频档键）仍绿且策略缺省 DEFAULT。
+        // BAT-D4 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md §2.5): the workbench
+        // frequency-tier declaration surface. Three-tier round-trip (every VmSpec carries the same
+        // table, the default tier is the first table row); the tier table and the flat power fields
+        // are mutually exclusive (one source of truth, a declaration carrying both faces is
+        // rejected citing both fields); a non-DEFAULT policy without a tier table is rejected
+        // (citing policy and frequencyTiers); an unknown policy label is rejected; the policy
+        // propagates into SimulationConfig; a v1 configuration (no tier keys at all) stays green
+        // and the policy defaults to DEFAULT.
         Path workflow = workflow(directory, "flow.dax", false);
         JsonObject tiered = configuration(workflow.toString(), 2);
         JsonObject tieredPlatform = tiered.getAsJsonObject("platform");
@@ -205,7 +216,8 @@ class WorkbenchConfigTest {
                     candidate.config.getFrequencyPolicy() == SimulationConfig.FrequencyPolicy.EDP_HEURISTIC,
                     "frequency policy must flow into every candidate SimulationConfig");
         }
-        // v1 配置（无任何频档键）仍绿：缺列 = v1 平台，策略缺省 DEFAULT
+        // a v1 configuration (no tier keys at all) stays green: an absent column = the v1
+        // platform, policy defaults to DEFAULT
         JsonObject v1 = configuration(workflow.toString(), 2);
         WorkbenchConfig v1Loaded = WorkbenchConfig.read(json(directory.resolve("v1.json"), v1));
         for (PlatformProfile.VmSpec spec : v1Loaded.getPlatform().getVms()) {
@@ -216,7 +228,8 @@ class WorkbenchConfigTest {
                     candidate.config.getFrequencyPolicy() == SimulationConfig.FrequencyPolicy.DEFAULT,
                     "absent policy resolution must be DEFAULT");
         }
-        // 频档表与平面功率字段互斥：单一真源，两处字段都要引用
+        // the tier table and the flat power fields are mutually exclusive: one source of truth,
+        // both field faces must be cited
         JsonObject both = configuration(workflow.toString(), 2);
         JsonObject bothPlatform = both.getAsJsonObject("platform");
         bothPlatform.add("frequencyTiers", tiers(2000.0, 250.0, 400.0, 1000.0, 220.0, 280.0, 500.0, 210.0, 240.0));
@@ -229,7 +242,7 @@ class WorkbenchConfigTest {
                 exclusive.getMessage().contains("frequencyTiers")
                         && exclusive.getMessage().contains("idlePowerWatts"),
                 "mutual-exclusivity rejection must cite both field faces: " + exclusive.getMessage());
-        // 非 DEFAULT 策略 + 无频档表 → 拒绝（引用 policy 与 frequencyTiers）
+        // non-DEFAULT policy + no tier table -> rejected (citing policy and frequencyTiers)
         JsonObject policyWithoutTiers = configuration(workflow.toString(), 2);
         policyWithoutTiers.getAsJsonObject("platform").addProperty("frequencyPolicy", "MIN_POWER");
         IllegalArgumentException inert = assertThrows(
@@ -239,7 +252,7 @@ class WorkbenchConfigTest {
                 inert.getMessage().contains("frequencyPolicy")
                         && inert.getMessage().contains("frequencyTiers"),
                 "policy-without-tiers rejection must cite both fields: " + inert.getMessage());
-        // 非表序降序 → 复用 PlatformProfile 的 BAT-D1 构造校验
+        // non-descending tier order -> reuses the BAT-D1 construction check of PlatformProfile
         JsonObject ascending = configuration(workflow.toString(), 2);
         ascending
                 .getAsJsonObject("platform")
@@ -250,7 +263,8 @@ class WorkbenchConfigTest {
         assertTrue(
                 unordered.getMessage().contains("descending"),
                 "non-descending tier column must be rejected: " + unordered.getMessage());
-        // 档值域非法（mips=0）与缺键（maxPowerWatts 缺失）→ 拒绝（显式失败纪律）
+        // illegal tier domain (mips=0) and a missing key (maxPowerWatts absent) -> rejected
+        // (explicit-failure discipline)
         JsonObject zeroMips = configuration(workflow.toString(), 2);
         zeroMips.getAsJsonObject("platform").add("frequencyTiers", tiers(0.0, 210.0, 240.0));
         IllegalArgumentException zero = assertThrows(
@@ -267,7 +281,7 @@ class WorkbenchConfigTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> WorkbenchConfig.read(json(directory.resolve("half-tier.json"), missingField)));
-        // 未知策略标签 → 拒绝并引用字段名
+        // unknown policy label -> rejected, citing the field name
         JsonObject unknownPolicy = configuration(workflow.toString(), 2);
         unknownPolicy
                 .getAsJsonObject("platform")
@@ -281,7 +295,7 @@ class WorkbenchConfigTest {
                 "unknown policy must cite the policy field: " + unknown.getMessage());
     }
 
-    /** BAT-D4：均一频档表 fixture——mips/idle/max 三元组序列原图组装（降序）。 */
+    /** BAT-D4: uniform tier-table fixture -- assembles the mips/idle/max triple sequence as given (descending). */
     private static JsonArray tiers(double... mipsIdleMax) {
         JsonArray table = new JsonArray();
         for (int i = 0; i < mipsIdleMax.length; i += 3) {

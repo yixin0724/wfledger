@@ -146,7 +146,8 @@ class SimulationStochasticModelIntegrationTest {
         long successfulParentReturn = sequenceOfSuccessfulReturnForTask(report, rootTaskId);
         long childReady = sequenceOfReadyForTask(report, childTaskId);
 
-        // 以事件序号而非绝对仿真时刻做判定基准：重试创建必须先于成功返回，子任务随后才可就绪。
+        // Event sequence numbers, not absolute simulation time, are the ordering basis: retry creation
+        // must precede the successful return, and the child becomes ready only afterwards.
         assertTrue(retrySequence >= 0, "The fixed seed must retry the parent task");
         assertTrue(successfulParentReturn > retrySequence);
         assertTrue(
@@ -233,7 +234,7 @@ class SimulationStochasticModelIntegrationTest {
         }
     }
 
-    /** 重试 attempt 必须保留计算类别，否则其运行时间和结果会从 compute 指标中漏计。 */
+    /** A retry attempt must keep its compute class type, or the compute metrics drop its runtime and outcome. */
     private static void assertRetryJobsRemainComputeAttempts(SimulationReport report) {
         Set<Integer> retryIds = new HashSet<Integer>();
         for (SimulationEvent event : report.getEvents()) {
@@ -258,7 +259,7 @@ class SimulationStochasticModelIntegrationTest {
                 "Retry compute attempts must be included in compute outcome metrics");
     }
 
-    /** 所有 retry 指标必须能一一回溯到已记录的 retry 创建事件和完成 Job evidence。 */
+    /** All retry metrics must trace one-to-one to recorded retry creation events and completed Job evidence. */
     private static void assertRetryMetricsMatchRecordedEvidence(SimulationReport report) {
         int retryEvents = 0;
         for (SimulationEvent event : report.getEvents()) {
