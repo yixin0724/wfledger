@@ -1,0 +1,44 @@
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  s_3ae6b032aa2d87::t_fa40c9f4c53b31 221-226
+  s_3ae6b032aa2d87::t_6330d2983bf21b 623
+  s_3ae6b032aa2d87::t_9bf29d9d90d8bd 481-496
+  s_3ae6b032aa2d87::t_8f98300201d966 51-52,58-59,65-66,72-73
+  s_3ae6b032aa2d87::t_29b0bc39123079 497
+experiments/src/main/java/org/workflowsim/examples/ExampleCliSupport.java
+  s_3ae6b032aa2d87::t_e6c69b5a2d746f 91-95,105
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  s_3ae6b032aa2d87::t_681b546f66eb7a 212-216
+  s_3ae6b032aa2d87::t_d27e633b7f4317 249,254,259,264
+  s_3ae6b032aa2d87::t_8e4d5f8630decb 284-301
+  s_24f59fb6b2f10b::t_8a19a93ff20952 283,302-303
+simulator/src/test/java/org/workflowsim/WorkflowSchedulerLegacyAliasTest.java
+  s_3ae6b032aa2d87::t_3af08f3427efbf 1-38,40-56,58-94
+  s_3ae6b032aa2d87::t_ec96409b6c77a5 39
+  s_3ae6b032aa2d87::t_5ef75b7ecba611 57
+docs/algorithms/CATALOG.md
+  s_3ae6b032aa2d87::t_3f8a97ebd72eae 169-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f20925a788f99a87efdbf3b03a48937d410d317e",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
