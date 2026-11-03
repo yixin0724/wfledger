@@ -1,0 +1,25 @@
+Makefile
+  s_3ae6b032aa2d87::t_4e306da3182caf 4
+  s_3ae6b032aa2d87::t_d90dca4b425561 33-42
+  s_3ae6b032aa2d87::t_f62d03963a7b5d 90
+README.md
+  s_3ae6b032aa2d87::t_22377194b775bf 29-30
+docs/experiments/AUDIT_COVERAGE.md
+  s_3ae6b032aa2d87::t_109ee43ddb8ea6 109-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a50054ff61655a3e61a1525c6cd630a78fa29b9d",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
