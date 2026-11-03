@@ -215,8 +215,14 @@ public class WorkflowScheduler extends DatacenterBroker {
      * binding fails fast and names the actual policy, because SimulationRunner already
      * rejects the deprecated labels for research evidence (AUD-F10).</p>
      *
+     * <p>Every enum value has an explicit case; {@code INVALID} keeps its historical static
+     * binding shell explicitly, and an unmapped value throws instead of silently falling
+     * back to the static binding, so a missed switch addition cannot masquerade as a
+     * plan-execution run (AUD-F21).</p>
+     *
      * @param name scheduling algorithm enum
      * @return the corresponding scheduling policy
+     * @throws IllegalStateException when {@code name} has no explicit case in this switch
      */
     private BaseSchedulingAlgorithm createSchedulingPolicy(SchedulingAlgorithm name) {
         BaseSchedulingAlgorithm algorithm;
@@ -273,9 +279,21 @@ public class WorkflowScheduler extends DatacenterBroker {
             case STATIC:
                 algorithm = new StaticSchedulingAlgorithm();
                 break;
-            default:
+            case INVALID:
+                // AUD-F21: INVALID is the legacy Parameters default (Parameters.reset()) and
+                // the registered-provider sentinel; without a provider there is no scheduling
+                // decision to make, so the static binding shell keeps the historical role of
+                // executing an already produced binding. Runner-configured runs never reach
+                // this case because the runner rejects INVALID first.
                 algorithm = new StaticSchedulingAlgorithm();
                 break;
+            default:
+                // AUD-F21: an unmapped enum value fails loudly instead of silently falling
+                // back to the static binding, so a missed switch addition cannot masquerade
+                // as a plan-execution run.
+                throw new IllegalStateException("SchedulingAlgorithm." + name + " has no policy "
+                        + "binding in WorkflowScheduler; add an explicit case when the enum grows "
+                        + "(AUD-F21).");
         }
         return algorithm;
     }

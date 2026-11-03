@@ -1,0 +1,66 @@
+package org.workflowsim;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Calendar;
+
+import org.cloudbus.cloudsim.core.CloudSim;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.workflowsim.scheduling.StaticSchedulingAlgorithm;
+import org.workflowsim.utils.ClusteringParameters;
+import org.workflowsim.utils.OverheadParameters;
+import org.workflowsim.utils.Parameters;
+
+/**
+ * Pins the explicit policy binding surface of WorkflowScheduler (AUD-F21).
+ *
+ * <p>Every scheduling enum value must have an explicit case in the policy switch: an
+ * unmapped value fails loudly instead of silently falling back to the static binding, so a
+ * missed enum addition cannot masquerade as a plan-execution run. INVALID keeps its
+ * historical role explicitly: it is the legacy no-decision shell that executes an already
+ * produced binding, and runner-configured runs never reach it because they reject INVALID
+ * first.</p>
+ */
+class WorkflowSchedulerExplicitBindingTest {
+
+    @BeforeEach
+    void resetLegacyState() {
+        Parameters.reset();
+        Parameters.enableLegacySchedulingAliases();
+        CloudSim.init(1, Calendar.getInstance(), false);
+    }
+
+    @Test
+    void everyEnumValueHasAnExplicitPolicyBinding() throws Exception {
+        WorkflowScheduler scheduler = new WorkflowScheduler("explicit-binding-test");
+        for (Parameters.SchedulingAlgorithm label : Parameters.SchedulingAlgorithm.values()) {
+            initSchedulingAlgorithm(label);
+            assertNotNull(
+                    scheduler.getSchedulingPolicy(), "enum value " + label + " must have an explicit policy binding");
+        }
+    }
+
+    @Test
+    void invalidIsTheExplicitNoDecisionBindingShell() throws Exception {
+        initSchedulingAlgorithm(Parameters.SchedulingAlgorithm.INVALID);
+        WorkflowScheduler scheduler = new WorkflowScheduler("explicit-invalid-test");
+
+        assertTrue(scheduler.getSchedulingPolicy() instanceof StaticSchedulingAlgorithm);
+    }
+
+    private static void initSchedulingAlgorithm(Parameters.SchedulingAlgorithm algorithm) {
+        Parameters.init(
+                1,
+                (String) null,
+                null,
+                null,
+                new OverheadParameters(0, null, null, null, null, 0),
+                new ClusteringParameters(0, 0, ClusteringParameters.ClusteringMethod.NONE, null),
+                algorithm,
+                Parameters.PlanningAlgorithm.INVALID,
+                null,
+                0);
+    }
+}
