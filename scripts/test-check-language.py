@@ -24,19 +24,29 @@ CHECKER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECKER)
 
 
+def cjk(*codepoints):
+    """Build a CJK string from code points.
+
+    The fixtures must contain real CJK characters, but this file is itself
+    tracked by the checker it exercises, so it cannot hold them literally:
+    source stays ASCII while the runtime values are genuine.
+    """
+    return "".join(chr(code) for code in codepoints)
+
+
 class DetectionTests(unittest.TestCase):
     """The character classes the policy forbids and the ones it allows."""
 
     def test_simplified_chinese_is_rejected(self):
-        self.assertTrue(CHECKER.CJK.search("证据链"))
-        self.assertTrue(CHECKER.CJK.search("a mixed line 侧车 here"))
+        self.assertTrue(CHECKER.CJK.search(cjk(0x8BC1, 0x636E, 0x94FE)))
+        self.assertTrue(CHECKER.CJK.search("a mixed line " + cjk(0x4FA7, 0x8F66) + " here"))
 
     def test_traditional_chinese_is_rejected(self):
-        self.assertTrue(CHECKER.CJK.search("證據鏈"))
+        self.assertTrue(CHECKER.CJK.search(cjk(0x8B49, 0x64DA, 0x93C8)))
 
     def test_fullwidth_punctuation_is_rejected(self):
-        self.assertTrue(CHECKER.CJK.search("hello，world"))
-        self.assertTrue(CHECKER.CJK.search("done。"))
+        self.assertTrue(CHECKER.CJK.search("hello" + cjk(0xFF0C) + "world"))
+        self.assertTrue(CHECKER.CJK.search("done" + cjk(0x3002)))
 
     def test_other_scripts_are_allowed(self):
         # The policy is "no Chinese", not "ASCII only": retained study tables keep
@@ -96,21 +106,22 @@ class RepositoryScanTests(unittest.TestCase):
         self.assertEqual([], CHECKER.find_violations(files, str(self.root)))
 
     def test_violation_reports_file_line_and_text(self):
-        files = [self.put("docs/a.md", "# Title\n\n中文一行\n")]
+        files = [self.put("docs/a.md", "# Title\n\n" + cjk(0x4E2D, 0x6587, 0x4E00, 0x884C) + "\n")]
         violations = CHECKER.find_violations(files, str(self.root))
         self.assertEqual(1, len(violations))
         self.assertEqual("docs/a.md", violations[0]["file"])
         self.assertEqual(3, violations[0]["line"])
-        self.assertEqual("中文一行", violations[0]["text"])
+        self.assertEqual(cjk(0x4E2D, 0x6587, 0x4E00, 0x884C), violations[0]["text"])
 
     def test_each_offending_line_is_listed(self):
-        files = [self.put("a.py", "# 第一行\nx = 1\n# 第二行\n")]
+        files = [self.put("a.py", "# " + cjk(0x7B2C, 0x4E00, 0x884C) + "\nx = 1\n# " + cjk(0x7B2C, 0x4E8C, 0x884C) + "\n")]
         violations = CHECKER.find_violations(files, str(self.root))
         self.assertEqual([1, 3], [item["line"] for item in violations])
 
     def test_exempt_fixture_is_skipped(self):
-        files = [self.put("datasets/dax/x.dax", "<!-- 中文注释 -->\n"),
-                 self.put("simulator/src/test/resources/dax/y.dax", "<!-- 中文注释 -->\n")]
+        comment = "<!-- " + cjk(0x4E2D, 0x6587, 0x6CE8, 0x91CA) + " -->\n"
+        files = [self.put("datasets/dax/x.dax", comment),
+                 self.put("simulator/src/test/resources/dax/y.dax", comment)]
         self.assertEqual([], CHECKER.find_violations(files, str(self.root)))
 
     def test_non_utf8_file_is_skipped_not_crashed(self):
@@ -135,7 +146,7 @@ class CliTests(unittest.TestCase):
 
     def test_dirty_tree_exits_one(self):
         with tempfile.TemporaryDirectory() as temporary:
-            Path(temporary, "a.md").write_text("中文\n", encoding="utf-8")
+            Path(temporary, "a.md").write_text(cjk(0x4E2D, 0x6587) + "\n", encoding="utf-8")
             status = []
             with mock.patch.object(CHECKER, "tracked_files", return_value=["a.md"]), \
                     mock.patch.object(CHECKER.subprocess, "run",
@@ -158,7 +169,7 @@ class CliTests(unittest.TestCase):
 
     def test_json_report_is_machine_readable(self):
         with tempfile.TemporaryDirectory() as temporary:
-            Path(temporary, "a.md").write_text("中文\n", encoding="utf-8")
+            Path(temporary, "a.md").write_text(cjk(0x4E2D, 0x6587) + "\n", encoding="utf-8")
             with mock.patch.object(CHECKER, "tracked_files", return_value=["a.md"]), \
                     mock.patch.object(CHECKER.subprocess, "run",
                                        return_value=mock.Mock(stdout=(temporary + "\n").encode())), \
