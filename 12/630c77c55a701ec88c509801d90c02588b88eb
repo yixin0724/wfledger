@@ -1,0 +1,26 @@
+docs/getting-started/BUILD.md
+  s_3ae6b032aa2d87::t_288a04f9483747 87
+  s_3ae6b032aa2d87::t_b4bafa22ed1197 86
+docs/advanced/MUTATION_GATE.md
+  s_3ae6b032aa2d87::t_9550de6286b37b 60,62-65
+  s_3ae6b032aa2d87::t_b0bad9c4f334e7 61
+.github/workflows/ci.yml
+  s_3ae6b032aa2d87::t_22ecc0df3bc9c5 201-221,223-236
+  s_3ae6b032aa2d87::t_a5237013f02dfe 222
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "12630c77c55a701ec88c509801d90c02588b88eb",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
