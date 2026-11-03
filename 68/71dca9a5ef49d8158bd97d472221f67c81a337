@@ -1,0 +1,52 @@
+.gitignore
+  s_3ae6b032aa2d87::t_acc33bdbda4e19 24-26
+  s_3ae6b032aa2d87::t_6900580bafbc28 46
+scripts/check-dataset-indexes.py
+  s_3ae6b032aa2d87::t_9c90eacfef9643 1-103,105,107-117,119-145,147-165,167-205,207-243,245,247-252,254-292
+  s_3ae6b032aa2d87::t_e0880cf742d9fd 206
+  s_3ae6b032aa2d87::t_b5200282a84f39 146
+  s_3ae6b032aa2d87::t_b5a41d57a1ca9b 104,106,118
+  s_3ae6b032aa2d87::t_1c340060fb63d7 244,246
+  s_3ae6b032aa2d87::t_00bde40e45c16a 253
+  s_3ae6b032aa2d87::t_dedd32ada81ca0 166
+scripts/test-check-dataset-indexes.py
+  s_3ae6b032aa2d87::t_d6e8951ac49941 1-233,237,239-247,250-304
+  s_3ae6b032aa2d87::t_336f9d0f82fd4d 234-236,238
+  s_3ae6b032aa2d87::t_510071b77c46af 248-249
+datasets/README.md
+  s_3ae6b032aa2d87::t_26d1d5e3697034 73
+  s_3ae6b032aa2d87::t_8dd85f7ef5e1c1 5-14
+  s_3ae6b032aa2d87::t_3dc72bc45eba61 83
+  s_3ae6b032aa2d87::t_eb820b9ae2a3ab 44
+  s_3ae6b032aa2d87::t_8bb41ec0e3f8fd 112
+docs/experiments/AUDIT_COVERAGE.md
+  s_3ae6b032aa2d87::t_25e34c8b059869 7-8
+  s_3ae6b032aa2d87::t_fdb62770a6a1b3 23
+  s_3ae6b032aa2d87::t_17bd3c32fafaef 105
+.github/workflows/ci.yml
+  s_3ae6b032aa2d87::t_475e4df80e00e2 43-47
+datasets/INDEX.json
+  s_3ae6b032aa2d87::t_64289c66a75b7d 1-43
+datasets/dax/INDEX.json
+  s_3ae6b032aa2d87::t_50553c07bb94c5 6,8,15,23,31,39,47,55,63,71,79,87,95,103,111,119,127,135,143,151,159,167,170-181
+datasets/wfformat/INDEX.json
+  s_3ae6b032aa2d87::t_e5be256fa9af5a 1-514
+datasets/wfinstances/INDEX.json
+  s_3ae6b032aa2d87::t_4885b5d1a1aeba 1-1431
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6871dca9a5ef49d8158bd97d472221f67c81a337",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
