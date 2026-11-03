@@ -58,4 +58,6 @@ New maintenance notes are written in professional technical English; paper title
 
 Run the relevant build and Javadoc checks even for comment-only changes; the full commands are in the [build guide](<../getting-started/BUILD.md>). The algorithm, randomness, inputs, artifact fields, and test assertions are never modified to fit a document.
 
+The language rule is enforced, not merely stated: `python3 -B scripts/check-language.py` (also `make language`) walks the tracked text files and fails on any line that still carries CJK characters. The only exemption is Chinese inside a `.dax` fixture: those bytes are frozen because the file's SHA-256 is a recorded input identity, and the same fixture also ships as a test resource.
+
 Provenance v3 records the component source-tree identity, and contract documents may also be hashed individually; comment or protocol tidy-ups change the corresponding identity of artifacts generated in the future. Do not rewrite the hashes of retained historical artifacts or label a new source as an old version. The source-tree hash is a local identity, not a Git commit and not a release signature.

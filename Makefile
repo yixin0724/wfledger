@@ -1,7 +1,7 @@
 # WorkflowSim Makefile
 # Shortcuts for the common Maven build commands
 
-.PHONY: all build test verify audit clean coverage install package rebuild mutation-gate help
+.PHONY: all build test verify audit clean coverage install package rebuild mutation-gate language help
 
 # default target
 all: build
@@ -62,6 +62,12 @@ mutation-gate:
 	@echo "Running the registered mutation gate (clean working tree required)..."
 	python3 -B scripts/mutation-gate.py --output output/mutation-gate/mutation-gate-$$(date +%Y-%m-%d).json
 
+# reject CJK characters in every tracked text file
+language:
+	@echo "Checking that the tree is maintained in English..."
+	python3 -B scripts/test-check-language.py
+	python3 -B scripts/check-language.py
+
 # show the help text
 help:
 	@echo "WorkflowSim build commands:"
@@ -76,6 +82,7 @@ help:
 	@echo "  make install  - install into the local Maven repository"
 	@echo "  make rebuild  - clean and rebuild"
 	@echo "  make mutation-gate - registered zero-survival mutation gate (clean working tree required)"
+	@echo "  make language - reject CJK characters in the tracked text files"
 	@echo "  make help     - show this help text"
 	@echo ""
 	@echo "Detailed documentation: docs/getting-started/BUILD.md"

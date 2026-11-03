@@ -94,6 +94,15 @@ python3 -B scripts/check-docs.py --json
 
 The checker discovers existing project Markdown through Git metadata, excluding dependencies, build outputs, and local experiment results; it validates local targets, Markdown anchors, and source-text line numbers, and it does not access the network. Missing targets, wrong anchors, or unsupported reference forms produce diagnostics with file/line positions and a non-zero exit. Semantics and commands must still be checked against the source code; the rules are in [documentation and source-comment requirements](<../advanced/CODE_STYLE.md>).
 
+## Language check
+
+```bash
+python3 -B scripts/test-check-language.py
+python3 -B scripts/check-language.py
+```
+
+The repository is maintained in professional technical English, including comments, generated reports, and retained study archives. The checker walks the tracked text files, reports every line that still carries CJK characters with its file and line number, and exits non-zero. Chinese inside a `.dax` fixture is exempt on purpose: those files are frozen bytes whose SHA-256 is part of a recorded input identity, so translating a comment inside one would invalidate the evidence that cites it. `make language` runs the same pair.
+
 ## Offline report browser acceptance
 
 The checker opens genuinely generated reports via `file://`; no server is started. Dependency versions are pinned in the [browser dependency manifest](<../../scripts/package.json>) and the [lock file](<../../scripts/package-lock.json>).

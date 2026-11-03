@@ -35,6 +35,11 @@ jobs:
           python3 -B scripts/test-check-docs.py
           python3 -B scripts/check-docs.py
 
+      - name: Verify the tree is maintained in English
+        run: |
+          python3 -B scripts/test-check-language.py
+          python3 -B scripts/check-language.py
+
       - name: Verify independent evidence and statistics checkers
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py
 
