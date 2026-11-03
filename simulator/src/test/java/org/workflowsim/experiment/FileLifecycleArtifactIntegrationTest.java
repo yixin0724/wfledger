@@ -31,6 +31,8 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -346,6 +348,55 @@ class FileLifecycleArtifactIntegrationTest {
         caller.remove("dataflowPlan");
         assertEquals(expected, validated.getManifestSnapshot());
         assertTrue(validated.getDecodedFileLifecycle().isQuiescent());
+    }
+
+    /**
+     * AUD-F15: a finished validator must never accept further events or a second finish.
+     * The 20+ mutable accumulators make silent instance reuse a cross-report contamination
+     * hazard, so the single-use contract is enforced, not just assumed.
+     */
+    @Test
+    void singleUseLifecycleIsEnforcedAfterFinish() throws Exception {
+        SimulationReport report = run(input(), true, false, 1000, 1);
+        ExperimentArtifactWriter.ExperimentArtifacts out =
+                ExperimentArtifactWriter.write(report, directory.resolve("snapshot"), "run");
+        FileLifecycleCodec.Decoded decoded = FileLifecycleCodec.decodeDocument(read(out.getFileLifecycle()));
+        Gson gson = new GsonBuilder().serializeNulls().create();
+        JsonObject root = gson.toJsonTree(ExperimentManifestWriter.fileLifecycleContextSnapshot(report))
+                .getAsJsonObject();
+        FileLifecycleContextValidator validator = new FileLifecycleContextValidator(root, decoded);
+        JsonObject firstEvent = null;
+        for (SimulationEvent event : report.getEvents()) {
+            JsonObject json = gson.toJsonTree(event).getAsJsonObject();
+            if (firstEvent == null) {
+                firstEvent = json;
+            }
+            validator.acceptEvent(json);
+        }
+        validator.finish();
+        JsonObject replay = firstEvent;
+        assertThrows(
+                IllegalStateException.class,
+                () -> validator.acceptEvent(replay),
+                "A finished validator must reject further event feeding (AUD-F15)");
+        assertThrows(
+                IllegalStateException.class,
+                () -> validator.finish(),
+                "A finished validator must reject re-finishing (AUD-F15)");
+    }
+
+    /**
+     * AUD-F15: the static entries stay independently reentrant -- each call constructs its own
+     * validator instance, so validating the same report twice must succeed twice.
+     */
+    @Test
+    void staticValidateReportEntriesStayIndependentlyReentrant() throws Exception {
+        SimulationReport report = run(input(), true, false, 1000, 1);
+        ExperimentArtifactWriter.ExperimentArtifacts out =
+                ExperimentArtifactWriter.write(report, directory.resolve("snapshot"), "run");
+        FileLifecycleCodec.Decoded decoded = FileLifecycleCodec.decodeDocument(read(out.getFileLifecycle()));
+        assertDoesNotThrow(() -> FileLifecycleContextValidator.validateReport(report, decoded));
+        assertDoesNotThrow(() -> FileLifecycleContextValidator.validateReport(report, decoded));
     }
 
     private Path input() throws Exception {

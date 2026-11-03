@@ -26,7 +26,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Cross-file V2 certificate: a valid lifecycle must describe this exact final Kernel run. */
+/**
+ * Cross-file V2 certificate: a valid lifecycle must describe this exact final Kernel run.
+ *
+ * <p><b>Single-use lifecycle (AUD-F15)</b>: an instance accumulates per-Event state in 20+
+ * mutable fields, so it validates exactly one report once. {@link #acceptEvent(JsonObject)}
+ * and {@link #finish()} reject any call after {@code finish()} -- the validation entries
+ * construct a fresh instance per report, which keeps the static methods reentrant, and
+ * read-only result access ({@link #getDataflowAssignmentResult()}) stays legal afterwards.
+ * Without this latch a reused instance would be caught only accidentally, by whatever
+ * per-Event check happens to notice the contamination, or not at all.</p>
+ */
 final class FileLifecycleContextValidator {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
     private final Checked decoded;
@@ -54,6 +64,8 @@ final class FileLifecycleContextValidator {
     private int storageRetryBudget;
     private org.workflowsim.data.v2.DataflowAssignmentValidator assignmentAudit;
     private org.workflowsim.data.v2.DataflowAssignmentValidator.Result assignmentResult;
+    /** AUD-F15 single-use latch: set when {@link #finish()} runs, never cleared. */
+    private boolean lifecycleFinished;
 
     org.workflowsim.data.v2.DataflowAssignmentValidator.Result getDataflowAssignmentResult() {
         return assignmentResult;
@@ -626,6 +638,10 @@ final class FileLifecycleContextValidator {
     }
 
     void acceptEvent(JsonObject event) throws IOException {
+        if (lifecycleFinished) {
+            throw new IllegalStateException(
+                    "Event feeding is rejected: this lifecycle validator already finished (single-use instance)");
+        }
         if (assignmentAudit != null) {
             try {
                 assignmentAudit.acceptEvent(event);
@@ -692,6 +708,11 @@ final class FileLifecycleContextValidator {
     }
 
     void finish() throws IOException {
+        if (lifecycleFinished) {
+            throw new IllegalStateException(
+                    "Finishing is rejected: this lifecycle validator already finished (single-use instance)");
+        }
+        lifecycleFinished = true;
         if (decoded.storage
                 && (retries.size() > storageRetryBudget || (!storageFailureEnabled && !retries.isEmpty()))) {
             throw fail("V3 retry history violates its failure mode or retry budget");
