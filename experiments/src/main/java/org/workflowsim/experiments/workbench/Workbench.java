@@ -134,7 +134,10 @@ public final class Workbench {
         return directory;
     }
 
-    /** 单个候选×种子运行与证据写入（逐字搬运转写自 run() 的内层循环体）。 */
+    /**
+     * Executes one candidate-by-seed run and writes its evidence (moved verbatim from the inner loop
+     * body of {@code run()}).
+     */
     private static RunOutcome executeCandidateRun(
             WorkbenchConfig.Candidate candidate,
             long seed,
@@ -171,7 +174,10 @@ public final class Workbench {
         return new RunOutcome(row, reportRow);
     }
 
-    /** 收尾索引与 HTML 报告（逐字搬运转写自 run() 的 finally 体）。 */
+    /**
+     * Finalizes the index and the HTML report (moved verbatim from the {@code finally} body of
+     * {@code run()}).
+     */
     private static void finalizeExperiment(
             WorkbenchConfig config,
             List<Map<String, Object>> rows,
@@ -198,7 +204,7 @@ public final class Workbench {
         history(root);
     }
 
-    /** executeCandidateRun 结果的私有搬运转写结构。 */
+    /** Private carrier structure for the result of {@code executeCandidateRun} (moved verbatim). */
     private static final class RunOutcome {
         final Map<String, Object> row, reportRow;
 

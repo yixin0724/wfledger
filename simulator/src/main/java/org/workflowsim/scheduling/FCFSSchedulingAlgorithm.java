@@ -23,10 +23,11 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * 先来先服务（FCFS）在线调度器。
+ * First-come, first-served (FCFS) online scheduler.
  *
- * <p>按传入 ready Job 的顺序扫描，并为每个 Job 选择按 VM ID 升序找到的首个空闲兼容 VM。
- * 一旦没有可用 VM 即结束本轮，因此它不会为未来 VM 空闲时间建立预测或保留。</p>
+ * <p>Scans the ready Jobs in the order they are supplied and, for each Job, selects the first
+ * idle compatible VM found in ascending VM ID order. The round ends as soon as no VM is
+ * available, so it builds neither a prediction of nor a reservation for future VM idle time.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -34,7 +35,7 @@ import org.workflowsim.WorkflowSimTags;
  */
 public class FCFSSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
-    /** 按当前 ready 顺序执行一次 FCFS 分派。 */
+    /** Perform one FCFS dispatch pass in the current ready order. */
     @Override
     public void run() {
         validateCloudletCompatibility();
@@ -52,7 +53,8 @@ public class FCFSSchedulingAlgorithm extends BaseSchedulingAlgorithm {
                     break;
                 }
             }
-            // 当前没有空闲兼容 VM，剩余 Job 留待后续调度事件。
+            // No idle compatible VM is available now; the remaining Jobs are left for later
+            // scheduling events.
             if (!stillHasVm) {
                 break;
             }

@@ -18,10 +18,11 @@ package org.workflowsim.planning;
 import java.util.List;
 
 /**
- * 静态规划策略的最小接口。
+ * Minimal interface for a static planning policy.
  *
- * <p>接口只约定输入 Task/VM 集合和规划入口；它本身不承诺生成完整 DAG 执行顺序、
- * 网络校准结果或真实平台回放。</p>
+ * <p>The interface specifies only the input Task/VM collections and the planning entry point;
+ * it does not by itself promise a complete DAG execution order, network calibration results,
+ * or a real-platform replay.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -29,18 +30,18 @@ import java.util.List;
  */
 public interface PlanningAlgorithmInterface {
 
-    /** 设置待规划 Task 列表。 */
+    /** Set the Task list to be planned. */
     public void setTaskList(List list);
 
-    /** 设置 VM 列表。 */
+    /** Set the VM list. */
     public void setVmList(List list);
 
-    /** 返回待规划 Task 列表。 */
+    /** Return the Task list to be planned. */
     public List getTaskList();
 
-    /** 返回 VM 列表。 */
+    /** Return the VM list. */
     public List getVmList();
 
-    /** 执行一次离线规划。 */
+    /** Execute one offline planning run. */
     public void run() throws Exception;
 }

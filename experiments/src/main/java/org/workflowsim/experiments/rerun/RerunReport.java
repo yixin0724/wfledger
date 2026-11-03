@@ -9,20 +9,23 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 /**
- * D2 阶段 6：rerun 差异比对报告（契约 §报告格式）。
+ * D2 stage 6: rerun divergence comparison report (contract section "report format").
  *
- * <p>机器可读形态为 {@code rerun-report.json}（schema
- * {@code workflowsim-rerun-report-v1}），人类可读形态为 {@code rerun-report.md}。
- * 字段与契约一一对应：{@code verdict}、{@code inputResolution}、
- * {@code coreDivergences}、{@code volatileFieldsNoted}、{@code codeIdentityNote}
- * 与两侧 {@code sourceTreeSha256}；失败路径额外携带 {@code failureReason} 与
- * {@code failureDetails}（如 INPUT_UNRESOLVED 的候选路径清单）；截断网络证据另含条件覆盖说明。</p>
+ * <p>The machine-readable form is {@code rerun-report.json} (schema
+ * {@code workflowsim-rerun-report-v1}); the human-readable form is
+ * {@code rerun-report.md}. Fields correspond one-to-one with the contract:
+ * {@code verdict}, {@code inputResolution}, {@code coreDivergences},
+ * {@code volatileFieldsNoted}, {@code codeIdentityNote}, and the
+ * {@code sourceTreeSha256} of both sides; the failure path additionally carries
+ * {@code failureReason} and {@code failureDetails} (for example, the candidate
+ * path list of INPUT_UNRESOLVED); truncated network evidence also carries a
+ * conditional coverage note.</p>
  *
- * <p>本类只做数据承载与序列化，不做 verdict 裁决。</p>
+ * <p>This class only carries and serializes data; it does not decide the verdict.</p>
  */
 public final class RerunReport {
 
-    /** 报告 schema 标识。 */
+    /** Report schema identifier. */
     public static final String SCHEMA_V1 = "workflowsim-rerun-report-v1";
 
     private static final Gson JSON =
@@ -80,12 +83,12 @@ public final class RerunReport {
         return outputDirectory;
     }
 
-    /** 失败原因（成功结论为 null）。 */
+    /** Failure reason (null for a successful verdict). */
     public String getFailureReason() {
         return failureReason;
     }
 
-    /** 失败附加细节（如候选路径清单）；成功结论为空列表。 */
+    /** Additional failure details (such as the candidate path list); empty list for a successful verdict. */
     public List<String> getFailureDetails() {
         return failureDetails;
     }
@@ -102,7 +105,7 @@ public final class RerunReport {
         return volatileFieldsNoted;
     }
 
-    /** 代码身份说明；两侧哈希任一未知时为 null。 */
+    /** Code identity note; null when either side's hash is unknown. */
     public String getCodeIdentityNote() {
         return codeIdentityNote;
     }
@@ -128,7 +131,7 @@ public final class RerunReport {
         return networkEvidenceCoverageNote;
     }
 
-    /** 机器可读JSON；旧字段保留null，网络覆盖说明只在截断时增加。 */
+    /** Machine-readable JSON; legacy fields keep null and the coverage note is added only when truncated. */
     public String toJson() {
         if (networkEvidenceCoverageNote == null) {
             return JSON.toJson(this);
@@ -140,7 +143,7 @@ public final class RerunReport {
         return JSON.toJson(document);
     }
 
-    /** 人类可读 markdown 摘要。 */
+    /** Human-readable markdown summary. */
     public String toMarkdown() {
         StringBuilder md = new StringBuilder();
         md.append("# Rerun Divergence Report\n\n");
@@ -238,7 +241,7 @@ public final class RerunReport {
         md.append("\n");
     }
 
-    /** 从 JSON 文本解析报告（测试与下游工具消费用）。 */
+    /** Parse a report from JSON text (consumed by tests and downstream tools). */
     public static JsonObject parseJson(String json) {
         return com.google.gson.JsonParser.parseString(json).getAsJsonObject();
     }
@@ -247,7 +250,7 @@ public final class RerunReport {
         return list == null ? Collections.<T>emptyList() : Collections.unmodifiableList(new ArrayList<T>(list));
     }
 
-    /** 单个输入的命中路径与哈希核对结果。 */
+    /** Resolved path and hash verification result of one input. */
     public static final class InputResolution {
 
         private final String recordedPath;
@@ -275,7 +278,7 @@ public final class RerunReport {
             return resolvedPath;
         }
 
-        /** 命中层级：1=study inputs/，2=记录绝对路径，3=workingDirectory 重定位。 */
+        /** Hit tier: 1 = study inputs/, 2 = recorded absolute path, 3 = workingDirectory rebasing. */
         public int getTier() {
             return tier;
         }
@@ -288,13 +291,13 @@ public final class RerunReport {
             return sizeBytes;
         }
 
-        /** sha256 与 sizeBytes 是否与 manifest 记录核对通过。 */
+        /** Whether sha256 and sizeBytes match the manifest record. */
         public boolean isVerified() {
             return verified;
         }
     }
 
-    /** 一条差异记录：JSON 指针 + 双侧值（超长已在 differ 内截断）。 */
+    /** One divergence entry: JSON pointer plus both values (over-long values already truncated in the differ). */
     public static final class DivergenceEntry {
 
         private final String pointer;
@@ -320,7 +323,7 @@ public final class RerunReport {
         }
     }
 
-    /** 报告构建器。 */
+    /** Report builder. */
     static final class Builder {
 
         private RerunVerdict verdict;
@@ -414,14 +417,14 @@ public final class RerunReport {
         }
     }
 
-    /** 供执行器把 resolver 结果转成报告条目。 */
+    /** Converts resolver results into report entries for the executor. */
     static List<InputResolution> inputResolutionsOf(RerunInputs inputs) {
         List<InputResolution> entries = new ArrayList<InputResolution>();
         if (inputs == null) {
             return entries;
         }
         for (RerunInputs.ResolvedInput input : inputs.getResolved()) {
-            // resolver 返回即代表 sha256/sizeBytes 已核对通过（不符会抛异常）。
+            // A resolver return means sha256/sizeBytes were verified (a mismatch throws).
             entries.add(new InputResolution(
                     input.getRecordedPath(),
                     input.getResolvedPath().toString(),

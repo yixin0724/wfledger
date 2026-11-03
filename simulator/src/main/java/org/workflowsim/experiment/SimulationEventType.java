@@ -1,32 +1,45 @@
 package org.workflowsim.experiment;
 
 /**
- * 一次 {@link SimulationRunner} 运行产生事件的稳定词表。
+ * Stable vocabulary of the events produced by one {@link SimulationRunner} run.
  *
- * <p>事件流描述模拟器中的建模生命周期，不表示生产平台发生过等价事件。</p>
+ * <p>The event stream describes the modeled lifecycle inside the simulator; it does not
+ * claim that equivalent events ever occurred on a production platform.</p>
  *
- * <p><strong>PLAT-19：SCHEDULING_DECISION 与 JOB_DISPATCHED 的分工。</strong>
- * 两者在同一模拟时刻为同一作业成对记录，都携带 {@code queueDelaySeconds}，
- * 但承担不同职责，有意不合并：</p>
+ * <p><strong>PLAT-19: division of labor between SCHEDULING_DECISION and
+ * JOB_DISPATCHED.</strong> Both are recorded in pairs for the same job at the same
+ * simulation time and both carry {@code queueDelaySeconds}, but they serve different duties
+ * and are deliberately not merged:</p>
  * <ul>
- * <li>{@code SCHEDULING_DECISION} —— 算法决策证据，被 {@link SimulationMetrics}
- * 消费用于计算就绪→决策、决策→开始两段延迟；重复记录属于事件流破坏（fail-fast）。</li>
- * <li>{@code JOB_DISPATCHED} —— 派发审计条目，证明调度结果已进入事件队列
- * （含派发延迟），当前仅供 events.jsonl 证据链与外部分析使用。</li>
+ * <li>{@code SCHEDULING_DECISION} -- algorithm decision evidence, consumed by
+ * {@link SimulationMetrics} to compute the ready-to-decision and decision-to-start delays;
+ * a duplicate record breaks the event stream (fail-fast).</li>
+ * <li>{@code JOB_DISPATCHED} -- dispatch audit entry proving that the scheduling result
+ * entered the event queue (including the dispatch delay); currently used only by the
+ * events.jsonl evidence chain and external analysis.</li>
  * </ul>
  */
 public enum SimulationEventType {
     WORKFLOW_PARSED,
-    /** R5 动态到达：某个工作流输入在其配置提交时刻变为可调度（根作业解除到达门控）。 */
+    /**
+     * R5 dynamic arrival: a workflow input becomes schedulable at its configured submission
+     * time (root jobs clear the arrival gate).
+     */
     WORKFLOW_ARRIVED,
     PLANNING_COMPLETED,
     JOBS_CLUSTERED,
     STAGE_IN_JOB_CREATED,
     JOB_READY,
     SCHEDULING_CYCLE,
-    /** 算法为作业选定 VM 的决策点；SimulationMetrics 消费，重复即事件流破坏。 */
+    /**
+     * Decision point where the algorithm selects a VM for a job; consumed by
+     * SimulationMetrics, and a duplicate breaks the event stream.
+     */
     SCHEDULING_DECISION,
-    /** 作业进入派发事件队列的审计点；仅证据链用途，与 SCHEDULING_DECISION 同时刻成对出现。 */
+    /**
+     * Audit point where a job enters the dispatch event queue; evidence-chain use only, and
+     * it appears in pairs with SCHEDULING_DECISION at the same simulation time.
+     */
     JOB_DISPATCHED,
     DATA_STAGE_IN_MODELED,
     TASK_EXECUTION_MODELED,

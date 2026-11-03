@@ -1,14 +1,17 @@
 package org.workflowsim.planning;
 
 /**
- * 与 WorkflowSim 受控共享存储执行模型对齐的 HEFT 静态 DAG 规划器。
+ * HEFT static DAG planner aligned with the controlled shared-storage execution model of
+ * WorkflowSim.
  *
- * <p>按向上 rank {@code r_u} 降序选择 Task，再以保留区插入的最早完成时间（EFT）选择
- * 兼容 VM。相同 rank 选较小 Task ID，相同 EFT 选较小 VM ID。rank 使用兼容 VM 的平均
- * 模型时长，其中包含本模型的共享存储 stage-in。</p>
+ * <p>Selects Tasks in descending order of the upward rank {@code r_u}, then chooses the
+ * compatible VM by the reservation insertion earliest finish time (EFT). Equal ranks choose the
+ * smaller Task ID, and equal EFTs the smaller VM ID. The rank uses the average model duration
+ * over the compatible VMs, which includes the shared-storage stage-in of this model.</p>
  *
- * <p>仅适用于共享存储、无聚类、无故障、无建模开销及 {@code SPACE_SHARED} VM；它不是
- * 拓扑感知、链路争用感知或现实平台校准的 HEFT。</p>
+ * <p>Applies only to shared storage, no clustering, no failures, no modeled overhead and
+ * {@code SPACE_SHARED} VMs; it is not a topology-aware, link-contention-aware, or
+ * real-platform-calibrated HEFT.</p>
  */
 public final class SharedStorageHeftPlanningAlgorithm extends BasePlanningAlgorithm {
 
@@ -29,7 +32,7 @@ public final class SharedStorageHeftPlanningAlgorithm extends BasePlanningAlgori
                 getTaskList(), getVmList(), context, SharedStorageDagPlanner.Strategy.HEFT);
     }
 
-    /** 返回最近一次成功规划的不可变决策轨迹。 */
+    /** Returns the immutable decision trace of the most recent successful plan. */
     public SharedStorageDagPlanTrace getLastPlanTrace() {
         if (lastPlanTrace == null) {
             throw new IllegalStateException("SHARED_STORAGE_HEFT has not completed a plan");

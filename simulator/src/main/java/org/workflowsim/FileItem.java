@@ -20,11 +20,12 @@ import java.util.List;
 import org.workflowsim.utils.Parameters.FileType;
 
 /**
- * WorkflowSim 的工作流文件描述。
+ * Workflow file descriptor for WorkflowSim.
  *
- * <p>CloudSim 已提供 {@code File}，但工作流的数据依赖还需要以 {@code double} 保存
- * 文件大小并区分输入、输出和中间文件语义，因此使用独立的 {@code FileItem} 表示。
- * 文件大小单位由输入格式约定；WfCommons 和 DAX 路径均以字节传入。</p>
+ * <p>CloudSim already provides {@code File}, but workflow data dependencies also need to
+ * store the file size as a {@code double} and distinguish input, output, and intermediate
+ * file semantics, so a dedicated {@code FileItem} is used. The file-size unit is fixed by
+ * the input format; both the WfCommons and DAX paths pass bytes.</p>
  *
  * @author weiweich
  */
@@ -66,19 +67,21 @@ public class FileItem {
     }
 
     /**
-     * 判断输入文件是否需要从作业外部执行 stage-in。
+     * Determines whether an input file requires stage-in from outside the job.
      *
-     * <p>工作流采用“文件写入一次、可被多次读取”的约定。若同一作业内存在同名输出文件，
-     * 则该输入由作业内任务产生，不应重复计入 stage-in。该判断主要服务于水平聚类后的
-     * 文件传输估算。</p>
+     * <p>Workflows follow the convention that a file is written once and may be read many
+     * times. If a same-named output file exists within the same job, the input is produced
+     * by a task in that job and must not be counted as stage-in again. This check mainly
+     * serves file-transfer estimation after horizontal clustering.</p>
      *
-     * @param list 当前作业关联的全部文件
-     * @return 当前对象是没有同名作业内输出文件的真实外部输入时返回 {@code true}
+     * @param list all files associated with the current job
+     * @return {@code true} when this object is a real external input that has no same-named
+     *         in-job output file
      */
     public boolean isRealInputFile(List<FileItem> list) {
         if (this.getType() == FileType.INPUT) {
             for (FileItem another : list) {
-                // 同名输出表明该数据在当前作业内产生，无需额外 stage-in。
+                // A same-named output means the data is produced within this job, so no extra stage-in is needed.
                 if (another.getName().equals(this.getName()) && another.getType() == FileType.OUTPUT) {
                     return false;
                 }

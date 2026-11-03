@@ -15,10 +15,11 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 用于 P7 输入认证的小型、固定 WfInstances 1.5 兼容性样本集。
+ * Small, fixed WfInstances 1.5 compatibility sample set used for P7 input certification.
  *
- * <p>这是抽象 DAG 转换路径。它有意不将 WfInstances 的机器、核心数、内存、时间戳或
- * 已观测 makespan 字段当作平台回放配置。</p>
+ * <p>This is the abstract DAG conversion path. It deliberately does not treat WfInstances
+ * machine, core-count, memory, timestamp, or observed-makespan fields as platform replay
+ * configuration.</p>
  */
 public final class P7WfInstancesPilotMatrix {
 
@@ -60,22 +61,23 @@ public final class P7WfInstancesPilotMatrix {
     private P7WfInstancesPilotMatrix() {}
 
     /**
-     * 返回固定的 WfInstances 输入认证场景。
+     * Returns the fixed WfInstances input certification scenarios.
      *
-     * @return 不可变场景列表
+     * @return immutable scenario list
      */
     public static List<Scenario> scenarios() {
         return SCENARIOS;
     }
 
     /**
-     * 为一个 WfInstances 认证场景生成抽象 DAG 转换配置。
+     * Builds the abstract DAG conversion configuration for one WfInstances certification
+     * scenario.
      *
-     * @param scenario 要解析的固定 WfInstances 输入场景
-     * @param datasetRoot 用于解析相对输入路径的显式、绝对数据集根
-     * @param algorithm 由标准运行器支持的调度算法
-     * @return 无故障、无开销、共享存储的固定基线配置
-     * @throws IllegalArgumentException 当任一必要参数为 {@code null} 时
+     * @param scenario fixed WfInstances input scenario to resolve
+     * @param datasetRoot explicit absolute dataset root used to resolve the relative input path
+     * @param algorithm scheduling algorithm supported by the standard runner
+     * @return fixed baseline configuration with no failure, no overhead, and shared storage
+     * @throws IllegalArgumentException when any required argument is {@code null}
      */
     public static SimulationConfig baselineConfig(
             Scenario scenario, Path datasetRoot, Parameters.SchedulingAlgorithm algorithm) {
@@ -97,15 +99,15 @@ public final class P7WfInstancesPilotMatrix {
     }
 
     /**
-     * 返回用于输入兼容性认证的固定同构抽象平台。
+     * Returns the fixed homogeneous abstract platform used for input compatibility certification.
      *
-     * @return 含 {@value #VM_COUNT} 个空间共享 VM 的平台
+     * @return platform with {@value #VM_COUNT} space-shared VMs
      */
     public static PlatformProfile baselinePlatform() {
         return PlatformProfiles.homogeneousLocal("p7-wfinstances-h0", VM_COUNT);
     }
 
-    /** 一个选定 WfInstances 文件的不可变输入契约。 */
+    /** Immutable input contract of one selected WfInstances file. */
     public static final class Scenario {
         private final String id;
         private final String system;
@@ -154,11 +156,11 @@ public final class P7WfInstancesPilotMatrix {
         }
 
         /**
-         * 将场景相对路径解析为规范化绝对路径。
+         * Resolves the scenario-relative path to a normalized absolute path.
          *
-         * @param datasetRoot 显式、绝对的 {@code datasets} 目录
-         * @return 该输入文件的规范化绝对路径
-         * @throws IllegalArgumentException 当数据集根或输入文件不合法时
+         * @param datasetRoot explicit absolute {@code datasets} directory
+         * @return normalized absolute path of this input file
+         * @throws IllegalArgumentException when the dataset root or the input file is invalid
          */
         public Path resolve(Path datasetRoot) {
             return ReferenceDatasetRoot.resolveFile(datasetRoot, relativePath);

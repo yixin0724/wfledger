@@ -1,13 +1,16 @@
 package org.workflowsim.planning;
 
 /**
- * 与 WorkflowSim 受控共享存储执行模型对齐的 CPOP 静态 DAG 规划器。
+ * CPOP static DAG planner aligned with the controlled shared-storage execution model of
+ * WorkflowSim.
  *
- * <p>以 {@code r_u + r_d} 作为优先级，确定一条关键路径，并将该路径强制映射到总模型时长
- * 最小的兼容 VM。相同优先级、路径分支和处理器代价均按较小 ID 打破平局；非关键 Task
- * 使用与 HEFT 相同的保留区插入分配。</p>
+ * <p>Uses {@code r_u + r_d} as the priority, identifies one critical path, and pins that path to
+ * the compatible VM with the smallest total model duration. Equal priorities, path branches and
+ * processor costs all break ties by the smaller ID; non-critical Tasks use the same reservation
+ * insertion assignment as HEFT.</p>
  *
- * <p>仅描述受控共享存储模型，不代表网络拓扑、共享链路争用或真实处理器绑定。</p>
+ * <p>Describes only the controlled shared-storage model; it does not represent network topology,
+ * shared-link contention, or real processor binding.</p>
  */
 public final class SharedStorageCpopPlanningAlgorithm extends BasePlanningAlgorithm {
 
@@ -28,7 +31,7 @@ public final class SharedStorageCpopPlanningAlgorithm extends BasePlanningAlgori
                 getTaskList(), getVmList(), context, SharedStorageDagPlanner.Strategy.CPOP);
     }
 
-    /** 返回最近一次成功规划的不可变决策轨迹。 */
+    /** Returns the immutable decision trace of the most recent successful plan. */
     public SharedStorageDagPlanTrace getLastPlanTrace() {
         if (lastPlanTrace == null) {
             throw new IllegalStateException("SHARED_STORAGE_CPOP has not completed a plan");

@@ -1,13 +1,16 @@
 package org.workflowsim.planning;
 
 /**
- * 与 WorkflowSim 受控共享存储执行模型对齐的 Earliest Task First（ETF）静态 DAG 规划器。
+ * Earliest Task First (ETF) static DAG planner aligned with the controlled shared-storage
+ * execution model of WorkflowSim.
  *
- * <p>每轮从依赖已满足的 Task-VM 对中选择保留区最早开始时间最小者；相同开始时间先选静态
- * b-level 较高的 Task，再按较小 Task ID 与 VM ID 打破平局。决策轨迹记录该开始时间和
- * 选择顺序。</p>
+ * <p>Each round selects, among the Task-VM pairs whose dependencies are satisfied, the pair with
+ * the smallest reservation earliest start time; equal start times first select the Task with the
+ * higher static b-level, then break ties by the smaller Task ID and VM ID. The decision trace
+ * records that start time and the selection order.</p>
  *
- * <p>该实现没有网络拓扑、链路争用或通信路由建模，不能作为网络感知 ETF 的实验结论。</p>
+ * <p>This implementation has no network topology, link-contention, or communication-routing
+ * modeling, so it cannot support experimental conclusions about network-aware ETF.</p>
  */
 public final class SharedStorageEtfPlanningAlgorithm extends BasePlanningAlgorithm {
 
@@ -28,7 +31,7 @@ public final class SharedStorageEtfPlanningAlgorithm extends BasePlanningAlgorit
                 SharedStorageDagPlanner.plan(getTaskList(), getVmList(), context, SharedStorageDagPlanner.Strategy.ETF);
     }
 
-    /** 返回最近一次成功规划的不可变决策轨迹。 */
+    /** Returns the immutable decision trace of the most recent successful plan. */
     public SharedStorageDagPlanTrace getLastPlanTrace() {
         if (lastPlanTrace == null) {
             throw new IllegalStateException("SHARED_STORAGE_ETF has not completed a plan");

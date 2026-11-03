@@ -1,24 +1,28 @@
 package org.workflowsim.utils;
 
-/** 随附 CloudSim 事件内核要求的公共时间规则。 */
+/** Shared timing rules required by the bundled CloudSim event kernel. */
 public final class SimulationTiming {
 
-    /** WorkflowDatacenter 的历史完成事件保护量，单位为模拟秒。 */
+    /** Historical completion-event guard of WorkflowDatacenter, in simulation seconds. */
     public static final double CLOUDLET_COMPLETION_SAFETY_SECONDS = 0.01;
 
     private SimulationTiming() {}
 
     /**
-     * 计算 WorkflowDatacenter 可接受的最早 Cloudlet 完成时间。
+     * Compute the earliest Cloudlet completion time accepted by WorkflowDatacenter.
      *
-     * <p>该值取内核预测完成时间和“当前时间 + 最小事件间隔 + 完成保护量”中的较大者，
-     * 以避免零延迟或过近事件违反 CloudSim 内核约束。</p>
+     * <p>The value is the larger of the kernel-predicted completion time and
+     * "current time + minimum event interval + completion guard", so that zero-delay or
+     * too-close events do not violate the CloudSim kernel constraints.</p>
      *
-     * @param currentTime 当前模拟时间
-     * @param predictedCompletionTime 内核预测的完成时间
-     * @param minimumEventIntervalSeconds 内核允许的最小事件间隔，单位为模拟秒
-     * @return 可接受、有限且晚于当前时刻的最早完成时间
-     * @throws IllegalArgumentException 当时间非法、加法溢出或浮点时钟无法前进时
+     * @param currentTime current simulation time
+     * @param predictedCompletionTime completion time predicted by the kernel
+     * @param minimumEventIntervalSeconds minimum event interval allowed by the kernel, in
+     *        simulation seconds
+     * @return earliest acceptable completion time that is finite and later than the current
+     *         instant
+     * @throws IllegalArgumentException when a time is invalid, the addition overflows, or the
+     *         floating-point clock cannot advance
      */
     public static double earliestCloudletCompletionTime(
             double currentTime, double predictedCompletionTime, double minimumEventIntervalSeconds) {

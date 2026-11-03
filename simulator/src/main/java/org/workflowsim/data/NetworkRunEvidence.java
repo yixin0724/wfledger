@@ -123,7 +123,8 @@ public final class NetworkRunEvidence {
 
     /**
      * 2026-10-26 complexity extraction from capture; statements verbatim; order unchanged.
-     * 作用域：仅校验候选绑定落在有界准入前缀内且 admission 序号唯一，并按序号建立索引。
+     * Scope: validate only that candidate bindings lie within the bounded admission prefix and
+     * that admission ordinals are unique, then index them by ordinal.
      */
     private static Map<Long, NetworkFlowBinding> indexBoundedBindings(List<NetworkFlowBinding> candidates, int budget) {
         Map<Long, NetworkFlowBinding> byOrdinal = new LinkedHashMap<Long, NetworkFlowBinding>();

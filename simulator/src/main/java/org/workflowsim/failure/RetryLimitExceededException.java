@@ -1,10 +1,12 @@
 package org.workflowsim.failure;
 
 /**
- * 表示一次受配置保护的仿真超过了允许创建的重试 Job 总数。
+ * Signals that a configuration-guarded simulation exceeded the total number of retry Jobs it
+ * may create.
  *
- * <p>这不是一个已完成的实验结果。调用方必须记录异常和配置，而不能把部分执行结果当作
- * 故障恢复指标。遗留静态 API 未设置此预算时保持历史的无上限行为。</p>
+ * <p>This is not a completed experiment result. Callers must record the exception and the
+ * configuration instead of treating partial execution results as a failure-recovery metric.
+ * Legacy static APIs that do not set this budget keep the historical unbounded behavior.</p>
  */
 public final class RetryLimitExceededException extends IllegalStateException {
 

@@ -87,7 +87,7 @@ public final class NetworkStudyValidator {
         }
     }
 
-    /** 路径/协议与计划加载阶段（逐字搬运转写自 validate()）。 */
+    /** Path/protocol and plan loading stage (verbatim move from validate()). */
     private static RetainedStudy loadRetainedStudy(Path indexPath) throws IOException {
         Path root = indexPath.toAbsolutePath().normalize().getParent();
         Path realRoot = root.toRealPath();
@@ -111,7 +111,7 @@ public final class NetworkStudyValidator {
         return new RetainedStudy(index, root, realRoot, plan, registered, protocolSha256);
     }
 
-    /** 单个研究运行索引项与证据校验（逐字搬运转写）。 */
+    /** Validation of a single study run index entry and its evidence (verbatim move). */
     private static void validateStudyRun(
             JsonObject run,
             RetainedStudy retained,
@@ -175,7 +175,8 @@ public final class NetworkStudyValidator {
 
     /**
      * 2026-10-26 complexity extraction from validateStudyRun; statements verbatim; order unchanged.
-     * 作用域：仅解析并校验单个研究运行指向的 manifest 证据路径（限制在留存研究目录内）且强制 v4 schema。
+     * Scope: only resolves and validates the manifest evidence path targeted by a single study
+     * run (confined to the retained study directory) and enforces the v4 schema.
      */
     private static JsonObject readValidatedManifest(JsonObject run, RetainedStudy retained) throws IOException {
         String relative = text(run, "manifest");
@@ -193,7 +194,7 @@ public final class NetworkStudyValidator {
         return evidence;
     }
 
-    /** 设计实验 manifest 指标与索引一致性校验（逐字搬运转写）。 */
+    /** Consistency check between the designed experiment manifest metrics and the index (verbatim move). */
     private static void validateRunEvidence(JsonObject run, JsonObject workflow, String cell, JsonObject evidence)
             throws IOException {
         if (evidence.getAsJsonArray("inputs").size() != 1) {
@@ -223,7 +224,7 @@ public final class NetworkStudyValidator {
         match(run, "meanVmUtilization", metrics, "meanVmModeledIntervalUtilization");
     }
 
-    /** validate() 已保留研究上下文的私有搬运转写结构。 */
+    /** Private moved structure holding the study context retained by validate(). */
     private static final class RetainedStudy {
         final JsonObject index;
         final Path root;
@@ -248,7 +249,7 @@ public final class NetworkStudyValidator {
         }
     }
 
-    /** validate() 跨运行校验进度的私有搬运转写结构。 */
+    /** Private moved structure for the cross-run validation progress of validate(). */
     private static final class ValidationState {
         final Set<String> expected;
         String datasetIdentity;

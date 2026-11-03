@@ -239,8 +239,8 @@ public final class DataflowFilePlan {
 
     /**
      * 2026-10-26 complexity extraction from capture; statements verbatim; order unchanged.
-     * 作用域：仅把单个 Task 声明的 INPUT/OUTPUT 文件解析进节点簿记（输入计数/输出集合）与全局文件构建器
-     * （唯一生产者、字节一致性）。
+     * Scope: resolves only the INPUT/OUTPUT files declared by one Task into the node bookkeeping
+     * (input counts/output set) and the global file builder (unique producer, byte consistency).
      */
     private static void resolveTaskFiles(Node node, Map<FileId, FileBuilder> files, int id, int workflow, Task task) {
         for (FileItem item : task.getFileList()) {

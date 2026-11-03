@@ -21,12 +21,13 @@ import org.workflowsim.WfCommonsJsonParser;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 在不运行仿真的前提下校验 WfCommons JSON 工作流实例。
+ * Validates WfCommons JSON workflow instances without running a simulation.
  *
- * <p>用法：{@code main [directory]}；默认目录为 {@code datasets/wfformat}。
- * 程序递归查找 {@code *.json} 工作流实例（跳过 {@code INDEX.json} 与
- * {@code *.manifest.json} 元数据），逐个解析并检查生成的任务图：任务长度和深度为正、
- * 父子依赖对称且任务集合非空。</p>
+ * <p>Usage: {@code main [directory]}; the default directory is {@code datasets/wfformat}. The
+ * program recursively finds {@code *.json} workflow instances (skipping the {@code INDEX.json}
+ * and {@code *.manifest.json} metadata), parses each one, and checks the resulting task graph:
+ * task length and depth are positive, parent-child dependencies are symmetric, and the task set
+ * is non-empty.</p>
  */
 public final class WfCommonsJsonParserValidationExample {
 
@@ -48,8 +49,8 @@ public final class WfCommonsJsonParserValidationExample {
         WfCommonsJsonParser parser = new WfCommonsJsonParser();
 
         for (File jsonFile : jsonFiles) {
-            // ReplicaCatalog 是跨文件共享的历史静态状态；每个文件前重新初始化，
-            // 防止文件副本登记泄漏到下一个实例。
+            // ReplicaCatalog is historical static state shared across files; reinitialize it before
+            // each file so one file's replica registrations do not leak into the next instance.
             ReplicaCatalog.init(ReplicaCatalog.FileSystem.LOCAL);
             WfCommonsJsonParser.ParseResult result = parser.parse(jsonFile.getPath(), 0, 1);
             List<Task> tasks = result.getTasks();
@@ -88,7 +89,7 @@ public final class WfCommonsJsonParserValidationExample {
     private static void collectJsonFiles(File file, List<File> jsonFiles) {
         if (file.isFile()) {
             String name = file.getName().toLowerCase();
-            // 跳过 datasets/wfformat 中同样以 .json 结尾的数据集元数据。
+            // Skip the dataset metadata under datasets/wfformat that also ends in .json.
             if (name.endsWith(".json") && !"index.json".equals(name) && !name.endsWith(".manifest.json")) {
                 jsonFiles.add(file);
             }

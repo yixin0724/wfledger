@@ -16,10 +16,11 @@
 package org.workflowsim.utils;
 
 /**
- * 任务聚类所需的参数。
+ * Parameters required by task clustering.
  *
- * <p>{@code clustersNum} 与 {@code clustersSize} 由具体聚类策略解释；通常只配置其中
- * 一个。{@code code} 仅供平衡聚类的研究变体选择具体策略。</p>
+ * <p>{@code clustersNum} and {@code clustersSize} are interpreted by the concrete
+ * clustering strategy; usually only one of them is configured. {@code code} is used
+ * only by research variants of balanced clustering to select a concrete strategy.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -27,12 +28,12 @@ package org.workflowsim.utils;
  */
 public class ClusteringParameters {
 
-    /** 每层聚类作业数量。 */
+    /** Number of clustering jobs per level. */
     private final int clusters_num;
-    /** 每个聚类作业包含的任务数。 */
+    /** Number of tasks contained in each clustering job. */
     private final int clusters_size;
 
-    /** 支持的聚类方法。 */
+    /** Supported clustering methods. */
     public enum ClusteringMethod {
         HORIZONTAL,
         VERTICAL,
@@ -40,38 +41,38 @@ public class ClusteringParameters {
         BLOCK,
         BALANCED
     }
-    /** 平衡聚类变体代码。 */
+    /** Balanced clustering variant code. */
     private final String code;
-    /** 选定的聚类方法。 */
+    /** Selected clustering method. */
     private final ClusteringMethod method;
 
-    /** @return 平衡聚类变体代码；其他方法下通常为 {@code null} */
+    /** @return balanced clustering variant code; usually {@code null} for other methods */
     public String getCode() {
         return code;
     }
 
-    /** @return 每层聚类作业数量 */
+    /** @return number of clustering jobs per level */
     public int getClustersNum() {
         return clusters_num;
     }
 
-    /** @return 每个聚类作业的任务数 */
+    /** @return number of tasks in each clustering job */
     public int getClustersSize() {
         return clusters_size;
     }
 
-    /** @return 聚类方法 */
+    /** @return clustering method */
     public ClusteringMethod getClusteringMethod() {
         return method;
     }
 
     /**
-     * 创建聚类参数。
+     * Create clustering parameters.
      *
-     * @param cNum 每层聚类作业数量
-     * @param cSize 每个聚类作业的任务数
-     * @param method 聚类方法
-     * @param code 平衡聚类变体代码
+     * @param cNum number of clustering jobs per level
+     * @param cSize number of tasks in each clustering job
+     * @param method clustering method
+     * @param code balanced clustering variant code
      */
     public ClusteringParameters(int cNum, int cSize, ClusteringMethod method, String code) {
         this.clusters_num = cNum;

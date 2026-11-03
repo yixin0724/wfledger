@@ -25,7 +25,7 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters;
 
 /**
- * 垂直聚类策略：沿同一依赖流水线合并任务。
+ * Vertical clustering strategy: merges tasks along the same dependency pipeline.
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -33,15 +33,15 @@ import org.workflowsim.utils.Parameters;
  */
 public class VerticalClustering extends BasicClustering {
 
-    /* 允许探索的最大 DAG 深度。 */
+    /* Maximum DAG depth allowed for exploration. */
     private final int mDepth;
-    /* 任务遍历检查点。 */
+    /* Task traversal checkpoints. */
     private final Map<Integer, Boolean> mHasChecked;
 
     /**
-     * 创建垂直聚类器。
+     * Creates a vertical clusterer.
      *
-     * @param depth 允许探索的最大 DAG 深度
+     * @param depth maximum DAG depth allowed for exploration
      */
     public VerticalClustering(int depth) {
         super();
@@ -50,9 +50,9 @@ public class VerticalClustering extends BasicClustering {
     }
 
     /**
-     * 将任务标记为已遍历。
+     * Marks a task as traversed.
      *
-     * @param index 任务 ID
+     * @param index task ID
      */
     private void setCheck(int index) {
 
@@ -63,10 +63,10 @@ public class VerticalClustering extends BasicClustering {
     }
 
     /**
-     * 判断任务是否已遍历。
+     * Tests whether a task has been traversed.
      *
-     * @param index 任务 ID
-     * @return 任务是否已遍历
+     * @param index task ID
+     * @return whether the task has been traversed
      */
     private boolean getCheck(int index) {
 
@@ -77,13 +77,15 @@ public class VerticalClustering extends BasicClustering {
     }
 
     /**
-     * 遍历 DAG 的唯一依赖链，生成垂直聚类作业。
+     * Traverses the unique dependency chains of the DAG and produces vertical clustering
+     * jobs.
      */
     @Override
     public void run() {
         if (mDepth > 0) {
             /**
-             * Montage 的历史输入可能含重复边，按既有 reducer 规则预先消除。
+             * Historical Montage inputs may contain duplicate edges; remove them up front
+             * following the existing reducer rules.
              */
             if (Parameters.getReduceMethod().equals("montage")) {
                 removeDuplicateMontage();
@@ -106,7 +108,7 @@ public class VerticalClustering extends BasicClustering {
                     }
 
                     if (pNum == 0) {
-                        // 虚拟根节点不参与聚类。
+                        // The virtual root node does not participate in clustering.
                     } else if (pNum > 1) {
                         if (cNum > 1 || cNum == 0) {
 
@@ -119,7 +121,7 @@ public class VerticalClustering extends BasicClustering {
                             taskList.clear();
 
                         } else { // cNum == 1
-                            // 在分支边界截断并开始新的聚类链。
+                            // Truncate at a branch boundary and start a new clustering chain.
 
                             if (!taskList.isEmpty()) {
                                 addTasks2Job(taskList);
@@ -131,12 +133,12 @@ public class VerticalClustering extends BasicClustering {
                         }
                     } else { // pNum == 1
                         if (cNum > 1 || cNum == 0) {
-                            // 单父节点分支在此结束当前聚类链。
+                            // A single-parent branch ends the current clustering chain here.
                             taskList.add(node);
                             addTasks2Job(taskList);
                             taskList.clear();
                         } else {
-                            // 单父单子节点继续并入当前聚类链。
+                            // A single-parent single-child node joins the current clustering chain.
                             if (!taskList.contains(node)) {
                                 taskList.add(node);
                             }
@@ -158,7 +160,8 @@ public class VerticalClustering extends BasicClustering {
     }
 
     /**
-     * 按历史 {@code reducer.method=montage} 规则去除 Montage 工作流的重复依赖边。
+     * Removes duplicate dependency edges of Montage workflows following the historical
+     * {@code reducer.method=montage} rule.
      */
     public void removeDuplicateMontage() {
 
@@ -168,7 +171,7 @@ public class VerticalClustering extends BasicClustering {
             String name = node.getType();
             switch (name) {
                 case "mBackground":
-                    // 移除 mBackground 指向 mProjectPP 的重复父边。
+                    // Remove duplicate parent edges from mBackground to mProjectPP.
 
                     for (int j = 0; j < node.getParentList().size(); j++) {
 
@@ -193,7 +196,8 @@ public class VerticalClustering extends BasicClustering {
                     }
                     break;
                 default:
-                    // 其余任务类型无去重规则（Montage 专用遗留逻辑），刻意跳过。
+                    // Other task types have no deduplication rule (Montage-specific legacy
+                    // logic) and are deliberately skipped.
                     break;
             }
         }

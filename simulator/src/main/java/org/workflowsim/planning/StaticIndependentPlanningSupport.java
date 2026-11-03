@@ -10,11 +10,12 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.TaskExecutionModel;
 
 /**
- * 离线独立任务基线共用的确定性机械逻辑。
+ * Deterministic mechanical logic shared by the offline independent-task baselines.
  *
- * <p>这些规划器只产生 VM 映射。WorkflowSim 的 {@code STATIC} 分派器负责把映射带入
- * 模拟生命周期，但不会把它们变成 DAG 算法或重放真实队列。Task 和 VM 分别按 ID 升序，
- * 等价候选以较小 ID 打破平局。</p>
+ * <p>These planners only produce VM mappings. WorkflowSim's {@code STATIC} dispatcher carries the
+ * mappings into the simulation lifecycle, but does not turn them into DAG algorithms or replay a
+ * real queue. Tasks and VMs are ordered by ascending ID, and equivalent candidates are broken by
+ * the smaller ID.</p>
  */
 abstract class StaticIndependentPlanningSupport extends BasePlanningAlgorithm {
 
@@ -69,7 +70,8 @@ abstract class StaticIndependentPlanningSupport extends BasePlanningAlgorithm {
     }
 
     protected final double executionTime(Task task, CondorVM vm) {
-        // 与运行时共用矩阵秒数→整数 MI 转换；无矩阵时保留单 PE 原始长度。
+        // Shares the matrix-based seconds-to-integer-MI conversion with the runtime; without a matrix,
+        // the original single-PE length is kept.
         return isCompatible(task, vm)
                 ? TaskExecutionModel.executionSeconds(task, vm.getId(), vm.getMips())
                 : Double.POSITIVE_INFINITY;
@@ -97,8 +99,8 @@ abstract class StaticIndependentPlanningSupport extends BasePlanningAlgorithm {
     }
 
     /**
-     * 计算 {@code availability[vm] + effectiveComputeSeconds(task, vm)} 最小的可兼容 VM。
-     * 相等完成时间选择较小 VM ID。
+     * Selects the compatible VM minimizing {@code availability[vm] + effectiveComputeSeconds(task, vm)}.
+     * Equal finish times go to the smaller VM ID.
      */
     protected final Choice earliestCompletion(
             Task task, List<CondorVM> vms, double[] availability, String algorithmName) {

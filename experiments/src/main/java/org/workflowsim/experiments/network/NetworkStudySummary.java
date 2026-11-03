@@ -28,7 +28,7 @@ public final class NetworkStudySummary {
         return result;
     }
 
-    /** 到达域参轴检测（逐字搬运转写自 summarize()）。 */
+    /** Arrival-domain parameter-axis detection (moved verbatim from summarize()). */
     private static boolean detectHeterogeneityAxis(List<Map<String, Object>> runs) {
         // Heterogeneity enters the stratification only when runs carry it; frozen protocols stay byte-identical.
         boolean heterogeneityAxis = false;
@@ -41,7 +41,7 @@ public final class NetworkStudySummary {
         return heterogeneityAxis;
     }
 
-    /** 完成运行分组与失败计数（逐字搬运转写）。 */
+    /** Completed-run grouping and failure counting (moved verbatim). */
     private static GroupedRuns groupCompletedRuns(List<Map<String, Object>> runs, boolean heterogeneityAxis) {
         Map<String, List<Map<String, Object>>> groups = new LinkedHashMap<String, List<Map<String, Object>>>();
         int failures = 0;
@@ -60,7 +60,7 @@ public final class NetworkStudySummary {
         return new GroupedRuns(groups, failures);
     }
 
-    /** 按分组聚合的指标（逐字搬运转写）。 */
+    /** Per-group aggregate metrics (moved verbatim). */
     private static List<Map<String, Object>> aggregateGroups(
             Map<String, List<Map<String, Object>>> groups, boolean heterogeneityAxis) {
         List<Map<String, Object>> aggregates = new ArrayList<Map<String, Object>>();
@@ -95,7 +95,7 @@ public final class NetworkStudySummary {
         return aggregates;
     }
 
-    /** 基准对比与 Holm 多重校正（逐字搬运转写）。 */
+    /** Baseline comparison and Holm multiple correction (moved verbatim). */
     private static List<Map<String, Object>> buildComparisons(
             List<Map<String, Object>> aggregates, boolean heterogeneityAxis, int failures) {
         List<Map<String, Object>> comparisons = new ArrayList<Map<String, Object>>();
@@ -130,7 +130,8 @@ public final class NetworkStudySummary {
 
     /**
      * 2026-10-26 complexity extraction from buildComparisons; statements verbatim; order unchanged.
-     * 作用域：仅计算单个候选 planner 相对 LOCAL_HEFT 基线在本 stratum 内的效应/胜/平/负记录并追加进 family。
+     * Scope: compute only the effect/win/tie/loss records of a single candidate planner against
+     * the LOCAL_HEFT baseline within this stratum, and append them to family.
      */
     private static void compareCandidateAgainstBaseline(
             List<Map<String, Object>> stratum,
@@ -183,7 +184,7 @@ public final class NetworkStudySummary {
         family.add(comparison);
     }
 
-    /** summarize() 分组阶段的私有搬运转写结构。 */
+    /** Private moved-verbatim structure for the summarize() grouping stage. */
     private static final class GroupedRuns {
         final Map<String, List<Map<String, Object>>> groups;
         final int failures;

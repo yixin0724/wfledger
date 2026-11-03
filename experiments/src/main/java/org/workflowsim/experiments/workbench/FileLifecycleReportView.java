@@ -80,7 +80,7 @@ final class FileLifecycleReportView {
         return freeze(root);
     }
 
-    /** 文件生命周期事件扫描阶段（逐字搬运转写自 project()）。 */
+    /** File lifecycle event scan stage (verbatim relocation from project()). */
     private LifecycleScan scanLifecycleEvents(JsonArray rawEvents, Map<DataflowFilePlan.FileId, BigDecimal> fileBytes) {
         LifecycleScan scan = new LifecycleScan();
 
@@ -127,7 +127,7 @@ final class FileLifecycleReportView {
         return scan;
     }
 
-    /** 副本行构建（上限截断，逐字搬运转写）。 */
+    /** Copy row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> copiesRows(FileLifecycleCodec.Decoded decoded, LifecycleScan scan) {
         List<Map<String, Object>> copies = new ArrayList<>();
         for (Map.Entry<Long, JsonObject> entry : scan.admissions.entrySet()) {
@@ -139,7 +139,7 @@ final class FileLifecycleReportView {
         return copies;
     }
 
-    /** 资源行构建（上限截断，逐字搬运转写）。 */
+    /** Resource row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> resourceRows(JsonArray rawResources) {
         List<Map<String, Object>> resources = new ArrayList<>();
         for (int i = 0; i < Math.min(RESOURCE_LIMIT, rawResources.size()); i++) {
@@ -152,7 +152,7 @@ final class FileLifecycleReportView {
         return resources;
     }
 
-    /** 事件行构建（上限截断，逐字搬运转写）。 */
+    /** Event row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> eventRows(JsonArray rawEvents, LifecycleScan scan) {
         List<Map<String, Object>> events = new ArrayList<>();
         for (int i = 0; i < Math.min(EVENT_LIMIT, rawEvents.size()); i++) {
@@ -161,7 +161,7 @@ final class FileLifecycleReportView {
         return events;
     }
 
-    /** project() 事件扫描阶段聚合量的私有搬运转写结构。 */
+    /** Private relocation holder for the event-scan aggregates of project(). */
     private static final class LifecycleScan {
         final Map<Long, JsonObject> admissions = new LinkedHashMap<>();
         final Map<Long, JsonObject> settlements = new HashMap<>();

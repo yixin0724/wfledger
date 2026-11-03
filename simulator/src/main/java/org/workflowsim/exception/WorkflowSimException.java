@@ -1,18 +1,20 @@
 package org.workflowsim.exception;
 
 /**
- * WorkflowSim 模拟器异常的根基类。
+ * Root class of the WorkflowSim simulator exceptions.
  *
- * <p>所有 WorkflowSim 特定异常都应继承此类或其子类，以便调用方能够统一捕获和处理
- * 模拟器相关错误。此异常是 checked exception，要求调用方显式处理或声明抛出。</p>
+ * <p>All WorkflowSim-specific exceptions should extend this class or one of its subclasses so
+ * that callers can catch and handle simulator-related errors uniformly. This exception is a
+ * checked exception, so callers must handle it explicitly or declare it in their throws
+ * clause.</p>
  *
- * <p>异常层次结构：</p>
+ * <p>Exception hierarchy:</p>
  * <ul>
- *   <li>{@code WorkflowSimException} - 根基类</li>
- *   <li>{@code SimulationConfigurationException} - 配置错误</li>
- *   <li>{@code WorkflowParsingException} - 输入解析错误</li>
- *   <li>{@code SimulationExecutionException} - 仿真执行错误</li>
- *   <li>{@code PlatformException} - 平台/资源错误</li>
+ *   <li>{@code WorkflowSimException} - root class</li>
+ *   <li>{@code SimulationConfigurationException} - configuration error</li>
+ *   <li>{@code WorkflowParsingException} - input parsing error</li>
+ *   <li>{@code SimulationExecutionException} - simulation execution error</li>
+ *   <li>{@code PlatformException} - platform/resource error</li>
  * </ul>
  *
  * @see SimulationConfigurationException
@@ -22,28 +24,28 @@ package org.workflowsim.exception;
 public class WorkflowSimException extends Exception {
 
     /**
-     * 使用错误消息创建异常。
+     * Create an exception with an error message.
      *
-     * @param message 描述错误原因的消息
+     * @param message message describing the cause of the error
      */
     public WorkflowSimException(String message) {
         super(message);
     }
 
     /**
-     * 使用错误消息和根因创建异常。
+     * Create an exception with an error message and a root cause.
      *
-     * @param message 描述错误原因的消息
-     * @param cause 导致此异常的底层异常
+     * @param message message describing the cause of the error
+     * @param cause underlying exception that caused this exception
      */
     public WorkflowSimException(String message, Throwable cause) {
         super(message, cause);
     }
 
     /**
-     * 使用根因创建异常。
+     * Create an exception with a root cause.
      *
-     * @param cause 导致此异常的底层异常
+     * @param cause underlying exception that caused this exception
      */
     public WorkflowSimException(Throwable cause) {
         super(cause);

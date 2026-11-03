@@ -1,40 +1,43 @@
 package org.workflowsim.exception;
 
 /**
- * 当平台资源配置或容量约束无法满足时抛出的异常。
+ * Signals that a platform resource configuration or capacity constraint cannot be met.
  *
- * <p>此异常专门处理与 {@link org.workflowsim.platform.PlatformProfile}、
- * Host、VM、存储资源相关的错误，包括：</p>
+ * <p>This exception covers errors related to
+ * {@link org.workflowsim.platform.PlatformProfile}, Host, VM, and storage resources,
+ * including:</p>
  * <ul>
- *   <li>VM-to-Host 放置不可行（PE 数量或容量不足）</li>
- *   <li>Host 配置无效（如负数 MIPS 或 RAM）</li>
- *   <li>VM 配置与 Host 兼容性检查失败</li>
- *   <li>存储带宽或成本定价信息缺失</li>
- *   <li>CloudSim 数据中心或存储实体创建失败</li>
+ *   <li>Infeasible VM-to-Host placement (insufficient PE count or capacity)</li>
+ *   <li>Invalid Host configuration (for example negative MIPS or RAM)</li>
+ *   <li>Failed compatibility check between the VM configuration and the Host</li>
+ *   <li>Missing storage bandwidth or cost pricing information</li>
+ *   <li>Failed creation of a CloudSim datacenter or storage entity</li>
  * </ul>
  *
- * <p>调用方应在构建平台配置时预检资源约束，使用
- * {@link org.workflowsim.platform.PlatformProfile} 的容量验证功能。</p>
+ * <p>Callers should preflight resource constraints while building the platform
+ * configuration, using the capacity validation facility of
+ * {@link org.workflowsim.platform.PlatformProfile}.</p>
  *
- * <p><strong>注：</strong>此异常继承自 {@link RuntimeException}，因为平台配置错误
- * 属于编程错误或配置不当，应该快速失败而不是要求调用方捕获。</p>
+ * <p><strong>Note:</strong> This exception extends {@link RuntimeException} because a
+ * platform configuration error is a programming error or a misconfiguration and should
+ * fail fast rather than require callers to catch it.</p>
  */
 public final class PlatformException extends RuntimeException {
 
     /**
-     * 使用平台错误描述创建异常。
+     * Creates the exception with a platform error description.
      *
-     * @param message 平台错误的具体说明
+     * @param message specific description of the platform error
      */
     public PlatformException(String message) {
         super(message);
     }
 
     /**
-     * 使用平台错误描述和根因创建异常。
+     * Creates the exception with a platform error description and a root cause.
      *
-     * @param message 平台错误的具体说明
-     * @param cause 导致平台错误的底层异常
+     * @param message specific description of the platform error
+     * @param cause underlying exception that caused the platform error
      */
     public PlatformException(String message, Throwable cause) {
         super(message, cause);

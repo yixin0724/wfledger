@@ -23,7 +23,7 @@ import java.util.List;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * 同层任务集合之间后继图距离的离散度指标。
+ * Dispersion metric for the successor graph distances between same-level TaskSets.
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -32,10 +32,10 @@ import org.workflowsim.clustering.TaskSet;
 public class DistanceVariance implements BalancingMetric {
 
     /**
-     * 计算任务集合两两后继图距离的离散度。
+     * Computes the dispersion of the pairwise successor graph distances of the TaskSets.
      *
-     * @param list 待检查的任务集合
-     * @return 图距离离散度；集合不足两个时为零
+     * @param list TaskSets to inspect
+     * @return graph-distance dispersion; zero when fewer than two TaskSets are present
      */
     @Override
     public double getMetric(List<TaskSet> list) {
@@ -67,12 +67,13 @@ public class DistanceVariance implements BalancingMetric {
     }
 
     /**
-     * 计算两个同层任务集合到共同后继的图距离。
-     * 水平聚类假定两个集合位于同一 DAG 层，不适用于任意跨层任务对。
+     * Computes the graph distance from two same-level TaskSets to their common successor.
+     * Horizontal clustering assumes both TaskSets lie on the same DAG level, so it does not
+     * apply to arbitrary cross-level Task pairs.
      *
-     * @param taskA 第一个同层任务集合
-     * @param taskB 第二个同层任务集合
-     * @return 偶数形式的后继图距离
+     * @param taskA first same-level TaskSet
+     * @param taskB second same-level TaskSet
+     * @return successor graph distance in even form
      */
     private int calDistance(TaskSet taskA, TaskSet taskB) {
         if (taskA == null || taskB == null || taskA == taskB) {

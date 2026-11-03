@@ -34,10 +34,12 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 使用 {@code CloudletSchedulerDynamicWorkload} 作为 VM 本地调度器的历史教学示例。
+ * Historical teaching example that uses {@code CloudletSchedulerDynamicWorkload} as the
+ * VM-local scheduler.
  *
- * <p>本示例直接配置历史静态 API，仅用于理解动态工作负载调度器与 WorkflowSim 的连接方式；
- * 它不是标准研究实验入口，也不提供可审计的实验配置或工件。</p>
+ * <p>This example configures the historical static API directly and only serves to explain
+ * how the dynamic workload scheduler connects to WorkflowSim; it is not a standard research
+ * experiment entry point and provides no auditable experiment configuration or artifacts.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -47,18 +49,18 @@ public class DynamicWorkloadExample1 extends WorkflowSimBasicExample1 {
 
     protected static List<CondorVM> createVM(int userId, int vms) {
 
-        // 创建 VM 容器，随后提交给工作流引擎。
+        // Create the VM container that is later submitted to the workflow engine.
         LinkedList<CondorVM> list = new LinkedList<>();
 
-        // VM 的抽象资源规格。
-        long size = 10000; // 镜像大小（MB）
-        int ram = 512; // VM 内存（MB）
+        // Abstract resource specification of the VM.
+        long size = 10000; // Image size (MB)
+        int ram = 512; // VM memory (MB)
         int mips = 1000;
         long bw = 1000;
-        int pesNumber = 1; // CPU 核数
-        String vmm = "Xen"; // 虚拟机监控器名称
+        int pesNumber = 1; // Number of CPU cores
+        String vmm = "Xen"; // Virtual machine monitor name
 
-        // 创建使用动态工作负载调度器的 VM。
+        // Create the VMs that use the dynamic workload scheduler.
         CondorVM[] vm = new CondorVM[vms];
 
         for (int i = 0; i < vms; i++) {
@@ -79,22 +81,25 @@ public class DynamicWorkloadExample1 extends WorkflowSimBasicExample1 {
         return list;
     }
 
-    // ======================== 静态示例入口 ========================
+    // ======================== Static example entry point ========================
     /**
-     * 运行单数据中心、单存储的历史动态工作负载场景。
+     * Run the historical dynamic workload scenario on a single datacenter and a single
+     * storage.
      */
     public static void main(String[] args) {
 
         try {
             ExampleCliSupport.begin("dynamic-workload");
-            // 第一步：配置历史 WorkflowSim 静态参数。
+            // Step 1: configure the historical static WorkflowSim parameters.
 
             /**
-             * 数据中心或 Host 容量不足时，实际创建的 VM 数可能少于声明值。
+             * When the datacenter or Host capacity is insufficient, fewer VMs may be created
+             * than declared.
              */
-            int vmNum = 20; // VM 数量
+            int vmNum = 20; // Number of VMs
             /**
-             * 默认使用项目内工作流路径；从其他工作目录执行时需要调整。
+             * The in-project workflow path is used by default; adjust it when running from
+             * another working directory.
              */
             String daxPath = ExampleCliSupport.singleDax(args, ExampleCliSupport.DEFAULT_DAX_PATH);
             File daxFile = new File(daxPath);
@@ -104,63 +109,65 @@ public class DynamicWorkloadExample1 extends WorkflowSimBasicExample1 {
             }
 
             /**
-             * 本示例的教学点是 {@link CloudletSchedulerDynamicWorkload}（VM 的 MIPS
-             * 随时间动态变化），规划器只是配角。R9 移除了与执行模型不对齐的历史
-             * HEFT 标签后改用无前置约束的 RANDOM 规划：它与本示例的 LOCAL 文件
-             * 系统、动态 MIPS VM 调度器兼容（SHARED_STORAGE_* 系列要求 SHARED
-             * 存储 + SPACE_SHARED VM，与此处装置冲突）。
+             * The teaching point of this example is {@link CloudletSchedulerDynamicWorkload}
+             * (the MIPS of a VM change dynamically over time); the planner is only a
+             * supporting part. R9 removed the historical HEFT label that did not align with
+             * the execution model and switched to an unconstrained RANDOM planning: it is
+             * compatible with the LOCAL file system and the dynamic-MIPS VM scheduler used
+             * here (the SHARED_STORAGE_* family requires SHARED storage plus SPACE_SHARED
+             * VMs, which conflicts with this setup).
              */
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.STATIC;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.RANDOM;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.LOCAL;
 
             /**
-             * 不注入额外开销。
+             * Inject no additional overhead.
              */
             OverheadParameters op = new OverheadParameters(0, null, null, null, null, 0);
 
             /**
-             * 不进行任务聚类。
+             * Perform no task clustering.
              */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.NONE;
             ClusteringParameters cp = new ClusteringParameters(0, 0, method, null);
 
             /**
-             * 初始化历史全局参数与文件目录。
+             * Initialize the historical global parameters and file directories.
              */
             Parameters.init(vmNum, daxPath, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
 
-            // 在创建任何 CloudSim 实体之前完成初始化。
-            int num_user = 1; // Grid 用户数
+            // Complete the initialization before creating any CloudSim entity.
+            int num_user = 1; // Number of grid users
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // 是否记录事件追踪
+            boolean trace_flag = false; // Whether to record the event trace
 
-            // 初始化 CloudSim。
+            // Initialize CloudSim.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
             /**
-             * 创建包含一个调度器的工作流规划器。
+             * Create a workflow planner that holds one scheduler.
              */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
             /**
-             * 取得与规划器关联的工作流执行引擎。
+             * Obtain the workflow engine associated with the planner.
              */
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
             /**
-             * 创建 VM 列表；VM 的 userId 对应其调度器 ID。
+             * Create the VM list; the userId of a VM is the id of its scheduler.
              */
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
             /**
-             * 将 VM 列表提交给工作流执行引擎。
+             * Submit the VM list to the workflow engine.
              */
             wfEngine.submitVmList(vmlist0, 0);
 
             /**
-             * 将数据中心绑定到调度器。
+             * Bind the datacenter to the scheduler.
              */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 

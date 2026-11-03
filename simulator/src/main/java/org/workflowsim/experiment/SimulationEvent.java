@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 一次 WorkflowSim 运行产生的不可变、有序观测事件。 */
+/** Immutable, ordered observation event produced by one WorkflowSim run. */
 public final class SimulationEvent {
 
     private final long sequence;

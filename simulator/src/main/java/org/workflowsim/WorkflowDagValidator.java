@@ -11,23 +11,27 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 校验任务有向无环图（DAG）不变量，并以确定性顺序计算任务深度。
+ * Validates task directed-acyclic-graph (DAG) invariants and computes task depths in a
+ * deterministic order.
  *
- * <p>深度以根任务为 1，其他任务为最长父路径长度加 1。该计算既是输入校验的一部分，
- * 也为依赖层级相关的聚类和调度策略提供稳定的层级信息。</p>
+ * <p>A root task has depth 1; any other task has the longest parent path length plus 1. The
+ * computation is both part of input validation and a source of stable level information for
+ * dependency-aware clustering and scheduling policies.</p>
  */
 public final class WorkflowDagValidator {
 
     private WorkflowDagValidator() {}
 
     /**
-     * 校验任务归属、父子边对称性、任务编号唯一性和无环性，并写入任务深度。
+     * Validates task membership, parent-child edge symmetry, task-ID uniqueness, and
+     * acyclicity, and writes the task depths.
      *
-     * <p>根任务深度为 1；其余任务深度为所有父任务中最大深度加 1。根和子任务均按
-     * 任务编号排序处理，使同一输入在不同 JVM 运行中得到一致深度。</p>
+     * <p>A root task has depth 1; any other task has the maximum depth over all parents
+     * plus 1. Roots and children are processed in task-ID order so that the same input
+     * yields identical depths across JVM runs.</p>
      *
-     * @param tasks 来自同一工作流输入的任务列表
-     * @throws WorkflowValidationException 当任务列表不构成合法 DAG 时
+     * @param tasks task list from one workflow input
+     * @throws WorkflowValidationException when the task list does not form a valid DAG
      */
     public static void validateAndAssignDepths(List<Task> tasks) {
         if (tasks == null || tasks.isEmpty()) {
@@ -66,7 +70,7 @@ public final class WorkflowDagValidator {
             List<Task> children = new ArrayList<>(parent.getChildList());
             children.sort(Comparator.comparingInt(Task::getCloudletId));
             for (Task child : children) {
-                // 以最长父路径定义深度，而非首次访问时的任意路径。
+                // Depth is defined by the longest parent path, not by whichever path reaches the child first.
                 child.setDepth(Math.max(child.getDepth(), parent.getDepth() + 1));
                 int remaining = remainingParents.get(child) - 1;
                 remainingParents.put(child, remaining);
@@ -83,7 +87,8 @@ public final class WorkflowDagValidator {
 
     /**
      * 2026-10-26 complexity extraction from validateAndAssignDepths; statements verbatim; order unchanged.
-     * 作用域：仅逐任务校验非空、长度、编号唯一与邻接表存在性并建索引，同时把深度归零。
+     * Scope: per-task validation of non-nullness, length, ID uniqueness, and adjacency-list
+     * presence, plus indexing, and resets every depth to zero.
      */
     private static Set<Task> indexAndValidateTasks(List<Task> tasks) {
         Map<Integer, Task> taskById = new HashMap<>();

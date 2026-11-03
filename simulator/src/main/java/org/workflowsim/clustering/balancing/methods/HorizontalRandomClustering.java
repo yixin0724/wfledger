@@ -27,9 +27,10 @@ import org.workflowsim.clustering.TaskSet;
 import org.workflowsim.utils.SimulationRandom;
 
 /**
- * 随机水平聚类方法。
+ * Random horizontal clustering method.
  *
- * <p>该方法在受控随机置换后以轮转方式把同层任务集合分配到目标聚类作业。</p>
+ * <p>After a controlled random permutation, this method distributes the task sets of the same
+ * level across the target cluster jobs in round-robin order.</p>
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
  * @date Apr 9, 2013
@@ -37,24 +38,24 @@ import org.workflowsim.utils.SimulationRandom;
 public class HorizontalRandomClustering extends BalancingMethod {
 
     /**
-     * 创建随机水平聚类方法。
+     * Create a random horizontal clustering method.
      *
-     * @param levelMap 按层组织的任务集合
-     * @param taskMap 逻辑任务到任务集合的映射
-     * @param clusterNum 每层目标聚类作业数
+     * @param levelMap task sets organized by level
+     * @param taskMap mapping from logical task to task set
+     * @param clusterNum number of target cluster jobs per level
      */
     public HorizontalRandomClustering(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
     /**
-     * 置换每层候选集合后按轮转规则分配任务。
+     * Permute the candidate set of each level, then assign tasks by the round-robin rule.
      */
     @Override
     public void run() {
         Map<Integer, List<TaskSet>> map = getLevelMap();
         for (List<TaskSet> taskList : map.values()) {
-            // 使用会话种子派生的随机流打破输入顺序。
+            // Break the input order with a random stream derived from the session seed.
             Collections.shuffle(taskList, SimulationRandom.newJavaRandom("clustering.balancing.random"));
             Collections.shuffle(taskList, SimulationRandom.newJavaRandom("clustering.balancing.random"));
 
@@ -65,21 +66,21 @@ public class HorizontalRandomClustering extends BalancingMethod {
                 }
                 int index = 0;
                 for (TaskSet set : taskList) {
-                    // 轮转选择下一个目标集合。
+                    // Select the next target task set in round-robin order.
                     TaskSet job = (TaskSet) jobList.get(index);
                     index++;
                     if (index == getClusterNum()) {
                         index = 0;
                     }
                     job.addTask(set.getTaskList());
-                    // 更新每个逻辑任务的所属集合映射。
+                    // Update the owning task set mapping of each logical task.
                     for (Task task : set.getTaskList()) {
-                        getTaskMap().put(task, job); // 依赖关系由调用方统一重建
+                        getTaskMap().put(task, job); // dependencies are rebuilt centrally by the caller
                     }
                 }
                 taskList.clear();
             } else {
-                // 候选数不超过目标数时无需合并。
+                // No merging is needed when the candidate count does not exceed the target count.
             }
         }
     }

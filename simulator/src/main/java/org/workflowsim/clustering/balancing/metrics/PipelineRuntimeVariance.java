@@ -22,7 +22,7 @@ import java.util.List;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * 由唯一父子链组成的流水线运行时间离散度指标。
+ * Dispersion metric for pipeline runtimes, where each pipeline is a unique parent-child chain.
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -31,10 +31,10 @@ import org.workflowsim.clustering.TaskSet;
 public class PipelineRuntimeVariance implements BalancingMetric {
 
     /**
-     * 计算任务集合所属流水线运行时间的相对离散度。
+     * Computes the relative dispersion of the pipeline runtimes the task sets belong to.
      *
-     * @param list 待检查的任务集合
-     * @return 相对流水线运行时间离散度；集合不足两个时为零
+     * @param list task sets to inspect
+     * @return relative pipeline runtime dispersion; zero when the list holds fewer than two
      */
     @Override
     public double getMetric(List<TaskSet> list) {
@@ -46,7 +46,7 @@ public class PipelineRuntimeVariance implements BalancingMetric {
         for (int i = 0; i < list.size(); i++) {
             TaskSet set = (TaskSet) list.get(i);
             rv[i] = getPipelineSum(set);
-            // 如需诊断各流水线长度，可在此处临时输出 rv[i]。
+            // To diagnose individual pipeline lengths, temporarily print rv[i] here.
         }
         double sum = 0.0;
         for (int i = 0; i < list.size(); i++) {
@@ -64,10 +64,10 @@ public class PipelineRuntimeVariance implements BalancingMetric {
     }
 
     /**
-     * 沿唯一父子链累加任务集合的作业长度。
+     * Accumulates the job lengths of the task sets along the unique parent-child chain.
      *
-     * @param task 流水线起始任务集合
-     * @return 唯一依赖链上的作业长度之和
+     * @param task task set that starts the pipeline
+     * @return sum of the job lengths on the unique dependency chain
      */
     private double getPipelineSum(TaskSet task) {
         double sum = 0.0;

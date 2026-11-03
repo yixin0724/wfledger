@@ -12,11 +12,13 @@ package org.workflowsim.examples.failure.clustering;
 import org.workflowsim.examples.ExampleCliSupport;
 
 /**
- * 历史容错聚类参数扫描辅助工具。
+ * Historical fault-tolerant clustering parameter sweep helper.
  *
- * <p>本类不再在无参数时隐式启动 125,000 次模拟。真正的研究参数扫描必须作为
- * {@code experiments/studies/<study-id>} 下具有冻结配置、种子计划、比较组、停止条件和
- * 结果工件的 campaign 实现；这里仅保留有界 smoke 入口及供旧调用方复用的单次运行方法。</p>
+ * <p>This class no longer starts 125,000 simulations implicitly when invoked without arguments.
+ * A genuine research parameter sweep must be implemented as a campaign under
+ * {@code experiments/studies/<study-id>} with a frozen configuration, a seed plan, comparison
+ * groups, stopping conditions, and result artifacts; only the bounded smoke entry point and the
+ * single-run method reused by legacy callers are kept here.</p>
  *
  * @author chenweiwei
  */
@@ -29,9 +31,9 @@ public final class ParameterSweep {
     private ParameterSweep() {}
 
     /**
-     * 仅运行显式请求的一格、一重复 smoke。
+     * Run only the explicitly requested single-cell, single-replication smoke.
      *
-     * @param args 必须是唯一参数 {@code --smoke}
+     * @param args must be the single argument {@code --smoke}
      */
     public static void main(String[] args) {
         if (args == null || args.length != 1 || !"--smoke".equals(args[0])) {
@@ -48,10 +50,11 @@ public final class ParameterSweep {
     }
 
     /**
-     * 执行一个历史参数组合，使用固定默认根种子。
+     * Execute one historical parameter combination with a fixed default root seed.
      *
-     * <p>保留该签名是为了兼容现有教学调用。需要重复运行时应使用带根种子的重载，确保
-     * 每个重复有可记录且可重放的随机条件。</p>
+     * <p>The signature is kept for compatibility with existing teaching callers. When repeated runs
+     * are needed, use the overload that takes a root seed, so that every replication has a
+     * recordable and replayable random condition.</p>
      */
     public static double execute(
             String failureScale,
@@ -71,16 +74,16 @@ public final class ParameterSweep {
     }
 
     /**
-     * 执行一个历史参数组合并显式指定根种子。
+     * Execute one historical parameter combination with an explicitly given root seed.
      *
-     * @param failureScale Weibull 故障尺度
-     * @param queueScale Gamma 队列尺度
-     * @param queuePriorWeight 队列旧估计器先验强度
-     * @param queueShape Gamma 队列形状
-     * @param failurePriorWeight 故障旧估计器先验强度
-     * @param clustering SR、DR、NOOP 或 DC
-     * @param rootSeed 本次运行的可重放根种子
-     * @return 模型 makespan；失败时抛异常，不使用 sentinel
+     * @param failureScale Weibull failure scale
+     * @param queueScale Gamma queue scale
+     * @param queuePriorWeight prior strength of the queue legacy estimator
+     * @param queueShape Gamma queue shape
+     * @param failurePriorWeight prior strength of the failure legacy estimator
+     * @param clustering SR, DR, NOOP, or DC
+     * @param rootSeed replayable root seed of this run
+     * @return model makespan; an exception is thrown on failure, no sentinel is used
      */
     public static double execute(
             String failureScale,
@@ -112,10 +115,11 @@ public final class ParameterSweep {
     }
 
     /**
-     * 兼容历史“100 次平均”名称，但改为 100 个确定性且不同的根种子。
+     * Keep the historical "average of 100 runs" name but use 100 deterministic and distinct root seeds.
      *
-     * <p>同一参数格中的种子序列是固定的；不同参数格只要传入同一 {@code rootSeed} 就能
-     * 使用 common random numbers。该方法不输出研究证据，也不包含置信区间或停止规则。</p>
+     * <p>The seed sequence within one parameter cell is fixed; different parameter cells use common
+     * random numbers as soon as they are given the same {@code rootSeed}. This method produces no
+     * research evidence and contains neither confidence intervals nor a stopping rule.</p>
      */
     public static double execute100(
             String failureScale,
@@ -135,7 +139,7 @@ public final class ParameterSweep {
                 ExampleCliSupport.LEGACY_DEMO_SEED);
     }
 
-    /** 执行给定数量的确定性重复，并返回算术平均 makespan。 */
+    /** Execute the given number of deterministic replications and return the arithmetic mean makespan. */
     public static double executeReplications(
             String failureScale,
             double queueScale,

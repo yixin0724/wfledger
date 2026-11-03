@@ -12,37 +12,42 @@ import org.workflowsim.experiment.SimulationReport;
 import org.workflowsim.experiment.SimulationRunner;
 
 /**
- * D2 阶段 4：完整复跑流水线——读取 v4 证据 → 三级定位输入 → 重建配置/平台 →
- * 重新仿真 → 在 {@code <output>/rerun/} 写出新三件套。
+ * D2 phase 4: full rerun pipeline -- read the v4 evidence, locate the inputs through three
+ * tiers, rebuild the configuration and platform, re-simulate, and write the new artifact
+ * trio under {@code <output>/rerun/}.
  *
- * <p>本类只负责"执行"，不做任何比对：核心量差异判定由阶段 5 的
- * {@code EvidenceCoreDiffer} 完成。所有失败路径沿用既有 verdict 语义：
+ * <p>This class only executes and performs no comparison: the stage-5
+ * {@code EvidenceCoreDiffer} produces the core-quantity difference verdict. All failure paths
+ * keep the existing verdict semantics:
  * {@code EVIDENCE_INVALID}/{@code INPUT_UNRESOLVED}/{@code INPUT_HASH_MISMATCH}/
- * {@code RECONSTRUCTION_REJECTED} 经 {@link RerunFailureException} 抛出；仿真
- * 自身的执行失败（如 {@code RetryLimitExceededException}）原样上抛，不伪装成
- * 证据问题。</p>
+ * {@code RECONSTRUCTION_REJECTED} are thrown through {@link RerunFailureException}; an execution
+ * failure of the simulation itself (such as {@code RetryLimitExceededException}) propagates
+ * unchanged and is not disguised as an evidence problem.</p>
  *
- * <p>输出目录必须为空或不存在，避免把 rerun 产物混入既有研究目录。</p>
+ * <p>The output directory must be empty or nonexistent, so that rerun artifacts are not mixed
+ * into an existing study directory.</p>
  */
 public final class RerunExecutor {
 
-    /** 输出目录内固定放置新三件套的子目录名（契约 §报告格式）。 */
+    /** Subdirectory name that always holds the new artifact trio inside the output directory
+     * (contract section "Report and Exit Codes"). */
     public static final String RERUN_DIRECTORY_NAME = "rerun";
 
-    /** rerun 产物的 runId，与历史证据保持同构（result.*）。 */
+    /** runId of the rerun artifacts, isomorphic to the historical evidence (result.*). */
     public static final String RERUN_RUN_ID = "result";
 
     private RerunExecutor() {}
 
     /**
-     * 从 run 目录执行完整复跑流水线。
+     * Run the full rerun pipeline starting from a run directory.
      *
-     * @param runDirectory 含 result.manifest.json 三件套的历史 run 目录
-     * @param outputDirectory 输出根目录（须为空或不存在）
-     * @return 本次复跑的证据、输入定位与新三件套路径
-     * @throws RerunFailureException 证据、输入或重建阶段失败（携带 verdict）
-     * @throws IOException 文件系统读写失败
-     * @throws SimulationExecutionException 仿真执行失败
+     * @param runDirectory historical run directory containing the result.manifest.json artifact
+     *        trio
+     * @param outputDirectory output root directory (must be empty or nonexistent)
+     * @return evidence, input locations, and new artifact-trio paths of this rerun
+     * @throws RerunFailureException evidence, input, or rebuild stage failed (carries a verdict)
+     * @throws IOException file-system read or write failure
+     * @throws SimulationExecutionException simulation execution failure
      */
     public static RerunExecution execute(Path runDirectory, Path outputDirectory)
             throws RerunFailureException, IOException, SimulationExecutionException {
@@ -50,14 +55,15 @@ public final class RerunExecutor {
     }
 
     /**
-     * 从已通过结构校验的证据对象执行复跑流水线（供上层复用已读取的证据）。
+     * Run the rerun pipeline from an evidence object that already passed structural validation
+     * (so a caller can reuse evidence it has already read).
      *
-     * @param evidence 已通过 {@link RerunEvidenceReader} 校验的证据
-     * @param outputDirectory 输出根目录（须为空或不存在）
-     * @return 本次复跑的证据、输入定位与新三件套路径
-     * @throws RerunFailureException 输入或重建阶段失败（携带 verdict）
-     * @throws IOException 文件系统读写失败
-     * @throws SimulationExecutionException 仿真执行失败
+     * @param evidence evidence already validated by {@link RerunEvidenceReader}
+     * @param outputDirectory output root directory (must be empty or nonexistent)
+     * @return evidence, input locations, and new artifact-trio paths of this rerun
+     * @throws RerunFailureException input or rebuild stage failed (carries a verdict)
+     * @throws IOException file-system read or write failure
+     * @throws SimulationExecutionException simulation execution failure
      */
     public static RerunExecution execute(RerunEvidence evidence, Path outputDirectory)
             throws RerunFailureException, IOException, SimulationExecutionException {
@@ -74,7 +80,8 @@ public final class RerunExecutor {
         return new RerunExecution(evidence, inputs, artifacts);
     }
 
-    /** 输出目录已存在时必须为空；绝不静默覆盖或混写既有产物。 */
+    /** An existing output directory must be empty; never silently overwrite or intermix existing
+     * artifacts. */
     private static void refuseNonEmptyDirectory(Path directory) throws IOException {
         if (!Files.exists(directory)) {
             return;
@@ -89,7 +96,8 @@ public final class RerunExecutor {
         }
     }
 
-    /** 一次成功复跑的完整结果：原证据、输入定位明细与新三件套路径。 */
+    /** Complete result of one successful rerun: the original evidence, the input-location details,
+     * and the new artifact-trio paths. */
     public static final class RerunExecution {
 
         private final RerunEvidence evidence;
@@ -102,22 +110,22 @@ public final class RerunExecutor {
             this.artifacts = artifacts;
         }
 
-        /** 原始（历史）证据快照。 */
+        /** Original (historical) evidence snapshot. */
         public RerunEvidence getEvidence() {
             return evidence;
         }
 
-        /** 输入定位明细（每个输入的命中层级、路径与哈希核对结果）。 */
+        /** Input-location details (hit tier, path, and hash verification result for each input). */
         public RerunInputs getInputs() {
             return inputs;
         }
 
-        /** 新三件套的绝对路径。 */
+        /** Absolute paths of the new artifact trio. */
         public ExperimentArtifacts getArtifacts() {
             return artifacts;
         }
 
-        /** 新三件套所在目录（{@code <output>/rerun/}）。 */
+        /** Directory holding the new artifact trio ({@code <output>/rerun/}). */
         public Path getRerunDirectory() {
             return artifacts.getManifest().getParent();
         }

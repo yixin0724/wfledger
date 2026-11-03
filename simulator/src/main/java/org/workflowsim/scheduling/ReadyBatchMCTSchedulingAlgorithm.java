@@ -7,14 +7,15 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * 面向 WorkflowSim 在线 ready-batch 生命周期的 MCT 调度器。
+ * MCT scheduler for the WorkflowSim online ready-batch lifecycle.
  *
- * <p>对当前 ready Job，计算每个空闲兼容 VM 的
- * {@code ECT = cloudletLength / vmMips}，选择最小者；VM 候选按 ID 升序，因而相等 ECT
- * 时选择较小 VM ID。一次更新中每台 VM 至多接收一个 Job。离线静态 MCT 还需要维护机器的
- * 暂定可用时间，本实现不声称具有该语义。</p>
+ * <p>For the current ready Job, compute {@code ECT = cloudletLength / vmMips} for every idle
+ * compatible VM and select the smallest value; VM candidates are ordered by ascending ID, so an
+ * ECT tie selects the smaller VM ID. Each VM receives at most one Job per update. Offline
+ * static MCT additionally maintains a tentative availability time per machine; this
+ * implementation does not claim that semantics.</p>
  *
- * <p>参考: Maheswaran, M., et al. "Dynamic Mapping of a Class of Independent
+ * <p>Reference: Maheswaran, M., et al. "Dynamic Mapping of a Class of Independent
  * Tasks onto Heterogeneous Computing Systems." JPDC 1999.</p>
  */
 public class ReadyBatchMCTSchedulingAlgorithm extends BaseSchedulingAlgorithm {
@@ -34,7 +35,7 @@ public class ReadyBatchMCTSchedulingAlgorithm extends BaseSchedulingAlgorithm {
                 if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE || !isCompatible(cloudlet, vm)) {
                     continue;
                 }
-                // 当前事件时刻 VM 已空闲，ECT 退化为执行长度除以 VM MIPS。
+                // At the current event time the VM is idle, so ECT reduces to execution length over VM MIPS.
                 double completionTime = (double) cloudlet.getCloudletLength() / vm.getMips();
                 if (completionTime < minCompletionTime) {
                     minCompletionTime = completionTime;
@@ -43,7 +44,7 @@ public class ReadyBatchMCTSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             }
 
             if (bestVm == null) {
-                break; // 无空闲 VM
+                break; // no idle VM
             }
 
             bestVm.setState(WorkflowSimTags.VM_STATUS_BUSY);

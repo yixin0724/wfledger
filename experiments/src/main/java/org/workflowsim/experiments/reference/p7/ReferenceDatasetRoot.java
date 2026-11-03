@@ -5,17 +5,18 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/** P7/reference 运行入口共享的显式数据集根目录契约。 */
+/** Explicit dataset-root contract shared by the P7/reference run entry points. */
 final class ReferenceDatasetRoot {
 
     private ReferenceDatasetRoot() {}
 
     /**
-     * 校验并规范化一个显式、绝对的数据集目录。
+     * Validate and normalize an explicit, absolute dataset directory.
      *
-     * @param datasetRoot 调用者提供的 {@code datasets} 目录
-     * @return 规范化后的绝对目录
-     * @throws IllegalArgumentException 当目录为空、相对、不存在或不是目录时抛出
+     * @param datasetRoot the {@code datasets} directory supplied by the caller
+     * @return the normalized absolute directory
+     * @throws IllegalArgumentException if the directory is null, relative, missing, or not a
+     *         directory
      */
     static Path require(Path datasetRoot) {
         if (datasetRoot == null) {
@@ -32,12 +33,13 @@ final class ReferenceDatasetRoot {
     }
 
     /**
-     * 在已验证的数据集根内解析一个声明的相对输入文件。
+     * Resolve one declared relative input file inside a validated dataset root.
      *
-     * @param datasetRoot 显式、绝对的数据集根
-     * @param relativePath 由冻结场景声明的相对文件名
-     * @return 已验证的规范化绝对常规文件
-     * @throws IllegalArgumentException 当路径逃逸数据集根、无效或不存在时抛出
+     * @param datasetRoot explicit, absolute dataset root
+     * @param relativePath relative file name declared by the frozen scenario
+     * @return validated normalized absolute regular file
+     * @throws IllegalArgumentException if the path escapes the dataset root, is invalid, or does
+     *         not exist
      */
     static Path resolveFile(Path datasetRoot, String relativePath) {
         Path normalizedRoot = require(datasetRoot);

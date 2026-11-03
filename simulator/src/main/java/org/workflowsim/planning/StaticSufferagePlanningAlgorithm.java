@@ -7,10 +7,12 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * 独立任务的经典 Sufferage 基线。
+ * Classic Sufferage baseline for independent tasks.
  *
- * <p>每轮比较每个 Task 的次优与最优暂定完成时间之差，优先映射损失最大的 Task；同分按
- * Task ID 打破平局。只有一台兼容 VM 时损失定义为零，以保持有限且确定的排序。</p>
+ * <p>Each round compares, for every Task, the gap between its second-best and best tentative
+ * completion time, and maps the Task with the largest sufferage first; ties are broken by Task
+ * ID. With only one compatible VM the sufferage is defined as zero so that the ordering stays
+ * finite and deterministic.</p>
  */
 public final class StaticSufferagePlanningAlgorithm extends StaticIndependentPlanningSupport {
 
@@ -37,7 +39,8 @@ public final class StaticSufferagePlanningAlgorithm extends StaticIndependentPla
                         secondBest = Math.min(secondBest, availability[index] + duration);
                     }
                 }
-                // 只有一台兼容 VM 时没有可失去的备选，将损失定为零以保持有限且确定的排序。
+                // With a single compatible VM there is no alternative to lose, so the sufferage is
+                // set to zero to keep the ordering finite and deterministic.
                 double sufferage = Double.isInfinite(secondBest) ? 0.0 : secondBest - best.getFinishTime();
                 if (selectedChoice == null
                         || sufferage > selectedSufferage

@@ -21,7 +21,7 @@ import java.util.List;
 import org.workflowsim.Task;
 
 /**
- * 聚类算法内部使用的一组逻辑任务。
+ * A group of logical tasks used internally by a clustering algorithm.
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -30,28 +30,28 @@ import org.workflowsim.Task;
 public class TaskSet {
 
     /**
-     * 此集合中的逻辑任务。
+     * Logical tasks in this set.
      */
     private final List<Task> taskList;
     /**
-     * 此任务集合的父集合。
+     * Parent sets of this task set.
      */
     private final List<TaskSet> parentList;
     /**
-     * 此任务集合的子集合。
+     * Child sets of this task set.
      */
     private final List<TaskSet> childList;
     /**
-     * 遍历时使用的已检查标记。
+     * Checked flag used during traversal.
      */
     public boolean hasChecked;
     /**
-     * 聚类启发式使用的影响因子。
+     * Impact factor used by the clustering heuristic.
      */
     private double impactFactor;
 
     /**
-     * 创建空的任务集合。
+     * Creates an empty task set.
      */
     public TaskSet() {
         this.taskList = new ArrayList<>();
@@ -62,72 +62,72 @@ public class TaskSet {
     }
 
     /**
-     * 返回影响因子。
+     * Returns the impact factor.
      *
-     * @return 影响因子
+     * @return the impact factor
      */
     public double getImpactFactor() {
         return this.impactFactor;
     }
 
     /**
-     * 设置影响因子。
+     * Sets the impact factor.
      *
-     * @param factor 影响因子
+     * @param factor the impact factor
      */
     public void setImpactFafctor(double factor) {
         this.impactFactor = factor;
     }
 
     /**
-     * 返回父任务集合。
+     * Returns the parent task sets.
      *
-     * @return 父任务集合
+     * @return the parent task sets
      */
     public List<TaskSet> getParentList() {
         return this.parentList;
     }
 
     /**
-     * 返回子任务集合。
+     * Returns the child task sets.
      *
-     * @return 子任务集合
+     * @return the child task sets
      */
     public List<TaskSet> getChildList() {
         return this.childList;
     }
 
     /**
-     * 返回集合中的逻辑任务。
+     * Returns the logical tasks in this set.
      *
-     * @return 逻辑任务列表
+     * @return the list of logical tasks
      */
     public List<Task> getTaskList() {
         return this.taskList;
     }
 
     /**
-     * 向此集合加入一个任务。
+     * Adds one task to this set.
      *
-     * @param task 要加入的任务
+     * @param task the task to add
      */
     public void addTask(Task task) {
         this.taskList.add(task);
     }
 
     /**
-     * 向此集合加入一批任务。
+     * Adds a batch of tasks to this set.
      *
-     * @param list 要加入的任务列表
+     * @param list the tasks to add
      */
     public void addTask(List<Task> list) {
         this.taskList.addAll(list);
     }
 
     /**
-     * 返回此集合的作业长度，即所有任务长度之和。
+     * Returns the job length of this set, that is, the sum of all task lengths.
      *
-     * @return 作业长度
+     * @return the job length
      */
     public long getJobRuntime() {
         long runtime = 0;

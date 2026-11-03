@@ -516,7 +516,10 @@ final class FileLifecycleValidator {
                     "Physical resources must exactly match the versioned endpoint, link and store inventory");
         }
 
-        /** Fabric 构造的拓扑阶段（k/核数/放置/链路配对与容量对账，逐字搬运转写）。 */
+        /**
+         * Fabric construction topology stage (k, core count, placement, link pairing,
+         * capacity reconciliation, moved verbatim).
+         */
         private void parseTopology(JsonObject topology, Set<String> expected) {
             keys(topology, "kind", "k", "coreSwitchCount", "linkBandwidthBytesPerSecond", "hostPlacements");
             equal(topology, "kind", "FAT_TREE");
@@ -1155,7 +1158,7 @@ final class FileLifecycleValidator {
             }
         }
 
-        /** resolve() 的四路解析阶段（LOCAL/ZERO/NEW_COPY/JOIN_EXISTING，逐字搬运转写）。 */
+        /** Four-way resolution stage of resolve() (LOCAL/ZERO/NEW_COPY/JOIN_EXISTING, moved verbatim). */
         private Copy resolveAdmission(
                 JsonObject p, FileRow file, Job owner, Location source, String resolution, Replica local, double at) {
             Copy copy = null;

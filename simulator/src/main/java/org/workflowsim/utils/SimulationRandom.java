@@ -23,11 +23,14 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.Well19937c;
 
 /**
- * 管理单次 WorkflowSim 配置的可复现伪随机流。
+ * Manages the reproducible pseudo-random streams of a single WorkflowSim configuration.
  *
- * <p>调用方按稳定的组件名称获取新的生成器。同一组件的生成器获得不同但确定性的种子；
- * 因此一个组件增加抽样次数不会扰动其他组件的随机序列。该隔离是可复现实验和
- * common-random-numbers 比较的基础，但不等同于统计有效性证明。</p>
+ * <p>Callers obtain a fresh generator under a stable component name. Generators of the
+ * same component receive distinct but deterministic seeds; therefore increasing the
+ * number of draws in one component does not perturb the random sequences of other
+ * components. This isolation is the basis of reproducible experiments and of
+ * common-random-numbers comparison, but it is not equivalent to a proof of statistical
+ * validity.</p>
  */
 public final class SimulationRandom {
 
@@ -37,9 +40,9 @@ public final class SimulationRandom {
     private SimulationRandom() {}
 
     /**
-     * 为下一次仿真启动新的确定性随机上下文。
+     * Starts a new deterministic random context for the next simulation run.
      *
-     * @param seed 要记录在实验配置中的根种子
+     * @param seed root seed to record in the experiment configuration
      */
     public static synchronized void reset(long seed) {
         rootSeed = seed;
@@ -48,20 +51,20 @@ public final class SimulationRandom {
     }
 
     /**
-     * 为指定模型组件创建 Java 随机数生成器。
+     * Creates a Java random number generator for the given model component.
      *
-     * @param component 稳定的组件名称，例如 {@code planning.random}
-     * @return 新建的确定性生成器
+     * @param component stable component name, for example {@code planning.random}
+     * @return a newly created deterministic generator
      */
     public static synchronized Random newJavaRandom(String component) {
         return new Random(nextSeed(component));
     }
 
     /**
-     * 为指定模型组件创建 Apache Commons Math 随机数生成器。
+     * Creates an Apache Commons Math random number generator for the given model component.
      *
-     * @param component 稳定的组件名称
-     * @return 新建的确定性生成器
+     * @param component stable component name
+     * @return a newly created deterministic generator
      */
     public static synchronized RandomGenerator newApacheRandom(String component) {
         return new Well19937c(nextSeed(component));

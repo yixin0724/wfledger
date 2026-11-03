@@ -13,7 +13,8 @@ import org.workflowsim.exception.SimulationExecutionException;
 import org.workflowsim.failure.RetryLimitExceededException;
 
 /**
- * D2 阶段 6：rerun 与差异比对的统一入口（契约 §命令与输入约定、§执行流程）。
+ * D2 stage 6: single entry point for the rerun and the difference comparison (contract sections
+ * "Command and Input Conventions" and "Execution and Snapshot Boundaries").
  *
  * <pre>
  * mvn -pl :workflowsim-workbench -am compile exec:java \
@@ -21,36 +22,40 @@ import org.workflowsim.failure.RetryLimitExceededException;
  *   -Dexec.args="&lt;run-dir&gt; &lt;output-dir&gt;"
  * </pre>
  *
- * <p>执行流程严格按契约串联：读取并校验三件套（{@link RerunEvidenceReader}）→
- * 输入定位与哈希核对（{@link RerunInputResolver}）→ 配置重建
- * （{@link ManifestConfigRebuilder}）→ 标准路径复跑并落盘新三件套
- * （{@link RerunExecutor}）→ 核心量比对（{@link EvidenceCoreDiffer}）→ 生成
- * {@code rerun-report.json} + {@code rerun-report.md}。每一步失败 fail fast，
- * verdict 映射到独立退出码（见 {@link RerunVerdict}），可直接作为 CI 门禁。</p>
+ * <p>The execution flow is chained exactly as the contract specifies: read and validate the
+ * three-piece bundle ({@link RerunEvidenceReader}) -> locate the inputs and check their hashes
+ * ({@link RerunInputResolver}) -> rebuild the configuration
+ * ({@link ManifestConfigRebuilder}) -> rerun through the standard path and persist a new
+ * three-piece bundle ({@link RerunExecutor}) -> compare the core quantities
+ * ({@link EvidenceCoreDiffer}) -> generate {@code rerun-report.json} + {@code rerun-report.md}.
+ * Every step fails fast, and the verdict maps to an independent exit code (see
+ * {@link RerunVerdict}), so it can serve directly as a CI gate.</p>
  *
- * <p>语义说明：模拟执行阶段本身失败（{@link SimulationExecutionException} 或
- * {@link RetryLimitExceededException}）同样按 {@code RECONSTRUCTION_REJECTED}
- * 报告——契约把该结论定义为"历史证据与当前代码语义不兼容"的合法暴露，运行期
- * 拒绝是其中一种形态，失败原因中会注明发生在执行阶段。</p>
+ * <p>Semantics: a failure of the simulation execution phase itself
+ * ({@link SimulationExecutionException} or {@link RetryLimitExceededException}) is likewise
+ * reported as {@code RECONSTRUCTION_REJECTED} -- the contract defines that conclusion as a
+ * legitimate exposure of "historical evidence is incompatible with the current code semantics";
+ * a run-phase rejection is one of its forms, and the failure reason states that it occurred in
+ * the execution phase.</p>
  */
 public final class RerunDiffExecutor {
 
-    /** 机器可读报告文件名。 */
+    /** Machine-readable report file name. */
     public static final String REPORT_JSON_NAME = "rerun-report.json";
 
-    /** 人类可读报告文件名。 */
+    /** Human-readable report file name. */
     public static final String REPORT_MARKDOWN_NAME = "rerun-report.md";
 
-    /** 命令行用法错误退出码（与全部 verdict 码不重叠）。 */
+    /** Command-line usage-error exit code (does not overlap any verdict code). */
     static final int EXIT_USAGE = 64;
 
-    /** 未预期异常退出码（与全部 verdict 码不重叠）。 */
+    /** Unexpected-exception exit code (does not overlap any verdict code). */
     static final int EXIT_UNEXPECTED = 70;
 
     private RerunDiffExecutor() {}
 
     /**
-     * CLI 入口：verdict 退出码 0-5；用法错误 64；未预期异常 70。
+     * CLI entry point: verdict exit code 0-5; usage error 64; unexpected exception 70.
      *
      * @param args {@code <run-dir> <output-dir>}
      */
@@ -77,17 +82,21 @@ public final class RerunDiffExecutor {
     }
 
     /**
-     * 对单个 run 执行完整 rerun + 差异比对，并把报告写入输出目录。
+     * Execute the full rerun and difference comparison for a single run, and write the report
+     * into the output directory.
      *
-     * <p>失败路径（verdict 非 IDENTICAL/DIVERGED）不产生 {@code rerun/} 新三件套，
-     * 但仍然写出两份报告，携带失败原因与候选路径等细节。</p>
+     * <p>A failure path (verdict other than IDENTICAL/DIVERGED) produces no new {@code rerun/}
+     * three-piece bundle, but both reports are still written, carrying the failure reason and
+     * details such as candidate paths.</p>
      *
-     * @param runDirectory 单个 run 的证据目录（含 v4 三件套）
-     * @param outputDirectory 输出目录：必须不存在或为空
-     * @return 完整报告对象（与落盘内容一致）
-     * @throws IOException 读取证据或写报告失败
-     * @throws IllegalArgumentException 入参为空
-     * @throws IllegalStateException 输出目录已存在且非空（不覆盖任何已有文件）
+     * @param runDirectory evidence directory of a single run (containing the v4 three-piece
+     *     bundle)
+     * @param outputDirectory output directory: must not exist or must be empty
+     * @return complete report object (identical to what was written to disk)
+     * @throws IOException reading evidence or writing the report failed
+     * @throws IllegalArgumentException an argument is null
+     * @throws IllegalStateException the output directory already exists and is not empty (no
+     *     existing file is overwritten)
      */
     public static RerunReport execute(Path runDirectory, Path outputDirectory) throws IOException {
         if (runDirectory == null || outputDirectory == null) {
@@ -128,17 +137,23 @@ public final class RerunDiffExecutor {
         } catch (IllegalArgumentException
                 | IllegalStateException
                 | org.workflowsim.exception.SimulationConfigurationException e) {
-            // BAT-V4.1（2026-10-29 测试工程师对抗轮 / DVFS 第五轮，红→绿）：执行阶段的
-            // 运行期法拒绝必须留在 verdict 契约内，不得冒泡为 usage 类（exit 64、两份报告
-            // 一页不写——那是契约 §"Classified simulation-execution exceptions … map to
-            // RECONSTRUCTION_REJECTED"要消灭的崩溃类失败）。现实命中路径：tiered+carbon
-            // 三维证据在重建时被 ManifestConfigRebuilder 剥离频档（D5 前向契约），重建出
-            // 的"无功率+碳强度"半声明平台在 SimulationReport 构造期被 BAT-C1 半声明律以
-            // IllegalArgumentException 拒绝——语义上这就是"历史证据与当前代码不兼容"的
-            // 合法暴露（DVFS_DIMENSION_DESIGN.md §2.4 的记录失败路径），应当落
-            // RECONSTRUCTION_REJECTED + 报告照写（exit 4），而不是崩溃。重建阶段的同类
-            // 异常已由 ManifestConfigRebuilder 包成 RerunFailureException（上一 catch）；
-            // 未包装抵达本处的此类异常只可能来自模拟执行/写盘阶段。
+            // BAT-V4.1 (2026-10-29 test-engineer adversarial round / DVFS fifth round, red ->
+            // green): a run-phase law rejection must stay inside the verdict contract and must
+            // not bubble up as a usage-class exit (exit 64, both reports not written at all --
+            // that is the crash-class failure the contract section "Classified
+            // simulation-execution exceptions ... map to RECONSTRUCTION_REJECTED" exists to
+            // eliminate). Actual hit path: during rebuilding, ManifestConfigRebuilder strips
+            // the frequency tier from tiered+carbon three-dimensional evidence (D5 forward
+            // contract), and the rebuilt "no power + carbon intensity" half-declared platform
+            // is rejected by the BAT-C1 half-declaration law with an IllegalArgumentException
+            // when the SimulationReport is constructed -- semantically this is a legitimate
+            // exposure of "historical evidence incompatible with the current code"
+            // (the recorded failure path of DVFS_DIMENSION_DESIGN.md section 2.4) and must land
+            // as RECONSTRUCTION_REJECTED with the report still written (exit 4), not as a
+            // crash. The same class of exception during the rebuilding phase is already
+            // wrapped into RerunFailureException by ManifestConfigRebuilder (the previous
+            // catch); such an exception reaching this point unwrapped can only come from the
+            // simulation execution or the report-writing phase.
             report = failureReport(
                     builder,
                     evidence,

@@ -19,19 +19,21 @@ import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowDatacenter;
 
-/** 根据已校验的 {@link PlatformProfile} 构建 CloudSim/WorkflowSim 实体。 */
+/** Build CloudSim/WorkflowSim entities from a validated {@link PlatformProfile}. */
 public final class PlatformFactory {
 
     private PlatformFactory() {}
 
     /**
-     * 将抽象平台描述转换为一个 WorkflowSim 数据中心。
+     * Convert an abstract platform description into one WorkflowSim datacenter.
      *
-     * @param entityName CloudSim 实体名称，不能为空
-     * @param profile 已通过容量与 VM-Host 放置预检的平台描述
-     * @return 使用确定性 VM 放置策略的数据中心
-     * @throws Exception 当 CloudSim 存储实体无法创建时抛出
-     * @throws IllegalArgumentException 当名称为空或平台描述为空时抛出
+     * @param entityName CloudSim entity name, must not be empty
+     * @param profile platform description that already passed the capacity and VM-host
+     *        placement preflight
+     * @return datacenter using the deterministic VM placement policy
+     * @throws Exception when a CloudSim storage entity cannot be created
+     * @throws IllegalArgumentException when the name is empty or the platform description
+     *         is null
      */
     public static WorkflowDatacenter createDatacenter(String entityName, PlatformProfile profile) throws Exception {
         requireEntityName(entityName);
@@ -78,12 +80,13 @@ public final class PlatformFactory {
     }
 
     /**
-     * 根据平台描述创建归属于指定 WorkflowEngine 用户的 VM 列表。
+     * Create the list of VMs owned by the specified WorkflowEngine user according to the
+     * platform description.
      *
-     * @param profile 已校验的平台描述
-     * @param userId CloudSim 中接收这些 VM 的用户/调度器标识
-     * @return 与平台 VM 描述一一对应的新建 VM 列表
-     * @throws IllegalArgumentException 当平台描述为空时抛出
+     * @param profile validated platform description
+     * @param userId identifier of the user/scheduler in CloudSim that receives these VMs
+     * @return newly created VM list that corresponds one-to-one to the platform VM descriptions
+     * @throws IllegalArgumentException when the platform description is null
      */
     public static List<CondorVM> createVms(PlatformProfile profile, int userId) {
         if (profile == null) {
@@ -120,7 +123,8 @@ public final class PlatformFactory {
                         spec.getVmm(),
                         createScheduler(spec));
             }
-            // BAT-D2（2026-10-29）：频档表随装配注入 VM（空表保持 v1 模式）。
+            // BAT-D2 (2026-10-29): inject the frequency-tier table into the VM at assembly time
+            // (an empty table keeps the v1 mode).
             if (spec.hasFrequencyTiers()) {
                 vm.setFrequencyTiers(spec.getFrequencyTiers());
             }

@@ -7,10 +7,11 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * 独立任务的经典 Min-Min 完成时间基线。
+ * Classic Min-Min completion-time baseline for independent tasks.
  *
- * <p>每轮先为每个剩余 Task 找到最小暂定完成时间，再从中选择全局最小者；相同完成时间按
- * Task ID 打破平局，VM 内平局由共用逻辑按 VM ID 打破。本策略拒绝带 DAG 边的 Task。</p>
+ * <p>Each round first finds the minimum tentative completion time of every remaining Task and
+ * then selects the global minimum; equal completion times are broken by Task ID, and VM-level
+ * ties are broken by VM ID in the shared logic. This policy rejects Tasks that carry DAG edges.</p>
  */
 public final class StaticMinMinPlanningAlgorithm extends StaticIndependentPlanningSupport {
 

@@ -101,7 +101,7 @@ public final class NetworkStudyExecutor {
         return root.resolve(INDEX);
     }
 
-    /** 单个研究单元的执行与证据写入（逐字搬运转写）。 */
+    /** Execution and evidence writing of a single study cell (moved verbatim). */
     private static Map<String, Object> runStudyCell(
             NetworkStudyPlan.WorkflowCase workflow,
             NetworkStudyPlan.Condition condition,

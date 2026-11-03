@@ -1,27 +1,28 @@
 package org.workflowsim;
 
 /**
- * 当工作流输入无法表示为合法任务有向无环图（DAG）时抛出的异常。
+ * Thrown when a workflow input cannot be represented as a valid task directed acyclic
+ * graph (DAG).
  *
- * <p>调用方应将此异常视为输入或输入转换结果不满足模型约束，而不是一次可重试的
- * 仿真运行失败。</p>
+ * <p>Callers must treat this exception as an input, or an input conversion result, that
+ * violates the model constraints, rather than as a retryable simulation run failure.</p>
  */
 public final class WorkflowValidationException extends IllegalArgumentException {
 
     /**
-     * 使用验证失败原因创建异常。
+     * Creates the exception with the validation failure reason.
      *
-     * @param message 面向调用方的验证失败说明
+     * @param message caller-facing description of the validation failure
      */
     public WorkflowValidationException(String message) {
         super(message);
     }
 
     /**
-     * 使用验证失败原因和根因创建异常。
+     * Creates the exception with the validation failure reason and its root cause.
      *
-     * @param message 面向调用方的验证失败说明
-     * @param cause 导致验证失败的底层异常
+     * @param message caller-facing description of the validation failure
+     * @param cause underlying exception that caused the validation failure
      */
     public WorkflowValidationException(String message, Throwable cause) {
         super(message, cause);

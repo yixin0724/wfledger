@@ -26,25 +26,29 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 固定参数的 Fat-tree × 调度 campaign 执行器。
+ * Fixed-parameter Fat-tree x scheduling campaign executor.
  *
- * <p>参数与历史来源见 {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}：
- * 主矩阵 10 DAG × 4 规划器 × 3 数据移动模型 = 120 次运行；3 主机敏感性 OFAT
- * 扫描 10 DAG × 2 通信感知规划器 × 6 拓扑变体 = 120 次运行；4 主机结构
- * 敏感性扫描（激活 k/超收敛/放置轴判别力）= 120 次运行。全部运行使用同一
- * seed（91）和各块声明的 3/4 主机同质平台，配对统计沿 DAG 维度（Wilcoxon 符号秩）。</p>
+ * <p>Parameters and historical provenance: see
+ * {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}. The main matrix is
+ * 10 DAGs x 4 planners x 3 data-movement models = 120 runs; the 3-host sensitivity OFAT scan
+ * is 10 DAGs x 2 communication-aware planners x 6 topology variants = 120 runs; the 4-host
+ * structural sensitivity scan (activating the discriminating power of the k, oversubscription
+ * and placement axes) = 120 runs. Every run uses the same seed (91) and the 3/4-host
+ * homogeneous platform declared by its block, with paired statistics along the DAG dimension
+ * (Wilcoxon signed rank).</p>
  *
- * <p>Montage/Sipht 家族被排除：原始 DAX 含同名文件的不一致尺寸声明（如
- * Montage 的 fit.txt），被 LOCAL 通信感知规划族的严格副本校验拒绝——兼容性
- * 分类由 {@code FatTreeCampaignDagCompatibilityIntegrationTest} 锁定。</p>
+ * <p>The Montage/Sipht families are excluded: their original DAX files declare inconsistent
+ * sizes for files of the same name (for example Montage's fit.txt), which the strict replica
+ * validation of the LOCAL communication-aware planning family rejects; the compatibility
+ * classification is locked by {@code FatTreeCampaignDagCompatibilityIntegrationTest}.</p>
  *
- * <p><b>用法：</b>{@code main(<datasets-root>, <output-dir>)}；无参数时默认使用
- * 当前工作目录下的 {@code datasets} 与 {@code fattree-campaign-output/run-<时间戳>}。
- * 输出 {@code campaign-results.json}（schema
- * {@code workflowsim-fattree-campaign-v1}）与 {@code campaign-results.md}。</p>
+ * <p><b>Usage:</b> {@code main(<datasets-root>, <output-dir>)}; with no arguments it defaults
+ * to {@code datasets} and {@code fattree-campaign-output/run-<timestamp>} under the current
+ * working directory. It writes {@code campaign-results.json} (schema
+ * {@code workflowsim-fattree-campaign-v1}) and {@code campaign-results.md}.</p>
  *
- * <p>确定性：相同数据集根下复跑产出逐位一致的 makespan（由
- * {@code FatTreeCampaignGoldenIntegrationTest} 锁定抽样）。</p>
+ * <p>Determinism: a rerun under the same dataset root produces bitwise-identical makespans
+ * (sampled and locked by {@code FatTreeCampaignGoldenIntegrationTest}).</p>
  */
 public final class FatTreeSchedulingCampaignExecutor {
 
@@ -53,41 +57,51 @@ public final class FatTreeSchedulingCampaignExecutor {
     static final String RESULTS_SCHEMA = "workflowsim-fattree-campaign-v1";
     static final long FIXED_SEED = 91L;
 
-    /** campaign 对照规划器：两个通信感知 + 两个通信无感知基线（探测验证合法）。 */
+    /**
+     * Campaign comparison planners: two communication-aware plus two communication-unaware
+     * baselines (probe-verified as valid).
+     */
     static final List<Parameters.PlanningAlgorithm> PLANNERS = Collections.unmodifiableList(Arrays.asList(
             Parameters.PlanningAlgorithm.LOCAL_HEFT,
             Parameters.PlanningAlgorithm.LOCAL_CPOP,
             Parameters.PlanningAlgorithm.RANDOM,
             Parameters.PlanningAlgorithm.PSO));
 
-    /** 三种 V1 数据移动对照；释放和共享规则不同，跨模型单调性仅作诊断。 */
+    /**
+     * Three V1 data-movement controls; their release and sharing rules differ, so cross-model
+     * monotonicity is diagnostic only.
+     */
     static final List<DataMovementModel> MODELS = Collections.unmodifiableList(Arrays.asList(
             DataMovementModel.preExecutionTransferDelayV1(),
             DataMovementModel.preExecutionTransferDelayWithContentionV1(),
             DataMovementModel.fatTreeContentionV1()));
 
     /**
-     * 固定历史装置的链路基线：0.125 MB/s，为 VM 端点带宽 1 MB/s 的 1/8。
-     * 参数选择和原始再标定说明见
-     * {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}；
-     * 不据此推导任意拓扑或负载的跨模型恒等/单调结论。
+     * Link baseline of the fixed historical apparatus: 0.125 MB/s, one eighth of the 1 MB/s VM
+     * endpoint bandwidth. Parameter selection and original recalibration notes: see
+     * {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}; do not derive
+     * cross-model identity/monotonicity conclusions for arbitrary topologies or loads from it.
      */
     static final double BASELINE_LINK_BANDWIDTH_MB = 0.125;
 
     /**
-     * A4 带宽比对照：基线 ×10 = 1.25 MB/s；端点带宽仍为 1 MB/s。
-     * 是否退化为端点主导由具体路径/并发和回归夹具检查，不作为普遍结论。
+     * A4 bandwidth-ratio control: baseline x 10 = 1.25 MB/s; the endpoint bandwidth stays 1 MB/s.
+     * Whether it degenerates to endpoint dominance is checked by the concrete path/concurrency
+     * and the regression fixture, not asserted as a general conclusion.
      */
     static final double A4_LINK_BANDWIDTH_MB = BASELINE_LINK_BANDWIDTH_MB * 10.0;
 
     /**
-     * 3 主机敏感性拓扑变体（OFAT）：基线 + 5 个单轴变体，全部 R6 模型。
+     * 3-host sensitivity topology variants (OFAT): the baseline plus 5 single-axis variants, all
+     * under the R6 model.
      *
-     * <p>实测边界：3 主机下任意两条并发流必共享一个端点主机，路由变体
-     * （k、超收敛、放置）改变共享链路集合但不改变每条链路上的流重叠集合，
-     * 公平份额速率画像不变——结构轴在 3 主机平台退化（实测全部恒等）；
-     * 带宽比轴（A4）有效。结构轴的判别力由 4 主机结构块
-     * （{@link #structuralVariants()}）提供。</p>
+     * <p>Measured boundary: on 3 hosts any two concurrent flows necessarily share one endpoint
+     * host, so the routing variants (k, oversubscription, placement) change the set of shared
+     * links but not the set of flow overlaps on each link, and the fair-share rate profile is
+     * unchanged -- the structural axes degenerate on a 3-host platform (all identical in the
+     * measurements); the bandwidth-ratio axis (A4) stays effective. Discriminating power for
+     * the structural axes comes from the 4-host structural block
+     * ({@link #structuralVariants()}).</p>
      */
     static final List<TopologyVariant> SENSITIVITY_VARIANTS = Collections.unmodifiableList(Arrays.asList(
             new TopologyVariant("baseline-k4-full", NetworkTopologySpec.fatTree(4, BASELINE_LINK_BANDWIDTH_MB)),
@@ -100,9 +114,10 @@ public final class FatTreeSchedulingCampaignExecutor {
                     NetworkTopologySpec.fatTree(4, BASELINE_LINK_BANDWIDTH_MB, null, sameEdgePairPlacements()))));
 
     /**
-     * 4 主机结构敏感性变体：与 3 主机轴相同，但 A5 放置覆盖 4 台主机
-     * （{0→0,1→0,2→2,3→2}：两个同 edge 主机对，跨 2 Pod）。4 主机允许
-     * 不共享端点的交叉流（如 0→2 与 1→3），使 k/超收敛/放置轴获得判别力。
+     * 4-host structural sensitivity variants: the same axes as the 3-host case, but the A5
+     * placement covers 4 hosts ({0->0,1->0,2->2,3->2}: two same-edge host pairs spanning 2
+     * pods). With 4 hosts, cross flows that share no endpoint (for example 0->2 and 1->3)
+     * exist, which gives the k/oversubscription/placement axes discriminating power.
      */
     static List<TopologyVariant> structuralVariants() {
         Map<Integer, Integer> pairPlacements = new LinkedHashMap<Integer, Integer>();
@@ -124,9 +139,10 @@ public final class FatTreeSchedulingCampaignExecutor {
     private FatTreeSchedulingCampaignExecutor() {}
 
     /**
-     * 同 edge 热点放置：host0/host1 显式放 edge 全局索引 0（k=4 时每 edge
-     * 至多 k/2=2 台主机，故 3 台无法全部同 edge），host2 放索引 2（pod1/edge0）。
-     * 对照默认轮转放置（索引 0,1,2：跨 2 Pod 3 edge）。
+     * Same-edge hotspot placement: host0/host1 are explicitly placed on global edge index 0 (with
+     * k=4 each edge holds at most k/2=2 hosts, so 3 hosts cannot all share one edge), and host2
+     * goes to index 2 (pod1/edge0). Contrast with the default round-robin placement (indices
+     * 0,1,2: 3 edges across 2 pods).
      */
     private static Map<Integer, Integer> sameEdgePairPlacements() {
         Map<Integer, Integer> placements = new LinkedHashMap<Integer, Integer>();
@@ -137,10 +153,10 @@ public final class FatTreeSchedulingCampaignExecutor {
     }
 
     /**
-     * 命令行入口。
+     * Command-line entry point.
      *
-     * @param args {@code <datasets-root> <output-dir>}；留空则使用默认路径
-     * @throws Exception 当任一次运行不健康、参数或写出失败时
+     * @param args {@code <datasets-root> <output-dir>}; when empty, the default paths are used
+     * @throws Exception when any run is unhealthy, or when the arguments or the output writing fail
      */
     public static void main(String[] args) throws Exception {
         Path datasetsRoot;
@@ -178,10 +194,11 @@ public final class FatTreeSchedulingCampaignExecutor {
     }
 
     /**
-     * 发现 10 个核心 DAG（3 家族 × 3 规模 + HEFT 论文例）。
+     * Discover the 10 core DAGs (3 families x 3 scales plus the HEFT paper example).
      *
-     * <p>Montage/Sipht 不入选：其原始 DAX 含同名文件的不一致尺寸声明，被
-     * LOCAL 通信感知规划族（campaign 的两个主角规划器所属家族）拒绝。</p>
+     * <p>Montage/Sipht are not selected: their original DAX files declare inconsistent sizes for
+     * files of the same name, which the LOCAL communication-aware planning family (the family of
+     * the campaign's two main planners) rejects.</p>
      */
     static List<DagScenario> discoverCoreDags(Path datasetsRoot) throws IOException {
         String[][] families = {
@@ -220,14 +237,16 @@ public final class FatTreeSchedulingCampaignExecutor {
     }
 
     /**
-     * 执行 campaign（IT 可用 DAG 子集与关闭扫描复用）。
+     * Run the campaign (reused by integration tests with a DAG subset and with the scans disabled).
      *
-     * @param datasetsRoot 数据集根（当前实现仅用于标签一致性，DAX 路径来自 dags）
-     * @param dags 参与的 DAG 场景
-     * @param includeSensitivity 是否执行 3 主机敏感性 OFAT 扫描
-     * @param includeStructural 是否执行 4 主机结构敏感性扫描
-     * @return 主矩阵 + 敏感性 + 结构敏感性 + 统计 + 排名的完整结果
-     * @throws Exception 当任一次运行不健康时
+     * @param datasetsRoot dataset root (the current implementation uses it for label consistency
+     *                     only; the DAX paths come from dags)
+     * @param dags participating DAG scenarios
+     * @param includeSensitivity whether to run the 3-host sensitivity OFAT scan
+     * @param includeStructural whether to run the 4-host structural sensitivity scan
+     * @return the complete result of main matrix + sensitivity + structural sensitivity +
+     *         statistics + rankings
+     * @throws Exception when any run is unhealthy
      */
     static CampaignResults runCampaign(
             Path datasetsRoot, List<DagScenario> dags, boolean includeSensitivity, boolean includeStructural)
@@ -310,7 +329,10 @@ public final class FatTreeSchedulingCampaignExecutor {
                 .build();
     }
 
-    /** 同质平台（vmCount 主机 = vmCount VM，mips 1.0、每 VM 带宽 1 MB/s）；拓扑声明可选（R6 必需）。 */
+    /**
+     * Homogeneous platform (vmCount hosts = vmCount VMs, mips 1.0, 1 MB/s bandwidth per VM); the
+     * topology declaration is optional (required by R6).
+     */
     private static PlatformProfile platform(int vmCount, NetworkTopologySpec topology) {
         PlatformProfile.Builder builder = PlatformProfile.builder("campaign-platform");
         for (int id = 0; id < vmCount; id++) {
@@ -338,9 +360,9 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
     }
 
-    // ---- 结果聚合 ----
+    // ---- result aggregation ----
 
-    /** 单个 DAG 场景（家族 + 规模 + DAX 路径）。 */
+    /** One DAG scenario (family + scale + DAX path). */
     static final class DagScenario {
         final String id;
         final String family;
@@ -355,7 +377,7 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
     }
 
-    /** 敏感性拓扑变体。 */
+    /** Sensitivity topology variant. */
     static final class TopologyVariant {
         final String id;
         final NetworkTopologySpec spec;
@@ -366,7 +388,10 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
     }
 
-    /** campaign 完整结果：主矩阵、敏感性、结构敏感性、配对统计与排名汇总。 */
+    /**
+     * Complete campaign result: main matrix, sensitivity, structural sensitivity, paired
+     * statistics and ranking summary.
+     */
     static final class CampaignResults {
         final List<DagScenario> dags;
         final List<Map<String, Object>> mainMatrix;
@@ -384,7 +409,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             this.structural = structural;
         }
 
-        /** 主矩阵中 (planner, modelKind) 的逐 DAG makespan 序列（按 dags 顺序）。 */
+        /** Per-DAG makespan series for (planner, modelKind) in the main matrix, in dags order. */
         List<Double> makespans(String planner, String modelKind) {
             List<Double> values = new ArrayList<Double>();
             for (DagScenario dag : dags) {
@@ -425,13 +450,15 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
 
         /**
-         * 弱单调性诊断（V1 ≤ R2 ≤ R6，逐 DAG × 规划器）。
+         * Weak-monotonicity diagnostics (V1 <= R2 <= R6, per DAG x planner).
          *
-         * <p>R6 的每流速率确实受 R2 约束域的超集限制（min(端点份额, 链路份额)
-         * ≤ 端点份额），但完成时刻一旦分化，并发流格局随之漂移，makespan 级
-         * 弱单调性不再是定理——实测存在噪声级交叉（PSO × epigenomics-n100：
-         * R6 低于 R2 约 0.0075%）。诊断如实记录每个违反与最大相对偏差，作为
-         * 数据报告而非失败。</p>
+         * <p>The per-flow rate of R6 is indeed bounded by the superset of the R2 constraint
+         * domain (min(endpoint share, link share) <= endpoint share), but once completion times
+         * diverge the concurrent-flow pattern drifts with them, so weak monotonicity at the
+         * makespan level is no longer a theorem -- the measurements contain noise-level
+         * crossings (PSO x epigenomics-n100: R6 about 0.0075% below R2). The diagnostics record
+         * every violation and the maximum relative deviation truthfully, as a data report
+         * rather than a failure.</p>
          */
         List<Map<String, Object>> monotonicityDiagnostics() {
             List<Map<String, Object>> violations = new ArrayList<Map<String, Object>>();
@@ -470,9 +497,10 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
 
         /**
-         * 严格弱单调性断言（V1 ≤ R2 ≤ R6）。仅适用于已实证成立的子集
-         * （如 HEFT 论文例，由 {@code FatTreeCampaignGoldenIntegrationTest}
-         * 使用）；全集上存在噪声级交叉，用 {@link #monotonicityDiagnostics()}。
+         * Strict weak-monotonicity assertion (V1 <= R2 <= R6). Applies only to the subset where it has
+         * been empirically established (for example the HEFT paper example, used by
+         * {@code FatTreeCampaignGoldenIntegrationTest}); the full set contains noise-level
+         * crossings, so use {@link #monotonicityDiagnostics()}.
          */
         void assertWeakMonotonicity() {
             List<Map<String, Object>> violations = monotonicityDiagnostics();
@@ -481,7 +509,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** 每个模型下按平均 makespan 的规划器排名（升序）。 */
+        /** Planner ranking per model by mean makespan (ascending). */
         Map<String, List<String>> averageRankings() {
             Map<String, List<String>> rankings = new LinkedHashMap<String, List<String>>();
             for (DataMovementModel model : MODELS) {
@@ -507,7 +535,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             return rankings;
         }
 
-        /** 逐 DAG 逐模型的第一名（makespan 最小规划器）。 */
+        /** Per-DAG, per-model winner (the planner with the smallest makespan). */
         Map<String, Map<String, String>> perDagWinners() {
             Map<String, Map<String, String>> winners = new LinkedHashMap<String, Map<String, String>>();
             for (DataMovementModel model : MODELS) {
@@ -530,7 +558,10 @@ public final class FatTreeSchedulingCampaignExecutor {
             return winners;
         }
 
-        /** 同模型内规划器对比（基线 LOCAL_HEFT）+ 跨模型对比（基线 V1），全部 DAG 配对。 */
+        /**
+         * Within-model planner comparisons (baseline LOCAL_HEFT) plus cross-model comparisons
+         * (baseline V1), paired across all DAGs.
+         */
         List<Map<String, Object>> pairedStatistics() {
             List<Map<String, Object>> statistics = new ArrayList<Map<String, Object>>();
             String v1 =
@@ -576,12 +607,15 @@ public final class FatTreeSchedulingCampaignExecutor {
             return statistics;
         }
 
-        /** 敏感性对比：每个变体 vs 基线（同规划器，R6 模型，DAG 配对）。 */
+        /** Sensitivity comparisons: each variant vs the baseline (same planner, R6 model, DAG-paired). */
         List<Map<String, Object>> sensitivityStatistics() {
             return scanStatistics(SENSITIVITY_VARIANTS, "sensitivity");
         }
 
-        /** 4 主机结构敏感性对比：每个变体 vs 基线（同规划器，R6 模型，DAG 配对）。 */
+        /**
+         * 4-host structural sensitivity comparisons: each variant vs the baseline (same planner,
+         * R6 model, DAG-paired).
+         */
         List<Map<String, Object>> structuralStatistics() {
             return scanStatistics(structuralVariants(), "structural");
         }
@@ -685,7 +719,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             return md.toString();
         }
 
-        /** 报告头汇总（逐字搬运转写自 toMarkdown()）。 */
+        /** Report header summary (moved verbatim out of toMarkdown()). */
         private void appendHeader(StringBuilder md) {
             md.append("# Fat-tree × Scheduling Campaign Measured Results (auto-generated)\n\n");
             md.append("- seed=")
@@ -702,7 +736,7 @@ public final class FatTreeSchedulingCampaignExecutor {
                     .append(" runs\n\n");
         }
 
-        /** 主矩阵 makespan 表（逐字搬运转写）。 */
+        /** Main-matrix makespan table (moved verbatim). */
         private void appendMainMatrix(StringBuilder md) {
             md.append("## Main Matrix makespan (seconds)\n\n");
             md.append("| DAG |");
@@ -734,7 +768,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** 弱单调性诊断表（逐字搬运转写）。 */
+        /** Weak-monotonicity diagnostics table (moved verbatim). */
         private void appendMonotonicityDiagnostics(StringBuilder md) {
             md.append("\n## Weak-Monotonicity Diagnostics (V1 ≤ R2 ≤ R6)\n\n");
             List<Map<String, Object>> violations = monotonicityDiagnostics();
@@ -766,7 +800,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** 平均排名段（逐字搬运转写）。 */
+        /** Average-ranking section (moved verbatim). */
         private void appendAverageRankings(StringBuilder md) {
             md.append("\n## Average Ranking (makespan ascending)\n\n");
             for (Map.Entry<String, List<String>> entry : averageRankings().entrySet()) {
@@ -778,7 +812,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** 逐 DAG 第一名表（逐字搬运转写）。 */
+        /** Per-DAG winner table (moved verbatim). */
         private void appendPerDagWinners(StringBuilder md) {
             md.append("\n## Per-DAG Winner\n\n| DAG |");
             for (DataMovementModel model : MODELS) {
@@ -798,7 +832,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** 配对统计段（含敏感性条件分支，逐字搬运转写）。 */
+        /** Paired-statistics section (including the conditional sensitivity branch, moved verbatim). */
         private void appendPairedStatistics(StringBuilder md) {
             md.append("\n## Paired Wilcoxon (across DAGs)\n\n");
             md.append("| Axis | Baseline | Candidate | n (effective) | Median Diff (s)")
@@ -814,7 +848,7 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** 4 主机结构敏感性段（含条件分支，逐字搬运转写）。 */
+        /** 4-host structural sensitivity section (including the conditional branch, moved verbatim). */
         private void appendStructuralSensitivity(StringBuilder md) {
             if (!structural.isEmpty()) {
                 md.append("\n## 4-Host Structural-Sensitivity makespan").append(" (seconds, R6 model)\n\n");

@@ -37,10 +37,11 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 按 VM 索引建模任务故障的历史容错聚类教学示例。
+ * Historical fault-tolerant clustering teaching example that models task failures by VM index.
  *
- * <p>它与 {@code FaultTolerantClusteringExample1} 对照，展示 VM 维度的故障生成
- * 假设。它不是标准研究实验入口，也不能用于主张真实 VM 故障率。</p>
+ * <p>It contrasts with {@code FaultTolerantClusteringExample1} and shows a VM-dimension failure
+ * generation assumption. It is not a standard research experiment entry point, and it must not
+ * be used to claim real VM failure rates.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -48,35 +49,41 @@ import org.workflowsim.utils.ReplicaCatalog;
  */
 public class FaultTolerantClusteringExample4 extends FaultTolerantClusteringExample1 {
 
-    // ======================== 静态示例入口 ========================
+    // ======================== Static example entry point ========================
     /**
-     * 运行单数据中心、单存储的 VM 维度故障场景。
+     * Run the VM-dimension failure scenario with a single datacenter and a single storage.
      */
     public static void main(String[] args) {
 
         try {
             ExampleCliSupport.begin("fault-clustering-vm");
-            // 第一步：配置历史 WorkflowSim 静态参数。
-            /** 请求创建的 VM 数；资源不足时实际可创建数量可能更少。 */
-            int vmNum = 20; // VM 数量。
-            /** 请按本机数据集位置调整 DAX 路径。 */
+            // Step 1: configure the historical WorkflowSim static parameters.
+            /**
+             * Number of requested VMs; fewer may actually be created when resources are
+             * insufficient.
+             */
+            int vmNum = 20; // Number of VMs.
+            /** Adjust the DAX path to the dataset location on this machine. */
             String daxPath = ExampleCliSupport.singleDax(args, ExampleCliSupport.DEFAULT_DAX_PATH);
             File daxFile = new File(daxPath);
             if (!daxFile.exists()) {
                 Log.printLine("Warning: Please replace daxPath with the physical path in your working environment!");
                 return;
             }
-            /* 容错参数。 */
-            /** MONITOR_JOB 按任务深度归类，MONITOR_VM 按 VM 标识归类，MONITOR_ALL 汇总，MONITOR_NONE 不记录。 */
+            /* Fault-tolerance parameters. */
+            /**
+             * MONITOR_JOB records by task depth, MONITOR_VM records by VM identifier, MONITOR_ALL
+             * aggregates every record, and MONITOR_NONE records no failure.
+             */
             FailureParameters.FTCMonitor ftc_monitor = FailureParameters.FTCMonitor.MONITOR_VM;
-            /** FTCFailure 决定生成器按何种粒度选取失效到达分布。 */
+            /** FTCFailure decides the granularity at which the generator selects the failure arrival distribution. */
             FailureParameters.FTCFailure ftc_failure = FailureParameters.FTCFailure.FAILURE_VM;
-            /** 此历史示例选择基于估计器的动态容错重聚类策略。 */
+            /** This historical example selects the estimator-based dynamic fault-tolerant reclustering strategy. */
             FailureParameters.FTCluteringAlgorithm ftc_method = FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_DR;
-            /** 生成器矩阵按 VM 和工作流层级构建。 */
+            /** The generator matrix is built per VM and per workflow level. */
             int maxLevel = 11;
             DistributionGenerator[][] failureGenerators = new DistributionGenerator[vmNum][maxLevel];
-            /** 按 VM 建模失效到达过程；每个 VM 持有独立分布实例。 */
+            /** Model the failure arrival process per VM; each VM holds its own distribution instance. */
             for (int vmId = 0; vmId < vmNum; vmId++) {
                 DistributionGenerator generator = new DistributionGenerator(
                         DistributionGenerator.DistributionFamily.WEIBULL,
@@ -89,19 +96,22 @@ public class FaultTolerantClusteringExample4 extends FaultTolerantClusteringExam
                     failureGenerators[vmId][level] = generator;
                 }
             }
-            /** 该场景由 MINMIN 调度器决定映射，因此禁用规划器。 */
+            /** The mapping is decided by the MINMIN scheduler in this scenario, so the planner is disabled. */
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.SHARED;
 
-            /** 不注入额外开销。 */
+            /** No additional overhead is injected. */
             OverheadParameters op = new OverheadParameters(0, null, null, null, null, 0);
 
-            /** 常规任务聚类关闭；容错恢复策略在失败后另行处理。 */
+            /**
+             * Regular task clustering is disabled; the fault-tolerant recovery strategy is handled
+             * separately after a failure.
+             */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.NONE;
             ClusteringParameters cp = new ClusteringParameters(0, 0, method, null);
 
-            /** 初始化旧版故障状态、静态参数与文件目录。 */
+            /** Initialize the legacy failure state, static parameters, and file catalog. */
             FailureParameters.init(ftc_method, ftc_monitor, ftc_failure, failureGenerators);
             Parameters.init(vmNum, daxPath, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
@@ -109,27 +119,30 @@ public class FaultTolerantClusteringExample4 extends FaultTolerantClusteringExam
             FailureMonitor.init();
             FailureGenerator.init();
 
-            // 在创建模拟实体前初始化 CloudSim。
-            int num_user = 1; // 模拟用户数。
+            // Initialize CloudSim before creating simulation entities.
+            int num_user = 1; // Number of simulated users.
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // 是否记录 CloudSim 事件轨迹。
+            boolean trace_flag = false; // Whether to record the CloudSim event trace.
 
-            // 初始化 CloudSim 事件引擎。
+            // Initialize the CloudSim event engine.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
-            /** 创建一个包含单调度器的工作流规划器。 */
+            /** Create a workflow planner that contains a single scheduler. */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
-            /** 获取对应的工作流执行引擎。 */
+            /** Obtain the corresponding workflow execution engine. */
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
-            /** 创建 VM 列表；VM 的 userId 对应管理它的调度器标识。 */
+            /**
+             * Create the VM list; the VM userId corresponds to the identifier of the scheduler that
+             * manages it.
+             */
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
-            /** 将 VM 列表提交给工作流执行引擎。 */
+            /** Submit the VM list to the workflow execution engine. */
             wfEngine.submitVmList(vmlist0, 0);
 
-            /** 将数据中心绑定给该调度器。 */
+            /** Bind the datacenter to that scheduler. */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 
             CloudSim.startSimulation();

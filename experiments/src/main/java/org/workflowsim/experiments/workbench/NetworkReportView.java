@@ -81,7 +81,7 @@ final class NetworkReportView {
         return freeze(root);
     }
 
-    /** 传输总量指标段（逐字搬运转写自 project()）。 */
+    /** Transfer totals metrics section (verbatim relocation from project()). */
     private Map<String, Object> totalsSection(NetworkTraceMetrics metrics) {
         Map<String, Object> totals = map();
         totals.put("admittedPayloadBytes", number(metrics.getAdmittedPayloadBytes()));
@@ -94,7 +94,7 @@ final class NetworkReportView {
         return totals;
     }
 
-    /** 完成 FCT 指标段（逐字搬运转写）。 */
+    /** Completion FCT metrics section (verbatim relocation). */
     private Map<String, Object> fctSection(NetworkTraceMetrics metrics) {
         Map<String, Object> fct = map();
         fct.put("completedSamples", number(metrics.getCompletedFctSampleCount()));
@@ -105,7 +105,7 @@ final class NetworkReportView {
         return fct;
     }
 
-    /** 局部性指标段（逐字搬运转写）。 */
+    /** Locality metrics section (verbatim relocation). */
     private Map<String, Object> localitySection(NetworkRunMetrics run) {
         Map<String, Object> locality = map();
         locality.put("status", run.getLocalityStatus().name());
@@ -122,7 +122,7 @@ final class NetworkReportView {
         return locality;
     }
 
-    /** 起源流行构建（上限截断，逐字搬运转写）。 */
+    /** Origin flow row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> flowRows(NetworkTraceMetrics metrics, Map<Long, NetworkFlowBinding> bindings) {
         List<Map<String, Object>> flows = new ArrayList<Map<String, Object>>();
         for (int index = 0; index < Math.min(FLOW_LIMIT, metrics.getFlows().size()); index++) {
@@ -165,7 +165,7 @@ final class NetworkReportView {
         return flows;
     }
 
-    /** 资源行构建（上限截断，逐字搬运转写）。 */
+    /** Resource row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> resourceRows(NetworkTraceMetrics metrics) {
         List<Map<String, Object>> resources = new ArrayList<Map<String, Object>>();
         for (int index = 0;
@@ -184,7 +184,7 @@ final class NetworkReportView {
         return resources;
     }
 
-    /** 事件行构建（上限截断，逐字搬运转写）。 */
+    /** Event row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> eventRows(NetworkRunEvidence evidence, Map<Long, NetworkFlowBinding> bindings) {
         List<TransferTraceEvent> raw = evidence.getTraceSnapshot().getEvents();
         List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();

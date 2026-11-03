@@ -124,7 +124,9 @@ public final class DataTransferFabric {
 
     /**
      * 2026-10-26 complexity extraction from DataTransferFabric constructor; statements verbatim; order unchanged.
-     * 作用域：仅校验并登记含拓扑时的实际主机映射（覆盖全部 VM 端点、落在已放置主机上）并把物理链路容量并入资源表。
+     * Scope: validates and registers only the actual host mapping when a topology is present
+     * (covering every VM endpoint and placing each on an already placed host) and merges link
+     * capacities into the resource table.
      */
     private static Map<Integer, Integer> resolveTopologyPlacement(
             FatTreeTopology topology,

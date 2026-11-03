@@ -22,7 +22,7 @@ import java.util.List;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * 任务集合影响因子的离散度指标。
+ * Dispersion metric for task-set impact factors.
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -31,10 +31,10 @@ import org.workflowsim.clustering.TaskSet;
 public class ImpactFactorVariance implements BalancingMetric {
 
     /**
-     * 计算任务集合影响因子的离散度。
+     * Compute the dispersion of the impact factors of the task sets.
      *
-     * @param list 待检查的任务集合
-     * @return 影响因子离散度；集合不足两个时为零
+     * @param list task sets to inspect
+     * @return impact-factor dispersion; zero when fewer than two sets are present
      */
     @Override
     public double getMetric(List<TaskSet> list) {

@@ -339,7 +339,10 @@ final class ManifestV4Validator {
         }
     }
 
-    /** validate() 的逐输入对账阶段（到达/路径/结果三向一致，逐字搬运转写）。 */
+    /**
+     * Per-input reconciliation stage of validate(): arrival/path/result three-way agreement
+     * (verbatim move; statements unchanged).
+     */
     private static void validateWorkflowInputAlignment(
             int i,
             JsonElement arrivalElement,
@@ -383,7 +386,10 @@ final class ManifestV4Validator {
         }
     }
 
-    /** validateTopology() 的主机-边缘放置解析阶段（逐字搬运转写）。 */
+    /**
+     * Host-to-edge placement parsing stage of validateTopology()
+     * (verbatim move; statements unchanged).
+     */
     private static Map<Integer, Integer> parseHostEdgePlacements(JsonElement placement) throws IOException {
         if (placement.isJsonNull()) {
             return null;
@@ -407,7 +413,10 @@ final class ManifestV4Validator {
         return placements;
     }
 
-    /** validateTopology() 的放置覆盖与边缘负载校验阶段（逐字搬运转写）。 */
+    /**
+     * Placement coverage and edge load check stage of validateTopology()
+     * (verbatim move; statements unchanged).
+     */
     private static void verifyHostEdgePlacements(
             Map<Integer, Integer> placements, Set<Integer> hostIds, int k, long edgeCount) throws IOException {
         if (!placements.keySet().equals(hostIds)) {

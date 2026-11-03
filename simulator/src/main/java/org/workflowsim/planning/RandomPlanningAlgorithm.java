@@ -26,11 +26,12 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.SimulationRandom;
 
 /**
- * 受随机种子控制的 Task-to-compatible-VM 随机映射基线。
+ * Random Task-to-compatible-VM mapping baseline controlled by a random seed.
  *
- * <p>它仅产生映射：DAG 依赖仍由 {@code WorkflowEngine} 强制执行，且不会生成离线执行顺序。
- * VM 候选先按 ID 稳定排序，再从 PE 兼容候选中按 {@code SimulationRandom} 选择，因此同一
- * 种子和相同输入可复现。</p>
+ * <p>It produces only a mapping: DAG dependencies are still enforced by
+ * {@code WorkflowEngine}, and no offline execution order is generated. VM candidates are first
+ * sorted stably by ID, and the choice among PE-compatible candidates is then made through
+ * {@code SimulationRandom}, so the same seed and identical inputs reproduce.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -38,7 +39,7 @@ import org.workflowsim.utils.SimulationRandom;
  */
 public class RandomPlanningAlgorithm extends BasePlanningAlgorithm {
 
-    /** 在每个 Task 的兼容 VM 集合上执行受种子控制的随机映射。 */
+    /** Perform a seed-controlled random mapping over each Task's compatible VM set. */
     @Override
     public void run() {
         Random random = SimulationRandom.newJavaRandom("planning.random");

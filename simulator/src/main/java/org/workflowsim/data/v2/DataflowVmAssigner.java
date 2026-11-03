@@ -300,7 +300,7 @@ public final class DataflowVmAssigner {
             observation.getFabric().requireLocation(DataLocation.vm(vm.id));
         }
     }
-    /** prepare() 的候选打分阶段（逐字搬运转写；完成时刻公式与 ID tie-break 原样）。 */
+    /** Candidate scoring stage of prepare() (moved verbatim; finish-time formula and ID tie-break unchanged). */
     private CandidateAssessment evaluateVmCandidates(
             Task task,
             Job job,
@@ -354,7 +354,7 @@ public final class DataflowVmAssigner {
         return assessment;
     }
 
-    /** prepare() 候选评估结果的私有搬运转写结构。 */
+    /** Private moved-verbatim structure for the prepare() candidate assessment results. */
     private static final class CandidateAssessment {
         private List<Map<String, Object>> scores;
         private VmOption chosen;

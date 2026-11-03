@@ -5,11 +5,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * rerun 流程的机器可读失败：携带 {@link RerunVerdict} 与可选细节列表。
+ * Machine-readable failure of the rerun flow: carries a {@link RerunVerdict} and an optional detail
+ * list.
  *
- * <p>契约要求每一步失败都 fail fast 并给出原因；调用方把 verdict 映射到退出码，
- * 把 message 与 details 写入报告。本异常不代表程序 bug，而是契约定义的合法
- * 失败路径之一（包括 {@code RECONSTRUCTION_REJECTED} 这类信息性结论）。</p>
+ * <p>The contract requires every failure step to fail fast and give a reason; callers map the verdict
+ * to an exit code and write the message and details into the report. This exception does not
+ * indicate a program bug, but is one of the legitimate failure paths defined by the contract
+ * (including informational conclusions such as {@code RECONSTRUCTION_REJECTED}).</p>
  */
 public final class RerunFailureException extends Exception {
 
@@ -39,12 +41,15 @@ public final class RerunFailureException extends Exception {
         this.details = Collections.unmodifiableList(new ArrayList<String>(details));
     }
 
-    /** 本失败对应的契约结论。 */
+    /** Contract verdict corresponding to this failure. */
     public RerunVerdict getVerdict() {
         return verdict;
     }
 
-    /** 附加细节（如尝试过的候选路径、被拒绝的具体原因）；可为空列表，不可为 null。 */
+    /**
+     * Additional details, such as the candidate paths that were attempted or the concrete reason for
+     * rejection; may be an empty list, never null.
+     */
     public List<String> getDetails() {
         return details;
     }

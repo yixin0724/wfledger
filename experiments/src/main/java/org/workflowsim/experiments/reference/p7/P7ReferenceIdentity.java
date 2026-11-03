@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 
 import org.workflowsim.experiment.ExperimentEvidenceContext;
 
-/** P7 冻结参考基线写入 v3 工件时使用的稳定研究身份。 */
+/** Stable study identity used when the frozen P7 reference baseline writes v3 artifacts. */
 final class P7ReferenceIdentity {
 
     static final String STUDY_ID = "p7-baseline";
@@ -22,13 +22,16 @@ final class P7ReferenceIdentity {
     private P7ReferenceIdentity() {}
 
     /**
-     * 创建当前 P7 driver、协议和显式数据集根的不可变证据上下文。
+     * Creates the immutable evidence context for the current P7 driver, protocol, and explicit
+     * dataset root.
      *
-     * <p>协议文件通过 driver 的 code source 反向定位，而不是依赖 JVM 当前工作目录。打包后的
-     * 独立 JAR 若没有并置源码仓库，会诚实记录协议文件不可用，而不会伪造内容哈希。</p>
+     * <p>The protocol file is located by reverse lookup from the driver's code source instead of
+     * relying on the JVM current working directory. A packaged standalone JAR without a colocated
+     * source repository honestly records the protocol file as unavailable rather than fabricating
+     * a content hash.</p>
      *
-     * @param datasetRoot P7 使用的绝对数据集根
-     * @return 可复用于同一 P7 campaign 所有运行的证据上下文
+     * @param datasetRoot absolute dataset root used by P7
+     * @return evidence context reusable for every run of the same P7 campaign
      */
     static ExperimentEvidenceContext context(Path datasetRoot) {
         Path normalizedRoot = ReferenceDatasetRoot.require(datasetRoot);

@@ -35,10 +35,11 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 使用运行时间均衡方法的历史均衡水平聚类教学示例。
+ * Historical balanced horizontal clustering teaching example that uses the runtime balancing method.
  *
- * <p>该示例说明如何选择旧版均衡策略并将其传入聚类器。它不代表经过校准的资源均衡模型，
- * 也不是当前标准研究 runner 的实验入口。</p>
+ * <p>The example shows how to select a legacy balancing strategy and pass it to the clusterer.
+ * It does not represent a calibrated resource balancing model, and it is not an experiment entry
+ * point of the current standard research runner.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -46,9 +47,9 @@ import org.workflowsim.utils.ReplicaCatalog;
  */
 public class BalancedClusteringExample1 extends HorizontalClusteringExample1 {
 
-    // ======================== 静态示例入口 ========================
+    // ======================== Static example entry point ========================
     /**
-     * 运行单数据中心、单存储的历史均衡聚类场景。
+     * Run the historical balanced clustering scenario with a single datacenter and a single storage.
      */
     public static void main(String[] args) {
 
@@ -71,26 +72,29 @@ public class BalancedClusteringExample1 extends HorizontalClusteringExample1 {
             int interval =
                     ExampleCliSupport.nonNegativeInt("-i", ExampleCliSupport.optionOrDefault(options, "-i", "0"));
 
-            // 第一步：初始化历史 WorkflowSim 静态参数。
+            // Step 1: initialize the historical WorkflowSim static parameters.
             /**
-             * 请求创建的 VM 数；若数据中心或 Host 资源不足，实际可创建数量可能更少。
+             * Number of requested VMs; fewer may actually be created when datacenter or host
+             * resources are insufficient.
              */
-            int vmNum = 20; // VM 数量。
+            int vmNum = 20; // Number of VMs.
             /**
-             * 该场景由调度器决定映射，因此禁用规划器，避免其覆盖调度结果。
+             * The scheduler decides the mapping in this scenario, so the planner is disabled to keep
+             * it from overwriting the scheduling result.
              */
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.DATA;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.LOCAL;
 
             /**
-             * 聚类、队列、提交后处理和引擎延迟按层级传入；不研究的开销以零值表示。
+             * Clustering, queue, postscript, and engine delays are passed per level; an overhead that
+             * is not studied is expressed as zero.
              */
             Map<Integer, DistributionGenerator> clusteringDelay = new HashMap();
             Map<Integer, DistributionGenerator> queueDelay = new HashMap();
             Map<Integer, DistributionGenerator> postscriptDelay = new HashMap();
             Map<Integer, DistributionGenerator> engineDelay = new HashMap();
-            /** 此示例应用假定最多包含 11 个水平层级。 */
+            /** This example application assumes at most 11 horizontal levels. */
             int maxLevel = 11;
             for (int level = 0; level < maxLevel; level++) {
                 if (c_delay != 0.0) {
@@ -118,40 +122,44 @@ public class BalancedClusteringExample1 extends HorizontalClusteringExample1 {
             OverheadParameters op =
                     new OverheadParameters(interval, engineDelay, queueDelay, postscriptDelay, clusteringDelay, 0);
 
-            /** 选择均衡聚类。 */
+            /** Select balanced clustering. */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.BALANCED;
             /**
-             * code 的兼容取值：{@code r} 为水平运行时间均衡，{@code d} 为水平距离均衡，
-             * {@code i} 为水平影响因子均衡，{@code h} 为水平随机均衡；其他值沿用
-             * 历史普通水平聚类路径。
+             * Accepted compatibility values of {@code code}: {@code r} is horizontal runtime
+             * balancing, {@code d} is horizontal distance balancing, {@code i} is horizontal impact
+             * factor balancing, and {@code h} is horizontal random balancing; any other value keeps
+             * the historical plain horizontal clustering path.
              */
             ClusteringParameters cp = new ClusteringParameters(20, 0, method, code);
 
-            /** 初始化历史静态参数与文件副本目录。 */
+            /** Initialize the historical static parameters and the file replica catalog. */
             Parameters.init(vmNum, daxPath, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
 
-            // 在创建模拟实体前初始化 CloudSim。
-            int num_user = 1; // 模拟用户数。
+            // Initialize CloudSim before creating simulation entities.
+            int num_user = 1; // Number of simulated users.
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // 是否记录 CloudSim 事件轨迹。
+            boolean trace_flag = false; // Whether to record the CloudSim event trace.
 
-            // 初始化 CloudSim 事件引擎。
+            // Initialize the CloudSim event engine.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
-            /** 创建一个包含单调度器的工作流规划器。 */
+            /** Create a workflow planner that contains a single scheduler. */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
-            /** 获取对应的工作流执行引擎。 */
+            /** Obtain the corresponding workflow execution engine. */
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
-            /** 创建 VM 列表；VM 的 userId 对应管理它的调度器标识。 */
+            /**
+             * Create the VM list; the VM userId corresponds to the identifier of the scheduler that
+             * manages it.
+             */
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
-            /** 将 VM 列表提交给工作流执行引擎。 */
+            /** Submit the VM list to the workflow execution engine. */
             wfEngine.submitVmList(vmlist0, 0);
 
-            /** 将数据中心绑定给该调度器。 */
+            /** Bind the datacenter to that scheduler. */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 
             CloudSim.startSimulation();

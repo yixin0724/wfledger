@@ -24,11 +24,13 @@ import org.workflowsim.WorkflowEngine;
 import com.google.gson.Gson;
 
 /**
- * 逐进程运行 {@link ExampleCatalog} 中历史教学 CLI 的聚合入口。
+ * Aggregate entry point that runs the historical teaching CLIs in {@link ExampleCatalog}
+ * one process at a time.
  *
- * <p>每个示例都在独立 JVM 中启动，避免 CloudSim、Parameters、ReplicaCatalog 和故障模型
- * 的静态状态跨示例泄漏。该工具只验证默认教学场景是否能完成，不能证明算法论文等价性、
- * 统计显著性或真实平台模型有效性。</p>
+ * <p>Each example starts in its own JVM so that the static state of CloudSim, Parameters,
+ * ReplicaCatalog, and the failure model cannot leak across examples. This tool only checks
+ * that the default teaching scenarios complete; it cannot prove equivalence to the
+ * algorithm papers, statistical significance, or the validity of a real platform model.</p>
  */
 public final class WorkflowSimAllExamplesTester {
 
@@ -37,10 +39,12 @@ public final class WorkflowSimAllExamplesTester {
     private WorkflowSimAllExamplesTester() {}
 
     /**
-     * 运行全部 catalog 示例，或使用 {@code --list} 列出稳定标识和主类。
+     * Runs every catalog example, or lists stable identifiers and main classes with
+     * {@code --list}.
      *
-     * @param args 空数组，或唯一参数 {@code --list}
-     * @throws Exception 当任一子进程无法启动、超时或以非零状态退出时
+     * @param args an empty array, or the single argument {@code --list}
+     * @throws Exception when any child process cannot start, times out, or exits with a
+     *         non-zero status
      */
     public static void main(String[] args) throws Exception {
         if (args != null && args.length == 1 && "--list".equals(args[0])) {
@@ -83,12 +87,14 @@ public final class WorkflowSimAllExamplesTester {
     }
 
     /**
-     * 从运行中已加载的模块与依赖组装子 JVM 类路径。
+     * Assembles the child-JVM classpath from the modules and dependencies already loaded in
+     * the running process.
      *
-     * <p>不能直接依赖 {@code java.class.path}，因为 Maven exec 插件可能把项目依赖放在
-     * 独立类加载器中。锚定实际已加载类可同时支持 Maven、IDE 和打包后的运行路径。</p>
+     * <p>{@code java.class.path} cannot be relied on directly because the Maven exec plugin
+     * may place project dependencies in a separate class loader. Anchoring on the classes
+     * actually loaded supports Maven, IDE, and packaged runtime paths alike.</p>
      */
-    // 同包的进程级 CLI 测试复用这条与 Maven exec 兼容的类路径组装逻辑。
+    // Same-package process-level CLI tests reuse this Maven-exec-compatible classpath assembly.
     static String runtimeClasspath() {
         Set<String> entries = new LinkedHashSet<String>();
         addCodeSource(entries, WorkflowSimAllExamplesTester.class);

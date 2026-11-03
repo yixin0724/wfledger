@@ -478,7 +478,9 @@ public final class BenchmarkExecutor {
                     vm.getVmm(),
                     vm.getSchedulerMode(),
                     vm.getCosts(),
-                    // BAT-D1 单一真源：频档表替代平面功率字段（平面恒 0），强度模型骑档表能量链。
+                    // BAT-D1 single source of truth: the frequency tier table replaces the flat
+                    // power fields (flat fields stay 0); the intensity model rides the
+                    // tier-table energy chain.
                     0.0,
                     0.0,
                     Double.valueOf(CARBON_INTENSITY_GRAMS_PER_KWH),
@@ -594,7 +596,8 @@ public final class BenchmarkExecutor {
                         Double.valueOf(report.getCarbonAccounting().getTotalCarbonGrams()));
                 record.put(
                         "meanVmUtilization", Double.valueOf(report.getMetrics().getMeanVmModeledIntervalUtilization()));
-                // 台账面（tier mix 证据）：fleet per-tier busy seconds（键=档 mips 升序）。
+                // Ledger view (tier mix evidence): fleet per-tier busy seconds
+                // (keys = tier mips ascending).
                 record.put("fleetPerTierBusySeconds", report.getMetrics().getFleetPerTierBusySeconds());
             } catch (Exception failure) {
                 record.put("status", "FAILED");

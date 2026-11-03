@@ -220,7 +220,7 @@ public final class NetworkLedgerCodec {
         return flowEvent(sequence, effective, observed, type, p, id, ordinal);
     }
 
-    /** event() 的流动事件分支（START/RATE_CHANGE/SERVICE_SEGMENT/COMPLETE，逐字搬运转写）。 */
+    /** Flow-event branch of {@code event()} (START/RATE_CHANGE/SERVICE_SEGMENT/COMPLETE, moved verbatim). */
     private static TransferTraceEvent flowEvent(
             long sequence,
             double effective,

@@ -36,10 +36,12 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 以 {@code clusters.num} 指定聚类强度的历史水平聚类教学示例。
+ * Historical horizontal clustering teaching example that specifies the clustering strength
+ * through {@code clusters.num}.
  *
- * <p>它与 {@code HorizontalClusteringExample1} 的按大小配置方式对照。任务聚类
- * 属于历史底层 API 的探索能力，不是当前标准研究 runner 的实验入口。</p>
+ * <p>It contrasts with the size-based configuration of {@code HorizontalClusteringExample1}.
+ * Task clustering is an exploratory capability of the legacy low-level API, not an
+ * experiment entry point of the current standard research runner.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -47,21 +49,23 @@ import org.workflowsim.utils.ReplicaCatalog;
  */
 public class HorizontalClusteringExample2 extends HorizontalClusteringExample1 {
 
-    // ======================== 静态示例入口 ========================
+    // ======================== Static example entry point ========================
     /**
-     * 运行单数据中心、单存储的历史水平聚类场景。
+     * Run the historical horizontal clustering scenario on a single datacenter and a single
+     * storage.
      */
     public static void main(String[] args) {
 
         try {
             ExampleCliSupport.begin("horizontal-clustering-count");
-            // 第一步：配置历史 WorkflowSim 静态参数。
+            // Step 1: configure the historical static WorkflowSim parameters.
             /**
-             * 请求创建的 VM 数；若数据中心或 Host 资源不足，实际可创建数量可能更少。
+             * Number of VMs requested; if the datacenter or Host resources are insufficient,
+             * fewer VMs than requested may actually be created.
              */
-            int vmNum = 20; // VM 数量。
+            int vmNum = 20; // Number of VMs.
             /**
-             * 请按本机数据集位置调整 DAX 路径。
+             * Adjust the DAX path to the dataset location on this machine.
              */
             String daxPath = ExampleCliSupport.singleDax(args, ExampleCliSupport.DEFAULT_DAX_PATH);
             File daxFile = new File(daxPath);
@@ -71,61 +75,65 @@ public class HorizontalClusteringExample2 extends HorizontalClusteringExample1 {
             }
 
             /**
-             * 该场景由 MINMIN 调度器决定映射，因此禁用规划器，避免其覆盖调度结果。
+             * The MINMIN scheduler decides the mapping in this scenario, so the planner is
+             * disabled to keep it from overriding the scheduling result.
              */
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.SHARED;
 
             /**
-             * 水平聚类需要提供每层的聚类延迟映射；若不研究该开销，应使用零值分布，
-             * 而不是传入 {@code null}。
+             * Horizontal clustering requires a clustering delay mapping for every level; when
+             * this overhead is not under study, use a zero-valued distribution instead of
+             * passing {@code null}.
              */
             Map<Integer, DistributionGenerator> clusteringDelay = new HashMap();
-            /** 此 Montage 示例假定最多包含 11 个水平层级。 */
+            /** This Montage example assumes at most 11 horizontal levels. */
             int maxLevel = 11;
             for (int level = 0; level < maxLevel; level++) {
                 DistributionGenerator cluster_delay =
                         new DistributionGenerator(DistributionGenerator.DistributionFamily.WEIBULL, 1.0, 5.0);
-                clusteringDelay.put(level, cluster_delay); // 为每层安装相同的聚类延迟分布。
+                clusteringDelay.put(level, cluster_delay); // Install the same clustering delay distribution per level.
             }
-            // 将聚类延迟装入开销参数。
+            // Install the clustering delays into the overhead parameters.
             OverheadParameters op = new OverheadParameters(0, null, null, null, clusteringDelay, 0);
 
-            /** 选择水平聚类。 */
+            /** Select horizontal clustering. */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.HORIZONTAL;
             /**
-             * {@code clusters.num} 与 {@code clusters.size} 只能指定一个：前者表示每层的
-             * 聚类 Job 数，后者表示每个聚类 Job 的任务数；二者乘积对应每层任务总数。
-             * 此处指定 {@code clusters.num = 20}，即每层创建 20 个聚类 Job。
+             * Only one of {@code clusters.num} and {@code clusters.size} may be specified:
+             * the former is the number of clustered jobs per level, the latter the number of
+             * tasks per clustered job; their product is the total task count per level.
+             * Here {@code clusters.num = 20} is specified, so 20 clustered jobs are created
+             * per level.
              */
             ClusteringParameters cp = new ClusteringParameters(20, 0, method, null);
 
-            /** 初始化历史静态参数与文件副本目录。 */
+            /** Initialize the historical static parameters and the file replica catalog. */
             Parameters.init(vmNum, daxPath, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
 
-            // 在创建模拟实体前初始化 CloudSim。
-            int num_user = 1; // 模拟用户数。
+            // Initialize CloudSim before creating any simulated entity.
+            int num_user = 1; // Number of simulated users.
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // 是否记录 CloudSim 事件轨迹。
+            boolean trace_flag = false; // Whether to record the CloudSim event trace.
 
-            // 初始化 CloudSim 事件引擎。
+            // Initialize the CloudSim event engine.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
-            /** 创建一个包含单调度器的工作流规划器。 */
+            /** Create a workflow planner that holds a single scheduler. */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
-            /** 获取对应的工作流执行引擎。 */
+            /** Obtain the workflow engine associated with the planner. */
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
-            /** 创建 VM 列表；VM 的 userId 对应管理它的调度器标识。 */
+            /** Create the VM list; the userId of a VM is the id of its scheduler. */
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
-            /** 将 VM 列表提交给工作流执行引擎。 */
+            /** Submit the VM list to the workflow engine. */
             wfEngine.submitVmList(vmlist0, 0);
 
-            /** 将数据中心绑定给该调度器。 */
+            /** Bind the datacenter to that scheduler. */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 
             CloudSim.startSimulation();

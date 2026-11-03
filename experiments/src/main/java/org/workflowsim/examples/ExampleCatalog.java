@@ -5,11 +5,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 可直接运行的历史教学 CLI 清单。
+ * Catalog of directly runnable legacy teaching CLIs.
  *
- * <p>该 catalog 是人工聚合器和进程级 smoke 测试的单一事实来源。它有意排除 P7
- * reference 工具、WfCommons 教程和 {@code ParameterSweep}：这些入口分别具有独立的
- * 参数与证据契约，不能混入遗留示例套件。</p>
+ * <p>This catalog is the single source of truth for the manual aggregator and the
+ * process-level smoke test. It deliberately excludes the P7 reference tooling, the WfCommons
+ * tutorial, and {@code ParameterSweep}: those entry points carry their own parameter and
+ * evidence contracts and must not be mixed into the legacy example suite.</p>
  */
 public final class ExampleCatalog {
 
@@ -17,7 +18,7 @@ public final class ExampleCatalog {
 
     private ExampleCatalog() {}
 
-    /** @return 所有默认参数即可运行的历史教学 CLI 描述符。 */
+    /** @return descriptors of all legacy teaching CLIs that run with default arguments. */
     public static List<Descriptor> legacyExamples() {
         return LEGACY_EXAMPLES;
     }
@@ -80,7 +81,7 @@ public final class ExampleCatalog {
         examples.add(new Descriptor(id, mainClass));
     }
 
-    /** 单个可执行历史示例的稳定标识和主类名称。 */
+    /** Stable identifier and main class name of one executable legacy example. */
     public static final class Descriptor {
         private final String id;
         private final String mainClass;

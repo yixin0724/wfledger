@@ -370,7 +370,10 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /** 构造器阶段一：dataflowPlan 根作用域/文件字节/V3 计划引用总量 + 到达序列（逐字搬运转写）。 */
+    /**
+     * Constructor stage one: dataflowPlan root scopes, file bytes, V3 planned reference totals,
+     * and the arrival sequence (verbatim move; statements unchanged).
+     */
     private void initRootScopes(JsonObject root, JsonObject config, Checked decoded) throws IOException {
         for (JsonElement row : arr(obj(root, "dataflowPlan"), "tasks")) {
             JsonObject task = object(row);
@@ -411,7 +414,10 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /** 构造器阶段二：Job/Task 结果集校验（逐字搬运转写）。 */
+    /**
+     * Constructor stage two: Job/Task outcome-set validation (verbatim move; statements
+     * unchanged).
+     */
     private void initJobOutcomes(JsonObject root, JsonObject result, Checked decoded) throws IOException {
         initJobOutcomeRows(result);
         initTaskOutcomeRows(result);
@@ -498,7 +504,10 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /** 构造器阶段三：V2 事件流终态初始化（请求/解析/就绪/CPU/终结事件，逐字搬运转写）。 */
+    /**
+     * Constructor stage three: V2 final-state initialization from the event stream (request,
+     * resolution, readiness, CPU, and terminal events; verbatim move, statements unchanged).
+     */
     private void initFinalLifecycleFromEvents(Checked decoded) throws IOException {
         for (FileLifecycleEvent event : decoded.getEvidence().getEvents()) {
             JsonObject p = event.getPayload();
@@ -709,7 +718,10 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /** finish() 的逐 Job 生命周期锚点校验（主事件时点/派发/CPU 包络/重试来源，逐字搬运转写）。 */
+    /**
+     * Per-Job lifecycle anchor validation invoked by finish() (main-event times, dispatch, CPU
+     * envelope, and retry origin; verbatim move, statements unchanged).
+     */
     private void verifyJobLifecycleAnchors(
             Map.Entry<Integer, Job> entry, Set<Integer> initialTasks, Set<Integer> retriedFailures) throws IOException {
         int id = entry.getKey();
@@ -859,7 +871,10 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /** finish() 的重试次序校验（失败返回→重试创建→就绪，逐字搬运转写）。 */
+    /**
+     * Retry sequencing validation invoked by finish() (failed return, retry creation, readiness;
+     * verbatim move, statements unchanged).
+     */
     private void verifyRetrySequencing(Map.Entry<Integer, Integer> retry) throws IOException {
         JsonObject created = retryEvents.get(retry.getKey()),
                 returned = main("JOB_RETURNED", retry.getValue()),
@@ -1134,7 +1149,10 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /** validateStorageFailure 的启用态生成器拓扑校验（逐字搬运转写）。 */
+    /**
+     * Enabled-state failure-generator layout validation called by validateStorageFailure
+     * (verbatim move; statements unchanged).
+     */
     private static void validateEnabledFailureLayout(
             JsonObject root, String mode, String family, JsonArray dense, JsonObject keyed, boolean byVm, int budget)
             throws IOException {

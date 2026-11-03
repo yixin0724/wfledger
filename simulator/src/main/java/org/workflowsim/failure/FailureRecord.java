@@ -16,7 +16,8 @@
 package org.workflowsim.failure;
 
 /**
- * 一条任务执行失败观测记录，供监控器估计失败率和恢复策略使用。
+ * One observed task-execution failure record, used by the monitor to estimate the failure
+ * rate and by the recovery policy.
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -25,48 +26,48 @@ package org.workflowsim.failure;
 public class FailureRecord {
 
     /**
-     * 该记录对应任务的运行时间长度。
+     * Run-time length of the tasks covered by this record.
      */
     public double length;
     /**
-     * 失败任务数量。
+     * Number of failed tasks.
      */
     public int failedTasksNum;
     /**
-     * 失败任务的 DAG 深度（旧版部分路径也将其作为 type）。
+     * DAG depth of the failed tasks (some legacy paths also use it as the type).
      */
-    public int depth; // 旧版部分路径将深度作为 type。
+    public int depth; // Some legacy paths use the depth as the type.
     /**
-     * 该记录覆盖的全部任务数（包括成功与失败）。
+     * Total number of tasks covered by this record (both successful and failed).
      */
     public int allTaskNum;
     /**
-     * 发生失败的 VM 标识。
+     * Identifier of the VM on which the failure occurred.
      */
     public int vmId;
     /**
-     * 发生失败的 Job 标识。
+     * Identifier of the Job on which the failure occurred.
      */
     public int jobId;
     /**
-     * 工作流标识（当前旧接口中对应 user id）。
+     * Workflow identifier (maps to the user id in the current legacy interface).
      */
     public int workflowId;
     /**
-     * 恢复时考虑的延迟开销。
+     * Delay overhead taken into account during recovery.
      */
     public double delayLength;
 
     /**
-     * 创建失败观测记录。
+     * Creates a failure observation record.
      *
-     * @param length 任务运行时间长度
-     * @param tasks 失败任务数量
-     * @param depth 失败任务的 DAG 深度
-     * @param all 覆盖的全部任务数量
-     * @param vm 发生失败的 VM 标识
-     * @param job 发生失败的 Job 标识
-     * @param workflow 发生失败的工作流标识
+     * @param length run-time length of the tasks
+     * @param tasks number of failed tasks
+     * @param depth DAG depth of the failed tasks
+     * @param all total number of covered tasks
+     * @param vm identifier of the VM on which the failure occurred
+     * @param job identifier of the Job on which the failure occurred
+     * @param workflow identifier of the workflow in which the failure occurred
      */
     public FailureRecord(double length, int tasks, int depth, int all, int vm, int job, int workflow) {
         this.length = length;

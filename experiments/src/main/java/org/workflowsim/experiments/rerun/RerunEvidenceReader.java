@@ -15,18 +15,21 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
 /**
- * 阶段 1：读取单个 run 目录的证据三件套并做结构校验（见契约“执行流程”第一步）。
+ * Stage 1: reads the evidence triple of a single run directory and validates its structure
+ * (see step one of "Execution flow" in the contract).
  *
- * <p>定位规则：优先使用 {@code result.manifest.json}；不存在时接受目录内唯一的
- * {@code *.manifest.json}，多个或缺失都按 {@code EVIDENCE_INVALID} 拒绝。schema
- * 预检在结构校验之前：v2/v3 是历史可读格式但不支持 rerun，明确拒绝并说明原因；
- * 结构、sidecar 哈希与事件计数校验委托现有
- * {@link ExperimentArtifactValidator#validate(Path)}，与本包无关的校验规则保持
- * 单一来源。</p>
+ * <p>Location rule: {@code result.manifest.json} is preferred; when it is absent, the
+ * single {@code *.manifest.json} in the directory is accepted, while multiple candidates
+ * or none at all are rejected as {@code EVIDENCE_INVALID}. The schema preflight precedes
+ * structural validation: v2/v3 are historically readable formats but do not support
+ * rerun, so they are rejected explicitly with the reason stated; structure, sidecar hash,
+ * and event count validation are delegated to the existing
+ * {@link ExperimentArtifactValidator#validate(Path)}, so that validation rules unrelated
+ * to this package keep a single source.</p>
  */
 public final class RerunEvidenceReader {
 
-    /** 标准写入约定（runId 为 result）下的 manifest 文件名。 */
+    /** Manifest file name under the standard write convention (runId is result). */
     static final String DEFAULT_MANIFEST_NAME = "result.manifest.json";
 
     private static final String SCHEMA_V4 = "workflowsim-experiment-manifest-v4";
@@ -36,14 +39,15 @@ public final class RerunEvidenceReader {
     private RerunEvidenceReader() {}
 
     /**
-     * 读取并校验一个 run 目录的证据包。
+     * Reads and validates the evidence package of a single run directory.
      *
-     * @param runDirectory 单个 run 的证据目录
-     * @return 通过全部校验的证据快照
-     * @throws RerunFailureException 当目录/manifest 不存在、schema 不是 v4 或
-     *         三件套结构校验失败时（verdict 为 {@code EVIDENCE_INVALID}）
-     * @throws IOException 当文件系统读取失败时（非契约失败）
-     * @throws IllegalArgumentException 当 runDirectory 为 null 时
+     * @param runDirectory evidence directory of a single run
+     * @return evidence snapshot that passed every validation
+     * @throws RerunFailureException when the directory or manifest is missing, the schema
+     *         is not v4, or the evidence triple fails structural validation (verdict is
+     *         {@code EVIDENCE_INVALID})
+     * @throws IOException when filesystem reading fails (not a contract failure)
+     * @throws IllegalArgumentException when runDirectory is null
      */
     public static RerunEvidence read(Path runDirectory) throws RerunFailureException, IOException {
         if (runDirectory == null) {

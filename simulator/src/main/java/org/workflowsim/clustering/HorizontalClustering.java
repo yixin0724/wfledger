@@ -27,10 +27,12 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.SimulationRandom;
 
 /**
- * 水平聚类策略：合并同一 DAG 深度的任务。
+ * Horizontal clustering strategy: merges tasks that share the same DAG depth.
  *
- * <p>可通过目标作业数或每个作业的任务数控制聚类强度。分组前使用带命名流的伪随机
- * 置换，以便随机性随会话种子受控。</p>
+ * <p>The clustering strength can be controlled either by a target job count or by the
+ * number of tasks per job. Before grouping, the strategy applies a pseudo-random
+ * permutation from a named stream, so that randomness stays controlled by the session
+ * seed.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -39,23 +41,24 @@ import org.workflowsim.utils.SimulationRandom;
 public class HorizontalClustering extends BasicClustering {
 
     /**
-     * 每个 DAG 层期望生成的聚类作业数。
+     * Expected number of cluster jobs produced per DAG layer.
      */
     private final int clusterNum;
     /**
-     * 每个聚类作业期望包含的任务数。
+     * Expected number of tasks contained in each cluster job.
      */
     private final int clusterSize;
     /**
-     * DAG 深度到该层任务列表的映射。
+     * Mapping from a DAG depth to the task list of that layer.
      */
     private final Map<Integer, List> mDepth2Task;
 
     /**
-     * 创建水平聚类器；{@code clusterNum} 与 {@code clusterSize} 至少应指定一个。
+     * Creates a horizontal clusterer; at least one of {@code clusterNum} and
+     * {@code clusterSize} should be specified.
      *
-     * @param clusterNum 每层聚类作业数（{@code clusters.num}）
-     * @param clusterSize 每个聚类作业的任务数（{@code clusters.size}）
+     * @param clusterNum number of cluster jobs per layer ({@code clusters.num})
+     * @param clusterSize number of tasks per cluster job ({@code clusters.size})
      */
     public HorizontalClustering(int clusterNum, int clusterSize) {
         super();
@@ -65,7 +68,8 @@ public class HorizontalClustering extends BasicClustering {
     }
 
     /**
-     * 按层分组任务、执行水平聚类，并重建作业依赖和延迟。
+     * Groups tasks by layer, performs horizontal clustering, and rebuilds job dependencies
+     * and delays.
      */
     @Override
     public void run() {
@@ -83,12 +87,12 @@ public class HorizontalClustering extends BasicClustering {
             }
         }
         /**
-         * 优先按 {@code clusters.num} 分组。
+         * Group by {@code clusters.num} first.
          */
         if (clusterNum > 0) {
             bundleClustering();
             /**
-             * 否则按 {@code clusters.size} 分组。
+             * Otherwise group by {@code clusters.size}.
              */
         } else if (clusterSize > 0) {
             collapseClustering();
@@ -99,7 +103,7 @@ public class HorizontalClustering extends BasicClustering {
     }
 
     /**
-     * 将每层任务合并为固定数量的作业。
+     * Merges the tasks of each layer into a fixed number of jobs.
      */
     private void bundleClustering() {
 
@@ -127,10 +131,10 @@ public class HorizontalClustering extends BasicClustering {
             for (int i = 0; i < this.clusterNum; i++) {
                 start = end + 1;
                 if (i < mid) {
-                    // 使用较大的分组大小处理余数。
+                    // Use the larger group size to absorb the remainder.
                     end = start + avg_b - 1;
                 } else {
-                    // 使用常规分组大小。
+                    // Use the regular group size.
                     end = start + avg_a - 1;
                 }
 
@@ -146,7 +150,7 @@ public class HorizontalClustering extends BasicClustering {
     }
 
     /**
-     * 将固定数量的任务合并为一个作业。
+     * Merges a fixed number of tasks into one job.
      */
     private void collapseClustering() {
         for (Map.Entry<Integer, List> pairs : mDepth2Task.entrySet()) {

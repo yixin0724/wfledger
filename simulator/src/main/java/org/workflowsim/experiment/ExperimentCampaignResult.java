@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** 已执行全部声明 cell 后形成的不可变内存结果。 */
+/** Immutable in-memory result formed after every declared cell has executed. */
 public final class ExperimentCampaignResult {
 
     private final ExperimentPlan plan;
@@ -59,7 +59,7 @@ public final class ExperimentCampaignResult {
         }
     }
 
-    /** 带有来源 cell 与复制身份的不可变单次运行报告。 */
+    /** Immutable single-run report carrying its source cell and replication identity. */
     public static final class Run {
         private final ExperimentPlan.Cell cell;
         private final int replicationIndex;

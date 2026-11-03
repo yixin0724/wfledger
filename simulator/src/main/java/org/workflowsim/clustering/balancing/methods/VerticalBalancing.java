@@ -24,10 +24,11 @@ import java.util.Map;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * 均衡聚类框架中的垂直合并方法。
+ * Vertical merge method within the balanced clustering framework.
  *
- * <p>它在任务集合拥有唯一子集合时将父集合并入子集合，以便与其他均衡方法在同一
- * 任务集合表示上组合使用。</p>
+ * <p>It merges the parent set into its child set when the task set has a unique child
+ * set, so that it can be combined with the other balancing methods on the same task set
+ * representation.</p>
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
  * @date Apr 9, 2013
@@ -35,18 +36,18 @@ import org.workflowsim.clustering.TaskSet;
 public class VerticalBalancing extends BalancingMethod {
 
     /**
-     * 创建垂直均衡方法。
+     * Create the vertical balancing method.
      *
-     * @param levelMap 按层组织的任务集合
-     * @param taskMap 逻辑任务到任务集合的映射
-     * @param clusterNum 每层目标聚类作业数
+     * @param levelMap task sets organized by level
+     * @param taskMap mapping from logical tasks to task sets
+     * @param clusterNum target number of clustering jobs per level
      */
     public VerticalBalancing(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
     /**
-     * 合并拥有唯一子集合的任务集合。
+     * Merge the task sets that have a unique child set.
      */
     @Override
     public void run() {
@@ -55,19 +56,19 @@ public class VerticalBalancing extends BalancingMethod {
             if (!set.hasChecked) {
                 set.hasChecked = true;
             }
-            // 检查当前集合能否安全并入其唯一子集合。
+            // Check whether the current set can be safely merged into its unique child set.
             List<TaskSet> list = set.getChildList();
             if (list.size() == 1) {
                 //
                 TaskSet child = list.get(0);
                 List pList = child.getParentList();
                 if (pList.size() == 1) {
-                    // 将父集合合并到子集合，方向不可反转。
+                    // Merge the parent set into the child set; the direction must not be reversed.
                     addTaskSet2TaskSet(set, child);
                 }
             }
         }
-        // 在方法退出前恢复遍历标记。
+        // Restore the traversal flags before the method exits.
         cleanTaskSetChecked();
     }
 }

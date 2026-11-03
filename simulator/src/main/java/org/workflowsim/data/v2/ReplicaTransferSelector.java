@@ -160,7 +160,8 @@ public final class ReplicaTransferSelector {
 
     /**
      * 2026-10-26 complexity extraction from select; statements verbatim; order unchanged.
-     * 作用域：仅校验 select() 的可见性快照与 fabric 非空、目的为已注册 VM 输入位置。
+     * Scope: verifies only that the visibility snapshot and the fabric are non-null and that the
+     * destination is a registered VM input location.
      */
     private static void requireSelectableInputs(
             DataReplicaState.Snapshot snapshot, DataTransferFabric fabric, DataLocation destination) {
@@ -175,7 +176,8 @@ public final class ReplicaTransferSelector {
 
     /**
      * 2026-10-26 complexity extraction from select; statements verbatim; order unchanged.
-     * 作用域：仅计算正量传输的隔离时长与绝对完成时刻并校验其 binary64 可表示性，再装配 NETWORK_COPY 决议。
+     * Scope: computes only the in-isolation duration and absolute finish of a positive-quantity
+     * transfer, checks their binary64 representability, and then assembles the NETWORK_COPY decision.
      */
     private static Decision positiveCopyDecision(
             DataflowFilePlan.FileDefinition file,

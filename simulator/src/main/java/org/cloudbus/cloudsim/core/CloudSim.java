@@ -197,9 +197,10 @@ public class CloudSim {
 
             return clock;
         } catch (IllegalArgumentException e) {
-            // R8 审计修复（P1-1）：原实现把事件循环内的一切 IAE 改写为误导性
-            // NPE("you haven't initialized CloudSim")且不保留 cause——坏 DAX 的
-            // WorkflowValidationException 等真实根因被埋两层。现原样重抛根因。
+            // R8 audit fix (P1-1): the original implementation rewrote every IAE raised inside the
+            // event loop into a misleading NPE("you haven't initialized CloudSim") and dropped the
+            // cause -- the real root cause, such as the WorkflowValidationException of a bad DAX,
+            // was buried two levels deep. The root cause is now rethrown verbatim.
             throw e;
         }
     }
@@ -220,7 +221,8 @@ public class CloudSim {
         try {
             runStop();
         } catch (IllegalArgumentException e) {
-            // R8 审计修复（P1-1）：原样重抛根因，不再改写为无 cause 的 NPE。
+            // R8 audit fix (P1-1): rethrow the root cause verbatim instead of rewriting it into a
+            // cause-less NPE.
             throw e;
         }
     }

@@ -37,10 +37,13 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 允许选择水平或垂直聚类方式的历史动态重聚类教学示例。
+ * Historical dynamic reclustering teaching example that allows selecting horizontal or
+ * vertical clustering.
  *
- * <p>该类通过旧版单字符参数组合故障、开销和聚类设置，用于兼容性探索。它不是标准
- * 研究实验入口，参数扫描结果也不能在没有冻结种子与工件的情况下作统计解释。</p>
+ * <p>The class combines failure, overhead, and clustering settings through legacy
+ * single-character parameters for compatibility exploration. It is not the standard
+ * research experiment entry point, and parameter-sweep results cannot be interpreted
+ * statistically without frozen seeds and artifacts.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -49,18 +52,19 @@ import org.workflowsim.utils.ReplicaCatalog;
 public class FaultTolerantClusteringExample6 extends FaultTolerantClusteringExample1 {
 
     private static final String EXAMPLE_ID = "fault-clustering-options";
-    /** 固定教学种子下的低频共享故障时钟尺度，不代表真实故障率。 */
+    /** Low-frequency shared failure-clock scale under a fixed teaching seed; not a real failure rate. */
     private static final double DEFAULT_FAILURE_INTERVAL_SCALE = 75000.0;
 
     /**
-     * 运行可选聚类方式的历史容错场景。
+     * Runs the historical fault-tolerant scenario with a selectable clustering method.
      *
-     * <p>支持 {@code -c}（SR/DR/NOOP/DC/VR）、{@code -d}、{@code -b}、
-     * {@code -q}/{@code -s}（队列 Gamma 参数）、{@code -w}（队列先验强度）、
-     * {@code -p}（故障尺度）、{@code -t}（故障先验强度）和 {@code -r}（根种子）。
-     * {@code -b} 的值除以十后作为运行时间缩放系数，其余数值为有限正数。</p>
+     * <p>Supports {@code -c} (SR/DR/NOOP/DC/VR), {@code -d}, {@code -b},
+     * {@code -q}/{@code -s} (queue Gamma parameters), {@code -w} (queue prior strength),
+     * {@code -p} (failure scale), {@code -t} (failure prior strength), and {@code -r}
+     * (root seed). The {@code -b} value is divided by ten to obtain the runtime scale
+     * factor; all other values must be finite positive numbers.</p>
      *
-     * @param args 旧式单字符 option 与值组成的参数序列
+     * @param args argument sequence of legacy single-character options and values
      */
     public static void main(String[] args) {
         try {
@@ -101,7 +105,7 @@ public class FaultTolerantClusteringExample6 extends FaultTolerantClusteringExam
             int maxLevel = 11;
 
             DistributionGenerator[][] failureGenerators = new DistributionGenerator[vmNum][maxLevel];
-            // 历史 E6 使用一个共享全局故障时钟；它不是 VM-深度独立故障模型。
+            // Historical E6 uses one shared global failure clock; it is not a VM-depth-independent model.
             DistributionGenerator failureGenerator = new DistributionGenerator(
                     DistributionGenerator.DistributionFamily.WEIBULL,
                     failureScale,

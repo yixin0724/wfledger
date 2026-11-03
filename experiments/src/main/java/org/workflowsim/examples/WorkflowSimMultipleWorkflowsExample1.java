@@ -46,10 +46,12 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 同时提交多个 DAX 工作流的历史教学示例。
+ * Historical teaching example that submits multiple DAX workflows at the same time.
  *
- * <p>本类使用历史静态参数传入多个输入路径，适合说明旧版多工作流装配方式；它不是
- * 标准研究实验入口，也不替代冻结输入、种子计划和证据工件的 campaign 协议。</p>
+ * <p>This class passes several input paths through the historical static parameters and is
+ * suitable for illustrating the legacy multi-workflow assembly; it is not the standard research
+ * experiment entry point, and it does not replace the campaign protocol of frozen inputs, seed
+ * plans, and evidence artifacts.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -59,18 +61,18 @@ public class WorkflowSimMultipleWorkflowsExample1 {
 
     protected static List<CondorVM> createVM(int userId, int vms) {
 
-        // 创建 VM 容器，随后提交给工作流执行引擎。
+        // Create the VM container and submit it to the workflow execution engine afterwards.
         LinkedList<CondorVM> list = new LinkedList<>();
 
-        // VM 的抽象资源规格。
-        long size = 10000; // 镜像大小（MB）
-        int ram = 512; // VM 内存（MB）
+        // Abstract resource specification of the VMs.
+        long size = 10000; // Image size (MB)
+        int ram = 512; // VM memory (MB)
         int mips = 1000;
         long bw = 1000;
-        int pesNumber = 1; // CPU 核数
-        String vmm = "Xen"; // 虚拟机监控器名称
+        int pesNumber = 1; // Number of CPU cores
+        String vmm = "Xen"; // Virtual machine monitor name
 
-        // 按相同规格创建 VM。
+        // Create the VMs with identical specifications.
         CondorVM[] vm = new CondorVM[vms];
 
         for (int i = 0; i < vms; i++) {
@@ -83,80 +85,83 @@ public class WorkflowSimMultipleWorkflowsExample1 {
         return list;
     }
 
-    // ======================== 静态示例入口 ========================
+    // ======================== Static example entry point ========================
     /**
-     * 运行单数据中心、单存储的多工作流历史场景。
+     * Run the historical multi-workflow scenario with a single datacenter and a single storage.
      */
     public static void main(String[] args) {
 
         try {
             ExampleCliSupport.begin("multiple-workflows");
-            // 第一步：配置历史 WorkflowSim 静态参数。
+            // Step 1: configure the historical WorkflowSim static parameters.
 
             /**
-             * 数据中心或 Host 容量不足时，实际创建的 VM 数可能少于声明值。
+             * When datacenter or Host capacity is insufficient, the number of VMs actually
+             * created may be smaller than the declared value.
              */
-            int vmNum = 20; // VM 数量
+            int vmNum = 20; // Number of VMs
             /**
-             * 默认使用项目内相对路径；从其他工作目录执行时需要调整。
+             * The default uses relative paths inside the project; adjust them when running from
+             * another working directory.
              */
             List<String> daxPaths =
                     ExampleCliSupport.multipleDax(args, ExampleCliSupport.DEFAULT_MULTIPLE_DAX_PATHS, 3);
 
             /**
-             * 历史 MINMIN 调度在调度层决策，因此关闭规划器以避免覆盖其结果。
+             * Historical MINMIN scheduling decides at the scheduling layer, so the planner is
+             * disabled to keep it from overwriting that result.
              */
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.SHARED;
 
             /**
-             * 不注入额外开销。
+             * Do not inject additional overhead.
              */
             OverheadParameters op = new OverheadParameters(0, null, null, null, null, 0);
 
             /**
-             * 不进行任务聚类。
+             * Do not perform any task clustering.
              */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.NONE;
             ClusteringParameters cp = new ClusteringParameters(0, 0, method, null);
 
             /**
-             * 初始化历史全局参数与文件目录。
+             * Initialize the historical global parameters and file directories.
              */
             Parameters.init(vmNum, daxPaths, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
 
-            // 在创建任何 CloudSim 实体之前完成初始化。
-            int num_user = 1; // Grid 用户数
+            // Complete initialization before creating any CloudSim entity.
+            int num_user = 1; // Number of grid users
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // 是否记录事件追踪
+            boolean trace_flag = false; // Whether event tracing is recorded
 
-            // 初始化 CloudSim。
+            // Initialize CloudSim.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
             /**
-             * 创建包含一个调度器的工作流规划器。
+             * Create a workflow planner that contains one scheduler.
              */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
             /**
-             * 取得与规划器关联的工作流执行引擎。
+             * Obtain the workflow execution engine associated with the planner.
              */
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
             /**
-             * 创建 VM 列表；VM 的 userId 对应其调度器 ID。
+             * Create the VM list; a VM's userId corresponds to its scheduler ID.
              */
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
             /**
-             * 将 VM 列表提交给工作流执行引擎。
+             * Submit the VM list to the workflow execution engine.
              */
             wfEngine.submitVmList(vmlist0, 0);
 
             /**
-             * 将数据中心绑定到调度器。
+             * Bind the datacenter to the scheduler.
              */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 
@@ -174,20 +179,20 @@ public class WorkflowSimMultipleWorkflowsExample1 {
 
     protected static WorkflowDatacenter createDatacenter(String name) {
 
-        // 构建数据中心：先创建一个或多个 Host 的列表。
+        // Build the datacenter: first create a list of one or more Hosts.
         List<Host> hostList = new ArrayList<>();
 
-        // 每个 Host 由一个或多个 PE（CPU 核）组成，因此先构造 PE 列表。
+        // Each Host consists of one or more PEs (CPU cores), so build the PE list first.
         for (int i = 1; i <= 20; i++) {
             List<Pe> peList1 = new ArrayList<>();
             int mips = 2000;
-            // 创建并加入 PE；多核 Host 需要相应数量的 PE。
-            peList1.add(new Pe(0, new PeProvisionerSimple(mips))); // PE 标识与 MIPS 额定值。
+            // Create and add the PEs; a multi-core Host needs the matching number of PEs.
+            peList1.add(new Pe(0, new PeProvisionerSimple(mips))); // PE identifier and MIPS rating.
             peList1.add(new Pe(1, new PeProvisionerSimple(mips)));
 
             int hostId = 0;
-            int ram = 2048; // Host 内存（MB）。
-            long storage = 1000000; // Host 存储容量。
+            int ram = 2048; // Host memory (MB).
+            long storage = 1000000; // Host storage capacity.
             int bw = 10000;
             hostList.add(new Host(
                     hostId,
@@ -195,28 +200,30 @@ public class WorkflowSimMultipleWorkflowsExample1 {
                     new BwProvisionerSimple(bw),
                     storage,
                     peList1,
-                    new VmSchedulerTimeShared(peList1))); // 本示例的 Host 调度器。
+                    new VmSchedulerTimeShared(peList1))); // Host scheduler of this example.
             hostId++;
         }
 
-        // 描述数据中心的体系结构、操作系统、Host 列表、时区和抽象成本。
-        String arch = "x86"; // 系统体系结构。
-        String os = "Linux"; // 操作系统。
+        // Describe the datacenter architecture, operating system, Host list, time zone, and
+        // abstract costs.
+        String arch = "x86"; // System architecture.
+        String os = "Linux"; // Operating system.
         String vmm = "Xen";
-        double time_zone = 10.0; // 资源所在时区。
-        double cost = 3.0; // 抽象计算成本。
-        double costPerMem = 0.05; // 抽象内存成本。
-        double costPerStorage = 0.1; // 抽象存储成本。
-        double costPerBw = 0.1; // 抽象带宽成本。
-        LinkedList<Storage> storageList = new LinkedList<>(); // 本示例不建模 SAN 设备。
+        double time_zone = 10.0; // Time zone of the resources.
+        double cost = 3.0; // Abstract computation cost.
+        double costPerMem = 0.05; // Abstract memory cost.
+        double costPerStorage = 0.1; // Abstract storage cost.
+        double costPerBw = 0.1; // Abstract bandwidth cost.
+        LinkedList<Storage> storageList = new LinkedList<>(); // This example models no SAN device.
         WorkflowDatacenter datacenter = null;
         DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
                 arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
-        // 最后创建共享存储对象。
+        // Finally create the shared storage object.
         /**
-         * 数据中心内部的最大传输速率（MB/s）。该历史数值不构成真实存储系统校准依据。
+         * Maximum transfer rate inside the datacenter (MB/s). This historical value is not a
+         * basis for calibrating a real storage system.
          */
-        int maxTransferRate = 15; // 可按研究平台契约显式替换。
+        int maxTransferRate = 15; // May be replaced explicitly under the research platform contract.
         try {
             HarddriveStorage s1 = new HarddriveStorage(name, 1e12);
             s1.setMaxTransferRate(maxTransferRate);
@@ -230,9 +237,9 @@ public class WorkflowSimMultipleWorkflowsExample1 {
     }
 
     /**
-     * 输出作业结果表。
+     * Print the job result table.
      *
-     * @param list 待输出的作业列表
+     * @param list job list to print
      */
     protected static void printJobList(List<Job> list) {
         int size = list.size();

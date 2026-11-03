@@ -7,12 +7,15 @@ import java.util.List;
 import org.workflowsim.exception.SimulationConfigurationException;
 
 /**
- * RL 策略的会话级注册表：把策略实例送达调度器内部，并收集决策轨迹。
+ * Session-level registry for RL policies: delivers the policy instance into the scheduler
+ * and collects the decision trace.
  *
- * <p>调度器实例由 {@code WorkflowScheduler} 按枚举构造，无法通过构造器接收策略，
- * 故沿用平台既有静态配置模式（参照 {@code FailureParameters}）：{@code RlEnvironment}
- * 在每个 episode 开始前 {@link #init(RlPolicy)}、结束后 {@link #reset()}。
- * 注册表不是线程安全资源；平台仿真是单线程事件循环。</p>
+ * <p>Scheduler instances are constructed from an enum by {@code WorkflowScheduler} and
+ * cannot receive a policy through a constructor, so the registry follows the existing
+ * platform static-configuration pattern (see {@code FailureParameters}): {@code RlEnvironment}
+ * calls {@link #init(RlPolicy)} before each episode starts and {@link #reset()} after it
+ * ends. The registry is not a thread-safe resource; platform simulation is a single-threaded
+ * event loop.</p>
  */
 public final class RlPolicyRegistry {
 
@@ -23,10 +26,10 @@ public final class RlPolicyRegistry {
     private RlPolicyRegistry() {}
 
     /**
-     * 注册 episode 策略并清空轨迹。
+     * Registers the episode policy and clears the trace.
      *
-     * @param policy 本 episode 使用的策略
-     * @throws SimulationConfigurationException 当策略为空时
+     * @param policy policy used by this episode
+     * @throws SimulationConfigurationException when the policy is null
      */
     public static void init(RlPolicy policy) {
         if (policy == null) {
@@ -38,9 +41,9 @@ public final class RlPolicyRegistry {
     }
 
     /**
-     * @return 当前已注册策略
-     * @throws SimulationConfigurationException 当无注册策略时（RL_POLICY 调度器
-     *         必须在 {@code RlEnvironment} 管理的 episode 内运行）
+     * @return the currently registered policy
+     * @throws SimulationConfigurationException when no policy is registered (the RL_POLICY
+     *         scheduler must run inside an episode managed by {@code RlEnvironment})
      */
     public static RlPolicy current() {
         if (currentPolicy == null) {
@@ -52,35 +55,36 @@ public final class RlPolicyRegistry {
     }
 
     /**
-     * 记录一次成功的分派决策。
+     * Records one successful dispatch decision.
      *
-     * <p>仅供 {@code RlPolicySchedulingAlgorithm} 在执行分派时调用；其他调用方
-     * 不得写入轨迹。</p>
+     * <p>For {@code RlPolicySchedulingAlgorithm} use only, at the moment it performs a
+     * dispatch; other callers must not write to the trace.</p>
      */
     public static void recordDecision(double time, int jobId, int vmId) {
         DECISIONS.add(new RlDecision(time, jobId, vmId));
     }
 
     /**
-     * 记录一次策略查询（每次 ready-batch 更新计一步，无论产生多少分派）。
+     * Records one policy query (one step per ready-batch update, regardless of how many
+     * dispatches it produces).
      *
-     * <p>仅供 {@code RlPolicySchedulingAlgorithm} 在请求动作前调用。</p>
+     * <p>For {@code RlPolicySchedulingAlgorithm} use only, before it requests an action.</p>
      */
     public static void recordStep() {
         stepCount++;
     }
 
-    /** @return 本 episode 的决策轨迹（不可变，插入序） */
+    /** @return the decision trace of this episode (immutable, insertion order) */
     public static List<RlDecision> decisions() {
         return Collections.unmodifiableList(new ArrayList<RlDecision>(DECISIONS));
     }
 
-    /** @return 本 episode 的策略查询次数（每次 ready-batch 更新计一步） */
+    /** @return the policy query count of this episode (one step per ready-batch update) */
     public static int stepCount() {
         return stepCount;
     }
 
-    /** 释放 episode 状态；测试必须在每个用例后调用。 */
+    /** Releases the episode state; tests must call it after every case. */
     public static void reset() {
         currentPolicy = null;
         DECISIONS.clear();

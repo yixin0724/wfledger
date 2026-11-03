@@ -40,10 +40,12 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 供遗留参数扫描调用的动态重聚类容错教学示例。
+ * Dynamic reclustering fault-tolerant teaching example invoked by the legacy parameter sweep.
  *
- * <p>本类保留可返回 makespan 的历史入口，便于理解原始参数实验代码。它没有冻结实验
- * 计划、种子和证据工件，因此不能作为标准研究实验入口或统计结论来源。</p>
+ * <p>The class keeps the historical entry point that returns a makespan so that the original
+ * parameter experiment code stays intelligible. It has no frozen experiment plan, seed, or evidence
+ * artifact, so it cannot serve as a standard research experiment entry point or as a source of
+ * statistical conclusions.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -52,18 +54,21 @@ import org.workflowsim.utils.ReplicaCatalog;
 public class FaultTolerantClusteringExample5 extends FaultTolerantClusteringExample1 {
 
     private static final String EXAMPLE_ID = "fault-clustering-dynamic";
-    /** 固定教学种子下的低频共享故障时钟尺度，不代表真实故障率。 */
+    /**
+     * Scale of the low-frequency shared failure clock under the fixed teaching seed; it does not
+     * represent a real failure rate.
+     */
     private static final double DEFAULT_FAILURE_INTERVAL_SCALE = 150000.0;
 
     /**
-     * 运行带动态重聚类的历史教学情景。
+     * Run the historical teaching scenario with dynamic reclustering.
      *
-     * <p>支持的 option 为 {@code -c}（SR/DR/NOOP/DC）、{@code -d}（DAX 路径）、
-     * {@code -b}（运行时间缩放的十分之一）、{@code -q}/{@code -s}（队列 Gamma 参数）、
-     * {@code -w}（队列先验强度）、{@code -p}（故障尺度）、{@code -t}（故障先验强度）
-     * 和 {@code -r}（根种子）。所有数值均须为有限正数。</p>
+     * <p>Supported options are {@code -c} (SR/DR/NOOP/DC), {@code -d} (DAX path), {@code -b} (one
+     * tenth of the runtime scale), {@code -q}/{@code -s} (queue Gamma parameters), {@code -w} (queue
+     * prior strength), {@code -p} (failure scale), {@code -t} (failure prior strength), and
+     * {@code -r} (root seed). Every numeric value must be a finite positive number.</p>
      *
-     * @param args 旧式单字符 option 与值组成的参数序列
+     * @param args legacy argument sequence of single-character options and values
      */
     public static void main(String[] args) {
         double makespan = runInternal(args, true);
@@ -71,13 +76,14 @@ public class FaultTolerantClusteringExample5 extends FaultTolerantClusteringExam
     }
 
     /**
-     * 兼容旧参数扫描代码的 makespan 入口。
+     * Makespan entry point compatible with legacy parameter sweep code.
      *
-     * <p>错误不再伪装为 {@code 0.0}，而是通过未检查异常向调用方传播。批量调用方应
-     * 自己建立种子计划、统计口径和结果工件。</p>
+     * <p>Errors are no longer disguised as {@code 0.0} but propagate to the caller as unchecked
+     * exceptions. Batch callers must establish their own seed plan, statistical protocol, and
+     * result artifacts.</p>
      *
-     * @param args 与 {@link #main(String[])} 相同的 option 序列
-     * @return 本次模型运行的 makespan
+     * @param args the same option sequence as {@link #main(String[])}
+     * @return makespan of this model run
      */
     public static double main2(String[] args) {
         return runInternal(args, false);
@@ -122,7 +128,8 @@ public class FaultTolerantClusteringExample5 extends FaultTolerantClusteringExam
             int maxLevel = 11;
 
             DistributionGenerator[][] failureGenerators = new DistributionGenerator[vmNum][maxLevel];
-            // 历史 E5 使用一个共享全局故障时钟；它不是 VM-深度独立故障模型。
+            // Historical E5 uses one shared global failure clock; it is not a VM-depth independent
+            // failure model.
             DistributionGenerator failureGenerator = new DistributionGenerator(
                     DistributionGenerator.DistributionFamily.WEIBULL,
                     failureScale,
@@ -220,10 +227,10 @@ public class FaultTolerantClusteringExample5 extends FaultTolerantClusteringExam
     }
 
     /**
-     * 输出 Job 摘要并返回列表中最大的完成时间。
+     * Print the Job summary and return the largest finish time in the list.
      *
-     * @param list 已完成的 Job 列表
-     * @return 本次模型运行的 makespan
+     * @param list list of completed Jobs
+     * @return makespan of this model run
      */
     protected static double printJobList2(List<Job> list) {
         int size = list.size();

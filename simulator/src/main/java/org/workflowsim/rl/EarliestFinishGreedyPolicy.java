@@ -4,14 +4,18 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 基线策略：每个就绪 Job 选择预计最早完成（ECT = length / mips）的空闲兼容 VM。
+ * Baseline policy: each ready Job selects the idle compatible VM with the earliest expected
+ * completion (ECT = length / mips).
  *
- * <p>这是 RL 轨道的参考策略，用于验证环境闭环与给出可比较的下界基线：</p>
+ * <p>This is the reference policy of the RL track, used to verify the closed environment loop and to
+ * provide a comparable lower-bound baseline:</p>
  * <ul>
- *   <li>按观测中的 Job 到达序逐个决策；同 Job 多 VM 等 ECT 选较小 VM ID；</li>
- *   <li>同一次更新内每台 VM 至多接收一个 Job（与 ready-batch 调度器契约一致）：
- *       已被本轮占用的 VM 视为不可用，后续 Job 顺延次优 VM；</li>
- *   <li>无空闲兼容 VM 的 Job 返回 {@link RlPolicy#NO_ASSIGNMENT}。</li>
+ *   <li>Decisions follow the Job arrival order of the observation; for the same Job, VMs with equal
+ *       ECT go to the smaller VM ID;</li>
+ *   <li>Within one update each VM receives at most one Job (consistent with the ready-batch scheduler
+ *       contract): a VM already reserved in this round counts as unavailable, and later Jobs fall
+ *       through to the next-best VM;</li>
+ *   <li>A Job with no idle compatible VM returns {@link RlPolicy#NO_ASSIGNMENT}.</li>
  * </ul>
  */
 public final class EarliestFinishGreedyPolicy implements RlPolicy {

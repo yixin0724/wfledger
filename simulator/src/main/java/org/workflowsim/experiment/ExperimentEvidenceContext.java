@@ -6,11 +6,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 一次正式 reference 或 study 运行附加的显式研究身份。
+ * Explicit research identity attached to a formal reference or study run.
  *
- * <p>核心模拟器不依赖任何具体实验模块；实验调用方通过本类型把自身 driver、协议和
- * 数据集根信息交给通用工件 writer。未提供本上下文的单次运行仍可写出 v3 manifest，
- * 但其中 {@code study} 为 {@code null}，不能被误解释为完整研究证据。</p>
+ * <p>The core simulator does not depend on any concrete experiment module; an experiment
+ * caller hands its driver, protocol, and dataset root information to the generic artifact
+ * writer through this type. A single run that does not provide this context can still
+ * write a v3 manifest, but its {@code study} is {@code null} and must not be
+ * misinterpreted as complete study evidence.</p>
  */
 public final class ExperimentEvidenceContext {
 
@@ -36,12 +38,12 @@ public final class ExperimentEvidenceContext {
         this.datasetRoot = builder.datasetRoot;
     }
 
-    /** 创建 reference 或 study 身份构建器。 */
+    /** Creates a builder for the reference or study identity. */
     public static Builder builder(String studyId) {
         return new Builder(studyId);
     }
 
-    /** 返回供 manifest/index 写入的独立、机器可读身份对象。 */
+    /** Returns the standalone, machine-readable identity object written to the manifest/index. */
     public Map<String, Object> asMap() {
         Map<String, Object> values = new LinkedHashMap<String, Object>();
         values.put("id", studyId);
@@ -63,7 +65,7 @@ public final class ExperimentEvidenceContext {
         return values;
     }
 
-    /** 构造不可变研究身份的校验式 builder。 */
+    /** Validating builder that constructs an immutable research identity. */
     public static final class Builder {
         private final String studyId;
         private String groupId;
@@ -79,7 +81,7 @@ public final class ExperimentEvidenceContext {
             this.studyId = requireText(studyId, "Study ID");
         }
 
-        /** 声明执行 driver 所属 Maven 构件。 */
+        /** Declares the Maven artifact that owns the executing driver. */
         public Builder artifact(String groupId, String artifactId, String version) {
             this.groupId = requireText(groupId, "Study groupId");
             this.artifactId = requireText(artifactId, "Study artifactId");
@@ -87,7 +89,7 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        /** 声明执行当前研究入口的类与其源码子树。 */
+        /** Declares the class that executes the current study entry point and its source subtree. */
         public Builder driver(Class<?> driverClass, String sourceSubpath) {
             if (driverClass == null) {
                 throw new IllegalArgumentException("Study driver class is required");
@@ -97,7 +99,7 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        /** 声明人可读协议标识与可选的本地协议文件。 */
+        /** Declares the human-readable protocol identifier and an optional local protocol file. */
         public Builder protocol(String protocolId, Path protocolFile) {
             this.protocolId = requireText(protocolId, "Protocol ID");
             this.protocolFile =
@@ -105,7 +107,7 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        /** 声明研究入口解析输入时使用的绝对数据集根。 */
+        /** Declares the absolute dataset root used by the study entry point to resolve inputs. */
         public Builder datasetRoot(Path datasetRoot) {
             if (datasetRoot == null) {
                 throw new IllegalArgumentException("Dataset root is required");
@@ -121,7 +123,7 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        /** 校验全部研究身份字段并生成上下文。 */
+        /** Validates every study identity field and builds the context. */
         public ExperimentEvidenceContext build() {
             if (groupId == null
                     || artifactId == null

@@ -20,42 +20,50 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 历史教学命令行示例共享的输入、随机性和结果边界约定。
+ * Shared input, randomness, and result-boundary contract for the historical teaching command-line
+ * examples.
  *
- * <p>该类只服务于 {@code experiments} 中保留的历史 API 示例。它不改变
- * {@code SimulationRunner} 的算法契约，也不将这些示例提升为可复现实验 campaign。</p>
+ * <p>This class serves only the legacy API examples retained in {@code experiments}. It neither
+ * changes the algorithm contract of {@code SimulationRunner} nor promotes these examples to
+ * reproducible experiment campaigns.</p>
  */
 public final class ExampleCliSupport {
 
-    /** 已通过严格 DAX 输入契约并适合历史单工作流教学示例的默认输入。 */
+    /** Default input that passed the strict DAX input contract and suits the historical
+     * single-workflow teaching example. */
     public static final String DEFAULT_DAX_PATH = "datasets/dax/epigenomics/n100/Epigenomics_100.dax";
 
-    /** 多工作流历史示例使用的三个严格输入候选。 */
+    /** Three strict input candidates used by the multi-workflow historical example. */
     public static final List<String> DEFAULT_MULTIPLE_DAX_PATHS = Collections.unmodifiableList(Arrays.asList(
             "datasets/dax/epigenomics/n24/Epigenomics_24.dax",
             "datasets/dax/epigenomics/n46/Epigenomics_46.dax",
             DEFAULT_DAX_PATH));
 
-    /** 历史教学情景的固定根种子；正式研究实验仍必须显式记录自己的种子计划。 */
+    /** Fixed root seed for the historical teaching scenario; formal research experiments must
+     * still record their own seed plan explicitly. */
     public static final long LEGACY_DEMO_SEED = 20260901L;
 
     /**
-     * Epigenomics n100 历史容错教学情景使用的 Weibull 到达间隔尺度。
+     * Weibull inter-arrival scale used by the Epigenomics n100 historical fault-tolerance teaching
+     * scenario.
      *
-     * <p>该值仅用于让旧示例在有限时间内展示低频故障和重试，不是由真实平台故障记录
-     * 校准得到的参数。</p>
+     * <p>The value exists only so that the legacy example exhibits low-frequency failures and
+     * retries within a bounded time; it is not a parameter calibrated from real platform failure
+     * records.</p>
      */
     public static final double LEGACY_DEMO_FAILURE_INTERVAL_SCALE = 7500.0;
 
     /**
-     * 按 DAG 层级生成失效流的遗留重聚类示例使用的更稀疏教学尺度。
+     * Sparser teaching scale used by the legacy reclustering example that generates failure streams
+     * per DAG level.
      *
-     * <p>各层持有独立随机流，不能直接复用单流示例的尺度；该值仅保证默认教学情景有界，
-     * 不表示真实失效过程。</p>
+     * <p>Each level holds an independent random stream, so the scale of the single-stream example
+     * cannot be reused directly; the value only bounds the default teaching scenario and does not
+     * represent a real failure process.</p>
      */
     public static final double LEGACY_CLUSTERING_DEMO_FAILURE_INTERVAL_SCALE = 50000.0;
 
-    /** 统一机器可读的成功边界前缀。 */
+    /** Unified machine-readable success-boundary prefix. */
     public static final String COMPLETION_PREFIX = "EXAMPLE_COMPLETED";
 
     private static final ThreadLocal<String> ACTIVE_EXAMPLE_ID = new ThreadLocal<String>();
@@ -63,22 +71,25 @@ public final class ExampleCliSupport {
     private ExampleCliSupport() {}
 
     /**
-     * 开始一个历史教学场景，清理上一场景可能遗留的 WorkflowSim 静态状态并安装固定种子。
+     * Begin a historical teaching scenario: clear WorkflowSim static state possibly left over from
+     * the previous scenario and install the fixed seed.
      *
-     * <p>命令行 smoke 仍会在独立 JVM 中运行每个示例；这里的清理仅为同 JVM 的人工调用
-     * 提供明确边界，不能替代进程隔离。</p>
+     * <p>The command-line smoke run still executes each example in a separate JVM; the cleanup here
+     * only gives manual same-JVM invocations an explicit boundary and cannot replace process
+     * isolation.</p>
      *
-     * @param exampleId catalog 中稳定且非空的示例标识
+     * @param exampleId stable and non-empty example identifier from the catalog
      */
     public static void begin(String exampleId) {
         begin(exampleId, LEGACY_DEMO_SEED);
     }
 
     /**
-     * 开始一个历史教学场景，并安装调用方显式指定的根种子。
+     * Begin a historical teaching scenario and install the root seed explicitly supplied by the
+     * caller.
      *
-     * @param exampleId catalog 中稳定且非空的示例标识
-     * @param rootSeed 本次场景要记录和重放的根种子
+     * @param exampleId stable and non-empty example identifier from the catalog
+     * @param rootSeed root seed to record and replay for this scenario
      */
     public static void begin(String exampleId, long rootSeed) {
         if (exampleId == null || exampleId.trim().isEmpty()) {
@@ -90,11 +101,12 @@ public final class ExampleCliSupport {
     }
 
     /**
-     * 解析单工作流示例的零或一个 DAX 参数，并在创建 CloudSim 实体前验证输入存在。
+     * Parse the zero-or-one DAX argument of a single-workflow example, and verify that the input
+     * exists before any CloudSim entity is created.
      *
-     * @param args 命令行参数
-     * @param defaultPath 未传参数时使用的受控默认输入
-     * @return 可读的 DAX 文件路径，保留调用者提供的相对路径语义
+     * @param args command-line arguments
+     * @param defaultPath controlled default input used when no argument is supplied
+     * @return readable DAX file path, preserving the relative-path semantics supplied by the caller
      */
     public static String singleDax(String[] args, String defaultPath) {
         int count = args == null ? 0 : args.length;
@@ -106,13 +118,13 @@ public final class ExampleCliSupport {
     }
 
     /**
-     * 解析多工作流示例的输入：不传参数时使用受控默认集合；显式提供时必须恰好提供
-     * {@code expectedCount} 条 DAX 路径。
+     * Parse the inputs of a multi-workflow example: use the controlled default set when no argument
+     * is supplied; when supplied explicitly, exactly {@code expectedCount} DAX paths are required.
      *
-     * @param args 命令行参数
-     * @param defaults 未传参数时使用的输入集合
-     * @param expectedCount 显式传入时要求的路径数
-     * @return 已逐项验证的不可修改路径列表
+     * @param args command-line arguments
+     * @param defaults input set used when no argument is supplied
+     * @param expectedCount required number of paths when they are supplied explicitly
+     * @return unmodifiable list of paths, each verified in turn
      */
     public static List<String> multipleDax(String[] args, List<String> defaults, int expectedCount) {
         if (defaults == null || defaults.size() != expectedCount || expectedCount <= 0) {
@@ -130,7 +142,7 @@ public final class ExampleCliSupport {
         return Collections.unmodifiableList(validated);
     }
 
-    /** 验证一个 DAX 输入文件存在且为普通文件。 */
+    /** Verify that a DAX input file exists and is a regular file. */
     public static String requireDax(String path) {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("DAX input path cannot be empty");
@@ -143,14 +155,16 @@ public final class ExampleCliSupport {
     }
 
     /**
-     * 严格解析仅由“单字符 flag + 一个值”组成的遗留命令行。
+     * Strictly parse a legacy command line composed only of "single-character flag plus one value"
+     * pairs.
      *
-     * <p>重复 flag、未知 flag、空 flag、缺失值和空值都会立即失败。数值和领域约束由
-     * 调用方使用本类的解析辅助方法继续检查。</p>
+     * <p>Duplicate flags, unknown flags, empty flags, missing values, and empty values all fail
+     * immediately. Numeric and domain constraints are checked further by the caller through the
+     * parsing helpers of this class.</p>
      *
-     * @param args 命令行参数
-     * @param allowedOptions 支持的 flag，例如 {@code -d}
-     * @return 按出现顺序保存的不可修改 option map
+     * @param args command-line arguments
+     * @param allowedOptions supported flags, for example {@code -d}
+     * @return unmodifiable option map stored in order of appearance
      */
     public static Map<String, String> parseValueOptions(String[] args, String... allowedOptions) {
         Set<String> allowed = new LinkedHashSet<String>(Arrays.asList(allowedOptions));
@@ -178,7 +192,7 @@ public final class ExampleCliSupport {
         return Collections.unmodifiableMap(values);
     }
 
-    /** 获取可选参数值；缺失时返回调用方声明的默认值。 */
+    /** Return an optional argument value; return the caller-declared default when it is absent. */
     public static String optionOrDefault(Map<String, String> options, String option, String defaultValue) {
         if (options == null) {
             throw new IllegalArgumentException("Options cannot be null");
@@ -187,7 +201,7 @@ public final class ExampleCliSupport {
         return value == null ? defaultValue : value;
     }
 
-    /** 解析严格大于零的有限浮点参数。 */
+    /** Parse a finite floating-point argument strictly greater than zero. */
     public static double positiveFinite(String option, String value) {
         double result = finite(option, value);
         if (result <= 0.0) {
@@ -196,7 +210,7 @@ public final class ExampleCliSupport {
         return result;
     }
 
-    /** 解析大于等于零的有限浮点参数。 */
+    /** Parse a finite floating-point argument greater than or equal to zero. */
     public static double nonNegativeFinite(String option, String value) {
         double result = finite(option, value);
         if (result < 0.0) {
@@ -205,7 +219,7 @@ public final class ExampleCliSupport {
         return result;
     }
 
-    /** 解析大于等于零的整数参数。 */
+    /** Parse an integer argument greater than or equal to zero. */
     public static int nonNegativeInt(String option, String value) {
         try {
             int result = Integer.parseInt(value);
@@ -218,7 +232,7 @@ public final class ExampleCliSupport {
         }
     }
 
-    /** 解析 64 位有符号整数，例如显式实验根种子。 */
+    /** Parse a signed 64-bit integer, for example an explicit experiment root seed. */
     public static long longValue(String option, String value) {
         try {
             return Long.parseLong(value);
@@ -228,11 +242,11 @@ public final class ExampleCliSupport {
     }
 
     /**
-     * 计算一组严格正有限因子的乘积，并在溢出时失败。
+     * Compute the product of a set of strictly positive finite factors, and fail on overflow.
      *
-     * @param expression 人类可读的参数表达式
-     * @param factors 已分别完成领域校验的乘数
-     * @return 有限正乘积
+     * @param expression human-readable argument expression
+     * @param factors multipliers that have each already passed domain validation
+     * @return finite positive product
      */
     public static double positiveFiniteProduct(String expression, double... factors) {
         if (factors == null || factors.length == 0) {
@@ -251,7 +265,10 @@ public final class ExampleCliSupport {
         return product;
     }
 
-    /** 验证 option 值只由允许的单字符代码组成且至少包含一个字符。 */
+    /**
+     * Verify that the option value consists only of allowed single-character codes and contains at
+     * least one character.
+     */
     public static String allowedCharacters(String option, String value, String allowedCharacters) {
         if (value == null || value.isEmpty()) {
             throw new IllegalArgumentException(option + " cannot be empty");
@@ -265,12 +282,12 @@ public final class ExampleCliSupport {
     }
 
     /**
-     * 验证 option 值恰好属于给定的有限集合。
+     * Verify that the option value belongs exactly to the given finite set.
      *
-     * @param option 命令行 option 名称
-     * @param value 待验证值
-     * @param allowedValues 可接受的精确值
-     * @return 原值，便于直接赋给调用方变量
+     * @param option command-line option name
+     * @param value value to verify
+     * @param allowedValues accepted exact values
+     * @return the original value, so that it can be assigned directly to a caller variable
      */
     public static String allowedValue(String option, String value, String... allowedValues) {
         if (value == null || value.isEmpty()) {
@@ -284,7 +301,7 @@ public final class ExampleCliSupport {
         throw new IllegalArgumentException(option + " has unsupported value: " + value);
     }
 
-    /** 解析闭区间 {@code [0, 1]} 内的有限浮点参数。 */
+    /** Parse a finite floating-point argument in the closed interval {@code [0, 1]}. */
     public static double unitInterval(String option, String value) {
         double result = nonNegativeFinite(option, value);
         if (result > 1.0) {
@@ -293,7 +310,7 @@ public final class ExampleCliSupport {
         return result;
     }
 
-    /** 解析开区间 {@code (0, 1)} 内的有限浮点参数。 */
+    /** Parse a finite floating-point argument in the open interval {@code (0, 1)}. */
     public static double openUnitInterval(String option, String value) {
         double result = unitInterval(option, value);
         if (result == 0.0 || result == 1.0) {
@@ -303,9 +320,10 @@ public final class ExampleCliSupport {
     }
 
     /**
-     * 输出稳定的完成边界。失败 Job 在容错教学情景中可能代表可恢复的中间尝试，因而如实计数。
+     * Emit the stable completion boundary. In fault-tolerance teaching scenarios a failed Job may
+     * represent a recoverable intermediate attempt, so such failures are counted as they are.
      *
-     * @param jobs 本次 CloudSim 事件循环返回的 Job 列表
+     * @param jobs Job list returned by this CloudSim event loop
      */
     public static void reportCompletion(List<Job> jobs) {
         if (jobs == null || jobs.isEmpty()) {
@@ -330,14 +348,20 @@ public final class ExampleCliSupport {
                 + " failedJobs=" + failed);
     }
 
-    /** 将历史示例的错误转换为可让 CLI 和 Maven 正确失败的未检查异常。 */
+    /**
+     * Convert a historical example error into an unchecked exception that makes the CLI and Maven
+     * fail correctly.
+     */
     public static IllegalStateException failure(String exampleId, Exception cause) {
         String message = cause == null ? "unknown error" : cause.getMessage();
         Log.printLine("The simulation has been terminated due to an unexpected error: " + message);
         return new IllegalStateException("Historical example failed: " + exampleId, cause);
     }
 
-    /** 清理本线程已登记的示例标识和 WorkflowSim 历史静态状态。 */
+    /**
+     * Clear the example identifier registered on this thread and the historical WorkflowSim static
+     * state.
+     */
     public static void end() {
         resetLegacyState();
         ACTIVE_EXAMPLE_ID.remove();

@@ -44,7 +44,8 @@ public final class ExactJsonValues {
 
     /**
      * 2026-10-26 complexity extraction from equal; statements verbatim; order unchanged.
-     * 作用域：仅比对两个 JSON 对象（成员集合一致且逐成员递归精确相等）。
+     * Scope: compares two JSON objects only (identical member key sets and recursively exact
+     * equality per member).
      */
     private static boolean equalObjectMembers(JsonElement first, JsonElement second) {
         JsonObject a = first.getAsJsonObject();
@@ -62,7 +63,8 @@ public final class ExactJsonValues {
 
     /**
      * 2026-10-26 complexity extraction from equal; statements verbatim; order unchanged.
-     * 作用域：仅比对两个 JSON 数组（长度一致且按下标递归精确相等）。
+     * Scope: compares two JSON arrays only (identical length and recursively exact equality by
+     * index).
      */
     private static boolean equalArrayElements(JsonElement first, JsonElement second) {
         JsonArray a = first.getAsJsonArray();

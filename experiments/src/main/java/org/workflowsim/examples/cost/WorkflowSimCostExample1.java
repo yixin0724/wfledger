@@ -36,10 +36,11 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 输出历史数据中心成本模型结果的教学示例。
+ * Historical cost model teaching example that outputs the result computed per datacenter.
  *
- * <p>该示例展示的值由数据传输字节、任务运行时间和抽象单位成本组合而成。它用于理解
- * CloudSim 成本字段，不是云服务商计费重放，也不是标准研究实验入口。</p>
+ * <p>The values shown by this example combine transferred data bytes, task runtime, and an
+ * abstract unit cost. They serve to explain the CloudSim cost fields; they are not a replay of
+ * cloud provider billing, and this class is not a standard research experiment entry point.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -47,18 +48,21 @@ import org.workflowsim.utils.ReplicaCatalog;
  */
 public class WorkflowSimCostExample1 extends WorkflowSimBasicExample1 {
 
-    // ======================== 静态示例入口 ========================
+    // ======================== Static example entry point ========================
     /**
-     * 运行单数据中心、单存储的历史成本场景。
+     * Run the historical cost scenario with a single datacenter and a single storage.
      */
     public static void main(String[] args) {
 
         try {
             ExampleCliSupport.begin("cost-datacenter");
-            // 第一步：配置历史 WorkflowSim 静态参数。
-            /** 请求创建的 VM 数；资源不足时实际可创建数量可能更少。 */
-            int vmNum = 20; // VM 数量。
-            /** 请按本机数据集位置调整 DAX 路径。 */
+            // Step 1: configure the historical WorkflowSim static parameters.
+            /**
+             * Number of requested VMs; fewer may actually be created when resources are
+             * insufficient.
+             */
+            int vmNum = 20; // Number of VMs.
+            /** Adjust the DAX path to the dataset location on this machine. */
             String daxPath = ExampleCliSupport.singleDax(args, ExampleCliSupport.DEFAULT_DAX_PATH);
             File daxFile = new File(daxPath);
             if (!daxFile.exists()) {
@@ -66,45 +70,49 @@ public class WorkflowSimCostExample1 extends WorkflowSimBasicExample1 {
                 return;
             }
             /**
-             * 该场景由 MINMIN 调度器决定映射，因此禁用规划器。规划和调度在这条历史路径中
-             * 不是两个可以同时独立优化的映射阶段。
+             * The mapping is decided by the MINMIN scheduler in this scenario, so the planner is
+             * disabled. Planning and scheduling are not two independently optimizable mapping stages
+             * on this historical path.
              */
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.LOCAL;
 
-            /** 不注入额外开销。 */
+            /** No additional overhead is injected. */
             OverheadParameters op = new OverheadParameters(0, null, null, null, null, 0);
 
-            /** 不执行任务聚类。 */
+            /** Perform no task clustering. */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.NONE;
             ClusteringParameters cp = new ClusteringParameters(0, 0, method, null);
 
-            /** 初始化历史静态参数与文件副本目录。 */
+            /** Initialize the historical static parameters and the file replica catalog. */
             Parameters.init(vmNum, daxPath, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
 
-            // 在创建模拟实体前初始化 CloudSim。
-            int num_user = 1; // 模拟用户数。
+            // Initialize CloudSim before creating simulation entities.
+            int num_user = 1; // Number of simulated users.
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // 是否记录 CloudSim 事件轨迹。
+            boolean trace_flag = false; // Whether to record the CloudSim event trace.
 
-            // 初始化 CloudSim 事件引擎。
+            // Initialize the CloudSim event engine.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
-            /** 创建一个包含单调度器的工作流规划器。 */
+            /** Create a workflow planner that contains a single scheduler. */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
-            /** 获取对应的工作流执行引擎。 */
+            /** Obtain the corresponding workflow execution engine. */
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
-            /** 创建 VM 列表；VM 的 userId 对应管理它的调度器标识。 */
+            /**
+             * Create the VM list; the VM userId corresponds to the identifier of the scheduler that
+             * manages it.
+             */
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
-            /** 将 VM 列表提交给工作流执行引擎。 */
+            /** Submit the VM list to the workflow execution engine. */
             wfEngine.submitVmList(vmlist0, 0);
 
-            /** 将数据中心绑定给该调度器。 */
+            /** Bind the datacenter to that scheduler. */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 
             CloudSim.startSimulation();
@@ -120,9 +128,9 @@ public class WorkflowSimCostExample1 extends WorkflowSimBasicExample1 {
     }
 
     /**
-     * 输出 Job 摘要及其抽象处理成本。
+     * Print the Job summary together with its abstract processing cost.
      *
-     * @param list 已完成的 Job 列表
+     * @param list list of completed Jobs
      */
     protected static void printJobList(List<Job> list) {
         int size = list.size();

@@ -16,20 +16,24 @@
 package org.workflowsim.scheduling;
 
 /**
- * 原名 MinMinSchedulingAlgorithm。
+ * Originally named MinMinSchedulingAlgorithm.
  *
- * <p>注意:本实现并非经典 Min-Min(Braun et al. 2001)。实际行为是
- * SPT(Shortest Processing Time)- fastest-idle 变体:先选最短任务,
- * 再选最快的空闲 VM。ready-batch Min-Min 请参考 {@link ReadyBatchMinMinSchedulingAlgorithm}。</p>
+ * <p>Note: this implementation is not the classic Min-Min (Braun et al. 2001). The actual
+ * behavior is an SPT (Shortest Processing Time) - fastest-idle variant: first select the
+ * shortest task, then select the fastest idle VM. For ready-batch Min-Min see
+ * {@link ReadyBatchMinMinSchedulingAlgorithm}.</p>
  *
- * <p><strong>兼容边界：</strong>仅保留给历史源码兼容；标准研究入口拒绝该标签，
- * 不得以此类结果声称经典 Min-Min。</p>
+ * <p><strong>Compatibility boundary:</strong> retained solely for historical source
+ * compatibility; the standard research entry point rejects this label, and results of this
+ * class must not be claimed as classic Min-Min.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
  * @date Apr 9, 2013
- * @deprecated 行为与经典 Min-Min 不一致,已改名 {@link SptFastestIdleSchedulingAlgorithm}。
- *             ready-batch 实现见 {@link ReadyBatchMinMinSchedulingAlgorithm}。
+ * @deprecated Behavior is inconsistent with classic Min-Min; renamed to
+ *             {@link SptFastestIdleSchedulingAlgorithm}.
+ *             The ready-batch implementation is
+ *             {@link ReadyBatchMinMinSchedulingAlgorithm}.
  */
 @Deprecated
 public class MinMinSchedulingAlgorithm extends SptFastestIdleSchedulingAlgorithm {

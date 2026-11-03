@@ -25,20 +25,22 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * P7 兼容性参考矩阵执行器；常规新实验使用 Workbench。
+ * P7 compatibility reference-matrix executor; routine new experiments use the Workbench.
  *
- * <p>执行冻结矩阵（2 个 Epigenomics 输入 × 2 个平台 × 5 个在线调度器 = 20 次仿真），
- * 生成标准化实验证据包（manifest/metrics/events）和索引文件。支持无参数运行（使用项目根目录下的
- * {@code datasets} 和自动创建的 {@code p7-output/run-<时间戳>} 输出目录）。
+ * <p>Execute the frozen matrix (2 Epigenomics inputs x 2 platforms x 5 online schedulers = 20
+ * simulations) and generate the standardized experiment evidence packages
+ * (manifest/metrics/events) plus the index file. Parameter-free execution is supported (it uses
+ * the {@code datasets} directory under the project root and the automatically created
+ * {@code p7-output/run-<timestamp>} output directory).
  *
- * <p><b>用法：</b>
+ * <p><b>Usage:</b>
  * <ul>
- * <li>无参数：{@code main()} - 使用默认路径（IDEA 右键运行）</li>
- * <li>指定路径：{@code main(<dataset-root>, <output-dir>)} - 自定义路径</li>
+ * <li>No arguments: {@code main()} -- use the default paths (run from the IDE context menu)</li>
+ * <li>Explicit paths: {@code main(<dataset-root>, <output-dir>)} -- custom paths</li>
  * </ul>
  *
- * @see P7BaselineMatrix 基线场景与算法定义
- * @see P7EvidenceIndexValidator 生成的索引验证器
+ * @see P7BaselineMatrix baseline scenario and algorithm definitions
+ * @see P7EvidenceIndexValidator validator for the generated index
  */
 public final class P7BaselineExecutor {
 
@@ -53,20 +55,24 @@ public final class P7BaselineExecutor {
     private P7BaselineExecutor() {}
 
     /**
-     * 命令行入口。
+     * Command-line entry point.
      *
-     * <p>用法：{@code P7BaselineExecutor <absolute-dataset-root> <absolute-empty-output-directory>}。
-     * 输出目录必须为空；执行结束后其中包含索引及每次运行的可校验证据工件。</p>
+     * <p>Usage: {@code P7BaselineExecutor <absolute-dataset-root> <absolute-empty-output-directory>}.
+     * The output directory must be empty; when execution finishes it holds the index and the
+     * verifiable evidence artifacts of every run.</p>
      *
-     * <p>不带参数运行时（例如在 IDE 中直接 Run），默认使用当前工作目录下的
-     * {@code datasets} 作为数据集根，并在 {@code p7-output/} 下创建带时间戳的空输出目录。</p>
+     * <p>When run without arguments (for example, Run directly in an IDE), the {@code datasets}
+     * directory under the current working directory is used as the dataset root, and an empty
+     * timestamped output directory is created under {@code p7-output/}.</p>
      *
-     * @param args 绝对数据集根和绝对空输出目录；留空则使用上述默认值
-     * @throws Exception 当参数、输入契约、仿真执行或证据写入与校验失败时
+     * @param args absolute dataset root and absolute empty output directory; when omitted, the
+     *     defaults above apply
+     * @throws Exception when the arguments, the input contract, the simulation execution, or the
+     *     evidence writing and validation fails
      */
     public static void main(String[] args) throws Exception {
         if (args == null || args.length == 0) {
-            // IDE 直接运行支持：默认从项目根目录推导数据集与输出目录。
+            // Direct IDE-run support: derive the dataset and output directories from the project root.
             Path projectRoot =
                     Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
             Path defaultDatasets = projectRoot.resolve("datasets");
@@ -96,16 +102,18 @@ public final class P7BaselineExecutor {
     }
 
     /**
-     * 执行完整、冻结的 P7 基线矩阵。
+     * Execute the complete, frozen P7 baseline matrix.
      *
-     * <p>该方法固定执行协议定义的四个场景和五个调度器组合，并只写出
-     * {@value #BASELINE_INDEX_FILE_NAME}。随后校验器会确认索引恰好包含整个 4 x 5
-     * 矩阵，因此该工件可以被称为 P7 基线。</p>
+     * <p>The method always executes the four scenarios and five scheduler combinations defined by
+     * the protocol and writes only {@value #BASELINE_INDEX_FILE_NAME}. The validator afterwards
+     * confirms that the index contains exactly the whole 4 x 5 matrix, which is what allows the
+     * artifact to be called a P7 baseline.</p>
      *
-     * @param datasetRoot 显式、绝对的 {@code datasets} 目录
-     * @param outputDirectory 必须为空或不存在的绝对输出目录
-     * @return 含相对工件路径和关键结果的不可变运行记录列表
-     * @throws Exception 当目录条件、场景输入、仿真或工件校验不满足要求时
+     * @param datasetRoot explicit, absolute {@code datasets} directory
+     * @param outputDirectory absolute output directory that must be empty or nonexistent
+     * @return immutable list of run records with relative artifact paths and key results
+     * @throws Exception when the directory conditions, the scenario inputs, the simulation, or
+     *     the artifact validation does not meet the requirements
      */
     public static List<RunRecord> executeBaseline(Path datasetRoot, Path outputDirectory) throws Exception {
         Path normalizedDatasetRoot = ReferenceDatasetRoot.require(datasetRoot);
@@ -120,19 +128,22 @@ public final class P7BaselineExecutor {
     }
 
     /**
-     * 执行给定的 P7 场景和调度算法子集，以支持开发和冒烟验证。
+     * Execute a given subset of P7 scenarios and scheduling algorithms to support development and
+     * smoke validation.
      *
-     * <p>该方法会写出 {@value #SELECTION_INDEX_FILE_NAME}，并以
-     * {@value #SELECTION_INDEX_KIND} 标记结果。即使选择恰好包含当前完整矩阵，调用方
-     * 也不应将该输出当作冻结基线；正式 P7 基线只能通过 {@link #executeBaseline(Path, Path)}
-     * 或命令行入口生成。</p>
+     * <p>The method writes {@value #SELECTION_INDEX_FILE_NAME} and marks the result with
+     * {@value #SELECTION_INDEX_KIND}. Even when the selection happens to contain the current full
+     * matrix, callers must not treat that output as a frozen baseline; an official P7 baseline
+     * can only be produced through {@link #executeBaseline(Path, Path)} or the command-line entry
+     * point.</p>
      *
-     * @param datasetRoot 显式、绝对的 {@code datasets} 目录
-     * @param outputDirectory 必须为空或不存在的绝对输出目录
-     * @param scenarios 要执行的冻结 P7 场景
-     * @param algorithms 每个场景要评估的维护中调度算法
-     * @return 含相对工件路径和关键结果的不可变运行记录列表
-     * @throws Exception 当目录条件、场景输入、仿真或工件校验不满足要求时
+     * @param datasetRoot explicit, absolute {@code datasets} directory
+     * @param outputDirectory absolute output directory that must be empty or nonexistent
+     * @param scenarios frozen P7 scenarios to execute
+     * @param algorithms maintained scheduling algorithms to evaluate for each scenario
+     * @return immutable list of run records with relative artifact paths and key results
+     * @throws Exception when the directory conditions, the scenario inputs, the simulation, or
+     *     the artifact validation does not meet the requirements
      */
     public static List<RunRecord> executeSelection(
             Path datasetRoot,
@@ -151,10 +162,11 @@ public final class P7BaselineExecutor {
     }
 
     /**
-     * 兼容旧调用方的子集执行入口。
+     * Subset-execution entry point kept for legacy callers.
      *
-     * @deprecated 请使用 {@link #executeBaseline(Path, Path)} 生成完整冻结基线，或使用
-     *     {@link #executeSelection(Path, Path, List, List)} 明确生成非基线的选择运行。
+     * @deprecated use {@link #executeBaseline(Path, Path)} to generate the complete frozen
+     *     baseline, or {@link #executeSelection(Path, Path, List, List)} to explicitly produce a
+     *     non-baseline selection run.
      */
     @Deprecated
     public static List<RunRecord> execute(
@@ -293,7 +305,7 @@ public final class P7BaselineExecutor {
         ExperimentArtifactWriter.writeJson(indexFile, index);
     }
 
-    /** 含相对 manifest 路径的不可变机器可读运行摘要。 */
+    /** Immutable machine-readable run summary that carries the relative manifest path. */
     public static final class RunRecord {
 
         private final String scenarioId;

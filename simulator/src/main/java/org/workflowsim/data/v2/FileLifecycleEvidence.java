@@ -73,7 +73,9 @@ public final class FileLifecycleEvidence {
 
     /**
      * 2026-10-26 complexity extraction from capture; statements verbatim; order unchanged.
-     * 作用域：仅校验保留事件前缀非空、序号连续递增且观测时间单调不减并不越终点。
+     * Scope: validates only that the retained event prefix is non-empty, that sequence
+     * numbers increase contiguously, and that observation times are non-decreasing and
+     * never exceed the final observation.
      */
     private static void validatePrefixOrder(List<FileLifecycleEvent> events, double observedThrough) {
         long sequence = 1;

@@ -1,8 +1,9 @@
 /*
- * WfCommons JSON 端到端仿真示例。
+ * End-to-end simulation example for WfCommons JSON.
  *
- * 对一个 WfCommons WfFormat JSON 工作流实例运行标准 WorkflowSim 流程
- * （解析 -> 聚类 -> 规划 -> 调度 -> 执行），说明 JSON 数据集可以作为一等输入。
+ * Runs the standard WorkflowSim flow (parse -> cluster -> plan -> schedule -> execute) on one
+ * WfCommons WfFormat JSON workflow instance, showing that a JSON dataset can serve as a first-class
+ * input.
  */
 package org.workflowsim.examples.wfcommons;
 
@@ -20,12 +21,12 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 对 WfCommons JSON 工作流实例执行端到端标准仿真。
+ * Runs the end-to-end standard simulation on a WfCommons JSON workflow instance.
  *
- * <p>用法：{@code main [jsonPath]}；默认输入为
- * {@code datasets/wfformat/montage/n100/montage-100-000.json}。该示例使用
- * 显式命名的 ready-batch Min-Min 策略，不启用聚类或规划，使 JSON 输入能够进入与
- * DAX 相同的标准 WorkflowSim 流程。</p>
+ * <p>Usage: {@code main [jsonPath]}; the default input is
+ * {@code datasets/wfformat/montage/n100/montage-100-000.json}. The example uses the explicitly
+ * named ready-batch Min-Min policy and enables neither clustering nor planning, so that JSON input
+ * enters the same standard WorkflowSim flow as DAX.</p>
  */
 public final class WfCommonsSimulationExample1 {
 
@@ -52,7 +53,7 @@ public final class WfCommonsSimulationExample1 {
         printReport(report);
     }
 
-    /** 输出已完成运行的紧凑可复现性摘要。 */
+    /** Prints a compact reproducibility summary of the completed run. */
     protected static void printReport(SimulationReport report) {
         Log.printLine();
         Log.printLine("========== OUTPUT ==========");

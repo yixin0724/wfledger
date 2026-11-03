@@ -19,18 +19,21 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 /**
- * 对 P7 索引及其所有引用证据包进行只读交叉校验。
+ * Read-only cross-validation of a P7 index and every evidence bundle it references.
  *
- * <p>v2 是迁移前的完整基线格式；v3 额外将索引中的 reference 身份与每份 manifest 的
- * study provenance 做逐字段结构比对，防止将不同 P7 driver、协议或数据集根混入同一索引。
- * 开发性子集使用独立 schema，绝不会被验证为完整冻结基线。</p>
+ * <p>v2 is the complete pre-migration baseline format; v3 additionally compares each
+ * reference identity in the index field by field against the study provenance of every
+ * manifest, preventing different P7 drivers, protocols, or dataset roots from being mixed
+ * into one index. A development subset uses its own schema and is never validated as a
+ * complete frozen baseline.</p>
  */
 public final class P7EvidenceIndexValidator {
 
     private static final String SCHEMA_V2 = "workflowsim-p7-baseline-index-v2";
     private static final String SCHEMA_V3 = P7BaselineExecutor.BASELINE_INDEX_SCHEMA;
     private static final String SELECTION_SCHEMA = P7BaselineExecutor.SELECTION_INDEX_SCHEMA;
-    // 历史 v2/v3 工件写入过的协议路径必须继续可读，不能因文档改名而失效。
+    // Protocol paths written by historical v2/v3 artifacts must stay readable; a document
+    // rename must not break them.
     private static final String HISTORICAL_PROTOCOL_REFERENCE = "P7_EXPERIMENT_PROTOCOL.md";
     private static final String HISTORICAL_PROTOCOL_ID =
             "docs/experiments/reference-baselines/" + HISTORICAL_PROTOCOL_REFERENCE;
@@ -40,12 +43,14 @@ public final class P7EvidenceIndexValidator {
     private P7EvidenceIndexValidator() {}
 
     /**
-     * 校验 P7 索引、每个相对证据路径以及索引和 manifest 的关键配置/结果一致性。
+     * Validates a P7 index, every relative evidence path, and the key configuration and
+     * result consistency between the index and each manifest.
      *
-     * @param indexPath 待校验的 P7 冻结基线或开发性选择索引文件
-     * @return 包含索引位置和运行数量的校验结果
-     * @throws IOException 当索引、引用工件或其内容不一致时抛出
-     * @throws IllegalArgumentException 当 {@code indexPath} 为空时抛出
+     * @param indexPath P7 frozen baseline or development selection index file to validate
+     * @return validation result containing the index location and run count
+     * @throws IOException when the index, a referenced artifact, or their contents are
+     *         inconsistent
+     * @throws IllegalArgumentException when {@code indexPath} is null
      */
     public static ValidationResult validate(Path indexPath) throws IOException {
         if (indexPath == null) {
@@ -106,7 +111,7 @@ public final class P7EvidenceIndexValidator {
         return new ValidationResult(index, expectedRunCount);
     }
 
-    /** 命令行校验入口；不会写入任何文件。 */
+    /** Command-line validation entry point; writes no files. */
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: P7EvidenceIndexValidator <p7-index.json>");
@@ -685,7 +690,7 @@ public final class P7EvidenceIndexValidator {
         REFERENCE_SELECTION
     }
 
-    /** 供程序调用方使用的只读校验结果。 */
+    /** Read-only validation result for programmatic callers. */
     public static final class ValidationResult {
         private final Path index;
         private final int runCount;

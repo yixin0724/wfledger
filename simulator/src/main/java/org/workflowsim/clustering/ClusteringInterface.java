@@ -22,7 +22,7 @@ import org.workflowsim.Job;
 import org.workflowsim.Task;
 
 /**
- * 所有任务聚类策略的统一接口。
+ * Common interface for all task clustering policies.
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -31,35 +31,35 @@ import org.workflowsim.Task;
 public interface ClusteringInterface {
 
     /**
-     * 设置待聚类的逻辑任务列表。
+     * Set the list of logical tasks to cluster.
      *
-     * @param list 待聚类任务
+     * @param list the tasks to cluster
      */
     public void setTaskList(List<Task> list);
 
     /**
-     * 返回聚类后生成的作业列表。
+     * Return the Jobs produced by clustering.
      *
-     * @return 聚类作业列表
+     * @return the clustered Job list
      */
     public List<Job> getJobList();
 
     /**
-     * 返回当前逻辑任务列表。
+     * Return the current logical task list.
      *
-     * @return 逻辑任务列表
+     * @return the logical task list
      */
     public List<Task> getTaskList();
 
     /**
-     * 执行聚类，并生成作业及其依赖关系。
+     * Run clustering and create the Jobs together with their dependencies.
      */
     public void run();
 
     /**
-     * 返回聚类过程收集的任务文件引用。
+     * Return the task file references collected during clustering.
      *
-     * @return 任务文件列表
+     * @return the task file list
      */
     public List<FileItem> getTaskFiles();
 }

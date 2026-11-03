@@ -6,10 +6,11 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
 /**
- * 独立任务的 Opportunistic Load Balancing（OLB）基线。
+ * Opportunistic Load Balancing (OLB) baseline for independent tasks.
  *
- * <p>按 Task-ID 顺序选择暂定可用时间最早的兼容 VM；相同可用时间选择较小 VM ID，再将该
- * Task 的执行时间累加至该 VM。它仅适用于无依赖任务集合。</p>
+ * <p>Selects, in Task-ID order, the compatible VM with the earliest tentative availability time;
+ * ties on availability go to the smaller VM ID, and the Task execution time is then added to that
+ * VM. It applies only to dependency-free task sets.</p>
  */
 public final class StaticOlbPlanningAlgorithm extends StaticIndependentPlanningSupport {
 

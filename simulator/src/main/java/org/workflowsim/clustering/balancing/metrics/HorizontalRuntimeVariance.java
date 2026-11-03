@@ -22,7 +22,7 @@ import java.util.List;
 import org.workflowsim.clustering.TaskSet;
 
 /**
- * 同层任务集合运行时间的相对离散度指标。
+ * Relative dispersion of task-set runtime within one level.
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
  * @date Apr 9, 2013
@@ -30,10 +30,10 @@ import org.workflowsim.clustering.TaskSet;
 public class HorizontalRuntimeVariance implements BalancingMetric {
 
     /**
-     * 计算任务集合运行时间相对于均值的离散度。
+     * Computes the dispersion of task-set runtime relative to the mean.
      *
-     * @param list 待检查的任务集合
-     * @return 相对运行时间离散度；集合不足两个时为零
+     * @param list task sets to inspect
+     * @return relative runtime dispersion; zero when fewer than two task sets are supplied
      */
     @Override
     public double getMetric(List<TaskSet> list) {

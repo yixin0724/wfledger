@@ -23,31 +23,41 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
- * D2 阶段 5：核心量逐位差异比对器。
+ * D2 stage 5: bitwise core-quantity divergence comparator.
  *
- * <p>契约（docs/experiments/RERUN_DIFF_CONTRACT.md §比对规则）三类字段：</p>
+ * <p>The contract (docs/experiments/RERUN_DIFF_CONTRACT.md, section "Comparison Rules") covers
+ * three field classes:</p>
  * <ul>
- *   <li><b>核心量</b>——manifest 中除显式豁免外的全部字段、metrics 全部字段
- *       （除两个墙钟纳秒总量）、events全部字段（除本机耗时键）及可选network-ledger全部字段。
- *       比对方式为序列化值的<b>精确相等</b>，浮点不设 epsilon：需要容差才能通过的
- *       情形都是未修复的非确定性来源，应修源头而不是放宽比较。</li>
- *   <li><b>易变量</b>——显式枚举的白名单（provenance/runtime 全子树、artifacts 哈希、
- *       输入与产出绝对路径、墙钟纳秒字段）。白名单外的任何字段一律按核心量比对；
- *       新增豁免必须走契约修订，不允许实现时随手放宽。</li>
- *   <li><b>身份信息</b>——{@code provenance.core.sourceTreeSha256} 与
- *       {@code configuration.algorithmContract}，不参与判定，单独提取供报告醒目展示。</li>
+ *   <li><b>Core quantities</b> -- every manifest field outside the explicit exemptions, every
+ *       metrics field (except the two wall-clock nanosecond totals), every events field
+ *       (except the local elapsed-time keys), and every field of the optional network ledger.
+ *       Comparison is the <b>exact equality</b> of the serialized values; floating point gets
+ *       no epsilon: every case that would need a tolerance is an unfixed non-determinism
+ *       source, so fix the source instead of loosening the comparison.</li>
+ *   <li><b>Volatile quantities</b> -- the explicitly enumerated whitelist (the whole
+ *       provenance/runtime subtrees, artifact hashes, input and output absolute paths,
+ *       wall-clock nanosecond fields). Every field outside the whitelist is compared as a core
+ *       quantity; a new exemption requires a contract revision and must not be loosened ad hoc
+ *       in the implementation.</li>
+ *   <li><b>Identity information</b> -- {@code provenance.core.sourceTreeSha256} and
+ *       {@code configuration.algorithmContract}; it takes no part in the verdict and is
+ *       extracted separately for prominent display in the report.</li>
  * </ul>
  *
- * <p>本类不做 verdict 裁决与落盘，只产出结构化差异结果；verdict 由阶段 6 的
- * 报告执行器结合输入定位结果确定。</p>
+ * <p>This class neither decides the verdict nor writes it out; it only produces structured
+ * divergence results. The verdict is settled by the stage 6 report executor in conjunction
+ * with the input-location result.</p>
  */
 public final class EvidenceCoreDiffer {
 
-    /** metrics 中豁免的本机墙钟纳秒字段（契约逐项点名，禁止扩散）。 */
+    /** Local wall-clock nanosecond metrics fields exempted here; the contract names each one, do not widen. */
     public static final Set<String> VOLATILE_METRIC_FIELDS = Collections.unmodifiableSet(new LinkedHashSet<String>(
             Arrays.asList("totalSchedulingDecisionWallClockNanos", "totalPlanningDecisionWallClockNanos")));
 
-    /** 事件 attributes 中豁免的本机耗时键（REPRODUCIBILITY 契约声明排除在指纹外）。 */
+    /**
+     * Local elapsed-time keys exempted inside the event attributes (the REPRODUCIBILITY
+     * contract declares them outside the fingerprint).
+     */
     public static final Set<String> VOLATILE_EVENT_ATTRIBUTE_KEYS = Collections.unmodifiableSet(
             new LinkedHashSet<String>(Arrays.asList("decisionElapsedNanos", "planningDecisionElapsedNanos")));
 
@@ -55,21 +65,25 @@ public final class EvidenceCoreDiffer {
             Collections.unmodifiableList(Arrays.asList("/provenance", "/runtime"));
 
     /**
-     * 比对行为使用的豁免叶子模式。
+     * Exempt leaf patterns used by the comparison behavior.
      *
-     * <p>审查工程 F-001 修复（2026-10-19）：metrics/events 墙钟豁免正则改为从
-     * {@link #VOLATILE_METRIC_FIELDS} / {@link #VOLATILE_EVENT_ATTRIBUTE_KEYS}
-     * **程序化派生**——此前两个 public 常量在全库零消费、行为只由此处硬编码正则
-     * 驱动，构成双定义漂移隐患（向常量加项不会改变行为）。单一信息源后，
-     * 常量即契约：字段集的任何变动自动反映到比对行为。行为锚 =
-     * {@code EvidenceCoreDifferTest}（指针豁免、墙钟属性豁免等既有契约用例）。
-     * 归期（agreement）语义与修复前逐项一致。</p>
+     * <p>Review-engineering F-001 fix (2026-10-19): the metrics/events wall-clock exemption
+     * regexes are now **programmatically derived** from
+     * {@link #VOLATILE_METRIC_FIELDS} / {@link #VOLATILE_EVENT_ATTRIBUTE_KEYS} -- previously
+     * those two public constants had zero consumers repository-wide and the behavior was driven
+     * only by the hard-coded regexes here, a dual-definition drift hazard (adding an item to a
+     * constant did not change the behavior). With a single source of truth the constant is the
+     * contract: any change to the field set is reflected in the comparison behavior
+     * automatically. Behavior anchor = {@code EvidenceCoreDifferTest} (the existing contract
+     * cases such as pointer exemptions and wall-clock attribute exemptions). The agreement
+     * semantics are item-for-item identical to those before the fix.</p>
      */
     private static final List<Pattern> VOLATILE_POINTER_PATTERNS = buildVolatilePointerPatterns();
 
     private static List<Pattern> buildVolatilePointerPatterns() {
         List<Pattern> patterns = new ArrayList<Pattern>();
-        // 身份声明：随代码演化合法变化，不参与核心量判定，单独提取报告。
+        // Identity declaration: changes legally as the code evolves, takes no part in the core
+        // comparison, and is extracted separately for the report.
         patterns.add(Pattern.compile("/configuration/algorithmContract"));
         // Only path leaves are volatile: input identity/order and array length remain core.
         patterns.add(Pattern.compile("/configuration/workflowPaths/\\d+"));
@@ -82,7 +96,7 @@ public final class EvidenceCoreDiffer {
         return Collections.unmodifiableList(patterns);
     }
 
-    /** 常量集合到正则候选分支的字面量化连接（保持集合声明顺序）。 */
+    /** Literal-quoted alternation of the constant set into regex candidate branches (declaration order kept). */
     private static String regexAlternation(Set<String> keys) {
         StringBuilder alternation = new StringBuilder();
         boolean first = true;
@@ -96,7 +110,7 @@ public final class EvidenceCoreDiffer {
         return alternation.toString();
     }
 
-    /** 单侧值序列化后的最大记录长度，超过即截断。 */
+    /** Maximum recorded length of a serialized one-sided value; longer values are truncated. */
     private static final int MAX_VALUE_CHARS = 120;
 
     private static final Gson COMPACT = new GsonBuilder().serializeNulls().create();
@@ -104,12 +118,13 @@ public final class EvidenceCoreDiffer {
     private EvidenceCoreDiffer() {}
 
     /**
-     * 比对原始证据与 rerun 新证据的全部核心量。
+     * Compare every core quantity of the original evidence with the newly produced rerun evidence.
      *
-     * @param original 原始 run 的证据（manifest 已解析，sidecar 文件可读）
-     * @param rerun rerun 新产出的证据
-     * @return 结构化差异结果（核心量分歧清单、易变量差异记录、双侧身份信息）
-     * @throws IOException sidecar 文件不可读
+     * @param original evidence of the original run (manifest already parsed, sidecar files readable)
+     * @param rerun evidence newly produced by the rerun
+     * @return structured divergence result (core divergence list, volatile divergence records,
+     *         identity information of both sides)
+     * @throws IOException a sidecar file cannot be read
      */
     public static DiffResult compare(RerunEvidence original, RerunEvidence rerun) throws IOException {
         if (original == null || rerun == null) {
@@ -156,8 +171,9 @@ public final class EvidenceCoreDiffer {
                     volatileNoted);
         }
 
-        // manifest 内嵌 metrics 与 sidecar 是同一份核心量（工件校验器强制相等），
-        // 两处比对会对同一分歧各记一条；按（指针, 旧值, 新值）精确去重。
+        // The metrics embedded in the manifest and the sidecar carry the same core quantities (the
+        // artifact validator forces them equal), so comparing both would record each divergence
+        // twice; deduplicate exactly on (pointer, old value, new value).
         return new DiffResult(
                 deduplicate(core),
                 volatileNoted,
@@ -180,7 +196,7 @@ public final class EvidenceCoreDiffer {
         return unique;
     }
 
-    // ---- manifest 与 metrics 的通用递归比对 ----
+    // ---- generic recursive comparison of manifest and metrics ----
 
     private static void compareJson(
             String pointer,
@@ -190,7 +206,8 @@ public final class EvidenceCoreDiffer {
             List<Divergence> core,
             List<Divergence> volatileNoted) {
         if (volatileScope || isVolatileSubtreeRoot(pointer)) {
-            // 易变子树：递归到叶子，仅记录差异，不参与核心量判定。
+            // Volatile subtree: recurse to the leaves, record differences only, take no part in the
+            // core comparison.
             compareVolatileScope(pointer, original, rerun, core, volatileNoted);
             return;
         }
@@ -201,13 +218,16 @@ public final class EvidenceCoreDiffer {
             return;
         }
         if (original == null || rerun == null || original.isJsonNull() || rerun.isJsonNull()) {
-            // BAT-R3（2026-10-27 审查第三轮）：JSON null 与“键缺席”同义（均代表未声明），
-            // 与显式 0.0 统一进入缺位判定；三者之外任何取值仍走原文比对。
+            // BAT-R3 (2026-10-27, third review round): JSON null is synonymous with "key absent" (both
+            // mean undeclared) and joins explicit 0.0 in the absence test; any value outside
+            // these three still goes through the literal comparison.
             JsonElement normalizedOriginal = original == null || original.isJsonNull() ? null : original;
             JsonElement normalizedRerun = rerun == null || rerun.isJsonNull() ? null : rerun;
             if (!nullSafeEquals(normalizedOriginal, normalizedRerun)) {
-                // BAT-E4.1（2026-10-27）：能耗前历史证据侧缺键/缺节 vs 复跑侧规范零值等价
-                // ——仅限能耗维度指针且在场值必须为规范零；任何非零值仍走核心量分歧。
+                // BAT-E4.1 (2026-10-27): a missing key/section on the pre-energy historical evidence
+                // side is equivalent to the canonical zero value on the rerun side -- limited to the
+                // energy-dimension pointers, and the present value must be the canonical zero; any
+                // non-zero value still goes through core-quantity divergence.
                 if (!isBackwardCompatibleEnergyAbsence(pointer, normalizedOriginal, normalizedRerun)) {
                     core.add(new Divergence(pointer, describe(original), describe(rerun)));
                 }
@@ -219,7 +239,9 @@ public final class EvidenceCoreDiffer {
 
     /**
      * 2026-10-26 complexity extraction from compareJson; statements verbatim; order unchanged.
-     * 作用域：仅处理已判入易变子树的取值（对象/数组顺序遍历仅记录，叶子差异记入 volatileNoted，不参与核心量判定）。
+     * Scope: handles only values already classified into a volatile subtree (object/array order
+     * traversal records only, leaf differences go to volatileNoted, and nothing takes part in
+     * the core comparison).
      */
     private static void compareVolatileScope(
             String pointer,
@@ -257,7 +279,9 @@ public final class EvidenceCoreDiffer {
 
     /**
      * 2026-10-26 complexity extraction from compareJson; statements verbatim; order unchanged.
-     * 作用域：仅处理非易变指针上双非空取值的核心量比对（容器递归或叶子/标量精确相等，分歧记入 core）。
+     * Scope: handles only the core-quantity comparison of two non-null values on non-volatile
+     * pointers (container recursion, or exact equality of leaves/scalars; divergences go to
+     * core).
      */
     private static void compareCoreValue(
             String pointer,
@@ -294,14 +318,18 @@ public final class EvidenceCoreDiffer {
     }
 
     /**
-     * BAT-E4.1（2026-10-27）：能耗维度的向后兼容缺位等价。
+     * BAT-E4.1 (2026-10-27): backward-compatible absence equivalence for the energy dimension.
      *
-     * <p>语义：仅当一侧值缺位（键不存在）、另一侧是<b>规范零</b>时视为相等。适用指针：
-     * {@code /energyMetrics}（整节递归全零，含 vmEnergyJoules 映射）与
-     * {@code /platform/vms/N/(idlePowerWatts|maxPowerWatts)}（数值恰为 0.0）。非零值绝不豁免
-     * ——带功率证据的复跑漂移仍然全量比对（守恒律防线不放松）。这不是易变白名单扩张：
-     * 数值仍是核心量，"E4 前历史证据无该键"与"E4 后合法全零节"同语义。契约依据见
-     * docs/experiments/RERUN_DIFF_CONTRACT.md（BAT-E4.1 段）。</p>
+     * <p>Semantics: the values count as equal only when one side is absent (the key does not
+     * exist) and the other side is <b>canonical zero</b>. Applicable pointers:
+     * {@code /energyMetrics} (the whole section recursively all zero, including the
+     * vmEnergyJoules map) and {@code /platform/vms/N/(idlePowerWatts|maxPowerWatts)} (the number
+     * is exactly 0.0). Non-zero values are never exempt -- a rerun drift on evidence that
+     * carries power is still compared in full (the conservation-law defense is not relaxed).
+     * This is not a widening of the volatile whitelist: the numbers remain core quantities, and
+     * "historical evidence before E4 has no such key" has the same meaning as "a legally
+     * all-zero section after E4". Contract basis: see
+     * docs/experiments/RERUN_DIFF_CONTRACT.md (BAT-E4.1 paragraph).</p>
      */
     private static boolean isBackwardCompatibleEnergyAbsence(String pointer, JsonElement original, JsonElement rerun) {
         if (original != null && rerun != null) {
@@ -320,7 +348,7 @@ public final class EvidenceCoreDiffer {
         return false;
     }
 
-    /** 递归校验：对象/数组树的每个数值叶子恰为 0.0，且不含其它类型叶子。 */
+    /** Recursive check: every numeric leaf of the object/array tree is exactly 0.0 and no leaf has another type. */
     private static boolean jsonTreeIsAllZeroNumbers(JsonElement element) {
         if (element.isJsonObject()) {
             for (java.util.Map.Entry<String, JsonElement> entry :
@@ -342,11 +370,11 @@ public final class EvidenceCoreDiffer {
         return element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber() && element.getAsDouble() == 0.0;
     }
 
-    /** 能耗功率叶子指针：/platform/vms/&lt;N&gt;/idlePowerWatts 或 maxPowerWatts。 */
+    /** Energy power leaf pointer: /platform/vms/&lt;N&gt;/idlePowerWatts or maxPowerWatts. */
     private static final java.util.regex.Pattern ENERGY_POWER_LEAF_POINTER =
             java.util.regex.Pattern.compile("^/platform/vms/\\d+/(idlePowerWatts|maxPowerWatts)$");
 
-    // ---- events 逐行比对（行数即事件总数） ----
+    // ---- events compared line by line (the line count is the total event count) ----
 
     private static void compareEvents(
             Path originalEvents, Path rerunEvents, List<Divergence> core, List<Divergence> volatileNoted)
@@ -369,9 +397,9 @@ public final class EvidenceCoreDiffer {
         return token.replace("~", "~0").replace("/", "~1");
     }
 
-    // ---- 豁免白名单判定（契约 §易变量，显式枚举） ----
+    // ---- exemption whitelist tests (contract section on volatile quantities, explicit enumeration) ----
 
-    /** 整个子树豁免（provenance/runtime）；子树内递归到叶子仅做记录。 */
+    /** Whole-subtree exemption (provenance/runtime); recursion to the leaves inside it only records. */
     private static boolean isVolatileSubtreeRoot(String pointer) {
         for (String prefix : VOLATILE_SUBTREE_PREFIXES) {
             if (pointer.equals(prefix) || pointer.startsWith(prefix + "/")) {
@@ -381,7 +409,7 @@ public final class EvidenceCoreDiffer {
         return false;
     }
 
-    /** 精确枚举的叶子豁免（路径、哈希、墙钟纳秒、身份声明）。 */
+    /** Exactly enumerated leaf exemptions (paths, hashes, wall-clock nanoseconds, identity declaration). */
     private static boolean isVolatileLeaf(String pointer) {
         for (Pattern pattern : VOLATILE_POINTER_PATTERNS) {
             if (pattern.matcher(pointer).matches()) {
@@ -391,9 +419,9 @@ public final class EvidenceCoreDiffer {
         return false;
     }
 
-    // ---- 身份信息提取（不参与判定，供报告醒目展示） ----
+    // ---- identity information extraction (no part in the verdict; for prominent report display) ----
 
-    /** 提取 {@code provenance.core.sourceTreeSha256}（缺失时为 null），供报告展示。 */
+    /** Extract {@code provenance.core.sourceTreeSha256} (null when missing) for report display. */
     public static String sourceTreeSha256(JsonObject manifest) {
         JsonElement value = manifest;
         for (String key : Arrays.asList("provenance", "core", "sourceTreeSha256")) {
@@ -405,7 +433,7 @@ public final class EvidenceCoreDiffer {
         return value == null || value.isJsonNull() ? null : value.getAsString();
     }
 
-    /** 提取 {@code configuration.algorithmContract} 的紧凑序列化文本（缺失时为 null）。 */
+    /** Extract the compact serialized text of {@code configuration.algorithmContract} (null when missing). */
     public static String algorithmContract(JsonObject manifest) {
         JsonObject configuration = manifest.getAsJsonObject("configuration");
         if (configuration == null || !configuration.has("algorithmContract")) {
@@ -415,7 +443,7 @@ public final class EvidenceCoreDiffer {
         return value.isJsonNull() ? null : COMPACT.toJson(value);
     }
 
-    // ---- 小工具 ----
+    // ---- small helpers ----
 
     private static JsonObject readJson(Path path) throws IOException {
         return JsonParser.parseString(new String(Files.readAllBytes(path), StandardCharsets.UTF_8))
@@ -438,7 +466,10 @@ public final class EvidenceCoreDiffer {
         return ExactJsonValues.equal(a, b);
     }
 
-    /** 序列化值描述：null 缺失显式标注，超长截断并记录总长度。 */
+    /**
+     * Serialized value description: null is explicitly marked missing; over-long values are
+     * truncated and their total length is recorded.
+     */
     private static String describe(JsonElement value) {
         if (value == null) {
             return "<missing>";
@@ -450,7 +481,7 @@ public final class EvidenceCoreDiffer {
         return text.substring(0, MAX_VALUE_CHARS) + "…[truncated:" + text.length() + "]";
     }
 
-    /** 一条差异：JSON 指针 + 双侧值（已截断）。 */
+    /** One divergence: JSON pointer plus the values of both sides (already truncated). */
     public static final class Divergence {
 
         private final String pointer;
@@ -463,7 +494,7 @@ public final class EvidenceCoreDiffer {
             this.rerunValue = rerunValue;
         }
 
-        /** 分歧字段的 JSON 指针（如 {@code /result/makespanSeconds}）。 */
+        /** JSON pointer of the divergent field (for example {@code /result/makespanSeconds}). */
         public String getPointer() {
             return pointer;
         }
@@ -482,7 +513,10 @@ public final class EvidenceCoreDiffer {
         }
     }
 
-    /** 比对结果：核心量分歧、易变量差异记录、双侧身份信息。 */
+    /**
+     * Comparison result: core-quantity divergences, volatile divergence records, and the
+     * identity information of both sides.
+     */
     public static final class DiffResult {
 
         private final List<Divergence> coreDivergences;
@@ -507,17 +541,17 @@ public final class EvidenceCoreDiffer {
             this.rerunAlgorithmContract = rerunAlgorithmContract;
         }
 
-        /** 核心量分歧清单（空 = 全部逐位一致）。 */
+        /** Core-quantity divergence list (empty = every value bitwise identical). */
         public List<Divergence> getCoreDivergences() {
             return coreDivergences;
         }
 
-        /** 核心量是否全部逐位一致。 */
+        /** Whether every core quantity is bitwise identical. */
         public boolean isIdenticalCore() {
             return coreDivergences.isEmpty();
         }
 
-        /** 白名单内取值发生变化的易变字段记录（仅记录，不参与判定）。 */
+        /** Records of volatile fields whose whitelisted values changed (recorded only, no part in the verdict). */
         public List<Divergence> getVolatileNoted() {
             return volatileNoted;
         }
@@ -530,7 +564,7 @@ public final class EvidenceCoreDiffer {
             return rerunSourceTreeSha256;
         }
 
-        /** 代码树哈希是否一致（rerun 侧哈希即当前代码的哈希）。 */
+        /** Whether the code-tree hashes match (the rerun-side hash is the hash of the current code). */
         public boolean isCodeIdentityMatching() {
             return originalSourceTreeSha256 != null && originalSourceTreeSha256.equals(rerunSourceTreeSha256);
         }

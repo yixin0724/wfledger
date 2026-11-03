@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** 写入可审计的逐运行证据包集合及 campaign 索引。 */
+/** Write the auditable per-run evidence bundle set and the campaign index. */
 public final class ExperimentCampaignArtifactWriter {
 
     public static final String INDEX_FILE_NAME = "experiment-campaign-index.json";
@@ -19,15 +19,16 @@ public final class ExperimentCampaignArtifactWriter {
     private ExperimentCampaignArtifactWriter() {}
 
     /**
-     * 写入新目录或显式空目录，并在返回前校验完整索引。
+     * Write a new or explicitly empty directory and validate the complete index before returning.
      *
-     * <p>未完成的 campaign 不会获得有效索引。</p>
+     * <p>An incomplete campaign never obtains a valid index.</p>
      *
-     * @param result 已执行完毕、包含全部声明运行的 campaign 结果
-     * @param outputDirectory 新建或为空的输出目录
-     * @return campaign 索引和逐运行工件路径
-     * @throws IOException 当工件写入或完整索引校验失败时抛出
-     * @throws IllegalArgumentException 当结果、输出目录为空，或目录不是空目录时抛出
+     * @param result campaign result that has finished executing and contains every declared run
+     * @param outputDirectory newly created or empty output directory
+     * @return campaign index and per-run artifact paths
+     * @throws IOException if artifact writing or complete-index validation fails
+     * @throws IllegalArgumentException if the result or output directory is null, or the
+     *         directory is not empty
      */
     public static CampaignArtifacts write(ExperimentCampaignResult result, Path outputDirectory) throws IOException {
         if (result == null || outputDirectory == null) {
@@ -95,7 +96,7 @@ public final class ExperimentCampaignArtifactWriter {
         return values;
     }
 
-    /** 已写入 campaign 的不可变文件位置集合。 */
+    /** Immutable set of written campaign file locations. */
     public static final class CampaignArtifacts {
         private final Path index;
         private final List<RunArtifact> runs;
@@ -114,7 +115,7 @@ public final class ExperimentCampaignArtifactWriter {
         }
     }
 
-    /** 一条 campaign 索引记录及其相对证据路径。 */
+    /** One campaign index record and its relative evidence paths. */
     public static final class RunArtifact {
         private final String cellId;
         private final String comparisonGroup;

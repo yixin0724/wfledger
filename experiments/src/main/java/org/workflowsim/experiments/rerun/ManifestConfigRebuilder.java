@@ -27,24 +27,26 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
- * 阶段 3：把 v4 manifest 反向重建为可执行的 {@link SimulationConfig} 与
- * {@link PlatformProfile}（见契约“重建规则”）。
+ * Stage 3: reconstruct the v4 manifest back into an executable {@link SimulationConfig} and
+ * {@link PlatformProfile} (see the "reconstruction rules" contract).
  *
- * <p>重建只做忠实翻译：每个字段都取 manifest 记录值，不猜测、不填默认、不
- * 静默修正；组合合法性完全交给现有构建器校验（{@code SimulationConfig.build}、
- * {@code PlatformProfile.build}、{@code FailureModelConfig.build} 等）。任何
- * 校验失败——包括互斥算法组合、未知枚举名、字段缺失、数据移动模型参数与
- * 工厂语义不符、VM-Host 预检放置与当前放置逻辑不一致——统一映射为
- * {@code RECONSTRUCTION_REJECTED}，这是合法判定而非程序错误。</p>
+ * <p>Reconstruction is a faithful translation only: every field takes the recorded manifest
+ * value, with no guessing, no default filling, and no silent correction; combination legality is
+ * left entirely to the existing builders ({@code SimulationConfig.build},
+ * {@code PlatformProfile.build}, {@code FailureModelConfig.build}, and so on). Any validation
+ * failure -- including mutually exclusive algorithm combinations, unknown enum names, missing
+ * fields, data movement model parameters that disagree with the factory semantics, and VM-Host
+ * preflight placement that disagrees with the current placement logic -- is mapped uniformly to
+ * {@code RECONSTRUCTION_REJECTED}, which is a legal verdict rather than a program error.</p>
  *
- * <p>{@code configuration.workflowPaths} 使用阶段 2 已核对 sha256 的定位结果，
- * 而非 manifest 记录的原机器路径。</p>
+ * <p>{@code configuration.workflowPaths} uses the locations resolved and sha256-verified in
+ * stage 2, not the original machine paths recorded in the manifest.</p>
  */
 public final class ManifestConfigRebuilder {
 
     private ManifestConfigRebuilder() {}
 
-    /** 重建产物：可执行配置 + 平台描述。 */
+    /** Reconstruction product: executable configuration plus platform description. */
     public static final class RebuiltConfiguration {
 
         private final SimulationConfig config;
@@ -65,12 +67,12 @@ public final class ManifestConfigRebuilder {
     }
 
     /**
-     * 从证据包 manifest 重建配置与平台。
+     * Rebuild the configuration and the platform from the evidence-package manifest.
      *
-     * @param evidence 阶段 1 已校验的证据包
-     * @param inputs   阶段 2 已定位并核对哈希的输入
-     * @throws RerunFailureException {@code RECONSTRUCTION_REJECTED}，异常消息包含
-     *         原始校验失败原因与字段路径
+     * @param evidence evidence package already validated in stage 1
+     * @param inputs   inputs already located and hash-verified in stage 2
+     * @throws RerunFailureException {@code RECONSTRUCTION_REJECTED}; the exception message carries
+     *         the original validation failure cause and the field path
      */
     public static RebuiltConfiguration rebuild(RerunEvidence evidence, RerunInputs inputs)
             throws RerunFailureException {
@@ -143,15 +145,19 @@ public final class ManifestConfigRebuilder {
                     requireString(vm, "vmm", "platform.vms[].vmm"),
                     schedulerMode,
                     optionalCosts(vm.get("costs"), "platform.vms[].costs"),
-                    // BAT-E4.1（2026-10-27）：功率字段往返转发（缺键按 0 处理 = 能耗前历史
-                    // manifest；非零值由 VmSpec 构造器的 max>=idle 校验兜底）。
+                    // BAT-E4.1 (2026-10-27): power fields are forwarded on a round trip (a
+                    // missing key is treated as 0 = pre-energy historical manifest; non-zero values
+                    // are guarded by the max>=idle check of the VmSpec constructor).
                     optionalNonNegativeDouble(vm.get("idlePowerWatts"), "platform.vms[].idlePowerWatts"),
                     optionalNonNegativeDouble(vm.get("maxPowerWatts"), "platform.vms[].maxPowerWatts"),
                     optionalCarbonIntensity(
                             vm.get("carbonIntensityGramsPerKWh"), "platform.vms[].carbonIntensityGramsPerKWh"),
-                    // A1（2026-11-02）：频档表往返重建。缺键/空表 = v1 单档平台（合法缺省）；
-                    // 非空表由 VmSpec 构造器做"严格降序 + 与平铺功率互斥"校验——
-                    // 记录里表非法时重建必须拒收（RECONSTRUCTION_REJECTED），不得静默修正。
+                    // A1 (2026-11-02): frequency tier table round-trip rebuild. A missing key or
+                    // an empty table = v1 single-tier platform (legal default); a non-empty table
+                    // is checked by the VmSpec constructor for "strictly descending + mutually
+                    // exclusive with the flat power fields" -- an illegal table in the record must
+                    // be rejected by reconstruction (RECONSTRUCTION_REJECTED), never silently
+                    // corrected.
                     rebuildFrequencyTiers(vm.get("frequencyTiers"))));
             Integer pinned = optionalInt(vm.get("pinnedHostId"));
             if (pinned != null) {
@@ -219,8 +225,9 @@ public final class ManifestConfigRebuilder {
     }
 
     /**
-     * 重建后的确定性 VM-Host 预检放置必须与 manifest 记录一致；不一致说明当前
-     * 代码的放置逻辑与产出证据的版本不同，重跑不再可信，按拒绝处理。
+     * The deterministic VM-Host preflight placement after reconstruction must match the manifest
+     * record; a mismatch means the current placement logic differs from the version that produced
+     * the evidence, so the rerun is no longer trustworthy and is treated as rejected.
      */
     private static void verifyPreflightAssignments(JsonObject platformSection, PlatformProfile platform) {
         Map<Integer, Integer> assignments = platform.getVmHostAssignments();
@@ -278,8 +285,10 @@ public final class ManifestConfigRebuilder {
                         CostModel.class,
                         requireString(config, "costModel", "configuration.costModel"),
                         "configuration.costModel"))
-                // A1（2026-11-02）：频档指派策略往返。键缺省 = pre-D4 形状/DEFAULT，
-                // 与"缺键 == 唯一合法 DEFAULT"的值语义一致；出现即按记录值重建。
+                // A1 (2026-11-02): frequency tier assignment policy round-trip. A missing
+                // key = pre-D4 shape/DEFAULT, consistent with the value semantics "missing key
+                // == the only legal DEFAULT"; when present, the policy is rebuilt from the
+                // recorded value.
                 .frequencyPolicy(rebuildFrequencyPolicy(config.get("frequencyPolicy")))
                 .overheadModel(
                         rebuildOverheadModel(requireObject(config, "overheadModel", "configuration.overheadModel")))
@@ -288,14 +297,20 @@ public final class ManifestConfigRebuilder {
                 .failureModel(rebuildFailureModel(requireObject(config, "failureModel", "configuration.failureModel")))
                 .dataMovementModel(rebuildDataMovementModel(
                         requireObject(config, "dataMovementModel", "configuration.dataMovementModel")));
-        // BAT-R7（2026-10-27 第七轮审查，跨缝链首跑即红）：注册标签算法的证据复跑。
-        // manifest 记录 schedulingAlgorithm=INVALID + registeredSchedulingAlgorithm=<label>，
-        // 此前重建器只读前者 → INVALID 无提供者 → RECONSTRUCTION_REJECTED；任何
-        // registry 算法的证据从未被复跑过（各缝单测、链条无人走过）。
-        // 修复：label 经 AlgorithmRegistry.find（SPI）解析回提供者；类路径未注册该
-        // 标签时 fail-fast 拒（复诊断要求算法在复跑机器上可用——与证据链诚实一致）。
-        // 注意（延续 BAT-R4 的三形态纪律）：非注册历史证据里该键以 JSON null 出现
-        // （manifest writer serializeNulls），has() 为真——必须同时排除 null 才是"在声明"。
+        // BAT-R7 (2026-10-27 seventh review round, red on the first cross-seam
+        // chain run): evidence rerun of registered-label algorithms.
+        // The manifest records schedulingAlgorithm=INVALID +
+        // registeredSchedulingAlgorithm=<label>, but the rebuilder previously read only the
+        // former -> INVALID has no provider -> RECONSTRUCTION_REJECTED; the evidence of any
+        // registry algorithm had never been rerun (each seam had unit tests; nobody walked the
+        // chain).
+        // Fix: the label is resolved back to a provider through AlgorithmRegistry.find (SPI); when
+        // the classpath does not register that label, fail fast and reject (rerun diagnosis
+        // requires the algorithm to be available on the rerun machine -- consistent with evidence
+        // chain honesty).
+        // Note (continuing the BAT-R4 three-shape discipline): in non-registered historical
+        // evidence the key appears as JSON null (manifest writer serializeNulls) and has() is
+        // true -- null must be excluded too for the key to count as "declared".
         if (config.has("registeredSchedulingAlgorithm")
                 && !config.get("registeredSchedulingAlgorithm").isJsonNull()) {
             String registeredLabel = requireString(
@@ -480,8 +495,9 @@ public final class ManifestConfigRebuilder {
             default:
                 throw new IllegalArgumentException("Unsupported configuration.dataMovementModel.kind: " + kindName);
         }
-        // 共享工厂实例的端点参数是模型语义的一部分；记录值与之不符说明 manifest
-        // 来自不兼容的模型版本，拒绝而非静默采用工厂默认。
+        // The endpoint parameters of a shared factory instance are part of the model
+        // semantics; recorded values that disagree mean the manifest comes from an incompatible
+        // model version, so reject instead of silently adopting the factory default.
         if (Double.compare(model.getAccessLinkBandwidthMbPerSecond(), access) != 0
                 || Double.compare(model.getAccessLinkLatencySeconds(), latency) != 0
                 || Double.compare(model.getSourceEndpointBandwidthMbPerSecond(), source) != 0) {
@@ -508,7 +524,7 @@ public final class ManifestConfigRebuilder {
         return builder.build();
     }
 
-    // ---- JSON helpers（失败一律 IllegalArgumentException，由 rebuild 统一包装） ----
+    // ---- JSON helpers (every failure is IllegalArgumentException, wrapped by rebuild) ----
 
     private static PlatformProfile.CostSpec costSpec(JsonObject costs, String path) {
         return new PlatformProfile.CostSpec(
@@ -598,11 +614,13 @@ public final class ManifestConfigRebuilder {
     }
 
     /**
-     * A1（2026-11-02）：{@code platform.vms[].frequencyTiers} 往返重建。
+     * A1 (2026-11-02): round-trip rebuild of {@code platform.vms[].frequencyTiers}.
      *
-     * <p>缺键/空数组 = v1 单档平台（合法缺省，不做任何猜测）。表项按记录顺序重建；
-     * 严格降序、与平铺功率字段互斥、功率区间由
-     * {@link PlatformProfile.VmSpec} 的构造校验兜底——这里是忠实翻译，不是校验器。</p>
+     * <p>A missing key or an empty array = v1 single-tier platform (legal default, with no
+     * guessing at all). Table entries are rebuilt in recorded order; strict descending order,
+     * mutual exclusivity with the flat power fields, and the power range are guarded by the
+     * constructor validation of {@link PlatformProfile.VmSpec} -- this method is a faithful
+     * translation, not a validator.</p>
      */
     private static List<PlatformProfile.FrequencyTier> rebuildFrequencyTiers(JsonElement element) {
         if (element == null || element.isJsonNull()) {
@@ -628,21 +646,23 @@ public final class ManifestConfigRebuilder {
     }
 
     /**
-     * A1（2026-11-02）：{@code configuration.frequencyPolicy} 往返重建。
+     * A1 (2026-11-02): round-trip rebuild of {@code configuration.frequencyPolicy}.
      *
-     * <p>键缺省/空值 → {@code DEFAULT}（pre-D4 冻结证据的唯一合法值；与
-     * ExperimentManifestWriter 的键缺省发射规则同源）。未知枚举名照旧由
-     * {@code enumValue} 拒收，不降级。</p>
+     * <p>A missing key or a null value maps to {@code DEFAULT} (the only legal value of pre-D4
+     * frozen evidence; the same rule as the key-absence emission of ExperimentManifestWriter).
+     * Unknown enum names are still rejected by {@code enumValue}, with no downgrade.</p>
      */
     private static SimulationConfig.FrequencyPolicy rebuildFrequencyPolicy(JsonElement element) {
         if (element == null || element.isJsonNull()) {
             return SimulationConfig.FrequencyPolicy.DEFAULT;
         }
-        // 类型错误在这里显式拒绝，而不是让 getAsString() 抛 Gson 的 IllegalStateException：
-        // 两者最终都落 RECONSTRUCTION_REJECTED（RerunDiffExecutor.execute 同时捕获
-        // IllegalArgumentException 与 IllegalStateException），但显式拒绝能给出
-        // "哪个字段、期望什么类型"的可操作信息，而不是一句框架级报错（A1 复核轮，
-        // 诊断质量修正；复核时曾误判为 verdict 契约漏洞，已实测证伪）。
+        // A type error is rejected explicitly here instead of letting getAsString() throw
+        // Gson's IllegalStateException: both end up as RECONSTRUCTION_REJECTED
+        // (RerunDiffExecutor.execute catches IllegalArgumentException and IllegalStateException
+        // alike), but an explicit rejection gives actionable information about "which field, which
+        // type was expected" instead of a framework-level message (A1 review round,
+        // diagnostic-quality fix; that review once misjudged it as a verdict contract hole, since
+        // disproved by measurement).
         if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
             throw new IllegalArgumentException("configuration.frequencyPolicy must be a JSON string when present");
         }
@@ -651,8 +671,10 @@ public final class ManifestConfigRebuilder {
     }
 
     /**
-     * BAT-E4.1（2026-10-27）：可选非负功率字段；缺键/空值按 0 处理（能耗前历史形态），
-     * 负数与非数值显式拒绝——功率是物理量纲，静默接受非法值违反显式失败纪律。
+     * BAT-E4.1 (2026-10-27): optional non-negative power field; a missing key or a null value is
+     * treated as 0 (pre-energy historical shape), while negative and non-numeric values are
+     * rejected explicitly -- power is a physical quantity, and silently accepting an illegal value
+     * violates the explicit-failure discipline.
      */
     private static Double optionalCarbonIntensity(JsonElement element, String field) {
         if (element == null || element.isJsonNull()) {

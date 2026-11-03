@@ -157,7 +157,8 @@ public final class NetworkStudyPlan {
 
     /**
      * 2026-10-26 complexity extraction from create; statements verbatim; order unchanged.
-     * 作用域：仅校验合格输入/排除项与已登记研究协议逐项一致（id、sha256、资格剔除字段），不一致即抛。
+     * Scope: verifies only that the qualified inputs and exclusions match the registered study
+     * protocol item by item (id, sha256, qualification-exclusion fields), and throws on any mismatch.
      */
     private static void verifyAgainstRegisteredProtocol(
             NetworkStudyPlan registered, List<WorkflowCase> values, List<Map<String, Object>> excluded) {
@@ -344,7 +345,8 @@ public final class NetworkStudyPlan {
             return Collections.unmodifiableList(conditions);
         }
         List<Integer> mainCounts = getVmCounts();
-        // smoke 只覆盖两个代表性网络，保持 CI 成本恒定；full 覆盖全部五个带宽档位
+        // smoke covers only two representative networks to keep CI cost constant; full covers all
+        // five bandwidth tiers
         List<String> mainNetworks = full ? SENSITIVITY_NETWORKS : Arrays.asList("endpoint", "fat-tree-constrained");
         for (Integer vmCount : mainCounts) {
             for (String network : mainNetworks) {

@@ -19,17 +19,19 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
 /**
- * 面向抽象调度器比较的冻结 P7 确定性基线矩阵。
+ * Frozen P7 deterministic baseline matrix for abstract scheduler comparison.
  *
- * <p>该目录有意排除故障、开销、聚类、本地存储和规划算法。初始 DAX 样本仅限可解析的
- * Epigenomics 输入；它不是跨工作流家族结果集、真实平台回放，也不是经校准的成本或网络实验。</p>
+ * <p>The catalog deliberately excludes failures, overhead, clustering, local storage, and
+ * planning algorithms. The initial DAX sample is limited to the parsable Epigenomics input; it is
+ * not a cross-workflow-family result set, a real-platform replay, or a calibrated cost or network
+ * experiment.</p>
  */
 public final class P7BaselineMatrix {
 
     public static final long ROOT_SEED = 20260901L;
     public static final double RUNTIME_REFERENCE_MIPS = 1000.0;
     public static final double RUNTIME_SCALE = 1.0;
-    /** 冻结的 CloudSim 内核节拍；改变它会改变模型中的任务开始时间。 */
+    /** Frozen CloudSim kernel tick; changing it changes the task start times in the model. */
     public static final double CLOUDSIM_MIN_EVENT_INTERVAL_SECONDS = 0.1;
 
     public static final int SMALL_VM_COUNT = 10;
@@ -64,21 +66,22 @@ public final class P7BaselineMatrix {
     private P7BaselineMatrix() {}
 
     /**
-     * 返回 P7 基线协议允许使用的调度算法。
+     * Return the scheduling algorithms that the P7 baseline protocol allows.
      *
-     * @return 不可变的维护中调度算法列表
+     * @return immutable list of maintained scheduling algorithms
      */
     public static List<Parameters.SchedulingAlgorithm> schedulingAlgorithms() {
         return SCHEDULING_ALGORITHMS;
     }
 
     /**
-     * 返回冻结 P7 基线必须覆盖的场景/调度器单元集合。
+     * Return the set of scenario/scheduler cells that a frozen P7 baseline must cover.
      *
-     * <p>这个集合不依赖本地数据集路径，供索引校验器判定某份工件是否真的是完整的
-     * P7 基线，而不是只执行了部分组合的开发性选择运行。</p>
+     * <p>This set does not depend on local dataset paths; it lets the index validator decide
+     * whether an artifact really is a complete P7 baseline rather than a developmental selection
+     * run that executed only part of the combinations.</p>
      *
-     * @return 不可变的 {@code scenarioId + NUL + schedulingAlgorithm} 单元键集合
+     * @return immutable set of {@code scenarioId + NUL + schedulingAlgorithm} cell keys
      */
     static Set<String> baselineCellKeys() {
         return BASELINE_CELL_KEYS;
@@ -98,10 +101,10 @@ public final class P7BaselineMatrix {
     }
 
     /**
-     * 判断场景标识是否属于冻结 P7 矩阵。
+     * Determine whether a scenario identifier belongs to the frozen P7 matrix.
      *
-     * @param scenarioId 待检查的场景标识
-     * @return 当且仅当该标识属于冻结矩阵时为 {@code true}
+     * @param scenarioId scenario identifier to check
+     * @return {@code true} if and only if the identifier belongs to the frozen matrix
      */
     static boolean isBaselineScenarioId(String scenarioId) {
         if (scenarioId == null) {
@@ -117,10 +120,10 @@ public final class P7BaselineMatrix {
     }
 
     /**
-     * 判断调度器名称是否属于冻结 P7 矩阵。
+     * Determine whether a scheduler name belongs to the frozen P7 matrix.
      *
-     * @param algorithmName 待检查的枚举名称
-     * @return 当且仅当该调度器被 P7 协议允许时为 {@code true}
+     * @param algorithmName enum name to check
+     * @return {@code true} if and only if the scheduler is allowed by the P7 protocol
      */
     static boolean isBaselineAlgorithmName(String algorithmName) {
         if (algorithmName == null) {
@@ -134,19 +137,21 @@ public final class P7BaselineMatrix {
         return false;
     }
 
-    /** 将场景和调度器组成不会与正常名称冲突的内部单元键。 */
+    /** Combine a scenario and a scheduler into an internal cell key that cannot collide with normal names. */
     static String cellKey(String scenarioId, String algorithmName) {
         return scenarioId + "\u0000" + algorithmName;
     }
 
     /**
-     * 按稳定场景标识返回冻结定义，不访问本地数据集。
+     * Return the frozen definition by stable scenario identifier without accessing the local
+     * dataset.
      *
-     * <p>只读索引校验器使用本方法将记录中的摘要字段与协议目录中的工作负载、平台变体
-     * 和输入哈希契约交叉比对。</p>
+     * <p>The read-only index validator uses this method to cross-check the digest fields recorded
+     * in an entry against the workload, platform variant, and input-hash contract of the protocol
+     * catalog.</p>
      *
-     * @param scenarioId P7 场景标识
-     * @return 对应冻结场景；未知标识返回 {@code null}
+     * @param scenarioId P7 scenario identifier
+     * @return corresponding frozen scenario; {@code null} for an unknown identifier
      */
     static Scenario scenarioById(String scenarioId) {
         if (scenarioId == null) {
@@ -164,13 +169,15 @@ public final class P7BaselineMatrix {
     }
 
     /**
-     * 为显式数据集根目录下的冻结工作负载构造平台变体场景。
+     * Build the platform-variant scenarios for the frozen workloads under an explicit dataset
+     * root.
      *
-     * <p>数据集根必须是一个绝对目录。输入文件的存在性和哈希值由实际执行与报告校验负责。</p>
+     * <p>The dataset root must be an absolute directory. The existence and the hash values of the
+     * input files are the responsibility of actual execution and report verification.</p>
      *
-     * @param datasetRoot 显式、绝对的 {@code datasets} 目录
-     * @return 每个冻结工作负载与平台变体组合形成的不可变场景列表
-     * @throws IllegalArgumentException 当数据集根不合法时
+     * @param datasetRoot explicit, absolute {@code datasets} directory
+     * @return immutable scenario list formed by every frozen workload and platform variant
+     * @throws IllegalArgumentException when the dataset root is invalid
      */
     public static List<Scenario> scenarios(Path datasetRoot) {
         ReferenceDatasetRoot.require(datasetRoot);
@@ -183,13 +190,16 @@ public final class P7BaselineMatrix {
     }
 
     /**
-     * 为一个 P7 场景创建冻结的、无故障且无开销的抽象仿真配置。
+     * Create the frozen, failure-free, and overhead-free abstract simulation configuration for a
+     * P7 scenario.
      *
-     * @param scenario 已声明的工作负载与平台变体
-     * @param schedulingAlgorithm P7 允许的维护中调度算法
-     * @param datasetRoot 用于解析场景工作流相对路径的显式、绝对数据集根
-     * @return 具有固定种子、运行时换算参数和 CloudSim 节拍的配置
-     * @throws IllegalArgumentException 当参数为空或算法不属于 P7 基线时
+     * @param scenario declared workload and platform variant
+     * @param schedulingAlgorithm maintained scheduling algorithm allowed by P7
+     * @param datasetRoot explicit, absolute dataset root used to resolve the scenario workflow
+     *        relative path
+     * @return configuration with the fixed seed, runtime conversion parameters, and CloudSim tick
+     * @throws IllegalArgumentException when an argument is null or the algorithm is outside the
+     *         P7 baseline
      */
     public static SimulationConfig baselineConfig(
             Scenario scenario, Parameters.SchedulingAlgorithm schedulingAlgorithm, Path datasetRoot) {
@@ -217,11 +227,12 @@ public final class P7BaselineMatrix {
     }
 
     /**
-     * 构造与给定场景对应的冻结抽象平台。
+     * Build the frozen abstract platform corresponding to the given scenario.
      *
-     * @param scenario 决定 VM 数量及同构或异构 MIPS 分配的场景
-     * @return 已经容量预检的空间共享 VM 平台
-     * @throws IllegalArgumentException 当场景为 {@code null} 时
+     * @param scenario scenario that determines the VM count and the homogeneous or heterogeneous
+     *        MIPS allocation
+     * @return space-shared VM platform that has passed the capacity preflight
+     * @throws IllegalArgumentException when the scenario is {@code null}
      */
     public static PlatformProfile baselinePlatform(Scenario scenario) {
         if (scenario == null) {
@@ -239,13 +250,13 @@ public final class P7BaselineMatrix {
         return builder.build();
     }
 
-    /** P7 中冻结的同构与异构平台变体。 */
+    /** Frozen homogeneous and heterogeneous platform variants in P7. */
     public enum PlatformVariant {
         H0_HOMOGENEOUS,
         H1_HETEROGENEOUS
     }
 
-    /** 一个冻结工作负载及其平台变体组成的不可变场景。 */
+    /** Immutable scenario formed by one frozen workload and its platform variant. */
     public static final class Scenario {
 
         private final Workload workload;
@@ -285,11 +296,11 @@ public final class P7BaselineMatrix {
         }
 
         /**
-         * 将场景的相对工作流路径解析为规范化绝对路径。
+         * Resolve the scenario relative workflow path to a normalized absolute path.
          *
-         * @param datasetRoot 显式、绝对的 {@code datasets} 目录
-         * @return 该场景工作流的规范化绝对路径
-         * @throws IllegalArgumentException 当数据集根或输入文件不合法时
+         * @param datasetRoot explicit, absolute {@code datasets} directory
+         * @return normalized absolute path of the scenario workflow
+         * @throws IllegalArgumentException when the dataset root or the input file is invalid
          */
         public Path resolveWorkflow(Path datasetRoot) {
             return ReferenceDatasetRoot.resolveFile(datasetRoot, workload.relativeWorkflowPath);

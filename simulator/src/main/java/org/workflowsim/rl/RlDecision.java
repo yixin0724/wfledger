@@ -1,7 +1,8 @@
 package org.workflowsim.rl;
 
 /**
- * 一次成功分派的记录：决策时刻、Job 与目标 VM。跳过的 Job 不产生决策记录。
+ * Record of one successful dispatch: decision time, Job, and target VM. A skipped Job produces no
+ * decision record.
  */
 public final class RlDecision {
 
@@ -15,17 +16,17 @@ public final class RlDecision {
         this.vmId = vmId;
     }
 
-    /** @return 分派时刻的仿真时钟（秒） */
+    /** @return simulation clock at dispatch time, in seconds */
     public double getTime() {
         return time;
     }
 
-    /** @return 被分派的 Job ID */
+    /** @return ID of the dispatched Job */
     public int getJobId() {
         return jobId;
     }
 
-    /** @return 分派目标 VM ID */
+    /** @return ID of the dispatch target VM */
     public int getVmId() {
         return vmId;
     }

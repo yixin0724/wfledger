@@ -13,20 +13,22 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
- * 阶段 2：输入定位（见契约“输入定位规则”）。
+ * Stage 2: input resolution (see the "input resolution rules" contract).
  *
- * <p>manifest 中 {@code inputs[].path} 是原机器的绝对路径，跨环境不可靠。定位
- * 顺序固定为三级，任一级命中（文件存在）后立即核对 sha256 与 sizeBytes：
- * 核对通过即采用；不通过按 {@code INPUT_HASH_MISMATCH} 终止，绝不静默降级到
- * 下一候选或替换输入。三级全部未命中报 {@code INPUT_UNRESOLVED}，并列出尝试过
- * 的全部候选路径。</p>
+ * <p>{@code inputs[].path} in the manifest is an absolute path from the original machine and
+ * is unreliable across environments. Resolution follows a fixed three-tier order; as soon as
+ * one tier hits (the file exists), sha256 and sizeBytes are verified immediately: a passing
+ * check is accepted, a failing check terminates with {@code INPUT_HASH_MISMATCH} and never
+ * degrades silently to the next candidate or substitutes another input. When no tier hits,
+ * {@code INPUT_UNRESOLVED} is reported together with every candidate path that was tried.</p>
  *
  * <ol>
- *   <li>run 目录所属 study 输出目录（{@code <study>/runs/<run>} 结构）下的
- *       {@code inputs/<文件名>}；</li>
- *   <li>记录的绝对路径原样；</li>
- *   <li>把记录路径按 {@code provenance.execution.workingDirectory} 相对化后，
- *       重定位到当前重定位根（默认当前工作目录）。</li>
+ *   <li>{@code inputs/<file name>} under the study output directory that owns the run
+ *       directory ({@code <study>/runs/<run>} layout);</li>
+ *   <li>the recorded absolute path as is;</li>
+ *   <li>the recorded path made relative to
+ *       {@code provenance.execution.workingDirectory} and then rebased onto the current
+ *       rebasing root (the current working directory by default).</li>
  * </ol>
  */
 public final class RerunInputResolver {
@@ -37,12 +39,13 @@ public final class RerunInputResolver {
     private RerunInputResolver() {}
 
     /**
-     * 以当前工作目录为重定位根，解析证据包中记录的全部输入。
+     * Resolves every input recorded in the evidence package, using the current working
+     * directory as the rebasing root.
      *
-     * @throws RerunFailureException {@code INPUT_UNRESOLVED} 或
-     *         {@code INPUT_HASH_MISMATCH}（含尝试候选清单）；输入条目缺必填字段
-     *         时为 {@code EVIDENCE_INVALID}
-     * @throws IOException 文件系统读取失败
+     * @throws RerunFailureException {@code INPUT_UNRESOLVED} or {@code INPUT_HASH_MISMATCH}
+     *         (with the list of tried candidates); {@code EVIDENCE_INVALID} when an input
+     *         entry lacks a required field
+     * @throws IOException when a filesystem read fails
      */
     public static RerunInputs resolve(RerunEvidence evidence) throws RerunFailureException, IOException {
         return resolve(
@@ -51,7 +54,7 @@ public final class RerunInputResolver {
                 Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize());
     }
 
-    /** 测试可见的显式重定位根版本。 */
+    /** Explicit-rebasing-root variant, visible for tests. */
     static RerunInputs resolve(JsonObject manifest, Path runDirectory, Path rebasingRoot)
             throws RerunFailureException, IOException {
         List<RerunInputs.ResolvedInput> resolved = new ArrayList<RerunInputs.ResolvedInput>();
@@ -106,7 +109,8 @@ public final class RerunInputResolver {
     }
 
     /**
-     * 按契约顺序生成三级候选；某级不可用时该位置为 null（保持 tier 编号稳定）。
+     * Builds the three-tier candidate list in contract order; an unavailable tier leaves null
+     * in its slot so that tier numbering stays stable.
      */
     private static List<Path> candidatePaths(
             String recordedPath, String recordedWorkingDirectory, Path runDirectory, Path rebasingRoot) {

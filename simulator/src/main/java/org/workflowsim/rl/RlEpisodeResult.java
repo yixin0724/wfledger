@@ -5,10 +5,12 @@ import java.util.List;
 import org.workflowsim.experiment.SimulationReport;
 
 /**
- * 一个 RL episode 的完整结果：仿真证据报告 + episode 统计（奖励、步数、决策轨迹）。
+ * Complete result of one RL episode: the simulation evidence report plus the episode statistics
+ * (reward, step count, decision trace).
  *
- * <p>奖励契约：{@code reward = −makespan}（秒）。episode 是完整的一次工作流仿真，
- * 奖励只在终局给出，不做逐步塑形——makespan 是该轨道唯一被回归覆盖的目标量。</p>
+ * <p>Reward contract: {@code reward = -makespan} in seconds. An episode is one complete
+ * workflow simulation, so the reward is emitted only at the terminal state with no per-step
+ * shaping -- makespan is the only objective quantity covered by regression on this track.</p>
  */
 public final class RlEpisodeResult {
 
@@ -22,27 +24,27 @@ public final class RlEpisodeResult {
         this.stepCount = stepCount;
     }
 
-    /** @return 本次 episode 的完整仿真证据报告 */
+    /** @return the complete simulation evidence report of this episode */
     public SimulationReport getReport() {
         return report;
     }
 
-    /** @return episode makespan（秒） */
+    /** @return episode makespan in seconds */
     public double getMakespan() {
         return report.getMakespan();
     }
 
-    /** @return episode 奖励 = −makespan */
+    /** @return episode reward = -makespan */
     public double getReward() {
         return -report.getMakespan();
     }
 
-    /** @return 策略查询次数（每次 ready-batch 调度更新计一步） */
+    /** @return number of policy queries (one step per ready-batch scheduling update) */
     public int getStepCount() {
         return stepCount;
     }
 
-    /** @return 成功分派的决策轨迹（插入序，不可变） */
+    /** @return decision trace of successful dispatches (insertion order, immutable) */
     public List<RlDecision> getDecisions() {
         return decisions;
     }

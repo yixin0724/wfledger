@@ -14,7 +14,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/** 用于 v1 experiment-campaign 索引的只读完整性校验器。 */
+/** Read-only integrity validator for a v1 experiment-campaign index. */
 public final class ExperimentCampaignValidator {
 
     static final String SCHEMA = "workflowsim-experiment-campaign-index-v1";
@@ -22,12 +22,13 @@ public final class ExperimentCampaignValidator {
     private ExperimentCampaignValidator() {}
 
     /**
-     * 校验 campaign 索引、其计划声明和所有被引用的证据工件。
+     * Validates a campaign index, its plan declaration, and every referenced evidence artifact.
      *
-     * @param indexPath 待校验的 campaign 索引文件
-     * @return 包含索引位置和运行数量的校验结果
-     * @throws IOException 当索引、相对路径、证据工件或其交叉引用不一致时抛出
-     * @throws IllegalArgumentException 当 {@code indexPath} 为空时抛出
+     * @param indexPath campaign index file to validate
+     * @return validation result containing the index location and the run count
+     * @throws IOException when the index, a relative path, an evidence artifact, or a cross-reference
+     *         between them is inconsistent
+     * @throws IllegalArgumentException when {@code indexPath} is null
      */
     public static ValidationResult validate(Path indexPath) throws IOException {
         if (indexPath == null) {
@@ -63,7 +64,7 @@ public final class ExperimentCampaignValidator {
         return new ValidationResult(index, runCount);
     }
 
-    /** 命令行校验入口；不会写入任何文件。 */
+    /** Command-line validation entry point; writes no files. */
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: ExperimentCampaignValidator <experiment-campaign-index.json>");
@@ -191,7 +192,7 @@ public final class ExperimentCampaignValidator {
         }
     }
 
-    /** 供程序调用方使用的只读校验结果。 */
+    /** Read-only validation result for programmatic callers. */
     public static final class ValidationResult {
         private final Path index;
         private final int runCount;

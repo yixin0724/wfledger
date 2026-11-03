@@ -6,10 +6,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 阶段 2 产物：manifest 中全部输入在本机的定位结果（只读）。
+ * Stage 2 artifact: on-host location results for all inputs listed in the manifest (read-only).
  *
- * <p>每个 {@link ResolvedInput} 记录原路径、本机实际路径、核对通过的 sha256 与
- * 命中的定位层级，供配置重建与报告使用；定位过程绝不静默替换输入。</p>
+ * <p>Each {@link ResolvedInput} records the original path, the actual local path, the verified
+ * sha256, and the matched location tier, for configuration rebuilding and reporting; the
+ * location process never silently substitutes an input.</p>
  */
 public final class RerunInputs {
 
@@ -26,7 +27,7 @@ public final class RerunInputs {
         return resolved;
     }
 
-    /** 按 manifest inputs[] 原始顺序返回第 i 个定位结果。 */
+    /** Return the i-th location result in the original manifest inputs[] order. */
     public ResolvedInput get(int index) {
         return resolved.get(index);
     }
@@ -35,7 +36,7 @@ public final class RerunInputs {
         return resolved.size();
     }
 
-    /** 单个输入的已核对定位结果。 */
+    /** Verified location result for a single input. */
     public static final class ResolvedInput {
 
         private final String recordedPath;
@@ -55,12 +56,12 @@ public final class RerunInputs {
             this.tier = tier;
         }
 
-        /** manifest 记录的原机器绝对路径。 */
+        /** Absolute path on the original machine, as recorded in the manifest. */
         public String getRecordedPath() {
             return recordedPath;
         }
 
-        /** 本机实际使用且哈希核对通过的文件。 */
+        /** File actually used on this host whose hash check passed. */
         public Path getResolvedPath() {
             return resolvedPath;
         }
@@ -74,8 +75,8 @@ public final class RerunInputs {
         }
 
         /**
-         * 命中的定位层级：1 = study inputs/ 目录，2 = 记录的绝对路径原样，
-         * 3 = 按记录的 workingDirectory 相对化后重定位。
+         * Matched location tier: 1 = study inputs/ directory, 2 = the recorded absolute path
+         * used as is, 3 = relocated by relativizing against the recorded workingDirectory.
          */
         public int getTier() {
             return tier;

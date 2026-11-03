@@ -17,11 +17,14 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * 在不依赖 Git 或 JVM 当前工作目录的前提下采集内容寻址 provenance 信息。
+ * Captures content-addressed provenance information without relying on Git or on the
+ * current working directory of the JVM.
  *
- * <p>v3 将核心模拟器身份与可选的 study/reference driver 身份分开记录。类路径所在模块
- * 的 POM 和源码树由类的 code source 推导，而不是从 {@code user.dir} 向上猜测项目根，
- * 因而同一工件从 Reactor 根、子模块目录或外部目录启动时不会得到错误的核心身份。</p>
+ * <p>v3 records the core simulator identity separately from the optional study/reference
+ * driver identity. The POM and the source tree of the module on the class path are derived
+ * from the code source of the class rather than by guessing the project root upwards from
+ * {@code user.dir}; therefore the same artifact does not obtain a wrong core identity when
+ * it is started from the reactor root, a submodule directory, or an external directory.</p>
  */
 final class ExperimentProvenance {
 
@@ -90,11 +93,14 @@ final class ExperimentProvenance {
     }
 
     /**
-     * 根据 Maven 构建目录中的类目录或已打包 JAR 推导模块根目录。
+     * Derives the module root directory from a classes directory or a packaged JAR in a
+     * Maven build directory.
      *
-     * <p>单元测试通常从 {@code target/classes} 加载核心类，而 Failsafe 或实际的已打包
-     * 运行可能从 {@code target/*.jar} 加载。两种情形均有明确、无需依赖工作目录的模块
-     * 边界。仓库外安装的 JAR 则不臆测其源码位置，返回 {@code null}。</p>
+     * <p>Unit tests usually load core classes from {@code target/classes}, whereas Failsafe
+     * or an actual packaged run may load them from {@code target/*.jar}. Both cases have a
+     * well-defined module boundary that does not depend on the working directory. For a JAR
+     * installed outside the repository, no source location is assumed and {@code null} is
+     * returned.</p>
      */
     static Path moduleRootForCodeSource(Path location) {
         if (location == null || location.getFileName() == null) {

@@ -1,13 +1,16 @@
 package org.workflowsim.planning;
 
 /**
- * 与 WorkflowSim 受控共享存储执行模型对齐的 DLS 静态 DAG 规划器。
+ * DLS static DAG planner aligned with the WorkflowSim controlled shared-storage execution model.
  *
- * <p>每轮从依赖已满足的 Task-VM 对中选择动态层最大者：
- * {@code dynamicLevel = upwardRank - earliestInsertionStart}。同一动态层按较小 Task ID、
- * 再按较小 VM ID 打破平局；决策轨迹记录每轮的动态层和选择顺序。</p>
+ * <p>Each round selects, among the Task-VM pairs whose dependencies are already satisfied, the
+ * one with the largest dynamic level:
+ * {@code dynamicLevel = upwardRank - earliestInsertionStart}. Ties within the same dynamic
+ * level are broken by smaller Task ID, then by smaller VM ID; the decision trace records the
+ * dynamic level and the selection order of each round.</p>
  *
- * <p>它不引入互连拓扑或链路保留，因此只是该受控模型下的 DLS 适配，而非通用网络感知 DLS。</p>
+ * <p>It introduces no interconnect topology or link reservation, so it is only a DLS adaptation
+ * under this controlled model, not a general network-aware DLS.</p>
  */
 public final class SharedStorageDlsPlanningAlgorithm extends BasePlanningAlgorithm {
 
@@ -28,7 +31,7 @@ public final class SharedStorageDlsPlanningAlgorithm extends BasePlanningAlgorit
                 SharedStorageDagPlanner.plan(getTaskList(), getVmList(), context, SharedStorageDagPlanner.Strategy.DLS);
     }
 
-    /** 返回最近一次成功规划的不可变决策轨迹。 */
+    /** Returns the immutable decision trace of the most recent successful plan. */
     public SharedStorageDagPlanTrace getLastPlanTrace() {
         if (lastPlanTrace == null) {
             throw new IllegalStateException("SHARED_STORAGE_DLS has not completed a plan");

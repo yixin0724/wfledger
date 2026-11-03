@@ -103,7 +103,7 @@ final class StorageLifecycleReportView {
         return freeze(root);
     }
 
-    /** project() 的事件扫描阶段（逐字搬运转写；三个大 case 臂另行搬运转写）。 */
+    /** Event scan stage of project() (verbatim relocation; the three large case arms are relocated separately). */
     private StorageScan scanLifecycleEvents(JsonArray rawEvents, Map<DataflowFilePlan.FileId, BigDecimal> fileBytes) {
         StorageScan scan = new StorageScan();
         // Scan the whole capture before applying display caps, including late settlements/readiness.
@@ -156,7 +156,7 @@ final class StorageLifecycleReportView {
         return scan;
     }
 
-    /** COPY_SETTLED 事件臂（逐字搬运转写）。 */
+    /** COPY_SETTLED event arm (verbatim relocation). */
     private void applyCopySettled(JsonObject event, JsonObject payload, StorageScan scan) {
         long ordinal = payload.get("copyOrdinal").getAsLong();
         scan.settlements.put(ordinal, event);
@@ -172,7 +172,7 @@ final class StorageLifecycleReportView {
         scan.totals.residual = scan.totals.residual.add(exact(payload.get("remainingAfterService")));
     }
 
-    /** INPUT_WAITING_FOR_STORE 事件臂（逐字搬运转写）。 */
+    /** INPUT_WAITING_FOR_STORE event arm (verbatim relocation). */
     private void applyInputWaiting(
             JsonObject payload, StorageScan scan, Map<DataflowFilePlan.FileId, BigDecimal> fileBytes) {
         DataflowFilePlan.FileId waitingFile = fileKey(payload.getAsJsonObject("fileId"));
@@ -185,7 +185,7 @@ final class StorageLifecycleReportView {
                 scan.totals.requiredBytes.add(fileBytes.get(waitingFile).multiply(waitingReferences));
     }
 
-    /** INPUT_RESOLVED 事件臂（逐字搬运转写）。 */
+    /** INPUT_RESOLVED event arm (verbatim relocation). */
     private void applyInputResolved(
             JsonObject event,
             JsonObject payload,
@@ -223,7 +223,7 @@ final class StorageLifecycleReportView {
         }
     }
 
-    /** 副本行构建（上限截断，逐字搬运转写）。 */
+    /** Copy row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> copiesRows(StorageLifecycleCodec.Decoded decoded, StorageScan scan) {
         List<Map<String, Object>> copies = new ArrayList<>();
         for (Map.Entry<Long, JsonObject> entry : scan.admissions.entrySet()) {
@@ -235,7 +235,7 @@ final class StorageLifecycleReportView {
         return copies;
     }
 
-    /** 资源行构建（上限截断，逐字搬运转写）。 */
+    /** Resource row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> resourceRows(JsonArray rawResources) {
         List<Map<String, Object>> resources = new ArrayList<>();
         for (int i = 0; i < Math.min(RESOURCE_LIMIT, rawResources.size()); i++) {
@@ -248,7 +248,7 @@ final class StorageLifecycleReportView {
         return resources;
     }
 
-    /** 事件行构建（上限截断，逐字搬运转写）。 */
+    /** Event row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> eventRows(JsonArray rawEvents, StorageScan scan) {
         List<Map<String, Object>> events = new ArrayList<>();
         for (int i = 0; i < Math.min(EVENT_LIMIT, rawEvents.size()); i++) {
@@ -257,7 +257,7 @@ final class StorageLifecycleReportView {
         return events;
     }
 
-    /** Job 行构建（上限截断，逐字搬运转写）。 */
+    /** Job row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> jobRows(StorageScan scan) {
         List<Map<String, Object>> jobRows = new ArrayList<>();
         for (Job job : scan.jobs.values()) {
@@ -269,7 +269,10 @@ final class StorageLifecycleReportView {
         return jobRows;
     }
 
-    /** project() 事件扫描阶段聚合量的私有搬运转写结构（保持原局部变量的声明类型与初始化顺序）。 */
+    /**
+     * Private relocation holder for the project() event-scan aggregates (declaration types and
+     * initialization order of the original local variables preserved).
+     */
     private static final class StorageScan {
         final Map<Long, JsonObject> admissions = new LinkedHashMap<>();
         final Map<Long, JsonObject> settlements = new HashMap<>();

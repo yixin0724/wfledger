@@ -18,10 +18,11 @@ package org.workflowsim.scheduling;
 import java.util.List;
 
 /**
- * 调度策略的最小接口。
+ * Minimal interface for a scheduling policy.
  *
- * <p>调用方在每个调度事件提供当前 ready Job 与 VM 列表，策略只返回本轮实际分派的
- * Job；接口本身不定义离线计划、未来可用时间或现实队列语义。</p>
+ * <p>The caller supplies the current ready Job and VM lists at each scheduling event, and the
+ * policy returns only the Jobs dispatched in that round; the interface itself defines neither
+ * offline plans, future availability times, nor realistic queueing semantics.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -29,21 +30,21 @@ import java.util.List;
  */
 public interface SchedulingAlgorithmInterface {
 
-    /** 设置当前 ready Job 列表。 */
+    /** Set the current ready Job list. */
     public void setCloudletList(List list);
 
-    /** 设置当前 VM 列表。 */
+    /** Set the current VM list. */
     public void setVmList(List list);
 
-    /** 返回当前 ready Job 列表。 */
+    /** Return the current ready Job list. */
     public List getCloudletList();
 
-    /** 返回当前 VM 列表。 */
+    /** Return the current VM list. */
     public List getVmList();
 
-    /** 执行一次调度更新。 */
+    /** Execute one scheduling update. */
     public void run() throws Exception;
 
-    /** 返回本轮已分派的 Job。 */
+    /** Return the Jobs dispatched in this round. */
     public List getScheduledList();
 }

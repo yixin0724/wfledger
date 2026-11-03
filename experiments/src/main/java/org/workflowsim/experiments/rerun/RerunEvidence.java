@@ -5,11 +5,14 @@ import java.nio.file.Path;
 import com.google.gson.JsonObject;
 
 /**
- * 一次通过校验的v4证据包：三件套、可选网络账本路径/状态、事件计数与manifest。
+ * One validated v4 evidence bundle: the manifest/metrics/events triple, the optional network
+ * ledger path/status, the event count, and the manifest.
  *
- * <p>本对象是只读快照。manifest 以 Gson {@code JsonObject} 树原样保存，后续
- * 配置重建与比对都在该树上工作；metrics/events和可选network-ledger的哈希、计数
- * 及必要内容/上下文已由 {@link RerunEvidenceReader} 委托现有验证器核对完毕。</p>
+ * <p>This object is a read-only snapshot. The manifest is kept as-is as a Gson
+ * {@code JsonObject} tree, and the later configuration rebuild and comparison both work on
+ * that tree; the hashes, counts, and required content/context of metrics/events and of the
+ * optional network-ledger have already been checked through the existing verifiers, which
+ * {@link RerunEvidenceReader} delegates to.</p>
  */
 public final class RerunEvidence {
 
@@ -86,7 +89,8 @@ public final class RerunEvidence {
 
     /**
      * 2026-10-26 complexity extraction from RerunEvidence constructor; statements verbatim; order unchanged.
-     * 作用域：仅校验五件套非空，越界即抛"缺失必要证据组件"。
+     * Scope: validates only that the five evidence components are non-null; a violation throws
+     * the 'missing required evidence component' error.
      */
     private static void requireEvidenceComponents(
             Path runDirectory, Path manifestPath, Path metricsPath, Path eventsPath, JsonObject manifest) {
@@ -101,7 +105,8 @@ public final class RerunEvidence {
 
     /**
      * 2026-10-26 complexity extraction from RerunEvidence constructor; statements verbatim; order unchanged.
-     * 作用域：仅从 manifest 的 configuration.networkEvidence 解码可选网络证据配置（缺省为 off）。
+     * Scope: decodes only the optional network evidence configuration from
+     * configuration.networkEvidence in the manifest (absent means off).
      */
     private static org.workflowsim.data.NetworkEvidenceConfig manifestNetworkEvidenceOption(JsonObject manifest) {
         org.workflowsim.data.NetworkEvidenceConfig option = org.workflowsim.data.NetworkEvidenceConfig.off();
@@ -116,7 +121,9 @@ public final class RerunEvidence {
 
     /**
      * 2026-10-26 complexity extraction from RerunEvidence constructor; statements verbatim; order unchanged.
-     * 作用域：仅校验声明模式与三类 sidecar 路径/状态组合的自洽性，失配即抛管线配置异常。
+     * Scope: validates only the self-consistency of the declared mode with the path/status
+     * combinations of the three sidecar kinds; a mismatch throws a pipeline configuration
+     * exception.
      */
     private static void requireConsistentSidecarContract(
             org.workflowsim.data.NetworkEvidenceConfig option,
@@ -226,12 +233,12 @@ public final class RerunEvidence {
         return storageLifecycleCaptureStatus;
     }
 
-    /** manifest 声明且 JSONL 实测一致的事件条数。 */
+    /** Number of events declared by the manifest and confirmed by the measured JSONL. */
     public int getEventCount() {
         return eventCount;
     }
 
-    /** 解析后的 manifest 树（v4 schema）。调用方不得修改。 */
+    /** Parsed manifest tree (v4 schema). Callers must not modify it. */
     public JsonObject getManifest() {
         return manifest;
     }

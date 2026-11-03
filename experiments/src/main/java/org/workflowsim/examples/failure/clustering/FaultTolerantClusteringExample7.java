@@ -39,10 +39,12 @@ import org.workflowsim.utils.PeriodicalSignal;
 import org.workflowsim.utils.ReplicaCatalog;
 
 /**
- * 使用周期性故障信号的历史动态重聚类教学示例。
+ * Historical dynamic reclustering teaching example that uses a periodic failure signal.
  *
- * <p>该类将周期性信号、故障分布和重聚类路径组合为一个旧版可执行场景。所有参数都是
- * 抽象情景假设；它不是标准研究实验入口，也不能用于推断真实平台的周期性故障行为。</p>
+ * <p>The class combines a periodic signal, a failure distribution, and the reclustering path into
+ * one legacy executable scenario. All parameters are abstract scenario assumptions; it is not a
+ * standard research experiment entry point, and it must not be used to infer the periodic failure
+ * behavior of a real platform.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -51,25 +53,29 @@ import org.workflowsim.utils.ReplicaCatalog;
 public class FaultTolerantClusteringExample7 extends FaultTolerantClusteringExample1 {
 
     private static final String EXAMPLE_ID = "fault-clustering-periodic";
-    /** 周期性缓存耗尽后的兼容回退尺度及旧估计器先验基准，不代表真实故障率。 */
+    /**
+     * Compatibility fallback scale after the periodic cache is exhausted, together with the prior
+     * baseline of the legacy estimator; it does not represent a real failure rate.
+     */
     private static final double DEFAULT_FAILURE_INTERVAL_SCALE = 100000.0;
-    /** 固定教学种子下短间隔的高故障阶段尺度。 */
+    /** High-failure phase scale at a short interval under the fixed teaching seed. */
     private static final double DEFAULT_HIGH_FAILURE_INTERVAL_SCALE = 30000.0;
-    /** 固定教学种子下长间隔的低故障阶段尺度。 */
+    /** Low-failure phase scale at a long interval under the fixed teaching seed. */
     private static final double DEFAULT_LOW_FAILURE_INTERVAL_SCALE = 180000.0;
 
     /**
-     * 运行带周期性两级失效间隔的容错场景。
+     * Run the fault-tolerant scenario with a periodic two-level failure interval.
      *
-     * <p>支持 {@code -c}（SR/DR/NOOP/DC/VR）、{@code -d}、{@code -b}、
-     * {@code -q}/{@code -s}（队列 Gamma 参数）、{@code -w}（队列先验强度）、
-     * {@code -p}/{@code -t}（旧故障估计器参数）、{@code -e}（周期）、{@code -n}
-     * （高故障阶段比例）、{@code -h}/{@code -l}（高/低故障阶段的 Weibull 间隔尺度）
-     * 和 {@code -r}（根种子）。高故障阶段尺度必须小于低故障阶段尺度。周期性到达的
-     * 实际抽样由 {@code -h}/{@code -l} 控制；{@code -p}/{@code -t} 保留为旧估计器
-     * 先验及缓存耗尽后的兼容回退参数。</p>
+     * <p>Supports {@code -c} (SR/DR/NOOP/DC/VR), {@code -d}, {@code -b},
+     * {@code -q}/{@code -s} (queue Gamma parameters), {@code -w} (queue prior strength),
+     * {@code -p}/{@code -t} (legacy failure estimator parameters), {@code -e} (period),
+     * {@code -n} (high-failure phase portion), {@code -h}/{@code -l} (Weibull interval scales of
+     * the high/low failure phase), and {@code -r} (root seed). The high-failure phase scale must be
+     * smaller than the low-failure phase scale. The actual sampling of periodic arrivals is
+     * controlled by {@code -h}/{@code -l}; {@code -p}/{@code -t} are retained as legacy estimator
+     * priors and as compatibility fallback parameters after the cache is exhausted.</p>
      *
-     * @param args 旧式单字符 option 与值组成的参数序列
+     * @param args legacy argument sequence of single-character options and values
      */
     public static void main(String[] args) {
         try {
@@ -124,12 +130,14 @@ public class FaultTolerantClusteringExample7 extends FaultTolerantClusteringExam
                     : ClusteringParameters.ClusteringMethod.HORIZONTAL;
             FailureParameters.FTCluteringAlgorithm strategy = strategyFor(clustering);
             int maxLevel = 11;
-            // 为保留清晰语义，upper 为长间隔低故障阶段，lower 为短间隔高故障阶段。
+            // To keep the semantics clear, upper is the long-interval low-failure phase and
+            // lower is the short-interval high-failure phase.
             PeriodicalSignal signal = new PeriodicalSignal(
                     period, lowFailureIntervalScale, highFailureIntervalScale, highFailurePortion, false);
 
             DistributionGenerator[][] failureGenerators = new DistributionGenerator[vmNum][maxLevel];
-            // 历史 E7 使用一个共享全局故障时钟；它不是 VM-深度独立故障模型。
+            // Historical E7 uses one shared global failure clock; it is not a VM-depth independent
+            // failure model.
             DistributionGenerator failureGenerator = new PeriodicalDistributionGenerator(
                     DistributionGenerator.DistributionFamily.WEIBULL,
                     failureScale,

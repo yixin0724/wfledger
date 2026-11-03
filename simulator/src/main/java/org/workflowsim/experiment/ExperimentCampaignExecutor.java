@@ -3,19 +3,19 @@ package org.workflowsim.experiment;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 通过标准运行器顺序执行已经声明的 campaign。 */
+/** Execute the declared campaigns sequentially through the standard runner. */
 public final class ExperimentCampaignExecutor {
 
     /**
-     * 按 cell 声明顺序和种子计划顺序运行全部重复。
+     * Run every repetition in cell declaration order and seed-plan order.
      *
-     * <p>WorkflowSim 保留 CloudSim 静态状态，标准运行器不承诺 JVM 内并发，
-     * 因此这里刻意采用顺序执行。</p>
+     * <p>WorkflowSim retains the CloudSim static state and the standard runner does not
+     * promise in-JVM concurrency, so sequential execution is deliberate here.</p>
      *
-     * @param plan 已通过构造约束校验的不可变实验计划
-     * @return 包含每个已执行 cell/repetition 的不可变结果
-     * @throws Exception 当任一次标准仿真运行失败时抛出
-     * @throws IllegalArgumentException 当 {@code plan} 为空时抛出
+     * @param plan immutable experiment plan already validated against the construction constraints
+     * @return immutable results covering every executed cell/repetition
+     * @throws Exception when any standard simulation run fails
+     * @throws IllegalArgumentException when {@code plan} is null
      */
     public ExperimentCampaignResult execute(ExperimentPlan plan) throws Exception {
         if (plan == null) {

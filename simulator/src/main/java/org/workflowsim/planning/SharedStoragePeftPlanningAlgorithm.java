@@ -1,13 +1,16 @@
 package org.workflowsim.planning;
 
 /**
- * 与 WorkflowSim 受控共享存储执行模型对齐的 Predict Earliest Finish Time（PEFT）规划器。
+ * Predict Earliest Finish Time (PEFT) planner aligned with the WorkflowSim controlled
+ * shared-storage execution model.
  *
- * <p>先以兼容 VM 平均 optimistic cost table（OCT）最大的 ready Task 为优先级，再选择
- * 插入 {@code EFT + OCT} 最小的 VM。Task 优先级和 VM 目标相同时均选较小 ID。由于本模型
- * 没有链路模型，原始 PEFT 的跨处理器通信项在此为零。</p>
+ * <p>It first prioritizes the ready Task with the largest optimistic cost table (OCT) averaged
+ * over compatible VMs, then selects the VM that minimizes the inserted {@code EFT + OCT}.
+ * Equal Task priority and equal VM target both resolve to the smaller ID. Because this model has
+ * no link model, the cross-processor communication term of the original PEFT is zero here.</p>
  *
- * <p>该实现保留后继任务乐观前瞻，不表示网络感知或真实平台校准的 PEFT。</p>
+ * <p>The implementation keeps the optimistic lookahead over successor tasks; it does not
+ * represent network-aware PEFT or PEFT calibrated against a real platform.</p>
  */
 public final class SharedStoragePeftPlanningAlgorithm extends BasePlanningAlgorithm {
 
@@ -28,7 +31,7 @@ public final class SharedStoragePeftPlanningAlgorithm extends BasePlanningAlgori
                 getTaskList(), getVmList(), context, SharedStorageDagPlanner.Strategy.PEFT);
     }
 
-    /** 返回最近一次成功规划的不可变决策轨迹。 */
+    /** Returns the immutable decision trace of the most recent successful plan. */
     public SharedStorageDagPlanTrace getLastPlanTrace() {
         if (lastPlanTrace == null) {
             throw new IllegalStateException("SHARED_STORAGE_PEFT has not completed a plan");

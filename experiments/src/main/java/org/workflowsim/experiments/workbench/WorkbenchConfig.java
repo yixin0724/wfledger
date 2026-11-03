@@ -61,8 +61,9 @@ public final class WorkbenchConfig {
         List<Double> arrivals = readArrivals(root, paths);
         JsonObject platformObject = object(root, "platform");
         PlatformProfile platform = platform(platformObject);
-        // BAT-D4（2026-10-29，docs/advanced/DVFS_DIMENSION_DESIGN.md §2.5）：平台级频档策略
-        // 在 profile 构建之后单一解析（策略无表拒斥需要已装配的频档剖面事实）。
+        // BAT-D4 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md 2.5): the platform-level
+        // frequency-tier policy is resolved once, after the profile is built (rejecting a policy on a
+        // tierless platform needs the assembled frequency-tier profile facts).
         SimulationConfig.FrequencyPolicy frequencyPolicy = frequencyPolicy(platformObject, platform);
         SimulationModels models = readSimulationModels(root, platform);
         List<Long> seeds = readSeeds(root);
@@ -70,7 +71,7 @@ public final class WorkbenchConfig {
         return new WorkbenchConfig(name, root.deepCopy(), platform, candidates, seeds);
     }
 
-    /** 严格 JSON 文档读取（逐字搬运转写自 read())。 */
+    /** Strict JSON document read, extracted verbatim from read(). */
     private static JsonObject readJsonDocument(Path path) throws IOException {
         JsonObject root;
         try (com.google.gson.stream.JsonReader reader =
@@ -86,7 +87,7 @@ public final class WorkbenchConfig {
         return root;
     }
 
-    /** 配置字段白名单与 schema 校验（逐字搬运转写）。 */
+    /** Configuration field whitelist and schema validation, extracted verbatim. */
     private static void validateConfigurationFields(JsonObject root) {
         fields(
                 root,
@@ -104,7 +105,7 @@ public final class WorkbenchConfig {
         }
     }
 
-    /** workflowPaths 读取与存在性校验（逐字搬运转写）。 */
+    /** workflowPaths read and existence validation, extracted verbatim. */
     private static List<String> readWorkflowPaths(Path path, JsonObject root) {
         JsonArray inputs = array(root, "workflowPaths");
         if (inputs.size() < 1 || inputs.size() > 32) {
@@ -127,7 +128,7 @@ public final class WorkbenchConfig {
         return paths;
     }
 
-    /** 到达时刻读取与长度一致校验（逐字搬运转写）。 */
+    /** Arrival-time read and length-consistency validation, extracted verbatim. */
     private static List<Double> readArrivals(JsonObject root, List<String> paths) {
         List<Double> arrivals = new ArrayList<Double>();
         if (root.has("workflowArrivalSeconds")) {
@@ -145,7 +146,7 @@ public final class WorkbenchConfig {
         return arrivals;
     }
 
-    /** 仿真模型组读取与组合校验（逐字搬运转写）。 */
+    /** Simulation model-group read and combination validation, extracted verbatim. */
     private static SimulationModels readSimulationModels(JsonObject root, PlatformProfile platform) {
         JsonObject sim = root.has("simulation") ? object(root, "simulation") : new JsonObject();
         fields(
@@ -181,7 +182,7 @@ public final class WorkbenchConfig {
         return new SimulationModels(sim, fs, movement, networkEvidence);
     }
 
-    /** 随机种子读取与去重校验（逐字搬运转写）。 */
+    /** Random seed read and uniqueness validation, extracted verbatim. */
     private static List<Long> readSeeds(JsonObject root) {
         List<Long> seeds = new ArrayList<Long>();
         if (root.has("seeds")) {
@@ -198,8 +199,9 @@ public final class WorkbenchConfig {
     }
 
     /**
-     * 算法候选与配置组装（逐字搬运转写）。BAT-D4（2026-10-29）追加频档策略参数——
-     * 策略是配置级（SimulationConfig）声明，逐候选同值注入。
+     * Algorithm candidate and configuration assembly, extracted verbatim. BAT-D4 (2026-10-29) adds the
+     * frequency-policy parameter: the policy is a configuration-level (SimulationConfig)
+     * declaration injected with the same value into every candidate.
      */
     private static List<Candidate> readCandidates(
             JsonObject root,
@@ -268,7 +270,7 @@ public final class WorkbenchConfig {
         return candidates;
     }
 
-    /** readCandidates 调度策略解析的私有搬运转写结构。 */
+    /** Private extraction structure for the scheduling-policy resolution in readCandidates. */
     private static final class ResolvedScheduler {
         final Parameters.SchedulingAlgorithm scheduler;
         final org.workflowsim.experiment.registry.SchedulingAlgorithmProvider registeredProvider;
@@ -283,13 +285,15 @@ public final class WorkbenchConfig {
 
     /**
      * 2026-10-26 complexity extraction from readCandidates; statements verbatim; order unchanged.
-     * 作用域：仅解析候选算轨的调度策略（默认标签、枚举解析、SPI 外部注册回退与维护面资格审查）。
+     * Scope: resolve only the scheduling policy of a candidate algorithm track (default label, enum
+     * resolution, SPI external-registration fallback, and maintained-surface eligibility check).
      */
     /**
-     * C1（2026-11-02 复核轮）：延后引擎需要 {@code platform.carbonWindows}，而预算窗口
-     * 属于研究协议声明域、刻意不进 v1 工作台面（CARBON_DIMENSION_DESIGN §2.3）。因此
-     * 工作台在<b>校验期</b>就拒绝这个标签并指明去处，而不是让用户 validate 通过、
-     * run 到一半才被运行期拒绝。
+     * C1 (2026-11-02 review round): the deferral engine needs {@code platform.carbonWindows}, and
+     * budget windows belong to the research-protocol declaration domain and are deliberately kept
+     * out of the v1 workbench surface (CARBON_DIMENSION_DESIGN 2.3). The workbench therefore
+     * rejects this label at <b>validation time</b> and names the alternative, instead of letting the
+     * user pass validate and then be rejected by the runtime halfway through a run.
      */
     private static void rejectWorkbenchExcludedScheduler(Parameters.SchedulingAlgorithm scheduler) {
         if (scheduler == Parameters.SchedulingAlgorithm.CARBON_WINDOW_DEFER) {
@@ -315,7 +319,7 @@ public final class WorkbenchConfig {
         try {
             scheduler = Parameters.SchedulingAlgorithm.valueOf(schedulerText);
         } catch (IllegalArgumentException unknownEnumLabel) {
-            // BAT-3（2026-10-26）：外部注册算轨标签（ServiceLoader SPI）。
+            // BAT-3 (2026-10-26): externally registered algorithm-track label (ServiceLoader SPI).
             if (!assignment.isEnabled()
                     && planner == Parameters.PlanningAlgorithm.INVALID
                     && org.workflowsim.experiment.registry.AlgorithmRegistry.isRegistered(schedulerText)) {
@@ -338,7 +342,8 @@ public final class WorkbenchConfig {
 
     /**
      * 2026-10-26 complexity extraction from readCandidates; statements verbatim; order unchanged.
-     * 作用域：仅计算决策层归属并校验同一实验内全部候选必须处于同一决策层。
+     * Scope: compute only the decision-layer membership, and verify that all candidates of one
+     * experiment belong to the same decision layer.
      */
     private static String requireSameDecisionLayer(
             String track,
@@ -355,7 +360,7 @@ public final class WorkbenchConfig {
         return candidateTrack;
     }
 
-    /** read() 仿真模型组的私有搬运转写结构。 */
+    /** Private extraction structure for the simulation model group in read(). */
     private static final class SimulationModels {
         final JsonObject sim;
         final ReplicaCatalog.FileSystem fileSystem;
@@ -444,17 +449,21 @@ public final class WorkbenchConfig {
                 "storageTransferMbPerSecond",
                 "networkTopology",
                 "sourceStorage",
-                // BAT-E4.2（2026-10-27）：能耗维度可选声明（均一功率，缺省 0 表示不带功率模型）。
+                // BAT-E4.2 (2026-10-27): optional energy-dimension declaration (uniform power; the
+                // default 0 means no power model).
                 "idlePowerWatts",
                 "maxPowerWatts",
-                // BAT-C3（2026-10-28）：碳维度可选声明（均一 gCO₂/kWh，强度模型）。
-                // 预算模型的 carbonWindows <b>不进 v1 工作台面</b>：窗口属于研究协议声明域
-                // （CARBON_DIMENSION_DESIGN.md §2.5 的 E5 式比较轨），上此处白名单即拒。
+                // BAT-C3 (2026-10-28): optional carbon-dimension declaration (uniform gCO2/kWh,
+                // intensity model). Budget-model carbonWindows <b>do not enter the v1 workbench
+                // surface</b>: windows belong to the research-protocol declaration domain (the
+                // E5-style comparison track of CARBON_DIMENSION_DESIGN.md 2.5), so a whitelist entry
+                // here is rejected outright.
                 "carbonIntensityGramsPerKWh",
-                // BAT-D4（2026-10-29）：DVFS 频档维度可选声明（docs/advanced/
-                // DVFS_DIMENSION_DESIGN.md §2.5）。frequencyTiers 均一 P-state 三元组
-                // 表（严格降序、首档=默认档，逐 VM 同表）；frequencyPolicy 配置级指派
-                // 策略枚举（DEFAULT/MIN_POWER/EDP_HEURISTIC，缺省 DEFAULT=v1 退化）。
+                // BAT-D4 (2026-10-29): optional DVFS frequency-tier dimension declaration
+                // (docs/advanced/DVFS_DIMENSION_DESIGN.md 2.5). frequencyTiers is a uniform P-state
+                // triple table (strictly descending, first tier = default tier, the same table for
+                // every VM); frequencyPolicy is the configuration-level assignment policy enum
+                // (DEFAULT/MIN_POWER/EDP_HEURISTIC; the default DEFAULT degenerates to v1).
                 "frequencyTiers",
                 "frequencyPolicy");
         JsonArray mips = array(value, "vmMips");
@@ -462,8 +471,9 @@ public final class WorkbenchConfig {
             throw new IllegalArgumentException("vmMips requires 1..64 VMs");
         }
         int bandwidth = integer(value, "bandwidthMbPerSecond", 1000, 1, 1000000000);
-        // BAT-E4.2（2026-10-27）：可选均一功率（瓦）。两键都以 0 为缺省值 = 不带功率模型；
-        // 单独声明一半（idle>max 缺省 0）由显式校验拒绝，非法值不静默。
+        // BAT-E4.2 (2026-10-27): optional uniform power (watts). Both keys default to 0, meaning no
+        // power model; declaring only one half (idle > max with max defaulting to 0) is rejected by
+        // an explicit check, so illegal values are never silent.
         double idlePowerWatts = optionalPlatformPower(value, "idlePowerWatts");
         double maxPowerWatts = optionalPlatformPower(value, "maxPowerWatts");
         if (idlePowerWatts > maxPowerWatts) {
@@ -471,25 +481,32 @@ public final class WorkbenchConfig {
                     "platform.idlePowerWatts (" + idlePowerWatts + ") exceeds maxPowerWatts (" + maxPowerWatts
                             + "); both default to 0 (no power model) when omitted");
         }
-        // BAT-D4（2026-10-29）：平台级均一频档表（缺键 = 无档 = v1 单档模式）。域校验
-        // （mips>0 有限、idle≥0、max≥idle）复用 PlatformProfile.FrequencyTier 构造校验，
-        // 表序严格降序由 VmSpec 13 参构造的 BAT-D1 校验拒绝——此处不重复实现域规则。
+        // BAT-D4 (2026-10-29): platform-level uniform frequency-tier table (absent key = no tiers = v1
+        // single-tier mode). Domain validation (mips > 0 and finite, idle >= 0, max >= idle) reuses
+        // the PlatformProfile.FrequencyTier constructor checks, and strict descending table order is
+        // rejected by the BAT-D1 check of the 13-argument VmSpec constructor; domain rules are not
+        // duplicated here.
         List<PlatformProfile.FrequencyTier> frequencyTiers = frequencyTiers(value);
-        // BAT-D4 镜像 PlatformProfile 的单一真源条款（BAT-D1）：频档表与平面功率字段
-        // 互斥——首档功率对<b>替代</b>平面对（幂等互斥由 VmSpec 构造校验兜底，工作台
-        // 预拒绝时同时引用两处字段，给用户最短修复路径）。
+        // BAT-D4 mirrors the single-source-of-truth clause of PlatformProfile (BAT-D1): the
+        // frequency-tier table and the flat power fields are mutually exclusive -- the first-tier
+        // power pair <b>replaces</b> the flat pair (idempotent exclusion is backstopped by the VmSpec
+        // constructor check; the workbench rejects up front and cites both fields, giving the user
+        // the shortest repair path).
         if (frequencyTiers != null && (idlePowerWatts > 0.0 || maxPowerWatts > 0.0)) {
             throw new IllegalArgumentException(
                     "platform.frequencyTiers and platform.idlePowerWatts/maxPowerWatts are mutually exclusive:"
                             + " the tier table REPLACES the flat fields — one source of truth"
                             + " (BAT-D4, DVFS_DIMENSION_DESIGN.md §2.5)");
         }
-        // BAT-C3（2026-10-28）：可选均一碳强度（gCO₂/kWh；非负有限，0 合法=已声明的零碳
-        // 强度电网）。碳乘的是能量链（强度模型复算 E），无功率剖面上强度核算真空化——
-        // 报告端同口径 fail-fast（SimulationReport→CarbonAccounting），工作台前置拒绝并
-        // 同时引用两处字段，不给"静默零碳"留缝（守则：显式失败纪律）。
-        // BAT-D4：频档表即功率声明（镜像 BAT-D2 功率闸 hasPowerModel()||hasFrequencyTiers()
-        // 与 Python 审计器的 tiered-powered 谓词）——tiered 平台上强度核算骑逐档守恒能量。
+        // BAT-C3 (2026-10-28): optional uniform carbon intensity (gCO2/kWh; nonnegative and
+        // finite, 0 is legal = an already-declared zero-carbon-intensity grid). Carbon multiplies the
+        // energy chain (the intensity model recomputes E), and without a power profile the intensity
+        // accounting becomes vacuous -- the report side fails fast on the same rule
+        // (SimulationReport -> CarbonAccounting), so the workbench rejects it up front and cites both
+        // fields, leaving no gap for "silent zero carbon" (guideline: explicit-failure discipline).
+        // BAT-D4: the tier table is itself a power declaration (mirroring the BAT-D2 power gate
+        // hasPowerModel() || hasFrequencyTiers() and the Python auditor's tiered-powered predicate);
+        // on a tiered platform the intensity accounting rides the per-tier conserved energy.
         Double carbonIntensityGramsPerKWh = value.has("carbonIntensityGramsPerKWh")
                         && !value.get("carbonIntensityGramsPerKWh").isJsonNull()
                 ? Double.valueOf(
@@ -539,12 +556,14 @@ public final class WorkbenchConfig {
     }
 
     /**
-     * BAT-D4（2026-10-29）：platform.frequencyTiers 均一频档表读取。缺键/JSON null →
-     * {@code null}（v1 平台 = 无档）；声明时必须是非空数组、每项是对象且字段白名单恰为
-     * {mips, idlePowerWatts, maxPowerWatts}（全部必填——缺键即拒，不给"缺省档"留缝）。
-     * 数值域由 {@link PlatformProfile.FrequencyTier} 构造校验拒绝（单一域校验真源）。
+     * BAT-D4 (2026-10-29): read the platform.frequencyTiers uniform frequency-tier table. An absent
+     * key or JSON null yields {@code null} (v1 platform = no tiers); when declared it must be a
+     * non-empty array, each entry must be an object, and the field whitelist is exactly
+     * {mips, idlePowerWatts, maxPowerWatts} (all required -- a missing key is rejected, leaving no
+     * gap for a "default tier"). The numeric domain is rejected by the
+     * {@link PlatformProfile.FrequencyTier} constructor checks (single source of domain validation).
      *
-     * @return 声明序频档表；未声明时 {@code null}
+     * @return tier table in declaration order; {@code null} when it is not declared
      */
     private static List<PlatformProfile.FrequencyTier> frequencyTiers(JsonObject value) {
         if (!value.has("frequencyTiers") || value.get("frequencyTiers").isJsonNull()) {
@@ -572,12 +591,15 @@ public final class WorkbenchConfig {
     }
 
     /**
-     * BAT-D4（2026-10-29，docs/advanced/DVFS_DIMENSION_DESIGN.md §2.2/§2.5）：
-     * platform.frequencyPolicy 配置级频档指派策略解析。缺键缺省 DEFAULT（v1 退化——
-     * 与平台声明的首档一致）；未知标签显式拒绝并引用字段名与合法标签集；
-     * 非 DEFAULT 策略要求平台实际声明频档表——无表平台上策略会被静默忽略，产生
-     * "以为在研究 DVFS 实际在跑 v1"的误导性结果（镜像 SimulationRunner
-     * .validateFrequencyDimension 的 BAT-D2 运行级闸，工作台前置同口径拒绝）。
+     * BAT-D4 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md 2.2/2.5): resolve the
+     * platform.frequencyPolicy configuration-level frequency-tier assignment policy. An absent key
+     * defaults to DEFAULT (the v1 degeneration, consistent with the first tier declared by the
+     * platform); an unknown label is rejected explicitly with both the field name and the legal
+     * label set cited; a non-DEFAULT policy requires the platform to actually declare a
+     * frequency-tier table -- on a tierless platform the policy would be silently ignored, producing
+     * the misleading result of "believing DVFS is studied while v1 actually runs" (mirroring the
+     * BAT-D2 run-level gate of SimulationRunner.validateFrequencyDimension; the workbench rejects up
+     * front on the same rule).
      */
     private static SimulationConfig.FrequencyPolicy frequencyPolicy(JsonObject value, PlatformProfile platform) {
         String policyText = text(value, "frequencyPolicy", "DEFAULT");
@@ -598,7 +620,8 @@ public final class WorkbenchConfig {
         return policy;
     }
 
-    /** BAT-D4：@return 平台剖面中是否存在任何声明了频档表的 VM（均一表 → 全真或全假）。 */
+    /** BAT-D4: @return whether any VM in the platform profile declared a frequency-tier table
+     * (a uniform table makes the result all true or all false). */
     private static boolean anyVmHasFrequencyTiers(PlatformProfile platform) {
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
             if (spec.hasFrequencyTiers()) {
@@ -608,7 +631,7 @@ public final class WorkbenchConfig {
         return false;
     }
 
-    /** sourceStorage 子段装配（逐字搬运转写自 platform())。 */
+    /** sourceStorage sub-section assembly, extracted verbatim from platform(). */
     private static void applySourceStorage(JsonObject value, PlatformProfile.Builder result, JsonArray mips) {
         if (value.has("sourceStorage")) {
             JsonObject source = object(value, "sourceStorage");
@@ -633,7 +656,7 @@ public final class WorkbenchConfig {
         }
     }
 
-    /** networkTopology 子段装配（逐字搬运转写自 platform())。 */
+    /** networkTopology sub-section assembly, extracted verbatim from platform(). */
     private static void applyNetworkTopology(JsonObject value, PlatformProfile.Builder result, JsonArray mips) {
         if (value.has("networkTopology") && !value.get("networkTopology").isJsonNull()) {
             JsonObject topology = object(value, "networkTopology");
@@ -835,8 +858,9 @@ public final class WorkbenchConfig {
     }
 
     /**
-     * BAT-E4.2（2026-10-27）：平台功率字段的可选读取；缺省 0.0（不带功率模型），
-     * 显式拒绝非数值与负值（功率是物理量纲，静默接受非法值违反显式失败纪律）。
+     * BAT-E4.2 (2026-10-27): optional read of a platform power field; absent means 0.0 (no power
+     * model), and non-numeric or negative values are rejected explicitly (power is a physical
+     * quantity, so silently accepting illegal values violates the explicit-failure discipline).
      */
     private static double optionalPlatformPower(JsonObject value, String key) {
         if (!value.has(key) || value.get(key).isJsonNull()) {

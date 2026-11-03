@@ -23,10 +23,12 @@ import org.cloudbus.cloudsim.Vm;
 import org.workflowsim.Task;
 
 /**
- * 规划器基类，保存待映射 Task、VM 和数据中心集合。
+ * Planner base class that holds the Task, VM and datacenter collections to be mapped.
  *
- * <p>具体规划策略应继承本类；本类不产生映射或执行顺序。规划器的输出语义由具体实现决定：
- * 可以只是 Task-to-VM 映射，也可以是受控静态 DAG 的完整保留计划。</p>
+ * <p>Concrete planning policies should extend this class; this class produces neither a
+ * mapping nor an execution order. The output semantics of a planner are defined by the
+ * concrete implementation: it may be only a Task-to-VM mapping, or the complete preserved
+ * plan of a controlled static DAG.</p>
  *
  * @author Weiwei Chen
  * @since WorkflowSim Toolkit 1.0
@@ -34,50 +36,50 @@ import org.workflowsim.Task;
  */
 public abstract class BasePlanningAlgorithm implements PlanningAlgorithmInterface {
 
-    /** 待规划的 Task 列表。 */
+    /** Task list to be planned. */
     private List<Task> tasktList;
-    /** 规划时可用的 VM 列表。 */
+    /** VM list available during planning. */
     private List<? extends Vm> vmList;
 
-    /** 可见的数据中心列表。 */
+    /** Visible datacenter list. */
     private List<? extends Datacenter> datacenterList;
-    /** 创建规划器基类。 */
+    /** Create the planner base class. */
     public BasePlanningAlgorithm() {}
 
-    /** 设置待规划 Task 列表。 */
+    /** Set the Task list to be planned. */
     @Override
     public void setTaskList(List list) {
         this.tasktList = list;
     }
 
-    /** 设置 VM 列表；内部复制列表以稳定候选集合。 */
+    /** Set the VM list; the list is copied internally to stabilize the candidate set. */
     @Override
     public void setVmList(List list) {
         this.vmList = new ArrayList(list);
     }
 
-    /** 返回待规划 Task 列表。 */
+    /** Return the Task list to be planned. */
     @Override
     public List<Task> getTaskList() {
         return this.tasktList;
     }
 
-    /** 返回 VM 列表。 */
+    /** Return the VM list. */
     @Override
     public List getVmList() {
         return this.vmList;
     }
 
-    /** 返回数据中心列表。 */
+    /** Return the datacenter list. */
     public List getDatacenterList() {
         return this.datacenterList;
     }
 
-    /** 设置数据中心列表。 */
+    /** Set the datacenter list. */
     public void setDatacenterList(List list) {
         this.datacenterList = list;
     }
 
-    /** 执行一次离线规划。 */
+    /** Execute one offline planning pass. */
     public abstract void run() throws Exception;
 }
