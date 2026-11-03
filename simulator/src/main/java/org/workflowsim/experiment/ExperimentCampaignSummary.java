@@ -65,10 +65,25 @@ public final class ExperimentCampaignSummary {
         List<ComparisonSummary> comparisonSummaries = new ArrayList<ComparisonSummary>();
         for (Map.Entry<String, List<CellSummary>> entry : candidatesByGroup.entrySet()) {
             CellSummary baseline = baselines.get(entry.getKey());
+            // (AUD-F06, 2026-11-03) All non-baseline candidates of one comparison
+            // group form one Holm family, including comparisons whose paired test
+            // produced no p value; the declared family size is the correction
+            // multiplier base.
+            List<ComparisonSummary> family = new ArrayList<ComparisonSummary>();
+            List<Double> rawPValues = new ArrayList<Double>();
             for (CellSummary candidate : entry.getValue()) {
                 if (!candidate.isBaseline()) {
-                    comparisonSummaries.add(ComparisonSummary.from(baseline, candidate));
+                    ComparisonSummary raw = ComparisonSummary.from(baseline, candidate);
+                    family.add(raw);
+                    rawPValues.add(raw.getPairedSignificance().getPValue());
                 }
+            }
+            List<HolmStepDownCorrection.Adjusted> adjusted = HolmStepDownCorrection.adjustWithinFamily(rawPValues);
+            for (int index = 0; index < family.size(); index++) {
+                comparisonSummaries.add(ComparisonSummary.withHolm(
+                        family.get(index),
+                        adjusted.get(index).getAdjustedPValue(),
+                        adjusted.get(index).isSignificantAfterHolm()));
             }
         }
         return new ExperimentCampaignSummary(cellSummaries, comparisonSummaries);
@@ -408,6 +423,8 @@ public final class ExperimentCampaignSummary {
         private final Double successfulWorkflowRunRateDelta;
         private final String inferenceStatus;
         private final PairedWilcoxonSignificance pairedSignificance;
+        private final Double holmAdjustedPValue;
+        private final boolean significantAfterHolmAtDefaultAlpha;
 
         private ComparisonSummary(
                 String comparisonGroup,
@@ -426,7 +443,9 @@ public final class ExperimentCampaignSummary {
                 double successfulLogicalTaskCompletionRateDelta,
                 Double successfulWorkflowRunRateDelta,
                 String inferenceStatus,
-                PairedWilcoxonSignificance pairedSignificance) {
+                PairedWilcoxonSignificance pairedSignificance,
+                Double holmAdjustedPValue,
+                boolean significantAfterHolmAtDefaultAlpha) {
             this.comparisonGroup = comparisonGroup;
             this.baselineCellId = baselineCellId;
             this.candidateCellId = candidateCellId;
@@ -444,6 +463,8 @@ public final class ExperimentCampaignSummary {
             this.successfulWorkflowRunRateDelta = successfulWorkflowRunRateDelta;
             this.inferenceStatus = inferenceStatus;
             this.pairedSignificance = pairedSignificance;
+            this.holmAdjustedPValue = holmAdjustedPValue;
+            this.significantAfterHolmAtDefaultAlpha = significantAfterHolmAtDefaultAlpha;
         }
 
         private static ComparisonSummary from(CellSummary baseline, CellSummary candidate) {
@@ -481,7 +502,9 @@ public final class ExperimentCampaignSummary {
                         completionRateDelta,
                         workflowSuccessRateDelta,
                         "UNPAIRED_INDEPENDENT_REPLICATIONS",
-                        PairedWilcoxonSignificance.unavailableUnpaired());
+                        PairedWilcoxonSignificance.unavailableUnpaired(),
+                        null,
+                        false);
             }
             Map<Long, Double> baselineBySeed = valuesBySeed(baseline);
             Map<Long, Double> candidateBySeed = valuesBySeed(candidate);
@@ -517,7 +540,37 @@ public final class ExperimentCampaignSummary {
                     completionRateDelta,
                     workflowSuccessRateDelta,
                     status,
-                    PairedWilcoxonSignificance.evaluate(matchedBaseline, matchedCandidate));
+                    PairedWilcoxonSignificance.evaluate(matchedBaseline, matchedCandidate),
+                    null,
+                    false);
+        }
+
+        /**
+         * Copy of {@code raw} carrying the within-family Holm correction outcome;
+         * the raw comparison itself stays immutable. (AUD-F06, 2026-11-03)
+         */
+        static ComparisonSummary withHolm(
+                ComparisonSummary raw, Double holmAdjustedPValue, boolean significantAfterHolmAtDefaultAlpha) {
+            return new ComparisonSummary(
+                    raw.comparisonGroup,
+                    raw.baselineCellId,
+                    raw.candidateCellId,
+                    raw.matchedRootSeedCount,
+                    raw.meanMatchedMakespanDeltaSeconds,
+                    raw.baselineMeanMakespanSeconds,
+                    raw.candidateMeanMakespanSeconds,
+                    raw.meanMakespanRatio,
+                    raw.baselineRelativeMakespanSpeedup,
+                    raw.makespanImprovementPercent,
+                    raw.baselineMeanModeledProcessingCost,
+                    raw.candidateMeanModeledProcessingCost,
+                    raw.meanModeledProcessingCostRatio,
+                    raw.successfulLogicalTaskCompletionRateDelta,
+                    raw.successfulWorkflowRunRateDelta,
+                    raw.inferenceStatus,
+                    raw.pairedSignificance,
+                    holmAdjustedPValue,
+                    significantAfterHolmAtDefaultAlpha);
         }
 
         private static Double ratio(double numerator, double denominator) {
@@ -631,6 +684,29 @@ public final class ExperimentCampaignSummary {
          */
         public PairedWilcoxonSignificance getPairedSignificance() {
             return pairedSignificance;
+        }
+        /**
+         * Holm step-down adjusted p value within this comparison's candidate
+         * family; the family is every non-baseline candidate of the same
+         * comparison group, including comparisons whose paired test produced no
+         * p value, which still consume correction budget under the platform's
+         * registered conservative convention. Multiplicity-aware consumers must
+         * read this field (or {@link #isSignificantAfterHolmAtDefaultAlpha()})
+         * instead of the raw paired test result.
+         *
+         * @return the adjusted p value, or {@code null} when the paired test
+         *         produced no p value
+         */
+        public Double getHolmAdjustedPValue() {
+            return holmAdjustedPValue;
+        }
+        /**
+         * @return whether the Holm adjusted p value is strictly below
+         *         {@link PairedWilcoxonSignificance#DEFAULT_ALPHA}; always
+         *         {@code false} when no adjusted value exists
+         */
+        public boolean isSignificantAfterHolmAtDefaultAlpha() {
+            return significantAfterHolmAtDefaultAlpha;
         }
     }
 

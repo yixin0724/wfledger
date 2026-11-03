@@ -2,10 +2,11 @@ package org.workflowsim.experiments.network;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.workflowsim.experiment.HolmStepDownCorrection;
 
 /** Seed repeats are collapsed within each DAG before comparisons; populations are never pooled. */
 public final class NetworkStudySummary {
@@ -210,22 +211,27 @@ public final class NetworkStudySummary {
     }
 
     static void applyHolm(List<Map<String, Object>> family) {
-        List<Map<String, Object>> sorted = new ArrayList<Map<String, Object>>();
+        // (AUD-F06, 2026-11-03) The step-down arithmetic lives in the shared
+        // HolmStepDownCorrection so the network study and the generic campaign
+        // cannot drift. The record protocol is unchanged: keys are inserted in
+        // the same order, untested records keep their null/false defaults, and
+        // the serialized output stays byte-identical.
+        List<Double> rawPValues = new ArrayList<Double>();
         for (Map<String, Object> record : family) {
             record.put("holmAdjustedPValue", null);
             record.put("significantAfterHolm", false);
-            if (record.get("pValue") != null) {
-                sorted.add(record);
-            }
+            Object pValue = record.get("pValue");
+            rawPValues.add(pValue == null ? null : Double.valueOf(((Number) pValue).doubleValue()));
         }
-        Collections.sort(sorted, Comparator.comparingDouble(r -> number(r, "pValue")));
-        double previous = 0;
-        for (int i = 0; i < sorted.size(); i++) {
-            Map<String, Object> record = sorted.get(i);
-            double adjusted = Math.max(previous, Math.min(1.0, (family.size() - i) * number(record, "pValue")));
-            previous = adjusted;
-            record.put("holmAdjustedPValue", adjusted);
-            record.put("significantAfterHolm", adjusted < 0.05);
+        List<HolmStepDownCorrection.Adjusted> adjusted = HolmStepDownCorrection.adjustWithinFamily(rawPValues);
+        for (int index = 0; index < family.size(); index++) {
+            if (rawPValues.get(index) != null) {
+                family.get(index).put("holmAdjustedPValue", adjusted.get(index).getAdjustedPValue());
+                family.get(index)
+                        .put(
+                                "significantAfterHolm",
+                                Boolean.valueOf(adjusted.get(index).isSignificantAfterHolm()));
+            }
         }
     }
 
