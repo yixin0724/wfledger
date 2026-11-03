@@ -8,6 +8,7 @@ The coherent dataflow runners separate immutable history from the active working
 - [Replica state](<../../simulator/src/main/java/org/workflowsim/data/v2/DataReplicaState.java>) copies only the ordered position rows of the files that gained a newly published replica. A snapshot retains the immutable root together with the watermark and active tickets at capture; a fork still copies the active index independently, keeping branch-independent clocks, sequence numbers, and ticket identities.
 - The [runtime coordinator](<../../simulator/src/main/java/org/workflowsim/data/v2/CoherentDataflowRuntime.java>) copies the active Jobs inside a transaction and archives the immutable terminal summary only after all outputs are processed successfully. Historical preparation results keep the same object, preparation-time deltas are still computed against the original instants, and the duplicate-Job-ID check covers both the active and terminal sides.
 - Observation and quiescence decisions do not iterate terminated Jobs; the orderings and barriers of the ready queue, input waiting, SOURCE waiting, output obligations, and active copies are still preserved independently.
+- The [contention engine](<../../simulator/src/main/java/org/workflowsim/data/TransferContentionEngine.java>) shares its immutable retained trace prefix across forks; a fork deep-copies only the active transfer table and endpoint capacities, and the bounded evidence budget itself is unchanged.
 
 A history lookup inspects O(log W) blocks, assuming expected constant-time hash lookup within a block; an update amortized over a single history copies O(log W) entries, but one large merge can still be O(W), and the large merges of repeated forks do not share the amortization. Do not describe this as worst-case logarithmic updates.
 
@@ -35,6 +36,12 @@ the change, and the full simulator suite (1093 tests, including the runtime isol
 structural-sharing, and rollback suites) stays green.
 
 The active Job set still requires isolation; large batches of wide tasks active at the same time can retain near-quadratic copy costs. Lifecycle logs use incremental appends after the transaction, and the checked services too still keep their own transactional copies. This structure promises no speedup for every DAG, parsing, solving, or reporting phase.
+
+### Immutable trace prefix in the contention engine (2026-11-03)
+
+`TransferContentionEngine.fork()` previously copied the entire retained trace event list into the fork, so a fork storm over evidence capture degraded quadratically with the retained record count. The retained events are now an append-only persistent list (newest cons cell first): a fork shares the immutable prefix in O(1), later appends on either side stay isolated, the active transfer table and endpoint capacities are still deep-copied per fork, and `getTraceSnapshot()` materializes the ordered event prefix for its immutable snapshot exactly as before.
+
+Semantics were pinned by behavior tests, not by timing: forking after every mutation produces the byte-identical event stream of the unforked scenario (full Gson serialization comparison), a budget overflow on a fork drops events only on the child, and repeated forks over a large retained history share the same newest-record identity (600 forks over 2901 retained events). The production V2 path (`coherentV2`) runs capture-disabled with an empty trace budget, so no measured production run hits this cost today; the change closes the structural hazard of evidence capture combined with fork-heavy callers.
 
 ## Repeatable Benchmarks
 

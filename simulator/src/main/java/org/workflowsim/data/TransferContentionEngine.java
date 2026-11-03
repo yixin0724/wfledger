@@ -142,10 +142,26 @@ public final class TransferContentionEngine {
         }
     }
 
-    /** Allocated only for a positive record budget; never calls user code. */
+    /** Immutable cons cell of the append-only retained trace; forks share the whole prefix. */
+    private static final class TraceNode {
+        final TransferTraceEvent event;
+        final TraceNode previous;
+
+        TraceNode(TransferTraceEvent event, TraceNode previous) {
+            this.event = event;
+            this.previous = previous;
+        }
+    }
+
+    /**
+     * Allocated only for a positive record budget; never calls user code. The retained events
+     * form an append-only persistent list (newest cell first), so forks share the immutable
+     * prefix instead of copying the retained history (AUD-F04).
+     */
     private static final class TraceState {
         private final int maxEvents;
-        private final List<TransferTraceEvent> events = new ArrayList<TransferTraceEvent>();
+        private TraceNode head;
+        private int size;
         private long droppedCount;
         private long nextAdmissionOrdinal = 1L;
         private double intervalStart;
@@ -156,76 +172,89 @@ public final class TransferContentionEngine {
 
         // Call only for true events. Reserve before DTO construction or resource copying.
         private long reserveSequence() {
-            if (events.size() == maxEvents) {
+            if (size == maxEvents) {
                 droppedCount++;
                 return 0L;
             }
-            return events.size() + 1L;
+            return size + 1L;
         }
 
         private void capacity(String resource, double capacity, double engineTime) {
             long sequence = reserveSequence();
             if (sequence != 0L) {
-                events.add(TransferTraceEvent.capacity(sequence, engineTime, resource, capacity));
+                head = new TraceNode(TransferTraceEvent.capacity(sequence, engineTime, resource, capacity), head);
+                size++;
             }
         }
 
         private void start(long id, Transfer transfer, double now) {
             long sequence = reserveSequence();
             if (sequence != 0L) {
-                events.add(TransferTraceEvent.start(
-                        sequence,
-                        now,
-                        id,
-                        transfer.traceAdmissionOrdinal,
-                        transfer.bytes,
-                        transfer.occupiedResources,
-                        transfer.nominalRateBytesPerSecond,
-                        transfer.rateBytesPerSecond));
+                head = new TraceNode(
+                        TransferTraceEvent.start(
+                                sequence,
+                                now,
+                                id,
+                                transfer.traceAdmissionOrdinal,
+                                transfer.bytes,
+                                transfer.occupiedResources,
+                                transfer.nominalRateBytesPerSecond,
+                                transfer.rateBytesPerSecond),
+                        head);
+                size++;
             }
         }
 
         private void rateChange(long id, Transfer transfer, double effectiveTime, double observedTime) {
             long sequence = reserveSequence();
             if (sequence != 0L) {
-                events.add(TransferTraceEvent.rateChange(
-                        sequence,
-                        effectiveTime,
-                        observedTime,
-                        id,
-                        transfer.traceAdmissionOrdinal,
-                        transfer.tracePreviousRate,
-                        transfer.rateBytesPerSecond));
+                head = new TraceNode(
+                        TransferTraceEvent.rateChange(
+                                sequence,
+                                effectiveTime,
+                                observedTime,
+                                id,
+                                transfer.traceAdmissionOrdinal,
+                                transfer.tracePreviousRate,
+                                transfer.rateBytesPerSecond),
+                        head);
+                size++;
             }
         }
 
         private void service(long id, Transfer transfer, double effectiveTime, double observedTime, double elapsed) {
             long sequence = reserveSequence();
             if (sequence != 0L) {
-                events.add(TransferTraceEvent.serviceSegment(
-                        sequence,
-                        intervalStart,
-                        effectiveTime,
-                        observedTime,
-                        id,
-                        transfer.traceAdmissionOrdinal,
-                        elapsed,
-                        transfer.rateBytesPerSecond,
-                        transfer.traceRemainingBefore,
-                        transfer.traceRemainingAfterService));
+                head = new TraceNode(
+                        TransferTraceEvent.serviceSegment(
+                                sequence,
+                                intervalStart,
+                                effectiveTime,
+                                observedTime,
+                                id,
+                                transfer.traceAdmissionOrdinal,
+                                elapsed,
+                                transfer.rateBytesPerSecond,
+                                transfer.traceRemainingBefore,
+                                transfer.traceRemainingAfterService),
+                        head);
+                size++;
             }
         }
 
         private void complete(long id, Transfer transfer, double effectiveTime, double observedTime) {
             long sequence = reserveSequence();
             if (sequence != 0L) {
-                events.add(TransferTraceEvent.complete(
-                        sequence,
-                        effectiveTime,
-                        observedTime,
-                        id,
-                        transfer.traceAdmissionOrdinal,
-                        transfer.traceRemainingAfterService));
+                head = new TraceNode(
+                        TransferTraceEvent.complete(
+                                sequence,
+                                effectiveTime,
+                                observedTime,
+                                id,
+                                transfer.traceAdmissionOrdinal,
+                                transfer.traceRemainingAfterService),
+                        head);
+                size++;
             }
         }
     }
@@ -251,7 +280,9 @@ public final class TransferContentionEngine {
      * still COMPLETE; only a subsequent true event makes capture TRUNCATED.
      * Once full, true events are counted without allocating their DTOs or trace
      * resource copies. The budget bounds records, not bytes: START resource
-     * lists and caller-retained snapshots can use additional memory.
+     * lists and caller-retained snapshots can use additional memory. Retained
+     * records form an append-only persistent list that forks share instead of
+     * copying, so a fork stays independent of the retained history length.
      *
      * @param maxTraceEvents zero disables capture; positive values bound retained events
      * @throws IllegalArgumentException if the budget is negative
@@ -315,7 +346,13 @@ public final class TransferContentionEngine {
         return new TransferServiceSnapshot(lastAdvanceTime, shareResources, endpointCapacitiesBytesPerSecond, flows);
     }
 
-    /** @return deep independent service-state copy; immutable retained trace DTOs may be shared */
+    /**
+     * Deep independent service-state copy. The retained trace is an append-only persistent
+     * list, so the fork shares the immutable event prefix in O(1) instead of copying the
+     * retained history, and later appends on either side stay isolated.
+     *
+     * @return independent service-state copy sharing the immutable retained trace prefix
+     */
     public TransferContentionEngine fork() {
         TransferContentionEngine copy = new TransferContentionEngine(
                 traceState == null ? 0 : traceState.maxEvents, coherentChecked, shareResources);
@@ -338,7 +375,8 @@ public final class TransferContentionEngine {
             copy.activeTransfers.put(entry.getKey(), fresh);
         }
         if (traceState != null) {
-            copy.traceState.events.addAll(traceState.events);
+            copy.traceState.head = traceState.head;
+            copy.traceState.size = traceState.size;
             copy.traceState.droppedCount = traceState.droppedCount;
             copy.traceState.nextAdmissionOrdinal = traceState.nextAdmissionOrdinal;
             copy.traceState.intervalStart = traceState.intervalStart;
@@ -368,13 +406,27 @@ public final class TransferContentionEngine {
                     0L,
                     lastAdvanceTime);
         }
+        List<TransferTraceEvent> ordered = new ArrayList<TransferTraceEvent>(traceState.size);
+        for (TraceNode node = traceState.head; node != null; node = node.previous) {
+            ordered.add(node.event);
+        }
+        Collections.reverse(ordered);
         return new TransferTraceSnapshot(
                 traceState.droppedCount == 0L
                         ? TransferTraceSnapshot.Status.COMPLETE
                         : TransferTraceSnapshot.Status.TRUNCATED,
-                traceState.events,
+                ordered,
                 traceState.droppedCount,
                 lastAdvanceTime);
+    }
+
+    /**
+     * White-box identity of the newest retained trace record, for fork-sharing tests only:
+     * a fork must share this immutable prefix instead of copying the retained history.
+     * Returns null when capture is disabled. Not part of the simulation semantics.
+     */
+    Object traceHeadIdentity() {
+        return traceState == null ? null : traceState.head;
     }
 
     /**
