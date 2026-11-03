@@ -1,0 +1,22 @@
+simulator/src/test/java/org/workflowsim/WorkflowSchedulerExplicitBindingTest.java
+  s_3ae6b032aa2d87::t_375a7ce8f886b1 1-66
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  s_3ae6b032aa2d87::t_a14fbadcf0a448 282-287,290-296
+  s_3ae6b032aa2d87::t_3ad077cc6726fd 218-222,225
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0d33ca04a3949c854c0a26b77ad52f0635d3dc57",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
