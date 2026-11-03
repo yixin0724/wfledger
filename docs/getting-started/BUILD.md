@@ -50,7 +50,7 @@ mvn -pl :workflowsim -Dit.test=SimulationEvidenceIntegrationTest verify
 
 The last command still runs the core unit tests and the `verify` gate; it only restricts the integration test selection. Targeted tests are not a substitute for full verification.
 
-Reports are located in each module's `target/surefire-reports/`, `target/failsafe-reports/`, `target/site/jacoco/`, and `target/site/jacoco-it/`. Judge success by the actual exit status and the reports, not by a fixed test count. The JaCoCo thresholds are maintained in the [core POM](<../../simulator/pom.xml>) and the [experiments POM](<../../experiments/pom.xml>).
+Reports are located in each module's `target/surefire-reports/`, `target/failsafe-reports/`, `target/site/jacoco/`, and `target/site/jacoco-it/`. Judge success by the actual exit status and the reports, not by a fixed test count. The JaCoCo thresholds are maintained in the [core POM](<../../simulator/pom.xml>) and the [experiments POM](<../../experiments/pom.xml>). `mvn verify` enforces bundle-level and package-level floors on unit coverage plus bundle-level floors on integration coverage (AUD-F03, 2026-11-03), so a package with zero coverage cannot hide behind the bundle aggregate and the failsafe battery stays inside the gate.
 
 A standard checkout contains the small inputs the gates require; tests fail when they are missing. The full large corpora are not a default prerequisite — see the [dataset notes](<../../datasets/README.md>). `mvn clean` removes only build directories; it does not remove custom experiment outputs or retained evidence.
 

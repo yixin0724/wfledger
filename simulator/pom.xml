@@ -19,12 +19,18 @@
 
     <properties>
         <!-- R3 coverage-gate ratchet: set slightly below the measured value
-             (clean verify of the 2026-09-17 R10 platform-uplift round: instruction 54.19% /
-             branch 48.49%, measured after R10 corrected the CPOP predecessor rank and the
-             max-min network semantics and added the hand-derivation, event-settlement, and
-             manifest v4 tests). It only rises, never falls. -->
-        <workflowsim.jacoco.instruction.minimum>0.54</workflowsim.jacoco.instruction.minimum>
-        <workflowsim.jacoco.branch.minimum>0.48</workflowsim.jacoco.branch.minimum>
+             (clean verify of the 2026-11-03 baseline: instruction 72.00% / branch 61.48%).
+             It only rises, never falls. AUD-F03 (2026-11-03) adds package-level floors:
+             every maintained package must stay above 59% / 44% instruction / branch so no
+             package can hide behind the bundle aggregate; the frozen/legacy zones excluded
+             from that rule are listed in the parent POM. The integration floors below cover
+             target/jacoco-it.exec (measured 68.09% / 55.18%). -->
+        <workflowsim.jacoco.instruction.minimum>0.71</workflowsim.jacoco.instruction.minimum>
+        <workflowsim.jacoco.branch.minimum>0.60</workflowsim.jacoco.branch.minimum>
+        <workflowsim.jacoco.package.instruction.minimum>0.59</workflowsim.jacoco.package.instruction.minimum>
+        <workflowsim.jacoco.package.branch.minimum>0.44</workflowsim.jacoco.package.branch.minimum>
+        <workflowsim.jacoco.it.instruction.minimum>0.67</workflowsim.jacoco.it.instruction.minimum>
+        <workflowsim.jacoco.it.branch.minimum>0.54</workflowsim.jacoco.it.branch.minimum>
     </properties>
 
     <dependencies>

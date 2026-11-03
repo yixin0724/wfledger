@@ -46,6 +46,13 @@
         <!-- R3 coverage-gate default thresholds (0 = no limit); each module overrides them in its own pom with ratcheted measured values. -->
         <workflowsim.jacoco.instruction.minimum>0.00</workflowsim.jacoco.instruction.minimum>
         <workflowsim.jacoco.branch.minimum>0.00</workflowsim.jacoco.branch.minimum>
+        <!-- AUD-F03 (2026-11-03): package-level floors on unit data and bundle-level floors on the
+             failsafe integration data (target/jacoco-it.exec) also default to 0 here; each module
+             overrides them with ratcheted measured values. -->
+        <workflowsim.jacoco.package.instruction.minimum>0.00</workflowsim.jacoco.package.instruction.minimum>
+        <workflowsim.jacoco.package.branch.minimum>0.00</workflowsim.jacoco.package.branch.minimum>
+        <workflowsim.jacoco.it.instruction.minimum>0.00</workflowsim.jacoco.it.instruction.minimum>
+        <workflowsim.jacoco.it.branch.minimum>0.00</workflowsim.jacoco.it.branch.minimum>
     </properties>
 
     <build>
@@ -243,7 +250,14 @@
                             <!-- R3 coverage gate: enforces BUNDLE-level instruction/branch
                                  floors on unit-test coverage (target/jacoco.exec); the thresholds
                                  come from per-module properties and ratchet upward only (measured
-                                 values rounded down to keep headroom). -->
+                                 values rounded down to keep headroom).
+                                 AUD-F03 (2026-11-03): the PACKAGE-level rule additionally floors
+                                 every maintained package so a zero-coverage package can no
+                                 longer hide behind the bundle aggregate. The excluded names are
+                                 the documented frozen/legacy or driver-only zones measured below
+                                 the floor: upstream org.cloudbus.*, the frozen reclustering and
+                                 horizontal-impact method zones, trivial exception constructors,
+                                 and the example/benchmark driver packages of the workbench. -->
                             <id>check-unit-coverage</id>
                             <phase>verify</phase>
                             <goals>
@@ -263,6 +277,60 @@
                                                 <counter>BRANCH</counter>
                                                 <value>COVEREDRATIO</value>
                                                 <minimum>${workflowsim.jacoco.branch.minimum}</minimum>
+                                            </limit>
+                                        </limits>
+                                    </rule>
+                                    <rule>
+                                        <element>PACKAGE</element>
+                                        <excludes>
+                                            <exclude>org.cloudbus.*</exclude>
+                                            <exclude>org.workflowsim.exception</exclude>
+                                            <exclude>org.workflowsim.reclustering</exclude>
+                                            <exclude>org.workflowsim.clustering.balancing.methods</exclude>
+                                            <exclude>org.workflowsim.examples*</exclude>
+                                            <exclude>org.workflowsim.experiments.benchmark</exclude>
+                                        </excludes>
+                                        <limits>
+                                            <limit>
+                                                <counter>INSTRUCTION</counter>
+                                                <value>COVEREDRATIO</value>
+                                                <minimum>${workflowsim.jacoco.package.instruction.minimum}</minimum>
+                                            </limit>
+                                            <limit>
+                                                <counter>BRANCH</counter>
+                                                <value>COVEREDRATIO</value>
+                                                <minimum>${workflowsim.jacoco.package.branch.minimum}</minimum>
+                                            </limit>
+                                        </limits>
+                                    </rule>
+                                </rules>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <!-- AUD-F03 (2026-11-03): enforces BUNDLE-level instruction/branch
+                                 floors on integration-test coverage (target/jacoco-it.exec) so
+                                 the failsafe battery stays inside the gate; the thresholds come
+                                 from per-module properties and ratchet upward only. -->
+                            <id>check-integration-coverage</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <configuration>
+                                <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
+                                <rules>
+                                    <rule>
+                                        <element>BUNDLE</element>
+                                        <limits>
+                                            <limit>
+                                                <counter>INSTRUCTION</counter>
+                                                <value>COVEREDRATIO</value>
+                                                <minimum>${workflowsim.jacoco.it.instruction.minimum}</minimum>
+                                            </limit>
+                                            <limit>
+                                                <counter>BRANCH</counter>
+                                                <value>COVEREDRATIO</value>
+                                                <minimum>${workflowsim.jacoco.it.branch.minimum}</minimum>
                                             </limit>
                                         </limits>
                                     </rule>
