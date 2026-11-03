@@ -1,0 +1,26 @@
+simulator/src/main/java/org/workflowsim/experiment/FileLifecycleContextValidator.java
+  s_3ae6b032aa2d87::t_a31c33ed7e9021 29-39
+  s_3ae6b032aa2d87::t_cc62e003d1c25d 67-68
+  s_3ae6b032aa2d87::t_08c00edfd964cb 711-715
+  s_3ae6b032aa2d87::t_b9c5d2450fc0ad 641-644
+simulator/src/test/java/org/workflowsim/experiment/FileLifecycleArtifactIntegrationTest.java
+  s_3ae6b032aa2d87::t_d1056da4f805d6 353-399
+  s_3ae6b032aa2d87::t_3aa63533e3305e 34-35
+  s_3ae6b032aa2d87::t_5d9d23f5599d92 400-401
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bf93926abd6ee8b21132c93de8c16b8104a85dd5",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
