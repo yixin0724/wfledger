@@ -1,0 +1,26 @@
+simulator/src/main/java/org/workflowsim/experiment/SimulationEventRecorder.java
+  s_3ae6b032aa2d87::t_3f9b738c739955 99,109-115
+  s_3ae6b032aa2d87::t_7604fdead38176 24-32,35,39,41,44-54,56,60-64,116
+  s_3ae6b032aa2d87::t_4541c978bdc924 17-20
+  s_3ae6b032aa2d87::t_c51b73178d83ac 65-66
+simulator/src/test/java/org/workflowsim/experiment/SimulationEventRecorderTest.java
+  s_3ae6b032aa2d87::t_50c79302b08407 1-98
+docs/experiments/REPRODUCIBILITY.md
+  s_3ae6b032aa2d87::t_336fd7a57d9cd4 64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a4ca13c7e0a89eb919e840804acfbef151dd1fe3",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
