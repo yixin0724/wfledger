@@ -112,6 +112,65 @@ public final class AlgorithmCatalog {
     }
 
     /**
+     * Cost-comparison caliber of a (planning, scheduling) label pair (AUD-F09).
+     *
+     * <p>The two calibers answer the same "which VM runs this task next" question with two
+     * different cost quantities, so a comparison that places both calibers side by side in
+     * one comparison group compares two different cost semantics under the same-named
+     * algorithms. The catalog classifies the caliber; it changes neither caliber's own
+     * comparison semantics.</p>
+     */
+    public enum CostComparisonCaliber {
+
+        /** Mapping decisions compare the bare {@code length/MIPS} ECT of ready tasks. */
+        ONLINE_READY_BATCH,
+
+        /** Mapping decisions compare TaskExecutionModel matrix seconds. */
+        STATIC_PLANNING,
+
+        /** Mapping decisions make no mapping-cost comparison at all. */
+        NONE
+    }
+
+    /**
+     * Classifies which cost quantity a (planning, scheduling) label pair uses for its
+     * mapping decisions (AUD-F09).
+     *
+     * <p>A planner-decided cell compares TaskExecutionModel matrix seconds regardless of
+     * its scheduling label, an online ready-batch cell compares the bare {@code length/MIPS}
+     * ECT, and every other maintained combination makes no mapping-cost comparison.</p>
+     *
+     * @param planning planner label of the cell
+     * @param scheduling scheduler label of the cell
+     * @return the cost-comparison caliber the cell's mapping decisions use
+     * @throws IllegalArgumentException when either label is {@code null}
+     */
+    public static CostComparisonCaliber costComparisonCaliber(
+            PlanningAlgorithm planning, SchedulingAlgorithm scheduling) {
+        if (planning == null) {
+            throw new IllegalArgumentException("Planning algorithm is required");
+        }
+        if (scheduling == null) {
+            throw new IllegalArgumentException("Scheduling algorithm is required");
+        }
+        // A planner-decided cell compares TaskExecutionModel matrix seconds; through the
+        // legacy Parameters carrier such a cell can still declare a non-STATIC scheduling
+        // label, so the caliber must follow the planning label, not the scheduling label.
+        if (planning != PlanningAlgorithm.INVALID) {
+            return CostComparisonCaliber.STATIC_PLANNING;
+        }
+        switch (scheduling) {
+            case READY_BATCH_MINMIN:
+            case READY_BATCH_MAXMIN:
+            case READY_BATCH_MCT:
+            case READY_BATCH_ROUNDROBIN:
+                return CostComparisonCaliber.ONLINE_READY_BATCH;
+            default:
+                return CostComparisonCaliber.NONE;
+        }
+    }
+
+    /**
      * Returns the scheduler and planner contract written into every run manifest.
      *
      * @param config immutable configuration of this run

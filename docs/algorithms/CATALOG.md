@@ -49,6 +49,12 @@ input transfer, or contention. For fixed positive lengths and identical candidat
 minimum ECT is equivalent to the maximum MIPS; different labels alone do not imply different
 mappings. `DATA` compares bytes, not transfer seconds.
 
+The same-named static planning labels compare [TaskExecutionModel](<../../simulator/src/main/java/org/workflowsim/utils/TaskExecutionModel.java>)
+matrix seconds instead of this bare `length/MIPS` quantity, so a campaign comparison group
+must not place the two cost calibers side by side; [ExperimentPlan](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentPlan.java>)
+rejects the mixed group at construction, and [AlgorithmCatalog](<../../simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java>)
+owns the classification (AUD-F09).
+
 A deferral-aware label is the one exception to "ready Jobs are dispatched immediately":
 `CARBON_WINDOW_DEFER` may leave the whole batch in the ready queue and asks the scheduler to
 wake it up at the start of the chosen window. The scheduler schedules that wake-up event; a

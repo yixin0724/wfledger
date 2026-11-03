@@ -20,6 +20,12 @@ import org.workflowsim.utils.SimulationConfig;
  * within a group must share the same randomization interpretation, yet each cell still
  * stores its own explicit seed sequence so that the experiment protocol can be audited
  * independently.</p>
+ *
+ * <p>Each comparison group must also stay within one mapping-cost caliber: the online
+ * ready-batch caliber (bare length/MIPS ECT) and the static planning caliber
+ * (TaskExecutionModel matrix seconds) must not be placed side by side in one group,
+ * because a same-named algorithm carries two different cost semantics across the two
+ * calibers (AUD-F09).</p>
  */
 public final class ExperimentPlan {
 
@@ -98,7 +104,7 @@ public final class ExperimentPlan {
          * Validates and freezes the current declaration.
          *
          * @return an immutable plan satisfying the comparison-group, baseline, candidate
-         *         identifier, and randomization-design constraints
+         *         identifier, randomization-design, and cost-caliber constraints
          * @throws IllegalArgumentException when no cell is declared, or when any
          *         cross-cell constraint does not hold
          */
@@ -110,6 +116,9 @@ public final class ExperimentPlan {
             Set<String> candidates = new HashSet<String>();
             Map<String, Cell> baselineByGroup = new HashMap<String, Cell>();
             Map<String, RandomizationDesign> designByGroup = new HashMap<String, RandomizationDesign>();
+            Map<String, AlgorithmCatalog.CostComparisonCaliber> caliberByGroup =
+                    new HashMap<String, AlgorithmCatalog.CostComparisonCaliber>();
+            Map<String, Cell> caliberOwnerByGroup = new HashMap<String, Cell>();
             for (Cell cell : cells) {
                 if (!cellIds.add(cell.getId())) {
                     throw new IllegalArgumentException("Experiment plan has duplicate cell ID " + cell.getId());
@@ -127,6 +136,30 @@ public final class ExperimentPlan {
                 if (cell.isBaseline() && baselineByGroup.put(cell.getComparisonGroup(), cell) != null) {
                     throw new IllegalArgumentException(
                             "Comparison group " + cell.getComparisonGroup() + " has more than one baseline");
+                }
+                // AUD-F09: one comparison group must not place the two mapping-cost calibers
+                // side by side; a same-named algorithm carries two different cost semantics
+                // across them, so the mixed comparison is rejected at construction instead of
+                // being executed. Cells outside both calibers stay unconstrained.
+                AlgorithmCatalog.CostComparisonCaliber caliber = AlgorithmCatalog.costComparisonCaliber(
+                        cell.getConfig().getPlanningAlgorithm(),
+                        cell.getConfig().getSchedulingAlgorithm());
+                if (caliber != AlgorithmCatalog.CostComparisonCaliber.NONE) {
+                    AlgorithmCatalog.CostComparisonCaliber existingCaliber =
+                            caliberByGroup.get(cell.getComparisonGroup());
+                    if (existingCaliber != null && existingCaliber != caliber) {
+                        Cell owner = caliberOwnerByGroup.get(cell.getComparisonGroup());
+                        throw new IllegalArgumentException("Comparison group " + cell.getComparisonGroup()
+                                + " mixes the " + describeCostCaliber(existingCaliber, owner)
+                                + " cost caliber with the " + describeCostCaliber(caliber, cell)
+                                + " cost caliber: a same-named algorithm carries two different "
+                                + "mapping-cost semantics across the two calibers, so keep one "
+                                + "comparison group within one cost caliber (AUD-F09).");
+                    }
+                    if (existingCaliber == null) {
+                        caliberByGroup.put(cell.getComparisonGroup(), caliber);
+                        caliberOwnerByGroup.put(cell.getComparisonGroup(), cell);
+                    }
                 }
             }
             for (Cell cell : cells) {
@@ -238,6 +271,16 @@ public final class ExperimentPlan {
             throw new IllegalArgumentException(subject + " must match " + IDENTIFIER.pattern());
         }
         return value;
+    }
+
+    /** Human-readable caliber description used by the cross-caliber rejection (AUD-F09). */
+    private static String describeCostCaliber(AlgorithmCatalog.CostComparisonCaliber caliber, Cell cell) {
+        String quantity = caliber == AlgorithmCatalog.CostComparisonCaliber.ONLINE_READY_BATCH
+                ? "bare length/MIPS ECT"
+                : "TaskExecutionModel matrix seconds";
+        return caliber.name() + " (" + quantity + "; planning "
+                + cell.getConfig().getPlanningAlgorithm() + ", scheduling "
+                + cell.getConfig().getSchedulingAlgorithm() + ")";
     }
 
     private static <T> T requireNonNull(T value, String subject) {
