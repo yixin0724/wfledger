@@ -26,6 +26,8 @@ mvn -pl :workflowsim-workbench -am compile exec:java \
 
 Open `index.html` in the output root to browse experiment history, and `report.html` inside an experiment directory for scheme comparisons, task timelines, waiting time, and resource utilization. Each run uses a dedicated output directory; failure causes and completed results are both retained.
 
+Experiment outputs under `output/` are working products with an explicit retention policy: uncompressed study and workbench directories are regenerable and can be removed with `make clean-output`, while every retained evidence original is kept as an `output/*.tar.gz` archive (the per-directory ignore annotations in `.gitignore` record which archives are the originals).
+
 - Run from configuration and read reports: [Workbench guide](<docs/getting-started/WORKBENCH.md>)
 - Build experiments with the Java API: [code-configuration guide](<docs/getting-started/CODE_CONFIG_EXPERIMENTS.md>)
 - Build, test, and tooling commands: [build guide](<docs/getting-started/BUILD.md>)

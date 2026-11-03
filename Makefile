@@ -1,7 +1,7 @@
 # WorkflowSim Makefile
 # Shortcuts for the common Maven build commands
 
-.PHONY: all build test verify audit clean coverage install package rebuild mutation-gate language help
+.PHONY: all build test verify audit clean clean-output coverage install package rebuild mutation-gate language help
 
 # default target
 all: build
@@ -29,6 +29,16 @@ audit:
 clean:
 	@echo "Removing the build output..."
 	mvn clean
+
+# remove the regenerable uncompressed study/workbench outputs, keeping all .tar.gz originals
+# (directory globs carry a trailing slash so the retained output/*.tar.gz archives never match)
+clean-output:
+	@echo "Removing uncompressed study/workbench outputs (all output/*.tar.gz originals are kept)..."
+	rm -rf output/workbench*/ output/sensitivity-r13/ output/sensitivity-r13-v2/ \
+		output/network-study-r10*/ output/peft-comparison-r12/ \
+		output/benchmark-standard-v1/ output/benchmark-standard-power-v1/ \
+		output/benchmark-standard-carbon-v1/ output/benchmark-standard-dvfs-v1/
+	@echo "Done. Retained evidence originals: output/*.tar.gz"
 
 # generate the test coverage report
 coverage:
@@ -77,6 +87,7 @@ help:
 	@echo "  make verify   - full tests and the coverage gate of both modules"
 	@echo "  make audit    - clean build plus joint acceptance, including the core API documentation"
 	@echo "  make clean    - remove the build output"
+	@echo "  make clean-output - remove regenerable uncompressed output/ study dirs (keeps all .tar.gz originals)"
 	@echo "  make coverage - generate the test coverage report"
 	@echo "  make package  - package the JARs (tests skipped)"
 	@echo "  make install  - install into the local Maven repository"

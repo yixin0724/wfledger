@@ -106,6 +106,11 @@ nothing (`events.count` instead of `eventCount`, a stage-in envelope's already-e
   necessarily references the per-domain contract objects) — the recorded decoupling
   proposal is to move `SchedulingAlgorithmProvider` into a leaf package, which breaks the
   `experiment.registry <-> scheduling` pair and halves `experiment.registry <-> utils`.
+- The `output/` tree follows a retention policy: uncompressed study and workbench directories
+  are regenerable working products, removable with `make clean-output`, while every retained
+  evidence original lives as an `output/*.tar.gz` archive. The large raw directories were
+  removed on 2026-11-03 after verifying, for each archived directory, that the archive holds
+  every raw file (AUD-F18).
 
 ## 6. Commands that constitute the gate
 
