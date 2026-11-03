@@ -96,7 +96,7 @@ nothing (`events.count` instead of `eventCount`, a stage-in envelope's already-e
 ```bash
 mvn -Pjavadoc clean verify                                   # unit + integration + coverage + javadoc
 python3 -B scripts/check-docs.py                             # link/anchor validation
-PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py   # 39 auditor self-tests
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py   # 38 auditor self-tests
 for t in scripts/test-*.py; do PYTHONDONTWRITEBYTECODE=1 python3 -B "$t"; done
 node scripts/verify-report.cjs <fixtures>/browser-fixtures.json     # offline report acceptance
 python3 -B scripts/mutation-gate.py --output <new>.json       # registered mutants
