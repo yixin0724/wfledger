@@ -1,0 +1,19 @@
+simulator/src/test/java/org/workflowsim/experiment/ControlledSharedStorageIndependentReferenceTest.java
+  s_2aca31fbb7a189::t_1f22c1cb679931 56-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6cfe469a4844fb0d92100e924eaf45c99ed2933f",
+  "prompts": {},
+  "sessions": {
+    "s_2aca31fbb7a189": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a527-ff82-7390-a8b2-84d77b19e78f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
