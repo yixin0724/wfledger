@@ -273,7 +273,7 @@ REGISTRY = [
         file="simulator/src/main/java/org/workflowsim/WfCommonsJsonParser.java",
         old="        return Math.max(MIN_CLOUDLET_LENGTH, (long) length);",
         new="        return MIN_CLOUDLET_LENGTH;",
-        killers="MontageWfInstancesStructuralTest"),
+        killers="WfCommonsRuntimeReferenceTest"),
 ]
 
 

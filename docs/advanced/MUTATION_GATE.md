@@ -68,7 +68,8 @@ regressions fail. M24–M26 (2026-11-04, B02/B03) add the fixed-commit CloudSim 
 WorkflowSim reference axes: transfer-work accounting, same-time serial ordering, and the SHARED
 transfer envelope. Each is killed by its corresponding hand-derived reference test. M27
 (2026-11-04, B05) adds the Montage real-derived runtime-mapping axis: collapsing every task to
-100 MI must be killed by the 17-instance structural suite.
+100 MI must be killed by the simulator-module `WfCommonsRuntimeReferenceTest`; the separate
+17-instance structural suite remains in experiments.
 
 ## Usage
 
