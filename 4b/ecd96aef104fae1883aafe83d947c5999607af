@@ -1,0 +1,64 @@
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  s_3ae6b032aa2d87::t_67a4cd0cf04a56 103
+  s_3ae6b032aa2d87::t_49c3db30004006 346-351
+  s_3ae6b032aa2d87::t_059e0c3ed996ee 47-54,238
+  s_3ae6b032aa2d87::t_99421c7f20ddaf 401-419
+  s_3ae6b032aa2d87::t_499ebafc52497a 275
+  s_3ae6b032aa2d87::t_4f3c478c3b7b1b 239-246
+  s_3ae6b032aa2d87::t_57f69d352e8db7 78
+docs/experiments/AUDIT_COVERAGE.md
+  s_3ae6b032aa2d87::t_84229bbda52025 50
+simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java
+  s_3ae6b032aa2d87::t_028f4f72f6e399 180-183
+scripts/mutation-gate.py
+  s_3ae6b032aa2d87::t_eb82cbe2c8704a 215-227
+docs/experiments/REPRODUCIBILITY.md
+  s_3ae6b032aa2d87::t_e7ac8200f2794c 64
+simulator/src/test/java/org/workflowsim/utils/SimulationConfigCopyTest.java
+  s_3ae6b032aa2d87::t_9a08cbe88e7aa5 55
+  s_3ae6b032aa2d87::t_406a83355065cb 33
+simulator/src/test/java/org/workflowsim/utils/SimulationConfigEventRecorderCapTest.java
+  s_3ae6b032aa2d87::t_e1002e2c2aacaa 1-46
+docs/advanced/MUTATION_GATE.md
+  s_3ae6b032aa2d87::t_0eaf511daa04d4 38
+  s_3ae6b032aa2d87::t_430a2ecf38b21f 46-49
+  s_3ae6b032aa2d87::t_0ec6dbe0863a98 54
+experiments/src/main/java/org/workflowsim/experiments/workbench/WorkbenchConfig.java
+  s_3ae6b032aa2d87::t_8b7406316330dc 260-265
+  s_3ae6b032aa2d87::t_9401636f3b178b 160
+docs/getting-started/WORKBENCH.md
+  s_3ae6b032aa2d87::t_39d744ad6ec3a6 68
+experiments/src/test/java/org/workflowsim/experiments/rerun/ManifestConfigRebuilderTest.java
+  s_3ae6b032aa2d87::t_50165249b15800 64-94
+  s_3ae6b032aa2d87::t_433da65e9ff7a0 63,454
+simulator/src/main/java/org/workflowsim/experiment/ExperimentManifestWriter.java
+  s_3ae6b032aa2d87::t_181e02b1eaa462 342-348
+simulator/src/test/java/org/workflowsim/experiment/SimulationRunnerEventRecorderCapIntegrationTest.java
+  s_3ae6b032aa2d87::t_e6d77fdf532bf4 1-57
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchConfigTest.java
+  s_3ae6b032aa2d87::t_d513c61df4caaf 4
+  s_3ae6b032aa2d87::t_d94c43be51f176 92-126
+experiments/src/main/java/org/workflowsim/experiments/rerun/ManifestConfigRebuilder.java
+  s_3ae6b032aa2d87::t_9f36f4760cd268 679-708
+  s_3ae6b032aa2d87::t_f92c820f70a1d7 284-288
+  s_3ae6b032aa2d87::t_a2bc9ccdbfa2ca 678
+simulator/src/main/java/org/workflowsim/experiment/SimulationEventRecorder.java
+  s_3ae6b032aa2d87::t_94222cb5693e22 20-23
+  s_3ae6b032aa2d87::t_5bef4e9bf05fc7 116-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4becd96aef104fae1883aafe83d947c5999607af",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
