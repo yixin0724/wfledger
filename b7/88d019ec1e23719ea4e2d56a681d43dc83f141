@@ -1,0 +1,23 @@
+docs/advanced/MUTATION_GATE.md
+  s_74c394365f705a::t_3ba4198431e63e 45,69-71,76
+experiments/src/test/java/org/workflowsim/experiments/reference/p7/MontageWfInstancesStructuralTest.java
+  s_74c394365f705a::t_24f03566f8a21c 1-126
+scripts/mutation-gate.py
+  s_74c394365f705a::t_a27773b372108a 270-276
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b788d019ec1e23719ea4e2d56a681d43dc83f141",
+  "prompts": {},
+  "sessions": {
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
