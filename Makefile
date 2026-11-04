@@ -1,7 +1,7 @@
 # WorkflowSim Makefile
 # Shortcuts for the common Maven build commands
 
-.PHONY: all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all language help
+.PHONY: all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all python-gate quality-gate language help
 
 # default target
 all: build
@@ -80,6 +80,18 @@ mutation-gate-all:
 	$(MAKE) mutation-gate
 	$(MAKE) mutation-gate-experiments
 
+# independent Python, documentation, language, and dataset checks
+python-gate:
+	@set -e; for test_file in scripts/test-*.py; do \
+		PYTHONDONTWRITEBYTECODE=1 python3 -B "$$test_file"; \
+	done
+	python3 -B scripts/check-docs.py
+	python3 -B scripts/check-dataset-indexes.py
+	$(MAKE) language
+
+# the same complete local acceptance surface as the two CI jobs, excluding real mutation
+quality-gate: audit python-gate
+
 # reject CJK characters in every tracked text file
 language:
 	@echo "Checking that the tree is maintained in English..."
@@ -94,6 +106,8 @@ help:
 	@echo "  make test     - unit/semantic tests of both modules"
 	@echo "  make verify   - full tests and the coverage gate of both modules"
 	@echo "  make audit    - clean build plus joint acceptance, including the core API documentation"
+	@echo "  make python-gate - independent Python, docs, language, and dataset checks"
+	@echo "  make quality-gate - complete local acceptance surface (audit + python-gate)"
 	@echo "  make clean    - remove the build output"
 	@echo "  make clean-output - remove regenerable uncompressed output/ study dirs (keeps all .tar.gz originals)"
 	@echo "  make coverage - generate the test coverage report"

@@ -18,7 +18,7 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Temporary: seed sensitivity under the random failure-retry scenario (delete after use). */
+/** Manual seed-sensitivity probe under the random failure-retry scenario; not a JUnit test. */
 public final class TmpSeedSensitivity {
     private TmpSeedSensitivity() {}
 

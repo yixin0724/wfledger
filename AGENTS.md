@@ -33,6 +33,7 @@
 ```bash
 mvn -q compile                                  # compile every module
 mvn -pl :workflowsim test                       # simulator unit tests
+make quality-gate                               # complete local acceptance (Maven + Python + docs + language + datasets)
 mvn -Pjavadoc clean verify                      # the full CI gate (tests + coverage + Javadoc)
 python3 -B scripts/check-docs.py                # documentation link/anchor check
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py   # Python auditor self-tests
@@ -123,6 +124,7 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 | `AGENTS.md` | Coding-agent handbook | Changes require human review |
 | `LICENSE` | Official GPL-2.0 full text (338 lines from gnu.org, verbatim) | Must not be replaced with a permissive license: upstream CloudSim 3 is GPL (`simulator/src/main/java/org/cloudbus/`, 65 of 66 files carry the GPL header) |
 | `CITATION.cff` | Software citation metadata (read by GitHub "Cite this repository") | Version, date, and author changes must match an actual release; the license field is fixed to `GPL-2.0-or-later` |
+| `.editorconfig` | Editor encoding, line-ending, indentation, and trailing-whitespace defaults | Keep in step with Spotless and CODE_STYLE.md; no formatter is driven by this file alone |
 | `Makefile` | Convenience commands | Maintained in step with the pom.xml targets |
 
 **Discipline for adding a top-level directory or file**: first ask "why can this not live

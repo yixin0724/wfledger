@@ -46,7 +46,7 @@ Montage/Inspiral/Sipht traces at 25–1000 Jobs. Their published savings range i
 
 **What they lack — our differentiation surface**: independent energy audit
 (no Python recompute), no conservation-law invariant test (no identity that a
-third party can verify), no carbon dimensionride-through, no evidence-chain
+third party can verify), no carbon dimension ride-through, no evidence-chain
 manifests with per-Job frequency assignments, no frozen benchmark with per-tier
 EDP accounting. This is the SAME dark-void the energy and carbon dimensions
 exploited: audit and conservation are our unique moat.
@@ -55,7 +55,7 @@ exploited: audit and conservation are our unique moat.
 
 | Paper | Venue | Model semantics |
 |---|---|---|
-| Mei et al. (arrXiv 2104.00486) | Energy-aware, deadline-constrained | DVFS-enabled heterogeneous clusters; slack-based stretching: tasks with schedule slack can be stretched to lower frequencies without extending the makespan; EDP is the optimization target |
+| Mei et al. (arXiv 2104.00486) | Energy-aware, deadline-constrained | DVFS-enabled heterogeneous clusters; slack-based stretching: tasks with schedule slack can be stretched to lower frequencies without extending the makespan; EDP is the optimization target |
 | Cao et al. (referenced in Cotes-Ruiz) | DVFS DAG optimum-frequency | No governor disclosure, no source available |
 | Guérout et al. | CloudSim-DVFS | DVFS into CloudSim with DAG support — but no failure model, no reconfiguration cost, no network cost |
 | DEFT (arXiv 2608.02122, 2025/26) | Multi-GPU runtimes | Joint task placement and DVFS — GPU-specific, but the frequency-tier table is the same structure |

@@ -1,7 +1,10 @@
 # Energy Dimension: Requirements Analysis and Architecture Design (v2)
 
 This document presents the enriched design for the energy-dimension extension, grounded in
-a primary-source literature survey. It supersedes v1 entirely; no code has been written yet.
+a primary-source literature survey. It supersedes v1 entirely. **AS BUILT (2026-11-04):** the
+energy model, manifest export, independent Python recomputation, Workbench surface, and frozen
+power benchmark are implemented and audited; this is a current contract with historical design
+rationale, not an unimplemented proposal.
 
 ## 1. What the field actually does — survey findings from primary sources
 

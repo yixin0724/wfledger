@@ -90,10 +90,12 @@ Standard artifacts comprise manifest v4, metrics v2, and events v1; network side
 ## Development and verification
 
 ```bash
-mvn -Pjavadoc clean verify
+make quality-gate
 ```
 
-The joint gate covers unit, semantic, and integration tests, coverage floors, and core-API Javadoc; independent Python and offline browser checks are described in the [build guide](<docs/getting-started/BUILD.md>). For performance comparisons, first check state, capture, and action-fingerprint equality, then report wall time and allocation deltas, following the [state-copy performance notes](<docs/advanced/DATAFLOW_STATE_COPY_PERFORMANCE.md>).
+The joint gate covers unit, semantic, and integration tests, coverage floors, core-API Javadoc, independent Python checks, documentation, language, and dataset integrity. Browser acceptance and both registered mutation families are described in the [build guide](<docs/getting-started/BUILD.md>). For performance comparisons, first check state, capture, and action-fingerprint equality, then report wall time and allocation deltas, following the [state-copy performance notes](<docs/advanced/DATAFLOW_STATE_COPY_PERFORMANCE.md>).
+
+The [V&V case ledger](<docs/experiments/VV_CASE_LEDGER.md>) and [golden-evidence registry](<docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md>) distinguish verification, validation, and labeled regression evidence; real-platform validation is not implied by a green build.
 
 ## License and citation
 

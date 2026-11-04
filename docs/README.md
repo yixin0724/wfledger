@@ -22,7 +22,7 @@ and superseded audit drafts are not long-term entry points.
 - [Paper-metrics conventions card](<algorithms/METRICS_CARD.md>): per-metric literature-convention differences and citation advice.
 - [Workflow inputs and datasets](<../datasets/README.md>): repository-bundled inputs, optional corpora, provenance, conversion, and format constraints.
 - [Dataflow and network capability matrix](<advanced/DATAFLOW_CAPABILITY_MATRIX.md>): physical models, storage, online assignment, and unimplemented capabilities.
-- [Energy dimension design](<advanced/ENERGY_DIMENSION_DESIGN.md>): requirements analysis, power-model architecture, metric surface, and the honesty scoping of the planned energy extension.
+- [Energy dimension design](<advanced/ENERGY_DIMENSION_DESIGN.md>): the implemented and audited energy dimension, power-model architecture, metric surface, and declared scope.
 - [Carbon dimension design](<advanced/CARBON_DIMENSION_DESIGN.md>): the two
   literature carbon accountings (intensity multiplier vs green-budget excess),
   the v1 architecture riding the audited energy chain, and the deliberate omissions.

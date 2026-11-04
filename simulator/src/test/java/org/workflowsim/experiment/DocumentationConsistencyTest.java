@@ -76,6 +76,25 @@ class DocumentationConsistencyTest {
         assertTrue(document.contains("does not produce a single credibility score"));
     }
 
+    @Test
+    void professionalMaintenanceSurfaceIsCurrentAndActionable() throws Exception {
+        assertFalse(read("docs/advanced/ENERGY_DIMENSION_DESIGN.md").contains("no code has been written yet"));
+        assertTrue(read("docs/advanced/ENERGY_DIMENSION_DESIGN.md").contains("AS BUILT"));
+        assertFalse(read("docs/README.md").contains("planned energy extension"));
+        assertTrue(read("docs/README.md").contains("implemented and audited energy dimension"));
+        assertFalse(read("docs/advanced/DVFS_DIMENSION_DESIGN.md").contains("dimensionride-through"));
+        assertFalse(read("docs/advanced/DVFS_DIMENSION_DESIGN.md").contains("arrXiv"));
+        String probe = read("experiments/src/test/java/org/workflowsim/experiments/rerun/TmpSeedSensitivity.java");
+        assertTrue(probe.contains("Manual seed-sensitivity probe"));
+        assertFalse(probe.contains("delete after use"));
+        assertTrue(read("Makefile").contains("quality-gate:"));
+        assertTrue(read("Makefile").contains("python-gate:"));
+        String ci = read(".github/workflows/ci.yml");
+        assertTrue(ci.contains("contents: read"));
+        assertTrue(ci.contains("concurrency:"));
+        assertTrue(read("docs/getting-started/BUILD.md").contains("final clean verification after mutation"));
+    }
+
     private static String read(String relative) throws Exception {
         Path path = Paths.get("..").resolve(relative);
         assertTrue(Files.isRegularFile(path), "missing documentation file: " + path);
