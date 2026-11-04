@@ -5,7 +5,9 @@ deliberately out of scope.** It is a ledger of coverage, not a claim that no def
 row names the test or command that fails when the property breaks.
 
 Last sweep: 2026-11-03 (review rounds 1-7, the dedicated coverage goal, the AUD-F05 validator
-recompute, the AUD-F13 dataset index chain, and the AUD-F08 shared-core honesty pass).
+recompute, the AUD-F13 dataset index chain, and the AUD-F08 shared-core honesty pass); updated
+2026-11-04 by the post-completion review follow-ups (three AUD-F12 javadoc path residuals in
+5922281, and the finding-disposition master ledger added as §7).
 
 ## 1. Evidence dimensions: a positive case and a tamper case each
 
@@ -123,3 +125,37 @@ python3 -B scripts/check-dataset-indexes.py                   # dataset index in
 node scripts/verify-report.cjs <fixtures>/browser-fixtures.json     # offline report acceptance
 python3 -B scripts/mutation-gate.py --output <new>.json       # registered mutants
 ```
+
+## 7. Audit-fix campaign: finding-to-disposition master ledger
+
+The 2026-11-03 audit produced one CI claim and twenty further P0/P1/P2 findings across the
+simulator, the experiments module, the evidence pipeline, and the process. The authoritative
+per-finding rows (level, evidence location, fix plan, execution notes, and the standing user
+decisions) live in the engineering plan document maintained in the engineering workspace
+outside this repository; this section is the in-repo disposition summary, so any checkout can
+answer "what was each audit finding and what happened to it" on its own.
+
+| Finding | Level | Subject | Disposition |
+|---|---|---|---|
+| F-01 | P0 | CI referenced an untracked language-gate script | **False alarm** — `scripts/check-language.py` and its self-test were committed in `4ee6219` (2026-11-03 13:51 +0800) before the audit conclusion; the audit's untracked-marker evidence was a stale snapshot taken before that commit. No fix was needed. |
+| F-02 | P0 | mutation gate never runs in CI; only 11 registered mutants | FIXED — `12630c7` (CI runs the full zero-survival battery on push and PR); `6fd98e5` + `fa0cb1e` (eight new canaries M12–M19, one per audit-fix semantic axis, red-first 8/8 KILLED; the logging channel of AUD-F19 is argued unregistered) |
+| F-03 | P0 | coverage floors low; BUNDLE aggregation; integration coverage uncounted | FIXED — `6eaddfc` (bundle→PACKAGE ratchets, integration-exec rules added, thresholds set by measured ratchet) |
+| F-04 | P0 | contention engine `advance()` O(B²): full-list fork each time step | FIXED — `a056426` (shared immutable retained-trace prefix across forks; byte-identical trace proven) |
+| F-05 | P1 | artifact validator checked metrics existence but never recomputed | FIXED — `fd3a723` (queue-wait recomputed from `result.jobs` with the same population and formula as the Python auditor; event contract boundaries enforced) |
+| F-06 | P1 | Holm correction only on the network study path | FIXED — `65254bc` (shared corrector in the simulator module; applied within each comparison group) |
+| F-07 | P1 | unbounded resident event list in `SimulationEventRecorder` | FIXED — `a4ca13c` (fail-fast capacity cap, default 20000) |
+| F-08 | P1 | four "independent" Python checkers share one 49KB core | FIXED — `167b7e0` (honest shared-implementation declaration; independence means independence from the Java production path) |
+| F-09 | P1 | dual cost calibers under one algorithm label | FIXED — `ae6231f` (mixed mapping-cost calibers rejected within one comparison group) |
+| F-10 | P1 | deprecated label bypass behind the scheduler | FIXED — `f20925a` (explicit legacy declaration required; no silent alias mapping) |
+| F-11 | P1 | RL interface non-Markov, silent illegal actions, terminal-only reward, static registry | FIXED — `7e3ca25` (demo-boundary declaration per user decision; behavior unchanged) |
+| F-12 | P1 | fat-tree routing triple implementation (Java topology / Java validator / Python audit) | FIXED — `10e5492` (single Java route source for topology and validator; Python kept as the cross-language evidence path); residual follow-up `5922281` fixed three stale javadoc path pointers found by the 2026-11-04 review |
+| F-13 | P1 | dataset tree without a top-level sha256 index chain | FIXED — `6871dca` (top-level `datasets/INDEX.json`, wfinstances index, sha256 chain verified by `check-dataset-indexes.py`) |
+| F-14 | P1 | 2090-line `SimulationMetrics`; silent miss on accumulator/assembler/getter triple edits | FIXED — `a1de55e` (serialization-surface contract guard; class split rejected as "move-only" risk) |
+| F-15 | P1 | stateful context validator, not reentrant | FIXED — `bf93926` (single-use lifecycle latch; feeding rejected after finish) |
+| F-16 | P1 | 14 package cycles | FIXED — `9490617` (cycle inventory locked by `PackageDependencyGuardTest`; full untangle recorded as a proposal) |
+| F-17 | P2 | Workbench UUID/timestamp output dirs; full-rewrite write amplification | CLOSED-BY-ARGUMENT — deliberate design: per-run dirs avoid parallel collisions, identity/environment/wall-clock are whitelisted by the rerun contract, per-candidate rewrite is crash tolerance |
+| F-18 | P2 | `output/` at 3.6GB with no executed retention policy | FIXED — `a50054f` (pre-deletion manifest recorded, non-retained uncompressed dirs removed, all `output/*.tar.gz` originals kept and coverage-verified, `make clean-output` added) |
+| F-19 | P2 | legacy catch sites swallow exceptions via `printStackTrace` | FIXED — `1f316c9` (vendored `Log.printError` channel; control flow including the historical null continuation unchanged) |
+| F-20 | P2 | Tier-B backlog plus permanent exemption zones; ratchet broken | CLOSED-BY-RECORD — exemption structure frozen by AGENTS.md policy; this campaign's new code held to zero Tier-A |
+| F-21 | P2 | `default` fallback to Static hides a missed registration edit | FIXED — `0d33ca0` (every scheduling label gets an explicit binding; INVALID binds the no-decision shell) |
+| F-22 | — | (audit self-correction) `verify-network-ledger.py` suspected dead code | CLOSED-BY-VERIFICATION — referenced by three docs and four tests; the audit conclusion was withdrawn |
