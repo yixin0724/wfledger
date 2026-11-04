@@ -41,6 +41,21 @@ class ControlledSharedStorageIndependentReferenceTest {
     }
 
     @Test
+    void legacySharedSingleTaskMatchesUpstreamIntermediateArithmetic() throws Exception {
+        // WorkflowSim-1.0 d3ea21a: 150 MB / 15 MB/s = 10 s, converted at 1000 MIPS to
+        // 10000 MI; the 2 s task contributes another 2000 MI. The 110 MI stage-in plus
+        // release cadence adds 0.21 s around the resulting 12 s execution envelope.
+        Path input = dax(
+                "upstream-shared",
+                "<job id=\"a\" runtime=\"2\">" + "<uses name=\"external\" link=\"input\" size=\"150000000\"/></job>");
+        SimulationReport report =
+                run(SimulationConfig.builder(input.toString(), 1).build(), oneVmPlatform(15));
+        assertReference(report, 12.21);
+        assertEquals(12.0, computeJob(report).getExecutionTime(), EPS);
+        assertEquals(2000L, report.getTasks().get(0).getEffectiveExecutionLengthMi());
+    }
+
+    @Test
     void rawSharedChainIncludesBootstrapAndEachTasksOwnInputs() throws Exception {
         Path input = dax(
                 "raw-chain",
@@ -389,10 +404,14 @@ class ControlledSharedStorageIndependentReferenceTest {
     }
 
     private static PlatformProfile oneVmPlatform() {
+        return oneVmPlatform(20);
+    }
+
+    private static PlatformProfile oneVmPlatform(int transferRateMbPerSecond) {
         return PlatformProfile.builder("independent-shared-reference")
                 .addHost(new PlatformProfile.HostSpec(0, 1, 1000.0, 1024, 1000L, 1_000_000L))
                 .addVm(vm(0, 1000.0, 1))
-                .storage(new PlatformProfile.StorageSpec(1_000_000_000L, 20))
+                .storage(new PlatformProfile.StorageSpec(1_000_000_000L, transferRateMbPerSecond))
                 .build();
     }
 

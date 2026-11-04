@@ -39,6 +39,9 @@ closed with dedicated boundary/conservation tests at that time.
 | M21 | Declared revision contract ignored, so a marker-less stream falls back to the legacy boundary | declared `events.revisionContract` requirement (AUD-F23, 2026-11-04) |
 | M22 | Campaign validator skips the independent statistical-summary recompute | campaign summary tamper detection (Q02, 2026-11-04) |
 | M23 | WfCommons parser skips schema-version and unknown-field validation | WfFormat 1.5/1.6 input gate (Q05, 2026-11-04) |
+| M24 | Space-Shared drops the file-transfer MI added to Cloudlet length | CloudSim 3.0.3 transfer-work accounting (B02, 2026-11-04) |
+| M25 | FutureQueue assigns serial zero to every event | same-time event ordering (B02, 2026-11-04) |
+| M26 | WorkflowDatacenter drops the SHARED input-transfer seconds | legacy WorkflowSim transfer envelope (B03, 2026-11-04) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -60,12 +63,14 @@ The M22 addition (2026-11-04, Q02) registers the campaign-summary evidence axis:
 `ExperimentCampaignSummaryVerifier` must make the intact-per-run/tampered-summary regression
 fail at the killers stage. The M23 addition (2026-11-04, Q05) registers the WfFormat input
 gate: bypassing `WfCommonsSchemaValidator` must make the unknown-version and unknown-field
-regressions fail.
+regressions fail. M24–M26 (2026-11-04, B02/B03) add the fixed-commit CloudSim and legacy
+WorkflowSim reference axes: transfer-work accounting, same-time serial ordering, and the SHARED
+transfer envelope. Each is killed by its corresponding hand-derived reference test.
 
 ## Usage
 
 ```bash
-# Full battery (~5–10 min for the 23 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Full battery (~5–10 min for the 26 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

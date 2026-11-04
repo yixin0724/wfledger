@@ -246,6 +246,27 @@ REGISTRY = [
         old="            WfCommonsSchemaValidator.validate(document);",
         new="            // M23: schema validation deliberately bypassed",
         killers="WfCommonsJsonParserValidationTest"),
+    dict(
+        id="M24",
+        name="Space-Shared drops the file-transfer MI added to Cloudlet length",
+        file="simulator/src/main/java/org/cloudbus/cloudsim/CloudletSchedulerSpaceShared.java",
+        old="        cloudlet.setCloudletLength(length);",
+        new="        cloudlet.setCloudletLength(cloudlet.getCloudletLength());",
+        killers="CloudletSchedulerReferenceTest"),
+    dict(
+        id="M25",
+        name="FutureQueue assigns serial zero to every event",
+        file="simulator/src/main/java/org/cloudbus/cloudsim/core/FutureQueue.java",
+        old="        newEvent.setSerial(serial++);",
+        new="        newEvent.setSerial(0L);",
+        killers="CloudSimKernelReferenceTest"),
+    dict(
+        id="M26",
+        name="WorkflowDatacenter drops the SHARED input-transfer seconds",
+        file="simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java",
+        old="        updateTaskExecTime(job, vm, effectiveStageInSeconds, fileTransferTime);",
+        new="        updateTaskExecTime(job, vm, effectiveStageInSeconds, 0.0);",
+        killers="ControlledSharedStorageIndependentReferenceTest"),
 ]
 
 
