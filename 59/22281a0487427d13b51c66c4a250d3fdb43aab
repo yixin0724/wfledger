@@ -1,0 +1,23 @@
+simulator/src/main/java/org/workflowsim/network/NetworkTopologySpec.java
+  s_3ae6b032aa2d87::t_2975a8cc510ad9 11
+simulator/src/test/java/org/workflowsim/network/FatTreeTopologyTest.java
+  s_3ae6b032aa2d87::t_cda33eea725c4a 21
+simulator/src/main/java/org/workflowsim/data/DataMovementModel.java
+  s_3ae6b032aa2d87::t_ab6314437bda85 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5922281a0487427d13b51c66c4a250d3fdb43aab",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
