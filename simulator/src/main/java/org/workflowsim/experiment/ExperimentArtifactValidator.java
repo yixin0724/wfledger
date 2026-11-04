@@ -46,6 +46,15 @@ public final class ExperimentArtifactValidator {
     public static final String MANIFEST_SCHEMA_V4 = ExperimentManifestWriter.SCHEMA_V4;
 
     /**
+     * AUD-F23 (2026-11-04 post-completion review): revision-stream contract a v4 writer declares
+     * in the events summary once it emits the F-006/F-007 markers. A declared contract turns the
+     * two conditional marker checks into requirements, so removing the markers from a stream this
+     * writer produced is rejected instead of being excused as a legacy stream. Manifests without
+     * the declaration (every retained pre-2026-11-04 bundle) keep the manifest-authority boundary.
+     */
+    public static final String EVENTS_REVISION_CONTRACT = ExperimentManifestWriter.EVENTS_REVISION_CONTRACT;
+
+    /**
      * Relative tolerance of the v4 independent metric recompute (AUD-F05, 2026-11-03),
      * mirroring the registered rel_tol default of the Python evidence auditor
      * (scripts/verify-study-evidence.py) so both gates accept the same honest bundles and
@@ -126,7 +135,7 @@ public final class ExperimentArtifactValidator {
                     requireObject(root, "result", "experiment manifest"),
                     "simulationEndSeconds",
                     "experiment manifest result");
-            verifyEventContract(contractAudit, end);
+            verifyEventContract(eventSummary, contractAudit, end);
             verifyMetricsRecompute(root, manifestMetrics, end);
         }
         if (networkContext != null) {
@@ -601,7 +610,19 @@ public final class ExperimentArtifactValidator {
      * clock, so the registered recompute population is the result job outcome records --
      * exactly what the Python auditor recomputes from.
      */
-    private static void verifyEventContract(EventContractAudit audit, double end) throws IOException {
+    private static void verifyEventContract(JsonObject eventSummary, EventContractAudit audit, double end)
+            throws IOException {
+        String declaredContract = declaredRevisionContract(eventSummary);
+        if (declaredContract != null && !EVENTS_REVISION_CONTRACT.equals(declaredContract)) {
+            throw new IOException("Unsupported events revisionContract \"" + declaredContract
+                    + "\"; this validator implements " + EVENTS_REVISION_CONTRACT);
+        }
+        boolean contractDeclared = declaredContract != null;
+        if (contractDeclared && audit.terminalCount != 1) {
+            throw new IOException("The declared events revisionContract " + EVENTS_REVISION_CONTRACT
+                    + " requires exactly one SIMULATION_TERMINATED event, but the stream contains "
+                    + audit.terminalCount);
+        }
         if (audit.terminalCount > 0) {
             if (audit.terminalCount != 1) {
                 throw new IOException("Duplicate SIMULATION_TERMINATED events: " + audit.terminalCount);
@@ -621,7 +642,7 @@ public final class ExperimentArtifactValidator {
                         + derivation[2] + " != envelope " + derivation[0] + " + effective stage " + derivation[1]);
             }
         }
-        if (!audit.startedDerivations.isEmpty() || audit.terminalCount > 0) {
+        if (contractDeclared || !audit.startedDerivations.isEmpty() || audit.terminalCount > 0) {
             List<Long> uncovered = new ArrayList<>();
             for (Long executed : audit.executedJobs) {
                 if (!audit.startedDerivations.containsKey(executed)) {
@@ -634,6 +655,26 @@ public final class ExperimentArtifactValidator {
                         + "marker " + uncovered);
             }
         }
+    }
+
+    /**
+     * AUD-F23 (2026-11-04 post-completion review): read the optional declared revision-stream
+     * contract from the events summary.
+     *
+     * @param eventSummary the manifest events summary
+     * @return the declared contract string, or {@code null} for the historical shape (no key)
+     * @throws IOException when the key is present but not a string
+     */
+    private static String declaredRevisionContract(JsonObject eventSummary) throws IOException {
+        if (!eventSummary.has("revisionContract")
+                || eventSummary.get("revisionContract").isJsonNull()) {
+            return null;
+        }
+        JsonElement declared = eventSummary.get("revisionContract");
+        if (!declared.isJsonPrimitive() || !declared.getAsJsonPrimitive().isString()) {
+            throw new IOException("events revisionContract must be a string when present");
+        }
+        return declared.getAsString();
     }
 
     /**

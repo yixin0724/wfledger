@@ -9,6 +9,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
 
 import org.cloudbus.cloudsim.Log;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +24,7 @@ import org.workflowsim.utils.SimulationConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -579,6 +583,135 @@ class ExperimentArtifactValidatorTest {
 
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(
                 () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+    }
+
+    /**
+     * AUD-F23 (2026-11-04 post-completion review): a writer that declares the F-006/F-007
+     * revision contract lets the validator require the markers. Removing the terminal event
+     * from such a stream used to be excused as "legacy stream" and passed the whole bundle.
+     */
+    @Test
+    void rejectsADeclaredRevisionContractWithoutItsTerminalEvent(@TempDir Path output) throws Exception {
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts = writeBundle(output, "revision-terminal");
+        JsonObject manifest = readManifest(artifacts.getManifest());
+        rewriteEvents(artifacts, manifest, event -> "SIMULATION_TERMINATED"
+                .equals(event.get("type").getAsString()));
+
+        java.io.IOException exception = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(
+                exception.getMessage().contains("revisionContract"),
+                "the refusal must name the declared contract: " + exception.getMessage());
+        assertTrue(
+                exception.getMessage().contains("SIMULATION_TERMINATED"),
+                "the refusal must name the missing marker: " + exception.getMessage());
+    }
+
+    /**
+     * AUD-F23: the evasion that motivated the declaration -- strip every marker, keep a
+     * consistent manifest, and the old conditional checks had nothing to compare against.
+     */
+    @Test
+    void rejectsAStreamThatRemovesEveryMarkerUnderItsDeclaredContract(@TempDir Path output) throws Exception {
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts = writeBundle(output, "revision-markers");
+        JsonObject manifest = readManifest(artifacts.getManifest());
+        rewriteEvents(
+                artifacts,
+                manifest,
+                event -> "SIMULATION_TERMINATED".equals(event.get("type").getAsString())
+                        || "JOB_EXECUTION_STARTED".equals(event.get("type").getAsString()));
+
+        java.io.IOException exception = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(
+                exception.getMessage().contains("revisionContract"),
+                "the refusal must name the declared contract: " + exception.getMessage());
+    }
+
+    /** AUD-F23: an unknown declared contract is refused instead of being read as the current one. */
+    @Test
+    void rejectsAnUnknownDeclaredRevisionContract(@TempDir Path output) throws Exception {
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts = writeBundle(output, "revision-unknown");
+        JsonObject manifest = readManifest(artifacts.getManifest());
+        manifest.getAsJsonObject("events").addProperty("revisionContract", "v0");
+        Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
+
+        java.io.IOException exception = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(
+                exception.getMessage().contains("Unsupported events revisionContract"),
+                "the refusal must name the unsupported contract: " + exception.getMessage());
+    }
+
+    /**
+     * AUD-F23 compatibility pin: a manifest without the declaration is a retained pre-2026-11-04
+     * bundle and keeps the manifest-authority boundary -- a marker-less stream stays acceptable.
+     */
+    @Test
+    void keepsTheManifestAuthorityBoundaryForAStreamWithoutTheDeclaration(@TempDir Path output) throws Exception {
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts = writeBundle(output, "revision-legacy");
+        JsonObject manifest = readManifest(artifacts.getManifest());
+        manifest.getAsJsonObject("events").remove("revisionContract");
+        rewriteEvents(
+                artifacts,
+                manifest,
+                event -> "SIMULATION_TERMINATED".equals(event.get("type").getAsString())
+                        || "JOB_EXECUTION_STARTED".equals(event.get("type").getAsString()));
+
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+                () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+    }
+
+    private static ExperimentArtifactWriter.ExperimentArtifacts writeBundle(Path output, String runId)
+            throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal(runId, 2));
+        return ExperimentArtifactWriter.write(report, output, runId);
+    }
+
+    private static JsonObject readManifest(Path manifest) throws Exception {
+        return JsonParser.parseString(new String(Files.readAllBytes(manifest), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+    }
+
+    /**
+     * Rewrites the event stream through the filter, renumbers the surviving events so the
+     * sequence contract still holds, and re-signs the manifest (count, bounds, artifact digest)
+     * so the only remaining difference is the dropped marker itself.
+     */
+    private static void rewriteEvents(
+            ExperimentArtifactWriter.ExperimentArtifacts artifacts, JsonObject manifest, Predicate<JsonObject> drop)
+            throws Exception {
+        List<String> kept = new ArrayList<>();
+        long sequence = 0L;
+        for (String line : Files.readAllLines(artifacts.getEvents(), StandardCharsets.UTF_8)) {
+            if (line.isEmpty()) {
+                continue;
+            }
+            JsonObject event = JsonParser.parseString(line).getAsJsonObject();
+            if (drop.test(event)) {
+                continue;
+            }
+            event.addProperty("sequence", sequence++);
+            kept.add(JSON.toJson(event));
+        }
+        Files.write(artifacts.getEvents(), kept, StandardCharsets.UTF_8);
+        JsonObject summary = manifest.getAsJsonObject("events");
+        summary.addProperty("eventCount", kept.size());
+        summary.addProperty("lastSequence", kept.size() - 1L);
+        for (JsonElement element : manifest.getAsJsonArray("artifacts")) {
+            JsonObject entry = element.getAsJsonObject();
+            if ("events".equals(entry.get("role").getAsString())) {
+                entry.addProperty("sha256", ExperimentProvenance.fingerprint(artifacts.getEvents()));
+                entry.addProperty("sizeBytes", Files.size(artifacts.getEvents()));
+            }
+        }
+        Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
     private static String resourcePath(String resource) throws Exception {

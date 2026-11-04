@@ -53,6 +53,13 @@ import org.junit.jupiter.api.Test;
  * inline references), no bytecode or third-party dependency; it follows the same conventions
  * the audited inventory was computed with. A fully-qualified reference counts even when no
  * import exists, because the compiled dependency is real regardless of style.</p>
+ *
+ * <p>Parent-child edges are outside the cycle notion on purpose (2026-11-04 review note): the
+ * root package {@code org.workflowsim} imports its subpackages and every subpackage imports
+ * root types such as {@code Job}, which is ordinary layering inside one module rather than a
+ * dependency cycle between peers. The scan therefore drops an edge when either package is an
+ * ancestor of the other, so the locked inventory counts only peer-package pairs; without that
+ * rule the root package alone would manufacture nine "cycles".</p>
  */
 class PackageDependencyGuardTest {
 

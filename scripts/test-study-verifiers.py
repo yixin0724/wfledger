@@ -642,6 +642,72 @@ class ContractEventAuditTests(unittest.TestCase):
         evidence.inspect_manifest(manifest, audit)
         self.assertGreater(audit.counts.get("job-start-coverage", 0), 0, audit.report())
 
+    def test_a_declared_revision_contract_requires_its_terminal_marker(self):
+        """AUD-F23: declaring the contract turns the conditional terminal check into a requirement."""
+        manifest = inject_contract_events(make_bundle(self.root / "declared-terminal"))
+        rewrite_stream(manifest, {"SIMULATION_TERMINATED"}, declared="F-006/F-007")
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertGreater(audit.counts.get("revision-contract-terminal", 0), 0, audit.report())
+
+    def test_a_declared_contract_rejects_a_stream_with_every_marker_removed(self):
+        """AUD-F23: the reproduced evasion -- remove both markers, re-sign, keep result.jobs intact."""
+        manifest = inject_contract_events(make_bundle(self.root / "declared-markers"))
+        rewrite_stream(manifest, {"SIMULATION_TERMINATED", "JOB_EXECUTION_STARTED"},
+                       declared="F-006/F-007")
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertGreater(audit.counts.get("revision-contract-terminal", 0), 0, audit.report())
+
+    def test_an_undeclared_markerless_stream_keeps_the_legacy_boundary(self):
+        """AUD-F23 compatibility pin: retained pre-declaration bundles stay readable (0 issues)."""
+        manifest = make_bundle(self.root / "undeclared-legacy")
+        rewrite_stream(manifest, {"SIMULATION_TERMINATED", "JOB_EXECUTION_STARTED"}, declared=None)
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertEqual(0, audit.issue_count, audit.report())
+
+    def test_a_declared_contract_with_its_markers_intact_passes(self):
+        """AUD-F23 positive case: the declaration is not a blanket failure."""
+        manifest = inject_contract_events(make_bundle(self.root / "declared-healthy"))
+        rewrite_stream(manifest, set(), declared="F-006/F-007")
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertEqual(0, audit.issue_count, audit.report())
+
+    def test_an_unknown_declared_contract_is_rejected(self):
+        """AUD-F23: an unknown declaration must not be read as the implemented contract."""
+        manifest = inject_contract_events(make_bundle(self.root / "declared-unknown"))
+        rewrite_stream(manifest, set(), declared="v0")
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertGreater(audit.counts.get("revision-contract", 0), 0, audit.report())
+
+
+def rewrite_stream(manifest, drop_types, declared="keep"):
+    """Delete the named event types, renumber the survivors, and re-sign the manifest.
+
+    AUD-F23 helper: a tamperer who removes markers must also renumber sequences and update the
+    declared count/digest, otherwise the attack is stopped by a plumbing check and never reaches
+    the contract check under test. ``declared`` replaces the events ``revisionContract`` value;
+    the default keeps whatever the fixture already declared, and None removes the key."""
+    path = manifest.parent / "run.events.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    kept = [event for event in events if event["type"] not in drop_types]
+    for index, event in enumerate(kept):
+        event["sequence"] = index
+    path.write_text(''.join(json.dumps(event) + '\n' for event in kept), encoding="utf-8")
+    doc = json.loads(manifest.read_text())
+    doc["events"]["eventCount"] = len(kept)
+    if kept:
+        doc["events"]["lastSequence"] = kept[-1]["sequence"]
+    if declared is None:
+        doc["events"].pop("revisionContract", None)
+    elif declared != "keep":
+        doc["events"]["revisionContract"] = declared
+    bind_sidecars(manifest, doc)
+    return manifest
+
 
 class CarbonDimensionAuditTests(unittest.TestCase):
     """BAT-C2 (2026-10-28): carbon-dimension recompute self-test -- expected values come only from the

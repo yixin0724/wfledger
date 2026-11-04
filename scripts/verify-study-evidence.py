@@ -16,6 +16,12 @@ from _study_audit import (Audit, CheckError, EXECUTION_SEMANTICS, LONG_MAX, RUN_
                           protect_output, read_json, resolve_input, union_length, write_report)
 
 SUCCESS, FAILED, COMPUTE, STAGE_IN = 4, 5, 2, 1
+# AUD-F23 (2026-11-04 post-completion review): revision-stream contract a current writer
+# declares in the events summary once the stream is non-empty. A declared contract turns the
+# two conditional marker checks below into requirements, so stripping the markers from a stream
+# this writer produced is rejected instead of being excused as a legacy stream. Manifests
+# without the declaration keep the declared manifest-authority boundary.
+REVISION_CONTRACT = "F-006/F-007"
 PRE_MODELS = {"PRE_EXECUTION_TRANSFER_DELAY_V1", "PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1",
               "PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1"}
 
@@ -286,6 +292,16 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 if key in event_summary:
                     audit.ensure(integer(needed(event_summary, key), "event " + key, True) == bound,
                                  "event-" + key, prefix, bound, event_summary.get(key))
+        # AUD-F23 (2026-11-04 post-completion review): a declared revision contract requires the
+        # markers it names. Without this, deleting every marker and re-signing the manifest was
+        # indistinguishable from a legacy stream and passed the whole audit (reproduced: 0 issues).
+        declared_contract = event_summary.get("revisionContract")
+        contract_declared = declared_contract is not None
+        if contract_declared:
+            audit.ensure(declared_contract == REVISION_CONTRACT, "revision-contract", prefix,
+                         REVISION_CONTRACT, declared_contract)
+            audit.ensure(len(terminal_events) == 1, "revision-contract-terminal", prefix,
+                         1, len(terminal_events))
         # F-006 contract revision (2026-10-23): when the terminal event is present (revision
         # streams), the makespan family becomes event-recomputable; bind the clocks exactly.
         # Legacy streams without the event keep the declared manifest-authority boundary.
@@ -311,9 +327,10 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             modeled = number(needed(attributes, "modeledJobStartSeconds"), "modeled job start", nonnegative=True)
             audit.ensure(modeled == envelope + effective, "job-start-derivation",
                          prefix + ":event:" + str(event.get("sequence")), modeled, [envelope, effective])
-        if started_jobs or terminal_events:
+        if contract_declared or started_jobs or terminal_events:
             # Revision streams must cover every executed instance; legacy streams (neither
-            # marker present) keep the declared manifest-authority boundary from 2026-10-19.
+            # marker present and no declared contract) keep the declared manifest-authority
+            # boundary from 2026-10-19.
             audit.ensure(executed_job_ids.issubset(set(started_jobs)), "job-start-coverage", prefix,
                          sorted(set(started_jobs)), sorted(executed_job_ids))
 

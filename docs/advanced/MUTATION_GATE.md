@@ -36,6 +36,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M18 | Finished lifecycle validator still accepts event feeding | lifecycle single-use contract (AUD-F15) |
 | M19 | INVALID label binds the FCFS policy instead of the static no-decision shell | unmapped label explicit binding (AUD-F21) |
 | M20 | Runner ignores the configured event-recorder cap and constructs the default recorder | cap configuration outlet (AUD-F07 follow-up, 2026-11-04) |
+| M21 | Declared revision contract ignored, so a marker-less stream falls back to the legacy boundary | declared `events.revisionContract` requirement (AUD-F23, 2026-11-04) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -47,12 +48,18 @@ not a research-claim decision surface, and `LogPrintErrorTest` guards it directl
 addition (2026-11-04, post-completion review follow-up) registers the runner-wiring axis of
 the AUD-F07 cap configuration outlet: the runner must construct the recorder from the
 configured cap, not silently fall back to the default; the post-commit battery of 2026-11-04
-verified the full set 20/20 KILLED (M20 at the killers stage).
+verified the set 20/20 KILLED (M20 at the killers stage). The M21 addition (2026-11-04,
+same review) registers the AUD-F23 declared-revision-contract axis: a marker-emitting writer
+declares the contract, so ignoring the declaration would let a stripped stream pass as a
+legacy one; M21 was verified KILLED red-first at the killers stage (the two declared-contract
+tests fail with the declaration ignored). The full battery had not been re-run with 21
+canaries at the time of writing, so the recorded aggregate remains 20/20 for the completed
+run plus the separate M21 killer-stage verification.
 
 ## Usage
 
 ```bash
-# Full battery (~5–10 min for the 20 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Full battery (~5–10 min for the 21 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

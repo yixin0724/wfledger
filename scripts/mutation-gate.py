@@ -225,6 +225,13 @@ REGISTRY = [
         // a Java-only constructor argument -- the only enabled-recorder construction site.
         SimulationEventRecorder events = new SimulationEventRecorder();""",
         killers="SimulationRunnerEventRecorderCapIntegrationTest"),
+    dict(
+        id="M21",
+        name="Declared revision contract is ignored, so a marker-less stream falls back to the legacy boundary",
+        file="simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactValidator.java",
+        old="        boolean contractDeclared = declaredContract != null;",
+        new="        boolean contractDeclared = false;",
+        killers="ExperimentArtifactValidatorTest"),
 ]
 
 

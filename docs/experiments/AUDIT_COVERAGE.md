@@ -8,8 +8,8 @@ Last sweep: 2026-11-03 (review rounds 1-7, the dedicated coverage goal, the AUD-
 recompute, the AUD-F13 dataset index chain, and the AUD-F08 shared-core honesty pass); updated
 2026-11-04 by the post-completion review follow-ups (three AUD-F12 javadoc path residuals in
 5922281, the finding-disposition master ledger added as §7, the vendored-tree diff registry
-note in 4f94e0d, and the AUD-F07 cap configuration outlet in 4becd96 with the M20 canary and
-the 20/20 battery result).
+note in 4f94e0d, the AUD-F07 cap configuration outlet in 4becd96 with the M20 canary, and the
+AUD-F23 declared revision contract with the M21 canary).
 
 ## 1. Evidence dimensions: a positive case and a tamper case each
 
@@ -22,7 +22,7 @@ the 20/20 battery result).
 | Network ledger | CI `verify-network-ledger.py` + producer fixtures | `test-network-ledger.py` negative fixtures |
 | File lifecycle V2 | CI `verify` fixtures + `_file_lifecycle_audit` | `test-file-lifecycle.py` negative cases |
 | Storage lifecycle V3 | CI fixtures + `_storage_lifecycle_audit` | `test-storage-lifecycle.py` negative cases |
-| Event stream | `EventStream` ordering/sequence/count checks | out-of-order time, duplicate sequence, blank line, eventCount, first/lastSequence — all refused (Python self-test + Java validator test) |
+| Event stream | `EventStream` ordering/sequence/count checks + the declared `events.revisionContract` | out-of-order time, duplicate sequence, blank line, eventCount, first/lastSequence, unknown contract — refused; with the contract declared, a stream that removes `SIMULATION_TERMINATED` or every marker is refused instead of being read as a legacy stream (Python self-test + Java validator test, AUD-F23) |
 | Simulation metrics v4 | Java validator recompute (AUD-F05) + `verify-study-evidence.py` derived metrics | consistently-tampered `makespanSeconds` / `meanJobVmQueueWaitingTimeSeconds`, shifted terminal clock, broken start derivation, uncovered executed job — all refused (Java validator test; Python auditor) |
 | Dataset integrity indexes | `check-dataset-indexes.py` passes over the standard checkout in CI and over the full local snapshots | 19-case self-test: digest tampering, missing retained file, broken index chain, unindexed disk/Git file, count drift — all refused (AUD-F13) |
 
@@ -49,7 +49,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate`, 20 registered mutants; M12–M19 added 2026-11-03 for the audit fix paths, M20 added 2026-11-04 for the cap-outlet wiring axis) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (2026-11-04 post-commit full battery, 20/20 aggregate) |
+| Repository gate (`make mutation-gate`, 21 registered mutants; M12–M19 added 2026-11-03 for the audit fix paths, M20 added 2026-11-04 for the cap-outlet wiring axis, M21 added 2026-11-04 for the declared revision contract) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (2026-11-04 post-commit full battery, 20/20 aggregate); M21 1/1 KILLED (2026-11-04 red-first killer-stage run) |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |
@@ -127,6 +127,7 @@ nothing (`events.count` instead of `eventCount`, a stage-in envelope's already-e
 ```bash
 mvn -Pjavadoc clean verify                                   # unit + integration + coverage + javadoc
 python3 -B scripts/check-docs.py                             # link/anchor validation
+python3 -B scripts/check-language.py                         # English-only language gate
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py   # 38 auditor self-tests
 for t in scripts/test-*.py; do PYTHONDONTWRITEBYTECODE=1 python3 -B "$t"; done
 python3 -B scripts/check-dataset-indexes.py                   # dataset index integrity chain (AUD-F13)
@@ -149,7 +150,7 @@ answer "what was each audit finding and what happened to it" on its own.
 | F-02 | P0 | mutation gate never runs in CI; only 11 registered mutants | FIXED — `12630c7` (CI runs the full zero-survival battery on push and PR); `6fd98e5` + `fa0cb1e` (eight new canaries M12–M19, one per audit-fix semantic axis, red-first 8/8 KILLED; the logging channel of AUD-F19 is argued unregistered) |
 | F-03 | P0 | coverage floors low; BUNDLE aggregation; integration coverage uncounted | FIXED — `6eaddfc` (bundle→PACKAGE ratchets, integration-exec rules added, thresholds set by measured ratchet) |
 | F-04 | P0 | contention engine `advance()` O(B²): full-list fork each time step | FIXED — `a056426` (shared immutable retained-trace prefix across forks; byte-identical trace proven) |
-| F-05 | P1 | artifact validator checked metrics existence but never recomputed | FIXED — `fd3a723` (queue-wait recomputed from `result.jobs` with the same population and formula as the Python auditor; event contract boundaries enforced) |
+| F-05 | P1 | artifact validator checked metrics existence but never recomputed | FIXED — `fd3a723` (queue-wait recomputed from `result.jobs` with the same population and formula as the Python auditor; event contract boundaries enforced); boundary closed by F-23 |
 | F-06 | P1 | Holm correction only on the network study path | FIXED — `65254bc` (shared corrector in the simulator module; applied within each comparison group) |
 | F-07 | P1 | unbounded resident event list in `SimulationEventRecorder` | FIXED — `a4ca13c` (fail-fast capacity cap, default 20000); follow-up `4becd96` (2026-11-04): the cap gained a full configuration outlet — SimulationConfig builder `eventRecorderCap`, runner wiring, workbench `simulation.eventRecorderCap`, manifest round-trip; M20 canary registered, 20/20 KILLED |
 | F-08 | P1 | four "independent" Python checkers share one 49KB core | FIXED — `167b7e0` (honest shared-implementation declaration; independence means independence from the Java production path) |
@@ -162,8 +163,41 @@ answer "what was each audit finding and what happened to it" on its own.
 | F-15 | P1 | stateful context validator, not reentrant | FIXED — `bf93926` (single-use lifecycle latch; feeding rejected after finish) |
 | F-16 | P1 | 14 package cycles | FIXED — `9490617` (cycle inventory locked by `PackageDependencyGuardTest`; full untangle recorded as a proposal) |
 | F-17 | P2 | Workbench UUID/timestamp output dirs; full-rewrite write amplification | CLOSED-BY-ARGUMENT — deliberate design: per-run dirs avoid parallel collisions, identity/environment/wall-clock are whitelisted by the rerun contract, per-candidate rewrite is crash tolerance |
-| F-18 | P2 | `output/` at 3.6GB with no executed retention policy | FIXED — `a50054f` (pre-deletion manifest recorded, non-retained uncompressed dirs removed, all `output/*.tar.gz` originals kept and coverage-verified, `make clean-output` added) |
+| F-18 | P2 | `output/` at 3.6GB with no executed retention policy | FIXED — `a50054f` (pre-deletion manifest recorded, non-retained uncompressed dirs removed, all `output/*.tar.gz` originals kept and coverage-verified, `make clean-output` added); the per-archive figures are reproduced in §8 so the retention boundary is auditable from this checkout alone |
 | F-19 | P2 | legacy catch sites swallow exceptions via `printStackTrace` | FIXED — `1f316c9` (vendored `Log.printError` channel; control flow including the historical null continuation unchanged) |
 | F-20 | P2 | Tier-B backlog plus permanent exemption zones; ratchet broken | CLOSED-BY-RECORD — exemption structure frozen by AGENTS.md policy; this campaign's new code held to zero Tier-A |
 | F-21 | P2 | `default` fallback to Static hides a missed registration edit | FIXED — `0d33ca0` (every scheduling label gets an explicit binding; INVALID binds the no-decision shell) |
-| F-22 | — | (audit self-correction) `verify-network-ledger.py` suspected dead code | CLOSED-BY-VERIFICATION — referenced by three docs and four tests; the audit conclusion was withdrawn |
+| F-22 | — | (audit self-correction) `verify-network-ledger.py` suspected dead code | CLOSED-BY-VERIFICATION — referenced by five documents and three self-test scripts (`test-network-ledger.py`, `test-file-lifecycle-context.py`, `test-dataflow-assignment.py`); the audit conclusion was withdrawn |
+| F-23 | — | (2026-11-04 post-completion review) a v4 stream whose markers were removed was indistinguishable from a legacy stream, so the audit passed a bundle with every `JOB_EXECUTION_STARTED` and the `SIMULATION_TERMINATED` deleted and the manifest re-signed | FIXED — a writer that emits the markers now declares `events.revisionContract` (`F-006/F-007`); both validators require exactly one terminal event and full execution coverage when it is declared, and keep the declared manifest-authority boundary when it is absent (7,402 of the 7,984 retained v4 bundles predate the declaration, so a blanket requirement would have rejected most historical evidence); M21 canary kills the "ignore the declaration" regression. Residual boundary: a bundle whose entire stream was removed looks like a run with recording disabled, which is a manifest-authority case by design |
+
+## 8. Retained-evidence archive coverage (AUD-F18 auditability follow-up)
+
+The 2026-11-03 cleanup (`a50054f`) deleted the regenerable uncompressed study/workbench
+directories after checking that each archive holds the raw files, and that check was recorded
+in the deletion commit rather than in this repository. The table below is measured from the
+archives themselves at the current checkout, so a reader can confirm the survivors, their
+sizes, and their run counts without the deleted directories. Where the deletion commit stated
+a file count, the measured count is given beside it for comparison; a post-deletion
+re-computation of "the archive holds every raw file" is no longer possible, and the per-run
+manifests inside the archives remain the record of what each run contained.
+
+| Archive | MiB | v4 run manifests | files | deletion-commit figure |
+| --- | ---: | ---: | ---: | --- |
+| `benchmark-standard-v1-evidence.tar.gz` | 21 | 160 | 482 | 482/482 match |
+| `benchmark-standard-power-v1-evidence.tar.gz` | 21 | 160 | 482 | 482/482 match |
+| `benchmark-standard-dvfs-v1-evidence.tar.gz` | 12 | 90 | 272 | 272/272 match |
+| `benchmark-standard-carbon-v1-evidence.tar.gz` | 22 | 170 | 512 | full raw structure (not itemized) |
+| `sensitivity-r13-v2-evidence.tar.gz` | 47 | 546 | 1645 | 1645 >= 1643 match |
+| `sensitivity-r13-evidence.tar.gz` | 46 | 546 | 1643 | not stated |
+| `network-study-r10-evidence.tar.gz` | 42 | 504 | 1517 | not stated |
+| `network-study-r10-pilot.tar.gz` | 54 | 564 | 1697 | not stated |
+| `network-v2-858f46a.tar.gz` | 136 | 1647 | 39569 | not stated |
+| `config-audit-1b6baa8.tar.gz` | 206 | 2382 | 7292 | not stated |
+| `scalability-audit-c62c6b8.tar.gz` | 105 | 1195 | 3679 | not stated |
+| `peft-comparison-r12-evidence.tar.gz` | 10 | 126 | 383 | not stated |
+| `carbon-c2-audit-evidence.tar.gz` | 0.3 | 2 | 10 | not stated |
+
+All thirteen archives open and list cleanly, and every retained score file is one of the
+`output/*.tar.gz` originals that `make clean-output` cannot match (the target uses
+trailing-slash directory globs). `datasets/` is excluded from this table: it is source input,
+not run evidence, and its integrity chain is §1's dataset row.

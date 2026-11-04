@@ -24,6 +24,20 @@ public final class ExperimentManifestWriter {
     /** Current evidence manifest schema: complete arrivals, cost matrix, and topology declarations. */
     static final String SCHEMA_V4 = "workflowsim-experiment-manifest-v4";
 
+    /**
+     * Declared revision-stream contract written into a v4 events summary once the stream is
+     * non-empty (AUD-F23, 2026-11-04 post-completion review).
+     *
+     * <p>The F-006/F-007 markers make the makespan and job-start families event-recomputable.
+     * Before this declaration the validator could not tell "a writer that does not emit the
+     * markers" from "a stream whose markers were removed", so both escalated to the declared
+     * manifest authority. A writer that states the contract here lets an auditor require the
+     * markers instead of excusing their absence; manifests written before the declaration keep
+     * the historical manifest-authority boundary, which is why the key is optional and why its
+     * absence is not an error.</p>
+     */
+    public static final String EVENTS_REVISION_CONTRACT = "F-006/F-007";
+
     private ExperimentManifestWriter() {}
 
     /** Standalone manifests must not silently drop requested network evidence. */
@@ -769,6 +783,9 @@ public final class ExperimentManifestWriter {
             values.put(
                     "lastSequence",
                     report.getEvents().get(report.getEvents().size() - 1).getSequence());
+            // AUD-F23 (2026-11-04 post-completion review): declare the marker contract so the
+            // validators can require the F-006/F-007 markers on a stream this writer produced.
+            values.put("revisionContract", EVENTS_REVISION_CONTRACT);
         }
         return values;
     }
