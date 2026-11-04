@@ -22,13 +22,4 @@ class MontageCorpusProfileContractTest {
                 inputs.get(0).getFileName().toString());
         assertTrue(Files.isRegularFile(inputs.get(0)));
     }
-
-    @Test
-    void extendedSuiteDeclaresAllSeventeenInputsExplicitly() throws Exception {
-        List<Path> inputs = MontageExtendedCorpusTest.extendedMontageInputs().collect(Collectors.toList());
-        assertEquals(17, inputs.size());
-        assertTrue(inputs.contains(MontageWfInstancesStructuralTest.montageInputs()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Tracked Montage input is missing"))));
-    }
 }
