@@ -1,0 +1,31 @@
+scripts/test-study-verifiers.py
+  s_b6c1c0b6ba9d4e::t_103166604f4ca2 645-710
+simulator/src/main/java/org/workflowsim/experiment/ExperimentManifestWriter.java
+  s_24f59fb6b2f10b::t_321b559c0ab0ba 27-40,786-788
+simulator/src/test/java/org/workflowsim/experiment/ExperimentArtifactValidatorTest.java
+  s_24f59fb6b2f10b::t_ff6a41b136392d 12-14,27,588-716
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9b8267e6d046291d7b7e6a6855cc03f97aa22dc2",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_b6c1c0b6ba9d4e": {
+      "agent_id": {
+        "tool": "antcc",
+        "id": "f9520ab1-1939-4c95-a59c-8ddabc511a05",
+        "model": "glink/Kimi-K3.1-Pro:glink_domestic"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
