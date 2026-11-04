@@ -1,0 +1,20 @@
+docs/experiments/AUDIT_COVERAGE.md
+  s_3ae6b032aa2d87::t_7c32f5388be72e 8-10
+  s_3ae6b032aa2d87::t_de871edd63c2a1 127-161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ad37140d5c8f7895b99eec09a0c5358f2a4a7e95",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
