@@ -1,0 +1,18 @@
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 55-56
+docs/experiments/AUDIT_COVERAGE.md
+  h_adc77830afcf4d 52
+simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactValidator.java
+  h_adc77830afcf4d 612-617
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "019b9f31bbdaed1e70d38e1fc5da844044e2df41",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
