@@ -113,6 +113,12 @@ nothing (`events.count` instead of `eventCount`, a stage-in envelope's already-e
   evidence original lives as an `output/*.tar.gz` archive. The large raw directories were
   removed on 2026-11-03 after verifying, for each archived directory, that the archive holds
   every raw file (AUD-F18).
+- The vendored `org.cloudbus.*` tree is maintained by this repository: repository-wide commits
+  normalized its formatting (`cc08dd1`, `7ad2a69`), translated its javadoc to English
+  (`3950109`), and removed 68 vendored dead files (`f27ba8a`). The audit-fix campaign's only
+  semantic API addition to the vendored tree is `Log.printError(String, Throwable)`
+  (AUD-F19, `1f316c9`), annotated in a header comment at the top of `Log.java` so a future
+  re-vendoring cannot silently drop it.
 
 ## 6. Commands that constitute the gate
 

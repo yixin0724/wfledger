@@ -6,6 +6,20 @@
  * Copyright (c) 2009-2012, The University of Melbourne, Australia
  */
 
+/*
+ * Local modifications to the vendored CloudSim source -- this repository maintains its copy:
+ *
+ * - Semantic addition (AUD-F19, commit 1f316c9, 2026-11-03): printError(String, Throwable),
+ *   a controlled error channel that respects the disabled flag, prints an optional message
+ *   line, and prints an optional stack trace through the configured output stream.
+ *
+ * - Repository-wide maintenance also diverges this tree from upstream CloudSim: format
+ *   normalization (commits cc08dd1 and 7ad2a69), javadoc translation to English (3950109),
+ *   and the removal of 68 vendored dead files (f27ba8a). A byte-for-byte refresh from
+ *   upstream would silently drop printError and the normalization; re-apply the semantic
+ *   addition listed above when refreshing.
+ */
+
 package org.cloudbus.cloudsim;
 
 import java.io.IOException;
