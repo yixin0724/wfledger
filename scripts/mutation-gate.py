@@ -288,7 +288,7 @@ REGISTRY = [
         name="Completion guard ignores the configured minimum event interval",
         file="simulator/src/main/java/org/workflowsim/utils/SimulationTiming.java",
         old="                currentTime + minimumEventIntervalSeconds + CLOUDLET_COMPLETION_SAFETY_SECONDS);",
-        new="                currentTime + CLOUDLET_COMPLETION_SAFETY_SECONDS);",
+        new="                currentTime + 0.0 * minimumEventIntervalSeconds + CLOUDLET_COMPLETION_SAFETY_SECONDS);",
         killers="SimulationTickSensitivityTest"),
 ]
 
