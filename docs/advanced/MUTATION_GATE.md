@@ -43,6 +43,9 @@ closed with dedicated boundary/conservation tests at that time.
 | M25 | FutureQueue assigns serial zero to every event | same-time event ordering (B02, 2026-11-04) |
 | M26 | WorkflowDatacenter drops the SHARED input-transfer seconds | legacy WorkflowSim transfer envelope (B03, 2026-11-04) |
 | M27 | WfCommons runtime conversion collapses every task to the minimum length | Montage real-derived runtime mapping (B05, 2026-11-04) |
+| M28 | Exact Wilcoxon reverts to the Commons Math 3.2 rank-sum path that discards ties | actual-rank exact statistical verification (B12, 2026-11-04) |
+| M29 | Completion guard ignores the configured minimum event interval | tick semantics (B4, 2026-11-04) |
+| M30 | Workbench drops the event-recorder cap from the simulation allowlist | experiments configuration surface (B4, 2026-11-04) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -69,13 +72,23 @@ WorkflowSim reference axes: transfer-work accounting, same-time serial ordering,
 transfer envelope. Each is killed by its corresponding hand-derived reference test. M27
 (2026-11-04, B05) adds the Montage real-derived runtime-mapping axis: collapsing every task to
 100 MI must be killed by the simulator-module `WfCommonsRuntimeReferenceTest`; the separate
-17-instance structural suite remains in experiments.
+17-instance structural suite remains in experiments. M28 replaces the exact Wilcoxon
+implementation with the old Commons Math 3.2 rank-sum path, and M29 removes the configured
+minimum event interval from completion timing; both are killed by independent reference tests.
+M30 is registered in the separate experiments family and kills the Workbench event-cap
+allowlist omission.
 
 ## Usage
 
 ```bash
-# Full battery (~5–10 min for the 27 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 29 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
+
+# Experiments family (one Workbench canary, same clean/exclusive requirement)
+python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
+
+# Both families sequentially (30 canaries total)
+python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)
 python3 -B scripts/mutation-gate.py --output <new-report.json> --dry-run
@@ -96,11 +109,11 @@ stale (source drifted; the ledger must be updated first). The report is JSON, wr
 to a path that does not yet exist (never-overwrite semantics, same discipline as the
 independent auditors).
 
-CI runs the full battery on every push and pull request as a dedicated `mutation-gate` job
-([ci.yml](<../../.github/workflows/ci.yml>), AUD-F02 2026-11-03). The job's clean checkout
-satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run
-rule, and the JSON report is uploaded as a build artifact. Local runs remain the entry
-point for ledger work and the `--dry-run` anchor preflight.
+CI runs both registered families on every push and pull request in the dedicated `mutation-gate`
+job ([ci.yml](<../../.github/workflows/ci.yml>), AUD-F02 2026-11-03; experiments scope added
+in B4). The job's clean checkout satisfies the clean-tree precondition, the dedicated runner
+satisfies the exclusive-run rule, and both JSON reports are uploaded as build artifacts. Local
+runs remain the entry point for ledger work and the `--dry-run` anchor preflight.
 
 ## Execution model and safety
 
@@ -108,7 +121,8 @@ point for ledger work and the `--dry-run` anchor preflight.
   from an in-memory backup in a `finally` block and re-verified byte-equal after restore.
 - Full mode refuses to start when `git status` is dirty.
 - Per mutant, the registered **killer test set** runs first (fast); if it does not kill, the
-  full simulator module battery runs as escalation. KILLED is claimed only on Maven exit
+  corresponding full module battery runs as escalation (`:workflowsim`, or
+  `:workflowsim-workbench -am` for the experiments family). KILLED is claimed only on Maven exit
   non-zero **with** test failures; a non-zero exit without failures is an INFRA_FAILURE,
   not a kill.
 - Anchor uniqueness: each registered anchor must occur **exactly once** in the current tree.

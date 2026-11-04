@@ -40,13 +40,13 @@ class RegistryLedgerTests(unittest.TestCase):
         self.assertGreaterEqual(len(GATE.REGISTRY), 9)
 
     def test_ids_are_unique_and_well_formed(self):
-        ids = [mutant["id"] for mutant in GATE.REGISTRY]
+        ids = [mutant["id"] for mutant in GATE.REGISTRY + GATE.EXPERIMENTS_REGISTRY]
         self.assertEqual(len(ids), len(set(ids)))
         for identifier in ids:
             self.assertRegex(identifier, r"^M[0-9]+$")
 
     def test_every_mutant_has_required_fields(self):
-        for mutant in GATE.REGISTRY:
+        for mutant in GATE.REGISTRY + GATE.EXPERIMENTS_REGISTRY:
             for field in ("id", "name", "file", "old", "new", "killers"):
                 self.assertIn(field, mutant)
             self.assertTrue(mutant["old"].strip())
@@ -59,9 +59,16 @@ class RegistryLedgerTests(unittest.TestCase):
             self.assertTrue(path.is_file(), mutant["file"])
             self.assertIn("simulator/src/main/java/", mutant["file"])
 
+    def test_experiments_registry_targets_workbench_sources(self):
+        for mutant in GATE.EXPERIMENTS_REGISTRY:
+            self.assertEqual(mutant["module"], "experiments")
+            self.assertIn("experiments/src/main/java/", mutant["file"])
+            self.assertTrue((ROOT / mutant["file"]).is_file(), mutant["file"])
+            self.assertIn("-am", GATE.module_test_arguments(mutant))
+
     def test_anchor_liveness_against_current_tree(self):
         """Drift guard: each anchor must still occur exactly once, else stale."""
-        for mutant in GATE.REGISTRY:
+        for mutant in GATE.REGISTRY + GATE.EXPERIMENTS_REGISTRY:
             text = (ROOT / mutant["file"]).read_text(encoding="utf-8")
             count = text.count(mutant["old"])
             self.assertEqual(count, 1, f"{mutant['id']} anchor count {count}")

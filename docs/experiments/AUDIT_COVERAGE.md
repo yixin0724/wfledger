@@ -49,7 +49,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate`, 27 registered mutants after the V&V B3 work; M12–M19 added 2026-11-03 for the audit fix paths, M20 for the cap outlet, M21 for the declared revision contract, M22/M23 for B1, M24–M26 for fixed-commit references, M27 for Montage runtime mapping) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M27 are verified red-first at the killers stage in the B1–B3 close-outs |
+| Repository gate (`make mutation-gate` plus `make mutation-gate-experiments`, 30 registered mutants after the V&V B4 work; M12–M19 added 2026-11-03, M20/M21 for cap/revision, M22/M23 for B1, M24–M26 for upstream references, M27 for Montage, M28 for tied Wilcoxon, M29 for tick, M30 for Workbench) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M30 are verified red-first at the killers stage in the B1–B4 close-outs |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |
@@ -219,3 +219,5 @@ recurrence; no historical ledger rows were removed.
 | Q05 | WfFormat parser retained the declared version but could silently ignore unknown versions and fields | FIXED — 1.5/1.6 required-field, type, range, and unknown-field validation runs before Gson binding; unknown versions fail explicitly and real-input cross-validation stays green |
 | Q07 | No systematic fixed-commit upstream differential layer existed for CloudSim/WorkflowSim semantics | FIXED for the declared B02/B03 intersection — CloudSim serial/send and Space-Shared references plus the legacy SHARED 150 MB/15 MB/s case and M24–M26 now anchor it; old labels, full examples, and failure semantics remain deliberately excluded |
 | Q13 | Statistical validity and application scenario coverage needed stronger independent inputs | PARTIAL (B3) — all 20 classic DAX and all 17 Montage WfInstances now have independent structural, unit, DAG, and missing-field checks; no real-platform validation is claimed |
+| Q11 | Registered mutation canaries covered only the simulator, not Workbench/rerun/CLI | FIXED for the first experiments axis — M30 covers the Workbench event-cap allowlist and runs with `-pl :workflowsim-workbench -am` in CI; broader experiments-axis growth remains governed by the ledger |
+| Q10 | Exact Wilcoxon used the Commons Math 3.2 rank-sum distribution, which discards tied ranks | FIXED — exact p values now use subset-sum over actual average ranks, with independent exact/normal reference tests and the M28 rollback canary; tick semantics are pinned by M29 |

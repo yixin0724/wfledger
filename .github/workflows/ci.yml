@@ -229,8 +229,11 @@ jobs:
       # test battery that stops killing a registered canary fails the build. The clean
       # checkout satisfies the clean-tree precondition and the dedicated runner satisfies the
       # exclusive-run rule.
-      - name: Run the registered-mutant zero-survival gate
+      - name: Run the registered-mutant zero-survival gate (simulator)
         run: PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/mutation-gate.py --output output/mutation-gate/mutation-gate-ci.json
+
+      - name: Run the registered-mutant zero-survival gate (experiments)
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/mutation-gate.py --module experiments --output output/mutation-gate/mutation-gate-experiments-ci.json
 
       - name: Preserve mutation-gate evidence
         if: always()

@@ -73,17 +73,19 @@ The self-tests verify the checkers on positive and negative cases; they do not p
 
 ## Mutation gate
 
-The registered-mutation zero-survival gate verifies the test battery's killing power against known semantic breaks (the registry, how to run it, and the rules for extending the table are documented in [Mutation gate](<../advanced/MUTATION_GATE.md>), in English). A full run takes about 5–10 minutes, requires a clean working tree, and must run exclusively (not concurrently with other Maven builds):
+The registered-mutation zero-survival gate verifies the test battery's killing power against known semantic breaks (the registry, how to run it, and the rules for extending the table are documented in [Mutation gate](<../advanced/MUTATION_GATE.md>), in English). A full simulator run takes about 5–10 minutes, requires a clean working tree, and must run exclusively (not concurrently with other Maven builds). The experiments family uses the same safety rules and `-pl :workflowsim-workbench -am`:
 
 ```bash
 python3 -B scripts/mutation-gate.py --output <new-report.json>
+python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
+python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 python3 -B scripts/mutation-gate.py --output <new-report.json> --dry-run
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-mutation-gate.py
 ```
 
 Exit codes: 0, all mutants killed; 1, survivors or a build failure; 2, anchor drift (the ledger must be fixed first). Dry-run mode and the self-test do not invoke Maven.
 
-CI runs the full battery on every push and pull request as a dedicated `mutation-gate` job (AUD-F02, 2026-11-03); the clean checkout satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run rule, and the JSON report is uploaded as an artifact. Local runs remain the entry point for ledger work and the `--dry-run` anchor preflight.
+CI runs both registered families on every push and pull request as a dedicated `mutation-gate` job (AUD-F02, 2026-11-03; experiments scope added in B4); the clean checkout satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run rule, and both JSON reports are uploaded as artifacts. Local runs remain the entry point for ledger work and the `--dry-run` anchor preflight.
 
 ## Documentation checks
 

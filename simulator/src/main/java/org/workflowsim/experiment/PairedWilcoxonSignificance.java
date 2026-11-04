@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.math3.stat.inference.WilcoxonSignedRankTest;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
 
 /**
  * Runs a Wilcoxon signed-rank significance test on two simulation-run series paired by root seed.
@@ -32,9 +33,10 @@ import org.apache.commons.math3.stat.inference.WilcoxonSignedRankTest;
  *     array including zero differences was passed straight to commons-math3, which contradicted
  *     the framing of this document, and made the exact path throw NumberIsTooLargeException once
  *     the full pair count exceeded 30);</li>
- * <li>With at most 25 effective nonzero differences the exact distribution is used (the exact
- *     two-sided p of the library is not upper-truncated, so this wrapper clamps it to [0,1]);
- *     otherwise the normal approximation is used. Note that the asymptotic path of commons-math3
+ * <li>With at most 25 effective nonzero differences the exact distribution over the actual
+ *     average ranks is used (subset-sum dynamic programming; B12 replaced the Commons Math 3.2
+ *     exact path, which discards tied ranks); otherwise the normal approximation is used.
+ *     Note that the asymptotic path of commons-math3
  *     3.2 applies a continuity correction in the -0.5 direction (biased toward significance,
  *     anti-conservative) and does no tie variance correction; know that bias when reading an
  *     asymptotic p value;</li>
@@ -154,12 +156,18 @@ public final class PairedWilcoxonSignificance {
             pairedBaseline[slot] = baseline.get(index).doubleValue();
             pairedCandidate[slot] = candidate.get(index).doubleValue();
         }
-        WilcoxonSignedRankTest test = new WilcoxonSignedRankTest();
         boolean exact = nonzeroIndices.size() <= MAX_EXACT_EFFECTIVE_SAMPLES;
-        double pValue = test.wilcoxonSignedRankTest(pairedBaseline, pairedCandidate, exact);
-        // The exact two-sided p of commons-math3 is 2 * (number of subsets with rank sum >= W) / 2^N
-        // with no upper truncation, so under ties or when W sits exactly in the middle it can
-        // slightly exceed 1; clamp it to the [0,1] domain of a p value.
+        double pValue;
+        if (exact) {
+            // B12 (2026-11-04): Commons Math 3.2's exact path enumerates rank sums over
+            // 1..N, discarding the actual average ranks and therefore returning incorrect
+            // p values for tied absolute differences. Compute the exact distribution over
+            // the actual ranks with subset-sum dynamic programming; the approximation path
+            // below intentionally retains the library's documented normal approximation.
+            pValue = exactTwoSidedPValue(pairedBaseline, pairedCandidate);
+        } else {
+            pValue = new WilcoxonSignedRankTest().wilcoxonSignedRankTest(pairedBaseline, pairedCandidate, false);
+        }
         pValue = Math.min(pValue, 1.0);
         return new PairedWilcoxonSignificance(
                 exact ? "AVAILABLE_WILCOXON_SIGNED_RANK_EXACT" : "AVAILABLE_WILCOXON_SIGNED_RANK_NORMAL_APPROXIMATION",
@@ -168,6 +176,47 @@ public final class PairedWilcoxonSignificance {
                 pairedCount,
                 nonzeroIndices.size(),
                 Double.valueOf(medianDifference));
+    }
+
+    /**
+     * Exact two-sided signed-rank p value over the actual average ranks. Doubling every rank
+     * keeps half-integer averages exact, and the subset-sum distribution counts each signed
+     * assignment once while retaining tied positions.
+     */
+    private static double exactTwoSidedPValue(double[] baseline, double[] candidate) {
+        int count = baseline.length;
+        double[] differences = new double[count];
+        double[] absolute = new double[count];
+        for (int index = 0; index < count; index++) {
+            differences[index] = candidate[index] - baseline[index];
+            absolute[index] = Math.abs(differences[index]);
+        }
+        double[] ranks = new NaturalRanking().rank(absolute);
+        int totalRank = 0;
+        int positiveRank = 0;
+        int[] doubledRanks = new int[count];
+        for (int index = 0; index < count; index++) {
+            doubledRanks[index] = (int) Math.round(ranks[index] * 2.0);
+            totalRank += doubledRanks[index];
+            if (differences[index] > 0.0) {
+                positiveRank += doubledRanks[index];
+            }
+        }
+        int observedMinimum = Math.min(positiveRank, totalRank - positiveRank);
+        double[] subsets = new double[totalRank + 1];
+        subsets[0] = 1.0;
+        for (int rank : doubledRanks) {
+            for (int sum = totalRank; sum >= rank; sum--) {
+                subsets[sum] += subsets[sum - rank];
+            }
+        }
+        double tail = 0.0;
+        for (int sum = 0; sum <= totalRank; sum++) {
+            if (Math.min(sum, totalRank - sum) <= observedMinimum) {
+                tail += subsets[sum];
+            }
+        }
+        return tail / Math.pow(2.0, count);
     }
 
     private static void validateSamples(List<Double> baseline, List<Double> candidate) {

@@ -19,6 +19,8 @@ Usage
     python3 -B scripts/mutation-gate.py --output <new-report.json>
     python3 -B scripts/mutation-gate.py --output <new-report.json> --dry-run
     python3 -B scripts/mutation-gate.py --output <new-report.json> --ids M5,M9
+    python3 -B scripts/mutation-gate.py --module experiments --output <new-report.json>
+    python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 Safety: mutation is applied in place to the working tree; every file is
 restored from an in-memory backup in a `finally` block and re-verified after
@@ -274,6 +276,31 @@ REGISTRY = [
         old="        return Math.max(MIN_CLOUDLET_LENGTH, (long) length);",
         new="        return MIN_CLOUDLET_LENGTH;",
         killers="WfCommonsRuntimeReferenceTest"),
+    dict(
+        id="M28",
+        name="Exact Wilcoxon reverts to the Commons Math 3.2 rank-sum path that discards ties",
+        file="simulator/src/main/java/org/workflowsim/experiment/PairedWilcoxonSignificance.java",
+        old="            pValue = exactTwoSidedPValue(pairedBaseline, pairedCandidate);",
+        new="            pValue = new WilcoxonSignedRankTest().wilcoxonSignedRankTest(pairedBaseline, pairedCandidate, true);",
+        killers="PairedWilcoxonExternalReferenceTest"),
+    dict(
+        id="M29",
+        name="Completion guard ignores the configured minimum event interval",
+        file="simulator/src/main/java/org/workflowsim/utils/SimulationTiming.java",
+        old="                currentTime + minimumEventIntervalSeconds + CLOUDLET_COMPLETION_SAFETY_SECONDS);",
+        new="                currentTime + CLOUDLET_COMPLETION_SAFETY_SECONDS);",
+        killers="SimulationTickSensitivityTest"),
+]
+
+EXPERIMENTS_REGISTRY = [
+    dict(
+        id="M30",
+        name="Workbench drops the event-recorder cap from the simulation allowlist",
+        file="experiments/src/main/java/org/workflowsim/experiments/workbench/WorkbenchConfig.java",
+        old="                \"eventRecorderCap\",\n                \"deadlineSeconds\",\n",
+        new="                // M30: cap allowlist entry deliberately removed\n                \"deadlineSeconds\",\n",
+        killers="WorkbenchConfigTest",
+        module="experiments"),
 ]
 
 
@@ -367,6 +394,17 @@ def git_tree_dirty():
         return None
 
 
+def module_test_arguments(mutant, killers=None):
+    """Select the reactor module without ever using a stale installed simulator jar."""
+    if mutant.get("module", "simulator") == "experiments":
+        arguments = ["-pl", ":workflowsim-workbench", "-am", "test"]
+    else:
+        arguments = ["-pl", ":workflowsim", "test"]
+    if killers:
+        arguments.extend(["-Dtest=%s" % killers, "-Dsurefire.failIfNoSpecifiedTests=false"])
+    return arguments
+
+
 def execute_mutant(mutant):
     """Apply one registered mutant in place, run the battery, restore, and report."""
     path = ROOT / mutant["file"]
@@ -379,10 +417,7 @@ def execute_mutant(mutant):
     try:
         path.write_text(
             original.replace(mutant["old"], mutant["new"]), encoding="utf-8")
-        code, out, secs = run_maven([
-            "-pl", ":workflowsim", "test",
-            "-Dtest=%s" % mutant["killers"],
-            "-Dsurefire.failIfNoSpecifiedTests=false"])
+        code, out, secs = run_maven(module_test_arguments(mutant, mutant["killers"]))
         elapsed += secs
         stats = parse_test_stats(out)
         failures = stats[1] if stats else 0
@@ -390,7 +425,7 @@ def execute_mutant(mutant):
             return {"id": mutant["id"], "name": mutant["name"], "file": mutant["file"],
                     "status": "KILLED", "stage": "killers", "testStats": stats,
                     "seconds": round(elapsed, 1)}
-        code, out, secs = run_maven(["-pl", ":workflowsim", "test"])
+        code, out, secs = run_maven(module_test_arguments(mutant))
         elapsed += secs
         stats = parse_test_stats(out)
         failures = stats[1] if stats else 0
@@ -419,17 +454,24 @@ def main(argv=None):
                         help="anchor-liveness and ledger check only; no mutation, no Maven")
     parser.add_argument("--ids", default=None,
                         help="comma-separated mutant ids to execute (default: all)")
+    parser.add_argument("--module", choices=("simulator", "experiments"), default="simulator",
+                        help="registered mutant family to execute (default: simulator)")
+    parser.add_argument("--all-modules", action="store_true",
+                        help="execute simulator and experiments registries sequentially")
     args = parser.parse_args(argv)
 
+    all_mutants = list(REGISTRY) + list(EXPERIMENTS_REGISTRY)
+    if args.all_modules:
+        registry = all_mutants
+    else:
+        registry = list(REGISTRY if args.module == "simulator" else EXPERIMENTS_REGISTRY)
     if args.ids:
         wanted = {token.strip() for token in args.ids.split(",") if token.strip()}
-        known = {mutant["id"] for mutant in REGISTRY}
+        known = {mutant["id"] for mutant in all_mutants}
         unknown = wanted - known
         if unknown:
             parser.error("unknown mutant ids: %s" % ", ".join(sorted(unknown)))
-        registry = [mutant for mutant in REGISTRY if mutant["id"] in wanted]
-    else:
-        registry = list(REGISTRY)
+        registry = [mutant for mutant in registry if mutant["id"] in wanted]
 
     started = time.time()
     if args.dry_run:
@@ -452,6 +494,7 @@ def main(argv=None):
         "schema": "workflowsim-mutation-gate-v1",
         "scope": "REGISTERED_MUTANT_SURVIVAL_GATE_NOT_A_TEST substitute_entry",
         "mode": "dry-run" if args.dry_run else "full",
+        "modules": sorted({mutant.get("module", "simulator") for mutant in registry}),
         "summary": summarize(results),
         "results": results,
         "wallClockSeconds": round(time.time() - started, 1),
