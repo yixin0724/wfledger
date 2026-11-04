@@ -1,0 +1,23 @@
+experiments/src/test/java/org/workflowsim/experiments/reference/p7/MontageStructuralTestSupport.java
+  s_74c394365f705a::t_bc8de36a8f2a9f 1-87
+experiments/src/test/java/org/workflowsim/experiments/reference/p7/MontageWfInstancesStructuralTest.java
+  s_74c394365f705a::t_3807ae3da9bc72 10,12,25-34,37-41
+pom.xml
+  s_74c394365f705a::t_e6159ddc5c86dc 46-47,127,447-453
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e98fb73ba259299149a0c50d39d7d0f52f78f1a1",
+  "prompts": {},
+  "sessions": {
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
