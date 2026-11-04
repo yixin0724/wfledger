@@ -290,6 +290,13 @@ REGISTRY = [
         old="                currentTime + minimumEventIntervalSeconds + CLOUDLET_COMPLETION_SAFETY_SECONDS);",
         new="                currentTime + 0.0 * minimumEventIntervalSeconds + CLOUDLET_COMPLETION_SAFETY_SECONDS);",
         killers="SimulationTickSensitivityTest"),
+    dict(
+        id="M31",
+        name="Coherent dataflow runtime reports zero admitted copies",
+        file="simulator/src/main/java/org/workflowsim/data/v2/CoherentDataflowRuntime.java",
+        old="        return current == null ? 0 : current.replicas.getAdmittedCopyCount();",
+        new="        return 0L;",
+        killers="DataflowStateProfileSmokeTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

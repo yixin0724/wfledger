@@ -33,7 +33,9 @@ Every research claim or benchmark case must be reviewable from the following fie
 | `review` | Reviewer, independence, date, disposition, and any accepted residual risk |
 
 A missing or `NOT_ESTABLISHED` case is not a passing case. `NOT_APPLICABLE` requires a written
-reason. A golden regression detects drift but does not prove initial correctness.
+reason. A golden regression detects drift but does not prove initial correctness. The
+[golden and reference-evidence registry](<GOLDEN_EVIDENCE_REGISTRY.md>) records the current anchors
+and their legal evidence classes.
 
 ## 2. Legal evidence classes
 
@@ -69,7 +71,8 @@ management. Each row is reported independently; there is no average or pass/fail
 | caseId | Evidence and current state | Domain and residual boundary |
 |---|---|---|
 | `REPRO-EXACT-001` | `VERIFIED`: full Maven gate and exact rerun contracts; see [reproducibility](<REPRODUCIBILITY.md>) and [rerun diff](<RERUN_DIFF_CONTRACT.md>) | Same declared code, inputs, and configuration; not a real-platform or cross-version equivalence claim |
-| `MUT-CORE-001` | `VERIFIED`: 30 registered canaries across simulator and experiments, including M22–M30; see [mutation gate](<../advanced/MUTATION_GATE.md>) | Registered semantic canaries, not an exhaustive mutation score; experiments coverage grows through its own registry and `-am` runner |
+| `MUT-CORE-001` | `VERIFIED`: 31 registered canaries across simulator and experiments, including M22–M31; see [mutation gate](<../advanced/MUTATION_GATE.md>) | Registered semantic canaries, not an exhaustive mutation score; experiments coverage grows through its own registry and `-am` runner |
+| `PERF-PROFILE-001` | `VERIFIED`: isolated-JVM `ONLINE_V3` profile smoke and independent comparator pass two cases with matching semantic fingerprints, guarded by M31 | No wall-clock performance threshold or universal speedup claim; larger trends require separately retained environment identities |
 | `STATS-WILCOXON-001` | `VERIFIED`: exact tied-rank p values use the actual average ranks, with external exact/normal references and the M28 rollback canary | Exact path limited to 25 effective nonzero differences; the normal approximation retains its declared continuity/tie limitations |
 | `NUM-TICK-001` | `VERIFIED`: hand-derived tick cases at 0.1, 0.05, and 0.025 seconds, guarded by M29 | Tick is a declared model parameter, not a numerical-convergence or network-latency calibration |
 | `BENCH-FROZEN-001` | `VERIFIED`: standard 160, power 160, carbon 170, DVFS 90 bundles independently audited after fresh restoration; zero issues | 580 historical evidence bundles; validates their registered evidence contracts, not real-platform calibration or current regeneration of every protocol |
@@ -77,6 +80,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `UPSTREAM-KERNEL-001` | `VERIFIED` for the declared B02/B03 intersection: CloudSim serial/send, Space-Shared, and legacy SHARED hand-derived references with M24–M26 canaries; see [reference implementation](<REFERENCE_IMPLEMENTATION.md>) | Does not cover old labels, complete examples, failure semantics, or real-platform validation; those remain separate cases |
 | `WF-APPS-001` | `VERIFIED` for structural verification: all 20 classic DAX and all 17 Montage WfInstances pass independent DAG, runtime, file-byte, schema, and missing-field checks; see [application benchmarks](<APPLICATION_BENCHMARKS.md>) | Historical synthetic inputs and real-derived instances remain separate populations; no production-trace replay or real-platform validation claim |
 | `REAL-PLATFORM-001` | `NOT_ESTABLISHED`: no complete production-cluster referent with platform, scheduler, clustering, network, WMS, and measurement uncertainty | Real-platform validation is not claimed; a future limited case requires independent approval and a complete referent |
+| `REVIEW-INDEPENDENT-001` | `PENDING_INDEPENDENT_REVIEW`: the design and implementation are self-reviewed; no independent signoff is claimed | Follow the [independent review protocol](<VV_REVIEW_PROTOCOL.md>) before releasing new scientific claims |
 
 ## 5. Change and review discipline
 

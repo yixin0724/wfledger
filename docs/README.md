@@ -58,6 +58,10 @@ and superseded audit drafts are not long-term entry points.
   CloudSim/WorkflowSim verification intersection, independent arithmetic, and explicit non-goals.
 - [Workflow application structural benchmarks](<experiments/APPLICATION_BENCHMARKS.md>): classic DAX and
   Montage WfInstances verification, input populations, units, and validation boundaries.
+- [Golden and reference-evidence registry](<experiments/GOLDEN_EVIDENCE_REGISTRY.md>): legal oracle classes,
+  current anchors, golden change discipline, and performance evidence boundaries.
+- [Independent V&V review protocol](<experiments/VV_REVIEW_PROTOCOL.md>): structured walkthrough,
+  independence requirements, assessment record, and the current pending-review status.
 - [Evidence replay and difference comparison](<experiments/RERUN_DIFF_CONTRACT.md>): configuration rebuilding, verdicts, exact core quantities, and the small set of volatile fields.
 - [Protocol identity and historical-evidence boundaries](<experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>): which legacy identities remain readable and why legacy results are not conclusions about the current implementation.
 - [Independent study-audit tooling](<../scripts/STUDY_AUDIT.md>): the actual scope of general evidence/statistics checks, distinguished from dataflow-specific certificates.
