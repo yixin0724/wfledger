@@ -61,7 +61,9 @@ and superseded audit drafts are not long-term entry points.
 - [Golden and reference-evidence registry](<experiments/GOLDEN_EVIDENCE_REGISTRY.md>): legal oracle classes,
   current anchors, golden change discipline, and performance evidence boundaries.
 - [Independent V&V review protocol](<experiments/VV_REVIEW_PROTOCOL.md>): structured walkthrough,
-  independence requirements, assessment record, and the current pending-review status.
+  independence requirements, assessment record, and the current review status.
+- [Independent V&V review record (2026-11-04)](<experiments/VV_REVIEW_2026-11-04.md>): findings,
+  corpus-blocker closure, capability/results assessments, and residual boundaries.
 - [Evidence replay and difference comparison](<experiments/RERUN_DIFF_CONTRACT.md>): configuration rebuilding, verdicts, exact core quantities, and the small set of volatile fields.
 - [Protocol identity and historical-evidence boundaries](<experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>): which legacy identities remain readable and why legacy results are not conclusions about the current implementation.
 - [Independent study-audit tooling](<../scripts/STUDY_AUDIT.md>): the actual scope of general evidence/statistics checks, distinguished from dataflow-specific certificates.

@@ -1,9 +1,9 @@
 # Independent V&V Review Protocol
 
 This protocol defines the independent technical review required before a research claim is
-released. It does not assert that such a review has already occurred. The current status is
-**PENDING_INDEPENDENT_REVIEW**: the design and implementation are self-reviewed, but no independent
-reviewer has signed a capability/results assessment.
+released. The current status is **INDEPENDENT_AI_REVIEW_COMPLETED** with residual boundaries; no
+human independent signoff is claimed. See the [2026-11-04 review record](<VV_REVIEW_2026-11-04.md>)
+for the findings, capability/results assessments, and approval scope.
 
 ## Reviewer and independence
 

@@ -81,7 +81,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `WF-APPS-STD-001` | `VERIFIED`: all 20 classic DAX and the one tracked Montage WfInstances pass independent DAG, runtime, file-byte, schema, and missing-field checks; see [application benchmarks](<APPLICATION_BENCHMARKS.md>) | Standard-checkout structural verification only; no optional-corpus or production-trace replay claim |
 | `WF-APPS-EXT-001` | `VERIFIED`: all 17 Montage WfInstances pass the same checks under the explicit `extended-corpus` profile after the full local snapshot and index are prepared | Optional-corpus structural verification only; not a clean-checkout requirement or real-platform validation |
 | `REAL-PLATFORM-001` | `NOT_ESTABLISHED`: no complete production-cluster referent with platform, scheduler, clustering, network, WMS, and measurement uncertainty | Real-platform validation is not claimed; a future limited case requires independent approval and a complete referent |
-| `REVIEW-INDEPENDENT-001` | `PENDING_INDEPENDENT_REVIEW`: the design and implementation are self-reviewed; no independent signoff is claimed | Follow the [independent review protocol](<VV_REVIEW_PROTOCOL.md>) before releasing new scientific claims |
+| `REVIEW-INDEPENDENT-001` | `VERIFIED`: independent AI structured review approved the internal-validity scope after VV-NEW-01 was closed; see the [2026-11-04 review record](<VV_REVIEW_2026-11-04.md>) | No human independent signoff or real-platform validation is claimed; semantic changes reopen the affected cases |
 
 ## 5. Change and review discipline
 
