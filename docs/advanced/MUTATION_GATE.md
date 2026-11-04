@@ -52,9 +52,8 @@ verified the set 20/20 KILLED (M20 at the killers stage). The M21 addition (2026
 same review) registers the AUD-F23 declared-revision-contract axis: a marker-emitting writer
 declares the contract, so ignoring the declaration would let a stripped stream pass as a
 legacy one; M21 was verified KILLED red-first at the killers stage (the two declared-contract
-tests fail with the declaration ignored). The full battery had not been re-run with 21
-canaries at the time of writing, so the recorded aggregate remains 20/20 for the completed
-run plus the separate M21 killer-stage verification.
+tests fail with the declaration ignored). The full battery of 2026-11-04 then ran all 21
+canaries green: 21/21 KILLED, 0 survived, 0 stale, 0 infra-failure, 437 s wall clock.
 
 ## Usage
 

@@ -609,6 +609,12 @@ public final class ExperimentArtifactValidator {
      * job instance flows through submitJobToScheduler) and the marker carries no submission
      * clock, so the registered recompute population is the result job outcome records --
      * exactly what the Python auditor recomputes from.
+     *
+     * <p>AUD-F23 (2026-11-04 post-completion review): a stream whose events summary declares
+     * {@link #EVENTS_REVISION_CONTRACT} is required to carry the markers. Without the
+     * declaration the legacy manifest-authority boundary applies, which is what keeps the
+     * retained pre-2026-11-04 bundles readable; the declaration exists precisely so that a
+     * marker-less stream from a marker-emitting writer is rejected instead of excused.</p>
      */
     private static void verifyEventContract(JsonObject eventSummary, EventContractAudit audit, double end)
             throws IOException {
