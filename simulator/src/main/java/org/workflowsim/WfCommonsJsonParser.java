@@ -118,7 +118,12 @@ public final class WfCommonsJsonParser {
         WfCommonsInstance instance;
         Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
         try {
-            instance = gson.fromJson(reader, WfCommonsInstance.class);
+            // Q05 (2026-11-04): validate the official 1.5/1.6 field surface before Gson
+            // binding, so a new schema version or an unknown field cannot disappear silently.
+            com.google.gson.JsonObject document =
+                    com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+            WfCommonsSchemaValidator.validate(document);
+            instance = gson.fromJson(document, WfCommonsInstance.class);
         } catch (JsonParseException e) {
             throw new IOException("Invalid WfCommons JSON: " + file.getAbsolutePath(), e);
         } finally {

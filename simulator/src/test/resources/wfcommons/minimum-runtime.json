@@ -1,5 +1,6 @@
 {
   "schemaVersion": "1.5",
+  "name": "minimum-runtime",
   "workflow": {
     "specification": {
       "tasks": [
@@ -17,6 +18,8 @@
       ]
     },
     "execution": {
+      "makespanInSeconds": 0.01,
+      "executedAt": "2026-01-01T00:00:00Z",
       "tasks": [
         {"id": "tiny", "runtimeInSeconds": 0.01}
       ]

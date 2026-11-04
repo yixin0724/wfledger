@@ -232,6 +232,20 @@ REGISTRY = [
         old="        boolean contractDeclared = declaredContract != null;",
         new="        boolean contractDeclared = false;",
         killers="ExperimentArtifactValidatorTest"),
+    dict(
+        id="M22",
+        name="Campaign validator skips the independent statistical-summary recompute",
+        file="simulator/src/main/java/org/workflowsim/experiment/ExperimentCampaignValidator.java",
+        old="        ExperimentCampaignSummaryVerifier.verify(index, document);",
+        new="        // M22: summary verification deliberately bypassed",
+        killers="ExperimentCampaignExecutorTest"),
+    dict(
+        id="M23",
+        name="WfCommons parser skips schema-version and unknown-field validation",
+        file="simulator/src/main/java/org/workflowsim/WfCommonsJsonParser.java",
+        old="            WfCommonsSchemaValidator.validate(document);",
+        new="            // M23: schema validation deliberately bypassed",
+        killers="WfCommonsJsonParserValidationTest"),
 ]
 
 

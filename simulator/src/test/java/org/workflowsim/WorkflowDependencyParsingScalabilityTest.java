@@ -160,11 +160,13 @@ class WorkflowDependencyParsingScalabilityTest {
         Path input = directory.resolve("repeated.json");
         Files.write(
                 input,
-                ("{\"schemaVersion\":\"1.5\",\"workflow\":{\"specification\":{\"files\":[],\"tasks\":["
-                                + "{\"id\":\"a\",\"parents\":[],\"children\":[\"c\",\"c\"]},"
-                                + "{\"id\":\"b\",\"parents\":[],\"children\":[\"c\"]},"
-                                + "{\"id\":\"c\",\"parents\":[\"b\",\"a\",\"a\"],\"children\":[]}]},"
-                                + "\"execution\":{\"tasks\":[{\"id\":\"a\",\"runtimeInSeconds\":1},"
+                ("{\"schemaVersion\":\"1.5\",\"name\":\"repeated\",\"workflow\":{"
+                                + "\"specification\":{\"files\":[],\"tasks\":["
+                                + "{\"id\":\"a\",\"name\":\"a\",\"parents\":[],\"children\":[\"c\",\"c\"]},"
+                                + "{\"id\":\"b\",\"name\":\"b\",\"parents\":[],\"children\":[\"c\"]},"
+                                + "{\"id\":\"c\",\"name\":\"c\",\"parents\":[\"b\",\"a\",\"a\"],\"children\":[]}]},"
+                                + "\"execution\":{\"makespanInSeconds\":1,\"executedAt\":\"2026-01-01T00:00:00Z\","
+                                + "\"tasks\":[{\"id\":\"a\",\"runtimeInSeconds\":1},"
                                 + "{\"id\":\"b\",\"runtimeInSeconds\":1},{\"id\":\"c\",\"runtimeInSeconds\":1}]}}}")
                         .getBytes(StandardCharsets.UTF_8));
         try (SimulationSession session = SimulationSession.open(

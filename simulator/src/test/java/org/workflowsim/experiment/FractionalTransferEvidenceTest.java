@@ -230,7 +230,8 @@ class FractionalTransferEvidenceTest {
                 + "\"specification\":{\"tasks\":[{\"id\":\"root\",\"name\":\"root\",\"parents\":[],\"children\":[],"
                 + "\"inputFiles\":[\"tiny-input.dat\"],\"outputFiles\":[]}],"
                 + "\"files\":[{\"id\":\"tiny-input.dat\",\"sizeInBytes\":" + size + "}]},"
-                + "\"execution\":{\"tasks\":[{\"id\":\"root\",\"runtimeInSeconds\":1.0}]}}}";
+                + "\"execution\":{\"makespanInSeconds\":1.0,\"executedAt\":\"2026-01-01T00:00:00Z\","
+                + "\"tasks\":[{\"id\":\"root\",\"runtimeInSeconds\":1.0}]}}}";
     }
 
     private static SimulationEvent onlyEvent(SimulationReport report, SimulationEventType type, int jobId) {

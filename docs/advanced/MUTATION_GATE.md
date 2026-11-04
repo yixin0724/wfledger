@@ -37,6 +37,8 @@ closed with dedicated boundary/conservation tests at that time.
 | M19 | INVALID label binds the FCFS policy instead of the static no-decision shell | unmapped label explicit binding (AUD-F21) |
 | M20 | Runner ignores the configured event-recorder cap and constructs the default recorder | cap configuration outlet (AUD-F07 follow-up, 2026-11-04) |
 | M21 | Declared revision contract ignored, so a marker-less stream falls back to the legacy boundary | declared `events.revisionContract` requirement (AUD-F23, 2026-11-04) |
+| M22 | Campaign validator skips the independent statistical-summary recompute | campaign summary tamper detection (Q02, 2026-11-04) |
+| M23 | WfCommons parser skips schema-version and unknown-field validation | WfFormat 1.5/1.6 input gate (Q05, 2026-11-04) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -54,11 +56,16 @@ declares the contract, so ignoring the declaration would let a stripped stream p
 legacy one; M21 was verified KILLED red-first at the killers stage (the two declared-contract
 tests fail with the declaration ignored). The full battery of 2026-11-04 then ran all 21
 canaries green: 21/21 KILLED, 0 survived, 0 stale, 0 infra-failure, 437 s wall clock.
+The M22 addition (2026-11-04, Q02) registers the campaign-summary evidence axis: bypassing
+`ExperimentCampaignSummaryVerifier` must make the intact-per-run/tampered-summary regression
+fail at the killers stage. The M23 addition (2026-11-04, Q05) registers the WfFormat input
+gate: bypassing `WfCommonsSchemaValidator` must make the unknown-version and unknown-field
+regressions fail.
 
 ## Usage
 
 ```bash
-# Full battery (~5–10 min for the 21 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Full battery (~5–10 min for the 23 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

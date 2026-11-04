@@ -113,15 +113,15 @@ The last command fetches no missing corpora; check the reported counts against t
 
 ## Conversion, Compatibility, and Evidence
 
-The main fields of the nested WfFormat 1.5 structure are listed below; the parser retains the declared version and does not automatically turn execution records into resource settings:
+The main fields of the nested WfFormat 1.5/1.6 structure are listed below; the parser retains the declared version and does not automatically turn execution records into resource settings. Versions 1.5 and 1.6 are explicitly supported; an unknown version or an unregistered field is rejected before Gson binding, rather than being silently ignored (Q05, 2026-11-04). The bundled Java validator covers the official required fields, types, ranges, and the consumed field surface, plus three registered compatibility extensions: fractional file bytes and Nextflow's workflow-level `repo` and `runName` provenance fields. It does not claim to implement every JSON Schema keyword:
 
 | Field | Conversion and checks |
 |---|---|
-| `schemaVersion` | the declared version reported for the input |
+| `schemaVersion` | `1.5` or `1.6`; other versions are rejected explicitly |
 | `workflow.specification.tasks[].id/name` | internal Task identity and type |
 | `parents` / `children` | dependencies must agree on both sides; missing endpoints, one-sided relations, and cycles are rejected |
 | `inputFiles` / `outputFiles` | must reference declared files |
-| `workflow.specification.files[].id/sizeInBytes` | file keys and finite non-negative byte sizes |
+| `workflow.specification.files[].id/sizeInBytes` | file keys and finite non-negative byte sizes; the project's pre-existing fractional-byte input contract is retained as a documented extension to the official integer type |
 | `workflow.execution.tasks[].id/runtimeInSeconds` | every specification Task must carry a runtime |
 
 The four WfInstances inputs shipped with the repository have fixed identities and hashes; their small end-to-end checks are maintained by the [input matrix definition](<../experiments/src/main/java/org/workflowsim/experiments/reference/p7/P7WfInstancesPilotMatrix.java>) and the [matrix test](<../experiments/src/test/java/org/workflowsim/experiments/reference/p7/P7WfInstancesPilotMatrixTest.java>); this is not a replay of the source-platform timeline.

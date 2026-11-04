@@ -49,7 +49,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate`, 21 registered mutants; M12–M19 added 2026-11-03 for the audit fix paths, M20 added 2026-11-04 for the cap-outlet wiring axis, M21 added 2026-11-04 for the declared revision contract) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (2026-11-04 post-commit full battery, 20/20 aggregate); M21 1/1 KILLED (2026-11-04 full 21/21 battery, 0 survived, 0 stale, 437 s) |
+| Repository gate (`make mutation-gate`, 23 registered mutants after the V&V B1 work; M12–M19 added 2026-11-03 for the audit fix paths, M20 for the cap outlet, M21 for the declared revision contract, M22 for campaign-summary verification, M23 for the WfFormat input gate) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22 and M23 are verified red-first at the killers stage in the B1 close-out |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |
@@ -215,3 +215,5 @@ recurrence; no historical ledger rows were removed.
 | Q06 | Benchmark verification commands referenced removed uncompressed evidence directories | FIXED — guide now restores tar originals into a new empty directory and audits there; current standard/power/carbon/DVFS bundles re-audited 160/160/170/90 with zero issues |
 | Q08 | DVFS design notes simultaneously said tiered evidence was rerunnable and non-rerunnable | FIXED — historical D4 boundary explicitly marked superseded by A1; current round-trip and `IDENTICAL_CORE` contract stated |
 | Q14 | Model count, Energy Portrait title, and mutation-duration guidance drifted | FIXED — nine physical models, corrected title, and a consistent 5–10 minute estimate; `DocumentationConsistencyTest` guards the current text |
+| Q02 | Generic campaign summary was serialized without an independent recompute or tamper check | FIXED — `ExperimentCampaignSummaryVerifier` rebuilds cell, completion, interval, paired, and Holm aggregates from validated manifests; deterministic and independent-replication tamper tests plus M22 guard it |
+| Q05 | WfFormat parser retained the declared version but could silently ignore unknown versions and fields | FIXED — 1.5/1.6 required-field, type, range, and unknown-field validation runs before Gson binding; unknown versions fail explicitly and real-input cross-validation stays green |

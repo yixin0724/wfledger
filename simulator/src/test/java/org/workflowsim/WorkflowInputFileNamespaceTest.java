@@ -103,10 +103,11 @@ class WorkflowInputFileNamespaceTest {
     }
 
     private static String wfCommons(String taskId, double size) {
-        return "{\"schemaVersion\":\"1.5\",\"workflow\":{\"specification\":{\"tasks\":[{"
-                + "\"id\":\"" + taskId + "\",\"inputFiles\":[\"shared-input\"]}],"
+        return "{\"schemaVersion\":\"1.5\",\"name\":\"namespace\",\"workflow\":{\"specification\":{\"tasks\":[{"
+                + "\"id\":\"" + taskId + "\",\"name\":\"" + taskId
+                + "\",\"parents\":[],\"children\":[],\"inputFiles\":[\"shared-input\"]}],"
                 + "\"files\":[{\"id\":\"shared-input\",\"sizeInBytes\":" + size + "}]},"
-                + "\"execution\":{\"tasks\":[{\"id\":\"" + taskId
-                + "\",\"runtimeInSeconds\":1}]}}}";
+                + "\"execution\":{\"makespanInSeconds\":1,\"executedAt\":\"2026-01-01T00:00:00Z\","
+                + "\"tasks\":[{\"id\":\"" + taskId + "\",\"runtimeInSeconds\":1}]}}}";
     }
 }

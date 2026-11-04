@@ -2,7 +2,6 @@ package org.workflowsim;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,9 +32,9 @@ class WfCommonsJsonParserValidationTest {
 
     @Test
     void rejectsMissingWorkflowStructureBeforeCreatingTasks() throws Exception {
-        assertThrows(IOException.class, () -> parse("{\"schemaVersion\":\"1.5\"}"));
+        assertThrows(IllegalArgumentException.class, () -> parse("{\"schemaVersion\":\"1.5\"}"));
         assertThrows(
-                IOException.class,
+                IllegalArgumentException.class,
                 () -> parse("{\"schemaVersion\":\"1.5\",\"workflow\":{"
                         + "\"specification\":{\"tasks\":[],\"files\":[]},\"execution\":{\"tasks\":[]}}}"));
     }
@@ -142,6 +141,31 @@ class WfCommonsJsonParserValidationTest {
                 () -> parse(document("[{\"id\":\"a\"}]", "[]", "[{\"id\":\"a\",\"runtimeInSeconds\":1.0e308}]")));
     }
 
+    @Test
+    void acceptsWfFormat16AndRejectsUnknownVersionsAndFields() throws Exception {
+        parse(document("1.6", "[{\"id\":\"a\"}]", "[]", "[{\"id\":\"a\",\"runtimeInSeconds\":1}]"));
+        assertThrows(
+                WorkflowValidationException.class,
+                () -> parse(document("1.7", "[{\"id\":\"a\"}]", "[]", "[{\"id\":\"a\",\"runtimeInSeconds\":1}]")));
+        com.google.gson.JsonObject document = com.google.gson.JsonParser.parseString(
+                        document("1.6", "[{\"id\":\"a\"}]", "[]", "[{\"id\":\"a\",\"runtimeInSeconds\":1}]"))
+                .getAsJsonObject();
+        document.addProperty("unrecognizedFutureField", true);
+        WorkflowValidationException failure =
+                assertThrows(WorkflowValidationException.class, () -> parse(document.toString()));
+        org.junit.jupiter.api.Assertions.assertTrue(failure.getMessage().contains("unrecognizedFutureField"));
+    }
+
+    @Test
+    void acceptsRegisteredNextflowProvenanceExtensions() throws Exception {
+        com.google.gson.JsonObject document = com.google.gson.JsonParser.parseString(
+                        document("1.5", "[{\"id\":\"a\"}]", "[]", "[{\"id\":\"a\",\"runtimeInSeconds\":1}]"))
+                .getAsJsonObject();
+        document.getAsJsonObject("workflow").addProperty("repo", "https://github.com/nf-core/bacass");
+        document.getAsJsonObject("workflow").addProperty("runName", "test-run");
+        parse(document.toString());
+    }
+
     private void parse(String contents) throws Exception {
         Path input = temporaryDirectory.resolve("workflow.json");
         Files.write(input, contents.getBytes(StandardCharsets.UTF_8));
@@ -149,8 +173,39 @@ class WfCommonsJsonParserValidationTest {
     }
 
     private static String document(String tasks, String files, String executionTasks) {
-        return "{\"schemaVersion\":\"1.5\",\"workflow\":{\"specification\":{\"tasks\":"
-                + tasks + ",\"files\":" + files + "},\"execution\":{\"tasks\":"
-                + executionTasks + "}}}";
+        return document("1.5", tasks, files, executionTasks);
+    }
+
+    private static String document(String version, String tasks, String files, String executionTasks) {
+        com.google.gson.JsonArray specificationTasks =
+                com.google.gson.JsonParser.parseString(tasks).getAsJsonArray();
+        for (com.google.gson.JsonElement element : specificationTasks) {
+            com.google.gson.JsonObject task = element.getAsJsonObject();
+            if (!task.has("name")) {
+                task.addProperty("name", task.get("id").getAsString());
+            }
+            if (!task.has("parents")) {
+                task.add("parents", new com.google.gson.JsonArray());
+            }
+            if (!task.has("children")) {
+                task.add("children", new com.google.gson.JsonArray());
+            }
+        }
+        com.google.gson.JsonObject specification = new com.google.gson.JsonObject();
+        specification.add("tasks", specificationTasks);
+        specification.add("files", com.google.gson.JsonParser.parseString(files).getAsJsonArray());
+        com.google.gson.JsonObject execution = new com.google.gson.JsonObject();
+        execution.addProperty("makespanInSeconds", 1.0);
+        execution.addProperty("executedAt", "2026-01-01T00:00:00Z");
+        execution.add(
+                "tasks", com.google.gson.JsonParser.parseString(executionTasks).getAsJsonArray());
+        com.google.gson.JsonObject workflow = new com.google.gson.JsonObject();
+        workflow.add("specification", specification);
+        workflow.add("execution", execution);
+        com.google.gson.JsonObject document = new com.google.gson.JsonObject();
+        document.addProperty("name", "schema-fixture");
+        document.addProperty("schemaVersion", version);
+        document.add("workflow", workflow);
+        return document.toString();
     }
 }

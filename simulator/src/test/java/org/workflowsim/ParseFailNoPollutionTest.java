@@ -180,15 +180,17 @@ class ParseFailNoPollutionTest {
                 json,
                 ("{\n"
                                 + "  \"schemaVersion\": \"1.5\",\n"
+                                + "  \"name\": \"invalid-instance\",\n"
                                 + "  \"workflow\": { \"specification\": { \"tasks\": [\n"
-                                + "      { \"id\": \"t1\", \"name\": \"n\", \"type\": \"compute\",\n"
+                                + "      { \"id\": \"t1\", \"name\": \"n\", \"parents\": [], \"children\": [],\n"
                                 + "        \"inputFiles\": [\"f.json\"], \"outputFiles\": [] },\n"
-                                + "      { \"id\": \"t2\", \"name\": \"n\", \"type\": \"compute\",\n"
+                                + "      { \"id\": \"t2\", \"name\": \"n\", \"parents\": [], \"children\": [],\n"
                                 + "        \"inputFiles\": [], \"outputFiles\": [] }\n"
                                 + "    ],\n"
-                                + "    \"files\": [ { \"id\": \"f.json\", \"sizeInBytes\": 100 } ],\n"
-                                + "    \"machine\": {} },\n"
-                                + "  \"execution\": { \"tasks\": [ { \"id\": \"t1\", \"runtimeInSeconds\": 1 } ] }\n"
+                                + "    \"files\": [ { \"id\": \"f.json\", \"sizeInBytes\": 100 } ] },\n"
+                                + "  \"execution\": { \"makespanInSeconds\": 1,\n"
+                                + "    \"executedAt\": \"2026-01-01T00:00:00Z\",\n"
+                                + "    \"tasks\": [ { \"id\": \"t1\", \"runtimeInSeconds\": 1 } ] }\n"
                                 + "}\n")
                         .getBytes(StandardCharsets.UTF_8));
         // t2 has no runtime -> rejected.

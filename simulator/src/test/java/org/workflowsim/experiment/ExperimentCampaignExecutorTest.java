@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 
 import org.cloudbus.cloudsim.Log;
@@ -138,6 +139,101 @@ class ExperimentCampaignExecutorTest {
                     .isAvailable());
             assertEquals(2, cell.getSuccessfulWorkflowLogicalCompletionSeconds().getCompletionTimeObservationCount());
         }
+    }
+
+    @Test
+    void rejectsTamperedCampaignSummaryDespiteIntactPerRunEvidence(@TempDir Path output) throws Exception {
+        String workflow = resourcePath("/dax/reproducibility-workflow.dax");
+        PlatformProfile platform = PlatformProfiles.homogeneousLocal("campaign-platform", 2);
+        SeedPlan seeds = SeedPlan.deterministic(20260902L);
+        ExperimentPlan plan = ExperimentPlan.builder("campaign-summary-tamper")
+                .addCell(cell("fcfs", "baseline", true, workflow, platform, seeds, Parameters.SchedulingAlgorithm.FCFS))
+                .addCell(cell(
+                        "mct",
+                        "ready-batch-mct",
+                        false,
+                        workflow,
+                        platform,
+                        seeds,
+                        Parameters.SchedulingAlgorithm.READY_BATCH_MCT))
+                .build();
+        Log.disable();
+        ExperimentCampaignResult result = new ExperimentCampaignExecutor().execute(plan);
+        ExperimentCampaignArtifactWriter.CampaignArtifacts artifacts =
+                ExperimentCampaignArtifactWriter.write(result, output);
+        com.google.gson.JsonObject index = com.google.gson.JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getIndex()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        index.getAsJsonObject("summary")
+                .getAsJsonArray("cells")
+                .get(0)
+                .getAsJsonObject()
+                .getAsJsonObject("makespanSeconds")
+                .addProperty("mean", 999.0);
+        Files.write(
+                artifacts.getIndex(),
+                new com.google.gson.GsonBuilder()
+                        .serializeNulls()
+                        .create()
+                        .toJson(index)
+                        .getBytes(StandardCharsets.UTF_8));
+        java.io.IOException failure = assertThrows(
+                java.io.IOException.class, () -> ExperimentCampaignValidator.validate(artifacts.getIndex()));
+        assertTrue(failure.getMessage().contains("independently recomputed"));
+    }
+
+    @Test
+    void validatesIndependentReplicationIntervalsAndRejectsHolmTampering(@TempDir Path output) throws Exception {
+        String workflow = resourcePath("/dax/reproducibility-workflow.dax");
+        PlatformProfile platform = PlatformProfiles.homogeneousLocal("campaign-platform", 2);
+        SeedPlan seeds = SeedPlan.explicit(RandomizationDesign.INDEPENDENT_REPLICATIONS, Arrays.asList(11L, 12L));
+        ExperimentPlan plan = ExperimentPlan.builder("campaign-independent-summary")
+                .addCell(cell("fcfs", "baseline", true, workflow, platform, seeds, Parameters.SchedulingAlgorithm.FCFS))
+                .addCell(cell(
+                        "mct",
+                        "ready-batch-mct",
+                        false,
+                        workflow,
+                        platform,
+                        seeds,
+                        Parameters.SchedulingAlgorithm.READY_BATCH_MCT))
+                .build();
+        Log.disable();
+        ExperimentCampaignResult result = new ExperimentCampaignExecutor().execute(plan);
+        ExperimentCampaignArtifactWriter.CampaignArtifacts artifacts =
+                ExperimentCampaignArtifactWriter.write(result, output);
+        assertTrue(result.getSummary()
+                .getCells()
+                .get(0)
+                .getMakespanSeconds()
+                .getMeanConfidenceInterval()
+                .isAvailable());
+        assertTrue(result.getSummary()
+                .getCells()
+                .get(0)
+                .getWorkflowRunCompletion()
+                .getWilsonConfidenceInterval()
+                .isAvailable());
+        ExperimentCampaignValidator.ValidationResult validated =
+                ExperimentCampaignValidator.validate(artifacts.getIndex());
+        assertEquals(4, validated.getRunCount());
+
+        com.google.gson.JsonObject index = com.google.gson.JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getIndex()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        index.getAsJsonObject("summary")
+                .getAsJsonArray("comparisons")
+                .get(0)
+                .getAsJsonObject()
+                .addProperty("holmAdjustedPValue", 0.01);
+        Files.write(
+                artifacts.getIndex(),
+                new com.google.gson.GsonBuilder()
+                        .serializeNulls()
+                        .create()
+                        .toJson(index)
+                        .getBytes(StandardCharsets.UTF_8));
+        assertThrows(java.io.IOException.class, () -> ExperimentCampaignValidator.validate(artifacts.getIndex()));
     }
 
     private static ExperimentPlan.Cell cell(

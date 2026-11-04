@@ -1,5 +1,6 @@
 {
   "schemaVersion": "1.5",
+  "name": "retry-local-output-transfer",
   "workflow": {
     "specification": {
       "tasks": [
@@ -26,6 +27,8 @@
       ]
     },
     "execution": {
+      "makespanInSeconds": 0.02,
+      "executedAt": "2026-01-01T00:00:00Z",
       "tasks": [
         {"id": "root", "runtimeInSeconds": 0.01},
         {"id": "child", "runtimeInSeconds": 0.01}

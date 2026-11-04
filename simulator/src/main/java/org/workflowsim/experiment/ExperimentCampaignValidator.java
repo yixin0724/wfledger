@@ -61,6 +61,10 @@ public final class ExperimentCampaignValidator {
             }
             validateRun(root, element.getAsJsonObject(), uniqueRuns);
         }
+        // Q02 (2026-11-04): the index also carries a complete statistical summary. Rebuild
+        // it from the same validated manifests so a consistently edited summary cannot pass
+        // merely because every per-run primary record is intact.
+        ExperimentCampaignSummaryVerifier.verify(index, document);
         return new ValidationResult(index, runCount);
     }
 
