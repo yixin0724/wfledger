@@ -66,7 +66,7 @@ package:
 # clean and rebuild
 rebuild: clean build
 
-# registered zero-survival mutation gate (about 3-5 minutes; needs a clean working tree,
+# registered zero-survival mutation gate (about 5-10 minutes; needs a clean working tree,
 # and the report is written to output/mutation-gate/)
 mutation-gate:
 	@echo "Running the registered mutation gate (clean working tree required)..."

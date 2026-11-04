@@ -33,16 +33,23 @@ families only — see the boundary statement below.
 
 ## How a third party verifies (no Java required)
 
+The retained originals are the `output/*-evidence.tar.gz` archives, not the deleted
+uncompressed working directories. Restore an archive into a **new, empty** directory and
+write the audit report to another new path; never modify the restored evidence in place.
+From the repository root:
+
 ```bash
-cd output/benchmark-standard-v1
-PYTHONDONTWRITEBYTECODE=1 python3 ../../scripts/verify-study-evidence.py \
+RESTORE=/absolute/new-empty-restore-directory
+mkdir -p "$RESTORE"
+tar -xzf output/benchmark-standard-v1-evidence.tar.gz -C "$RESTORE"
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-evidence.py \
   --output /new-path/benchmark-audit.json \
-  $(python3 -c "import json; print(' '.join('runs/' + r['runId'] + '/' + r['manifest'].split('/')[-1] for r in json.load(open('benchmark.json'))['runs']))")
+  "$RESTORE"/benchmark-standard-v1/runs/*/result.manifest.json
 ```
 
-or any subset. Each run carries a complete v4 evidence bundle (manifest/metrics/events),
-the ones rewritten with the standard v4 checksums, validated, and independently audited —
-160/160 pass with zero issues.
+Any subset of the restored manifests can be checked instead. Each run carries a complete
+v4 evidence bundle (manifest/metrics/events), the ones rewritten with the standard v4
+checksums, validated, and independently audited — 160/160 pass with zero issues.
 
 ## Frozen matrix definition
 
@@ -78,10 +85,10 @@ section reports `totalEnergyJoules`, `meanVmEnergyJoules`, `peakPowerWatts`
 (= vmCount × 400 W), and `energyMakespanProductJouleSeconds`, and the Python auditor
 recomputed the energy conservation law (`E = Σ P_idle×T_sim + (P_max−P_idle)×T_busy` from
 each manifest's own fields) on all 160 bundles with zero issues — the same command as above,
-substituting `benchmark-power.json`. Evidence is retained at
-`output/benchmark-standard-power-v1/` and as
-`output/benchmark-standard-power-v1-evidence.tar.gz` (21.7 MB); joules are declared-model
-values, not measurements of real hardware.
+substituting `benchmark-power.json`. Evidence is retained only as
+`output/benchmark-standard-power-v1-evidence.tar.gz` (21.7 MB); restore it into a fresh
+empty directory before auditing. Joules are declared-model values, not measurements of real
+hardware.
 
 ### Carbon variant benchmark-standard-carbon-v1
 
@@ -139,7 +146,7 @@ Relative `carbonMetrics` reproduction (from the repository root, no Java require
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-evidence.py \
   --output /new-path/carbon-audit.json \
-  $(ls output/benchmark-standard-carbon-v1/runs/*/result.manifest.json)
+  "$RESTORE"/benchmark-standard-carbon-v1/runs/*/result.manifest.json
 ```
 
 All 170 bundles audit with zero issues (5,216,594 automated checks, PASS) — the intensity
@@ -147,8 +154,8 @@ grams are the audited per-VM joules times the declared intensity, and the budget
 the fleet-power timeline rebuilt from the manifest's own compute-job intervals and power
 fields. A negative control that adds +1.0 g to a real bundle's
 `carbonMetrics/totalCarbonGrams` is killed with `metric-mismatch` at exactly that path.
-Evidence is retained at `output/benchmark-standard-carbon-v1/` and as
-`output/benchmark-standard-carbon-v1-evidence.tar.gz` (22.1 MB).
+Evidence is retained only as `output/benchmark-standard-carbon-v1-evidence.tar.gz` (22.1 MB);
+restore it into a fresh empty directory before auditing.
 
 Honest bounds of the carbon variant, beyond the boundary statements of the standard and
 power benchmarks:
@@ -260,7 +267,7 @@ Relative verification (from the repository root, no Java required):
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-evidence.py \
   --output /new-path/dvfs-audit.json \
-  $(ls output/benchmark-standard-dvfs-v1/runs/*/result.manifest.json)
+  "$RESTORE"/benchmark-standard-dvfs-v1/runs/*/result.manifest.json
 ```
 
 All 90 bundles audit with **PASS, 0 issues (2,761,384 automated checks)** — the per-tier
@@ -268,10 +275,10 @@ conservation law (per-Job `tierMips` groups, union per tier, default-tier idle s
 BAT-D2 slack), the tier-speed task-window recompute (BAT-D6), and the intensity grams
 riding the per-tier joules are all recomputed from each manifest's own fields. Negative
 controls in the Python self-test suite kill the v1-speed window forgery and per-tier
-attribution corruptions. Evidence is retained at
-`output/benchmark-standard-dvfs-v1/` and as
-`output/benchmark-standard-dvfs-v1-evidence.tar.gz` (12 MB); joules and grams are
-declared-model values at the frozen P-state table, not measurements.
+attribution corruptions. Evidence is retained only as
+`output/benchmark-standard-dvfs-v1-evidence.tar.gz` (12 MB); restore it into a fresh empty
+directory before auditing. Joules and grams are declared-model values at the frozen P-state
+table, not measurements.
 
 Honest bounds of the DVFS variant, beyond the boundary statements of the standard, power,
 and carbon benchmarks:
@@ -297,13 +304,14 @@ and carbon benchmarks:
 
 ### Verifying the power variant
 
-The power variant stores its index at `output/benchmark-standard-power-v1/benchmark-power.json`
-and the same command pattern works per-manifest:
+After restoring the archive, the power variant's index is at
+`$RESTORE/benchmark-standard-power-v1/benchmark-power.json`; the same command pattern works
+per-manifest:
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-evidence.py \
   --output /new-path/power-audit.json \
-  $(ls output/benchmark-standard-power-v1/runs/*/result.manifest.json | head -5)
+  "$RESTORE"/benchmark-standard-power-v1/runs/*/result.manifest.json
 ```
 
 Each powered bundle carries the per-VM `idlePowerWatts`/`maxPowerWatts` in the platform
@@ -312,6 +320,6 @@ section and the `energyMetrics` block; the auditor recomputes the conservation l
 bundles audit with zero issues, including a negative control that adds +500 J and is caught.
 
 
-The full evidence bundle (160 runs × v4 evidence package) is retained at
-`output/benchmark-standard-v1/` and as a tagged tar artifact
-`output/benchmark-standard-v1-evidence.tar.gz` (21 MB). It is not modified or re-labeled.
+The full evidence bundle (160 runs × v4 evidence package) is retained only as the tagged tar
+artifact `output/benchmark-standard-v1-evidence.tar.gz` (21 MB). It is not modified or
+re-labeled; audits run against a fresh restoration, never against the archive itself.

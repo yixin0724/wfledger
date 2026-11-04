@@ -1,6 +1,6 @@
-The # Energy Portrait of the Algorithm Corpus
+# Energy Portrait of the Algorithm Corpus
 
-The The platform's first statistical energy study: the ten-algorithm corpus of
+The platform's first statistical energy study: the ten-algorithm corpus of
 [`benchmark-standard-power-v1`](<STANDARD_BENCHMARK.md>) analyzed under the frozen
 homogeneous power model (250 W idle / 400 W max per VM) across 160 audited runs —
 5 inputs × 2 VM tiers × 3 decision layers × (network families where declared).
@@ -72,8 +72,9 @@ transfer-bound schedules).
 ## Raw numbers
 
 The retained artifact is regenerated to a fresh path on demand (the command
-above); the retained evidence lives in `output/benchmark-standard-power-v1/`
-plus its tar original. The analysis schema
+above); the retained evidence lives only in the tar original. Restore
+`output/benchmark-standard-power-v1-evidence.tar.gz` into a fresh empty directory before
+running the analyzer. The analysis schema
 (`workflowsim-energy-portrait-v1`) embeds the run rows, the sign-test
 tallies, the Holm-adjusted p-values, and the monopoly attribution of all six
 departures.

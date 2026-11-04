@@ -69,11 +69,11 @@ on already-conserved quantities**:
 **Intensity model (`CARBON_INTENSITY_V1`)** — multiplier accounting:
 ```
 VmSpec:  + double carbonIntensityGramsPerKWh        // declared per VM (region proxy)
-Metric:    totalCarbonGrams = Σ_vm  3.6 × E_vm(J) / 3600 × intensity_vm(g/kWh)
-           perVmCarbonGrams = {vm: 3.6 × E_vm × intensity_vm / 3600}
+Metric:    totalCarbonGrams = Σ_vm E_vm[J] / 3.6e6 × intensity_vm[g/kWh]
+           perVmCarbonGrams = {vm: E_vm[J] / 3.6e6 × intensity_vm[g/kWh]}
            meanVmCarbonGrams, carbonMakespanProduct (g·s)
 ```
-(E in J → Wh = E/3600; ×3.6 converts g/Wh to g/kWh scale: grams = E[J]/3600 × I[g/kWh].)
+(E in joules; kWh = E/3.6e6, so grams = E[J]/3.6e6 × I[g/kWh].)
 This is the **CASPER-family accounting**; heterogeneous per-VM intensity models
 geo-distributed fleets. Energy either must be powered (E>0 interval means carbon>0 means
 powered) or intensity-with-unpowered-E is silently zero — rejected (below).
@@ -88,7 +88,11 @@ The **P_fleet(t) curve is exactly derivable from per-VM busy windows + the linea
 model** (P_idle constant + P_work active windows) — the data the auditor already
 recomputes. This is the **CWM-family accounting**; window arrays are the researcher's
 declared renewable-availability scenario (like CaWoSched's `G_j` intervals). Windows must
-cover [0, T_sim) exactly, be sorted, non-overlapping: fail-fast otherwise.
+be sorted and non-overlapping. They define the accounting horizon rather than a promise to
+cover the entire simulation: outside the declared windows is not included in the excess
+integral. In particular, time after the last window contributes no excess; this is the
+implemented and independently audited boundary, not a license to describe the windows as
+whole-run coverage.
 
 ### 2.2 Manifest + auditor (all three parties, energy-discipline style)
 

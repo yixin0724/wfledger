@@ -307,11 +307,13 @@ specifies, with the following pins and one forward contract closed:
   powered. Flat-platform results are bit-identical to the previous inline
   formula (same expression, same summation order — pinned by the existing
   unit-law test); the tiered branch is pinned by a §2.3-law red→green test.
-- **Honest boundaries unchanged**: `ManifestConfigRebuilder` still rebuilds
-  neither `frequencyTiers` nor `frequencyPolicy` (tiered manifests remain
-  non-rerunnable — the diff fails loud); the registered DVFS-aware
-  demonstrator and the first DVFS-vs-DEFAULT comparison belong to D5/D6;
-  `carbonWindows` stay outside the v1 workbench surface.
+- **Superseded by A1 (2026-11-02)**: the following D4 statement is retained only as
+  history. At that time `ManifestConfigRebuilder` did not restore `frequencyTiers`
+  or `frequencyPolicy`, so tiered manifests could not rerun. A1 subsequently closed
+  that boundary: both fields now round-trip, tiered and tri-dimensional bundles rerun
+  `IDENTICAL_CORE`, and malformed recorded tables fail as `RECONSTRUCTION_REJECTED`.
+  The registered DVFS-aware demonstrator and the first DVFS-vs-DEFAULT comparison
+  belong to D5/D6; `carbonWindows` stay outside the v1 workbench surface.
 
 **As-built (D5+D6, 2026-10-29).** Both closing batches landed; the contract sections
 above held, with the following pins, one seam closed, and one honest demonstrator
@@ -359,8 +361,8 @@ ledger:
   self-test (the v1-speed forgery next to a slow-tier claim is killed).
 - **Manifest face**: every new manifest serializes `configuration.frequencyPolicy`
   (following the registered-label pattern); the tier table and per-Job `tierMips`
-  serialize as specified in §2.4. Tiered bundles remain honestly non-rerunnable
-  (the loud failure is the design's pinned behavior, not a regression).
+  serialize as specified in §2.4. Tiered bundles rerun `IDENTICAL_CORE` after A1;
+  malformed recorded tier tables still fail loudly rather than being silently repaired.
 
 ## 3. Honest scoping (v2 deliberate omissions)
 

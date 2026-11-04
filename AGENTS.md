@@ -54,7 +54,7 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 - Decisions split into three layers that **must not be compared across layers**: planning
   (`planning/`, offline Task → VM plus order), scheduling (`scheduling/`, online ready
   Job → VM), and coherent online binding (`DataflowVmAssigner` in `data/v2`).
-- Eight data/network physical models (`DataMovementModel`); three evidence sidecars
+- Nine data/network physical models (`DataMovementModel`); three evidence sidecars
   (network ledger, file lifecycle V2, storage lifecycle V3), whose format contracts live in
   `docs/advanced/`.
 - **The contract-document system lives in `docs/`**: a behavior change must update the

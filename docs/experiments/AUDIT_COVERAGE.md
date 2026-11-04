@@ -201,3 +201,17 @@ All thirteen archives open and list cleanly, and every retained score file is on
 `output/*.tar.gz` originals that `make clean-output` cannot match (the target uses
 trailing-slash directory globs). `datasets/` is excluded from this table: it is source input,
 not run evidence, and its integrity chain is §1's dataset row.
+
+## 9. V&V engineering follow-ups (2026-11-04)
+
+The following items were found during the V&V design phase after Review-R1. They are new
+follow-ups, not reopened F-01..F-23 findings. Each disposition links to the guard that prevents
+recurrence; no historical ledger rows were removed.
+
+| Item | Subject | Disposition |
+|---|---|---|
+| Q03 | Carbon intensity formula in the design document used `E/1000 × intensity`, while Java and Python use `E/3.6e6 × intensity` | FIXED — formula corrected to the implemented unit law; `DocumentationConsistencyTest` locks it |
+| Q04 | Carbon-window text required full `[0,T_sim)` coverage, while implementation and retained evidence integrate only the declared horizon | FIXED — contract now states sorted/non-overlapping declared windows and excludes time outside them; no behavior change |
+| Q06 | Benchmark verification commands referenced removed uncompressed evidence directories | FIXED — guide now restores tar originals into a new empty directory and audits there; current standard/power/carbon/DVFS bundles re-audited 160/160/170/90 with zero issues |
+| Q08 | DVFS design notes simultaneously said tiered evidence was rerunnable and non-rerunnable | FIXED — historical D4 boundary explicitly marked superseded by A1; current round-trip and `IDENTICAL_CORE` contract stated |
+| Q14 | Model count, Energy Portrait title, and mutation-duration guidance drifted | FIXED — nine physical models, corrected title, and a consistent 5–10 minute estimate; `DocumentationConsistencyTest` guards the current text |
