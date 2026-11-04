@@ -1,0 +1,21 @@
+docs/advanced/MUTATION_GATE.md
+  s_74c394365f705a::t_bb7c7fd0a516f7 71-72
+scripts/mutation-gate.py
+  s_74c394365f705a::t_59316599b189c7 276
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bb27c3a8066c93256d4e3e21334c6544ae7cfe1c",
+  "prompts": {},
+  "sessions": {
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
