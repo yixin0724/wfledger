@@ -1,0 +1,19 @@
+simulator/src/test/java/org/cloudbus/cloudsim/core/CloudSimKernelReferenceTest.java
+  s_37e38a7ed4368c::t_7c6e7c2f38c7d4 1-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "65bd4392732ebb150fe00c638908a8119aa07def",
+  "prompts": {},
+  "sessions": {
+    "s_37e38a7ed4368c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19ef8-86bb-7911-83de-89bd1a1aee90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
