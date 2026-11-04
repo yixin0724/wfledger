@@ -1,0 +1,21 @@
+docs/experiments/AUDIT_COVERAGE.md
+  s_3ae6b032aa2d87::t_893cbf0b5e257f 116-121
+simulator/src/main/java/org/cloudbus/cloudsim/Log.java
+  s_3ae6b032aa2d87::t_3b1e106886b1ce 9-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4f94e0d0c2955dfec4325e7a24f5513bb70357ee",
+  "prompts": {},
+  "sessions": {
+    "s_3ae6b032aa2d87": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "94f9e048-2be9-4a28-a7cb-f846c02b632e",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
