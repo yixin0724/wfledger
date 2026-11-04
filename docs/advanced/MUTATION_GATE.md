@@ -46,7 +46,8 @@ logging channel stays unregistered by argument — log routing is diagnostics vi
 not a research-claim decision surface, and `LogPrintErrorTest` guards it directly. The M20
 addition (2026-11-04, post-completion review follow-up) registers the runner-wiring axis of
 the AUD-F07 cap configuration outlet: the runner must construct the recorder from the
-configured cap, not silently fall back to the default.
+configured cap, not silently fall back to the default; the post-commit battery of 2026-11-04
+verified the full set 20/20 KILLED (M20 at the killers stage).
 
 ## Usage
 

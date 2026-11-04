@@ -7,7 +7,9 @@ row names the test or command that fails when the property breaks.
 Last sweep: 2026-11-03 (review rounds 1-7, the dedicated coverage goal, the AUD-F05 validator
 recompute, the AUD-F13 dataset index chain, and the AUD-F08 shared-core honesty pass); updated
 2026-11-04 by the post-completion review follow-ups (three AUD-F12 javadoc path residuals in
-5922281, and the finding-disposition master ledger added as §7).
+5922281, the finding-disposition master ledger added as §7, the vendored-tree diff registry
+note in 4f94e0d, and the AUD-F07 cap configuration outlet in 4becd96 with the M20 canary and
+the 20/20 battery result).
 
 ## 1. Evidence dimensions: a positive case and a tamper case each
 
@@ -47,7 +49,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate`, 20 registered mutants; M12–M19 added 2026-11-03 for the audit fix paths, M20 added 2026-11-04 for the cap-outlet wiring axis) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs) |
+| Repository gate (`make mutation-gate`, 20 registered mutants; M12–M19 added 2026-11-03 for the audit fix paths, M20 added 2026-11-04 for the cap-outlet wiring axis) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (2026-11-04 post-commit full battery, 20/20 aggregate) |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |
@@ -149,7 +151,7 @@ answer "what was each audit finding and what happened to it" on its own.
 | F-04 | P0 | contention engine `advance()` O(B²): full-list fork each time step | FIXED — `a056426` (shared immutable retained-trace prefix across forks; byte-identical trace proven) |
 | F-05 | P1 | artifact validator checked metrics existence but never recomputed | FIXED — `fd3a723` (queue-wait recomputed from `result.jobs` with the same population and formula as the Python auditor; event contract boundaries enforced) |
 | F-06 | P1 | Holm correction only on the network study path | FIXED — `65254bc` (shared corrector in the simulator module; applied within each comparison group) |
-| F-07 | P1 | unbounded resident event list in `SimulationEventRecorder` | FIXED — `a4ca13c` (fail-fast capacity cap, default 20000) |
+| F-07 | P1 | unbounded resident event list in `SimulationEventRecorder` | FIXED — `a4ca13c` (fail-fast capacity cap, default 20000); follow-up `4becd96` (2026-11-04): the cap gained a full configuration outlet — SimulationConfig builder `eventRecorderCap`, runner wiring, workbench `simulation.eventRecorderCap`, manifest round-trip; M20 canary registered, 20/20 KILLED |
 | F-08 | P1 | four "independent" Python checkers share one 49KB core | FIXED — `167b7e0` (honest shared-implementation declaration; independence means independence from the Java production path) |
 | F-09 | P1 | dual cost calibers under one algorithm label | FIXED — `ae6231f` (mixed mapping-cost calibers rejected within one comparison group) |
 | F-10 | P1 | deprecated label bypass behind the scheduler | FIXED — `f20925a` (explicit legacy declaration required; no silent alias mapping) |
