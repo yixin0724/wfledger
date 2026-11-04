@@ -20,8 +20,11 @@ DSS subsets also retain their source labels.
 
 - `ClassicDaxStructuralTest`: all 20 classic DAX files, with job counts computed independently
   from the XML namespace and checked against the parser and DAG validator.
-- `MontageWfInstancesStructuralTest`: all 17 Montage files, with expected values computed from
-  the original JSON. The 58-task 2MASS example is included, as are the large 2MASS/DSS instances.
+- `MontageWfInstancesStructuralTest`: the one Montage file tracked in a standard checkout,
+  including its 58 tasks and the source's declared missing fields.
+- `MontageExtendedCorpusTest`: all 17 Montage files, including the large 2MASS/DSS
+  instances, but only under the explicit `extended-corpus` Maven profile. The full local snapshot
+  and its index must be prepared first; a standard checkout never requires ignored optional data.
 - `WfCommonsJsonParserValidationTest`: 1.5/1.6 acceptance, unknown-version and unknown-field
   rejection, plus Nextflow `repo`/`runName` provenance compatibility.
 
@@ -30,6 +33,16 @@ tasks. Those values are therefore **unknown**, not zero and not inferred from fi
 makespan or sum of task runtimes is not used as a source-platform expectation.
 
 ## Runtime and file units
+
+Run the complete optional snapshot explicitly:
+
+```bash
+make extended-corpus
+```
+
+That target first checks the dataset index and then runs only the extended suite with
+`-Pextended-corpus -pl :workflowsim-workbench -am`. The default `make quality-gate` excludes
+`*ExtendedCorpusTest`, so a fresh checkout has no optional-corpus dependency.
 
 The parser uses `runtimeInSeconds` and `sizeInBytes` directly. At the standard reference setting
 `runtimeReferenceMips=1000` and `runtimeScale=1`, each task's expected length is independently

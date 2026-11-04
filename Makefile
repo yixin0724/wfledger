@@ -1,7 +1,7 @@
 # WorkflowSim Makefile
 # Shortcuts for the common Maven build commands
 
-.PHONY: all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all python-gate quality-gate language help
+.PHONY: all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all python-gate quality-gate extended-corpus language help
 
 # default target
 all: build
@@ -92,6 +92,11 @@ python-gate:
 # the same complete local acceptance surface as the two CI jobs, excluding real mutation
 quality-gate: audit python-gate
 
+# explicit opt-in full-corpus acceptance (all 17 Montage inputs must be prepared)
+extended-corpus:
+	python3 -B scripts/check-dataset-indexes.py
+	mvn -Pextended-corpus -pl :workflowsim-workbench -am -Dtest=MontageExtendedCorpusTest -Dsurefire.failIfNoSpecifiedTests=false test
+
 # reject CJK characters in every tracked text file
 language:
 	@echo "Checking that the tree is maintained in English..."
@@ -108,6 +113,7 @@ help:
 	@echo "  make audit    - clean build plus joint acceptance, including the core API documentation"
 	@echo "  make python-gate - independent Python, docs, language, and dataset checks"
 	@echo "  make quality-gate - complete local acceptance surface (audit + python-gate)"
+	@echo "  make extended-corpus - opt-in full-corpus acceptance (all 17 Montage inputs required)"
 	@echo "  make clean    - remove the build output"
 	@echo "  make clean-output - remove regenerable uncompressed output/ study dirs (keeps all .tar.gz originals)"
 	@echo "  make coverage - generate the test coverage report"

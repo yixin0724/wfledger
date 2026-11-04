@@ -43,6 +43,8 @@
         <workflowsim.experiments.exec.skip>false</workflowsim.experiments.exec.skip>
         <!-- JaCoCo writes this during the lifecycle; the empty default keeps direct Surefire/Failsafe calls safe. -->
         <argLine></argLine>
+        <!-- VV-NEW-01: optional full-corpus suites never make a clean checkout depend on ignored files. -->
+        <surefire.excludes>**/*IntegrationTest.java,**/*ExtendedCorpusTest.java</surefire.excludes>
         <!-- R3 coverage-gate default thresholds (0 = no limit); each module overrides them in its own pom with ratcheted measured values. -->
         <workflowsim.jacoco.instruction.minimum>0.00</workflowsim.jacoco.instruction.minimum>
         <workflowsim.jacoco.branch.minimum>0.00</workflowsim.jacoco.branch.minimum>
@@ -122,9 +124,7 @@
                     <configuration>
                         <forkCount>1</forkCount>
                         <reuseForks>true</reuseForks>
-                        <excludes>
-                            <exclude>**/*IntegrationTest.java</exclude>
-                        </excludes>
+                        <excludes>${surefire.excludes}</excludes>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -442,6 +442,13 @@
             <id>core-exec</id>
             <properties>
                 <workflowsim.simulator.exec.skip>false</workflowsim.simulator.exec.skip>
+            </properties>
+        </profile>
+        <profile>
+            <id>extended-corpus</id>
+            <properties>
+                <!-- Opt-in only: all 17 locally retained Montage inputs and their index must be prepared. -->
+                <surefire.excludes>**/*IntegrationTest.java</surefire.excludes>
             </properties>
         </profile>
     </profiles>

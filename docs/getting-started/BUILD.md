@@ -109,6 +109,14 @@ python3 -B scripts/check-language.py
 
 The repository is maintained in professional technical English, including comments, generated reports, and retained study archives. The checker walks the tracked text files, reports every line that still carries CJK characters with its file and line number, and exits non-zero. Chinese inside a `.dax` fixture is exempt on purpose: those files are frozen bytes whose SHA-256 is part of a recorded input identity, so translating a comment inside one would invalidate the evidence that cites it. `make language` runs the same pair.
 
+## Extended-corpus acceptance
+
+`make quality-gate` excludes `*ExtendedCorpusTest`, so the standard build has no dependency on
+ignored optional corpora. After preparing the full local snapshot and checking its index, run the
+17-instance Montage suite explicitly with `make extended-corpus`. The target invokes Maven with
+`-Pextended-corpus -pl :workflowsim-workbench -am` and never substitutes a skipped test for the
+required inputs; a missing file fails the suite. See [application benchmarks](<../experiments/APPLICATION_BENCHMARKS.md>).
+
 ## Offline report browser acceptance
 
 The checker opens genuinely generated reports via `file://`; no server is started. Dependency versions are pinned in the [browser dependency manifest](<../../scripts/package.json>) and the [lock file](<../../scripts/package-lock.json>).
