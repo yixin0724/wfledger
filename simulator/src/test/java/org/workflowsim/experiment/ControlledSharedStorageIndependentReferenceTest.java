@@ -53,6 +53,21 @@ class ControlledSharedStorageIndependentReferenceTest {
         assertReference(report, 12.21);
         assertEquals(12.0, computeJob(report).getExecutionTime(), EPS);
         assertEquals(2000L, report.getTasks().get(0).getEffectiveExecutionLengthMi());
+        SimulationEvent started = report.getEvents().stream()
+                .filter(event -> event.getType() == SimulationEventType.JOB_EXECUTION_STARTED
+                        && event.getJobId().intValue() == computeJob(report).getJobId())
+                .findFirst()
+                .orElse(null);
+        assertTrue(started != null);
+        assertEquals(10.0, ((Number) started.getAttributes().get("requestedDataStageSeconds")).doubleValue(), EPS);
+        SimulationEvent modeled = report.getEvents().stream()
+                .filter(event -> event.getType() == SimulationEventType.TASK_EXECUTION_MODELED
+                        && event.getJobId().intValue() == computeJob(report).getJobId())
+                .findFirst()
+                .orElse(null);
+        assertTrue(modeled != null);
+        assertEquals(
+                10.0, ((Number) modeled.getAttributes().get("requestedDataStageInSecondsForJob")).doubleValue(), EPS);
     }
 
     @Test
