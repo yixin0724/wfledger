@@ -1,0 +1,28 @@
+docs/README.md
+  h_adc77830afcf4d 61-64
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 49,80-81,86,92
+docs/experiments/AUDIT_COVERAGE.md
+  h_adc77830afcf4d 52,224
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  h_adc77830afcf4d 1-58
+docs/experiments/VV_CASE_LEDGER.md
+  h_adc77830afcf4d 36-38,74-75,83
+docs/experiments/VV_REVIEW_PROTOCOL.md
+  h_adc77830afcf4d 1-48
+scripts/mutation-gate.py
+  h_adc77830afcf4d 293-299
+simulator/src/test/java/org/workflowsim/data/v2/DataflowStateProfileSmokeTest.java
+  h_adc77830afcf4d 1-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "064373864e0c50ec0c52e16bd177cd73f31ea37a",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
