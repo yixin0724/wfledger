@@ -1,0 +1,19 @@
+.editorconfig
+  s_7bce2ecd1c2517::t_79c2ef26782894 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b45445130b56dc4e0a9f3576ca6923d77de9f400",
+  "prompts": {},
+  "sessions": {
+    "s_7bce2ecd1c2517": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18701-66f4-7962-8f1b-52cf27c00cdb",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
