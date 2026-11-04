@@ -18,7 +18,7 @@ import org.workflowsim.data.TransferContentionEngine;
  * Structural, placement, and deterministic-routing unit tests for the Al-Fares k-Pod Fat-tree topology.
  *
  * <p>All golden values are hand-derived from the structure and routing described in
- * {@code docs/research/FAT_TREE_DESIGN.md}: the k=2 minimal topology (2 hosts, 5 switches, 1 core) and
+ * {@code docs/advanced/FAT_TREE_DESIGN.md}: the k=2 minimal topology (2 hosts, 5 switches, 1 core) and
  * the k=4 topology (16-host capacity, 20 switches, 4 cores). Route key sequences are computed by hand
  * under the v1 deterministic rules: the uplink aggregate = srcEdge mod availA; the cross-Pod core
  * choice j = (srcEdge + dstEdge + srcPod + dstPod) mod the number of available cores of that

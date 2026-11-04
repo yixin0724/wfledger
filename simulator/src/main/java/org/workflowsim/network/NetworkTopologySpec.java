@@ -8,7 +8,7 @@ import java.util.Map;
  * Immutable declaration of a platform network topology.
  *
  * <p>v1 supports only the Al-Fares k-Pod Fat-tree (see {@link FatTreeTopology}
- * and {@code docs/research/FAT_TREE_DESIGN.md}). Topology parameters belong to
+ * and {@code docs/advanced/FAT_TREE_DESIGN.md}). Topology parameters belong to
  * the platform description ({@code PlatformProfile}); a data movement model
  * only declares the semantics "use topology contention".</p>
  *

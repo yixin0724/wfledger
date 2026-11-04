@@ -53,7 +53,7 @@ public final class DataMovementModel {
          * {@code PlatformProfile.networkTopology(...)}
          * ({@code org.workflowsim.network.NetworkTopologySpec}). External input (SOURCE) traffic
          * of v1 bypasses the topology and occupies only the target VM endpoint. Rationale and
-         * design are in {@code docs/research/FAT_TREE_DESIGN.md}.
+         * design are in {@code docs/advanced/FAT_TREE_DESIGN.md}.
          */
         PRE_EXECUTION_TRANSFER_DELAY_WITH_FAT_TREE_CONTENTION_V1,
         /** Versioned per-file visible-source/actual-route lifecycle with shared capacities. */
