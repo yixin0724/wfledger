@@ -1,0 +1,61 @@
+.github/workflows/ci.yml
+  s_24f59fb6b2f10b::t_8176f9408ef259 232,235-237
+Makefile
+  s_24f59fb6b2f10b::t_715b96b0df72bc 4,72,75-82,103-105
+docs/advanced/MUTATION_GATE.md
+  s_24f59fb6b2f10b::t_67721e71cbfffb 46-48,75-79,84,87-92,112-116,124-125
+docs/experiments/AUDIT_COVERAGE.md
+  s_24f59fb6b2f10b::t_4d80fa9d505fc4 52,222-223
+docs/experiments/CAMPAIGNS.md
+  s_24f59fb6b2f10b::t_1434261d6d7f81 61
+docs/experiments/VV_CASE_LEDGER.md
+  s_24f59fb6b2f10b::t_f04da19a1645e8 72-74
+docs/getting-started/BUILD.md
+  s_5ab7165dac7fa6::t_cdaaa83da5fe02 76,80-81,88
+scripts/mutation-gate.py
+  s_24f59fb6b2f10b::t_b1ec9680c518e4 22-23,279-303,397-407,420,428,457-460,463-467,470,474,497
+scripts/test-mutation-gate.py
+  s_37e38a7ed4368c::t_b2ca3403ad69e7 43,49,62-68,71
+simulator/src/test/java/org/workflowsim/experiment/PairedWilcoxonExternalReferenceTest.java
+  s_f33e8408759051::t_06c48c44eb6ab4 1-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1cc3230a0881776fdbeeca2604b823765f4900b1",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_37e38a7ed4368c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19ef8-86bb-7911-83de-89bd1a1aee90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_5ab7165dac7fa6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19efc-8193-7e71-a665-fdeaba5244e1",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_f33e8408759051": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "6974b166-f201-407b-a0b4-d59dad84173e",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
