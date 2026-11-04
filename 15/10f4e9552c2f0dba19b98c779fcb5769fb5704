@@ -1,0 +1,61 @@
+datasets/README.md
+  s_74c394365f705a::t_aa07c10af8c11e 116,120,124
+docs/advanced/MUTATION_GATE.md
+  s_5ab7165dac7fa6::t_bc7b16d8d0488e 40-41,59-63,68
+docs/experiments/AUDIT_COVERAGE.md
+  s_5ab7165dac7fa6::t_3e509544be9183 52,218-219
+scripts/mutation-gate.py
+  s_5ab7165dac7fa6::t_2fd531a9eb8554 235-248
+simulator/src/main/java/org/workflowsim/WfCommonsJsonParser.java
+  s_24f59fb6b2f10b::t_714dd622eadfe6 121-126
+simulator/src/main/java/org/workflowsim/WfCommonsSchemaValidator.java
+  s_74c394365f705a::t_e57fa351154412 1-304
+simulator/src/main/java/org/workflowsim/experiment/ExperimentCampaignSummaryVerifier.java
+  s_37e38a7ed4368c::t_712ae535b32851 1-552
+simulator/src/test/java/org/workflowsim/WfCommonsJsonParserValidationTest.java
+  s_74c394365f705a::t_341ca4822e20b6 35,37,144-168,176-209
+simulator/src/test/java/org/workflowsim/WorkflowInputFileNamespaceTest.java
+  s_24f59fb6b2f10b::t_0035bea89b3e7e 106-108,110-111
+simulator/src/test/resources/wfcommons/minimum-runtime.json
+  s_74c394365f705a::t_b5ba732b628db0 3,21-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1510f4e9552c2f0dba19b98c779fcb5769fb5704",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_37e38a7ed4368c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19ef8-86bb-7911-83de-89bd1a1aee90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_5ab7165dac7fa6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19efc-8193-7e71-a665-fdeaba5244e1",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
