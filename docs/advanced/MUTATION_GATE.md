@@ -42,6 +42,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M24 | Space-Shared drops the file-transfer MI added to Cloudlet length | CloudSim 3.0.3 transfer-work accounting (B02, 2026-11-04) |
 | M25 | FutureQueue assigns serial zero to every event | same-time event ordering (B02, 2026-11-04) |
 | M26 | WorkflowDatacenter drops the SHARED input-transfer seconds | legacy WorkflowSim transfer envelope (B03, 2026-11-04) |
+| M27 | WfCommons runtime conversion collapses every task to the minimum length | Montage real-derived runtime mapping (B05, 2026-11-04) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -65,12 +66,14 @@ fail at the killers stage. The M23 addition (2026-11-04, Q05) registers the WfFo
 gate: bypassing `WfCommonsSchemaValidator` must make the unknown-version and unknown-field
 regressions fail. M24–M26 (2026-11-04, B02/B03) add the fixed-commit CloudSim and legacy
 WorkflowSim reference axes: transfer-work accounting, same-time serial ordering, and the SHARED
-transfer envelope. Each is killed by its corresponding hand-derived reference test.
+transfer envelope. Each is killed by its corresponding hand-derived reference test. M27
+(2026-11-04, B05) adds the Montage real-derived runtime-mapping axis: collapsing every task to
+100 MI must be killed by the 17-instance structural suite.
 
 ## Usage
 
 ```bash
-# Full battery (~5–10 min for the 26 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Full battery (~5–10 min for the 27 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

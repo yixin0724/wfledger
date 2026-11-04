@@ -267,6 +267,13 @@ REGISTRY = [
         old="        updateTaskExecTime(job, vm, effectiveStageInSeconds, fileTransferTime);",
         new="        updateTaskExecTime(job, vm, effectiveStageInSeconds, 0.0);",
         killers="ControlledSharedStorageIndependentReferenceTest"),
+    dict(
+        id="M27",
+        name="WfCommons runtime conversion collapses every task to the minimum length",
+        file="simulator/src/main/java/org/workflowsim/WfCommonsJsonParser.java",
+        old="        return Math.max(MIN_CLOUDLET_LENGTH, (long) length);",
+        new="        return MIN_CLOUDLET_LENGTH;",
+        killers="MontageWfInstancesStructuralTest"),
 ]
 
 

@@ -56,6 +56,8 @@ and superseded audit drafts are not long-term entry points.
   classes, validation points, assessment states, residual risk, and the current baseline cases.
 - [Fixed-commit reference implementation](<experiments/REFERENCE_IMPLEMENTATION.md>): the narrow
   CloudSim/WorkflowSim verification intersection, independent arithmetic, and explicit non-goals.
+- [Workflow application structural benchmarks](<experiments/APPLICATION_BENCHMARKS.md>): classic DAX and
+  Montage WfInstances verification, input populations, units, and validation boundaries.
 - [Evidence replay and difference comparison](<experiments/RERUN_DIFF_CONTRACT.md>): configuration rebuilding, verdicts, exact core quantities, and the small set of volatile fields.
 - [Protocol identity and historical-evidence boundaries](<experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>): which legacy identities remain readable and why legacy results are not conclusions about the current implementation.
 - [Independent study-audit tooling](<../scripts/STUDY_AUDIT.md>): the actual scope of general evidence/statistics checks, distinguished from dataflow-specific certificates.

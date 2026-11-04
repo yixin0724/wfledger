@@ -49,7 +49,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate`, 26 registered mutants after the V&V B2 work; M12–M19 added 2026-11-03 for the audit fix paths, M20 for the cap outlet, M21 for the declared revision contract, M22/M23 for B1, M24–M26 for fixed-commit CloudSim and legacy WorkflowSim references) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M26 are verified red-first at the killers stage in the B1/B2 close-outs |
+| Repository gate (`make mutation-gate`, 27 registered mutants after the V&V B3 work; M12–M19 added 2026-11-03 for the audit fix paths, M20 for the cap outlet, M21 for the declared revision contract, M22/M23 for B1, M24–M26 for fixed-commit references, M27 for Montage runtime mapping) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M27 are verified red-first at the killers stage in the B1–B3 close-outs |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |
@@ -218,3 +218,4 @@ recurrence; no historical ledger rows were removed.
 | Q02 | Generic campaign summary was serialized without an independent recompute or tamper check | FIXED — `ExperimentCampaignSummaryVerifier` rebuilds cell, completion, interval, paired, and Holm aggregates from validated manifests; deterministic and independent-replication tamper tests plus M22 guard it |
 | Q05 | WfFormat parser retained the declared version but could silently ignore unknown versions and fields | FIXED — 1.5/1.6 required-field, type, range, and unknown-field validation runs before Gson binding; unknown versions fail explicitly and real-input cross-validation stays green |
 | Q07 | No systematic fixed-commit upstream differential layer existed for CloudSim/WorkflowSim semantics | FIXED for the declared B02/B03 intersection — CloudSim serial/send and Space-Shared references plus the legacy SHARED 150 MB/15 MB/s case and M24–M26 now anchor it; old labels, full examples, and failure semantics remain deliberately excluded |
+| Q13 | Statistical validity and application scenario coverage needed stronger independent inputs | PARTIAL (B3) — all 20 classic DAX and all 17 Montage WfInstances now have independent structural, unit, DAG, and missing-field checks; no real-platform validation is claimed |
