@@ -61,6 +61,38 @@ class ManifestConfigRebuilderTest {
     // ---- round-trip fidelity ----
 
     @Test
+    void rebuildCarriesTheConfiguredEventRecorderCap() throws Exception {
+        // AUD-F07 follow-up (2026-11-04, post-completion review): a run that legitimately
+        // raised the retention cap must round-trip through the manifest so the rerun
+        // reproduces the recording conditions, while a default-cap run keeps the
+        // pre-outlet manifest shape (no key), so old evidence never spuriously diverges.
+        RerunEvidence fixture = RerunEvidenceReader.read(fixtureRun);
+        assertTrue(
+                !fixture.getManifest().getAsJsonObject("configuration").has("eventRecorderCap"),
+                "a default-cap manifest must keep the pre-outlet shape");
+
+        Path run = Files.createDirectories(tempDir.resolve("event-cap"));
+        String dax = RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax");
+        SimulationConfig config = SimulationConfig.builder(dax, 3)
+                .schedulingAlgorithm(SchedulingAlgorithm.FCFS)
+                .randomSeed(20261104L)
+                .eventRecorderCap(50000)
+                .build();
+        PlatformProfile platform = PlatformProfiles.homogeneousLocal("event-cap-fixture", 3);
+        RerunTestSupport.generateEvidence(run, config, platform);
+
+        RerunEvidence evidence = RerunEvidenceReader.read(run);
+        assertEquals(
+                50000,
+                evidence.getManifest()
+                        .getAsJsonObject("configuration")
+                        .get("eventRecorderCap")
+                        .getAsInt());
+        RebuiltConfiguration rebuilt = ManifestConfigRebuilder.rebuild(evidence, RerunInputResolver.resolve(evidence));
+        assertEquals(50000, rebuilt.getConfig().getEventRecorderCap());
+    }
+
+    @Test
     void rebuildsSimpleFixtureFaithfully() throws Exception {
         RerunEvidence evidence = RerunEvidenceReader.read(fixtureRun);
         RerunInputs inputs = RerunInputResolver.resolve(evidence);
@@ -419,6 +451,7 @@ class ManifestConfigRebuilderTest {
         assertEquals(expected.getRuntimeScale(), actual.getRuntimeScale());
         assertEquals(expected.getRuntimeReferenceMips(), actual.getRuntimeReferenceMips());
         assertEquals(expected.getCloudSimMinEventIntervalSeconds(), actual.getCloudSimMinEventIntervalSeconds());
+        assertEquals(expected.getEventRecorderCap(), actual.getEventRecorderCap());
         assertEquals(expected.getCostModel(), actual.getCostModel());
         assertDataMovementEquals(expected.getDataMovementModel(), actual.getDataMovementModel());
         assertOverheadEquals(expected.getOverheadModel(), actual.getOverheadModel());

@@ -157,6 +157,7 @@ public final class WorkbenchConfig {
                 "runtimeScale",
                 "runtimeReferenceMips",
                 "minEventIntervalSeconds",
+                "eventRecorderCap",
                 "deadlineSeconds",
                 "taskCostMatrix",
                 "fixedEndpoint",
@@ -256,6 +257,12 @@ public final class WorkbenchConfig {
                     .runtimeScale(decimal(models.sim, "runtimeScale", 1, true))
                     .runtimeReferenceMips(decimal(models.sim, "runtimeReferenceMips", 1000, true))
                     .cloudSimMinEventIntervalSeconds(decimal(models.sim, "minEventIntervalSeconds", 0.1, true))
+                    .eventRecorderCap(integer(
+                            models.sim,
+                            "eventRecorderCap",
+                            SimulationConfig.DEFAULT_EVENT_RECORDER_CAP,
+                            1,
+                            Integer.MAX_VALUE))
                     .deadline(
                             models.sim.has("deadlineSeconds")
                                     ? longValue(models.sim.get("deadlineSeconds"), "deadlineSeconds")

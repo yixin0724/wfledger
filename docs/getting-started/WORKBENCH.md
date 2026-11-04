@@ -65,6 +65,7 @@ Simply replace the configuration argument of `run` with the chosen file. The pai
 | `simulation.dataMovementModel` | The exact enumeration name from the table below, default `LEGACY_WORKFLOWSIM_V1` |
 | `simulation.runtimeScale` / `runtimeReferenceMips` | Positive finite values, defaults 1 / 1000; conversion parameters from input runtime to model MI |
 | `simulation.minEventIntervalSeconds` | Positive finite value, default 0.1 |
+| `simulation.eventRecorderCap` | Optional strictly positive integer, default 20000; retention cap of the run's event stream (AUD-F07 follow-up, 2026-11-04) — the run fails fast when the cap is reached, and a non-default value round-trips through the manifest's `configuration.eventRecorderCap` |
 | `simulation.deadlineSeconds` | Optional non-negative signed-long integer, 0 means not requested; post-hoc observation only, it changes neither scheduling nor termination |
 | `simulation.taskCostMatrix` | Optional `{taskId, vmId, executionSeconds}` array covering all logical tasks × VMs; requires a STATIC path and cannot be combined with the SHARED_STORAGE planner |
 | `simulation.networkEvidence` | Optional recording object; mode and budget must be present together, see the recording table |

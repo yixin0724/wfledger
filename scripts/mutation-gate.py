@@ -212,6 +212,19 @@ REGISTRY = [
         new="""                // this case because the runner rejects INVALID first.
                 algorithm = new FCFSSchedulingAlgorithm();""",
         killers="WorkflowSchedulerExplicitBindingTest"),
+    dict(
+        id="M20",
+        name="Runner ignores the configured event-recorder cap and constructs the default recorder",
+        file="simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java",
+        old="""        // AUD-F07 follow-up (2026-11-04, post-completion review): the retention cap is run
+        // configuration (SimulationConfig builder / workbench simulation.eventRecorderCap), not
+        // a Java-only constructor argument -- the only enabled-recorder construction site.
+        SimulationEventRecorder events = new SimulationEventRecorder(config.getEventRecorderCap());""",
+        new="""        // AUD-F07 follow-up (2026-11-04, post-completion review): the retention cap is run
+        // configuration (SimulationConfig builder / workbench simulation.eventRecorderCap), not
+        // a Java-only constructor argument -- the only enabled-recorder construction site.
+        SimulationEventRecorder events = new SimulationEventRecorder();""",
+        killers="SimulationRunnerEventRecorderCapIntegrationTest"),
 ]
 
 

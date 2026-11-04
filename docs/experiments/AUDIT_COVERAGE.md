@@ -47,7 +47,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate`, 19 registered mutants; M12–M19 added 2026-11-03 for the audit fix paths) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs) |
+| Repository gate (`make mutation-gate`, 20 registered mutants; M12–M19 added 2026-11-03 for the audit fix paths, M20 added 2026-11-04 for the cap-outlet wiring axis) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs) |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |

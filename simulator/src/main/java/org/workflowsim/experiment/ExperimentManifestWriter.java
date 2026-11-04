@@ -339,6 +339,13 @@ public final class ExperimentManifestWriter {
         values.put("runtimeScale", config.getRuntimeScale());
         values.put("runtimeReferenceMips", config.getRuntimeReferenceMips());
         values.put("cloudSimMinEventIntervalSeconds", config.getCloudSimMinEventIntervalSeconds());
+        // AUD-F07 follow-up (2026-11-04, post-completion review): the retention cap is run
+        // configuration (builder/workbench outlet), so a run that raised it must round-trip;
+        // a default-cap run keeps the key absent -- the same "declared -> present" culture as
+        // frequencyPolicy above, preserving the bit-for-bit shape of pre-outlet evidence.
+        if (config.getEventRecorderCap() != SimulationConfig.DEFAULT_EVENT_RECORDER_CAP) {
+            values.put("eventRecorderCap", config.getEventRecorderCap());
+        }
         values.put("costModel", config.getCostModel().name());
         values.put(
                 "modeledProcessingCostScope",

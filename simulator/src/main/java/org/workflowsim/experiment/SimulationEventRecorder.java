@@ -17,7 +17,10 @@ import org.workflowsim.Task;
  *
  * <p>Retention is explicitly capped: the default cap is {@link #DEFAULT_MAX_EVENTS}, and a
  * run that would exceed it fails fast with an actionable exception instead of keeping an
- * unbounded resident list (AUD-F07).</p>
+ * unbounded resident list (AUD-F07). Since the 2026-11-04 post-completion review the cap is
+ * run configuration as well: the SimulationConfig builder's eventRecorderCap option and the
+ * workbench's simulation.eventRecorderCap field both feed the enabled recorder's
+ * constructor.</p>
  */
 public final class SimulationEventRecorder {
 
@@ -110,9 +113,10 @@ public final class SimulationEventRecorder {
             throw new IllegalStateException("Simulation event recorder reached its capacity cap of "
                     + maxEvents
                     + " events; the event stream stays bounded instead of growing unbounded. The "
-                    + "largest benchmark-standard-v1 run records 9008 events. Construct "
-                    + "SimulationEventRecorder with a larger cap, or use disabled() when the "
-                    + "event stream is not needed.");
+                    + "largest benchmark-standard-v1 run records 9008 events. Raise the "
+                    + "eventRecorderCap of the run configuration (SimulationConfig builder; "
+                    + "workbench simulation.eventRecorderCap), or use disabled() when the event "
+                    + "stream is not needed.");
         }
         List<Integer> taskIds = new ArrayList<Integer>();
         Integer jobId = null;

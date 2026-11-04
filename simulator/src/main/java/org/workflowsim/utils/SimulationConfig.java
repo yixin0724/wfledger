@@ -44,6 +44,14 @@ public final class SimulationConfig {
         EDP_HEURISTIC
     }
 
+    /**
+     * AUD-F07 follow-up (2026-11-04, post-completion review): default retention cap of the run's
+     * event recorder. Kept numerically equal to SimulationEventRecorder.DEFAULT_MAX_EVENTS by the
+     * drift lock of SimulationConfigEventRecorderCapTest; this class deliberately does not
+     * import that class -- utils must not grow a new outgoing edge to the experiment package.
+     */
+    public static final int DEFAULT_EVENT_RECORDER_CAP = 20000;
+
     private final List<String> workflowPaths;
     private final List<Double> workflowArrivalSeconds;
     private final int vmCount;
@@ -67,6 +75,7 @@ public final class SimulationConfig {
     private final transient org.workflowsim.experiment.registry.SchedulingAlgorithmProvider
             registeredSchedulingAlgorithmProvider;
     private final FrequencyPolicy frequencyPolicy;
+    private final int eventRecorderCap;
 
     private SimulationConfig(Builder builder) {
         this.workflowPaths = Collections.unmodifiableList(new ArrayList<>(builder.workflowPaths));
@@ -91,6 +100,7 @@ public final class SimulationConfig {
         this.taskCostMatrix = builder.taskCostMatrix;
         this.registeredSchedulingAlgorithmProvider = builder.registeredSchedulingAlgorithmProvider;
         this.frequencyPolicy = builder.frequencyPolicy;
+        this.eventRecorderCap = builder.eventRecorderCap;
     }
 
     /**
@@ -226,6 +236,15 @@ public final class SimulationConfig {
     }
 
     /**
+     * AUD-F07 follow-up (2026-11-04, post-completion review): @return the retention cap of the
+     * run's event recorder. A run that reaches the cap fails fast with an actionable exception
+     * instead of keeping an unbounded resident event list.
+     */
+    public int getEventRecorderCap() {
+        return eventRecorderCap;
+    }
+
+    /**
      * Return a builder initialized with every current configuration value.
      *
      * <p>Experiment campaigns use it to explicitly change the seed of each repetition without
@@ -253,6 +272,7 @@ public final class SimulationConfig {
                 .networkEvidence(networkEvidenceConfig)
                 .dataflowAssignment(dataflowAssignmentConfig)
                 .taskCostMatrix(taskCostMatrix)
+                .eventRecorderCap(eventRecorderCap)
                 .frequencyPolicy(frequencyPolicy);
     }
 
@@ -323,6 +343,12 @@ public final class SimulationConfig {
          */
         private FrequencyPolicy frequencyPolicy = FrequencyPolicy.DEFAULT;
 
+        /**
+         * AUD-F07 follow-up (2026-11-04, post-completion review): retention cap of the run's
+         * event recorder; defaults to {@code DEFAULT_EVENT_RECORDER_CAP}.
+         */
+        private int eventRecorderCap = DEFAULT_EVENT_RECORDER_CAP;
+
         private Builder(List<String> workflowPaths, int vmCount) {
             if (workflowPaths == null || workflowPaths.isEmpty()) {
                 throw new IllegalArgumentException("At least one workflow input is required");
@@ -369,6 +395,25 @@ public final class SimulationConfig {
                         "Frequency policy cannot be null; leave it unset for the DEFAULT default");
             }
             this.frequencyPolicy = value;
+            return this;
+        }
+
+        /**
+         * AUD-F07 follow-up (2026-11-04, post-completion review): set the retention cap of the
+         * run's event recorder. Before this outlet the cap was a Java-only constructor argument
+         * (SimulationEventRecorder(int)), so a config-driven run that legitimately needed more
+         * than the default 20000 events failed with no adjustment path.
+         *
+         * @param value retention cap, strictly positive (leaving it unset means the default
+         *              {@code DEFAULT_EVENT_RECORDER_CAP})
+         * @return this builder
+         * @throws IllegalArgumentException when {@code value} is not strictly positive
+         */
+        public Builder eventRecorderCap(int value) {
+            if (value <= 0) {
+                throw new IllegalArgumentException("Event recorder cap must be strictly positive: " + value);
+            }
+            this.eventRecorderCap = value;
             return this;
         }
 

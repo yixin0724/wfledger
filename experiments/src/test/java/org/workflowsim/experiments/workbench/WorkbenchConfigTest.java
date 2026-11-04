@@ -1,6 +1,7 @@
 package org.workflowsim.experiments.workbench;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.workflowsim.experiments.workbench.WorkbenchTestSupport.algorithm;
@@ -86,6 +87,41 @@ class WorkbenchConfigTest {
         negative.getAsJsonObject("platform").addProperty("idlePowerWatts", -1.0);
         Path negativeFile = json(directory.resolve("negative.json"), negative);
         assertThrows(IllegalArgumentException.class, () -> WorkbenchConfig.read(negativeFile));
+    }
+
+    @Test
+    void simulationEventRecorderCapIsConfiguration() throws Exception {
+        // AUD-F07 follow-up (2026-11-04, post-completion review): the retention cap has a
+        // workbench outlet too. Absent keeps the default, a declared value round-trips into
+        // the candidate configuration, and an invalid declaration is rejected at validation
+        // time with the field named -- a run that legitimately needs more than 20000 events
+        // must not be stranded with no adjustment path.
+        Path workflow = workflow(directory, "flow.dax", false);
+
+        JsonObject declared = configuration(workflow.toString(), 2);
+        declared.getAsJsonObject("simulation").addProperty("eventRecorderCap", 50000);
+        WorkbenchConfig loaded = WorkbenchConfig.read(json(directory.resolve("cap.json"), declared));
+        assertEquals(50000, loaded.getCandidates().get(0).config.getEventRecorderCap());
+
+        JsonObject absent = configuration(workflow.toString(), 2);
+        WorkbenchConfig defaults = WorkbenchConfig.read(json(directory.resolve("cap-defaults.json"), absent));
+        assertEquals(
+                SimulationConfig.DEFAULT_EVENT_RECORDER_CAP,
+                defaults.getCandidates().get(0).config.getEventRecorderCap());
+
+        JsonObject zero = configuration(workflow.toString(), 2);
+        zero.getAsJsonObject("simulation").addProperty("eventRecorderCap", 0);
+        Path zeroFile = json(directory.resolve("cap-zero.json"), zero);
+        IllegalArgumentException zeroRejection =
+                assertThrows(IllegalArgumentException.class, () -> WorkbenchConfig.read(zeroFile));
+        assertTrue(
+                zeroRejection.getMessage().contains("eventRecorderCap"),
+                "the rejection must cite the field: " + zeroRejection.getMessage());
+
+        JsonObject fractional = configuration(workflow.toString(), 2);
+        fractional.getAsJsonObject("simulation").addProperty("eventRecorderCap", 1.5);
+        Path fractionalFile = json(directory.resolve("cap-fractional.json"), fractional);
+        assertThrows(IllegalArgumentException.class, () -> WorkbenchConfig.read(fractionalFile));
     }
 
     /**

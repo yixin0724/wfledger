@@ -35,6 +35,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M17 | Deprecated-label bypass only throws when legacy aliases are enabled | legacy label gate closure (AUD-F10) |
 | M18 | Finished lifecycle validator still accepts event feeding | lifecycle single-use contract (AUD-F15) |
 | M19 | INVALID label binds the FCFS policy instead of the static no-decision shell | unmapped label explicit binding (AUD-F21) |
+| M20 | Runner ignores the configured event-recorder cap and constructs the default recorder | cap configuration outlet (AUD-F07 follow-up, 2026-11-04) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -42,12 +43,15 @@ One semantic axis, one canary; growth is by deliberate ledger addition (policy b
 The M12–M19 growth (2026-11-03, AUD-F02) registered one canary per semantic axis that this
 audit-fix effort introduced, each verified KILLED red-first at the killers stage; the F-19
 logging channel stays unregistered by argument — log routing is diagnostics visibility,
-not a research-claim decision surface, and `LogPrintErrorTest` guards it directly.
+not a research-claim decision surface, and `LogPrintErrorTest` guards it directly. The M20
+addition (2026-11-04, post-completion review follow-up) registers the runner-wiring axis of
+the AUD-F07 cap configuration outlet: the runner must construct the recorder from the
+configured cap, not silently fall back to the default.
 
 ## Usage
 
 ```bash
-# Full battery (~5–10 min for the 19 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Full battery (~5–10 min for the 20 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

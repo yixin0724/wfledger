@@ -30,6 +30,7 @@ class SimulationConfigCopyTest {
                 .runtimeScale(1.25)
                 .runtimeReferenceMips(2500.0)
                 .cloudSimMinEventIntervalSeconds(0.2)
+                .eventRecorderCap(7)
                 .costModel(CostModel.DATACENTER)
                 .failureModel(FailureModelConfig.disabled())
                 .dataMovementModel(DataMovementModel.fixedEndpointNoContention(50.0, 0.01, 25.0))
@@ -51,6 +52,7 @@ class SimulationConfigCopyTest {
         assertEquals(original.getRuntimeScale(), copy.getRuntimeScale(), 0.0);
         assertEquals(original.getRuntimeReferenceMips(), copy.getRuntimeReferenceMips(), 0.0);
         assertEquals(original.getCloudSimMinEventIntervalSeconds(), copy.getCloudSimMinEventIntervalSeconds(), 0.0);
+        assertEquals(original.getEventRecorderCap(), copy.getEventRecorderCap());
         assertEquals(original.getCostModel(), copy.getCostModel());
         assertEquals(original.getFailureModel(), copy.getFailureModel());
         assertEquals(

@@ -177,7 +177,10 @@ public final class SimulationRunner {
             PlatformProfile platform,
             org.workflowsim.network.FatTreeTopology fatTreeTopology)
             throws Exception {
-        SimulationEventRecorder events = new SimulationEventRecorder();
+        // AUD-F07 follow-up (2026-11-04, post-completion review): the retention cap is run
+        // configuration (SimulationConfig builder / workbench simulation.eventRecorderCap), not
+        // a Java-only constructor argument -- the only enabled-recorder construction site.
+        SimulationEventRecorder events = new SimulationEventRecorder(config.getEventRecorderCap());
         SimulationAssembly assembly = assembleSession(session, config, platform, events, fatTreeTopology);
         WorkflowDatacenter datacenter = assembly.datacenter;
         WorkflowPlanner planner = assembly.planner;

@@ -281,6 +281,11 @@ public final class ManifestConfigRebuilder {
                         requireDouble(config, "runtimeReferenceMips", "configuration.runtimeReferenceMips"))
                 .cloudSimMinEventIntervalSeconds(requireDouble(
                         config, "cloudSimMinEventIntervalSeconds", "configuration.cloudSimMinEventIntervalSeconds"))
+                // AUD-F07 follow-up (2026-11-04): retention-cap round-trip. A missing key =
+                // pre-outlet shape/default cap, consistent with the conditional emission of
+                // ExperimentManifestWriter; when present, the cap is rebuilt from the
+                // recorded value.
+                .eventRecorderCap(rebuildEventRecorderCap(config.get("eventRecorderCap")))
                 .costModel(enumValue(
                         CostModel.class,
                         requireString(config, "costModel", "configuration.costModel"),
@@ -668,6 +673,37 @@ public final class ManifestConfigRebuilder {
         }
         return enumValue(
                 SimulationConfig.FrequencyPolicy.class, element.getAsString(), "configuration.frequencyPolicy");
+    }
+
+    /**
+     * AUD-F07 follow-up (2026-11-04, post-completion review): round-trip rebuild of
+     * {@code configuration.eventRecorderCap}.
+     *
+     * <p>A missing key or a null value maps to the default cap (the only legal value of
+     * pre-outlet frozen evidence; the same rule as the key-absence emission of
+     * ExperimentManifestWriter). Non-numeric, non-exact-integer, and non-positive values are
+     * rejected explicitly -- the same diagnostic-quality rule as
+     * {@code rebuildFrequencyPolicy}, with no downgrade.</p>
+     */
+    private static int rebuildEventRecorderCap(JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return SimulationConfig.DEFAULT_EVENT_RECORDER_CAP;
+        }
+        if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isNumber()) {
+            throw new IllegalArgumentException("configuration.eventRecorderCap must be a JSON number when present");
+        }
+        long value;
+        try {
+            value = element.getAsBigDecimal().longValueExact();
+        } catch (ArithmeticException | NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "configuration.eventRecorderCap must be an exact integer when present", e);
+        }
+        if (value <= 0 || value > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                    "configuration.eventRecorderCap must be a positive int when present: " + value);
+        }
+        return (int) value;
     }
 
     /**
