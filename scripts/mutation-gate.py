@@ -320,10 +320,10 @@ REGISTRY = [
         killers="CommunicationEnhancedPlanTest"),
     dict(
         id="M35",
-        name="Exact single-processor DP degrades to the slack greedy plan",
+        name="Exact single-processor DP drops all non-zero candidate starts",
         file="simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedPlanner.java",
-        old="        return buildPlan(best.starts, decisionOrder);",
-        new="        return plan(Score.SLACK);",
+        old="            for (int start = 0; start <= (int) Math.floor(deadlineSeconds); start++) {",
+        new="            for (int start = 0; start < 1; start++) {",
         killers="CaWoSchedExactOptimizerTest"),
 ]
 

@@ -50,7 +50,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M32 | CaWoSched green-window selection degrades to ASAP | paper algorithm reproduction (R-PAPER-01, 2026-11-05) |
 | M33 | CaWoSched power weighting is removed from slack scores | generic timed-plan variants (R-PAPER-01B, 2026-11-05) |
 | M34 | Communication-enhanced DAG silently drops a missing link | communication model (R-PAPER-01C, 2026-11-05) |
-| M35 | Exact single-processor DP degrades to the slack greedy plan | exact oracle (R-PAPER-01D, 2026-11-05) |
+| M35 | Exact single-processor DP drops all non-zero candidate starts | exact oracle (R-PAPER-01D, 2026-11-05) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
