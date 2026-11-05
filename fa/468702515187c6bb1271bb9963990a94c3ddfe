@@ -1,0 +1,33 @@
+simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedVariant.java
+  s_74c394365f705a::t_4fd8c82b83cf24 1-55
+simulator/src/main/java/org/workflowsim/planning/timed/CarbonExcessEvaluator.java
+  s_74c394365f705a::t_c44dbcde6fa8b9 1-64
+simulator/src/main/java/org/workflowsim/planning/timed/MakespanEvaluator.java
+  s_74c394365f705a::t_c1fed583fbc0af 1-15
+simulator/src/main/java/org/workflowsim/planning/timed/PlanEvaluation.java
+  s_74c394365f705a::t_53cff906a203d6 1-44
+simulator/src/main/java/org/workflowsim/planning/timed/PlanObjectiveEvaluator.java
+  s_74c394365f705a::t_d19974be17befc 1-7
+simulator/src/main/java/org/workflowsim/planning/timed/PostPlanningOptimizer.java
+  s_74c394365f705a::t_79278002de179b 1-7
+simulator/src/main/java/org/workflowsim/planning/timed/TimedActivityType.java
+  s_74c394365f705a::t_4f1a3c96d32658 1-8
+simulator/src/test/java/org/workflowsim/planning/timed/TimedPlanFrameworkTest.java
+  s_74c394365f705a::t_5cd2bf06000709 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fa468702515187c6bb1271bb9963990a94c3ddfe",
+  "prompts": {},
+  "sessions": {
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
