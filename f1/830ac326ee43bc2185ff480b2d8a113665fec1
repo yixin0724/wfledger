@@ -1,0 +1,39 @@
+docs/README.md
+  s_74c394365f705a::t_9c745fe524bef3 63-64
+docs/algorithms/CONTRACTS.md
+  s_24f59fb6b2f10b::t_88eda123ccaf92 125-138
+docs/experiments/PAPER_REPRODUCTIONS.md
+  s_74c394365f705a::t_772d515482db58 1-61
+simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedPlan.java
+  s_74c394365f705a::t_2f35ad713e5e5b 1-115
+simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedPlanner.java
+  s_24f59fb6b2f10b::t_221c77ddc43ca6 1-436
+simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedTask.java
+  s_74c394365f705a::t_8d53015adfb114 1-81
+simulator/src/test/java/org/workflowsim/planning/cawosched/CaWoSchedPlannerTest.java
+  s_24f59fb6b2f10b::t_272b787f6ad24a 1-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f1830ac326ee43bc2185ff480b2d8a113665fec1",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
