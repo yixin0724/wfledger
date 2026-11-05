@@ -1,0 +1,39 @@
+docs/advanced/MUTATION_GATE.md
+  s_24f59fb6b2f10b::t_58349667684b38 54,89,94,100
+docs/experiments/AUDIT_COVERAGE.md
+  s_24f59fb6b2f10b::t_41438556630dea 52,232
+simulator/src/main/java/org/workflowsim/Task.java
+  s_24f59fb6b2f10b::t_4c684caf83c34d 63-65,244-254
+simulator/src/main/java/org/workflowsim/WorkflowDagValidator.java
+  s_24f59fb6b2f10b::t_ef4a5fffa12228 67,71,88-96
+simulator/src/main/java/org/workflowsim/clustering/BasicClustering.java
+  s_74c394365f705a::t_516f22f713578a 187
+simulator/src/main/java/org/workflowsim/scheduling/CwsRankMinRoundRobinSchedulingAlgorithm.java
+  s_24f59fb6b2f10b::t_9090fb581f57d0 1-61
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  s_74c394365f705a::t_c04f1fd6365cc9 99-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b2234c6ae1cfdefbf3809a8dc22080d9f5203621",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
