@@ -311,6 +311,20 @@ REGISTRY = [
         old="                value = weighted && maxActive > 0.0 ? slack * maxActive / task.getActiveWatts() : slack;",
         new="                value = slack;",
         killers="TimedPlanFrameworkTest"),
+    dict(
+        id="M34",
+        name="Communication-enhanced DAG silently drops a missing link",
+        file="simulator/src/main/java/org/workflowsim/planning/timed/CommunicationEnhancedPlan.java",
+        old="                if (link == null) {\n                    throw new IllegalArgumentException(\n                            \"Missing communication link for \" + parentId + \"->\" + activity.getActivityId());\n                }",
+        new="                if (link == null) {\n                    continue;\n                }",
+        killers="CommunicationEnhancedPlanTest"),
+    dict(
+        id="M35",
+        name="Exact single-processor DP degrades to the slack greedy plan",
+        file="simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedPlanner.java",
+        old="        return buildPlan(best.starts, decisionOrder);",
+        new="        return plan(Score.SLACK);",
+        killers="CaWoSchedExactOptimizerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

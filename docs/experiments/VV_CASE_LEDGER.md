@@ -82,7 +82,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `WF-APPS-EXT-001` | `VERIFIED`: all 17 Montage WfInstances pass the same checks under the explicit `extended-corpus` profile after the full local snapshot and index are prepared | Optional-corpus structural verification only; not a clean-checkout requirement or real-platform validation |
 | `REAL-PLATFORM-001` | `NOT_ESTABLISHED`: no complete production-cluster referent with platform, scheduler, clustering, network, WMS, and measurement uncertainty | Real-platform validation is not claimed; a future limited case requires independent approval and a complete referent |
 | `REVIEW-INDEPENDENT-001` | `VERIFIED`: independent AI structured review approved the internal-validity scope after VV-NEW-01 was closed; see the [2026-11-04 review record](<VV_REVIEW_2026-11-04.md>) | No human independent signoff or real-platform validation is claimed; semantic changes reopen the affected cases |
-| `PAPER-CAWOSCHED-001` | `VERIFIED_COMPUTE_ONLY_VARIANTS`: generic TimedPlan API, all 16 CaWoSched variants, hand-derived costs, SHARED HEFT adaptation, M32/M33; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No absolute-time runtime, communication processors, ILP, Workbench, full-corpus, or carbon-optimality claim |
+| `PAPER-CAWOSCHED-001` | `VERIFIED_TIMED_CORE`: generic TimedPlan API, all 16 variants, communication activities, exact single-processor DP, absolute-start dispatch, M32–M35; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full paper corpus, multi-processor ILP, Workbench JSON, or carbon-optimality claim |
 
 ## 5. Change and review discipline
 

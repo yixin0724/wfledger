@@ -93,6 +93,100 @@ public final class CaWoSchedPlanner {
         return schedule(score, weighted, refined, localSearch);
     }
 
+    /** Exact dynamic programming for at most six ordered activities on one resource. */
+    public CaWoSchedPlan planExactSingleProcessor() {
+        if (tasks.size() > 6) {
+            throw new IllegalArgumentException("Exact CaWoSched DP is limited to six activities");
+        }
+        int vmId = tasks.get(0).getVmId();
+        for (CaWoSchedTask task : tasks) {
+            if (task.getVmId() != vmId) {
+                throw new IllegalArgumentException("Exact CaWoSched DP requires one resource");
+            }
+        }
+        List<CaWoSchedTask> ordered = new ArrayList<CaWoSchedTask>(tasks);
+        Collections.sort(ordered, Comparator.comparingInt(CaWoSchedTask::getOrderOnVm));
+        List<Double> candidates = candidateStartTimes();
+        Map<Double, DpState> states = new LinkedHashMap<Double, DpState>();
+        states.put(0.0, new DpState(new LinkedHashMap<Integer, Double>(), 0.0));
+        for (CaWoSchedTask task : ordered) {
+            Map<Double, DpState> next = new LinkedHashMap<Double, DpState>();
+            for (Map.Entry<Double, DpState> stateEntry : states.entrySet()) {
+                DpState state = stateEntry.getValue();
+                double previousFinish = stateEntry.getKey().doubleValue();
+                for (double start : candidates) {
+                    if (start + EPSILON < previousFinish
+                            || start + task.getDurationSeconds() > deadlineSeconds + EPSILON) {
+                        continue;
+                    }
+                    Map<Integer, Double> starts = new LinkedHashMap<Integer, Double>(state.starts);
+                    starts.put(task.getTaskId(), start);
+                    double finish = start + task.getDurationSeconds();
+                    double cost = carbonExcessWattSeconds(taskPlans(starts), finish);
+                    DpState incumbent = next.get(finish);
+                    if (incumbent == null || cost < incumbent.cost - EPSILON) {
+                        next.put(finish, new DpState(starts, cost));
+                    }
+                }
+            }
+            states = next;
+            if (states.isEmpty()) {
+                throw new IllegalArgumentException("Exact CaWoSched DP found no feasible schedule");
+            }
+        }
+        DpState best = null;
+        for (DpState state : states.values()) {
+            if (best == null || state.cost < best.cost - EPSILON) {
+                best = state;
+            }
+        }
+        List<Integer> decisionOrder = new ArrayList<Integer>();
+        for (CaWoSchedTask task : ordered) {
+            decisionOrder.add(task.getTaskId());
+        }
+        return buildPlan(best.starts, decisionOrder);
+    }
+
+    private List<Double> candidateStartTimes() {
+        boolean integral = Math.abs(deadlineSeconds - Math.rint(deadlineSeconds)) <= EPSILON;
+        for (CaWoSchedTask task : tasks) {
+            integral &= Math.abs(task.getDurationSeconds() - Math.rint(task.getDurationSeconds())) <= EPSILON;
+        }
+        for (PlatformProfile.CarbonWindow window : windows) {
+            integral &= Math.abs(window.getStartSeconds() - Math.rint(window.getStartSeconds())) <= EPSILON
+                    && Math.abs(window.getEndSeconds() - Math.rint(window.getEndSeconds())) <= EPSILON;
+        }
+        if (integral) {
+            List<Double> result = new ArrayList<Double>();
+            for (int start = 0; start <= (int) Math.floor(deadlineSeconds); start++) {
+                result.add((double) start);
+            }
+            return result;
+        }
+        List<Double> result = new ArrayList<Double>();
+        for (Interval interval : refinedIntervals()) {
+            result.add(interval.start);
+        }
+        return result;
+    }
+
+    private Map<Integer, CaWoSchedPlan.TaskPlan> taskPlans(Map<Integer, Double> starts) {
+        Map<Integer, CaWoSchedPlan.TaskPlan> plans = new LinkedHashMap<Integer, CaWoSchedPlan.TaskPlan>();
+        for (Map.Entry<Integer, Double> entry : starts.entrySet()) {
+            CaWoSchedTask task = tasksById.get(entry.getKey());
+            plans.put(
+                    task.getTaskId(),
+                    new CaWoSchedPlan.TaskPlan(
+                            task.getTaskId(),
+                            task.getVmId(),
+                            entry.getValue(),
+                            task.getDurationSeconds(),
+                            task.getIdleWatts(),
+                            task.getActiveWatts()));
+        }
+        return plans;
+    }
+
     private CaWoSchedPlan schedule(Score score, boolean weighted, boolean refined, boolean localSearch) {
         Map<Integer, Double> starts = new LinkedHashMap<Integer, Double>();
         Map<Integer, Double> earliest = new LinkedHashMap<Integer, Double>();
@@ -328,6 +422,16 @@ public final class CaWoSchedPlanner {
         }
     }
 
+    private static final class DpState {
+        private final Map<Integer, Double> starts;
+        private final double cost;
+
+        private DpState(Map<Integer, Double> starts, double cost) {
+            this.starts = starts;
+            this.cost = cost;
+        }
+    }
+
     private static final class Interval {
         private final double start;
         private final double end;
@@ -370,7 +474,9 @@ public final class CaWoSchedPlanner {
         for (CaWoSchedTask task : tasks) {
             int id = task.getTaskId();
             if (earliest.get(id).doubleValue() > latest.get(id).doubleValue() + EPSILON) {
-                throw new IllegalArgumentException("CaWoSched deadline is infeasible for task " + id);
+                throw new IllegalArgumentException("CaWoSched deadline is infeasible for task " + id
+                        + " (EST=" + earliest.get(id) + ", LST=" + latest.get(id)
+                        + ", duration=" + task.getDurationSeconds() + ", deadline=" + deadlineSeconds + ")");
             }
         }
     }
@@ -409,6 +515,10 @@ public final class CaWoSchedPlanner {
     }
 
     private double carbonExcessWattSeconds(Map<Integer, CaWoSchedPlan.TaskPlan> plans) {
+        return carbonExcessWattSeconds(plans, deadlineSeconds);
+    }
+
+    private double carbonExcessWattSeconds(Map<Integer, CaWoSchedPlan.TaskPlan> plans, double horizonSeconds) {
         Map<Double, Double> events = new TreeMap<Double, Double>();
         for (PlatformProfile.CarbonWindow window : windows) {
             events.put(window.getStartSeconds(), events.getOrDefault(window.getStartSeconds(), 0.0));
@@ -423,11 +533,14 @@ public final class CaWoSchedPlanner {
         double previous = 0.0;
         for (Map.Entry<Double, Double> event : events.entrySet()) {
             double time = event.getKey().doubleValue();
+            if (time > horizonSeconds + EPSILON) {
+                break;
+            }
             total += excess(previous, time, idleWattsSum + active);
             active += event.getValue().doubleValue();
             previous = time;
         }
-        total += excess(previous, deadlineSeconds, idleWattsSum + active);
+        total += excess(previous, horizonSeconds, idleWattsSum + active);
         return total;
     }
 

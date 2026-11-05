@@ -256,7 +256,12 @@ public final class ClusteringEngine extends SimEntity {
                 processClustering();
                 // Append the unified stage-in job to express the simplified workflow input-preparation stage.
                 processDatastaging();
-                getWorkflowEngine().setStaticSchedulePlan(StaticSchedulePlan.fromJobs(getJobList()));
+                StaticSchedulePlan staticPlan = StaticSchedulePlan.fromJobs(getJobList());
+                if (Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_SLACK
+                        || Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_PRESSURE) {
+                    staticPlan = staticPlan.withStartTimeEnforcement();
+                }
+                getWorkflowEngine().setStaticSchedulePlan(staticPlan);
                 sendNow(this.workflowEngineId, WorkflowSimTags.JOB_SUBMIT, getJobList());
                 break;
             case CloudSimTags.END_OF_SIMULATION:

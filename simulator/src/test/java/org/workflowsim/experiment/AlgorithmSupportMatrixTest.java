@@ -61,6 +61,8 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.SHARED_STORAGE_DLS,
                 PlanningAlgorithm.SHARED_STORAGE_ETF,
                 PlanningAlgorithm.SHARED_STORAGE_PEFT,
+                PlanningAlgorithm.CAWOSCHED_SLACK,
+                PlanningAlgorithm.CAWOSCHED_PRESSURE,
                 PlanningAlgorithm.PSO,
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,

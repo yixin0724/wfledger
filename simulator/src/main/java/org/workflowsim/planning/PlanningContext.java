@@ -35,6 +35,14 @@ public final class PlanningContext {
         return config.getCloudSimMinEventIntervalSeconds();
     }
 
+    public double getDeadlineSeconds() {
+        return config.getDeadline();
+    }
+
+    public PlatformProfile getPlatform() {
+        return platform;
+    }
+
     /**
      * Validates the subset of the execution model actually estimated by the maintained
      * static DAG planner.

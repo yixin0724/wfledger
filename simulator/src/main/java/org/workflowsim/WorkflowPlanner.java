@@ -29,6 +29,7 @@ import org.workflowsim.experiment.SimulationEventRecorder;
 import org.workflowsim.experiment.SimulationEventType;
 import org.workflowsim.failure.FailureParameters;
 import org.workflowsim.planning.BasePlanningAlgorithm;
+import org.workflowsim.planning.CaWoSchedPlanningAlgorithm;
 import org.workflowsim.planning.LocalCpopPlanningAlgorithm;
 import org.workflowsim.planning.LocalHeftPlanningAlgorithm;
 import org.workflowsim.planning.LocalPeftPlanningAlgorithm;
@@ -48,6 +49,7 @@ import org.workflowsim.planning.StaticMinMinPlanningAlgorithm;
 import org.workflowsim.planning.StaticOlbPlanningAlgorithm;
 import org.workflowsim.planning.StaticRoundRobinPlanningAlgorithm;
 import org.workflowsim.planning.StaticSufferagePlanningAlgorithm;
+import org.workflowsim.planning.cawosched.CaWoSchedVariant;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 
@@ -407,6 +409,12 @@ public final class WorkflowPlanner extends SimEntity {
                 break;
             case SHARED_STORAGE_PEFT:
                 planner = new SharedStoragePeftPlanningAlgorithm(planningContext);
+                break;
+            case CAWOSCHED_SLACK:
+                planner = new CaWoSchedPlanningAlgorithm(planningContext, CaWoSchedVariant.SLACK);
+                break;
+            case CAWOSCHED_PRESSURE:
+                planner = new CaWoSchedPlanningAlgorithm(planningContext, CaWoSchedVariant.PRESSURE);
                 break;
             case PSO:
                 planner = new PSOPlanningAlgorithm();

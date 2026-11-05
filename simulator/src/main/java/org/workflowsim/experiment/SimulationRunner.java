@@ -303,8 +303,8 @@ public final class SimulationRunner {
             throw new SimulationConfigurationException("Planning algorithm "
                     + config.getPlanningAlgorithm() + " is legacy mapping-only code and is not "
                     + "supported by SimulationRunner; use SHARED_STORAGE_HEFT, SHARED_STORAGE_CPOP, or "
-                    + "SHARED_STORAGE_DLS, SHARED_STORAGE_ETF, or SHARED_STORAGE_PEFT "
-                    + "under their controlled model");
+                    + "SHARED_STORAGE_DLS, SHARED_STORAGE_ETF, SHARED_STORAGE_PEFT, "
+                    + "CAWOSCHED_SLACK, or CAWOSCHED_PRESSURE under their controlled model");
         }
     }
 

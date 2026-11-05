@@ -140,6 +140,12 @@ The generic `org.workflowsim.planning.timed` API additionally provides `TimedAct
 `CaWoSchedVariant`: W applies the official power weighting, R builds refined block intervals and
 decrements their budgets, and LS accepts only strictly carbon-improving legal moves. The generic
 `CarbonExcessEvaluator` independently integrates the same complete-horizon metric.
+`CommunicationEnhancedPlan` adds explicitly declared link activities and per-edge durations for
+cross-VM dependencies. `planExactSingleProcessor()` performs exact DP for up to six ordered
+activities, validated against independent enumeration. The `CAWOSCHED_SLACK` and
+`CAWOSCHED_PRESSURE` labels use the same SHARED HEFT base and enable absolute planned starts via
+`StaticSchedulePlan.withStartTimeEnforcement()` and the deferral-aware `StaticSchedulingAlgorithm`;
+other planners keep their previous order-only behavior.
 
 ### Independent Tasks and Mapping-Only Objectives
 

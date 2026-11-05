@@ -50,6 +50,7 @@ import org.workflowsim.scheduling.RlPolicySchedulingAlgorithm;
 import org.workflowsim.scheduling.SptFastestIdleSchedulingAlgorithm;
 import org.workflowsim.scheduling.StaticSchedulePlan;
 import org.workflowsim.scheduling.StaticSchedulingAlgorithm;
+import org.workflowsim.scheduling.TimedStaticSchedulingAlgorithm;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationConfig;
@@ -277,7 +278,12 @@ public class WorkflowScheduler extends DatacenterBroker {
                 algorithm = new CarbonWindowDeferSchedulingAlgorithm();
                 break;
             case STATIC:
-                algorithm = new StaticSchedulingAlgorithm();
+                if (Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_SLACK
+                        || Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_PRESSURE) {
+                    algorithm = new TimedStaticSchedulingAlgorithm();
+                } else {
+                    algorithm = new StaticSchedulingAlgorithm();
+                }
                 break;
             case INVALID:
                 // AUD-F21: INVALID is the legacy Parameters default (Parameters.reset()) and

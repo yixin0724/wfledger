@@ -24,6 +24,8 @@ public final class StaticSchedulePlan {
 
     private final Map<Integer, List<Integer>> jobIdsByVm;
     private final Map<Integer, Integer> nextIndexByVm;
+    private final Map<Integer, Double> startTimeByJob = new LinkedHashMap<Integer, Double>();
+    private boolean startTimeEnforced;
 
     private StaticSchedulePlan(Map<Integer, List<Integer>> source) {
         Map<Integer, List<Integer>> frozen = new LinkedHashMap<Integer, List<Integer>>();
@@ -94,7 +96,29 @@ public final class StaticSchedulePlan {
             }
             ordered.put(entry.getKey(), ids);
         }
-        return new StaticSchedulePlan(ordered);
+        StaticSchedulePlan plan = new StaticSchedulePlan(ordered);
+        for (Job job : jobs) {
+            if (job.getClassType() == ClassType.COMPUTE.value && !Double.isNaN(job.getStaticScheduleStartTime())) {
+                plan.startTimeByJob.put(job.getCloudletId(), job.getStaticScheduleStartTime());
+            }
+        }
+        return plan;
+    }
+
+    /** Enables absolute planned-start enforcement only for explicitly timed planners. */
+    public StaticSchedulePlan withStartTimeEnforcement() {
+        StaticSchedulePlan plan = new StaticSchedulePlan(jobIdsByVm);
+        plan.startTimeByJob.putAll(startTimeByJob);
+        plan.startTimeEnforced = true;
+        return plan;
+    }
+
+    public boolean isStartTimeEnforced() {
+        return startTimeEnforced;
+    }
+
+    public double getStartTimeSeconds(Job job) {
+        return startTimeByJob.getOrDefault(job.getCloudletId(), Double.NaN);
     }
 
     public boolean isEnforcingOrder() {

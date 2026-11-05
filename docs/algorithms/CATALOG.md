@@ -94,6 +94,8 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `LOCAL_HEFT` | LOCAL DAG | upward rank including average communication, insertion-based EFT |
 | `LOCAL_CPOP` | LOCAL DAG | predecessor-direction downward rank together with upward rank; the critical path is pinned, other tasks are inserted |
 | `LOCAL_PEFT` | LOCAL DAG | successor-cost OCT, zero at exits, ready-list selection, and insertion-based `EFT + OCT` |
+| `CAWOSCHED_SLACK` | SHARED DAG | SHARED HEFT mapping/order followed by slack-scored absolute-start CaWoSched planning |
+| `CAWOSCHED_PRESSURE` | SHARED DAG | SHARED HEFT mapping/order followed by pressure-scored absolute-start CaWoSched planning |
 
 ## Combination rules
 
@@ -107,6 +109,7 @@ mean multiple Jobs can be dispatched simultaneously.
 | Independent-task mapping | STATIC independent-task planner / STATIC | inputs must have no edges; a V1 model satisfying its own prerequisites | usable |
 | DAG mapping only | RANDOM or PSO / STATIC | a V1 model with satisfied prerequisites; see the coherent rows for coherent combinations | usable, but RANDOM does not optimize on it |
 | SHARED DAG | SHARED_STORAGE family / STATIC | SHARED + `legacyWorkflowsimV1()`; no failure, no overhead | rejected |
+| CaWoSched timed DAG | CAWOSCHED_SLACK / CAWOSCHED_PRESSURE / STATIC | SHARED + `legacyWorkflowsimV1()` + complete `carbonWindows`; no failure, no overhead | rejected |
 | LOCAL DAG | LOCAL family / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead | usable |
 | coherent pre-mapping | RANDOM / STATIC | V2 requires LOCAL; V3 allows LOCAL/SHARED; no overhead, optional Fat-tree, V3 must declare SOURCE storage | usable |
 | coherent online assignment | INVALID / STATIC with assignment explicitly enabled | same physical prerequisites as the row above; bind at control-ready, then prepare inputs | usable |
@@ -138,9 +141,10 @@ The standard-runner labels above are not the only literature code in the reposit
 `org.workflowsim.planning.timed` API represents timed activities, independent objectives, and
 post-planning optimizers. `org.workflowsim.planning.cawosched` implements all 16 compute-only
 CaWoSched variants over an existing SHARED HEFT fixed mapping/order, with independent carbon-cost
-integration. These are Java post-planning APIs, not Workbench labels or absolute-time dispatchers.
-See [paper algorithm reproductions](<../experiments/PAPER_REPRODUCTIONS.md>) for the official
-artifact, verified example, and current adaptation boundaries.
+integration. `CommunicationEnhancedPlan` adds declared link activities, and the two CAWOSCHED labels
+provide absolute-start dispatch through the deferral-aware scheduler. `planExactSingleProcessor`
+provides a small-instance exact DP. See [paper algorithm reproductions](<../experiments/PAPER_REPRODUCTIONS.md>)
+for the official artifact, verified example, and current adaptation boundaries.
 
 ## Registered external algorithms (extension surface, 2026-10-26)
 

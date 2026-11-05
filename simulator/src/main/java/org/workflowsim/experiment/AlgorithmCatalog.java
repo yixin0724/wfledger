@@ -101,6 +101,8 @@ public final class AlgorithmCatalog {
             case SHARED_STORAGE_DLS:
             case SHARED_STORAGE_ETF:
             case SHARED_STORAGE_PEFT:
+            case CAWOSCHED_SLACK:
+            case CAWOSCHED_PRESSURE:
             case PSO:
             case LOCAL_HEFT:
             case LOCAL_CPOP:
@@ -394,6 +396,12 @@ public final class AlgorithmCatalog {
             case SHARED_STORAGE_PEFT:
                 sharedStoragePeftPlanner(values);
                 break;
+            case CAWOSCHED_SLACK:
+                caWoSchedPlanner(values, "SLACK");
+                break;
+            case CAWOSCHED_PRESSURE:
+                caWoSchedPlanner(values, "PRESSURE");
+                break;
             case PSO:
                 psoPlanner(values);
                 break;
@@ -411,6 +419,17 @@ public final class AlgorithmCatalog {
                 break;
         }
         return values;
+    }
+
+    private static void caWoSchedPlanner(Map<String, Object> values, String score) {
+        values.put("decisionLayer", "STATIC_DAG_TIMED_POST_PLANNING");
+        values.put("inputDomain", "SHARED_DAG_WITH_COMPLETE_CARBON_WINDOWS");
+        values.put("decisionRule", "SHARED HEFT mapping/order followed by CaWoSched " + score + " timed starts");
+        values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
+        values.put("verification", "TIMED_PLAN_AND_DEFERRAL_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations("Compute-only SHARED adaptation; no communication-enhanced runtime or ILP claim"));
     }
 
     /**

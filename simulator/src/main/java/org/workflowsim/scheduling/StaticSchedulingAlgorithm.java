@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.Log;
+import org.cloudbus.cloudsim.core.CloudSim;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Job;
 import org.workflowsim.WorkflowSimTags;
@@ -43,8 +44,12 @@ import org.workflowsim.utils.Parameters.ClassType;
  */
 public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
+    private static final double TIME_EPSILON = 1.0e-9;
+
     private StaticSchedulePlan staticSchedulePlan = StaticSchedulePlan.empty();
     private boolean strictDataflowBindings;
+    private double nextWakeSeconds = Double.POSITIVE_INFINITY;
+    private int deferredJobCount;
     /** Enable fail-fast bound-compute validation for the explicit online-assignment contract. */
     public void requireDataflowBindings() {
         strictDataflowBindings = true;
@@ -63,6 +68,8 @@ public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     @Override
     public void run() throws Exception {
+        nextWakeSeconds = Double.POSITIVE_INFINITY;
+        deferredJobCount = 0;
 
         Map<Integer, CondorVM> mId2Vm = new HashMap<>();
 
@@ -170,6 +177,18 @@ public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             }
             Job expected = findReadyJob(expectedJobId.intValue());
             if (expected != null) {
+                if (staticSchedulePlan.isStartTimeEnforced()) {
+                    double plannedStart = staticSchedulePlan.getStartTimeSeconds(expected);
+                    if (!Double.isFinite(plannedStart)) {
+                        throw new IllegalStateException(
+                                "Timed static plan misses a start time for job " + expectedJobId);
+                    }
+                    if (CloudSim.clock() + TIME_EPSILON < plannedStart) {
+                        nextWakeSeconds = Math.min(nextWakeSeconds, plannedStart);
+                        deferredJobCount++;
+                        continue;
+                    }
+                }
                 scheduleIfIdle(expected, mId2Vm);
                 staticSchedulePlan.markDispatched(expected);
             }
@@ -184,6 +203,14 @@ public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             }
         }
         return null;
+    }
+
+    public double getNextWakeSeconds() {
+        return nextWakeSeconds;
+    }
+
+    public int getDeferredJobCount() {
+        return deferredJobCount;
     }
 
     private void scheduleIfIdle(Cloudlet cloudlet, Map<Integer, CondorVM> vms) {

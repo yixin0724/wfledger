@@ -123,6 +123,10 @@ public class Parameters {
         SHARED_STORAGE_DLS,
         SHARED_STORAGE_ETF,
         SHARED_STORAGE_PEFT,
+        /** CaWoSched fixed-plan time shifting with slack scoring and explicit timed dispatch. */
+        CAWOSCHED_SLACK,
+        /** CaWoSched fixed-plan time shifting with pressure scoring and explicit timed dispatch. */
+        CAWOSCHED_PRESSURE,
         /**
          * PSO (particle swarm optimization) mapping planner -- a paper reproduction (Pandey
          * et al., AINA 2010; reference open-source implementation meysamhit/workflowsim-pso).
