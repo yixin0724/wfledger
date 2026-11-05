@@ -10,6 +10,9 @@ import java.util.Map;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 import org.workflowsim.planning.SharedStorageDagPlanTrace;
+import org.workflowsim.planning.timed.TimedActivity;
+import org.workflowsim.planning.timed.TimedActivityType;
+import org.workflowsim.planning.timed.TimedPlan;
 import org.workflowsim.platform.PlatformProfile;
 
 /** Converts an existing SHARED plan into the compute-only fixed-mapping CaWoSched input. */
@@ -71,6 +74,61 @@ public final class CaWoSchedAdapter {
                     parents));
         }
         return new CaWoSchedPlanner(converted, windows, deadlineSeconds, declaredIdle);
+    }
+
+    /** Converts the SHARED HEFT trace directly into the generic TimedPlan representation. */
+    public static TimedPlan toTimedPlan(
+            List<Task> tasks,
+            List<CondorVM> vms,
+            PlatformProfile platform,
+            SharedStorageDagPlanTrace trace,
+            List<PlatformProfile.CarbonWindow> windows,
+            double deadlineSeconds) {
+        if (tasks == null || vms == null || platform == null || trace == null) {
+            throw new IllegalArgumentException("SHARED plan, VMs, platform, and trace are required");
+        }
+        Map<Integer, CondorVM> vmById = new LinkedHashMap<Integer, CondorVM>();
+        for (CondorVM vm : vms) {
+            vmById.put(vm.getId(), vm);
+        }
+        Map<Integer, PlatformProfile.VmSpec> specs = new LinkedHashMap<Integer, PlatformProfile.VmSpec>();
+        Map<Integer, Double> declaredIdle = new LinkedHashMap<Integer, Double>();
+        for (PlatformProfile.VmSpec spec : platform.getVms()) {
+            specs.put(spec.getId(), spec);
+            declaredIdle.put(spec.getId(), spec.getIdlePowerWatts());
+        }
+        Map<Integer, Integer> orderByTask = perVmOrder(trace);
+        List<Task> sorted = new ArrayList<Task>(tasks);
+        Collections.sort(sorted, Comparator.comparingInt(Task::getCloudletId));
+        List<TimedActivity> activities = new ArrayList<TimedActivity>();
+        for (Task task : sorted) {
+            SharedStorageDagPlanTrace.TaskPlan plan = trace.getTaskPlan(task.getCloudletId());
+            if (plan == null) {
+                throw new IllegalArgumentException("SHARED trace misses task " + task.getCloudletId());
+            }
+            CondorVM vm = vmById.get(plan.getVmId());
+            PlatformProfile.VmSpec spec = specs.get(plan.getVmId());
+            if (vm == null || spec == null) {
+                throw new IllegalArgumentException("SHARED trace references undeclared VM " + plan.getVmId());
+            }
+            List<Integer> parents = new ArrayList<Integer>();
+            for (Task parent : task.getParentList()) {
+                parents.add(parent.getCloudletId());
+            }
+            Collections.sort(parents);
+            activities.add(new TimedActivity(
+                    task.getCloudletId(),
+                    task.getCloudletId(),
+                    TimedActivityType.COMPUTE,
+                    plan.getVmId(),
+                    orderByTask.get(task.getCloudletId()),
+                    task.getCloudletLength() / vm.getMips(),
+                    plan.getPlannedStartSeconds(),
+                    spec.getIdlePowerWatts(),
+                    spec.getMaxPowerWatts(),
+                    parents));
+        }
+        return new TimedPlan(activities, windows, deadlineSeconds, declaredIdle);
     }
 
     private static Map<Integer, Integer> perVmOrder(SharedStorageDagPlanTrace trace) {

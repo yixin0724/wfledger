@@ -134,10 +134,11 @@ failure or extra-overhead configuration.
 
 ## Literature post-planning components
 
-The standard-runner labels above are not the only literature code in the repository. The
-`org.workflowsim.planning.cawosched` package implements a compute-only CaWoSched core over an
-existing SHARED HEFT fixed mapping/order (ASAP, slack, pressure, and independent carbon-cost
-integration). It is a Java post-planning API, not a Workbench label or an absolute-time dispatcher.
+The standard-runner labels above are not the only literature code in the repository. The generic
+`org.workflowsim.planning.timed` API represents timed activities, independent objectives, and
+post-planning optimizers. `org.workflowsim.planning.cawosched` implements all 16 compute-only
+CaWoSched variants over an existing SHARED HEFT fixed mapping/order, with independent carbon-cost
+integration. These are Java post-planning APIs, not Workbench labels or absolute-time dispatchers.
 See [paper algorithm reproductions](<../experiments/PAPER_REPRODUCTIONS.md>) for the official
 artifact, verified example, and current adaptation boundaries.
 

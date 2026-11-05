@@ -74,7 +74,7 @@ public final class CaWoSchedPlanner {
 
     /** Returns the same fixed mapping/order with every task placed at its earliest start. */
     public CaWoSchedPlan planAsap() {
-        return schedule(null);
+        return schedule(null, false, false, false);
     }
 
     /** Returns the slack- or pressure-scored greedy schedule. */
@@ -82,29 +82,50 @@ public final class CaWoSchedPlanner {
         if (score == null) {
             throw new IllegalArgumentException("CaWoSched score is required");
         }
-        return schedule(score);
+        return schedule(score, false, false, false);
     }
 
-    private CaWoSchedPlan schedule(Score score) {
+    /** Returns a power-weighted, refined, and optionally locally improved schedule. */
+    public CaWoSchedPlan plan(Score score, boolean weighted, boolean refined, boolean localSearch) {
+        if (score == null) {
+            throw new IllegalArgumentException("CaWoSched score is required");
+        }
+        return schedule(score, weighted, refined, localSearch);
+    }
+
+    private CaWoSchedPlan schedule(Score score, boolean weighted, boolean refined, boolean localSearch) {
         Map<Integer, Double> starts = new LinkedHashMap<Integer, Double>();
         Map<Integer, Double> earliest = new LinkedHashMap<Integer, Double>();
         Map<Integer, Double> latest = new LinkedHashMap<Integer, Double>();
         recomputeBounds(starts, earliest, latest);
         requireFeasibleBounds(earliest, latest);
 
-        List<Integer> decisionOrder = decisionOrder(score, earliest, latest);
+        List<Integer> decisionOrder = decisionOrder(score, weighted, earliest, latest);
+        List<Interval> intervals = refined ? refinedIntervals() : baseIntervals();
         if (score == null) {
             starts.putAll(earliest);
         } else {
             for (Integer taskId : decisionOrder) {
-                double selected = selectStart(taskId, earliest.get(taskId), latest.get(taskId));
+                double selected = refined
+                        ? selectStartFromIntervals(earliest.get(taskId), latest.get(taskId), intervals)
+                        : selectStart(taskId, earliest.get(taskId), latest.get(taskId));
                 starts.put(taskId, Double.valueOf(selected));
                 earliest.put(taskId, Double.valueOf(selected));
                 latest.put(taskId, Double.valueOf(selected));
+                if (refined) {
+                    consumePower(taskId, selected, intervals);
+                }
                 recomputeBounds(starts, earliest, latest);
             }
         }
+        if (localSearch) {
+            improveLocalSearch(starts, intervals);
+        }
         validateSchedule(starts);
+        return buildPlan(starts, decisionOrder);
+    }
+
+    private CaWoSchedPlan buildPlan(Map<Integer, Double> starts, List<Integer> decisionOrder) {
         Map<Integer, CaWoSchedPlan.TaskPlan> plans = new LinkedHashMap<Integer, CaWoSchedPlan.TaskPlan>();
         double makespan = 0.0;
         for (CaWoSchedTask task : tasks) {
@@ -123,18 +144,28 @@ public final class CaWoSchedPlanner {
         return new CaWoSchedPlan(plans, decisionOrder, deadlineSeconds, makespan, carbonExcessWattSeconds(plans));
     }
 
-    private List<Integer> decisionOrder(Score score, Map<Integer, Double> earliest, Map<Integer, Double> latest) {
+    private List<Integer> decisionOrder(
+            Score score, boolean weighted, Map<Integer, Double> earliest, Map<Integer, Double> latest) {
         if (score == null) {
             return topologicalOrder;
         }
         List<Integer> result = new ArrayList<Integer>();
         final Map<Integer, Double> values = new LinkedHashMap<Integer, Double>();
+        double maxActive = 0.0;
+        for (CaWoSchedTask task : tasks) {
+            maxActive = Math.max(maxActive, task.getActiveWatts());
+        }
         for (CaWoSchedTask task : tasks) {
             int id = task.getTaskId();
             double slack = latest.get(id).doubleValue() - earliest.get(id).doubleValue();
-            double value = score == Score.SLACK
-                    ? slack
-                    : task.getDurationSeconds() / (latest.get(id) + task.getDurationSeconds() - earliest.get(id));
+            double pressure =
+                    task.getDurationSeconds() / (latest.get(id) + task.getDurationSeconds() - earliest.get(id));
+            double value;
+            if (score == Score.SLACK) {
+                value = weighted && maxActive > 0.0 ? slack * maxActive / task.getActiveWatts() : slack;
+            } else {
+                value = weighted && maxActive > 0.0 ? pressure * task.getActiveWatts() / maxActive : pressure;
+            }
             values.put(id, Double.valueOf(value));
         }
         for (CaWoSchedTask task : tasks) {
@@ -169,6 +200,144 @@ public final class CaWoSchedPlanner {
             }
         }
         return selected;
+    }
+
+    private List<Interval> baseIntervals() {
+        List<Interval> result = new ArrayList<Interval>();
+        for (PlatformProfile.CarbonWindow window : windows) {
+            result.add(new Interval(window.getStartSeconds(), window.getEndSeconds(), window.getGreenWatts()));
+        }
+        return result;
+    }
+
+    private List<Interval> refinedIntervals() {
+        Set<Double> candidateTimes = new java.util.TreeSet<Double>();
+        Map<Integer, List<CaWoSchedTask>> byVm = new LinkedHashMap<Integer, List<CaWoSchedTask>>();
+        for (CaWoSchedTask task : tasks) {
+            byVm.computeIfAbsent(task.getVmId(), key -> new ArrayList<CaWoSchedTask>())
+                    .add(task);
+        }
+        for (List<CaWoSchedTask> vmTasks : byVm.values()) {
+            Collections.sort(vmTasks, Comparator.comparingInt(CaWoSchedTask::getOrderOnVm));
+            for (int begin = 0; begin < vmTasks.size(); begin++) {
+                for (int end = begin; end < vmTasks.size() && end < begin + 3; end++) {
+                    List<CaWoSchedTask> block = vmTasks.subList(begin, end + 1);
+                    double duration = 0.0;
+                    for (CaWoSchedTask task : block) {
+                        duration += task.getDurationSeconds();
+                    }
+                    for (PlatformProfile.CarbonWindow window : windows) {
+                        addBlockStarts(candidateTimes, block, window.getStartSeconds(), duration);
+                        addBlockStarts(candidateTimes, block, window.getEndSeconds(), duration);
+                    }
+                }
+            }
+        }
+        for (PlatformProfile.CarbonWindow window : windows) {
+            candidateTimes.add(window.getStartSeconds());
+            candidateTimes.add(window.getEndSeconds());
+        }
+        List<Double> ordered = new ArrayList<Double>(candidateTimes);
+        List<Interval> result = new ArrayList<Interval>();
+        for (int index = 0; index + 1 < ordered.size(); index++) {
+            double start = ordered.get(index);
+            result.add(new Interval(start, ordered.get(index + 1), greenWattsAt(start + EPSILON)));
+        }
+        return result;
+    }
+
+    private void addBlockStarts(Set<Double> candidates, List<CaWoSchedTask> block, double point, double duration) {
+        if (point + duration <= deadlineSeconds + EPSILON) {
+            double cursor = point;
+            for (CaWoSchedTask task : block) {
+                candidates.add(cursor);
+                cursor += task.getDurationSeconds();
+            }
+        }
+        if (point - duration >= -EPSILON) {
+            double cursor = point;
+            for (int index = block.size() - 1; index >= 0; index--) {
+                cursor -= block.get(index).getDurationSeconds();
+                candidates.add(cursor);
+            }
+        }
+    }
+
+    private double selectStartFromIntervals(double earliest, double latest, List<Interval> intervals) {
+        double selected = earliest;
+        double bestGreen = Double.NEGATIVE_INFINITY;
+        for (Interval interval : intervals) {
+            double start = interval.start;
+            if (start + EPSILON < earliest || start > latest + EPSILON) {
+                continue;
+            }
+            if (interval.budgetWatts > bestGreen + EPSILON
+                    || (Math.abs(interval.budgetWatts - bestGreen) <= EPSILON && start < selected)) {
+                selected = start;
+                bestGreen = interval.budgetWatts;
+            }
+        }
+        return selected;
+    }
+
+    private void consumePower(int taskId, double start, List<Interval> intervals) {
+        CaWoSchedTask task = tasksById.get(taskId);
+        for (Interval interval : intervals) {
+            if (start + EPSILON >= interval.start && start < interval.end + EPSILON) {
+                interval.budgetWatts -= task.getActiveWatts();
+            }
+        }
+    }
+
+    private void improveLocalSearch(Map<Integer, Double> starts, List<Interval> intervals) {
+        List<Integer> decisionOrder = new ArrayList<Integer>(tasksById.keySet());
+        for (int pass = 0; pass < 10; pass++) {
+            boolean improved = false;
+            for (CaWoSchedTask task : tasks) {
+                int taskId = task.getTaskId();
+                double currentCost = buildPlan(starts, decisionOrder).getCarbonExcessWattSeconds();
+                double bestCost = currentCost;
+                double bestStart = starts.get(taskId);
+                for (Interval interval : intervals) {
+                    double candidate = interval.start;
+                    if (candidate + EPSILON < 0.0) {
+                        continue;
+                    }
+                    Map<Integer, Double> trial = new LinkedHashMap<Integer, Double>(starts);
+                    trial.put(taskId, candidate);
+                    try {
+                        validateSchedule(trial);
+                    } catch (IllegalArgumentException invalid) {
+                        continue;
+                    }
+                    double candidateCost = buildPlan(trial, decisionOrder).getCarbonExcessWattSeconds();
+                    if (candidateCost < bestCost - EPSILON
+                            || (Math.abs(candidateCost - bestCost) <= EPSILON && candidate < bestStart)) {
+                        bestCost = candidateCost;
+                        bestStart = candidate;
+                    }
+                }
+                if (bestCost < currentCost - EPSILON) {
+                    starts.put(taskId, bestStart);
+                    improved = true;
+                }
+            }
+            if (!improved) {
+                break;
+            }
+        }
+    }
+
+    private static final class Interval {
+        private final double start;
+        private final double end;
+        private double budgetWatts;
+
+        private Interval(double start, double end, double budgetWatts) {
+            this.start = start;
+            this.end = end;
+            this.budgetWatts = budgetWatts;
+        }
     }
 
     private void recomputeBounds(

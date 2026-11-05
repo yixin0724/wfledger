@@ -301,9 +301,16 @@ REGISTRY = [
         id="M32",
         name="CaWoSched green-window selection degrades to ASAP",
         file="simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedPlanner.java",
-        old="        double selected = earliest;\n        double bestGreen = Double.NEGATIVE_INFINITY;",
-        new="        double selected = earliest;\n        double bestGreen = Double.POSITIVE_INFINITY;",
+        old="    private double selectStart(int taskId, double earliest, double latest) {\n        double selected = earliest;\n        double bestGreen = Double.NEGATIVE_INFINITY;",
+        new="    private double selectStart(int taskId, double earliest, double latest) {\n        double selected = earliest;\n        double bestGreen = Double.POSITIVE_INFINITY;",
         killers="CaWoSchedPlannerTest"),
+    dict(
+        id="M33",
+        name="CaWoSched power weighting is removed from slack scores",
+        file="simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedPlanner.java",
+        old="                value = weighted && maxActive > 0.0 ? slack * maxActive / task.getActiveWatts() : slack;",
+        new="                value = slack;",
+        killers="TimedPlanFrameworkTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

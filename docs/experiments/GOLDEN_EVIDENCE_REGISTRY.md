@@ -33,7 +33,7 @@ and a linked contract revision, not a silent update to match production output.
 | Legacy WorkflowSim SHARED semantics | `REFERENCE_IMPLEMENTATION` | `ControlledSharedStorageIndependentReferenceTest`, including the 150 MB/15 MB/s case and M26 |
 | Montage and classic input structures | `CONTRACT` | `MontageWfInstancesStructuralTest`, `ClassicDaxStructuralTest`, and `WfCommonsRuntimeReferenceTest` |
 | Exact tied-rank Wilcoxon | `INVARIANT` | `PairedWilcoxonExternalReferenceTest`; actual-rank subset-sum, with SciPy when available and stdlib fallback, plus M28 |
-| CaWoSched fixed-plan time shifting | `PAPER` / `CONTRACT` | `CaWoSchedPlannerTest` and `CaWoSchedAdapterTest`; ICPP 2025 EST/LST scores, ASAP/slack/pressure, hand-integrated carbon excess, and M32 |
+| CaWoSched fixed-plan time shifting | `PAPER` / `CONTRACT` | `CaWoSchedPlannerTest`, `CaWoSchedAdapterTest`, and `TimedPlanFrameworkTest`; all 16 compute-only variants, generic TimedPlan evaluation, hand-integrated carbon excess, and M32/M33 |
 | Tick and profile semantics | `CONTRACT` / `INVARIANT` | `SimulationTickSensitivityTest` and `DataflowStateProfileSmokeTest`; no numerical-convergence or timing-threshold claim |
 | Large-scale and campaign makespans | `GOLDEN_REGRESSION` | `LargeWorkflowScaleRegressionTest` and `FatTreeCampaignGoldenIntegrationTest`; drift detection only, not paper or real-platform proof |
 | Frozen standard/power/carbon/DVFS bundles | `GOLDEN_REGRESSION` | Freshly restored tar archives independently audited by `verify-study-evidence.py`; historical protocol identity, not current regeneration or real validation |

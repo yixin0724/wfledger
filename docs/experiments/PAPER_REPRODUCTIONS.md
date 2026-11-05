@@ -12,9 +12,9 @@ numbers, hardware, or real-platform behavior reproduced."
 | Primary source | [DOI](https://doi.org/10.1145/3754598.3754673), [arXiv:2507.08725v2](https://arxiv.org/html/2507.08725v2) |
 | Official artifact | [KIT-EAE/CaWoSched](https://github.com/KIT-EAE/CaWoSched), commit [`dfc8e49c692bb6178bb88514a9f9e8fb8b1bdf7b`](https://github.com/KIT-EAE/CaWoSched/commit/dfc8e49c692bb6178bb88514a9f9e8fb8b1bdf7b) |
 | License | [MIT](https://github.com/KIT-EAE/CaWoSched/blob/dfc8e49c692bb6178bb88514a9f9e8fb8b1bdf7b/LICENSE) |
-| Platform classes | `org.workflowsim.planning.cawosched.CaWoSchedPlanner`, `CaWoSchedTask`, `CaWoSchedPlan`, and `CaWoSchedAdapter` |
-| Verification | `CaWoSchedPlannerTest` and `CaWoSchedAdapterTest`; registered mutation canary M32 |
-| Status | `VERIFIED_CORE` for the compute-only ASAP/slack/pressure semantics and SHARED HEFT fixed-plan adaptation |
+| Platform classes | `org.workflowsim.planning.cawosched.CaWoSchedPlanner`, `CaWoSchedVariant`, `CaWoSchedOptimizer`, `CaWoSchedAdapter`, plus the generic `org.workflowsim.planning.timed` API |
+| Verification | `CaWoSchedPlannerTest`, `CaWoSchedAdapterTest`, `TimedPlanFrameworkTest`, `CaWoSchedTimedPlanIntegrationTest`; registered mutation canaries M32/M33 |
+| Status | `VERIFIED_COMPUTE_ONLY_VARIANTS` for all 16 score/weight/refinement/local-search combinations and the generic TimedPlan API |
 
 ### Implemented semantics
 
@@ -32,6 +32,10 @@ numbers, hardware, or real-platform behavior reproduced."
   `Σ max(0, P_idle + P_dynamic(t) - G(t)) dt` over the complete `[0,deadline)` horizon.
 - `CaWoSchedAdapter` converts a real SHARED HEFT trace into the compute-only input while preserving
   mapping, per-VM order, dependencies, raw compute duration, and declared VM power.
+- The generic `TimedPlan`, `PlanObjectiveEvaluator`, and `PostPlanningOptimizer` APIs decouple plan
+  representation, independent metrics, and optimization. `CaWoSchedVariant` exposes all 16
+  score/weight/refinement/local-search combinations through this API. R creates block-based refined
+  intervals and consumes their green budgets; LS accepts only strictly carbon-improving legal moves.
 
 ### Verified example
 
@@ -49,13 +53,15 @@ and mapping-compatible after conversion.
 
 - This is a post-planning component. The ordinary STATIC dispatcher still enforces mapping and
   order, not absolute start times; no new timed-dispatch event contract is claimed here.
-- Communication processors, per-edge communication energy, the `W` power weighting, `R` interval
-  refinement, local search, ILP, and the other CaWoSched variants are not yet implemented.
+- Communication processors, per-edge communication energy, and the ILP are not yet implemented.
+  All 16 compute-only score/weight/refinement/local-search combinations are implemented, but this
+  does not establish the paper's communication-enhanced model or optimal multi-processor result.
 - The current adapter is SHARED compute-only. It does not claim equivalence to the paper's
   full-duplex communication-enhanced DAG or LOCAL transfer semantics.
 - Workbench JSON and manifest protocol fields for timed CaWoSched runs are not introduced by this
   batch. No `CARBON_WINDOW_DEFER` result is relabeled as CaWoSched.
-- Real-platform carbon calibration, general carbon optimality, and all 16 variants are not claimed.
+- Real-platform carbon calibration, general carbon optimality, full paper-corpus reproduction, and
+  absolute-time runtime execution are not claimed.
 
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

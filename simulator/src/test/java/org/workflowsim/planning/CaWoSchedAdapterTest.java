@@ -12,6 +12,10 @@ import org.workflowsim.Task;
 import org.workflowsim.planning.cawosched.CaWoSchedAdapter;
 import org.workflowsim.planning.cawosched.CaWoSchedPlan;
 import org.workflowsim.planning.cawosched.CaWoSchedPlanner;
+import org.workflowsim.planning.cawosched.CaWoSchedVariant;
+import org.workflowsim.planning.timed.CarbonExcessEvaluator;
+import org.workflowsim.planning.timed.PlanEvaluation;
+import org.workflowsim.planning.timed.TimedPlan;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 
@@ -57,5 +61,36 @@ class CaWoSchedAdapterTest {
         assertTrue(plan.getMakespanSeconds() <= 20.0);
         assertTrue(plan.getCarbonExcessWattSeconds() >= 0.0);
         assertTrue(asap.getCarbonExcessWattSeconds() >= 0.0);
+    }
+
+    @Test
+    void genericOptimizerConsumesTheSharedHeftTimedPlan() {
+        Task first = new Task(1, 4L);
+        Task second = new Task(2, 2L);
+        PlanningRegressionFixtures.connect(first, second);
+        List<Task> tasks = Arrays.asList(first, second);
+        List<CondorVM> vms = PlanningRegressionFixtures.vms(2.0, 1, 1.0, 1);
+        PlatformProfile platform = PlanningRegressionFixtures.platform(vms);
+        PlanningContext context = new PlanningContext(
+                PlanningRegressionFixtures.config(
+                        "cawosched-timed-adapter.dax", Parameters.PlanningAlgorithm.SHARED_STORAGE_HEFT, null, false),
+                platform);
+        SharedStorageHeftPlanningAlgorithm heft = new SharedStorageHeftPlanningAlgorithm(context);
+        heft.setTaskList(tasks);
+        heft.setVmList(vms);
+        heft.run();
+        List<PlatformProfile.CarbonWindow> windows = Arrays.asList(
+                new PlatformProfile.CarbonWindow(0.0, 5.0, 0.0),
+                new PlatformProfile.CarbonWindow(5.0, 10.0, 100.0),
+                new PlatformProfile.CarbonWindow(10.0, 20.0, 0.0));
+        TimedPlan initial = CaWoSchedAdapter.toTimedPlan(tasks, vms, platform, heft.getLastPlanTrace(), windows, 20.0);
+
+        TimedPlan optimized = CaWoSchedVariant.SLACK_WR_LS.optimizer().optimize(initial);
+        PlanEvaluation evaluation = new CarbonExcessEvaluator().evaluate(optimized);
+
+        assertTrue(evaluation.getCarbonExcessWattSeconds() >= 0.0);
+        assertTrue(optimized.getMakespanSeconds() <= 20.0);
+        assertTrue(optimized.getActivity(1).getFinishSeconds()
+                <= optimized.getActivity(2).getStartSeconds());
     }
 }

@@ -134,7 +134,12 @@ per-VM order, computes initial EST/LST and slack/pressure scores, chooses the hi
 interval start in the current feasible range, and otherwise uses EST. The complete horizon is
 covered by contiguous windows, and carbon excess is independently integrated as
 `Σ max(0, P_idle + P_dynamic(t) - G(t)) dt`. See [paper reproductions](<../experiments/PAPER_REPRODUCTIONS.md>)
-for the verified example and excluded communication, W/R/LS/ILP, Workbench, and timed-dispatch scope.
+for the verified example and excluded communication, ILP, Workbench, and timed-dispatch scope.
+The generic `org.workflowsim.planning.timed` API additionally provides `TimedActivity`/`TimedPlan`,
+`PlanObjectiveEvaluator`, and `PostPlanningOptimizer`. All 16 compute-only variants are exposed by
+`CaWoSchedVariant`: W applies the official power weighting, R builds refined block intervals and
+decrements their budgets, and LS accepts only strictly carbon-improving legal moves. The generic
+`CarbonExcessEvaluator` independently integrates the same complete-horizon metric.
 
 ### Independent Tasks and Mapping-Only Objectives
 
