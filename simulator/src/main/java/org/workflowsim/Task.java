@@ -60,6 +60,9 @@ public class Task extends Cloudlet {
     /** Task impact for research algorithms. */
     private double impact;
 
+    /** CWS rank: longest descendant PROCESS path, with exit tasks ranked 1. */
+    private int cwsRank = 1;
+
     /** Task type or name declared by the input workflow. */
     private String type;
 
@@ -236,6 +239,17 @@ public class Task extends Cloudlet {
     /** @return DAG depth */
     public int getDepth() {
         return this.depth;
+    }
+
+    public void setCwsRank(int rank) {
+        if (rank < 1) {
+            throw new IllegalArgumentException("CWS rank must be at least 1");
+        }
+        this.cwsRank = rank;
+    }
+
+    public int getCwsRank() {
+        return cwsRank;
     }
 
     /** @return child task list */

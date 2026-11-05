@@ -162,6 +162,16 @@ This objective ignores DAG edges and the network. Only in the matrix-free raw MI
 
 RL uses a separate ready-job contract: actions are ordered by ready arrival, their value is the index into the VM-ID-sorted list rather than the VM ID, and `-1` skips; null, a wrong length, or an out-of-range value aborts, while a busy, incompatible, or already-occupied target makes the Job skip this round instead of automatically reselecting. Successful dispatches enter the trajectory, and the reward is the negative makespan; persistent lack of progress is intercepted. See the [RL dispatcher](<../../simulator/src/main/java/org/workflowsim/scheduling/RlPolicySchedulingAlgorithm.java>) for the implementation; it contains no learning algorithm. The whole RL track is a demo interface (AUD-F11): the observation is deliberately non-Markovian (current ready queue and VM load view only — no DAG structure, transfer state, or history), the reward is terminal-only, and the policy registry is a static single-process registry, so concurrent episodes in one JVM are not supported.
 
+### CWS RankMin-RR Static-DAG Adaptation (R-PAPER-02, 2026-11-05)
+
+`CWS_RANKMIN_RR` implements the static-DAG/idle-VM subset of Lehmann et al.'s CWS Rank(Min)
+Round-Robin policy. `WorkflowDagValidator` assigns each Task a CWS rank as the longest descendant
+PROCESS path, with exit tasks ranked 1. `BasicClustering` copies that rank to each Job. Ready Jobs
+are ordered by descending rank, ascending real input bytes, and ascending Job ID; the maintained
+persistent RR then selects currently idle PE-compatible VMs. This is not HEFT upward rank and not
+the dynamic Nextflow/Kubernetes API. The [Figure 1 integration test](<../../simulator/src/test/java/org/workflowsim/planning/CwsFigureOneIntegrationTest.java>)
+uses the paper's exact physical DAG and verifies the five-to-four-unit scheduling direction.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

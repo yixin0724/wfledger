@@ -49,7 +49,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate` plus `make mutation-gate-experiments`, 35 registered mutants after the CaWoSched R-PAPER-01D work; M12–M19 added 2026-11-03, M20/M21 for cap/revision, M22/M23 for B1, M24–M26 for upstream references, M27 for Montage, M28 for tied Wilcoxon, M29 for tick, M30 for Workbench, M31 for profile fingerprints) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M35 are verified red-first at the killers stage in the B1–B5 and R-PAPER-01 close-outs |
+| Repository gate (`make mutation-gate` plus `make mutation-gate-experiments`, 36 registered mutants after the CWS R-PAPER-02 work; M12–M19 added 2026-11-03, M20/M21 for cap/revision, M22/M23 for B1, M24–M26 for upstream references, M27 for Montage, M28 for tied Wilcoxon, M29 for tick, M30 for Workbench, M31 for profile fingerprints) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M36 are verified red-first at the killers stage in the B1–B5 and R-PAPER-01/02 close-outs |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |
@@ -229,3 +229,4 @@ recurrence; no historical ledger rows were removed.
 | R-PAPER-01B | The platform needed generic post-planning abstractions and full compute-only variants | VERIFIED_COMPUTE_ONLY_VARIANTS — TimedPlan/evaluator/optimizer APIs and all 16 variants are implemented; M33 guards power weighting; communication, timed execution, ILP, and full-corpus claims remain open |
 | R-PAPER-01C | The platform lacked communication activities and absolute-start execution | VERIFIED_TIMED_CORE — communication-enhanced activities and deferral-aware absolute starts are implemented and exercised end-to-end; M34 rejects missing-link evasion |
 | R-PAPER-01D | The platform lacked an independent exact small-instance oracle | VERIFIED — exact single-processor DP matches independent integer-start enumeration; M35 prevents degradation to the slack greedy plan |
+| R-PAPER-02 | The platform lacked a paper-backed online DAG-priority example | VERIFIED_STATIC_SUBSET — CWS RankMin-RR uses descendant-PROCESS rank and reproduces the Figure 1 5→4 direction; M36 guards against FIFO degradation |

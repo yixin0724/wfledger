@@ -48,6 +48,7 @@ public final class AlgorithmCatalog {
             case STATIC:
             case RL_POLICY:
             case CARBON_WINDOW_DEFER:
+            case CWS_RANKMIN_RR:
                 return true;
             case MINMIN:
             case MAXMIN:
@@ -247,6 +248,14 @@ public final class AlgorithmCatalog {
                 values.put(
                         "limitations",
                         limitations("The batch is the runtime-ready Job set, not a static independent-task batch."));
+                break;
+            case CWS_RANKMIN_RR:
+                values.put("decisionLayer", "ONLINE_READY_JOB_DAG_RANK");
+                values.put("inputDomain", "STATIC_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
+                values.put(
+                        "decisionRule", "CWS descendant-PROCESS rank descending, input bytes ascending, persistent RR");
+                values.put("verification", "PAPER_FIGURE_AND_COMPARATOR_REGRESSION_COVERED");
+                values.put("limitations", limitations("Static-DAG/idle-VM adaptation only; not the dynamic CWS API"));
                 break;
             case READY_BATCH_MCT:
                 readyBatchMctScheduler(values);

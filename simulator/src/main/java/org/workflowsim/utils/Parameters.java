@@ -96,6 +96,8 @@ public class Parameters {
          * degrades to same-order FCFS dispatch.
          */
         CARBON_WINDOW_DEFER,
+        /** CWS Rank(Min) + persistent Round-Robin over static DAG ready Jobs. */
+        CWS_RANKMIN_RR,
         INVALID
     }
 

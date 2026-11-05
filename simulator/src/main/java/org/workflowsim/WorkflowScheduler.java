@@ -35,6 +35,7 @@ import org.workflowsim.experiment.SimulationEventType;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.scheduling.BaseSchedulingAlgorithm;
 import org.workflowsim.scheduling.CarbonWindowDeferSchedulingAlgorithm;
+import org.workflowsim.scheduling.CwsRankMinRoundRobinSchedulingAlgorithm;
 import org.workflowsim.scheduling.DataAwareSchedulingAlgorithm;
 import org.workflowsim.scheduling.DeferralAwareSchedulingAlgorithm;
 import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
@@ -276,6 +277,9 @@ public class WorkflowScheduler extends DatacenterBroker {
                 break;
             case CARBON_WINDOW_DEFER:
                 algorithm = new CarbonWindowDeferSchedulingAlgorithm();
+                break;
+            case CWS_RANKMIN_RR:
+                algorithm = new CwsRankMinRoundRobinSchedulingAlgorithm();
                 break;
             case STATIC:
                 if (Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_SLACK

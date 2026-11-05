@@ -184,6 +184,7 @@ public class BasicClustering implements ClusteringInterface {
                 userId = task.getUserId();
                 priority = task.getPriority();
                 depth = task.getDepth();
+                job.setCwsRank(task.getCwsRank());
                 List<FileItem> fileList = task.getFileList();
                 job.getTaskList().add(task);
 

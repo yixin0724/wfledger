@@ -64,9 +64,11 @@ public final class WorkflowDagValidator {
         }
 
         int visited = 0;
+        List<Task> ordered = new ArrayList<>();
         while (!ready.isEmpty()) {
             Task parent = ready.removeFirst();
             visited++;
+            ordered.add(parent);
             List<Task> children = new ArrayList<>(parent.getChildList());
             children.sort(Comparator.comparingInt(Task::getCloudletId));
             for (Task child : children) {
@@ -82,6 +84,15 @@ public final class WorkflowDagValidator {
 
         if (visited != tasks.size()) {
             throw new WorkflowValidationException("Workflow graph contains a cycle");
+        }
+        // CWS rank is the longest descendant PROCESS path, not the root-to-task depth above.
+        for (int index = ordered.size() - 1; index >= 0; index--) {
+            Task task = ordered.get(index);
+            int rank = 1;
+            for (Task child : task.getChildList()) {
+                rank = Math.max(rank, child.getCwsRank() + 1);
+            }
+            task.setCwsRank(rank);
         }
     }
 

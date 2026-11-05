@@ -67,5 +67,26 @@ and mapping-compatible after conversion.
 - Real-platform carbon calibration, general carbon optimality, and full paper-corpus reproduction
   are not claimed.
 
+## CWS RankMin-RR — CCGrid 2023
+
+| Item | Record |
+|---|---|
+| Paper | Fabian Lehmann, Jonathan Bader, Friedrich Tschirpke, Lauritz Thamsen, Ulf Leser, *How Workflow Engines Should Talk to Resource Managers: A Proposal for a Common Workflow Scheduling Interface*, CCGrid 2023 |
+| Primary source | [DOI](https://doi.org/10.1109/CCGrid57682.2023.00025), [arXiv:2302.07652v3](https://arxiv.org/html/2302.07652v3) |
+| Official artifact | [CommonWorkflowScheduler/KubernetesScheduler](https://github.com/CommonWorkflowScheduler/KubernetesScheduler), commit [`3046e19d5a3a237c5f6c0df4d16f33e643b31828`](https://github.com/CommonWorkflowScheduler/KubernetesScheduler/tree/3046e19d5a3a237c5f6c0df4d16f33e643b31828) |
+| License | [GPLv3](https://github.com/CommonWorkflowScheduler/KubernetesScheduler/blob/3046e19d5a3a237c5f6c0df4d16f33e643b31828/LICENSE) |
+| Platform classes | `CwsRankMinRoundRobinSchedulingAlgorithm`, `Task.cwsRank`, and `WorkflowDagValidator` bottom-rank assignment |
+| Verification | `CwsDagRankTest`, `CwsRankMinRoundRobinSchedulingAlgorithmTest`, `CwsFigureOneIntegrationTest`; M36 |
+| Status | `VERIFIED_STATIC_SUBSET` for the static-DAG/idle-VM CWS RankMin-RR adaptation |
+
+CWS rank is the longest descendant PROCESS path, not HEFT's weighted upward rank. Ready Jobs are
+ordered by descending rank, then ascending real input bytes and ascending Job ID; VM selection is
+the maintained persistent round-robin over currently idle PE-compatible VMs. The physical Figure 1
+DAG is reproduced explicitly: `t1→t2/t3/t4`, `t3/t4→t5`, and `t2/t5→t6`, with ranks
+`[4,2,3,3,2,1]`. In the controlled runner, FCFS completes in **5.21 s** and CWS in **4.21 s**,
+matching the paper's five-to-four-unit direction after the declared stage-in/tick overhead. The
+static adaptation does not claim the dynamic Nextflow/Kubernetes API, future task creation, or
+real-cluster performance.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

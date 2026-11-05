@@ -39,6 +39,7 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `READY_BATCH_MAXMIN` | every unassigned Job first computes its minimum ECT, then the maximum of those is chosen; recomputed after each assignment |
 | `READY_BATCH_MCT` | ready-arrival order; among currently idle compatible VMs picks the smallest `length/MIPS` |
 | `READY_BATCH_ROUNDROBIN` | a persistent cursor ordered by VM ID rotates, skipping busy or incompatible VMs |
+| `CWS_RANKMIN_RR` | static-DAG CWS descendant-PROCESS rank descending, real input bytes ascending, then persistent RR over idle compatible VMs |
 | `DATA` | chooses the idle compatible VM with the fewest non-local real input bytes; requires LOCAL |
 | `RL_POLICY` | the policy registered via `RlEnvironment.runEpisode(...)` selects the VM list index |
 | `STATIC` | executes an existing mapping/binding; with a full static plan it additionally enforces the per-VM order — it is not an independent optimization algorithm |

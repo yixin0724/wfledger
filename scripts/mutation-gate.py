@@ -325,6 +325,13 @@ REGISTRY = [
         old="            for (int start = 0; start <= (int) Math.floor(deadlineSeconds); start++) {",
         new="            for (int start = 0; start < 1; start++) {",
         killers="CaWoSchedExactOptimizerTest"),
+    dict(
+        id="M36",
+        name="CWS RankMin comparator ignores DAG rank",
+        file="simulator/src/main/java/org/workflowsim/scheduling/CwsRankMinRoundRobinSchedulingAlgorithm.java",
+        old="                int byRank = Integer.compare(secondJob.getCwsRank(), firstJob.getCwsRank());",
+        new="                int byRank = 0;",
+        killers="CwsRankMinRoundRobinSchedulingAlgorithmTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

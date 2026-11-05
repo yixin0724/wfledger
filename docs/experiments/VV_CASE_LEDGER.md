@@ -83,6 +83,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `REAL-PLATFORM-001` | `NOT_ESTABLISHED`: no complete production-cluster referent with platform, scheduler, clustering, network, WMS, and measurement uncertainty | Real-platform validation is not claimed; a future limited case requires independent approval and a complete referent |
 | `REVIEW-INDEPENDENT-001` | `VERIFIED`: independent AI structured review approved the internal-validity scope after VV-NEW-01 was closed; see the [2026-11-04 review record](<VV_REVIEW_2026-11-04.md>) | No human independent signoff or real-platform validation is claimed; semantic changes reopen the affected cases |
 | `PAPER-CAWOSCHED-001` | `VERIFIED_TIMED_CORE`: generic TimedPlan API, all 16 variants, communication activities, exact single-processor DP, absolute-start dispatch, M32–M35; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full paper corpus, multi-processor ILP, Workbench JSON, or carbon-optimality claim |
+| `PAPER-CWS-RANKMIN-001` | `VERIFIED_STATIC_SUBSET`: CWS bottom-rank, input-byte tie-break, persistent RR, exact Figure 1 DAG and 5.21→4.21 direction, M36; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | Static-DAG/idle-VM subset only; no dynamic CWS API, future task creation, or real-cluster claim |
 
 ## 5. Change and review discipline
 

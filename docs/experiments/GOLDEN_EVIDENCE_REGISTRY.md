@@ -34,6 +34,7 @@ and a linked contract revision, not a silent update to match production output.
 | Montage and classic input structures | `CONTRACT` | `MontageWfInstancesStructuralTest`, `ClassicDaxStructuralTest`, and `WfCommonsRuntimeReferenceTest` |
 | Exact tied-rank Wilcoxon | `INVARIANT` | `PairedWilcoxonExternalReferenceTest`; actual-rank subset-sum, with SciPy when available and stdlib fallback, plus M28 |
 | CaWoSched fixed-plan time shifting | `PAPER` / `CONTRACT` | `CaWoSchedPlannerTest`, `CaWoSchedAdapterTest`, `TimedPlanFrameworkTest`, `CommunicationEnhancedPlanTest`, `CaWoSchedExactOptimizerTest`, and `CaWoSchedTimedExecutionIntegrationTest`; all 16 variants, exact DP, timed dispatch, and M32–M35 |
+| CWS RankMin-RR | `PAPER` | `CwsDagRankTest`, `CwsRankMinRoundRobinSchedulingAlgorithmTest`, and `CwsFigureOneIntegrationTest`; exact Figure 1 rank/DAG and 5.21→4.21 direction, M36 |
 | Tick and profile semantics | `CONTRACT` / `INVARIANT` | `SimulationTickSensitivityTest` and `DataflowStateProfileSmokeTest`; no numerical-convergence or timing-threshold claim |
 | Large-scale and campaign makespans | `GOLDEN_REGRESSION` | `LargeWorkflowScaleRegressionTest` and `FatTreeCampaignGoldenIntegrationTest`; drift detection only, not paper or real-platform proof |
 | Frozen standard/power/carbon/DVFS bundles | `GOLDEN_REGRESSION` | Freshly restored tar archives independently audited by `verify-study-evidence.py`; historical protocol identity, not current regeneration or real validation |
