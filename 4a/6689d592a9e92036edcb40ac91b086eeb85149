@@ -1,0 +1,37 @@
+simulator/src/main/java/org/workflowsim/ClusteringEngine.java
+  s_24f59fb6b2f10b::t_494bf1cc6d3961 259-264
+simulator/src/main/java/org/workflowsim/WorkflowPlanner.java
+  s_24f59fb6b2f10b::t_21724a81fadb5e 32,52,413-418
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  s_24f59fb6b2f10b::t_8df50dab5f40b2 104-105,399-404,424-434
+simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java
+  s_24f59fb6b2f10b::t_9e070810e3b0d8 306-307
+simulator/src/main/java/org/workflowsim/planning/CaWoSchedPlanningAlgorithm.java
+  s_24f59fb6b2f10b::t_78984f6e7b0574 1-55
+simulator/src/main/java/org/workflowsim/planning/PlanningContext.java
+  s_24f59fb6b2f10b::t_129fd93c3d3c83 38-45
+simulator/src/main/java/org/workflowsim/scheduling/StaticSchedulePlan.java
+  s_24f59fb6b2f10b::t_e11459d8403cb7 27-28,99-121
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  s_24f59fb6b2f10b::t_6043c63a0aed91 126-129
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  s_24f59fb6b2f10b::t_69b35409eb2044 684-686,736-738
+simulator/src/test/java/org/workflowsim/planning/cawosched/CaWoSchedExactOptimizerTest.java
+  s_24f59fb6b2f10b::t_c0d137ef7f3bbb 1-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4a6689d592a9e92036edcb40ac91b086eeb85149",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
