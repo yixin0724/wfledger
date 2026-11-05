@@ -60,6 +60,8 @@ and superseded audit drafts are not long-term entry points.
   Montage WfInstances verification, input populations, units, and validation boundaries.
 - [Golden and reference-evidence registry](<experiments/GOLDEN_EVIDENCE_REGISTRY.md>): legal oracle classes,
   current anchors, golden change discipline, and performance evidence boundaries.
+- [Paper algorithm reproductions](<experiments/PAPER_REPRODUCTIONS.md>): implemented literature algorithms,
+  official artifacts, verification cases, and adaptation boundaries.
 - [Independent V&V review protocol](<experiments/VV_REVIEW_PROTOCOL.md>): structured walkthrough,
   independence requirements, assessment record, and the current review status.
 - [Independent V&V review record (2026-11-04)](<experiments/VV_REVIEW_2026-11-04.md>): findings,

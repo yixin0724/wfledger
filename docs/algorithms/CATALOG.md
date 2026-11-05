@@ -132,6 +132,15 @@ RANDOM and STATIC_ROUND_ROBIN keep their respective cost-oblivious choices. Fail
 standard NOOP retry contract only in combinations that allow them; Workbench exposes no
 failure or extra-overhead configuration.
 
+## Literature post-planning components
+
+The standard-runner labels above are not the only literature code in the repository. The
+`org.workflowsim.planning.cawosched` package implements a compute-only CaWoSched core over an
+existing SHARED HEFT fixed mapping/order (ASAP, slack, pressure, and independent carbon-cost
+integration). It is a Java post-planning API, not a Workbench label or an absolute-time dispatcher.
+See [paper algorithm reproductions](<../experiments/PAPER_REPRODUCTIONS.md>) for the official
+artifact, verified example, and current adaptation boundaries.
+
 ## Registered external algorithms (extension surface, 2026-10-26)
 
 The standard runner additionally accepts algorithms provided by third-party code through the

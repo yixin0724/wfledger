@@ -47,6 +47,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M29 | Completion guard ignores the configured minimum event interval | tick semantics (B4, 2026-11-04) |
 | M30 | Workbench drops the event-recorder cap from the simulation allowlist | experiments configuration surface (B4, 2026-11-04) |
 | M31 | Coherent dataflow runtime reports zero admitted copies | profile semantic-fingerprint and copy-count verification (B5, 2026-11-04) |
+| M32 | CaWoSched green-window selection degrades to ASAP | paper algorithm reproduction (R-PAPER-01, 2026-11-05) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -78,18 +79,19 @@ implementation with the old Commons Math 3.2 rank-sum path, and M29 removes the 
 minimum event interval from completion timing; both are killed by independent reference tests.
 M30 is registered in the separate experiments family and kills the Workbench event-cap
 allowlist omission. M31 (2026-11-04, B5) adds the profile semantic-fingerprint axis: a false
-admitted-copy count must be rejected by the independent comparator, not hidden by timing.
+admitted-copy count must be rejected by the independent comparator, not hidden by timing. M32
+(2026-11-05, R-PAPER-01) adds the CaWoSched green-window selection axis.
 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 30 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 31 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)
 python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
 
-# Both families sequentially (31 canaries total)
+# Both families sequentially (32 canaries total)
 python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

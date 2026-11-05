@@ -122,6 +122,20 @@ In LOCAL, cross-VM communication is computed by the endpoint bandwidth model and
 
 The recurrence and its source page numbers are preserved unchanged in the [PEFT paper fixture provenance note](<../../simulator/src/test/resources/dax/peft-paper-example.SOURCE.md>). The [independent recurrence counterexamples](<../../simulator/src/test/java/org/workflowsim/planning/LocalPeftSuccessorCostContractTest.java>) cover exits, successor costs, and rank reversals; the [primary-source fixture regression](<../../simulator/src/test/java/org/workflowsim/planning/LocalPeftPrimarySourcePaperTest.java>) verifies the plan and the actual Task/Job intervals using the verbatim matrix/OCT/selection order. The current machine contract identifier is `PEFT_SUCCESSOR_COST_OCT_EXIT_ZERO_V2`; variants using own costs or exit means must not be renamed to the original PEFT.
 
+### CaWoSched Fixed-Plan Time Shifting (R-PAPER-01, 2026-11-05)
+
+[CaWoSchedPlanner](<../../simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedPlanner.java>)
+implements the compute-only core of Schweisgut et al., ICPP 2025
+([DOI](https://doi.org/10.1145/3754598.3754673)). It is a post-planning component, not a new
+`Parameters.PlanningAlgorithm` label and not a change to ordinary STATIC absolute-time behavior.
+`CaWoSchedAdapter` converts an existing SHARED HEFT trace into a fixed mapping/order and uses raw
+compute length / VM MIPS plus declared VM power. The implementation preserves dependencies and
+per-VM order, computes initial EST/LST and slack/pressure scores, chooses the highest-green-budget
+interval start in the current feasible range, and otherwise uses EST. The complete horizon is
+covered by contiguous windows, and carbon excess is independently integrated as
+`Σ max(0, P_idle + P_dynamic(t) - G(t)) dt`. See [paper reproductions](<../experiments/PAPER_REPRODUCTIONS.md>)
+for the verified example and excluded communication, W/R/LS/ILP, Workbench, and timed-dispatch scope.
+
 ### Independent Tasks and Mapping-Only Objectives
 
 The independent-task mappers reject any parent/child edges; their availability is a tentative cumulative computational load, not a runtime queue replay. OLB selects by availability but still updates with the effective computation durations; MET ignores availability; MCT, Min/Max-Min, and Sufferage use completion estimates. Sufferage defines the loss as 0 when only one compatible VM exists, and round robin deliberately disregards costs. The naming follows the [independent-task mapping taxonomy](<https://doi.org/10.1006/jpdc.1999.1581>); it does not automatically confer offline semantics on online ready batches.

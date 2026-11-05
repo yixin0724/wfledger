@@ -297,6 +297,13 @@ REGISTRY = [
         old="        return current == null ? 0 : current.replicas.getAdmittedCopyCount();",
         new="        return 0L;",
         killers="DataflowStateProfileSmokeTest"),
+    dict(
+        id="M32",
+        name="CaWoSched green-window selection degrades to ASAP",
+        file="simulator/src/main/java/org/workflowsim/planning/cawosched/CaWoSchedPlanner.java",
+        old="        double selected = earliest;\n        double bestGreen = Double.NEGATIVE_INFINITY;",
+        new="        double selected = earliest;\n        double bestGreen = Double.POSITIVE_INFINITY;",
+        killers="CaWoSchedPlannerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [
