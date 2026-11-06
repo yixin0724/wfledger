@@ -1,0 +1,47 @@
+docs/algorithms/CATALOG.md
+  s_3b2f07ac95fc75::t_2e5e5ac1e1149e 43-44
+docs/experiments/AUDIT_COVERAGE.md
+  s_24f59fb6b2f10b::t_6f0f526963ab0e 52,234
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  s_24f59fb6b2f10b::t_1be8055eabb839 39
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  s_24f59fb6b2f10b::t_ca1214c7e3a5d5 50-51,286-291
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  s_24f59fb6b2f10b::t_4639719239eebc 52-53,256-262,390-407
+simulator/src/main/java/org/workflowsim/scheduling/ReshiSchedulingAlgorithm.java
+  s_24f59fb6b2f10b::t_d0187d345e9df7 1-117
+simulator/src/main/java/org/workflowsim/scheduling/ReshiStrategy.java
+  s_24f59fb6b2f10b::t_3b723cf41ac296 1-8
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  s_24f59fb6b2f10b::t_5d66dd5c29067e 101-104,655
+simulator/src/main/java/org/workflowsim/utils/ReshiRegistry.java
+  s_24f59fb6b2f10b::t_8ce55224fc7945 1-27
+simulator/src/main/java/org/workflowsim/utils/SimulationSession.java
+  s_24f59fb6b2f10b::t_70d9332c5e455d 52-54
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmSupportMatrixTest.java
+  s_24f59fb6b2f10b::t_fbc0d8cb04b468 31-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "01352f982130e5ecce3f3435897f344833036976",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_3b2f07ac95fc75": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "8f9a979c-1854-4455-b4ff-09cc8e4d945c",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
