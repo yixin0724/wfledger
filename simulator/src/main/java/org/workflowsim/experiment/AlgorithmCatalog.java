@@ -104,6 +104,7 @@ public final class AlgorithmCatalog {
             case SHARED_STORAGE_PEFT:
             case CAWOSCHED_SLACK:
             case CAWOSCHED_PRESSURE:
+            case NACO_GA_HEFT:
             case PSO:
             case LOCAL_HEFT:
             case LOCAL_CPOP:
@@ -411,6 +412,9 @@ public final class AlgorithmCatalog {
             case CAWOSCHED_PRESSURE:
                 caWoSchedPlanner(values, "PRESSURE");
                 break;
+            case NACO_GA_HEFT:
+                nacoGaHeftPlanner(values);
+                break;
             case PSO:
                 psoPlanner(values);
                 break;
@@ -428,6 +432,18 @@ public final class AlgorithmCatalog {
                 break;
         }
         return values;
+    }
+
+    private static void nacoGaHeftPlanner(Map<String, Object> values) {
+        values.put("decisionLayer", "STATIC_DAG_HYBRID_GA_HEFT");
+        values.put("inputDomain", "LOCAL_DAG_WITH_DNC_STORAGE_NETWORK_COMPUTE");
+        values.put("decisionRule", "Elite HEFT seed, GPX crossover, mutation, tournament and elite replacement");
+        values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
+        values.put("verification", "DNC_AND_GA_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations(
+                        "NACO DNC adapter is not the full paper experimental pipeline or real-platform validation"));
     }
 
     private static void caWoSchedPlanner(Map<String, Object> values, String score) {

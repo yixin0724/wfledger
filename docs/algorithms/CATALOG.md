@@ -97,6 +97,7 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `LOCAL_PEFT` | LOCAL DAG | successor-cost OCT, zero at exits, ready-list selection, and insertion-based `EFT + OCT` |
 | `CAWOSCHED_SLACK` | SHARED DAG | SHARED HEFT mapping/order followed by slack-scored absolute-start CaWoSched planning |
 | `CAWOSCHED_PRESSURE` | SHARED DAG | SHARED HEFT mapping/order followed by pressure-scored absolute-start CaWoSched planning |
+| `NACO_GA_HEFT` | LOCAL DAG | DNC evaluation, HEFT elite seed, GPX crossover, mutation, tournament and elite replacement |
 
 ## Combination rules
 
@@ -112,6 +113,7 @@ mean multiple Jobs can be dispatched simultaneously.
 | SHARED DAG | SHARED_STORAGE family / STATIC | SHARED + `legacyWorkflowsimV1()`; no failure, no overhead | rejected |
 | CaWoSched timed DAG | CAWOSCHED_SLACK / CAWOSCHED_PRESSURE / STATIC | SHARED + `legacyWorkflowsimV1()` + complete `carbonWindows`; no failure, no overhead | rejected |
 | LOCAL DAG | LOCAL family / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead | usable |
+| NACO DNC DAG | NACO_GA_HEFT / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |
 | coherent pre-mapping | RANDOM / STATIC | V2 requires LOCAL; V3 allows LOCAL/SHARED; no overhead, optional Fat-tree, V3 must declare SOURCE storage | usable |
 | coherent online assignment | INVALID / STATIC with assignment explicitly enabled | same physical prerequisites as the row above; bind at control-ready, then prepare inputs | usable |
 

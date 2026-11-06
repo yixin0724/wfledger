@@ -172,6 +172,18 @@ persistent RR then selects currently idle PE-compatible VMs. This is not HEFT up
 the dynamic Nextflow/Kubernetes API. The [Figure 1 integration test](<../../simulator/src/test/java/org/workflowsim/planning/CwsFigureOneIntegrationTest.java>)
 uses the paper's exact physical DAG and verifies the five-to-four-unit scheduling direction.
 
+### NACO GA/HEFT + DNC (R-PAPER-03, 2026-11-06)
+
+`NACO_GA_HEFT` implements the NACO 2023 hybrid GA/HEFT core in the LOCAL controlled model.
+`NacoAdapter` derives raw compute duration, input/output bits, parent/child edge bits, VM network
+speed, and the declared storage rate from current WorkflowSim objects. `NacoDncEvaluator` computes
+`diskRead + communication + compute + diskWrite` after the earliest feasible start, preserving
+parent completion and per-VM availability. The GA uses a HEFT elite seed, topological chromosomes,
+GPX crossover, dependency-bounded mutation, tournament selection, and elite replacement under the
+`planning.naco.ga` named stream. The hand-derived two-VM schedule and DNC finish-time case are in
+`NacoDncEvaluatorTest`; the real LOCAL integration is in `NacoGaHeftIntegrationTest`. This is not the
+full paper experiment pipeline or an accuracy/optimal-makespan guarantee.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

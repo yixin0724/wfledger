@@ -33,6 +33,7 @@ import org.workflowsim.planning.CaWoSchedPlanningAlgorithm;
 import org.workflowsim.planning.LocalCpopPlanningAlgorithm;
 import org.workflowsim.planning.LocalHeftPlanningAlgorithm;
 import org.workflowsim.planning.LocalPeftPlanningAlgorithm;
+import org.workflowsim.planning.NacoGaHeftPlanningAlgorithm;
 import org.workflowsim.planning.PSOPlanningAlgorithm;
 import org.workflowsim.planning.PlanningContext;
 import org.workflowsim.planning.RandomPlanningAlgorithm;
@@ -415,6 +416,9 @@ public final class WorkflowPlanner extends SimEntity {
                 break;
             case CAWOSCHED_PRESSURE:
                 planner = new CaWoSchedPlanningAlgorithm(planningContext, CaWoSchedVariant.PRESSURE);
+                break;
+            case NACO_GA_HEFT:
+                planner = new NacoGaHeftPlanningAlgorithm(planningContext);
                 break;
             case PSO:
                 planner = new PSOPlanningAlgorithm();

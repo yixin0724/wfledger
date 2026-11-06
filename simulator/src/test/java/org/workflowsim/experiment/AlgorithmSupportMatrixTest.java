@@ -64,6 +64,7 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.SHARED_STORAGE_PEFT,
                 PlanningAlgorithm.CAWOSCHED_SLACK,
                 PlanningAlgorithm.CAWOSCHED_PRESSURE,
+                PlanningAlgorithm.NACO_GA_HEFT,
                 PlanningAlgorithm.PSO,
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,
@@ -136,7 +137,8 @@ class AlgorithmSupportMatrixTest {
         }
         boolean localComm = algorithm == PlanningAlgorithm.LOCAL_HEFT
                 || algorithm == PlanningAlgorithm.LOCAL_CPOP
-                || algorithm == PlanningAlgorithm.LOCAL_PEFT;
+                || algorithm == PlanningAlgorithm.LOCAL_PEFT
+                || algorithm == PlanningAlgorithm.NACO_GA_HEFT;
         SimulationConfig.Builder builder = SimulationConfig.builder("workflow.dax", 1)
                 .planningAlgorithm(algorithm)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC);

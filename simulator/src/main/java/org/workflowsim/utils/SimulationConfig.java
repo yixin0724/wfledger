@@ -735,7 +735,8 @@ public final class SimulationConfig {
                         || planningAlgorithm == PlanningAlgorithm.SHARED_STORAGE_ETF
                         || planningAlgorithm == PlanningAlgorithm.SHARED_STORAGE_PEFT
                         || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_SLACK
-                        || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_PRESSURE) {
+                        || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_PRESSURE
+                        || planningAlgorithm == PlanningAlgorithm.NACO_GA_HEFT) {
                     throw new IllegalArgumentException("A task cost matrix cannot be combined with "
                             + planningAlgorithm + ": the shared-storage planning track estimates "
                             + "execution times from raw task lengths and does not consume the matrix, "
@@ -755,7 +756,8 @@ public final class SimulationConfig {
             // instants cannot be claimed to be bit-identical to an arbitrary preExecution track.
             if (planningAlgorithm == PlanningAlgorithm.LOCAL_HEFT
                     || planningAlgorithm == PlanningAlgorithm.LOCAL_CPOP
-                    || planningAlgorithm == PlanningAlgorithm.LOCAL_PEFT) {
+                    || planningAlgorithm == PlanningAlgorithm.LOCAL_PEFT
+                    || planningAlgorithm == PlanningAlgorithm.NACO_GA_HEFT) {
                 String label = planningAlgorithm.name();
                 if (fileSystem != ReplicaCatalog.FileSystem.LOCAL) {
                     throw new IllegalArgumentException(label + " requires ReplicaCatalog.FileSystem.LOCAL; "

@@ -52,6 +52,8 @@ closed with dedicated boundary/conservation tests at that time.
 | M34 | Communication-enhanced DAG silently drops a missing link | communication model (R-PAPER-01C, 2026-11-05) |
 | M35 | Exact single-processor DP drops all non-zero candidate starts | exact oracle (R-PAPER-01D, 2026-11-05) |
 | M36 | CWS RankMin comparator ignores DAG rank | CWS static-DAG online scheduling (R-PAPER-02, 2026-11-05) |
+| M37 | NACO DNC removes the cross-host communication term | NACO DNC evaluation (R-PAPER-03, 2026-11-06) |
+| M38 | NACO GPX discards the first-parent prefix | NACO hybrid GA operator (R-PAPER-03, 2026-11-06) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -86,18 +88,18 @@ allowlist omission. M31 (2026-11-04, B5) adds the profile semantic-fingerprint a
 admitted-copy count must be rejected by the independent comparator, not hidden by timing. M32
 (2026-11-05, R-PAPER-01) adds the CaWoSched green-window selection axis. M33 (R-PAPER-01B)
 adds the power-weighted slack-score axis. M34/M35 (R-PAPER-01C/D) add missing-link and exact-DP
-axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis.
+axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes.
 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 35 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 37 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)
 python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
 
-# Both families sequentially (36 canaries total)
+# Both families sequentially (38 canaries total)
 python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

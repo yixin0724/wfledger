@@ -88,5 +88,25 @@ matching the paper's five-to-four-unit direction after the declared stage-in/tic
 static adaptation does not claim the dynamic Nextflow/Kubernetes API, future task creation, or
 real-cluster performance.
 
+## NACO 2023 — Hybrid GA/HEFT with DNC
+
+| Item | Record |
+|---|---|
+| Paper | Pablo Barredo, Jorge Puente, *Precise makespan optimization via hybrid genetic algorithm for scientific workflow scheduling problem*, Natural Computing 22, 615–630, 2023 |
+| Primary source | [DOI](https://doi.org/10.1007/s11047-023-09950-5), [University of Oviedo record](https://hdl.handle.net/10651/70610) |
+| Official artifact | [iScOp-uniovi/Paper_NACO_Barredo_2023](https://github.com/iScOp-uniovi/Paper_NACO_Barredo_2023), commit [`b2f42bed2584022433dfe270612fe777ec8d1f58`](https://github.com/iScOp-uniovi/Paper_NACO_Barredo_2023/tree/b2f42bed2584022433dfe270612fe777ec8d1f58) |
+| License | [MIT for source code](https://github.com/iScOp-uniovi/Paper_NACO_Barredo_2023/blob/b2f42bed2584022433dfe270612fe777ec8d1f58/LICENSE-MIT); datasets use the separately declared ODC-By terms |
+| Platform classes | `org.workflowsim.planning.naco` DNC evaluator, `NacoGaHeftOptimizer`, `NacoGaOperators`, `NacoAdapter`, and `NacoGaHeftPlanningAlgorithm` |
+| Verification | `NacoDncEvaluatorTest`, `NacoGaHeftOptimizerTest`, `NacoGaHeftIntegrationTest`; M37/M38 |
+| Status | `VERIFIED_HYBRID_CORE` for the DNC + elite GA/HEFT + GPX/mutation/replacement subset |
+
+The implementation evaluates compute, disk-read, disk-write, and cross-host communication time;
+constructs a HEFT elite seed; generates topological chromosomes with compatible VM coordinates;
+applies GPX crossover and dependency-bounded mutation through the `planning.naco.ga` named stream;
+and uses tournament selection and elite replacement. A real LOCAL `SimulationSession` verifies the
+planner. The two-VM hand oracle gives makespan 3, while a DNC case with communication and disk-read
+gives finish time 8. These are semantic checks, not claims of reproducing every paper workload,
+DNC accuracy percentage, or optimal makespan.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

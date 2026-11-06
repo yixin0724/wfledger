@@ -332,6 +332,20 @@ REGISTRY = [
         old="                int byRank = Integer.compare(secondJob.getCwsRank(), firstJob.getCwsRank());",
         new="                int byRank = 0;",
         killers="CwsRankMinRoundRobinSchedulingAlgorithmTest"),
+    dict(
+        id="M37",
+        name="NACO DNC removes the cross-host communication term",
+        file="simulator/src/main/java/org/workflowsim/planning/naco/NacoDncEvaluator.java",
+        old="                    communication += edgeBits / slowest;",
+        new="                    communication += 0.0;",
+        killers="NacoDncEvaluatorTest"),
+    dict(
+        id="M38",
+        name="NACO GPX discards the first-parent prefix",
+        file="simulator/src/main/java/org/workflowsim/planning/naco/NacoGaOperators.java",
+        old="            if (index < cut) {",
+        new="            if (false) {",
+        killers="NacoGaHeftOptimizerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [
