@@ -1,0 +1,57 @@
+docs/advanced/MUTATION_GATE.md
+  s_24f59fb6b2f10b::t_428e5430d8ea7e 58,93,98,104
+docs/algorithms/CATALOG.md
+  s_24f59fb6b2f10b::t_0c77b0f6ac270d 103,117
+docs/algorithms/CONTRACTS.md
+  s_24f59fb6b2f10b::t_4b638606729fec 197-206
+docs/experiments/AUDIT_COVERAGE.md
+  s_24f59fb6b2f10b::t_b0cdd6177965cf 52,235
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  s_24f59fb6b2f10b::t_05961f4f98d252 40
+docs/experiments/PAPER_REPRODUCTIONS.md
+  s_24f59fb6b2f10b::t_19b972f9566f36 130-147
+docs/experiments/VV_CASE_LEDGER.md
+  s_24f59fb6b2f10b::t_32ed9609fbe759 89
+scripts/mutation-gate.py
+  s_24f59fb6b2f10b::t_da5d93c74fe03b 356-362
+simulator/src/main/java/org/workflowsim/WorkflowPlanner.java
+  s_24f59fb6b2f10b::t_1cc434af3d3de1 33,424-426
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  s_24f59fb6b2f10b::t_05793881df467b 110,440-442,462-472
+simulator/src/main/java/org/workflowsim/planning/GreenHeftPlanningAlgorithm.java
+  s_24f59fb6b2f10b::t_f7856b830b37f4 1-40
+simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftAdapter.java
+  s_24f59fb6b2f10b::t_b6015af657cd2c 1-53
+simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftPlanner.java
+  s_24f59fb6b2f10b::t_3a8edf8bcefaf1 1-108
+simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftProblem.java
+  s_24f59fb6b2f10b::t_8a8e68ecd01b9c 1-40
+simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftSchedule.java
+  s_24f59fb6b2f10b::t_b9346a3d7a513c 1-76
+simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftTask.java
+  s_24f59fb6b2f10b::t_0627792d98d74e 1-67
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  s_24f59fb6b2f10b::t_5638a87863ee06 701-702,755-756
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmSupportMatrixTest.java
+  s_24f59fb6b2f10b::t_6fcd86e6ea0436 70
+simulator/src/test/java/org/workflowsim/planning/GreenHeftIntegrationTest.java
+  s_24f59fb6b2f10b::t_3bb17c16528c0f 1-74
+simulator/src/test/java/org/workflowsim/planning/greenheft/GreenHeftPlannerTest.java
+  s_24f59fb6b2f10b::t_4810ab2a598dfa 1-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0133789535ae12b41cc27c60d74e54c0b0ff201e",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
