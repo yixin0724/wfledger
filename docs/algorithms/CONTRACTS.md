@@ -236,6 +236,16 @@ realistic schedule. The six-task paper-style case yields nominal 25 seconds and 
 seconds; M45 kills removal of per-flow capacity sharing. The current adapter uses one shared
 bottleneck and fair sharing, not the full TCP throughput model or automatic path detection.
 
+### EBPSM Budget and Cache Scheduling (R-PAPER-09, 2026-11-06)
+
+`EBPSM` implements the public EBPSM resource-sharing policy rather than the closed MCPA alternative.
+`EbpsmBudgetDistributor` applies DTL/EFT order and SFTD upgrades. `EbpsmSchedulingAlgorithm` prefers
+VMs with required input data, then deployed container images, then other idle VMs; every candidate
+must fit the task's sub-budget. Runtime output files and deployed images update the per-VM cache state.
+`EbpsmConfig` is injected through `SimulationConfig.ebpsmConfig`, so no hidden budget or cache source
+exists. `EbpsmIntegrationTest` runs two staggered workflows. The subset uses a fixed declared VM pool
+and does not claim Docker deployment, elastic provisioning, or full WaaS corpus reproduction.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

@@ -51,6 +51,7 @@ public final class AlgorithmCatalog {
             case CWS_RANKMIN_RR:
             case RESHI_C:
             case RESHI_M:
+            case EBPSM:
                 return true;
             case MINMIN:
             case MAXMIN:
@@ -265,6 +266,9 @@ public final class AlgorithmCatalog {
             case RESHI_M:
                 reshiScheduler(values, "Historical-average-runtime descending with explicit task-node ranking");
                 break;
+            case EBPSM:
+                ebpsmScheduler(values);
+                break;
             case READY_BATCH_MCT:
                 readyBatchMctScheduler(values);
                 break;
@@ -398,6 +402,18 @@ public final class AlgorithmCatalog {
         values.put("decisionRule", "CWS descendant-PROCESS rank descending, input bytes ascending, persistent RR");
         values.put("verification", "PAPER_FIGURE_AND_COMPARATOR_REGRESSION_COVERED");
         values.put("limitations", limitations("Static-DAG/idle-VM adaptation only; not the dynamic CWS API"));
+    }
+
+    private static void ebpsmScheduler(Map<String, Object> values) {
+        values.put("decisionLayer", "ONLINE_MULTI_WORKFLOW_BUDGET_CACHE");
+        values.put("inputDomain", "MULTI_WORKFLOW_DAG_WITH_TASK_BUDGETS_AND_CACHES");
+        values.put(
+                "decisionRule",
+                "SFTD budget distribution plus input/container cache preference and budget-gated dispatch");
+        values.put("verification", "EBPSM_BUDGET_CACHE_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations("Static declared VM pool only; no Docker deployment or elastic VM provisioning"));
     }
 
     private static void reshiScheduler(Map<String, Object> values, String rule) {

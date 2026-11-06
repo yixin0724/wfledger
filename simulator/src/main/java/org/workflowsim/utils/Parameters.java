@@ -102,6 +102,8 @@ public class Parameters {
         RESHI_C,
         /** Reshi-M: historical-average-runtime priority with explicit task-node ranking. */
         RESHI_M,
+        /** EBPSM multi-workflow budget and cache-aware scheduling. */
+        EBPSM,
         INVALID
     }
 
@@ -661,6 +663,7 @@ public class Parameters {
         workflowArrivalSeconds = null;
         carbonWindows = Collections.emptyList();
         ReshiRegistry.clear();
+        EbpsmRegistry.clear();
         SimulationRandom.reset(randomSeed);
     }
 

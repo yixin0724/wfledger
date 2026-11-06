@@ -395,6 +395,20 @@ REGISTRY = [
         old="                flow.remaining = Math.max(0.0, flow.remaining - capacityBytesPerSecond * (end - time) / active.size());",
         new="                flow.remaining = Math.max(0.0, flow.remaining - capacityBytesPerSecond * (end - time));",
         killers="NetworkHeftPlannerTest"),
+    dict(
+        id="M46",
+        name="EBPSM ignores input-data cache preference",
+        file="simulator/src/main/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithm.java",
+        old="                if (hasRequiredInput(task, vm.getId())) {",
+        new="                if (false) {",
+        killers="EbpsmSchedulingAlgorithmTest"),
+    dict(
+        id="M47",
+        name="EBPSM dispatches tasks above their budget",
+        file="simulator/src/main/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithm.java",
+        old="            if (cost <= budget + 1.0e-9",
+        new="            if (true",
+        killers="EbpsmSchedulingAlgorithmTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

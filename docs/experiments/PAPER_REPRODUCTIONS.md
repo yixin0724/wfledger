@@ -199,5 +199,22 @@ durations. The paper-style six-task case reproduces the nominal 25-second schedu
 sharing; it does not claim the full TCP throughput model, path-detection system, or complete Grid
 workflow corpus.
 
+## EBPSM — Multi-tenant WaaS Resource Sharing (2020)
+
+| Item | Record |
+|---|---|
+| Paper | Muhammad H. Hilman, Maria A. Rodriguez, Rajkumar Buyya, *Resource-sharing Policy in Multi-tenant Scientific Workflow-as-a-Service Cloud Platform*, arXiv 2020 |
+| Primary source | [arXiv:1903.01113v3](https://arxiv.org/html/1903.01113v3), [arXiv DOI](https://doi.org/10.48550/arXiv.1903.01113) |
+| Platform classes | `EbpsmSchedulingAlgorithm`, `EbpsmBudgetDistributor`, `EbpsmConfig`, `EbpsmRegistry` |
+| Verification | `EbpsmBudgetDistributorTest`, `EbpsmSchedulingAlgorithmTest`, `EbpsmIntegrationTest`; M46/M47 |
+| Status | `VERIFIED_BUDGET_CACHE_CORE` for SFTD budget distribution and cache/budget-gated scheduling |
+
+EBPSM preprocesses task budgets using DTL/EFT order and slowest-first upgrades, then dispatches ready
+Jobs by input-data cache, container-image cache, and other idle VMs in that order. Each candidate
+must fit the task's sub-budget; over-budget candidates remain unscheduled. Two workflows with staggered
+arrivals complete through the standard runner. The current subset uses a fixed declared VM pool and
+explicit cache declarations, not Docker deployment, elastic VM provisioning, or a full WaaS corpus.
+The closed MCPA alternative was not reproduced or mislabeled.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

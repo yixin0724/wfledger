@@ -76,6 +76,7 @@ public final class SimulationConfig {
             registeredSchedulingAlgorithmProvider;
     private final FrequencyPolicy frequencyPolicy;
     private final org.workflowsim.utils.ReshiConfig reshiConfig;
+    private final org.workflowsim.utils.EbpsmConfig ebpsmConfig;
     private final int eventRecorderCap;
 
     private SimulationConfig(Builder builder) {
@@ -102,6 +103,7 @@ public final class SimulationConfig {
         this.registeredSchedulingAlgorithmProvider = builder.registeredSchedulingAlgorithmProvider;
         this.frequencyPolicy = builder.frequencyPolicy;
         this.reshiConfig = builder.reshiConfig;
+        this.ebpsmConfig = builder.ebpsmConfig;
         this.eventRecorderCap = builder.eventRecorderCap;
     }
 
@@ -242,6 +244,11 @@ public final class SimulationConfig {
         return reshiConfig;
     }
 
+    /** @return explicit EBPSM task budgets and cache inputs, or null when EBPSM is not configured */
+    public org.workflowsim.utils.EbpsmConfig getEbpsmConfig() {
+        return ebpsmConfig;
+    }
+
     /**
      * AUD-F07 follow-up (2026-11-04, post-completion review): @return the retention cap of the
      * run's event recorder. A run that reaches the cap fails fast with an actionable exception
@@ -351,6 +358,13 @@ public final class SimulationConfig {
         private FrequencyPolicy frequencyPolicy = FrequencyPolicy.DEFAULT;
 
         private org.workflowsim.utils.ReshiConfig reshiConfig;
+        private org.workflowsim.utils.EbpsmConfig ebpsmConfig;
+
+        /** Supplies explicit EBPSM task budgets, caches, and storage rates for this run. */
+        public Builder ebpsmConfig(org.workflowsim.utils.EbpsmConfig value) {
+            this.ebpsmConfig = value;
+            return this;
+        }
 
         /** Supplies the explicit Reshi rank table and task history for this run. */
         public Builder reshiConfig(org.workflowsim.utils.ReshiConfig value) {

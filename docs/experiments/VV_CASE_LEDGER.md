@@ -90,6 +90,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-MOHEFT-001` | `VERIFIED_PARETO_CORE`: HEFT-ordered beam search, dominance, crowding extremes, balanced selection and M41/M42; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No exact full Pareto optimality, empirical neural model, or full paper-corpus claim |
 | `PAPER-ICPCP-001` | `VERIFIED_DEADLINE_COST_CORE`: PCP, EST/LFT, path cost, END deadline slack, fork/join, infeasibility and M43/M44; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No IC-PCPD2, dynamic provisioning, or full paper-corpus claim |
 | `PAPER-NETWORK-HEFT-001` | `VERIFIED_BOTTLENECK_CORE`: shared-bottleneck stretching, independent parent-edge durations, iterative HEFT, 25→32 case and M45; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full TCP model, automatic path detection, or full Grid corpus claim |
+| `PAPER-EBPSM-001` | `VERIFIED_BUDGET_CACHE_CORE`: SFTD, input/container cache preference, budget gate, staggered multi-workflow integration and M46/M47; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No Docker deployment, elastic provisioning, MCPA substitution, or full WaaS corpus claim |
 
 ## 5. Change and review discipline
 

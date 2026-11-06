@@ -38,6 +38,7 @@ import org.workflowsim.scheduling.CarbonWindowDeferSchedulingAlgorithm;
 import org.workflowsim.scheduling.CwsRankMinRoundRobinSchedulingAlgorithm;
 import org.workflowsim.scheduling.DataAwareSchedulingAlgorithm;
 import org.workflowsim.scheduling.DeferralAwareSchedulingAlgorithm;
+import org.workflowsim.scheduling.EbpsmSchedulingAlgorithm;
 import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
 import org.workflowsim.scheduling.FastestVmSchedulingAlgorithm;
 import org.workflowsim.scheduling.FirstFitIdleSchedulingAlgorithm;
@@ -288,6 +289,9 @@ public class WorkflowScheduler extends DatacenterBroker {
                 break;
             case RESHI_M:
                 algorithm = new ReshiSchedulingAlgorithm(ReshiStrategy.RESHI_M);
+                break;
+            case EBPSM:
+                algorithm = new EbpsmSchedulingAlgorithm();
                 break;
             case STATIC:
                 if (Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_SLACK
