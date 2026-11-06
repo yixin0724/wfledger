@@ -100,6 +100,7 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `CAWOSCHED_SLACK` | SHARED DAG | SHARED HEFT mapping/order followed by slack-scored absolute-start CaWoSched planning |
 | `CAWOSCHED_PRESSURE` | SHARED DAG | SHARED HEFT mapping/order followed by pressure-scored absolute-start CaWoSched planning |
 | `NACO_GA_HEFT` | LOCAL DAG | DNC evaluation, HEFT elite seed, GPX crossover, mutation, tournament and elite replacement |
+| `GREEN_HEFT` | SHARED DAG | HEFT upward rank with minimum-energy VM selection and finish-time tie-break |
 
 ## Combination rules
 
@@ -113,6 +114,7 @@ mean multiple Jobs can be dispatched simultaneously.
 | Independent-task mapping | STATIC independent-task planner / STATIC | inputs must have no edges; a V1 model satisfying its own prerequisites | usable |
 | DAG mapping only | RANDOM or PSO / STATIC | a V1 model with satisfied prerequisites; see the coherent rows for coherent combinations | usable, but RANDOM does not optimize on it |
 | SHARED DAG | SHARED_STORAGE family / STATIC | SHARED + `legacyWorkflowsimV1()`; no failure, no overhead | rejected |
+| GreenHEFT DAG | GREEN_HEFT / STATIC | SHARED + declared per-VM power; no failure, no overhead; raw task lengths only | rejected without power or with frequency tiers |
 | CaWoSched timed DAG | CAWOSCHED_SLACK / CAWOSCHED_PRESSURE / STATIC | SHARED + `legacyWorkflowsimV1()` + complete `carbonWindows`; no failure, no overhead | rejected |
 | LOCAL DAG | LOCAL family / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead | usable |
 | NACO DNC DAG | NACO_GA_HEFT / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |

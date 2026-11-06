@@ -37,6 +37,7 @@ and a linked contract revision, not a silent update to match production output.
 | CWS RankMin-RR | `PAPER` | `CwsDagRankTest`, `CwsRankMinRoundRobinSchedulingAlgorithmTest`, and `CwsFigureOneIntegrationTest`; exact Figure 1 rank/DAG and 5.21→4.21 direction, M36 |
 | NACO hybrid GA/HEFT + DNC | `PAPER` / `CONTRACT` | `NacoDncEvaluatorTest`, `NacoGaHeftOptimizerTest`, and `NacoGaHeftIntegrationTest`; hand-derived DNC/mapping and elite-GA checks, M37/M38 |
 | Reshi-C/M | `PAPER` | `ReshiSchedulingAlgorithmTest`, `ReshiIntegrationTest`, and `ReshiPredictionErrorModelTest`; explicit rank/history and sign-clamp, M39 |
+| GreenHEFT | `PAPER` | `GreenHeftPlannerTest` and `GreenHeftIntegrationTest`; energy-first mapping and declared-power oracle, M40 |
 | Tick and profile semantics | `CONTRACT` / `INVARIANT` | `SimulationTickSensitivityTest` and `DataflowStateProfileSmokeTest`; no numerical-convergence or timing-threshold claim |
 | Large-scale and campaign makespans | `GOLDEN_REGRESSION` | `LargeWorkflowScaleRegressionTest` and `FatTreeCampaignGoldenIntegrationTest`; drift detection only, not paper or real-platform proof |
 | Frozen standard/power/carbon/DVFS bundles | `GOLDEN_REGRESSION` | Freshly restored tar archives independently audited by `verify-study-evidence.py`; historical protocol identity, not current regeneration or real validation |

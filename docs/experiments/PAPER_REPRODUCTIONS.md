@@ -127,5 +127,23 @@ prediction errors through a named random stream, including the official sign-and
 No regression-tree training, AWS image-type profiling, or complete production trace pipeline is
 built in; these are adaptation boundaries, not claims of reproducing the paper's full recommender.
 
+## GreenHEFT — FGCS 2014
+
+| Item | Record |
+|---|---|
+| Paper | Juan J. Durillo, Vlad Nae, Radu Prodan, *Multi-objective energy-efficient workflow scheduling using list-based heuristics*, Future Generation Computer Systems 36, 221–236, 2014 |
+| Primary source | [DOI](https://doi.org/10.1016/j.future.2013.07.005), [open repository record](http://resolver.obvsg.at/urn:nbn:at:at-ubi:3-2421) |
+| Reference artifact | [Dongyubo66/ecds-workflow-scheduling](https://github.com/Dongyubo66/ecds-workflow-scheduling), GreenHEFT baseline, commit [`36ecaf401a81e0fed5c6447853bc7054fea22bfc`](https://github.com/Dongyubo66/ecds-workflow-scheduling/commit/36ecaf401a81e0fed5c6447853bc7054fea22bfc) |
+| License | MIT for the third-party reference artifact; the paper remains the primary definition. No original-author GreenHEFT source repository was found |
+| Platform classes | `org.workflowsim.planning.greenheft` and `GreenHeftPlanningAlgorithm` |
+| Verification | `GreenHeftPlannerTest`, `GreenHeftIntegrationTest`; M40 |
+| Status | `VERIFIED_ENERGY_CORE` for static HEFT-priority, minimum-energy VM selection with finish-time tie-break |
+
+The implementation keeps HEFT upward-rank prioritization and chooses the VM with the lowest
+predicted task energy, using finish time and VM ID only as tie-breaks. The current adapter estimates
+energy as declared full-load watts times raw-MI execution seconds; missing power or multiple
+frequency tiers fails explicitly. This is not the paper's trained empirical power/performance model,
+MOHEFT Pareto front, or a claim of reproducing its full experimental corpus.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

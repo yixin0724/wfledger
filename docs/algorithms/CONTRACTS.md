@@ -194,6 +194,16 @@ rank table and `ReshiTaskHistory` are experiment inputs, not values inferred fro
 official sign-and-clamp convention through a named random stream. The implementation does not train
 the paper's regression-tree recommender or replay AWS instance profiles.
 
+### GreenHEFT Energy-First Static HEFT (R-PAPER-05, 2026-11-06)
+
+`GREEN_HEFT` preserves HEFT upward-rank prioritization and changes VM selection to minimum
+predicted task energy, with finish time and VM ID as deterministic tie-breaks. `GreenHeftAdapter`
+requires one declared plain power profile per VM and estimates task energy as full-load watts times
+raw-MI execution seconds. Missing power, multiple frequency tiers, or a task-cost matrix fails
+explicitly. The implementation is not the paper's empirical neural-network model or the MOHEFT
+Pareto optimizer. `GreenHeftPlannerTest` distinguishes energy-first selection from ordinary HEFT;
+`GreenHeftIntegrationTest` verifies the same rule against declared platform power.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

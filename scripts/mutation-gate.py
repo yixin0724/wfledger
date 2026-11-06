@@ -353,6 +353,13 @@ REGISTRY = [
         old="        return Math.max(1.0 - sample * errorFraction, 0.0);",
         new="        return 1.0 - sample * errorFraction;",
         killers="ReshiPredictionErrorModelTest"),
+    dict(
+        id="M40",
+        name="GreenHEFT selects earliest finish instead of minimum energy",
+        file="simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftPlanner.java",
+        old="                if (taskEnergy < bestEnergy - 1.0e-9",
+        new="                if (finish < bestFinish - 1.0e-9",
+        killers="GreenHeftPlannerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

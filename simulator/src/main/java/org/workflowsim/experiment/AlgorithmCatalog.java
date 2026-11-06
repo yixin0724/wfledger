@@ -107,6 +107,7 @@ public final class AlgorithmCatalog {
             case CAWOSCHED_SLACK:
             case CAWOSCHED_PRESSURE:
             case NACO_GA_HEFT:
+            case GREEN_HEFT:
             case PSO:
             case LOCAL_HEFT:
             case LOCAL_CPOP:
@@ -436,6 +437,9 @@ public final class AlgorithmCatalog {
             case NACO_GA_HEFT:
                 nacoGaHeftPlanner(values);
                 break;
+            case GREEN_HEFT:
+                greenHeftPlanner(values);
+                break;
             case PSO:
                 psoPlanner(values);
                 break;
@@ -453,6 +457,17 @@ public final class AlgorithmCatalog {
                 break;
         }
         return values;
+    }
+
+    private static void greenHeftPlanner(Map<String, Object> values) {
+        values.put("decisionLayer", "STATIC_DAG_ENERGY_HEFT");
+        values.put("inputDomain", "SHARED_DAG_WITH_DECLARED_VM_POWER");
+        values.put("decisionRule", "HEFT upward rank with minimum-energy VM and finish-time tie-break");
+        values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
+        values.put("verification", "GREENHEFT_ENERGY_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations("Requires declared power; no empirical neural model or multi-objective MOHEFT claim"));
     }
 
     private static void nacoGaHeftPlanner(Map<String, Object> values) {

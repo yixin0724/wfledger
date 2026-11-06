@@ -86,6 +86,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-CWS-RANKMIN-001` | `VERIFIED_STATIC_SUBSET`: CWS bottom-rank, input-byte tie-break, persistent RR, exact Figure 1 DAG and 5.21→4.21 direction, M36; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | Static-DAG/idle-VM subset only; no dynamic CWS API, future task creation, or real-cluster claim |
 | `PAPER-NACO-001` | `VERIFIED_HYBRID_CORE`: DNC evaluation, elite HEFT, GPX/mutation/replacement, named random stream, LOCAL integration, M37/M38; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full paper corpus, accuracy percentage, optimal makespan, or real-platform validation claim |
 | `PAPER-RESHI-001` | `VERIFIED_RANKED_SUBSET`: Reshi-C/M, explicit rank/history, session injection, prediction-error clamp and M39; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No regression-tree training, AWS profiling, or real-cluster validation claim |
+| `PAPER-GREENHEFT-001` | `VERIFIED_ENERGY_CORE`: HEFT priority, energy-first VM choice, declared-power integration and M40; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No empirical neural model, MOHEFT Pareto front, or full paper-corpus claim |
 
 ## 5. Change and review discipline
 

@@ -135,6 +135,8 @@ public class Parameters {
         CAWOSCHED_PRESSURE,
         /** NACO 2023 hybrid GA/HEFT with DNC evaluation and named random streams. */
         NACO_GA_HEFT,
+        /** GreenHEFT energy-first static HEFT planner using declared VM power profiles. */
+        GREEN_HEFT,
         /**
          * PSO (particle swarm optimization) mapping planner -- a paper reproduction (Pandey
          * et al., AINA 2010; reference open-source implementation meysamhit/workflowsim-pso).

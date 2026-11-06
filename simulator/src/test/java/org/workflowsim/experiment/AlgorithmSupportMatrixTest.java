@@ -67,6 +67,7 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.CAWOSCHED_SLACK,
                 PlanningAlgorithm.CAWOSCHED_PRESSURE,
                 PlanningAlgorithm.NACO_GA_HEFT,
+                PlanningAlgorithm.GREEN_HEFT,
                 PlanningAlgorithm.PSO,
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,
