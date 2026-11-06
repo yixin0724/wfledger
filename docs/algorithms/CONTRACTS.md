@@ -204,6 +204,17 @@ explicitly. The implementation is not the paper's empirical neural-network model
 Pareto optimizer. `GreenHeftPlannerTest` distinguishes energy-first selection from ordinary HEFT;
 `GreenHeftIntegrationTest` verifies the same rule against declared platform power.
 
+### MOHEFT Pareto Beam Search (R-PAPER-06, 2026-11-06)
+
+`MO_HEFT` expands HEFT-ordered task-to-VM candidates and keeps non-dominated makespan-energy
+solutions. `MoHeftPlanner` retains both objective extremes, applies crowding-distance truncation
+at beam width 8, and selects a balanced schedule by normalized distance to the ideal point. A
+candidate is dominated only when another candidate is no worse in both objectives and strictly
+better in at least one. The balanced tie-break is makespan, energy, then deterministic candidate ID.
+`MoHeftPlannerTest` covers dominated-candidate removal, Pareto extremes and balanced selection;
+`MoHeftIntegrationTest` covers a real three-point tradeoff. This is not an exact full Pareto optimizer
+or the paper's empirical neural-network model.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

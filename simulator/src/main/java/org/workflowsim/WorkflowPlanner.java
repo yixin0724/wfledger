@@ -34,6 +34,7 @@ import org.workflowsim.planning.GreenHeftPlanningAlgorithm;
 import org.workflowsim.planning.LocalCpopPlanningAlgorithm;
 import org.workflowsim.planning.LocalHeftPlanningAlgorithm;
 import org.workflowsim.planning.LocalPeftPlanningAlgorithm;
+import org.workflowsim.planning.MoHeftPlanningAlgorithm;
 import org.workflowsim.planning.NacoGaHeftPlanningAlgorithm;
 import org.workflowsim.planning.PSOPlanningAlgorithm;
 import org.workflowsim.planning.PlanningContext;
@@ -423,6 +424,9 @@ public final class WorkflowPlanner extends SimEntity {
                 break;
             case GREEN_HEFT:
                 planner = new GreenHeftPlanningAlgorithm(planningContext);
+                break;
+            case MO_HEFT:
+                planner = new MoHeftPlanningAlgorithm(planningContext);
                 break;
             case PSO:
                 planner = new PSOPlanningAlgorithm();

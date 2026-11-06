@@ -360,6 +360,20 @@ REGISTRY = [
         old="                if (taskEnergy < bestEnergy - 1.0e-9",
         new="                if (finish < bestFinish - 1.0e-9",
         killers="GreenHeftPlannerTest"),
+    dict(
+        id="M41",
+        name="MOHEFT dominance ignores energy",
+        file="simulator/src/main/java/org/workflowsim/planning/moheft/MoHeftPlanner.java",
+        old="        boolean noWorse = first.makespan <= second.makespan && first.energy <= second.energy;",
+        new="        boolean noWorse = first.makespan <= second.makespan;",
+        killers="MoHeftPlannerTest"),
+    dict(
+        id="M42",
+        name="MOHEFT balanced choice ignores makespan tradeoff",
+        file="simulator/src/main/java/org/workflowsim/planning/moheft/MoHeftPlanner.java",
+        old="            double distance = Math.sqrt(makespanPart * makespanPart + energyPart * energyPart);",
+        new="            double distance = candidate.energy;",
+        killers="MoHeftPlannerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

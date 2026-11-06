@@ -108,6 +108,7 @@ public final class AlgorithmCatalog {
             case CAWOSCHED_PRESSURE:
             case NACO_GA_HEFT:
             case GREEN_HEFT:
+            case MO_HEFT:
             case PSO:
             case LOCAL_HEFT:
             case LOCAL_CPOP:
@@ -440,6 +441,9 @@ public final class AlgorithmCatalog {
             case GREEN_HEFT:
                 greenHeftPlanner(values);
                 break;
+            case MO_HEFT:
+                moHeftPlanner(values);
+                break;
             case PSO:
                 psoPlanner(values);
                 break;
@@ -457,6 +461,19 @@ public final class AlgorithmCatalog {
                 break;
         }
         return values;
+    }
+
+    private static void moHeftPlanner(Map<String, Object> values) {
+        values.put("decisionLayer", "STATIC_DAG_PARETO_HEFT");
+        values.put("inputDomain", "SHARED_DAG_WITH_DECLARED_VM_POWER");
+        values.put(
+                "decisionRule", "HEFT-ordered beam search with non-dominated filtering, crowding and balanced choice");
+        values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
+        values.put("verification", "MOHEFT_PARETO_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations(
+                        "Beam-search Pareto subset; no empirical neural model or exact full Pareto optimality claim"));
     }
 
     private static void greenHeftPlanner(Map<String, Object> values) {

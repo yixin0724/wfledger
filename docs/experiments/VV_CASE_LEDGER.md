@@ -87,6 +87,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-NACO-001` | `VERIFIED_HYBRID_CORE`: DNC evaluation, elite HEFT, GPX/mutation/replacement, named random stream, LOCAL integration, M37/M38; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full paper corpus, accuracy percentage, optimal makespan, or real-platform validation claim |
 | `PAPER-RESHI-001` | `VERIFIED_RANKED_SUBSET`: Reshi-C/M, explicit rank/history, session injection, prediction-error clamp and M39; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No regression-tree training, AWS profiling, or real-cluster validation claim |
 | `PAPER-GREENHEFT-001` | `VERIFIED_ENERGY_CORE`: HEFT priority, energy-first VM choice, declared-power integration and M40; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No empirical neural model, MOHEFT Pareto front, or full paper-corpus claim |
+| `PAPER-MOHEFT-001` | `VERIFIED_PARETO_CORE`: HEFT-ordered beam search, dominance, crowding extremes, balanced selection and M41/M42; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No exact full Pareto optimality, empirical neural model, or full paper-corpus claim |
 
 ## 5. Change and review discipline
 

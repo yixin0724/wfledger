@@ -145,5 +145,23 @@ energy as declared full-load watts times raw-MI execution seconds; missing power
 frequency tiers fails explicitly. This is not the paper's trained empirical power/performance model,
 MOHEFT Pareto front, or a claim of reproducing its full experimental corpus.
 
+## MOHEFT — FGCS 2014 / CCGrid 2013
+
+| Item | Record |
+|---|---|
+| Paper | Juan J. Durillo, Vlad Nae, Radu Prodan, *Multi-objective energy-efficient workflow scheduling using list-based heuristics*, Future Generation Computer Systems 36, 221–236, 2014 |
+| Primary sources | [FGCS DOI](https://doi.org/10.1016/j.future.2013.07.005); earlier [CCGrid 2013 DOI](https://doi.org/10.1109/CCGrid.2013.62) |
+| Reference artifacts | [Dongyubo66/ecds-workflow-scheduling](https://github.com/Dongyubo66/ecds-workflow-scheduling) commit `36ecaf4`; [leimiaomiao/Multi-Objective-Workflow-Scheduling](https://github.com/leimiaomiao/Multi-Objective-Workflow-Scheduling) commit `280b745` |
+| License | ECDS reference is MIT; the second reference has no license file and is used for inspection only, not copied or redistributed |
+| Platform classes | `org.workflowsim.planning.moheft` and `MoHeftPlanningAlgorithm` |
+| Verification | `MoHeftPlannerTest`, `MoHeftIntegrationTest`; M41/M42 |
+| Status | `VERIFIED_PARETO_CORE` for HEFT-ordered beam search, non-dominated filtering, crowding and balanced selection |
+
+MOHEFT expands task-to-VM candidates in HEFT order, removes dominated candidates, retains makespan
+and energy extremes with crowding-distance truncation, and selects a deterministic balanced schedule
+using normalized distance to the ideal point. This is a beam-search Pareto subset, not an exact full
+Pareto-front optimizer or the paper's empirical neural-network model. The reference implementation
+semantics were inspected independently; no third-party code was copied without a compatible license.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

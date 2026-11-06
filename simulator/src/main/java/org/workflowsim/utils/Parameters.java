@@ -137,6 +137,8 @@ public class Parameters {
         NACO_GA_HEFT,
         /** GreenHEFT energy-first static HEFT planner using declared VM power profiles. */
         GREEN_HEFT,
+        /** MOHEFT Pareto makespan-energy beam-search planner with balanced execution choice. */
+        MO_HEFT,
         /**
          * PSO (particle swarm optimization) mapping planner -- a paper reproduction (Pandey
          * et al., AINA 2010; reference open-source implementation meysamhit/workflowsim-pso).
