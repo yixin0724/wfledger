@@ -75,6 +75,7 @@ public final class SimulationConfig {
     private final transient org.workflowsim.experiment.registry.SchedulingAlgorithmProvider
             registeredSchedulingAlgorithmProvider;
     private final FrequencyPolicy frequencyPolicy;
+    private final org.workflowsim.utils.ReshiConfig reshiConfig;
     private final int eventRecorderCap;
 
     private SimulationConfig(Builder builder) {
@@ -100,6 +101,7 @@ public final class SimulationConfig {
         this.taskCostMatrix = builder.taskCostMatrix;
         this.registeredSchedulingAlgorithmProvider = builder.registeredSchedulingAlgorithmProvider;
         this.frequencyPolicy = builder.frequencyPolicy;
+        this.reshiConfig = builder.reshiConfig;
         this.eventRecorderCap = builder.eventRecorderCap;
     }
 
@@ -235,6 +237,11 @@ public final class SimulationConfig {
         return frequencyPolicy;
     }
 
+    /** @return explicit Reshi rank/history input, or null when Reshi is not configured */
+    public org.workflowsim.utils.ReshiConfig getReshiConfig() {
+        return reshiConfig;
+    }
+
     /**
      * AUD-F07 follow-up (2026-11-04, post-completion review): @return the retention cap of the
      * run's event recorder. A run that reaches the cap fails fast with an actionable exception
@@ -342,6 +349,14 @@ public final class SimulationConfig {
          * v1 degenerate tier).
          */
         private FrequencyPolicy frequencyPolicy = FrequencyPolicy.DEFAULT;
+
+        private org.workflowsim.utils.ReshiConfig reshiConfig;
+
+        /** Supplies the explicit Reshi rank table and task history for this run. */
+        public Builder reshiConfig(org.workflowsim.utils.ReshiConfig value) {
+            this.reshiConfig = value;
+            return this;
+        }
 
         /**
          * AUD-F07 follow-up (2026-11-04, post-completion review): retention cap of the run's

@@ -49,6 +49,9 @@ public final class SimulationSession implements AutoCloseable {
         }
 
         Parameters.reset();
+        if (config.getReshiConfig() != null) {
+            ReshiRegistry.configure(config.getReshiConfig());
+        }
         Parameters.setRandomSeed(config.getRandomSeed());
         Parameters.setRuntimeScale(config.getRuntimeScale());
         Parameters.setRuntimeReferenceMips(config.getRuntimeReferenceMips());

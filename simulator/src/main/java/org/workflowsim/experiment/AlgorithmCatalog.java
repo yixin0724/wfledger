@@ -49,6 +49,8 @@ public final class AlgorithmCatalog {
             case RL_POLICY:
             case CARBON_WINDOW_DEFER:
             case CWS_RANKMIN_RR:
+            case RESHI_C:
+            case RESHI_M:
                 return true;
             case MINMIN:
             case MAXMIN:
@@ -251,12 +253,13 @@ public final class AlgorithmCatalog {
                         limitations("The batch is the runtime-ready Job set, not a static independent-task batch."));
                 break;
             case CWS_RANKMIN_RR:
-                values.put("decisionLayer", "ONLINE_READY_JOB_DAG_RANK");
-                values.put("inputDomain", "STATIC_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
-                values.put(
-                        "decisionRule", "CWS descendant-PROCESS rank descending, input bytes ascending, persistent RR");
-                values.put("verification", "PAPER_FIGURE_AND_COMPARATOR_REGRESSION_COVERED");
-                values.put("limitations", limitations("Static-DAG/idle-VM adaptation only; not the dynamic CWS API"));
+                cwsRankMinScheduler(values);
+                break;
+            case RESHI_C:
+                reshiScheduler(values, "Direct-child-count descending with explicit task-node ranking");
+                break;
+            case RESHI_M:
+                reshiScheduler(values, "Historical-average-runtime descending with explicit task-node ranking");
                 break;
             case READY_BATCH_MCT:
                 readyBatchMctScheduler(values);
@@ -383,6 +386,24 @@ public final class AlgorithmCatalog {
                 limitations("The standard SimulationRunner rejects this label because it is not "
                         + "the classical offline heuristic; use " + replacement
                         + " for the maintained online variant."));
+    }
+
+    private static void cwsRankMinScheduler(Map<String, Object> values) {
+        values.put("decisionLayer", "ONLINE_READY_JOB_DAG_RANK");
+        values.put("inputDomain", "STATIC_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
+        values.put("decisionRule", "CWS descendant-PROCESS rank descending, input bytes ascending, persistent RR");
+        values.put("verification", "PAPER_FIGURE_AND_COMPARATOR_REGRESSION_COVERED");
+        values.put("limitations", limitations("Static-DAG/idle-VM adaptation only; not the dynamic CWS API"));
+    }
+
+    private static void reshiScheduler(Map<String, Object> values, String rule) {
+        values.put("decisionLayer", "ONLINE_READY_JOB_RES");
+        values.put("inputDomain", "EXPLICIT_RESHI_RANK_TABLE_AND_TASK_HISTORY");
+        values.put("decisionRule", rule);
+        values.put("verification", "RESHI_RANKED_SCHEDULING_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations("Requires explicit Reshi rank/history inputs; no trained recommender is built in"));
     }
 
     private static Map<String, Object> planner(PlanningAlgorithm algorithm) {

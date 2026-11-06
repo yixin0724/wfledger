@@ -184,6 +184,16 @@ GPX crossover, dependency-bounded mutation, tournament selection, and elite repl
 `NacoDncEvaluatorTest`; the real LOCAL integration is in `NacoGaHeftIntegrationTest`. This is not the
 full paper experiment pipeline or an accuracy/optimal-makespan guarantee.
 
+### Reshi-C/M with Explicit Rank and Prediction Inputs (R-PAPER-04, 2026-11-06)
+
+`RESHI_C` implements Reshi-C's direct-child-count priority, and `RESHI_M` implements Reshi-M's
+historical-average-runtime priority. Both use the explicit `ReshiRankTable` for VM selection. The
+rank table and `ReshiTaskHistory` are experiment inputs, not values inferred from production output.
+`SimulationConfig.reshiConfig` supplies them to `SimulationSession`; missing inputs fail explicitly.
+`ReshiPredictionErrorModel` optionally applies normal or exponential runtime multipliers with the
+official sign-and-clamp convention through a named random stream. The implementation does not train
+the paper's regression-tree recommender or replay AWS instance profiles.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

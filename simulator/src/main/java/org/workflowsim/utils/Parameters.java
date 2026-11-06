@@ -98,6 +98,10 @@ public class Parameters {
         CARBON_WINDOW_DEFER,
         /** CWS Rank(Min) + persistent Round-Robin over static DAG ready Jobs. */
         CWS_RANKMIN_RR,
+        /** Reshi-C: direct-child-count priority with explicit task-node ranking. */
+        RESHI_C,
+        /** Reshi-M: historical-average-runtime priority with explicit task-node ranking. */
+        RESHI_M,
         INVALID
     }
 
@@ -648,6 +652,7 @@ public class Parameters {
         frequencyPolicy = SimulationConfig.FrequencyPolicy.DEFAULT;
         workflowArrivalSeconds = null;
         carbonWindows = Collections.emptyList();
+        ReshiRegistry.clear();
         SimulationRandom.reset(randomSeed);
     }
 

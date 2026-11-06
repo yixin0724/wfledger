@@ -85,6 +85,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-CAWOSCHED-001` | `VERIFIED_TIMED_CORE`: generic TimedPlan API, all 16 variants, communication activities, exact single-processor DP, absolute-start dispatch, M32–M35; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full paper corpus, multi-processor ILP, Workbench JSON, or carbon-optimality claim |
 | `PAPER-CWS-RANKMIN-001` | `VERIFIED_STATIC_SUBSET`: CWS bottom-rank, input-byte tie-break, persistent RR, exact Figure 1 DAG and 5.21→4.21 direction, M36; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | Static-DAG/idle-VM subset only; no dynamic CWS API, future task creation, or real-cluster claim |
 | `PAPER-NACO-001` | `VERIFIED_HYBRID_CORE`: DNC evaluation, elite HEFT, GPX/mutation/replacement, named random stream, LOCAL integration, M37/M38; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full paper corpus, accuracy percentage, optimal makespan, or real-platform validation claim |
+| `PAPER-RESHI-001` | `VERIFIED_RANKED_SUBSET`: Reshi-C/M, explicit rank/history, session injection, prediction-error clamp and M39; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No regression-tree training, AWS profiling, or real-cluster validation claim |
 
 ## 5. Change and review discipline
 

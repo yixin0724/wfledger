@@ -346,6 +346,13 @@ REGISTRY = [
         old="            if (index < cut) {",
         new="            if (false) {",
         killers="NacoGaHeftOptimizerTest"),
+    dict(
+        id="M39",
+        name="Reshi prediction error drops the non-negative runtime clamp",
+        file="simulator/src/main/java/org/workflowsim/utils/ReshiPredictionErrorModel.java",
+        old="        return Math.max(1.0 - sample * errorFraction, 0.0);",
+        new="        return 1.0 - sample * errorFraction;",
+        killers="ReshiPredictionErrorModelTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

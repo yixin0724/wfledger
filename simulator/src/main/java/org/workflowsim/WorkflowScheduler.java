@@ -47,6 +47,8 @@ import org.workflowsim.scheduling.ReadyBatchMCTSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchMaxMinSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchMinMinSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchRoundRobinSchedulingAlgorithm;
+import org.workflowsim.scheduling.ReshiSchedulingAlgorithm;
+import org.workflowsim.scheduling.ReshiStrategy;
 import org.workflowsim.scheduling.RlPolicySchedulingAlgorithm;
 import org.workflowsim.scheduling.SptFastestIdleSchedulingAlgorithm;
 import org.workflowsim.scheduling.StaticSchedulePlan;
@@ -280,6 +282,12 @@ public class WorkflowScheduler extends DatacenterBroker {
                 break;
             case CWS_RANKMIN_RR:
                 algorithm = new CwsRankMinRoundRobinSchedulingAlgorithm();
+                break;
+            case RESHI_C:
+                algorithm = new ReshiSchedulingAlgorithm(ReshiStrategy.RESHI_C);
+                break;
+            case RESHI_M:
+                algorithm = new ReshiSchedulingAlgorithm(ReshiStrategy.RESHI_M);
                 break;
             case STATIC:
                 if (Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_SLACK

@@ -108,5 +108,24 @@ planner. The two-VM hand oracle gives makespan 3, while a DNC case with communic
 gives finish time 8. These are semantic checks, not claims of reproducing every paper workload,
 DNC accuracy percentage, or optimal makespan.
 
+## Reshi — IPCCC 2022
+
+| Item | Record |
+|---|---|
+| Paper | Jonathan Bader, Fabian Lehmann, Alexander Groth, Lauritz Thamsen, Dominik Scheinert, Jonathan Will, Ulf Leser, Odej Kao, *Reshi: Recommending Resources for Scientific Workflow Tasks on Heterogeneous Infrastructures*, IPCCC 2022 |
+| Primary source | [DOI](https://doi.org/10.1109/IPCCC55026.2022.9894299), [arXiv:2208.07905v2](https://arxiv.org/html/2208.07905v2) |
+| Official artifact | [CRC-FONDA/WorkSim-PredError](https://github.com/CRC-FONDA/WorkSim-PredError), commit [`9fbcdc63410dd5550439612c459fc6d03ad5e62d`](https://github.com/CRC-FONDA/WorkSim-PredError/commit/9fbcdc63410dd5550439612c459fc6d03ad5e62d) |
+| License | LGPL-3.0 (`license.txt` in the artifact) |
+| Platform classes | `ReshiSchedulingAlgorithm`, `ReshiRankTable`, `ReshiTaskHistory`, `ReshiPredictionErrorModel`, and `ReshiRegistry` |
+| Verification | `ReshiSchedulingAlgorithmTest`, `ReshiIntegrationTest`, `ReshiPredictionErrorModelTest`; M39 |
+| Status | `VERIFIED_RANKED_SUBSET` for Reshi-C/M with explicit rank/history inputs and optional prediction errors |
+
+Reshi-C prioritizes Jobs by direct-child count; Reshi-M prioritizes by historical average runtime.
+Both use an explicit task-node rank table for VM selection. Reshi-C/M require `SimulationConfig.reshiConfig`,
+so missing rank/history inputs fail explicitly. Reshi-M can additionally apply normal or exponential
+prediction errors through a named random stream, including the official sign-and-clamp convention.
+No regression-tree training, AWS image-type profiling, or complete production trace pipeline is
+built in; these are adaptation boundaries, not claims of reproducing the paper's full recommender.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

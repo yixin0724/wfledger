@@ -28,7 +28,9 @@ class AlgorithmSupportMatrixTest {
                 SchedulingAlgorithm.STATIC,
                 SchedulingAlgorithm.RL_POLICY,
                 SchedulingAlgorithm.CARBON_WINDOW_DEFER,
-                SchedulingAlgorithm.CWS_RANKMIN_RR);
+                SchedulingAlgorithm.CWS_RANKMIN_RR,
+                SchedulingAlgorithm.RESHI_C,
+                SchedulingAlgorithm.RESHI_M);
         EnumSet<SchedulingAlgorithm> unavailable = EnumSet.of(
                 SchedulingAlgorithm.MINMIN,
                 SchedulingAlgorithm.MAXMIN,
