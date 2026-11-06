@@ -88,6 +88,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-RESHI-001` | `VERIFIED_RANKED_SUBSET`: Reshi-C/M, explicit rank/history, session injection, prediction-error clamp and M39; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No regression-tree training, AWS profiling, or real-cluster validation claim |
 | `PAPER-GREENHEFT-001` | `VERIFIED_ENERGY_CORE`: HEFT priority, energy-first VM choice, declared-power integration and M40; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No empirical neural model, MOHEFT Pareto front, or full paper-corpus claim |
 | `PAPER-MOHEFT-001` | `VERIFIED_PARETO_CORE`: HEFT-ordered beam search, dominance, crowding extremes, balanced selection and M41/M42; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No exact full Pareto optimality, empirical neural model, or full paper-corpus claim |
+| `PAPER-ICPCP-001` | `VERIFIED_DEADLINE_COST_CORE`: PCP, EST/LFT, path cost, END deadline slack, fork/join, infeasibility and M43/M44; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No IC-PCPD2, dynamic provisioning, or full paper-corpus claim |
 
 ## 5. Change and review discipline
 

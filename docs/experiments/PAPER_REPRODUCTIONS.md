@@ -163,5 +163,24 @@ using normalized distance to the ideal point. This is a beam-search Pareto subse
 Pareto-front optimizer or the paper's empirical neural-network model. The reference implementation
 semantics were inspected independently; no third-party code was copied without a compatible license.
 
+## IC-PCP — FGCS 2013
+
+| Item | Record |
+|---|---|
+| Paper | Saeid Abrishami, Mahmoud Naghibzadeh, Dick H. J. Epema, *Deadline-constrained workflow scheduling algorithms for Infrastructure as a Service Clouds*, Future Generation Computer Systems 29(1), 158–169, 2013 |
+| Primary source | [DOI](https://doi.org/10.1016/j.future.2012.05.004), [Semantic Scholar record](https://www.semanticscholar.org/paper/963fffd1e48466f767cc760c16069356fdbfc126) |
+| Reference artifact | [ralthor/Scheduler](https://github.com/ralthor/Scheduler), `Scheduler/ICPCP.py`, commit [`d8f8963a021abe945b8cebee693341031d086e77`](https://github.com/ralthor/Scheduler/commit/d8f8963a021abe945b8cebee693341031d086e77) |
+| License | No license file was found in the reference repository; inspected for algorithm semantics only, not copied or redistributed |
+| Platform classes | `org.workflowsim.planning.icpcp` and `IcpcpPlanningAlgorithm` |
+| Verification | `IcpcpPlannerTest`, `IcpcpIntegrationTest`; M43/M44 |
+| Status | `VERIFIED_DEADLINE_COST_CORE` for one-phase PCP, EST/LFT, path-cost and deadline-feasible VM selection |
+
+The planner constructs critical-parent partial critical paths using `lft-est`, tries each whole path on
+each VM, and selects the feasible candidate with minimum incremental cost and maximum flexibility.
+The virtual END node participates in slack calculation, so an infeasible deadline fails explicitly
+rather than falling back to an arbitrary VM. The current adapter uses raw MI, homogeneous estimated
+network transfer time, VM cost per second, and a one-second billing period. This is not IC-PCPD2,
+dynamic VM provisioning, or a full paper-corpus reproduction.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

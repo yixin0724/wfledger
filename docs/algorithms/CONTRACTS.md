@@ -215,6 +215,17 @@ better in at least one. The balanced tie-break is makespan, energy, then determi
 `MoHeftIntegrationTest` covers a real three-point tradeoff. This is not an exact full Pareto optimizer
 or the paper's empirical neural-network model.
 
+### IC-PCP Deadline/Cost Partial Critical Paths (R-PAPER-07, 2026-11-06)
+
+`IC_PCP` implements one-phase IC-PCP: initial HEFT priority, EST/LFT, critical-parent partial
+critical paths, whole-path VM trials, and feasible minimum-incremental-cost assignment. A virtual
+END node participates in the minimum slack check; an infeasible deadline fails explicitly. Cost is
+computed per VM as `ceil((lastFinish-firstStart)/billingPeriod) * vmCostPerSecond`, with the current
+adapter using a one-second billing period and homogeneous estimated transfer time. No silent fallback
+to an arbitrary VM, dynamic provisioning, IC-PCPD2, or full paper-corpus claim is made.
+`IcpcpPlannerTest` covers a low-cost chain, infeasible deadline, fork/join and cycle rejection;
+`IcpcpIntegrationTest` covers declared VM costs in a real session.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

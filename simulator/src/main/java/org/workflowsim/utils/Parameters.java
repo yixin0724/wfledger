@@ -139,6 +139,8 @@ public class Parameters {
         GREEN_HEFT,
         /** MOHEFT Pareto makespan-energy beam-search planner with balanced execution choice. */
         MO_HEFT,
+        /** IC-PCP one-phase partial-critical-path deadline/cost planner. */
+        IC_PCP,
         /**
          * PSO (particle swarm optimization) mapping planner -- a paper reproduction (Pandey
          * et al., AINA 2010; reference open-source implementation meysamhit/workflowsim-pso).

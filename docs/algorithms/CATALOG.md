@@ -102,6 +102,7 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `NACO_GA_HEFT` | LOCAL DAG | DNC evaluation, HEFT elite seed, GPX crossover, mutation, tournament and elite replacement |
 | `GREEN_HEFT` | SHARED DAG | HEFT upward rank with minimum-energy VM selection and finish-time tie-break |
 | `MO_HEFT` | SHARED DAG | HEFT-ordered beam search with non-dominated filtering, crowding and balanced makespan-energy choice |
+| `IC_PCP` | SHARED DAG | critical-parent PCP with EST/LFT, minimum incremental path cost and deadline slack |
 
 ## Combination rules
 
@@ -117,6 +118,7 @@ mean multiple Jobs can be dispatched simultaneously.
 | SHARED DAG | SHARED_STORAGE family / STATIC | SHARED + `legacyWorkflowsimV1()`; no failure, no overhead | rejected |
 | GreenHEFT DAG | GREEN_HEFT / STATIC | SHARED + declared per-VM power; no failure, no overhead; raw task lengths only | rejected without power or with frequency tiers |
 | MOHEFT DAG | MO_HEFT / STATIC | SHARED + declared per-VM power; no failure, no overhead; raw task lengths only | rejected without power or with frequency tiers |
+| IC-PCP DAG | IC_PCP / STATIC | SHARED + positive deadline and declared VM costs; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix or deadline <= 0 |
 | CaWoSched timed DAG | CAWOSCHED_SLACK / CAWOSCHED_PRESSURE / STATIC | SHARED + `legacyWorkflowsimV1()` + complete `carbonWindows`; no failure, no overhead | rejected |
 | LOCAL DAG | LOCAL family / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead | usable |
 | NACO DNC DAG | NACO_GA_HEFT / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |

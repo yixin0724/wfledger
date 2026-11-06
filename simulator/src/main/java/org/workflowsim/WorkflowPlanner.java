@@ -31,6 +31,7 @@ import org.workflowsim.failure.FailureParameters;
 import org.workflowsim.planning.BasePlanningAlgorithm;
 import org.workflowsim.planning.CaWoSchedPlanningAlgorithm;
 import org.workflowsim.planning.GreenHeftPlanningAlgorithm;
+import org.workflowsim.planning.IcpcpPlanningAlgorithm;
 import org.workflowsim.planning.LocalCpopPlanningAlgorithm;
 import org.workflowsim.planning.LocalHeftPlanningAlgorithm;
 import org.workflowsim.planning.LocalPeftPlanningAlgorithm;
@@ -427,6 +428,9 @@ public final class WorkflowPlanner extends SimEntity {
                 break;
             case MO_HEFT:
                 planner = new MoHeftPlanningAlgorithm(planningContext);
+                break;
+            case IC_PCP:
+                planner = new IcpcpPlanningAlgorithm(planningContext);
                 break;
             case PSO:
                 planner = new PSOPlanningAlgorithm();

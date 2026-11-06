@@ -374,6 +374,20 @@ REGISTRY = [
         old="            double distance = Math.sqrt(makespanPart * makespanPart + energyPart * energyPart);",
         new="            double distance = candidate.energy;",
         killers="MoHeftPlannerTest"),
+    dict(
+        id="M43",
+        name="IC-PCP ignores the virtual END deadline slack",
+        file="simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpPlanner.java",
+        old="        minimum = Math.min(minimum, latest.get(END_ID) - starts.get(END_ID));",
+        new="        // END slack intentionally ignored by the mutant",
+        killers="IcpcpPlannerTest"),
+    dict(
+        id="M44",
+        name="IC-PCP path choice ignores incremental cost",
+        file="simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpPlanner.java",
+        old="            if (best == null\n                    || costDelta < best.costDelta - 1.0e-9",
+        new="            if (best == null\n                    || slack > best.slack + 1.0e-9",
+        killers="IcpcpPlannerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

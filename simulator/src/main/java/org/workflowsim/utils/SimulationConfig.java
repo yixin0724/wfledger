@@ -700,7 +700,8 @@ public final class SimulationConfig {
                     || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_SLACK
                     || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_PRESSURE
                     || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
-                    || planningAlgorithm == PlanningAlgorithm.MO_HEFT) {
+                    || planningAlgorithm == PlanningAlgorithm.MO_HEFT
+                    || planningAlgorithm == PlanningAlgorithm.IC_PCP) {
                 if (fileSystem != ReplicaCatalog.FileSystem.SHARED) {
                     throw new IllegalArgumentException(planningAlgorithm + " requires shared storage");
                 }
@@ -719,6 +720,9 @@ public final class SimulationConfig {
                             + "DataMovementModel.legacyWorkflowsimV1() so planning and execution "
                             + "transfer estimates remain aligned");
                 }
+            }
+            if (planningAlgorithm == PlanningAlgorithm.IC_PCP && deadline <= 0L) {
+                throw new IllegalArgumentException("IC_PCP requires a positive workflow deadline");
             }
             // The task-by-VM cost matrix is folded in by the STATIC dispatch path
             // (MI = seconds * vm.mips); an online scheduler does not fold it in, so the matrix
@@ -755,7 +759,8 @@ public final class SimulationConfig {
                         || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_PRESSURE
                         || planningAlgorithm == PlanningAlgorithm.NACO_GA_HEFT
                         || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
-                        || planningAlgorithm == PlanningAlgorithm.MO_HEFT) {
+                        || planningAlgorithm == PlanningAlgorithm.MO_HEFT
+                        || planningAlgorithm == PlanningAlgorithm.IC_PCP) {
                     throw new IllegalArgumentException("A task cost matrix cannot be combined with "
                             + planningAlgorithm + ": the shared-storage planning track estimates "
                             + "execution times from raw task lengths and does not consume the matrix, "

@@ -69,6 +69,7 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.NACO_GA_HEFT,
                 PlanningAlgorithm.GREEN_HEFT,
                 PlanningAlgorithm.MO_HEFT,
+                PlanningAlgorithm.IC_PCP,
                 PlanningAlgorithm.PSO,
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,
@@ -146,6 +147,9 @@ class AlgorithmSupportMatrixTest {
         SimulationConfig.Builder builder = SimulationConfig.builder("workflow.dax", 1)
                 .planningAlgorithm(algorithm)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC);
+        if (algorithm == PlanningAlgorithm.IC_PCP) {
+            builder.deadline(100L);
+        }
         if (localComm) {
             // Communication modelling for LOCAL_HEFT/LOCAL_CPOP/LOCAL_PEFT requires
             // LOCAL file system mode plus the pre-execution transfer delay data movement

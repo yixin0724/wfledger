@@ -109,6 +109,7 @@ public final class AlgorithmCatalog {
             case NACO_GA_HEFT:
             case GREEN_HEFT:
             case MO_HEFT:
+            case IC_PCP:
             case PSO:
             case LOCAL_HEFT:
             case LOCAL_CPOP:
@@ -444,6 +445,9 @@ public final class AlgorithmCatalog {
             case MO_HEFT:
                 moHeftPlanner(values);
                 break;
+            case IC_PCP:
+                icpcpPlanner(values);
+                break;
             case PSO:
                 psoPlanner(values);
                 break;
@@ -461,6 +465,15 @@ public final class AlgorithmCatalog {
                 break;
         }
         return values;
+    }
+
+    private static void icpcpPlanner(Map<String, Object> values) {
+        values.put("decisionLayer", "STATIC_DAG_DEADLINE_COST_PCP");
+        values.put("inputDomain", "SHARED_DAG_WITH_POSITIVE_DEADLINE_AND_VM_COST");
+        values.put("decisionRule", "Critical-parent PCP with EST/LFT, incremental cost and flexibility");
+        values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
+        values.put("verification", "ICPCP_DEADLINE_COST_REGRESSION_COVERED");
+        values.put("limitations", limitations("One-phase IC-PCP core; no dynamic provisioning or IC-PCPD2 claim"));
     }
 
     private static void moHeftPlanner(Map<String, Object> values) {
