@@ -1,0 +1,51 @@
+docs/algorithms/CATALOG.md
+  s_24f59fb6b2f10b::t_2412c8c3b2a7da 104,119
+docs/algorithms/CONTRACTS.md
+  s_24f59fb6b2f10b::t_6bd2b2e4e884db 207-217
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  s_24f59fb6b2f10b::t_8ae4badc90091d 41
+docs/experiments/PAPER_REPRODUCTIONS.md
+  s_24f59fb6b2f10b::t_a3dedfaf7dc149 148-165
+docs/experiments/VV_CASE_LEDGER.md
+  s_24f59fb6b2f10b::t_048c958cbd5c01 90
+scripts/mutation-gate.py
+  s_24f59fb6b2f10b::t_acf857e6d48c45 363-376
+simulator/src/main/java/org/workflowsim/WorkflowPlanner.java
+  s_24f59fb6b2f10b::t_dcfd2ceaf78a6b 37,428-430
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  s_24f59fb6b2f10b::t_5f25c50f77e57f 111,444-446,466-478
+simulator/src/main/java/org/workflowsim/planning/MoHeftPlanningAlgorithm.java
+  s_24f59fb6b2f10b::t_7d3b51e1b89825 1-42
+simulator/src/main/java/org/workflowsim/planning/moheft/MoHeftPlanner.java
+  s_24f59fb6b2f10b::t_ef0cf48443ae2b 1-229
+simulator/src/main/java/org/workflowsim/planning/moheft/MoHeftResult.java
+  s_24f59fb6b2f10b::t_87de1da62180b5 1-24
+simulator/src/main/java/org/workflowsim/planning/moheft/MoHeftSchedule.java
+  s_24f59fb6b2f10b::t_a46958d3a9f802 1-76
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  s_24f59fb6b2f10b::t_d843b808e20c21 140-141
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  s_24f59fb6b2f10b::t_99362c08d22a50 702-703,757-758
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmSupportMatrixTest.java
+  s_24f59fb6b2f10b::t_39d3223de61c72 71
+simulator/src/test/java/org/workflowsim/planning/MoHeftIntegrationTest.java
+  s_24f59fb6b2f10b::t_471cb0b452520f 1-78
+simulator/src/test/java/org/workflowsim/planning/moheft/MoHeftPlannerTest.java
+  s_24f59fb6b2f10b::t_60bd94e246e553 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0ea9a6b54348546160931da073763213e60db1dc",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
