@@ -1,0 +1,85 @@
+docs/algorithms/CONTRACTS.md
+  s_7a88473cefc34f::t_2005ee6144d66d 175-186
+docs/experiments/AUDIT_COVERAGE.md
+  s_debe59a41d407e::t_fb9e6f0a8ae1ae 52,233
+docs/experiments/PAPER_REPRODUCTIONS.md
+  s_7a88473cefc34f::t_86faf232669f09 91-110
+docs/experiments/VV_CASE_LEDGER.md
+  s_7a88473cefc34f::t_67f0234b2fc665 87
+scripts/mutation-gate.py
+  s_7a88473cefc34f::t_86f9bc8d2f9f3b 335-348
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  s_74c394365f705a::t_bc09b09105cbcb 107,415-417,437-448
+simulator/src/main/java/org/workflowsim/planning/naco/NacoAdapter.java
+  s_74c394365f705a::t_d20f11b5243c1c 1-68
+simulator/src/main/java/org/workflowsim/planning/naco/NacoDncEvaluator.java
+  s_74c394365f705a::t_50f3043620e641 1-114
+simulator/src/main/java/org/workflowsim/planning/naco/NacoDncProblem.java
+  s_7a88473cefc34f::t_fe66c691273d59 1-64
+simulator/src/main/java/org/workflowsim/planning/naco/NacoGaHeftOptimizer.java
+  s_24f59fb6b2f10b::t_46a79375983aa8 1-88
+simulator/src/main/java/org/workflowsim/planning/naco/NacoGaOperators.java
+  s_debe59a41d407e::t_5aa469ef03cdca 1-142
+simulator/src/main/java/org/workflowsim/planning/naco/NacoGene.java
+  s_74c394365f705a::t_239c8cb1388fd4 1-23
+simulator/src/main/java/org/workflowsim/planning/naco/NacoSchedule.java
+  s_37e38a7ed4368c::t_f285e1c54b7d0c 1-64
+simulator/src/main/java/org/workflowsim/planning/naco/NacoTask.java
+  s_74c394365f705a::t_3251ac625bd993 1-73
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  s_7a88473cefc34f::t_805411ebaebb24 738-739,759-760
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmSupportMatrixTest.java
+  s_debe59a41d407e::t_9417dfbec1dc8d 67,140-141
+simulator/src/test/java/org/workflowsim/planning/naco/NacoDncEvaluatorTest.java
+  s_debe59a41d407e::t_c866cb30a7c5c6 1-67
+simulator/src/test/java/org/workflowsim/planning/naco/NacoGaHeftOptimizerTest.java
+  s_debe59a41d407e::t_783a3ad1b7efeb 1-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6a8381f3ea1d0375657794859bbbd93585bdc854",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_37e38a7ed4368c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19ef8-86bb-7911-83de-89bd1a1aee90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_7a88473cefc34f": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "e6980709-6bff-4725-addd-bf899644be5f",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_debe59a41d407e": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "a9c90d84-8610-4008-b5f5-28a949c6681b",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
