@@ -1,0 +1,58 @@
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 63,98,103,109
+docs/algorithms/CATALOG.md
+  h_adc77830afcf4d 106,123
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 229-238
+docs/experiments/AUDIT_COVERAGE.md
+  h_adc77830afcf4d 52,238
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  h_adc77830afcf4d 43
+docs/experiments/PAPER_REPRODUCTIONS.md
+  h_adc77830afcf4d 185-201
+docs/experiments/VV_CASE_LEDGER.md
+  h_adc77830afcf4d 92
+scripts/mutation-gate.py
+  h_adc77830afcf4d 391-397
+simulator/src/main/java/org/workflowsim/WorkflowPlanner.java
+  h_adc77830afcf4d 40,436-438
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  h_adc77830afcf4d 113,452-454,474-484
+simulator/src/main/java/org/workflowsim/planning/NetworkHeftPlanningAlgorithm.java
+  h_adc77830afcf4d 1-39
+simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftAdapter.java
+  h_adc77830afcf4d 1-62
+simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftEdge.java
+  h_adc77830afcf4d 1-41
+simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftFlowStretcher.java
+  h_adc77830afcf4d 1-77
+simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftPlanner.java
+  h_adc77830afcf4d 1-161
+simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftProblem.java
+  h_adc77830afcf4d 1-49
+simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftSchedule.java
+  h_adc77830afcf4d 1-74
+simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftTask.java
+  h_adc77830afcf4d 1-53
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  h_adc77830afcf4d 144-145
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  h_adc77830afcf4d 704-705,764-765
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmSupportMatrixTest.java
+  h_adc77830afcf4d 73
+simulator/src/test/java/org/workflowsim/planning/NetworkHeftIntegrationTest.java
+  h_adc77830afcf4d 1-56
+simulator/src/test/java/org/workflowsim/planning/networkheft/NetworkHeftPlannerTest.java
+  h_adc77830afcf4d 1-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bce7cb49adfa16cfbbd01fc90611932034196425",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
