@@ -1,0 +1,67 @@
+docs/advanced/MUTATION_GATE.md
+  s_1bd856a819664d::t_c8fc4fbafb0822 61-62,97,102,108
+docs/algorithms/CATALOG.md
+  s_24f59fb6b2f10b::t_261a40398363d8 105,121
+docs/algorithms/CONTRACTS.md
+  s_1bd856a819664d::t_4f7ace7474d1bf 218-228
+docs/experiments/AUDIT_COVERAGE.md
+  s_1bd856a819664d::t_a89c8c45398a88 52,237
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  s_1bd856a819664d::t_154c914a538919 42
+docs/experiments/PAPER_REPRODUCTIONS.md
+  s_1bd856a819664d::t_deaee437c574df 166-184
+docs/experiments/VV_CASE_LEDGER.md
+  s_1bd856a819664d::t_4b2c95bc70c988 91
+scripts/mutation-gate.py
+  s_1bd856a819664d::t_3effef5433c7bf 377-390
+simulator/src/main/java/org/workflowsim/WorkflowPlanner.java
+  s_24f59fb6b2f10b::t_f3f39be091da1e 34,432-434
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  s_24f59fb6b2f10b::t_be5dc6857528aa 112,448-450,470-478
+simulator/src/main/java/org/workflowsim/planning/IcpcpPlanningAlgorithm.java
+  s_1bd856a819664d::t_42ee4af64e1b1e 1-44
+simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpAdapter.java
+  s_1bd856a819664d::t_0da94c0aa8d4b9 1-75
+simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpPlanner.java
+  s_1bd856a819664d::t_b37352c5d74159 1-364
+simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpProblem.java
+  s_1bd856a819664d::t_b1cb0170ac2d1d 1-81
+simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpSchedule.java
+  s_1bd856a819664d::t_7ea589bf2dc24c 1-91
+simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpTask.java
+  s_1bd856a819664d::t_c085778adeff41 1-58
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  s_24f59fb6b2f10b::t_cc1f81ea9ea012 142-143
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  s_1bd856a819664d::t_ab356544b080ab 703-704,724-726,762-763
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmSupportMatrixTest.java
+  s_1bd856a819664d::t_22eb19b2bbef6a 72,150-152
+simulator/src/test/java/org/workflowsim/planning/IcpcpIntegrationTest.java
+  s_1bd856a819664d::t_30fd16d5062772 1-84
+simulator/src/test/java/org/workflowsim/planning/icpcp/IcpcpPlannerTest.java
+  s_1bd856a819664d::t_d2c8fd0403a46b 1-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "eaae154951f91472e5b7be11a62055824de67fcb",
+  "prompts": {},
+  "sessions": {
+    "s_1bd856a819664d": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "d43c7717-460b-4c9b-8587-78aceaf49dd9",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
