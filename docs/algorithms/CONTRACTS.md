@@ -226,6 +226,16 @@ to an arbitrary VM, dynamic provisioning, IC-PCPD2, or full paper-corpus claim i
 `IcpcpPlannerTest` covers a low-cost chain, infeasible deadline, fork/join and cycle rejection;
 `IcpcpIntegrationTest` covers declared VM costs in a real session.
 
+### Network-Aware HEFT Bottleneck Stretching (R-PAPER-08, 2026-11-06)
+
+`NETWORK_HEFT` forms flows for cross-VM parent-child edges and stretches them on a shared
+bottleneck. Active flows share the declared capacity, and each edge keeps an independent
+`parentId→childId` duration key so multiple parents of one task cannot overwrite each other.
+`NetworkHeftPlanner` then applies HEFT again with the stretched durations and keeps the best
+realistic schedule. The six-task paper-style case yields nominal 25 seconds and stretched 32
+seconds; M45 kills removal of per-flow capacity sharing. The current adapter uses one shared
+bottleneck and fair sharing, not the full TCP throughput model or automatic path detection.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

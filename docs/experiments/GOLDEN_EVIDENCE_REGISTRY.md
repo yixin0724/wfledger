@@ -40,6 +40,7 @@ and a linked contract revision, not a silent update to match production output.
 | GreenHEFT | `PAPER` | `GreenHeftPlannerTest` and `GreenHeftIntegrationTest`; energy-first mapping and declared-power oracle, M40 |
 | MOHEFT | `PAPER` / `CONTRACT` | `MoHeftPlannerTest` and `MoHeftIntegrationTest`; dominance, Pareto extremes and balanced selection, M41/M42 |
 | IC-PCP | `PAPER` / `CONTRACT` | `IcpcpPlannerTest` and `IcpcpIntegrationTest`; low-cost path, deadline infeasibility, fork/join and cycle, M43/M44 |
+| Network-Aware HEFT | `PAPER` | `NetworkHeftPlannerTest` and `NetworkHeftIntegrationTest`; shared-bottleneck stretching and 25→32 direction, M45 |
 | Tick and profile semantics | `CONTRACT` / `INVARIANT` | `SimulationTickSensitivityTest` and `DataflowStateProfileSmokeTest`; no numerical-convergence or timing-threshold claim |
 | Large-scale and campaign makespans | `GOLDEN_REGRESSION` | `LargeWorkflowScaleRegressionTest` and `FatTreeCampaignGoldenIntegrationTest`; drift detection only, not paper or real-platform proof |
 | Frozen standard/power/carbon/DVFS bundles | `GOLDEN_REGRESSION` | Freshly restored tar archives independently audited by `verify-study-evidence.py`; historical protocol identity, not current regeneration or real validation |

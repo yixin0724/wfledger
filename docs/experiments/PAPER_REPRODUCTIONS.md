@@ -182,5 +182,22 @@ rather than falling back to an arbitrary VM. The current adapter uses raw MI, ho
 network transfer time, VM cost per second, and a one-second billing period. This is not IC-PCPD2,
 dynamic VM provisioning, or a full paper-corpus reproduction.
 
+## Network-Aware HEFT — The Scientific World Journal 2014
+
+| Item | Record |
+|---|---|
+| Paper | Muhammad Murtaza Yousaf, Michael Welzl, *Network-Aware HEFT Scheduling for Grid*, The Scientific World Journal, 2014, Article 317284 |
+| Primary source | [DOI](https://doi.org/10.1155/2014/317284), [PMC full text](https://pmc.ncbi.nlm.nih.gov/articles/PMC3919093/) |
+| Platform classes | `org.workflowsim.planning.networkheft` and `NetworkHeftPlanningAlgorithm` |
+| Verification | `NetworkHeftPlannerTest`, `NetworkHeftIntegrationTest`; M45 |
+| Status | `VERIFIED_BOTTLENECK_CORE` for fair-shared bottleneck flow stretching and iterative HEFT rescheduling |
+
+The implementation forms cross-VM flows, orders them by start time, shares bottleneck capacity among
+active flows, advances to the next arrival or completion, and reschedules HEFT with stretched edge
+durations. The paper-style six-task case reproduces the nominal 25-second schedule and the stretched
+32-second result. The current adapter uses one shared bottleneck per experiment and fair capacity
+sharing; it does not claim the full TCP throughput model, path-detection system, or complete Grid
+workflow corpus.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

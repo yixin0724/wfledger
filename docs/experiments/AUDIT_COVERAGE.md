@@ -49,7 +49,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate` plus `make mutation-gate-experiments`, 44 registered mutants after the IC-PCP R-PAPER-07 work; M12–M19 added 2026-11-03, M20/M21 for cap/revision, M22/M23 for B1, M24–M26 for upstream references, M27 for Montage, M28 for tied Wilcoxon, M29 for tick, M30 for Workbench, M31 for profile fingerprints) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M44 are verified red-first at the killers stage in the B1–B5 and R-PAPER-01/02/03/04/05/06/07 close-outs |
+| Repository gate (`make mutation-gate` plus `make mutation-gate-experiments`, 45 registered mutants after the Network-Aware HEFT R-PAPER-08 work; M12–M19 added 2026-11-03, M20/M21 for cap/revision, M22/M23 for B1, M24–M26 for upstream references, M27 for Montage, M28 for tied Wilcoxon, M29 for tick, M30 for Workbench, M31 for profile fingerprints) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M45 are verified red-first at the killers stage in the B1–B5 and R-PAPER-01/02/03/04/05/06/07/08 close-outs |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |
@@ -235,3 +235,4 @@ recurrence; no historical ledger rows were removed.
 | R-PAPER-05 | The platform lacked an energy-first HEFT reference | VERIFIED_ENERGY_CORE — GreenHEFT uses minimum-energy VM selection; M40 distinguishes it from ordinary finish-time HEFT |
 | R-PAPER-06 | The platform lacked a makespan-energy Pareto scheduler | VERIFIED_PARETO_CORE — MOHEFT beam search and balanced selection; M41/M42 guard dominance and tradeoff semantics |
 | R-PAPER-07 | Deadline and VM-cost inputs lacked a literature scheduler | VERIFIED_DEADLINE_COST_CORE — IC-PCP paths and feasible cost selection; M43/M44 guard END slack and incremental cost |
+| R-PAPER-08 | Network/dataflow execution lacked a literature contention scheduler | VERIFIED_BOTTLENECK_CORE — Network-Aware HEFT stretches shared flows; M45 prevents full-capacity-per-flow degradation |

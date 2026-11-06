@@ -388,6 +388,13 @@ REGISTRY = [
         old="            if (best == null\n                    || costDelta < best.costDelta - 1.0e-9",
         new="            if (best == null\n                    || slack > best.slack + 1.0e-9",
         killers="IcpcpPlannerTest"),
+    dict(
+        id="M45",
+        name="Network-Aware HEFT gives every flow the full bottleneck",
+        file="simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftFlowStretcher.java",
+        old="                flow.remaining = Math.max(0.0, flow.remaining - capacityBytesPerSecond * (end - time) / active.size());",
+        new="                flow.remaining = Math.max(0.0, flow.remaining - capacityBytesPerSecond * (end - time));",
+        killers="NetworkHeftPlannerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

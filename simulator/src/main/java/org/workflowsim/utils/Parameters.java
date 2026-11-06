@@ -141,6 +141,8 @@ public class Parameters {
         MO_HEFT,
         /** IC-PCP one-phase partial-critical-path deadline/cost planner. */
         IC_PCP,
+        /** Network-Aware HEFT with shared-bottleneck flow stretching. */
+        NETWORK_HEFT,
         /**
          * PSO (particle swarm optimization) mapping planner -- a paper reproduction (Pandey
          * et al., AINA 2010; reference open-source implementation meysamhit/workflowsim-pso).

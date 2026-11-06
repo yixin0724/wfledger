@@ -701,7 +701,8 @@ public final class SimulationConfig {
                     || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_PRESSURE
                     || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
                     || planningAlgorithm == PlanningAlgorithm.MO_HEFT
-                    || planningAlgorithm == PlanningAlgorithm.IC_PCP) {
+                    || planningAlgorithm == PlanningAlgorithm.IC_PCP
+                    || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT) {
                 if (fileSystem != ReplicaCatalog.FileSystem.SHARED) {
                     throw new IllegalArgumentException(planningAlgorithm + " requires shared storage");
                 }
@@ -760,7 +761,8 @@ public final class SimulationConfig {
                         || planningAlgorithm == PlanningAlgorithm.NACO_GA_HEFT
                         || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
                         || planningAlgorithm == PlanningAlgorithm.MO_HEFT
-                        || planningAlgorithm == PlanningAlgorithm.IC_PCP) {
+                        || planningAlgorithm == PlanningAlgorithm.IC_PCP
+                        || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT) {
                     throw new IllegalArgumentException("A task cost matrix cannot be combined with "
                             + planningAlgorithm + ": the shared-storage planning track estimates "
                             + "execution times from raw task lengths and does not consume the matrix, "

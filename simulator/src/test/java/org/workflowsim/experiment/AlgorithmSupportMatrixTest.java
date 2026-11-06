@@ -70,6 +70,7 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.GREEN_HEFT,
                 PlanningAlgorithm.MO_HEFT,
                 PlanningAlgorithm.IC_PCP,
+                PlanningAlgorithm.NETWORK_HEFT,
                 PlanningAlgorithm.PSO,
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,
