@@ -1,0 +1,49 @@
+docs/algorithms/CONTRACTS.md
+  s_24f59fb6b2f10b::t_fa10aec6c133a8 145-147,150-154,176-178,185-197,202-210,215-222,227-234,239-250,258-265,271-278,282-291,295-303,307-317
+docs/experiments/PAPER_REPRODUCTIONS.md
+  s_24f59fb6b2f10b::t_b2652af981057c 42-44,85-88,104,108-112,115-117,129,132-139,186,190-197,206,210-216,275,278-284
+experiments/src/main/java/org/workflowsim/experiments/audit/AlgorithmMetricAudit.java
+  s_74c394365f705a::t_5cdc51bf133bc0 1-180
+experiments/src/main/java/org/workflowsim/experiments/comparison/CrossPaperComparison.java
+  s_74c394365f705a::t_acfe58fe958ad8 39,62
+experiments/src/test/java/org/workflowsim/experiments/audit/AlgorithmMetricAuditTest.java
+  s_74c394365f705a::t_60083c07cdd7a1 1-326
+experiments/src/test/java/org/workflowsim/experiments/comparison/CrossPaperComparisonTest.java
+  s_74c394365f705a::t_7fa49798237642 130
+simulator/src/main/java/org/workflowsim/planning/dheft/DheftPlanner.java
+  s_24f59fb6b2f10b::t_d7c617848650ae 12,22-24,27,30,33-53,55-59
+simulator/src/main/java/org/workflowsim/planning/naco/NacoAdapter.java
+  s_24f59fb6b2f10b::t_35de8d2771ad77 33-37,39-40,43-50,52-53,55,68
+simulator/src/main/java/org/workflowsim/planning/naco/NacoDncEvaluator.java
+  s_24f59fb6b2f10b::t_841d7eed1fac57 61-63,67,95-133
+simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftFlowStretcher.java
+  s_24f59fb6b2f10b::t_e0438395bbb402 26-30,74-79,83-85
+simulator/src/main/java/org/workflowsim/utils/CrchRegistry.java
+  s_24f59fb6b2f10b::t_dca9ac9593b68e 60-72
+simulator/src/test/java/org/workflowsim/scheduling/ReshiSchedulingAlgorithmTest.java
+  s_74c394365f705a::t_024d5470925275 4-5,17,20,58-115,145-149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5303a945a91e5a68dbd3ea3dd2f8d8a492072044",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
