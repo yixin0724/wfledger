@@ -1,0 +1,19 @@
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  s_74c394365f705a::t_17ca423de121fd 109-110,674
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2b7f0bf143325bdec42d93785cd44b60dd14db30",
+  "prompts": {},
+  "sessions": {
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
