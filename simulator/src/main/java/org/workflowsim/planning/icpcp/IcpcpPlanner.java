@@ -76,6 +76,9 @@ public final class IcpcpPlanner {
         Candidate best = null;
         double currentCost = cost(entries);
         for (Integer vmId : problem.getVmIds()) {
+            if (!supportsPath(vmId, path)) {
+                continue;
+            }
             Map<Integer, Integer> trialAssignments = new HashMap<Integer, Integer>(assignments);
             for (Integer task : path) {
                 trialAssignments.put(task, vmId);
@@ -98,6 +101,15 @@ public final class IcpcpPlanner {
             }
         }
         return best;
+    }
+
+    private boolean supportsPath(int vmId, List<Integer> path) {
+        for (Integer taskId : path) {
+            if (!problem.getTask(taskId).getComputeSecondsByVm().containsKey(vmId)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private int criticalParent(int taskId) {
@@ -132,8 +144,8 @@ public final class IcpcpPlanner {
         Map<Integer, Double> result = new HashMap<Integer, Double>();
         Map<Integer, Double> finish = new HashMap<Integer, Double>();
         Map<Integer, Double> available = new HashMap<Integer, Double>();
-        result.put(START_ID, 0.0);
-        finish.put(START_ID, 0.0);
+        result.put(START_ID, problem.getWorkflowStartSeconds());
+        finish.put(START_ID, problem.getWorkflowStartSeconds());
         for (Integer taskId : priority) {
             Integer vmId = assigned.get(taskId);
             double ready = 0.0;
@@ -157,7 +169,7 @@ public final class IcpcpPlanner {
                 available.put(vmId, taskFinish);
             }
         }
-        double end = 0.0;
+        double end = problem.getWorkflowStartSeconds();
         for (Integer taskId : priority) {
             end = Math.max(end, finish.get(taskId));
         }
@@ -225,7 +237,7 @@ public final class IcpcpPlanner {
                 last = Math.max(last, task.getFinishSeconds());
             }
             double periods = Math.ceil(Math.max(0.0, last - first) / problem.getBillingPeriodSeconds() - 1.0e-12);
-            total += periods * problem.getVmCostPerSecond(entry.getKey());
+            total += periods * problem.getBillingPeriodSeconds() * problem.getVmCostPerSecond(entry.getKey());
         }
         return total;
     }

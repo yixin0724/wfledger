@@ -1,7 +1,6 @@
 package org.workflowsim.planning.naco;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,12 +58,13 @@ public final class NacoDncEvaluator {
     /** Builds the HEFT seed schedule used as the elite member of the initial population. */
     public NacoSchedule heft(NacoDncProblem problem) {
         Map<Integer, Double> ranks = new LinkedHashMap<Integer, Double>();
-        List<NacoTask> ordered = new ArrayList<NacoTask>(problem.getTasks());
-        ordered.sort(Comparator.comparingInt(NacoTask::getTaskId).reversed());
+        // R-PAPER-03 audit: task IDs are parser-assigned labels, not a topological
+        // order. Compute upward ranks only after every child has been evaluated.
+        List<NacoTask> ordered = reverseTopological(problem);
         for (NacoTask task : ordered) {
             double bestChild = 0.0;
             for (Map.Entry<Integer, Double> edge : task.getEdgeBitsByChild().entrySet()) {
-                double childRank = ranks.getOrDefault(edge.getKey(), 0.0);
+                double childRank = ranks.get(edge.getKey());
                 bestChild = Math.max(bestChild, childRank + edge.getValue() / averageNetwork(problem));
             }
             ranks.put(task.getTaskId(), averageCompute(task) + bestChild);
@@ -90,6 +90,45 @@ public final class NacoDncEvaluator {
             chromosome.add(new NacoGene(task.getTaskId(), bestVm));
         }
         return evaluate(chromosome, problem);
+    }
+
+    private static List<NacoTask> reverseTopological(NacoDncProblem problem) {
+        Map<Integer, Integer> remainingChildren = new LinkedHashMap<Integer, Integer>();
+        Map<Integer, List<Integer>> parentsByChild = new LinkedHashMap<Integer, List<Integer>>();
+        for (NacoTask task : problem.getTasks()) {
+            remainingChildren.put(task.getTaskId(), task.getEdgeBitsByChild().size());
+            parentsByChild.put(task.getTaskId(), new ArrayList<Integer>());
+        }
+        for (NacoTask task : problem.getTasks()) {
+            for (Integer childId : task.getEdgeBitsByChild().keySet()) {
+                if (!remainingChildren.containsKey(childId)) {
+                    throw new IllegalArgumentException("NACO task graph references unknown child " + childId);
+                }
+                parentsByChild.get(childId).add(task.getTaskId());
+            }
+        }
+        java.util.PriorityQueue<Integer> exits = new java.util.PriorityQueue<Integer>();
+        for (Map.Entry<Integer, Integer> entry : remainingChildren.entrySet()) {
+            if (entry.getValue().intValue() == 0) {
+                exits.add(entry.getKey());
+            }
+        }
+        List<NacoTask> result = new ArrayList<NacoTask>();
+        while (!exits.isEmpty()) {
+            int taskId = exits.remove();
+            result.add(problem.getTask(taskId));
+            for (Integer parentId : parentsByChild.get(taskId)) {
+                int remaining = remainingChildren.get(parentId) - 1;
+                remainingChildren.put(parentId, remaining);
+                if (remaining == 0) {
+                    exits.add(parentId);
+                }
+            }
+        }
+        if (result.size() != problem.getTasks().size()) {
+            throw new IllegalArgumentException("NACO task graph contains a cycle");
+        }
+        return result;
     }
 
     private static double averageCompute(NacoTask task) {

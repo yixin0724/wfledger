@@ -76,6 +76,22 @@ class IcpcpPlannerTest {
     }
 
     @Test
+    void billingPeriodCostUsesTheDeclaredRatePerSecondForTheWholeRoundedPeriod() {
+        IcpcpTask only = new IcpcpTask(
+                1,
+                Collections.singletonMap(0, 2.0),
+                Collections.<Integer>emptyList(),
+                Collections.<Integer, Double>emptyMap());
+
+        IcpcpSchedule schedule = new IcpcpPlanner(
+                        new IcpcpProblem(Collections.singletonList(only), 2.0, 10.0, Collections.singletonMap(0, 3.0)))
+                .schedule();
+
+        // Two seconds round up to one ten-second billing period at three cost units/second.
+        assertEquals(30.0, schedule.getTotalCost(), 1.0e-9);
+    }
+
+    @Test
     void rejectsCycleInsteadOfReturningPartialSchedule() {
         IcpcpTask first = new IcpcpTask(1, values(1.0), Collections.singletonList(2), Collections.singletonMap(2, 0.0));
         IcpcpTask second =

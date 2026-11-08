@@ -57,8 +57,19 @@ public final class CrchRegistry {
             throw new IllegalArgumentException("CRCH requires positive work and VM speed");
         }
         double elapsed = Math.max(0.0, failureTimeSeconds - executionStartSeconds);
-        long checkpoints = (long) Math.floor(elapsed / active.getCheckpointIntervalSeconds());
-        long savedMi = (long) Math.floor(checkpoints * active.getCheckpointIntervalSeconds() * vmMips);
+        long checkpoints = 0L;
+        double checkpointedWorkSeconds = 0.0;
+        while (true) {
+            double candidate = checkpointedWorkSeconds
+                    + active.getCheckpointIntervalSeconds()
+                    + active.getCheckpointOverheadSeconds();
+            if (candidate > elapsed + 1.0e-9) {
+                break;
+            }
+            checkpointedWorkSeconds += active.getCheckpointIntervalSeconds();
+            checkpoints++;
+        }
+        long savedMi = Math.min(workMi, (long) Math.floor(checkpointedWorkSeconds * vmMips + 1.0e-9));
         long remaining = Math.max(0L, workMi - savedMi);
         CrchRecovery recovery = new CrchRecovery(remaining, checkpoints, failedVmId);
         CHECKPOINTS_BY_TASK.put(taskId, checkpoints);

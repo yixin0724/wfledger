@@ -172,19 +172,19 @@ public final class MoHeftPlanner {
     private static final class Candidate {
         private final long id;
         private final Map<Integer, MoHeftSchedule.Entry> entries;
-        private final Map<Integer, Double> available;
+        private final Map<Integer, List<MoHeftSchedule.Entry>> reservations;
         private final double makespan;
         private final double energy;
 
         private Candidate(
                 long id,
                 Map<Integer, MoHeftSchedule.Entry> entries,
-                Map<Integer, Double> available,
+                Map<Integer, List<MoHeftSchedule.Entry>> reservations,
                 double makespan,
                 double energy) {
             this.id = id;
             this.entries = entries;
-            this.available = available;
+            this.reservations = reservations;
             this.makespan = makespan;
             this.energy = energy;
         }
@@ -193,14 +193,18 @@ public final class MoHeftPlanner {
             return new Candidate(
                     0L,
                     Collections.<Integer, MoHeftSchedule.Entry>emptyMap(),
-                    Collections.<Integer, Double>emptyMap(),
+                    Collections.<Integer, List<MoHeftSchedule.Entry>>emptyMap(),
                     0.0,
                     0.0);
         }
 
         private Candidate append(GreenHeftTask task, int vmId, GreenHeftProblem problem, long id) {
             Map<Integer, MoHeftSchedule.Entry> nextEntries = new LinkedHashMap<Integer, MoHeftSchedule.Entry>(entries);
-            Map<Integer, Double> nextAvailable = new HashMap<Integer, Double>(available);
+            Map<Integer, List<MoHeftSchedule.Entry>> nextReservations =
+                    new LinkedHashMap<Integer, List<MoHeftSchedule.Entry>>();
+            for (Map.Entry<Integer, List<MoHeftSchedule.Entry>> entry : reservations.entrySet()) {
+                nextReservations.put(entry.getKey(), new ArrayList<MoHeftSchedule.Entry>(entry.getValue()));
+            }
             double parentReady = 0.0;
             for (Integer parentId : task.getParentTaskIds()) {
                 MoHeftSchedule.Entry parent = nextEntries.get(parentId);
@@ -213,13 +217,28 @@ public final class MoHeftPlanner {
                         : parentTask.getCommunicationSecondsByChild().getOrDefault(task.getTaskId(), 0.0);
                 parentReady = Math.max(parentReady, parent.getFinishSeconds() + transfer);
             }
-            double start = Math.max(nextAvailable.getOrDefault(vmId, 0.0), parentReady);
+            double start = parentReady;
+            List<MoHeftSchedule.Entry> vmReservations = nextReservations.get(vmId);
+            if (vmReservations != null) {
+                for (MoHeftSchedule.Entry reservation : vmReservations) {
+                    if (start + task.getComputeSecondsByVm().get(vmId) <= reservation.getStartSeconds() + 1.0e-9) {
+                        break;
+                    }
+                    start = Math.max(start, reservation.getFinishSeconds());
+                }
+            }
             double finish = start + task.getComputeSecondsByVm().get(vmId);
             double taskEnergy = task.getEnergyJoulesByVm().get(vmId);
-            nextEntries.put(
-                    task.getTaskId(), new MoHeftSchedule.Entry(task.getTaskId(), vmId, start, finish, taskEnergy));
-            nextAvailable.put(vmId, finish);
-            return new Candidate(id, nextEntries, nextAvailable, Math.max(makespan, finish), energy + taskEnergy);
+            MoHeftSchedule.Entry selected = new MoHeftSchedule.Entry(task.getTaskId(), vmId, start, finish, taskEnergy);
+            nextEntries.put(task.getTaskId(), selected);
+            nextReservations
+                    .computeIfAbsent(vmId, ignored -> new ArrayList<MoHeftSchedule.Entry>())
+                    .add(selected);
+            nextReservations.get(vmId).sort((first, second) -> {
+                int byStart = Double.compare(first.getStartSeconds(), second.getStartSeconds());
+                return byStart != 0 ? byStart : Integer.compare(first.getTaskId(), second.getTaskId());
+            });
+            return new Candidate(id, nextEntries, nextReservations, Math.max(makespan, finish), energy + taskEnergy);
         }
 
         private MoHeftSchedule toSchedule() {

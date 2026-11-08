@@ -41,7 +41,7 @@ import org.workflowsim.utils.SimulationConfig.FrequencyPolicy;
  * {@code E_vm = P_idle(default)*T_sim + sum over tiers[(P_max(tier)-P_idle(default))*busy(tier)]}
  * (docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.3); (2) the EDP estimator of the D2
  * task contract
- * {@code EDP_t = (P_max(t)*T_t + P_idle(default)*makespan_est) * T_t} (section 2.2),
+ * {@code EDP_t = (P_max(t)*T_t + P_idle(default)*(makespan_est-T_t)) * T_t} (section 2.2),
  * with numbers hand-derived in the test comments; (3) degenerate identities
  * (tierless/single-tier = the v1 law, already anchored by BAT-D1). Copying implementation
  * output as an expected value is forbidden -- every conservation assertion recomputes
@@ -234,16 +234,16 @@ class FrequencyTierAssignmentTest {
 
     /**
      * Power-asymmetric tier table (2000@max4000W / 1000@280W / 500@260W, default tier idle
-     * 250W). EDP hand derivation (D2 contract formula
-     * EDP_t=(P_max(t)*T_t + P_idle(default)*(clock+T_t))*T_t):
+     * 250W). EDP hand derivation (conservation-consistent local formula
+     * EDP_t=(P_max(t)*T_t + P_idle(default)*(makespan_est-T_t))*T_t):
      *
-     * <p>t1 (10000 MI, dispatch clock~0): A(2000):T=5, E=4000*5+250*5=21250->EDP 106250;
-     * B(1000):T=10, E=280*10+250*10=5300->EDP 53000; C(500):T=20, E=260*20+250*20=10200
-     * ->EDP 204000 => B.</p>
+     * <p>t1 (10000 MI, dispatch clock~0): A(2000):T=5, E=4000*5+250*0=20000->EDP 100000;
+     * B(1000):T=10, E=280*10+250*0=2800->EDP 28000; C(500):T=20, E=260*20+250*0=5200
+     * ->EDP 104000 => B.</p>
      *
      * <p>t2 (30000 MI, dispatched after t1 completes, clock~10): A:T=15,
-     * E=4000*15+250*25=66250->EDP 993750; B:T=30, E=280*30+250*40=18400->EDP 552000;
-     * C:T=60, E=260*60+250*70=33100->EDP 1986000 => B.</p>
+     * E=4000*15+250*10=62500->EDP 937500; B:T=30, E=280*30+250*10=10900->EDP 327000;
+     * C:T=60, E=260*60+250*10=18100->EDP 1086000 => B.</p>
      *
      * <p>Both jobs take the middle tier 1000 -- EDP, DEFAULT (first tier 2000) and
      * MIN_POWER (last tier 500) make three different choices on the same platform, so the
@@ -273,6 +273,52 @@ class FrequencyTierAssignmentTest {
         assertEquals(2000.0, firstComputeTier(run(platform, FrequencyPolicy.DEFAULT)), 0.0, "DEFAULT picks first");
         assertEquals(500.0, firstComputeTier(run(platform, FrequencyPolicy.MIN_POWER)), 0.0, "MIN_POWER picks last");
         assertEquals(1000.0, firstComputeTier(edp), 0.0, "EDP_HEURISTIC picks the hand-computed middle");
+    }
+
+    /**
+     * Conservation-law counterexample for the local EDP estimate. Let A be the 2000 tier and B the
+     * 1000 tier, so T_B=2T_A=2T. With P_A=4000, P_B=875 and default idle I=250, subtracting A's EDP
+     * from B's gives 250*T^2+250*clock*T&gt;0 when idle is charged over the whole makespan estimate
+     * (the old double count), but -500*T^2+250*clock*T=250*T*(clock-2T) when idle is charged only
+     * outside the local busy interval. The second expression is negative at dispatch clock &lt; 2T:
+     * t1 has T=5 and clock~0.21, and t2 has T=15 and clock~5.21 after A (or ~10.21 after B). Thus B
+     * must win for both jobs. At clock zero, the first-job hand values are:
+     * old A=106250, old B=112500, conserved A=100000, conserved B=87500.
+     */
+    @Test
+    void edpHeuristicUsesIdleOnlyOutsideLocalExecution() throws Exception {
+        PlatformProfile platform = tierPlatform(new double[][] {{2000.0, 250.0, 4000.0}, {1000.0, 0.0, 875.0}});
+        SimulationReport edp = run(platform, FrequencyPolicy.EDP_HEURISTIC);
+
+        assertTrue(edp.getMetrics().isWorkflowCompletedSuccessfully(), "EDP run must complete");
+        for (SimulationReport.JobOutcome job : edp.getJobs()) {
+            if (isCompute(job)) {
+                assertEquals(
+                        1000.0,
+                        job.getTierMips().doubleValue(),
+                        0.0,
+                        "conservation-consistent local EDP must select the hand-derived slower tier");
+            }
+        }
+    }
+
+    /**
+     * Nameplate peak is independent of the selected tier: each of the two VMs declares 400 W at its
+     * default tier but 900 W at its other tier, so fleet peak is 2*max(400,900)=1800 W. Using only
+     * the default tier would report 800 W, which is not even an upper bound on this MIN_POWER run's
+     * 900 W-per-VM active draw.
+     */
+    @Test
+    void tieredPeakPowerUsesMaximumAcrossDeclaredTiers() throws Exception {
+        PlatformProfile platform = tierPlatform(new double[][] {{2000.0, 250.0, 400.0}, {1000.0, 220.0, 900.0}});
+        SimulationReport report = run(platform, FrequencyPolicy.MIN_POWER);
+
+        assertTrue(report.getMetrics().isWorkflowCompletedSuccessfully(), "tiered run must complete");
+        assertEquals(
+                1800.0,
+                report.getEnergyAccounting().getPeakPowerWatts(),
+                0.0,
+                "two VMs times the hand-derived maximum declared tier power of 900 W");
     }
 
     // ------------------------------------------------------------------

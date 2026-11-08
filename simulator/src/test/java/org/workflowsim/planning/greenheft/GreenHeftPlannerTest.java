@@ -58,6 +58,27 @@ class GreenHeftPlannerTest {
     }
 
     @Test
+    void insertsAnIndependentTaskIntoAnEarlierLegalGap() {
+        GreenHeftTask parent = new GreenHeftTask(
+                1,
+                values(5.0, 5.0),
+                values(50.0, 5.0),
+                Collections.<Integer>emptyList(),
+                Collections.singletonMap(2, 5.0));
+        GreenHeftTask child = new GreenHeftTask(
+                2, values(5.0, 5.0), values(1.0, 100.0), Collections.singletonList(1), Collections.emptyMap());
+        GreenHeftTask independent = new GreenHeftTask(
+                3, values(2.0, 2.0), values(1.0, 100.0), Collections.<Integer>emptyList(), Collections.emptyMap());
+
+        GreenHeftSchedule schedule =
+                new GreenHeftPlanner().schedule(new GreenHeftProblem(Arrays.asList(parent, child, independent)));
+
+        assertEquals(0.0, schedule.getTaskPlan(3).getStartSeconds(), 1.0e-9);
+        assertEquals(15.0, schedule.getMakespanSeconds(), 1.0e-9);
+        assertEquals(7.0, schedule.getTotalEnergyJoules(), 1.0e-9);
+    }
+
+    @Test
     void rejectsACycleInsteadOfReturningAnInvalidSchedule() {
         GreenHeftTask first = new GreenHeftTask(
                 1, values(1.0), values(1.0), Collections.singletonList(2), Collections.singletonMap(2, 0.0));

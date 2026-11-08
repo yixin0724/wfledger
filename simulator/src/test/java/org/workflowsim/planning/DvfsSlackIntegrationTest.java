@@ -1,6 +1,7 @@
 package org.workflowsim.planning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -53,7 +54,7 @@ class DvfsSlackIntegrationTest {
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.DVFS_SLACK)
                 .fileSystem(ReplicaCatalog.FileSystem.SHARED)
                 .dataMovementModel(org.workflowsim.data.DataMovementModel.legacyWorkflowsimV1())
-                .deadline(4L)
+                .deadline(5L)
                 .runtimeReferenceMips(1.0)
                 .randomSeed(7L)
                 .build();
@@ -67,5 +68,45 @@ class DvfsSlackIntegrationTest {
             }
         }
         assertTrue(report.getMakespan() <= 4.3);
+    }
+
+    @Test
+    void rejectsRawMiFeasibleButSharedStorageInfeasibleDeadline() throws Exception {
+        Path workflow = PlanningRegressionFixtures.workflow(
+                directory,
+                "dvfs-input.dax",
+                "<job id=\"a\" name=\"a\" runtime=\"1000\">"
+                        + "<uses file=\"x\" link=\"input\" size=\"100000000\"/></job>");
+        PlatformProfile platform = PlatformProfile.builder("dvfs-storage")
+                .storage(new PlatformProfile.StorageSpec(1000000000000L, 1))
+                .addHost(new PlatformProfile.HostSpec(0, 1, 2000.0, 4096, 10000L, 100000L))
+                .addVm(new PlatformProfile.VmSpec(
+                        3,
+                        2000.0,
+                        1,
+                        4096,
+                        10000L,
+                        1000L,
+                        "Xen",
+                        PlatformProfile.CloudletSchedulerMode.SPACE_SHARED,
+                        null,
+                        0.0,
+                        0.0,
+                        null,
+                        Arrays.asList(
+                                new PlatformProfile.FrequencyTier(2000.0, 10.0, 100.0),
+                                new PlatformProfile.FrequencyTier(500.0, 2.0, 20.0))))
+                .build();
+        SimulationConfig config = SimulationConfig.builder(workflow.toString(), 1)
+                .planningAlgorithm(Parameters.PlanningAlgorithm.DVFS_SLACK)
+                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.DVFS_SLACK)
+                .fileSystem(ReplicaCatalog.FileSystem.SHARED)
+                .dataMovementModel(org.workflowsim.data.DataMovementModel.legacyWorkflowsimV1())
+                .deadline(2L)
+                .runtimeReferenceMips(1.0)
+                .randomSeed(7L)
+                .build();
+
+        assertThrows(IllegalStateException.class, () -> new SimulationRunner().run(config, platform));
     }
 }

@@ -94,6 +94,14 @@ integral. In particular, time after the last window contributes no excess; this 
 implemented and independently audited boundary, not a license to describe the windows as
 whole-run coverage.
 
+The report has one deliberately label-specific compatibility rule. For `CAWOSCHED_SLACK` and
+`CAWOSCHED_PRESSURE` on flat-power fleets, the budget integral uses the full configured deadline
+horizon and each active Job's own VM dynamic delta `P_max(vm) − P_idle(vm)`, matching the timed
+planner's deadline and heterogeneous-processor inputs. Other planning labels retain the historical
+report convention: the simulation-end/makespan horizon and the first VM's dynamic delta for every
+active VM. The tiered per-tier budget branch is unchanged. Consequently, a CaWoSched plan and its
+report use the same horizon and power law without changing historical non-CaWoSched evidence.
+
 ### 2.2 Manifest + auditor (all three parties, energy-discipline style)
 
 - `energyMetrics` unchanged; new sibling `carbonMetrics` section emitted when either

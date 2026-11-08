@@ -46,7 +46,7 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         for (Job job : jobs) {
             List<CondorVM> idle = new ArrayList<CondorVM>();
             for (CondorVM vm : sortedVmsById()) {
-                if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE) {
+                if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE && isCompatible(job, vm)) {
                     idle.add(vm);
                 }
             }
@@ -65,6 +65,9 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             List<CondorVM> inputCandidates = new ArrayList<CondorVM>();
             List<CondorVM> containerCandidates = new ArrayList<CondorVM>();
             for (CondorVM vm : idle) {
+                if (!isCompatible(task, vm)) {
+                    continue;
+                }
                 if (hasRequiredInput(task, vm.getId())) {
                     inputCandidates.add(vm);
                 }
@@ -117,8 +120,8 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         }
         double read = hasRequiredInput(task, vm.getId())
                 ? 0.0
-                : inputBytes / active.getGlobalReadRateBytesPerSecond() + inputBytes / vm.getBw();
-        double write = outputBytes / active.getGlobalWriteRateBytesPerSecond() + outputBytes / vm.getBw();
+                : inputBytes / active.getGlobalReadRateBytesPerSecond() + inputBytes / (1000000.0 * vm.getBw());
+        double write = outputBytes / active.getGlobalWriteRateBytesPerSecond() + outputBytes / (1000000.0 * vm.getBw());
         double container = hasContainer(task, vm.getId(), active) ? 0.0 : active.getContainerProvisioningDelaySeconds();
         return read + task.getCloudletLength() / vm.getMips() + write + container;
     }
@@ -153,6 +156,9 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
     }
 
     private void publish(Task task, int vmId, EbpsmConfig active) {
+        if (task.getCloudletStatus() != org.cloudbus.cloudsim.Cloudlet.SUCCESS) {
+            return;
+        }
         containerImages.get(vmId).add(active.getContainerImage(task.getCloudletId()));
         for (FileItem file : task.getFileList()) {
             if (file.getType() == FileType.OUTPUT) {

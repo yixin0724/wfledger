@@ -39,9 +39,9 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `READY_BATCH_MAXMIN` | every unassigned Job first computes its minimum ECT, then the maximum of those is chosen; recomputed after each assignment |
 | `READY_BATCH_MCT` | ready-arrival order; among currently idle compatible VMs picks the smallest `length/MIPS` |
 | `READY_BATCH_ROUNDROBIN` | a persistent cursor ordered by VM ID rotates, skipping busy or incompatible VMs |
-| `CWS_RANKMIN_RR` | static-DAG CWS descendant-PROCESS rank descending, real input bytes ascending, then persistent RR over idle compatible VMs |
-| `RESHI_C` | direct-child-count descending with explicit Reshi task-node ranking |
-| `RESHI_M` | historical-average-runtime descending with explicit Reshi task-node ranking |
+| `CWS_RANKMIN_RR` | static-DAG CWS descendant-PROCESS rank descending, `isRealInputFile` bytes ascending, then persistent RR over idle compatible VMs |
+| `RESHI_C` | direct-child-count descending with explicit Reshi task-node ranking over idle PE-compatible VMs |
+| `RESHI_M` | historical-average-runtime descending with explicit Reshi task-node ranking over idle PE-compatible VMs; prediction-error invariant |
 | `EBPSM` | multi-workflow SFTD budget distribution plus input/container cache preference and budget-gated dispatch |
 | `DVFS_SLACK` | STATIC dispatch with one planner-selected frequency tier per logical Task |
 | `CRCH` | synchronized-checkpoint remaining-work retry with alternative-VM selection |
@@ -102,13 +102,13 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `LOCAL_PEFT` | LOCAL DAG | successor-cost OCT, zero at exits, ready-list selection, and insertion-based `EFT + OCT` |
 | `CAWOSCHED_SLACK` | SHARED DAG | SHARED HEFT mapping/order followed by slack-scored absolute-start CaWoSched planning |
 | `CAWOSCHED_PRESSURE` | SHARED DAG | SHARED HEFT mapping/order followed by pressure-scored absolute-start CaWoSched planning |
-| `NACO_GA_HEFT` | LOCAL DAG | DNC evaluation, HEFT elite seed, GPX crossover, mutation, tournament and elite replacement |
+| `NACO_GA_HEFT` | LOCAL DAG | DNC evaluation in megabit units, reverse-topological HEFT elite seed, PE-compatible GPX crossover, mutation, tournament and elite replacement |
 | `GREEN_HEFT` | SHARED DAG | HEFT upward rank with minimum-energy VM selection and finish-time tie-break |
 | `MO_HEFT` | SHARED DAG | HEFT-ordered beam search with non-dominated filtering, crowding and balanced makespan-energy choice |
-| `IC_PCP` | SHARED DAG | critical-parent PCP with EST/LFT, minimum incremental path cost and deadline slack |
-| `NETWORK_HEFT` | SHARED DAG | fair-shared bottleneck flow stretching with iterative HEFT rescheduling |
+| `IC_PCP` | SHARED DAG | critical-parent PCP with EST/LFT, SHARED bootstrap/input envelopes, minimum incremental path cost and deadline slack |
+| `NETWORK_HEFT` | SHARED DAG | fair-shared bottleneck flow stretching with iterative insertion-based HEFT rescheduling |
 | `DVFS_SLACK` | SHARED DAG | HEFT mapping followed by iterative energy-decreasing slack allocation |
-| `DHEFT` | LOCAL DAG | ready-task EFT with pairwise minimum bandwidth and actual parent finish times |
+| `DHEFT` | LOCAL DAG | official ready-wave EFT with pairwise minimum bandwidth and actual parent finish times |
 
 ## Combination rules
 

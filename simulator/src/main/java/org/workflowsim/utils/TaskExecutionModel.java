@@ -49,7 +49,7 @@ public final class TaskExecutionModel {
      * @param task logical task
      * @param vmId candidate VM identifier
      * @param mips per-PE MIPS
-     * @return finite positive compute seconds, excluding stage-in
+     * @return finite positive compute seconds under the declared per-PE work convention, excluding stage-in
      */
     public static double executionSeconds(Task task, int vmId, double mips) {
         double seconds = executionLengthMi(task, vmId, mips) / mips;

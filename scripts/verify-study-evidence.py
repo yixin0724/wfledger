@@ -769,6 +769,9 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                     all_at_default_total += e
                 else:
                     default_mips, default_idle, default_max = tiers[0]
+                    # Nameplate peak is the maximum draw declared by any tier, independently of
+                    # which tier is the parked default; non-monotonic power tables are legal.
+                    expected_peak_power += max(tier[2] for tier in tiers)
                     # MIPS ascending = deterministic summation order (mirroring Java TreeMap; AGENTS #9).
                     ordered_tiers = sorted(
                         (m, union_length(w)) for m, w in tier_intervals_by_vm.get(vmid, {}).items())
@@ -784,7 +787,6 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                         e += (tier_max_by_vm[vmid][tier_mips] - default_idle) * tier_busy
                         if tier_mips != default_mips and tier_busy > 0.0:
                             nondefault_busy_observed = True
-                    expected_peak_power += default_max
                     all_at_default_total += (default_idle * end
                                              + (default_max - default_idle) * busy_by_vm[vmid])
                 expected_vm_energy[vmid] = e
@@ -907,6 +909,12 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 raise CheckError("platform carbonWindows declarations require a carbonMetrics"
                                  " section (BAT-C2 declared->required)")
             idle_sum = 0.0
+            planning_algorithm = config.get("planningAlgorithm")
+            cawosched = planning_algorithm in ("CAWOSCHED_SLACK", "CAWOSCHED_PRESSURE")
+            cawosched_horizon = end
+            if cawosched and not vm_tiers:
+                cawosched_horizon = number(config.get("deadline", 0.0),
+                                           "CaWoSched configured deadline", positive=True)
             if vm_tiers:
                 # BAT-D3: fleet power timeline for a tiered platform. Each VM's static component =
                 # P_idle(default tier) (the idle power at stall frequency, same source as the
@@ -950,28 +958,55 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             else:
                 for idle, _peak in vm_power.values():  # platform serialization order: mirrors the Java profile summation order
                     idle_sum += idle
-                # ΔP comes from the first VM's max−idle (BAT-C2's Java-aligned rule): v1 assumes
-                # uniform fleet dynamic power (an honest boundary in design doc §2.1); with a
-                # heterogeneous fleet first/last would drift, so both sides take the first VM.
-                first_idle, first_peak = next(iter(vm_power.values()))
-                dynamic_per_vm = first_peak - first_idle
-                fleet = {}
-                for job in computes:  # computes = every classType 2 Job (busy intervals are defined by compute Jobs only)
-                    a = number(job["startTime"], "job start", nonnegative=True)
-                    b = number(job["finishTime"], "job finish", nonnegative=True)
-                    if b > a:
-                        fleet[a] = fleet.get(a, 0) + 1
-                        fleet[b] = fleet.get(b, 0) - 1
-                segments = []
-                concurrent = 0
-                prev = 0.0
-                for t in sorted(fleet):
-                    if t > prev:
-                        segments.append((prev, t, idle_sum + concurrent * dynamic_per_vm))
-                    concurrent += fleet[t]
-                    prev = t
-                if prev < end:
-                    segments.append((prev, end, idle_sum + concurrent * dynamic_per_vm))
+                if cawosched:
+                    # CaWoSched planner/report compatibility: the complete configured deadline
+                    # horizon and each active Job's own flat VM dynamic watts. Other planners keep
+                    # the legacy first-VM/makespan branch below unchanged.
+                    fleet = {}
+                    for job in computes:
+                        a = number(job["startTime"], "job start", nonnegative=True)
+                        b = number(job["finishTime"], "job finish", nonnegative=True)
+                        if b > a:
+                            vmid = integer(job["vmId"], "job vmId", True)
+                            idle, peak = vm_power[vmid]
+                            dynamic = peak - idle
+                            fleet[a] = fleet.get(a, 0.0) + dynamic
+                            fleet[b] = fleet.get(b, 0.0) - dynamic
+                    segments = []
+                    active = 0.0
+                    prev = 0.0
+                    for t in sorted(fleet):
+                        if t >= cawosched_horizon:
+                            break
+                        if t > prev:
+                            segments.append((prev, t, idle_sum + active))
+                        active += fleet[t]
+                        prev = t
+                    if prev < cawosched_horizon:
+                        segments.append((prev, cawosched_horizon, idle_sum + active))
+                else:
+                    # ΔP comes from the first VM's max−idle (BAT-C2's Java-aligned rule): v1 assumes
+                    # uniform fleet dynamic power (an honest boundary in design doc §2.1); with a
+                    # heterogeneous fleet first/last would drift, so both sides take the first VM.
+                    first_idle, first_peak = next(iter(vm_power.values()))
+                    dynamic_per_vm = first_peak - first_idle
+                    fleet = {}
+                    for job in computes:  # computes = every classType 2 Job (busy intervals are defined by compute Jobs only)
+                        a = number(job["startTime"], "job start", nonnegative=True)
+                        b = number(job["finishTime"], "job finish", nonnegative=True)
+                        if b > a:
+                            fleet[a] = fleet.get(a, 0) + 1
+                            fleet[b] = fleet.get(b, 0) - 1
+                    segments = []
+                    concurrent = 0
+                    prev = 0.0
+                    for t in sorted(fleet):
+                        if t > prev:
+                            segments.append((prev, t, idle_sum + concurrent * dynamic_per_vm))
+                        concurrent += fleet[t]
+                        prev = t
+                    if prev < end:
+                        segments.append((prev, end, idle_sum + concurrent * dynamic_per_vm))
             per_window_excess = []
             total_excess = 0.0
             for wstart, wend, green in carbon_windows:

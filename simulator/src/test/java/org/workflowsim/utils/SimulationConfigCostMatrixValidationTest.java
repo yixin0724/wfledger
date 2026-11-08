@@ -47,6 +47,20 @@ class SimulationConfigCostMatrixValidationTest {
     }
 
     @Test
+    void rejectsCostMatrixWithRawLengthDheftPlanner() {
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(
+                        Collections.singletonList("workflow.dax"), 2)
+                .planningAlgorithm(PlanningAlgorithm.DHEFT)
+                .schedulingAlgorithm(SchedulingAlgorithm.STATIC)
+                .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
+                .dataMovementModel(org.workflowsim.data.DataMovementModel.preExecutionTransferDelayV1())
+                .taskCostMatrix(matrix())
+                .build());
+        assertTrue(failure.getMessage().contains(PlanningAlgorithm.DHEFT.toString()), failure.getMessage());
+        assertTrue(failure.getMessage().contains("task cost matrix"), failure.getMessage());
+    }
+
+    @Test
     void acceptsCostMatrixWithLocalHeftPlanner() {
         assertDoesNotThrow(() -> SimulationConfig.builder(Collections.singletonList("workflow.dax"), 2)
                 .planningAlgorithm(PlanningAlgorithm.LOCAL_HEFT)

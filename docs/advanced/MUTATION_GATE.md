@@ -69,6 +69,18 @@ closed with dedicated boundary/conservation tests at that time.
 | M51 | DHEFT uses maximum instead of minimum pairwise bandwidth | DHEFT pairwise bandwidth (R-PAPER-12, 2026-11-08) |
 | M52 | DHEFT ignores parent finish time | DHEFT dependency readiness (R-PAPER-12, 2026-11-08) |
 | M53 | Cross-paper comparison drops direct IC-PCP planner cost | Planner/runtime cost separation (R-COMPARE-02, 2026-11-08) |
+| M54 | DVFS slack drops unused-VM and terminal idle energy | Full-fleet DVFS energy law (R-AUDIT-01, 2026-11-08) |
+| M55 | DVFS slack drops SHARED stage-in and root release timing | DVFS SHARED deadline/timing (R-AUDIT-01) |
+| M56 | GreenHEFT reverts to append-only placement | GreenHEFT gap insertion (R-AUDIT-01) |
+| M57 | GreenHEFT admits PE-incompatible VMs | GreenHEFT PE compatibility (R-AUDIT-01) |
+| M58 | DHEFT drops decimal-megabyte bandwidth conversion | DHEFT bandwidth units (R-AUDIT-01) |
+| M59 | Network-Aware HEFT disables reservation-gap insertion | NetworkHEFT insertion EFT (R-AUDIT-01) |
+| M60 | Reshi-M reapplies prediction noise inside its comparator | Reshi-M prediction invariance (R-AUDIT-01) |
+| M61 | CWS counts non-real input bytes in its tie-break | CWS real-input ordering (R-AUDIT-01) |
+| M62 | NACO double-counts parent-produced input as external disk read | NACO DNC input accounting (R-AUDIT-01) |
+| M63 | EBPSM publishes unsuccessful output as readable cache | EBPSM successful-only publication (R-AUDIT-01) |
+| M64 | CRCH ignores checkpoint overhead when committing progress | CRCH checkpoint commit timing (R-AUDIT-01) |
+| M65 | EDP heuristic double-counts default idle during busy execution | EDP conservation-consistent tier choice (R-AUDIT-01) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -103,18 +115,18 @@ allowlist omission. M31 (2026-11-04, B5) adds the profile semantic-fingerprint a
 admitted-copy count must be rejected by the independent comparator, not hidden by timing. M32
 (2026-11-05, R-PAPER-01) adds the CaWoSched green-window selection axis. M33 (R-PAPER-01B)
 adds the power-weighted slack-score axis. M34/M35 (R-PAPER-01C/D) add missing-link and exact-DP
-axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) adds the Network-Aware HEFT bottleneck-sharing axis. M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment.
+axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) adds the Network-Aware HEFT bottleneck-sharing axis. M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms.
 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 51 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 63 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)
 python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
 
-# Both families sequentially (53 canaries total)
+# Both families sequentially (65 canaries total)
 python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

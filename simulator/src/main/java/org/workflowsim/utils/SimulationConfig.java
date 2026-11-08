@@ -792,13 +792,14 @@ public final class SimulationConfig {
                         || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_SLACK
                         || planningAlgorithm == PlanningAlgorithm.CAWOSCHED_PRESSURE
                         || planningAlgorithm == PlanningAlgorithm.NACO_GA_HEFT
+                        || planningAlgorithm == PlanningAlgorithm.DHEFT
                         || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
                         || planningAlgorithm == PlanningAlgorithm.MO_HEFT
                         || planningAlgorithm == PlanningAlgorithm.IC_PCP
                         || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT
                         || planningAlgorithm == PlanningAlgorithm.DVFS_SLACK) {
                     throw new IllegalArgumentException("A task cost matrix cannot be combined with "
-                            + planningAlgorithm + ": the shared-storage planning track estimates "
+                            + planningAlgorithm + ": this planning track estimates "
                             + "execution times from raw task lengths and does not consume the matrix, "
                             + "while the STATIC dispatch path would fold it in at runtime "
                             + "(silent planning/runtime divergence)");

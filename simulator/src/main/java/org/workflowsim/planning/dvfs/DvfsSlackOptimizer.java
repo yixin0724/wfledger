@@ -71,7 +71,6 @@ public final class DvfsSlackOptimizer {
         Map<Integer, DvfsSlackSchedule.Entry> entries = new LinkedHashMap<Integer, DvfsSlackSchedule.Entry>();
         Map<Integer, Double> available = new HashMap<Integer, Double>();
         double makespan = 0.0;
-        double energy = 0.0;
         for (DvfsSlackTask task : ordered) {
             int index = tierIndex.get(task.getTaskId());
             PlatformProfile.FrequencyTier tier = tiersByVm.get(task.getVmId()).get(index);
@@ -87,26 +86,27 @@ public final class DvfsSlackOptimizer {
                 }
                 ready = Math.max(ready, parentEntry.getFinishSeconds());
             }
-            double start = Math.max(available.getOrDefault(task.getVmId(), 0.0), ready);
-            double finish = start + task.getWorkMi() / tier.getMips();
+            double start = Math.max(
+                    task.getEarliestStartSeconds(), Math.max(available.getOrDefault(task.getVmId(), 0.0), ready));
+            double finish = start + task.getStageInSeconds() + task.getWorkMi() / tier.getMips();
             entries.put(
                     task.getTaskId(),
                     new DvfsSlackSchedule.Entry(task.getTaskId(), task.getVmId(), tier.getMips(), start, finish));
             available.put(task.getVmId(), finish);
-            energy += tier.getMaxPowerWatts() * (finish - start);
             makespan = Math.max(makespan, finish);
         }
+        double energy = 0.0;
         for (Map.Entry<Integer, List<PlatformProfile.FrequencyTier>> entry : tiersByVm.entrySet()) {
-            double previous = 0.0;
-            for (DvfsSlackTask task : ordered) {
-                if (task.getVmId() != entry.getKey()) {
-                    continue;
-                }
-                DvfsSlackSchedule.Entry plan = entries.get(task.getTaskId());
-                PlatformProfile.FrequencyTier tier = entry.getValue().get(tierIndex.get(task.getTaskId()));
-                energy += tier.getIdlePowerWatts() * Math.max(0.0, plan.getStartSeconds() - previous);
-                previous = plan.getFinishSeconds();
-            }
+            PlatformProfile.FrequencyTier defaultTier = entry.getValue().get(0);
+            energy += defaultTier.getIdlePowerWatts() * makespan;
+        }
+        for (DvfsSlackTask task : ordered) {
+            DvfsSlackSchedule.Entry plan = entries.get(task.getTaskId());
+            PlatformProfile.FrequencyTier tier = tiersByVm.get(task.getVmId()).get(tierIndex.get(task.getTaskId()));
+            PlatformProfile.FrequencyTier defaultTier =
+                    tiersByVm.get(task.getVmId()).get(0);
+            energy += (tier.getMaxPowerWatts() - defaultTier.getIdlePowerWatts())
+                    * (plan.getFinishSeconds() - plan.getStartSeconds());
         }
         return new DvfsSlackSchedule(entries, makespan, energy);
     }

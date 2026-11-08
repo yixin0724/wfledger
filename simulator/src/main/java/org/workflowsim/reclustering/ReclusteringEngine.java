@@ -160,7 +160,9 @@ public class ReclusteringEngine {
                         CloudSim.clock(),
                         job.getEffectiveExecutionLengthMi(),
                         CrchRegistry.getVmMips(job.getVmId()));
-                long remaining = recovery.getRemainingWorkMi();
+                long remaining = recovery.getRemainingWorkMi()
+                        + (long) Math.ceil(CrchRegistry.get().getCheckpointOverheadSeconds()
+                                * CrchRegistry.getVmMips(job.getVmId()));
                 if (remaining <= 0L) {
                     remaining = 1L;
                 }

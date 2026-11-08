@@ -36,6 +36,24 @@ class DvfsSlackOptimizerTest {
     }
 
     @Test
+    void unusedVmIdleEnergyPreventsAnEnergyIncreasingDowngrade() {
+        DvfsSlackTask task = new DvfsSlackTask(1, 0, 1000L, Collections.<Integer>emptyList());
+        Map<Integer, List<PlatformProfile.FrequencyTier>> tiers =
+                new LinkedHashMap<Integer, List<PlatformProfile.FrequencyTier>>();
+        tiers.put(
+                0,
+                Arrays.asList(
+                        new PlatformProfile.FrequencyTier(1000.0, 10.0, 100.0),
+                        new PlatformProfile.FrequencyTier(500.0, 0.0, 40.0)));
+        tiers.put(1, Collections.singletonList(new PlatformProfile.FrequencyTier(1000.0, 100.0, 100.0)));
+
+        DvfsSlackSchedule schedule = new DvfsSlackOptimizer().optimize(Collections.singletonList(task), tiers, 2.0);
+
+        assertEquals(1000.0, schedule.getTaskPlan(1).getTierMips(), 1.0e-9);
+        assertEquals(200.0, schedule.getTotalEnergyJoules(), 1.0e-9);
+    }
+
+    @Test
     void keepsTheOriginalTierWhenDownscalingWouldIncreaseEnergy() {
         DvfsSlackTask task = new DvfsSlackTask(1, 0, 1000L, Collections.<Integer>emptyList());
         Map<Integer, List<PlatformProfile.FrequencyTier>> tiers =

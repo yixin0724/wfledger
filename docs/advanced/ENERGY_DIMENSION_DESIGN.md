@@ -102,7 +102,7 @@ recorded here per the doc-follows-behavior discipline)
 |---|---|
 | `totalEnergyJoules` | conservation-law result |
 | `meanVmEnergyJoules` | `E_total / vmCount` |
-| `peakPowerWatts` | `Σ P_max` (fleet peak) |
+| `peakPowerWatts` | `Σ_vm P_nameplate(vm)` (fleet peak); flat VMs use `P_max`, tiered VMs use `max_tier P_max(tier)` |
 | `energyMakespanProductJouleSeconds` | `E_total × makespan` (EDP) |
 
 **No new event types.** `JOB_EXECUTION_STARTED / TASK_EXECUTION_MODELED / JOB_RETURNED`

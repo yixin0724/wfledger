@@ -64,7 +64,7 @@ class IcpcpIntegrationTest {
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
                 .fileSystem(ReplicaCatalog.FileSystem.SHARED)
                 .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
-                .deadline(3L)
+                .deadline(4L)
                 .runtimeReferenceMips(1.0)
                 .randomSeed(7L)
                 .build();
@@ -78,7 +78,9 @@ class IcpcpIntegrationTest {
             assertEquals(8, planner.getLastSchedule().getTaskPlan(1).getVmId());
             assertEquals(8, planner.getLastSchedule().getTaskPlan(2).getVmId());
             assertEquals(3.0, planner.getLastSchedule().getTotalCost(), 1.0e-9);
-            assertEquals(3.0, planner.getLastSchedule().getMakespanSeconds(), 1.0e-9);
+            // The abstract three-second chain starts after the 0.21-second SHARED bootstrap.
+            assertEquals(0.21, planner.getLastSchedule().getTaskPlan(1).getStartSeconds(), 1.0e-9);
+            assertEquals(3.21, planner.getLastSchedule().getMakespanSeconds(), 1.0e-9);
         }
     }
 }

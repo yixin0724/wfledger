@@ -127,6 +127,7 @@ class CrossPaperComparisonTest {
                         workflow.toString(), platform.getVms().size())
                 .planningAlgorithm(Parameters.PlanningAlgorithm.IC_PCP)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
+                .costModel(Parameters.CostModel.VM)
                 .fileSystem(ReplicaCatalog.FileSystem.SHARED)
                 .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
                 .deadline(10L)

@@ -39,7 +39,9 @@ numbers, hardware, or real-platform behavior reproduced."
 - `CommunicationEnhancedPlan` turns each cross-VM dependency into an ordered communication activity
   on an explicitly declared link with power and per-edge durations. Missing links fail fast.
 - `planExactSingleProcessor()` performs exact dynamic programming for small ordered activities and
-  is checked against independent integer-start enumeration. `CAWOSCHED_SLACK` and
+  is checked against independent integer-start enumeration plus a hand-derived six-activity
+  non-integral block. Non-integral exact candidates cover every block length; the three-task limit
+  is confined to heuristic refinement. `CAWOSCHED_SLACK` and
   `CAWOSCHED_PRESSURE` additionally write absolute starts into the standard STATIC plan and use a
   deferral-aware wake-up path to execute them.
 
@@ -80,8 +82,10 @@ and mapping-compatible after conversion.
 | Status | `VERIFIED_STATIC_SUBSET` for the static-DAG/idle-VM CWS RankMin-RR adaptation |
 
 CWS rank is the longest descendant PROCESS path, not HEFT's weighted upward rank. Ready Jobs are
-ordered by descending rank, then ascending real input bytes and ascending Job ID; VM selection is
-the maintained persistent round-robin over currently idle PE-compatible VMs. The physical Figure 1
+ordered by descending rank, then ascending real input bytes and ascending Job ID. Real input is
+computed with `FileItem.isRealInputFile`, excluding inputs already supplied by a same-named output
+inside the Job. VM selection is the maintained persistent round-robin over currently idle
+PE-compatible VMs. The physical Figure 1
 DAG is reproduced explicitly: `t1→t2/t3/t4`, `t3/t4→t5`, and `t2/t5→t6`, with ranks
 `[4,2,3,3,2,1]`. In the controlled runner, FCFS completes in **5.21 s** and CWS in **4.21 s**,
 matching the paper's five-to-four-unit direction after the declared stage-in/tick overhead. The
@@ -97,16 +101,20 @@ real-cluster performance.
 | Official artifact | [iScOp-uniovi/Paper_NACO_Barredo_2023](https://github.com/iScOp-uniovi/Paper_NACO_Barredo_2023), commit [`b2f42bed2584022433dfe270612fe777ec8d1f58`](https://github.com/iScOp-uniovi/Paper_NACO_Barredo_2023/tree/b2f42bed2584022433dfe270612fe777ec8d1f58) |
 | License | [MIT for source code](https://github.com/iScOp-uniovi/Paper_NACO_Barredo_2023/blob/b2f42bed2584022433dfe270612fe777ec8d1f58/LICENSE-MIT); datasets use the separately declared ODC-By terms |
 | Platform classes | `org.workflowsim.planning.naco` DNC evaluator, `NacoGaHeftOptimizer`, `NacoGaOperators`, `NacoAdapter`, and `NacoGaHeftPlanningAlgorithm` |
-| Verification | `NacoDncEvaluatorTest`, `NacoGaHeftOptimizerTest`, `NacoGaHeftIntegrationTest`; M37/M38 |
+| Verification | `NacoDncEvaluatorTest`, `NacoAdapterTest`, `NacoGaHeftOptimizerTest`, and `NacoGaHeftIntegrationTest`; M37/M38 |
 | Status | `VERIFIED_HYBRID_CORE` for the DNC + elite GA/HEFT + GPX/mutation/replacement subset |
 
 The implementation evaluates compute, disk-read, disk-write, and cross-host communication time;
-constructs a HEFT elite seed; generates topological chromosomes with compatible VM coordinates;
-applies GPX crossover and dependency-bounded mutation through the `planning.naco.ga` named stream;
+converts file bytes to megabits with `8 / 1e6`, separates external disk-read input from parent-edge
+input, and restricts compute coordinates to PE-compatible VMs. Task PE count constrains placement
+but does not divide per-PE MI again; duration remains `rawMI / vmMips`. It constructs a HEFT elite seed in
+reverse graph-topological order, generates topological chromosomes with compatible VM coordinates,
+applies GPX crossover and dependency-bounded mutation through the `planning.naco.ga` named stream,
 and uses tournament selection and elite replacement. A real LOCAL `SimulationSession` verifies the
 planner. The two-VM hand oracle gives makespan 3, while a DNC case with communication and disk-read
-gives finish time 8. These are semantic checks, not claims of reproducing every paper workload,
-DNC accuracy percentage, or optimal makespan.
+gives finish time 8; adapter oracles independently cover rates, external input, PE filtering, and
+non-topological numeric IDs. These are semantic checks, not claims of reproducing every paper
+workload, DNC accuracy percentage, or optimal makespan.
 
 ## Reshi — IPCCC 2022
 
@@ -118,14 +126,17 @@ DNC accuracy percentage, or optimal makespan.
 | License | LGPL-3.0 (`license.txt` in the artifact) |
 | Platform classes | `ReshiSchedulingAlgorithm`, `ReshiRankTable`, `ReshiTaskHistory`, `ReshiPredictionErrorModel`, and `ReshiRegistry` |
 | Verification | `ReshiSchedulingAlgorithmTest`, `ReshiIntegrationTest`, `ReshiPredictionErrorModelTest`; M39 |
-| Status | `VERIFIED_RANKED_SUBSET` for Reshi-C/M with explicit rank/history inputs and optional prediction errors |
+| Status | `VERIFIED_RANKED_SUBSET` for Reshi-C/M with explicit rank/history inputs and prediction-error-invariant priorities |
 
 Reshi-C prioritizes Jobs by direct-child count; Reshi-M prioritizes by historical average runtime.
-Both use an explicit task-node rank table for VM selection. Reshi-C/M require `SimulationConfig.reshiConfig`,
-so missing rank/history inputs fail explicitly. Reshi-M can additionally apply normal or exponential
-prediction errors through a named random stream, including the official sign-and-clamp convention.
-No regression-tree training, AWS image-type profiling, or complete production trace pipeline is
-built in; these are adaptation boundaries, not claims of reproducing the paper's full recommender.
+Both use an explicit task-node rank table for VM selection over idle PE-compatible VMs and fail
+explicitly when no currently allocatable VM has a recommendation. Reshi-C/M require
+`SimulationConfig.reshiConfig`, so missing rank/history inputs fail explicitly. Normal and
+exponential prediction-error multipliers remain available to prediction-consuming baselines through
+the sign-and-clamp model, but Reshi-C/M do not consume them: priority and random-stream state are
+prediction-error invariant, and no sampling occurs inside Reshi-M's comparator. No regression-tree
+training, AWS image-type profiling, or complete production trace pipeline is built in; these are
+adaptation boundaries, not claims of reproducing the paper's full recommender.
 
 ## GreenHEFT — FGCS 2014
 
@@ -172,15 +183,18 @@ semantics were inspected independently; no third-party code was copied without a
 | Reference artifact | [ralthor/Scheduler](https://github.com/ralthor/Scheduler), `Scheduler/ICPCP.py`, commit [`d8f8963a021abe945b8cebee693341031d086e77`](https://github.com/ralthor/Scheduler/commit/d8f8963a021abe945b8cebee693341031d086e77) |
 | License | No license file was found in the reference repository; inspected for algorithm semantics only, not copied or redistributed |
 | Platform classes | `org.workflowsim.planning.icpcp` and `IcpcpPlanningAlgorithm` |
-| Verification | `IcpcpPlannerTest`, `IcpcpIntegrationTest`; M43/M44 |
+| Verification | `IcpcpPlannerTest`, `IcpcpAdapterTest`, `IcpcpIntegrationTest`; M43/M44 |
 | Status | `VERIFIED_DEADLINE_COST_CORE` for one-phase PCP, EST/LFT, path-cost and deadline-feasible VM selection |
 
 The planner constructs critical-parent partial critical paths using `lft-est`, tries each whole path on
-each VM, and selects the feasible candidate with minimum incremental cost and maximum flexibility.
-The virtual END node participates in slack calculation, so an infeasible deadline fails explicitly
-rather than falling back to an arbitrary VM. The current adapter uses raw MI, homogeneous estimated
-network transfer time, VM cost per second, and a one-second billing period. This is not IC-PCPD2,
-dynamic VM provisioning, or a full paper-corpus reproduction.
+each PE-compatible VM, and selects the feasible candidate with minimum incremental cost and maximum
+flexibility. The virtual END node participates in slack calculation, so an infeasible deadline fails
+explicitly rather than falling back to an arbitrary VM. The SHARED adapter uses raw MI plus the same
+integer-MI storage-input envelope as the SHARED baseline, starts after the model-generated stage-in
+and root-release interval, and converts homogeneous estimated network transfer time from declared
+decimal MB/s. VM rates are cost per second and the generalized billing-period formula charges each
+rounded period's full seconds; the current adapter uses a one-second period. This is not IC-PCPD2,
+dynamic VM provisioning, a full event replay, or a full paper-corpus reproduction.
 
 ## Network-Aware HEFT — The Scientific World Journal 2014
 
@@ -189,15 +203,17 @@ dynamic VM provisioning, or a full paper-corpus reproduction.
 | Paper | Muhammad Murtaza Yousaf, Michael Welzl, *Network-Aware HEFT Scheduling for Grid*, The Scientific World Journal, 2014, Article 317284 |
 | Primary source | [DOI](https://doi.org/10.1155/2014/317284), [PMC full text](https://pmc.ncbi.nlm.nih.gov/articles/PMC3919093/) |
 | Platform classes | `org.workflowsim.planning.networkheft` and `NetworkHeftPlanningAlgorithm` |
-| Verification | `NetworkHeftPlannerTest`, `NetworkHeftIntegrationTest`; M45 |
+| Verification | `NetworkHeftPlannerTest`, `NetworkHeftAdapterTest`, `NetworkHeftFlowStretcherTest`, `NetworkHeftIntegrationTest`; M45 |
 | Status | `VERIFIED_BOTTLENECK_CORE` for fair-shared bottleneck flow stretching and iterative HEFT rescheduling |
 
 The implementation forms cross-VM flows, orders them by start time, shares bottleneck capacity among
-active flows, advances to the next arrival or completion, and reschedules HEFT with stretched edge
-durations. The paper-style six-task case reproduces the nominal 25-second schedule and the stretched
-32-second result. The current adapter uses one shared bottleneck per experiment and fair capacity
-sharing; it does not claim the full TCP throughput model, path-detection system, or complete Grid
-workflow corpus.
+active flows, advances to the next arrival or completion, and reschedules insertion-based HEFT with
+stretched edge durations over PE-compatible candidates. Nominal edge time and bottleneck capacity use
+consistent conversions of declared decimal MB/s; duplicate parent OUTPUT declarations are membership,
+and zero-byte positive-duration edges preserve their nominal duration using the supplied capacity.
+The paper-style six-task case reproduces the nominal 25-second schedule and the stretched 32-second
+result. The current adapter uses one shared bottleneck per experiment and fair capacity sharing; it
+does not claim the full TCP throughput model, path-detection system, or complete Grid workflow corpus.
 
 ## EBPSM — Multi-tenant WaaS Resource Sharing (2020)
 
@@ -256,13 +272,16 @@ CRCH replication heuristic.
 |---|---|
 | Official source | WorkflowSim `DHEFTPlanningAlgorithm`, [source file](https://github.com/WorkflowSim/WorkflowSim-1.0/blob/master/sources/org/workflowsim/planning/DHEFTPlanningAlgorithm.java), Apache License 2.0 |
 | Platform classes | `org.workflowsim.planning.dheft` and `DheftPlanningAlgorithm` |
-| Verification | `DheftPlannerTest`, `DheftIntegrationTest`; M51/M52 |
+| Verification | `DheftPlannerTest`, `DheftAdapterTest`, `DheftIntegrationTest`; M51/M52 |
 | Status | `VERIFIED_DHEFT_CORE` for ready-task EFT with pairwise minimum bandwidth |
 
-DHEFT releases dependency-ready Tasks and evaluates each VM's earliest start from its current
-availability and each parent's actual finish time plus `bytes / min(bw_i,bw_j)`. The selected VM is
-the earliest finisher with deterministic ID tie-breaking. This is the static ready-DAG subset of the
-official algorithm, not a claim of full dynamic workflow-arrival or production-cluster semantics.
+DHEFT schedules the complete current ready wave before releasing children unlocked by that wave.
+Each PE-compatible VM's earliest start uses its current availability and each parent's actual finish
+time plus `bytes / (1e6 * min(bw_i,bw_j))` for declared decimal-MB/s VM bandwidth; the direct problem
+API stores converted byte rates. The selected VM is the earliest finisher with deterministic ID
+tie-breaking. Duplicate parent OUTPUT declarations are membership, not repeated payload. This is the
+static ready-DAG subset of the official algorithm, not a claim of full dynamic workflow-arrival or
+production-cluster semantics.
 
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

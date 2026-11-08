@@ -34,9 +34,14 @@ public final class GreenHeftAdapter {
                 if (spec == null) {
                     throw new IllegalArgumentException("No GreenHEFT power declaration for VM " + vm.getId());
                 }
-                double seconds = task.getCloudletLength() / vm.getMips();
-                compute.put(vm.getId(), seconds);
-                energy.put(vm.getId(), seconds * spec.getMaxPowerWatts());
+                if (vm.getNumberOfPes() >= task.getNumberOfPes()) {
+                    double seconds = task.getCloudletLength() / vm.getMips();
+                    compute.put(vm.getId(), seconds);
+                    energy.put(vm.getId(), seconds * spec.getMaxPowerWatts());
+                }
+            }
+            if (compute.isEmpty()) {
+                throw new IllegalArgumentException("No PE-compatible GreenHEFT VM for Task " + task.getCloudletId());
             }
             List<Integer> parents = new ArrayList<Integer>();
             for (Task parent : task.getParentList()) {

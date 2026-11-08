@@ -17,7 +17,8 @@ public final class GreenHeftPlanner {
             return byRank != 0 ? byRank : Integer.compare(first.getTaskId(), second.getTaskId());
         });
         Map<Integer, GreenHeftSchedule.Entry> scheduled = new LinkedHashMap<Integer, GreenHeftSchedule.Entry>();
-        Map<Integer, Double> available = new HashMap<Integer, Double>();
+        Map<Integer, List<GreenHeftSchedule.Entry>> reservations =
+                new HashMap<Integer, List<GreenHeftSchedule.Entry>>();
         double makespan = 0.0;
         double energy = 0.0;
         for (GreenHeftTask task : ordered) {
@@ -38,7 +39,10 @@ public final class GreenHeftPlanner {
                             : parentTask.getCommunicationSecondsByChild().getOrDefault(task.getTaskId(), 0.0);
                     parentReady = Math.max(parentReady, parent.getFinishSeconds() + transfer);
                 }
-                double start = Math.max(available.getOrDefault(vmId, 0.0), parentReady);
+                double start = earliestStart(
+                        reservations.get(vmId),
+                        parentReady,
+                        task.getComputeSecondsByVm().get(vmId));
                 double finish = start + task.getComputeSecondsByVm().get(vmId);
                 double taskEnergy = task.getEnergyJoulesByVm().get(vmId);
                 if (taskEnergy < bestEnergy - 1.0e-9
@@ -52,14 +56,34 @@ public final class GreenHeftPlanner {
                     bestStart = start;
                 }
             }
-            available.put(bestVm, bestFinish);
-            scheduled.put(
-                    task.getTaskId(),
-                    new GreenHeftSchedule.Entry(task.getTaskId(), bestVm, bestStart, bestFinish, bestEnergy));
+            GreenHeftSchedule.Entry selected =
+                    new GreenHeftSchedule.Entry(task.getTaskId(), bestVm, bestStart, bestFinish, bestEnergy);
+            reservations
+                    .computeIfAbsent(bestVm, ignored -> new ArrayList<GreenHeftSchedule.Entry>())
+                    .add(selected);
+            reservations.get(bestVm).sort((first, second) -> {
+                int byStart = Double.compare(first.getStartSeconds(), second.getStartSeconds());
+                return byStart != 0 ? byStart : Integer.compare(first.getTaskId(), second.getTaskId());
+            });
+            scheduled.put(task.getTaskId(), selected);
             energy += bestEnergy;
             makespan = Math.max(makespan, bestFinish);
         }
         return new GreenHeftSchedule(scheduled, makespan, energy);
+    }
+
+    private static double earliestStart(List<GreenHeftSchedule.Entry> reservations, double ready, double duration) {
+        double start = ready;
+        if (reservations == null) {
+            return start;
+        }
+        for (GreenHeftSchedule.Entry reservation : reservations) {
+            if (start + duration <= reservation.getStartSeconds() + 1.0e-9) {
+                break;
+            }
+            start = Math.max(start, reservation.getFinishSeconds());
+        }
+        return start;
     }
 
     private Map<Integer, Double> upwardRanks(GreenHeftProblem problem) {

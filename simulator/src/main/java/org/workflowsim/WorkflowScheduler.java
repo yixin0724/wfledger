@@ -742,7 +742,9 @@ public class WorkflowScheduler extends DatacenterBroker {
      * the makespan estimate takes the greedy critical-path lower bound
      * {@code clock + T_t} (this Job pushes the schedule at least to its own completion, and
      * any smaller estimate denies this Job its own execution interval). Per the task contract:
-     * {@code EDP_t = (P_max(t)*T_t + P_idle(default)*makespan_est) * T_t}. The globally
+     * {@code EDP_t = (P_max(t)*T_t + P_idle(default)*(makespan_est-T_t)) * T_t}. The busy
+     * rectangle already includes idle plus dynamic power in P_max(t), so default idle is added
+     * only outside this Job's execution interval, consistently with EnergyAccounting. The globally
      * optimal EDP is an NP-hard cross-Job problem (design section 3 honest exclusion), and the
      * v2 target is an independent greedy choice per Job; on ties the strict {@code <} keeps the
      * first table entry (deterministic tie-break, AGENTS #9).</p>
@@ -760,8 +762,8 @@ public class WorkflowScheduler extends DatacenterBroker {
         for (PlatformProfile.FrequencyTier tier : tiers) {
             double estimatedSeconds = workMi / tier.getMips();
             double makespanEstimate = clock + estimatedSeconds;
-            double energyEstimate =
-                    tier.getMaxPowerWatts() * estimatedSeconds + defaultTier.getIdlePowerWatts() * makespanEstimate;
+            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds
+                    + defaultTier.getIdlePowerWatts() * (makespanEstimate - estimatedSeconds);
             double edp = energyEstimate * estimatedSeconds;
             if (best == null || edp < bestEdp) {
                 best = tier;

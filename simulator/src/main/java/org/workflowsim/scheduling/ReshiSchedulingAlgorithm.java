@@ -11,7 +11,6 @@ import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.utils.ReshiConfig;
 import org.workflowsim.utils.ReshiRankTable;
 import org.workflowsim.utils.ReshiRegistry;
-import org.workflowsim.utils.SimulationRandom;
 
 /** Reshi-C/M resource recommendation and ready-queue prioritization. */
 public final class ReshiSchedulingAlgorithm extends BaseSchedulingAlgorithm {
@@ -62,11 +61,12 @@ public final class ReshiSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             });
         }
 
+        validateCloudletCompatibility();
         List<CondorVM> vms = sortedVmsById();
         for (Job job : jobs) {
             List<CondorVM> free = new ArrayList<CondorVM>();
             for (CondorVM vm : vms) {
-                if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE) {
+                if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE && isCompatible(job, vm)) {
                     free.add(vm);
                 }
             }
@@ -81,17 +81,14 @@ public final class ReshiSchedulingAlgorithm extends BaseSchedulingAlgorithm {
     }
 
     private double runtime(Job job) {
-        ReshiConfig active = configuration();
-        double base = active.getTaskHistory()
+        // R-PAPER-04 audit: Reshi-M is defined by the historical average, not by a
+        // prediction-dependent task/node estimate. Prediction noise belongs to the
+        // prediction-consuming baselines; applying it here would both change Reshi-M's
+        // semantics and sample afresh inside comparator calls. Keeping the declared
+        // average makes priority deterministic and prediction-error invariant.
+        return configuration()
+                .getTaskHistory()
                 .averageRuntimeFor(job.getTaskList().get(0).getType());
-        if (active.getPredictionErrorModel() != null && active.getPredictionErrorFraction() > 0.0) {
-            return base
-                    * active.getPredictionErrorModel()
-                            .sampleFactor(
-                                    active.getPredictionErrorFraction(),
-                                    SimulationRandom.newJavaRandom("prediction.reshi.runtime"));
-        }
-        return base;
     }
 
     private CondorVM selectVm(Job job, List<CondorVM> free) {
@@ -105,7 +102,8 @@ public final class ReshiSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         ReshiRankTable.Entry best =
                 configuration().getRankTable().bestFor(job.getTaskList().get(0).getType(), freeIds);
         if (best == null) {
-            return free.get(0);
+            throw new IllegalArgumentException(
+                    "No Reshi rank for task type " + job.getTaskList().get(0).getType() + " on compatible idle VMs");
         }
         for (CondorVM vm : free) {
             if (vm.getId() == best.getVmId()) {

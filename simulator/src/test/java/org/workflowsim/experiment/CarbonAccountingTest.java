@@ -513,6 +513,113 @@ class CarbonAccountingTest {
         throw new IllegalStateException("tier mips " + mips + " matches no declared tier");
     }
 
+    /**
+     * CaWoSched report compatibility: the planner and report integrate the same full deadline
+     * horizon and heterogeneous flat dynamic powers. VM0 (idle 10, max 110) runs [0.21,2.21);
+     * VM1 (idle 20, max 220) runs [0.21,1.21). Dynamic excess is 100*2+200*1=400 W*s and idle
+     * excess is 30*10=300 W*s, so the full-deadline total is 700 W*s. The actual Job intervals
+     * are asserted before the hand arithmetic.
+     */
+    @Test
+    void caWoSchedBudgetUsesFullDeadlineAndHeterogeneousFlatPower() throws Exception {
+        SimulationReport report = runCaWoSchedFlatBudget(PlanningAlgorithm.CAWOSCHED_SLACK);
+        assertJobWindow(report, 1, 1, 0.21, 1.21);
+        assertJobWindow(report, 2, 0, 0.21, 2.21);
+        CarbonAccounting carbon = report.getCarbonAccounting();
+        assertEquals(700.0, carbon.getTotalCarbonExcessWattSeconds(), 1.0e-9);
+        assertEquals(550.0, carbon.getWindowExcessWattSeconds().get(0), 1.0e-9);
+        assertEquals(150.0, carbon.getWindowExcessWattSeconds().get(1), 1.0e-9);
+    }
+
+    /** The pressure label shares the same report semantics; the fixed ASAP fixture is identical. */
+    @Test
+    void caWoSchedPressureBudgetUsesTheSameFullDeadlineLaw() throws Exception {
+        SimulationReport report = runCaWoSchedFlatBudget(PlanningAlgorithm.CAWOSCHED_PRESSURE);
+        assertJobWindow(report, 1, 1, 0.21, 1.21);
+        assertJobWindow(report, 2, 0, 0.21, 2.21);
+        assertEquals(700.0, report.getCarbonAccounting().getTotalCarbonExcessWattSeconds(), 1.0e-9);
+    }
+
+    /** Non-CaWoSched keeps the historical first-VM delta and makespan horizon. */
+    @Test
+    void nonCaWoSchedBudgetPreservesFirstVmAndMakespanLaw() throws Exception {
+        SimulationReport report = runCaWoSchedFlatBudget(PlanningAlgorithm.SHARED_STORAGE_HEFT);
+        assertJobWindow(report, 1, 1, 0.21, 1.21);
+        assertJobWindow(report, 2, 0, 0.21, 2.21);
+        double expected = 30.0 * report.getMakespan() + 100.0 * 1.0 + 100.0 * 2.0;
+        assertEquals(expected, report.getCarbonAccounting().getTotalCarbonExcessWattSeconds(), 1.0e-9);
+        assertEquals(
+                expected,
+                report.getCarbonAccounting().getWindowExcessWattSeconds().get(0),
+                1.0e-9);
+        assertTrue(!report.getCarbonAccounting().getWindowExcessWattSeconds().containsKey(1));
+    }
+
+    private static void assertJobWindow(SimulationReport report, int taskId, int vmId, double start, double finish) {
+        for (SimulationReport.JobOutcome job : report.getJobs()) {
+            if (job.getClassType() == 2 && job.getTaskIds().contains(taskId)) {
+                assertEquals(vmId, job.getVmId());
+                assertEquals(start, job.getStartTime(), 1.0e-9);
+                assertEquals(finish, job.getFinishTime(), 1.0e-9);
+                return;
+            }
+        }
+        throw new AssertionError("Missing compute Job for task " + taskId);
+    }
+
+    private SimulationReport runCaWoSchedFlatBudget(PlanningAlgorithm algorithm) throws Exception {
+        Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), algorithm + "-budget.dax");
+        Files.write(
+                workflow,
+                ("<adag version=\"3.3\" count=\"2\">"
+                                + "<job id=\"a\" name=\"a\" runtime=\"1\"/>"
+                                + "<job id=\"b\" name=\"b\" runtime=\"4\"/></adag>")
+                        .getBytes(StandardCharsets.UTF_8));
+        SimulationConfig config = SimulationConfig.builder(workflow.toString(), 2)
+                .planningAlgorithm(algorithm)
+                .schedulingAlgorithm(SchedulingAlgorithm.STATIC)
+                .fileSystem(ReplicaCatalog.FileSystem.SHARED)
+                .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
+                .deadline(10L)
+                .runtimeReferenceMips(1000.0)
+                .randomSeed(20261108L)
+                .build();
+        PlatformProfile.Builder builder = PlatformProfile.builder("cawosched-flat-budget");
+        builder.addHost(new PlatformProfile.HostSpec(0, 1, 2000, 2048, 10000L, 1000000L))
+                .addVm(new PlatformProfile.VmSpec(
+                        0,
+                        2000,
+                        1,
+                        512,
+                        1000L,
+                        10000L,
+                        "Xen",
+                        PlatformProfile.CloudletSchedulerMode.SPACE_SHARED,
+                        null,
+                        10.0,
+                        110.0,
+                        null))
+                .pinVmToHost(0, 0);
+        builder.addHost(new PlatformProfile.HostSpec(1, 1, 1000, 2048, 10000L, 1000000L))
+                .addVm(new PlatformProfile.VmSpec(
+                        1,
+                        1000,
+                        1,
+                        512,
+                        1000L,
+                        10000L,
+                        "Xen",
+                        PlatformProfile.CloudletSchedulerMode.SPACE_SHARED,
+                        null,
+                        20.0,
+                        220.0,
+                        null))
+                .pinVmToHost(1, 1);
+        builder.carbonWindow(0.0, 5.0, 0.0).carbonWindow(5.0, 10.0, 0.0);
+        lastProfile = builder.build();
+        return new SimulationRunner().run(config, lastProfile);
+    }
+
     // ---- fixtures ----
 
     private SimulationReport run(boolean powered, Double intensity, double[][] windows) throws Exception {

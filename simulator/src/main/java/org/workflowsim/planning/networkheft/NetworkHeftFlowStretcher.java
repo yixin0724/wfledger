@@ -23,7 +23,11 @@ public final class NetworkHeftFlowStretcher {
                     continue;
                 }
                 flows.add(new Flow(
-                        parent.getTaskId(), edge, parentEntry.getFinishSeconds(), edge.getNominalDurationSeconds()));
+                        parent.getTaskId(),
+                        edge,
+                        parentEntry.getFinishSeconds(),
+                        edge.getNominalDurationSeconds(),
+                        capacityBytesPerSecond));
             }
         }
         flows.sort(Comparator.comparingDouble(flow -> flow.start));
@@ -67,11 +71,18 @@ public final class NetworkHeftFlowStretcher {
         private final double start;
         private double remaining;
 
-        private Flow(int parentTaskId, NetworkHeftEdge edge, double start, double nominalDuration) {
+        private Flow(
+                int parentTaskId,
+                NetworkHeftEdge edge,
+                double start,
+                double nominalDuration,
+                double capacityBytesPerSecond) {
             this.parentTaskId = parentTaskId;
             this.edge = edge;
             this.start = start;
-            this.remaining = edge.getDataBytes() > 0.0 ? edge.getDataBytes() : edge.getNominalDurationSeconds() * 100.0;
+            // A zero-byte direct-API edge still carries its declared nominal duration.
+            // Derive equivalent work from the supplied capacity, never a hidden 100 B/s rate.
+            this.remaining = edge.getDataBytes() > 0.0 ? edge.getDataBytes() : nominalDuration * capacityBytesPerSecond;
         }
     }
 }

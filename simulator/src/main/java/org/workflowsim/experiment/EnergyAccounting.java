@@ -140,7 +140,11 @@ public final class EnergyAccounting {
                                 + "evidence chain is broken (BAT-D2)");
                     }
                 }
-                peak += spec.defaultFrequencyTier().getMaxPowerWatts();
+                double nameplateMax = 0.0;
+                for (PlatformProfile.FrequencyTier tier : spec.getFrequencyTiers()) {
+                    nameplateMax = Math.max(nameplateMax, tier.getMaxPowerWatts());
+                }
+                peak += nameplateMax;
             } else {
                 e = spec.getIdlePowerWatts() * makespanSeconds
                         + (spec.getMaxPowerWatts() - spec.getIdlePowerWatts()) * m.getModeledBusyIntervalSeconds();
@@ -194,7 +198,10 @@ public final class EnergyAccounting {
         return meanVmEnergyJoules;
     }
 
-    /** @return fleet peak power (sum of per-VM max) in watts; 0 when no power model */
+    /**
+     * @return fleet nameplate peak (flat P_max, or maximum P_max across each VM's declared tiers)
+     *     in watts; 0 when no power model
+     */
     public double getPeakPowerWatts() {
         return peakPowerWatts;
     }

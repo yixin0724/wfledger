@@ -34,6 +34,33 @@ class DheftPlannerTest {
     }
 
     @Test
+    void schedulesTheWholeCurrentReadyWaveBeforeReleasingItsChildren() {
+        DheftTask first = new DheftTask(
+                1,
+                values(1.0, 100.0),
+                Collections.<Integer>emptyList(),
+                Collections.singletonMap(2, new DheftEdge(2, 0.0)));
+        DheftTask child = new DheftTask(2, values(10.0, 11.0), Collections.singletonList(1), Collections.emptyMap());
+        DheftTask independent =
+                new DheftTask(3, values(10.0, 15.0), Collections.<Integer>emptyList(), Collections.emptyMap());
+        Map<Integer, Double> bandwidthBytesPerSecond = new LinkedHashMap<Integer, Double>();
+        bandwidthBytesPerSecond.put(0, 1.0);
+        bandwidthBytesPerSecond.put(1, 1.0);
+
+        DheftSchedule schedule = new DheftPlanner()
+                .schedule(new DheftProblem(Arrays.asList(first, child, independent), bandwidthBytesPerSecond));
+
+        // Official DHEFT forms the initial ready wave [1,3]. Task 3 therefore reserves VM0
+        // [1,11], after which task 2 finishes at 12 on VM1. Letting newly-ready task 2 jump
+        // ahead of task 3 instead reserves VM0 [1,11] for task 2 and inflates makespan to 15.
+        assertEquals(0, schedule.getVmId(3));
+        assertEquals(1.0, schedule.getTaskPlan(3).getStartSeconds(), 1.0e-9);
+        assertEquals(1, schedule.getVmId(2));
+        assertEquals(1.0, schedule.getTaskPlan(2).getStartSeconds(), 1.0e-9);
+        assertEquals(12.0, schedule.getMakespanSeconds(), 1.0e-9);
+    }
+
+    @Test
     void rejectsCycle() {
         DheftTask first = new DheftTask(
                 1, values(1.0), Collections.singletonList(2), Collections.singletonMap(2, new DheftEdge(2, 0.0)));

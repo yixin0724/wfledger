@@ -2,6 +2,7 @@ package org.workflowsim.planning.networkheft;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -22,29 +23,37 @@ public final class NetworkHeftAdapter {
         }
         double averageBandwidth = 0.0;
         for (CondorVM vm : vms) {
-            averageBandwidth += vm.getBw();
+            averageBandwidth += vm.getBw() * 8.0e6;
         }
         averageBandwidth /= Math.max(1, vms.size());
         List<NetworkHeftTask> converted = new ArrayList<NetworkHeftTask>();
         for (Task task : tasks) {
             Map<Integer, Double> compute = new LinkedHashMap<Integer, Double>();
             for (CondorVM vm : vms) {
-                compute.put(vm.getId(), task.getCloudletLength() / vm.getMips());
+                if (task.getNumberOfPes() <= vm.getNumberOfPes()) {
+                    compute.put(vm.getId(), task.getCloudletLength() / vm.getMips());
+                }
+            }
+            if (compute.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Network-Aware HEFT cannot map task " + task.getCloudletId() + "; no PE-compatible VM");
+            }
+            LinkedHashSet<String> outputNames = new LinkedHashSet<String>();
+            for (FileItem output : task.getFileList()) {
+                if (output.getType() == FileType.OUTPUT) {
+                    outputNames.add(output.getName());
+                }
             }
             Map<Integer, NetworkHeftEdge> edges = new LinkedHashMap<Integer, NetworkHeftEdge>();
             for (Task child : task.getChildList()) {
                 double bytes = 0.0;
-                for (FileItem output : task.getFileList()) {
-                    if (output.getType() != FileType.OUTPUT) {
-                        continue;
-                    }
-                    for (FileItem input : child.getFileList()) {
-                        if (input.getType() == FileType.INPUT
-                                && output.getName().equals(input.getName())) {
-                            bytes += output.getSize();
-                        }
+                for (FileItem input : child.getFileList()) {
+                    if (input.getType() == FileType.INPUT && outputNames.contains(input.getName())) {
+                        bytes += input.getSize();
                     }
                 }
+                // WorkflowSim bandwidth is decimal MB/s. Convert file bytes to bits for
+                // the nominal estimate and use the corresponding byte-rate capacity below.
                 double bits = bytes * 8.0;
                 edges.put(
                         child.getCloudletId(),

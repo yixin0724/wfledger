@@ -7,7 +7,8 @@ LOCAL scenes are separate physical models; their values are not merged into one 
 comparison is a controlled two-task DAG, not a claim about general workflow performance.
 
 `CrossPaperComparisonTest` constructs the same two-task chain with 100 bytes of data,
-`runtimeReferenceMips=1.0`, `randomSeed=7`, two VMs, declared VM costs, and declared power. SHARED
+`runtimeReferenceMips=1.0`, `randomSeed=7`, two VMs, declared VM costs, declared power, and explicit
+`CostModel.VM` so runtime accounting and IC-PCP planner rates use the same VM tariff declarations. SHARED
 uses `legacyWorkflowsimV1`, while LOCAL uses `preExecutionTransferDelayV1`. Every run must complete
 successfully and produce non-negative energy and modeled processing cost.
 
@@ -28,11 +29,11 @@ not interchangeable.
 
 | Algorithm | Task 1 → VM | Task 2 → VM | Makespan (s) | Total energy (J) | Modeled processing cost | IC-PCP planner cost |
 |---|---:|---:|---:|---:|---:|---:|
-| `SHARED_STORAGE_HEFT` | 3 | 3 | 2.21 | 434.05 | 6.33002 | — |
-| `NETWORK_HEFT` | 3 | 3 | 2.21 | 434.05 | 6.33002 | — |
-| `GREEN_HEFT` | 8 | 8 | 4.21 | 264.05 | 12.33002 | — |
-| `MO_HEFT` | 3 | 8 | 3.21 | 349.05 | 9.33002 | — |
-| `IC_PCP` | 8 | 8 | 4.21 | 264.05 | 12.33002 | 4.0 |
+| `SHARED_STORAGE_HEFT` | 3 | 3 | 2.21 | 434.05 | 21.1 | — |
+| `NETWORK_HEFT` | 3 | 3 | 2.21 | 434.05 | 21.1 | — |
+| `GREEN_HEFT` | 8 | 8 | 4.21 | 264.05 | 5.1 | — |
+| `MO_HEFT` | 3 | 8 | 3.21 | 349.05 | 13.1 | — |
+| `IC_PCP` | 8 | 8 | 4.21 | 264.05 | 5.1 | 4.0 |
 
 HEFT and Network-Aware HEFT choose the same mapping in this small scene. GreenHEFT and IC-PCP also
 choose the same mapping but optimize different objectives; MOHEFT chooses a mixed mapping. The test
@@ -42,8 +43,8 @@ requires at least three distinct mappings so a degenerate all-identical comparis
 
 | Algorithm | Task 1 → VM | Task 2 → VM | Makespan (s) | Total energy (J) | Modeled processing cost |
 |---|---:|---:|---:|---:|---:|
-| `LOCAL_HEFT` | 3 | 3 | 2.21 | 434.05 | 6.33002 |
-| `DHEFT` | 3 | 3 | 2.21 | 434.05 | 6.33002 |
+| `LOCAL_HEFT` | 3 | 3 | 2.21 | 434.05 | 21.1 |
+| `DHEFT` | 3 | 3 | 2.21 | 434.05 | 21.1 |
 
 This LOCAL scene is **non-discriminating**: both algorithms select the same mapping, so their
 metrics are necessarily identical. It is not used to claim algorithm equivalence. DHEFT's pairwise

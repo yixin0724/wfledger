@@ -164,7 +164,9 @@ public final class CaWoSchedPlanner {
             return result;
         }
         List<Double> result = new ArrayList<Double>();
-        for (Interval interval : refinedIntervals()) {
+        // R-PAPER-01D audit: the exact DP needs the complete E-schedule candidate
+        // set, including blocks longer than the three-task heuristic refinement cap.
+        for (Interval interval : refinedIntervals(tasks.size())) {
             result.add(interval.start);
         }
         return result;
@@ -305,6 +307,10 @@ public final class CaWoSchedPlanner {
     }
 
     private List<Interval> refinedIntervals() {
+        return refinedIntervals(3);
+    }
+
+    private List<Interval> refinedIntervals(int maximumBlockSize) {
         Set<Double> candidateTimes = new java.util.TreeSet<Double>();
         Map<Integer, List<CaWoSchedTask>> byVm = new LinkedHashMap<Integer, List<CaWoSchedTask>>();
         for (CaWoSchedTask task : tasks) {
@@ -314,7 +320,7 @@ public final class CaWoSchedPlanner {
         for (List<CaWoSchedTask> vmTasks : byVm.values()) {
             Collections.sort(vmTasks, Comparator.comparingInt(CaWoSchedTask::getOrderOnVm));
             for (int begin = 0; begin < vmTasks.size(); begin++) {
-                for (int end = begin; end < vmTasks.size() && end < begin + 3; end++) {
+                for (int end = begin; end < vmTasks.size() && end < begin + maximumBlockSize; end++) {
                     List<CaWoSchedTask> block = vmTasks.subList(begin, end + 1);
                     double duration = 0.0;
                     for (CaWoSchedTask task : block) {

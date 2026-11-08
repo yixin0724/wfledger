@@ -148,7 +148,9 @@ idle ≤ max constraint as the v1 power fields.
   the built-in policies are `DEFAULT` (every Job runs at the first tier —
   v1-degenerate), `MIN_POWER` (every Job runs at the LAST/smallest tier),
   `EDP_HEURISTIC` (each Job selects the tier minimizing EDP = E_tier ×
-  estimated_T_tier, computed at dispatch with the Job's declared MI work).
+  estimated_T_tier, computed at dispatch with the Job's declared MI work). Its local energy
+  estimate is `P_max(tier) × T_tier + P_idle(default) × (makespan_est − T_tier)`: default idle is
+  charged only outside the Job's busy rectangle, consistent with the conservation law in §2.3.
 - **Registry-level**: registered DVFS-aware algorithms declare `dvfsAware=true`
   and can assign tiers per-Job through a first-class scheduling-time API
   (the declaration model's powerModelRequired gate extends to require declared
@@ -171,6 +173,10 @@ P_max(delta) exactly as in v1. When tiers exist, the VM's idle seconds draw the
 default tier's idle power and each busy interval draws the FULL max power of
 its assigned tier (idle+dynamic are already combined in P_max). This maintains
 the rectangle-per-Job auditability and degenerates to v1 exactly.
+
+`peakPowerWatts` is a declared nameplate constant, not the parked-tier power or an observed
+time-series maximum. Each tiered VM contributes `max_tier P_max(tier)`, so the fleet value remains
+an upper bound even when a lower-MIPS tier declares a higher maximum power than the default tier.
 
 ### 2.4 Audit chain recompute
 

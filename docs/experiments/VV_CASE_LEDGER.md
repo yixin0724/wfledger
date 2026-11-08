@@ -95,6 +95,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-CRCH-001` | `VERIFIED_RECOVERY_CORE`: synchronized checkpoints, remaining-work retry, alternative VM, real failure recovery and M49/M50; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No replication-count learning, PCA clustering, or full CRCH replication claim |
 | `PAPER-DHEFT-001` | `VERIFIED_DHEFT_CORE`: ready-task EFT, pairwise minimum bandwidth, parent finish, LOCAL integration and M51/M52; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full dynamic-arrival or production-cluster claim |
 | `PAPER-COMPARE-001` | `VERIFIED_COMPARISON_SCENE`: SHARED/LOCAL real-runner scenes, distinct mappings, direct IC-PCP planner cost, independent energy residual and M53; see [cross-paper comparison](<CROSS_PAPER_COMPARISON.md>) | Single two-task DAG only; LOCAL scene is non-discriminating; no universal ranking or mixed-model population |
+| `AUDIT-ALGO-METRIC-001` | `VERIFIED_ALGORITHM_METRIC_CORE`: all reproduced families reviewed and corrected; independent makespan/energy/cost/tail recomputation, M54–M65; see [algorithm and metric audit](<ALGORITHM_METRIC_AUDIT.md>) | No exact paper-table, full-corpus, global-optimality, or real-platform calibration claim |
 
 ## 5. Change and review discipline
 

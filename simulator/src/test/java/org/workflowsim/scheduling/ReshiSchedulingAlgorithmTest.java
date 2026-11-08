@@ -1,6 +1,8 @@
 package org.workflowsim.scheduling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -12,8 +14,10 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Job;
 import org.workflowsim.Task;
 import org.workflowsim.utils.ReshiConfig;
+import org.workflowsim.utils.ReshiPredictionErrorModel;
 import org.workflowsim.utils.ReshiRankTable;
 import org.workflowsim.utils.ReshiTaskHistory;
+import org.workflowsim.utils.SimulationRandom;
 
 /** Reshi-C/M priority and ranked VM allocation checks. */
 class ReshiSchedulingAlgorithmTest {
@@ -51,6 +55,64 @@ class ReshiSchedulingAlgorithmTest {
         assertEquals(Arrays.asList(slow, medium, fast), scheduler.getScheduledList());
     }
 
+    @Test
+    void rankedSelectionRejectsPeIncompatibleVms() {
+        ReshiSchedulingAlgorithm scheduler = new ReshiSchedulingAlgorithm(ReshiStrategy.RESHI_C, config());
+        Job job = job(1, "work", 0);
+        job.setNumberOfPes(2);
+        job.getTaskList().get(0).setNumberOfPes(2);
+        scheduler.setCloudletList(Arrays.asList(job));
+        // vm1 has the best rank but only one PE. Among compatible VMs, vm2 outranks vm0.
+        scheduler.setVmList(Arrays.asList(vm(0, 2), vm(1, 1), vm(2, 2)));
+
+        scheduler.run();
+
+        assertEquals(2, job.getVmId());
+    }
+
+    @Test
+    void missingRankOnCompatibleIdleVmsFailsExplicitly() {
+        ReshiSchedulingAlgorithm scheduler = new ReshiSchedulingAlgorithm(ReshiStrategy.RESHI_C, config());
+        Job job = job(1, "missing", 0);
+        scheduler.setCloudletList(Arrays.asList(job));
+        scheduler.setVmList(Arrays.asList(vm(0)));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, scheduler::run);
+        assertTrue(error.getMessage().contains("missing"));
+    }
+
+    @Test
+    void predictionErrorCannotChangeReshiMPriorityOrConsumeItsRandomStream() {
+        ReshiConfig base = config();
+        ReshiConfig noisy = new ReshiConfig(
+                base.getRankTable(),
+                base.getTaskHistory(),
+                new ReshiPredictionErrorModel(ReshiPredictionErrorModel.DistributionFamily.NORMAL),
+                10.0);
+        ReshiSchedulingAlgorithm scheduler = new ReshiSchedulingAlgorithm(ReshiStrategy.RESHI_M, noisy);
+        Job slow = job(1, "slow", 0);
+        Job fast = job(2, "fast", 0);
+        scheduler.setCloudletList(Arrays.asList(fast, slow));
+        scheduler.setVmList(Arrays.asList(vm(0), vm(1), vm(2)));
+        try {
+            SimulationRandom.reset(7L);
+            long expectedNextSeed =
+                    SimulationRandom.newJavaRandom("prediction.reshi.runtime").nextLong();
+            SimulationRandom.reset(7L);
+
+            scheduler.run();
+
+            long actualNextSeed =
+                    SimulationRandom.newJavaRandom("prediction.reshi.runtime").nextLong();
+            assertEquals(expectedNextSeed, actualNextSeed, "Reshi-M must not sample prediction-dependent priorities");
+        } finally {
+            SimulationRandom.reset(7L);
+        }
+        assertEquals(Arrays.asList(slow, fast), scheduler.getScheduledList());
+        assertEquals(0, slow.getVmId());
+        assertEquals(1, fast.getVmId());
+    }
+
     private static ReshiConfig config() {
         ReshiRankTable table = new ReshiRankTable(Arrays.asList(
                 new ReshiRankTable.Entry("work", "vm0", 5.0, 0),
@@ -80,6 +142,10 @@ class ReshiSchedulingAlgorithmTest {
     }
 
     private static CondorVM vm(int id) {
-        return new CondorVM(id, 0, 1000.0, 1, 512, 1L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
+        return vm(id, 1);
+    }
+
+    private static CondorVM vm(int id, int pes) {
+        return new CondorVM(id, 0, 1000.0, pes, 512, 1L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
     }
 }

@@ -25,8 +25,12 @@ public final class IcpcpPlanningAlgorithm extends BasePlanningAlgorithm {
         if (!(deadline > 0.0)) {
             throw new IllegalArgumentException("IC_PCP requires a positive workflow deadline");
         }
-        lastSchedule = new IcpcpPlanner(
-                        IcpcpAdapter.toProblem(getTaskList(), getVmList(), context.getPlatform(), deadline))
+        lastSchedule = new IcpcpPlanner(IcpcpAdapter.toProblem(
+                        getTaskList(),
+                        getVmList(),
+                        context.getPlatform(),
+                        deadline,
+                        context.getCloudSimMinEventIntervalSeconds()))
                 .schedule();
         for (Task task : getTaskList()) {
             IcpcpSchedule.Entry entry = lastSchedule.getTaskPlan(task.getCloudletId());

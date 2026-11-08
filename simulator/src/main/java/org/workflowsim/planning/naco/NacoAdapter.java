@@ -30,15 +30,29 @@ public final class NacoAdapter {
         for (Task task : tasks) {
             Map<Integer, Double> compute = new LinkedHashMap<Integer, Double>();
             for (CondorVM vm : vms) {
-                compute.put(vm.getId(), task.getCloudletLength() / vm.getMips());
+                if (task.getNumberOfPes() <= vm.getNumberOfPes()) {
+                    // Per-PE MI is not divided by task PEs again; PEs constrain
+                    // placement only in the maintained execution model.
+                    compute.put(vm.getId(), task.getCloudletLength() / vm.getMips());
+                }
             }
+            // R-PAPER-03 audit: DNC rates are Mbit/s, whereas FileItem sizes are
+            // bytes. Convert bytes to Mbit once here; do not divide raw bits by MB/s.
             double inputBits = 0.0;
             double outputBits = 0.0;
+            java.util.Set<String> parentProducedInputs = new java.util.HashSet<String>();
+            for (Task parent : task.getParentList()) {
+                for (FileItem parentFile : parent.getFileList()) {
+                    if (parentFile.getType() == FileType.OUTPUT) {
+                        parentProducedInputs.add(parentFile.getName());
+                    }
+                }
+            }
             for (FileItem file : task.getFileList()) {
-                if (file.getType() == FileType.INPUT) {
-                    inputBits += file.getSize() * 8.0;
+                if (file.getType() == FileType.INPUT && !parentProducedInputs.contains(file.getName())) {
+                    inputBits += file.getSize() * 8.0 / 1.0e6;
                 } else if (file.getType() == FileType.OUTPUT) {
-                    outputBits += file.getSize() * 8.0;
+                    outputBits += file.getSize() * 8.0 / 1.0e6;
                 }
             }
             Map<Integer, Double> edges = new LinkedHashMap<Integer, Double>();
@@ -51,7 +65,7 @@ public final class NacoAdapter {
                     for (FileItem childFile : child.getFileList()) {
                         if (childFile.getType() == FileType.INPUT
                                 && parentFile.getName().equals(childFile.getName())) {
-                            edgeBits += parentFile.getSize() * 8.0;
+                            edgeBits += parentFile.getSize() * 8.0 / 1.0e6;
                         }
                     }
                 }

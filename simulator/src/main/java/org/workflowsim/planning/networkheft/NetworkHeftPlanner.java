@@ -56,7 +56,7 @@ public final class NetworkHeftPlanner {
         });
         Map<Integer, NetworkHeftSchedule.Entry> entries = new LinkedHashMap<Integer, NetworkHeftSchedule.Entry>();
         Map<Integer, Integer> mapping = new LinkedHashMap<Integer, Integer>();
-        Map<Integer, Double> available = new HashMap<Integer, Double>();
+        Map<Integer, List<Reservation>> reservations = new HashMap<Integer, List<Reservation>>();
         double makespan = 0.0;
         for (Integer taskId : order) {
             NetworkHeftTask task = problem.getTask(taskId);
@@ -72,7 +72,10 @@ public final class NetworkHeftPlanner {
                     double communication = parent.getVmId() == vmId ? 0.0 : duration(parentId, edge, modifiedDurations);
                     ready = Math.max(ready, parent.getFinishSeconds() + communication);
                 }
-                double start = Math.max(available.getOrDefault(vmId, 0.0), ready);
+                double start = earliestStart(
+                        reservations.get(vmId),
+                        ready,
+                        task.getComputeSecondsByVm().get(vmId));
                 double finish = start + task.getComputeSecondsByVm().get(vmId);
                 if (finish < bestFinish - 1.0e-9 || (Math.abs(finish - bestFinish) <= 1.0e-9 && vmId < bestVm)) {
                     bestVm = vmId;
@@ -80,7 +83,7 @@ public final class NetworkHeftPlanner {
                     bestFinish = finish;
                 }
             }
-            available.put(bestVm, bestFinish);
+            reserve(reservations, taskId, bestVm, bestStart, bestFinish);
             entries.put(taskId, new NetworkHeftSchedule.Entry(taskId, bestVm, bestStart, bestFinish));
             mapping.put(taskId, bestVm);
             makespan = Math.max(makespan, bestFinish);
@@ -91,7 +94,7 @@ public final class NetworkHeftPlanner {
     private NetworkHeftSchedule realisticSchedule(
             NetworkHeftProblem problem, NetworkHeftSchedule candidate, Map<String, Double> stretched) {
         Map<Integer, NetworkHeftSchedule.Entry> entries = new LinkedHashMap<Integer, NetworkHeftSchedule.Entry>();
-        Map<Integer, Double> available = new HashMap<Integer, Double>();
+        Map<Integer, List<Reservation>> reservations = new HashMap<Integer, List<Reservation>>();
         double makespan = 0.0;
         for (Integer taskId : topological(problem)) {
             NetworkHeftTask task = problem.getTask(taskId);
@@ -104,9 +107,10 @@ public final class NetworkHeftPlanner {
                 double communication = parent.getVmId() == vmId ? 0.0 : duration(parentId, edge, stretched);
                 ready = Math.max(ready, parent.getFinishSeconds() + communication);
             }
-            double start = Math.max(available.getOrDefault(vmId, 0.0), ready);
+            double start = earliestStart(
+                    reservations.get(vmId), ready, task.getComputeSecondsByVm().get(vmId));
             double finish = start + task.getComputeSecondsByVm().get(vmId);
-            available.put(vmId, finish);
+            reserve(reservations, taskId, vmId, start, finish);
             entries.put(taskId, new NetworkHeftSchedule.Entry(taskId, vmId, start, finish));
             makespan = Math.max(makespan, finish);
         }
@@ -157,5 +161,46 @@ public final class NetworkHeftPlanner {
             total += seconds;
         }
         return total / task.getComputeSecondsByVm().size();
+    }
+
+    private static double earliestStart(List<Reservation> schedule, double readyTime, double duration) {
+        if (schedule == null) {
+            return readyTime;
+        }
+        double start = readyTime;
+        for (Reservation reservation : schedule) {
+            if (start + duration <= reservation.start) {
+                return start;
+            }
+            start = Math.max(start, reservation.finish);
+        }
+        return start;
+    }
+
+    private static void reserve(
+            Map<Integer, List<Reservation>> reservations, int taskId, int vmId, double start, double finish) {
+        List<Reservation> schedule = reservations.computeIfAbsent(vmId, ignored -> new ArrayList<Reservation>());
+        schedule.add(new Reservation(taskId, start, finish));
+        schedule.sort((first, second) -> {
+            int byStart = Double.compare(first.start, second.start);
+            if (byStart != 0) {
+                return byStart;
+            }
+            int byFinish = Double.compare(first.finish, second.finish);
+            return byFinish != 0 ? byFinish : Integer.compare(first.taskId, second.taskId);
+        });
+    }
+
+    /** One compute-only reservation; transfers do not occupy the VM. */
+    private static final class Reservation {
+        private final int taskId;
+        private final double start;
+        private final double finish;
+
+        private Reservation(int taskId, double start, double finish) {
+            this.taskId = taskId;
+            this.start = start;
+            this.finish = finish;
+        }
     }
 }

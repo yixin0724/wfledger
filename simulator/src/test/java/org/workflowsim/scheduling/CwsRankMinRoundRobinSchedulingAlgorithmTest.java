@@ -38,6 +38,24 @@ class CwsRankMinRoundRobinSchedulingAlgorithmTest {
         assertEquals(1, t2.getVmId());
     }
 
+    @Test
+    void equalRanksUseRealInputBytesNotSameJobOutputBytes() {
+        Job internallySupplied = job(1, 3, 100.0);
+        FileItem output = new FileItem("input-1", 100.0);
+        output.setType(Parameters.FileType.OUTPUT);
+        internallySupplied.addFile(output);
+        Job externallySupplied = job(2, 3, 50.0);
+        CwsRankMinRoundRobinSchedulingAlgorithm scheduler = new CwsRankMinRoundRobinSchedulingAlgorithm();
+        scheduler.setCloudletList(Arrays.asList(externallySupplied, internallySupplied));
+        scheduler.setVmList(Arrays.asList(vm(1), vm(2)));
+
+        scheduler.run();
+
+        // FileItem.isRealInputFile excludes the first Job's same-named input/output pair:
+        // real inputs are 0 versus 50 bytes, so the internally supplied Job sorts first.
+        assertEquals(Arrays.asList(internallySupplied, externallySupplied), scheduler.getScheduledList());
+    }
+
     private static Job job(int id, int rank, double inputBytes) {
         Job job = new Job(id, 100L);
         job.setCwsRank(rank);

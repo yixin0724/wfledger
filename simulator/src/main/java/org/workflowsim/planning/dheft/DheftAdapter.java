@@ -2,6 +2,7 @@ package org.workflowsim.planning.dheft;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -22,26 +23,33 @@ public final class DheftAdapter {
         }
         Map<Integer, Double> bandwidth = new LinkedHashMap<Integer, Double>();
         for (CondorVM vm : vms) {
-            bandwidth.put(vm.getId(), (double) vm.getBw());
+            // WorkflowSim declares decimal MB/s while file sizes and DheftEdge use bytes.
+            bandwidth.put(vm.getId(), vm.getBw() * 1.0e6);
         }
         List<DheftTask> converted = new ArrayList<DheftTask>();
         for (Task task : tasks) {
             Map<Integer, Double> compute = new LinkedHashMap<Integer, Double>();
             for (CondorVM vm : vms) {
-                compute.put(vm.getId(), task.getCloudletLength() / vm.getMips());
+                if (task.getNumberOfPes() <= vm.getNumberOfPes()) {
+                    compute.put(vm.getId(), task.getCloudletLength() / vm.getMips());
+                }
+            }
+            if (compute.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "DHEFT cannot map task " + task.getCloudletId() + "; no PE-compatible VM");
+            }
+            LinkedHashSet<String> outputNames = new LinkedHashSet<String>();
+            for (FileItem output : task.getFileList()) {
+                if (output.getType() == FileType.OUTPUT) {
+                    outputNames.add(output.getName());
+                }
             }
             Map<Integer, DheftEdge> edges = new LinkedHashMap<Integer, DheftEdge>();
             for (Task child : task.getChildList()) {
                 double bytes = 0.0;
-                for (FileItem output : task.getFileList()) {
-                    if (output.getType() != FileType.OUTPUT) {
-                        continue;
-                    }
-                    for (FileItem input : child.getFileList()) {
-                        if (input.getType() == FileType.INPUT
-                                && output.getName().equals(input.getName())) {
-                            bytes += input.getSize();
-                        }
+                for (FileItem input : child.getFileList()) {
+                    if (input.getType() == FileType.INPUT && outputNames.contains(input.getName())) {
+                        bytes += input.getSize();
                     }
                 }
                 edges.put(child.getCloudletId(), new DheftEdge(child.getCloudletId(), bytes));

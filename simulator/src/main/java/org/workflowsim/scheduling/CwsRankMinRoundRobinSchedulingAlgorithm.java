@@ -52,7 +52,10 @@ public final class CwsRankMinRoundRobinSchedulingAlgorithm extends ReadyBatchRou
     private static double realInputBytes(Job job) {
         double total = 0.0;
         for (FileItem file : job.getFileList()) {
-            if (file.getType() == FileType.INPUT) {
+            // R-PAPER-02 audit: "real input" has the same meaning as the execution
+            // layer. A same-named output inside the Job already supplies the input and
+            // must not inflate the RankMin tie-break quantity.
+            if (file.getType() == FileType.INPUT && file.isRealInputFile(job.getFileList())) {
                 total += file.getSize();
             }
         }

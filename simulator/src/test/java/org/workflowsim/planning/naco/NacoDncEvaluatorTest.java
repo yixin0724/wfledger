@@ -43,6 +43,23 @@ class NacoDncEvaluatorTest {
         assertEquals(3.0, schedule.getMakespanSeconds(), 1.0e-9);
     }
 
+    @Test
+    void heftSeedUsesGraphTopologyInsteadOfNumericTaskIds() {
+        NacoTask parent = new NacoTask(
+                2, 0.0, 0.0, compute(1.0, 1.0), Collections.<Integer>emptyList(), Collections.singletonMap(1, 0.0));
+        NacoTask child =
+                new NacoTask(1, 0.0, 0.0, compute(3.0, 3.0), Collections.singletonList(2), Collections.emptyMap());
+        NacoDncProblem problem = new NacoDncProblem(Arrays.asList(parent, child), speeds(100.0), disks(100.0, 100.0));
+
+        NacoSchedule schedule = new NacoDncEvaluator().heft(problem);
+
+        // Independent rank recurrence: rank(child)=3 and rank(parent)=1+3=4.
+        // The valid schedule is parent 2 then child 1, with finish times 1 and 4.
+        assertEquals(1.0, schedule.getTaskPlan(2).getFinishSeconds(), 1.0e-9);
+        assertEquals(1.0, schedule.getTaskPlan(1).getStartSeconds(), 1.0e-9);
+        assertEquals(4.0, schedule.getMakespanSeconds(), 1.0e-9);
+    }
+
     private static Map<Integer, Double> compute(double... values) {
         Map<Integer, Double> result = new LinkedHashMap<Integer, Double>();
         for (int index = 0; index < values.length; index++) {

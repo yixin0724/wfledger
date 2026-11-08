@@ -14,6 +14,25 @@ class CrchRegistryTest {
     }
 
     @Test
+    void checkpointOverheadDelaysTheNextCompletedCheckpoint() {
+        CrchRegistry.configure(new CrchConfig(1.0, 1.0));
+
+        CrchRecovery recovery = CrchRegistry.recordFailure(1, 3, 0.0, 3.5, 4000L, 1000.0);
+
+        assertEquals(2L, recovery.getCheckpointCount());
+        assertEquals(2000L, recovery.getRemainingWorkMi());
+    }
+
+    @Test
+    void savedWorkNeverExceedsTheOriginalTask() {
+        CrchRegistry.configure(new CrchConfig(1.0, 0.5));
+
+        CrchRecovery recovery = CrchRegistry.recordFailure(1, 3, 0.0, 10.0, 1000L, 1000.0);
+
+        assertEquals(0L, recovery.getRemainingWorkMi());
+    }
+
+    @Test
     void completedCheckpointsReduceRetryWorkInsteadOfRestartingEverything() {
         CrchRegistry.configure(new CrchConfig(1.0, 0.1));
 

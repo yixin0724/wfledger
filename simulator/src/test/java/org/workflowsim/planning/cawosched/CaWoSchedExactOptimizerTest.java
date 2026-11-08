@@ -37,6 +37,28 @@ class CaWoSchedExactOptimizerTest {
                 exact.getTaskPlan(1).getFinishSeconds() <= exact.getTaskPlan(2).getStartSeconds());
     }
 
+    @Test
+    void exactSingleProcessorPlanIncludesLongNonIntegralBlocks() {
+        double[] durations = {0.6, 0.5, 0.4, 0.4, 0.4, 0.4};
+        List<CaWoSchedTask> tasks = new java.util.ArrayList<CaWoSchedTask>();
+        for (int index = 0; index < durations.length; index++) {
+            tasks.add(new CaWoSchedTask(
+                    index + 1, 0, index, durations[index], 0.0, 1.0, Collections.<Integer>emptyList()));
+        }
+        List<PlatformProfile.CarbonWindow> windows = Arrays.asList(
+                new PlatformProfile.CarbonWindow(0.0, 2.0, 5.0), new PlatformProfile.CarbonWindow(2.0, 4.0, 0.0));
+        CaWoSchedPlanner planner = new CaWoSchedPlanner(tasks, windows, 4.0);
+
+        CaWoSchedPlan exact = planner.planExactSingleProcessor();
+
+        // Paper E-schedule oracle: one block covers [0,2.7), leaving 0.7 s active in
+        // the dirty [2,4) window. A three-task refinement cap cannot represent start 1.9.
+        assertEquals(0.7, exact.getCarbonExcessWattSeconds(), 1.0e-9);
+        assertEquals(2.7, exact.getMakespanSeconds(), 1.0e-9);
+        assertEquals(1.9, exact.getTaskPlan(5).getStartSeconds(), 1.0e-9);
+        assertEquals(2.3, exact.getTaskPlan(6).getStartSeconds(), 1.0e-9);
+    }
+
     private static double enumerateOptimalCost(
             CaWoSchedTask first, CaWoSchedTask second, List<PlatformProfile.CarbonWindow> windows) {
         double best = Double.POSITIVE_INFINITY;

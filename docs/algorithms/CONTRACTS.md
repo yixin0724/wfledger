@@ -142,10 +142,16 @@ decrements their budgets, and LS accepts only strictly carbon-improving legal mo
 `CarbonExcessEvaluator` independently integrates the same complete-horizon metric.
 `CommunicationEnhancedPlan` adds explicitly declared link activities and per-edge durations for
 cross-VM dependencies. `planExactSingleProcessor()` performs exact DP for up to six ordered
-activities, validated against independent enumeration. The `CAWOSCHED_SLACK` and
+activities, validated against independent integer-start enumeration and a hand-derived six-activity
+non-integral block. Its non-integral branch generates candidates from every block length up to the
+activity count; the three-task cap remains specific to heuristic R refinement. The `CAWOSCHED_SLACK` and
 `CAWOSCHED_PRESSURE` labels use the same SHARED HEFT base and enable absolute planned starts via
 `StaticSchedulePlan.withStartTimeEnforcement()` and the deferral-aware `StaticSchedulingAlgorithm`;
-other planners keep their previous order-only behavior.
+other planners keep their previous order-only behavior. On flat-power fleets, the two CAWOSCHED
+labels' `SimulationReport` budget accounting mirrors the timed objective: it integrates to the full
+configured deadline and folds each active Job by its own VM's `P_max − P_idle`. Other planning labels
+retain the legacy report convention (simulation-end horizon and first-VM dynamic delta), and the
+separate tiered per-tier branch is unchanged.
 
 ### Independent Tasks and Mapping-Only Objectives
 
@@ -167,63 +173,81 @@ RL uses a separate ready-job contract: actions are ordered by ready arrival, the
 `CWS_RANKMIN_RR` implements the static-DAG/idle-VM subset of Lehmann et al.'s CWS Rank(Min)
 Round-Robin policy. `WorkflowDagValidator` assigns each Task a CWS rank as the longest descendant
 PROCESS path, with exit tasks ranked 1. `BasicClustering` copies that rank to each Job. Ready Jobs
-are ordered by descending rank, ascending real input bytes, and ascending Job ID; the maintained
-persistent RR then selects currently idle PE-compatible VMs. This is not HEFT upward rank and not
+are ordered by descending rank, ascending real input bytes, and ascending Job ID. Real input uses
+`FileItem.isRealInputFile`, so a same-named output inside the Job does not inflate the tie-break;
+the maintained persistent RR then selects currently idle PE-compatible VMs. This is not HEFT upward rank and not
 the dynamic Nextflow/Kubernetes API. The [Figure 1 integration test](<../../simulator/src/test/java/org/workflowsim/planning/CwsFigureOneIntegrationTest.java>)
 uses the paper's exact physical DAG and verifies the five-to-four-unit scheduling direction.
 
 ### NACO GA/HEFT + DNC (R-PAPER-03, 2026-11-06)
 
 `NACO_GA_HEFT` implements the NACO 2023 hybrid GA/HEFT core in the LOCAL controlled model.
-`NacoAdapter` derives raw compute duration, input/output bits, parent/child edge bits, VM network
-speed, and the declared storage rate from current WorkflowSim objects. `NacoDncEvaluator` computes
-`diskRead + communication + compute + diskWrite` after the earliest feasible start, preserving
-parent completion and per-VM availability. The GA uses a HEFT elite seed, topological chromosomes,
-GPX crossover, dependency-bounded mutation, tournament selection, and elite replacement under the
-`planning.naco.ga` named stream. The hand-derived two-VM schedule and DNC finish-time case are in
-`NacoDncEvaluatorTest`; the real LOCAL integration is in `NacoGaHeftIntegrationTest`. This is not the
-full paper experiment pipeline or an accuracy/optimal-makespan guarantee.
+`NacoAdapter` derives raw compute duration, external-input/output megabits, parent/child edge
+megabits, VM network speed, and the declared storage rate from current WorkflowSim objects. File
+bytes are converted by `8 / 1e6`; parent-produced input is charged on its dependency edge, not
+again as external disk-read input. Compute coordinates and GA VM choices include only PE-compatible
+VMs. Task PE count constrains placement but does not divide per-PE MI again: duration remains
+`rawMI / vmMips`. `NacoDncEvaluator` computes `diskRead + communication + compute + diskWrite` after the earliest
+feasible start, preserving parent completion and per-VM availability. HEFT ranks are evaluated in
+reverse graph-topological order, not numeric Task-ID order. The GA uses a HEFT elite seed,
+topological chromosomes, GPX crossover, dependency-bounded mutation, tournament selection, and elite
+replacement under the `planning.naco.ga` named stream. Hand-derived evaluator and adapter oracles are
+in `NacoDncEvaluatorTest` and `NacoAdapterTest`; the real LOCAL integration is in
+`NacoGaHeftIntegrationTest`. This is not the full paper experiment pipeline or an
+accuracy/optimal-makespan guarantee.
 
 ### Reshi-C/M with Explicit Rank and Prediction Inputs (R-PAPER-04, 2026-11-06)
 
 `RESHI_C` implements Reshi-C's direct-child-count priority, and `RESHI_M` implements Reshi-M's
-historical-average-runtime priority. Both use the explicit `ReshiRankTable` for VM selection. The
-rank table and `ReshiTaskHistory` are experiment inputs, not values inferred from production output.
-`SimulationConfig.reshiConfig` supplies them to `SimulationSession`; missing inputs fail explicitly.
-`ReshiPredictionErrorModel` optionally applies normal or exponential runtime multipliers with the
-official sign-and-clamp convention through a named random stream. The implementation does not train
-the paper's regression-tree recommender or replay AWS instance profiles.
+historical-average-runtime priority. Both use the explicit `ReshiRankTable` for VM selection over
+idle PE-compatible VMs. A missing rank on every currently allocatable VM fails explicitly; no
+first-fit fallback is allowed. The rank table and `ReshiTaskHistory` are experiment inputs, not
+values inferred from production output. `SimulationConfig.reshiConfig` supplies them to
+`SimulationSession`; missing inputs fail explicitly. `ReshiPredictionErrorModel` implements normal
+or exponential multipliers with the official sign-and-clamp convention for prediction-consuming
+baselines. Reshi-C/M themselves do not consume that model: their priority and named-stream state are
+prediction-error invariant, and Reshi-M never samples inside its comparator. The implementation does
+not train the paper's regression-tree recommender or replay AWS instance profiles.
 
 ### GreenHEFT Energy-First Static HEFT (R-PAPER-05, 2026-11-06)
 
 `GREEN_HEFT` preserves HEFT upward-rank prioritization and changes VM selection to minimum
-predicted task energy, with finish time and VM ID as deterministic tie-breaks. `GreenHeftAdapter`
-requires one declared plain power profile per VM and estimates task energy as full-load watts times
-raw-MI execution seconds. Missing power, multiple frequency tiers, or a task-cost matrix fails
-explicitly. The implementation is not the paper's empirical neural-network model or the MOHEFT
-Pareto optimizer. `GreenHeftPlannerTest` distinguishes energy-first selection from ordinary HEFT;
-`GreenHeftIntegrationTest` verifies the same rule against declared platform power.
+predicted task energy, with finish time and VM ID as deterministic tie-breaks. Candidate VMs are
+PE-compatible, duration keeps the declared per-PE work convention `MI / per-PE MIPS`, and later tasks use earliest legal
+reservation-gap insertion rather than append-only placement. `GreenHeftAdapter` requires one declared
+plain power profile per VM and estimates task energy as full-load watts times raw-MI execution seconds.
+Missing power, multiple frequency tiers, or a task-cost matrix fails explicitly. The implementation
+is not the paper's empirical neural-network model or the MOHEFT Pareto optimizer.
+`GreenHeftPlannerTest` distinguishes energy-first selection and gap insertion;
+`GreenHeftAdapterTest` verifies PE compatibility and multi-PE duration.
 
 ### MOHEFT Pareto Beam Search (R-PAPER-06, 2026-11-06)
 
 `MO_HEFT` expands HEFT-ordered task-to-VM candidates and keeps non-dominated makespan-energy
-solutions. `MoHeftPlanner` retains both objective extremes, applies crowding-distance truncation
-at beam width 8, and selects a balanced schedule by normalized distance to the ideal point. A
-candidate is dominated only when another candidate is no worse in both objectives and strictly
-better in at least one. The balanced tie-break is makespan, energy, then deterministic candidate ID.
-`MoHeftPlannerTest` covers dominated-candidate removal, Pareto extremes and balanced selection;
-`MoHeftIntegrationTest` covers a real three-point tradeoff. This is not an exact full Pareto optimizer
-or the paper's empirical neural-network model.
+solutions. Candidates use the same PE filtering and reservation-gap insertion as GreenHEFT, so the
+front does not lose feasible low-energy early-gap schedules. `MoHeftPlanner` retains both objective
+extremes, applies crowding-distance truncation at beam width 8, and selects a balanced schedule by
+normalized distance to the ideal point. A candidate is dominated only when another candidate is no
+worse in both objectives and strictly better in at least one. The balanced tie-break is makespan,
+energy, then deterministic candidate ID. `MoHeftPlannerTest` covers dominated-candidate removal,
+Pareto extremes, balanced selection and gap-inserted candidates; `MoHeftIntegrationTest` covers a
+real three-point tradeoff. This is not an exact full Pareto optimizer or an empirical neural-network model.
 
 ### IC-PCP Deadline/Cost Partial Critical Paths (R-PAPER-07, 2026-11-06)
 
 `IC_PCP` implements one-phase IC-PCP: initial HEFT priority, EST/LFT, critical-parent partial
-critical paths, whole-path VM trials, and feasible minimum-incremental-cost assignment. A virtual
-END node participates in the minimum slack check; an infeasible deadline fails explicitly. Cost is
-computed per VM as `ceil((lastFinish-firstStart)/billingPeriod) * vmCostPerSecond`, with the current
-adapter using a one-second billing period and homogeneous estimated transfer time. No silent fallback
-to an arbitrary VM, dynamic provisioning, IC-PCPD2, or full paper-corpus claim is made.
-`IcpcpPlannerTest` covers a low-cost chain, infeasible deadline, fork/join and cycle rejection;
+critical paths, whole-path VM trials over PE-compatible resources, and feasible
+minimum-incremental-cost assignment. A virtual END node participates in the minimum slack check; an
+infeasible deadline fails explicitly. The SHARED adapter starts root work after the model-generated
+110-MI stage-in Job and root-release interval, and includes each task's shared-storage input seconds
+using the same single integer-MI conversion and `envelopeMI / vmMips` duration as the SHARED
+baseline. Its homogeneous communication
+estimate converts declared decimal MB/s to bit/s consistently. Cost is computed per VM as
+`ceil((lastFinish-firstStart)/billingPeriod) * billingPeriod * vmCostPerSecond`; the current adapter
+uses a one-second billing period. No silent fallback to an arbitrary VM, dynamic provisioning,
+IC-PCPD2, or full event-replay guarantee is made. `IcpcpPlannerTest` covers a low-cost chain,
+infeasible deadline, billing-period arithmetic, fork/join and cycle rejection; `IcpcpAdapterTest`
+covers units, PE filtering, duplicate declarations, SHARED input envelopes and absolute deadlines;
 `IcpcpIntegrationTest` covers declared VM costs in a real session.
 
 ### Network-Aware HEFT Bottleneck Stretching (R-PAPER-08, 2026-11-06)
@@ -231,48 +255,66 @@ to an arbitrary VM, dynamic provisioning, IC-PCPD2, or full paper-corpus claim i
 `NETWORK_HEFT` forms flows for cross-VM parent-child edges and stretches them on a shared
 bottleneck. Active flows share the declared capacity, and each edge keeps an independent
 `parentId→childId` duration key so multiple parents of one task cannot overwrite each other.
-`NetworkHeftPlanner` then applies HEFT again with the stretched durations and keeps the best
-realistic schedule. The six-task paper-style case yields nominal 25 seconds and stretched 32
-seconds; M45 kills removal of per-flow capacity sharing. The current adapter uses one shared
-bottleneck and fair sharing, not the full TCP throughput model or automatic path detection.
+`NetworkHeftPlanner` applies insertion-based HEFT over PE-compatible candidates with the stretched
+durations and keeps the best realistic schedule. The adapter converts decimal MB/s to bit/s for
+nominal edge time and to the corresponding byte/s bottleneck capacity; duplicate OUTPUT declarations
+are membership, not repeated payload. A zero-byte edge with a positive nominal duration derives its
+work from the supplied capacity rather than a hidden rate. The six-task paper-style case yields
+nominal 25 seconds and stretched 32 seconds; M45 kills removal of per-flow capacity sharing. The
+current adapter uses one shared bottleneck and fair sharing, not the full TCP throughput model or
+automatic path detection.
 
 ### EBPSM Budget and Cache Scheduling (R-PAPER-09, 2026-11-06)
 
 `EBPSM` implements the public EBPSM resource-sharing policy rather than the closed MCPA alternative.
 `EbpsmBudgetDistributor` applies DTL/EFT order and SFTD upgrades. `EbpsmSchedulingAlgorithm` prefers
-VMs with required input data, then deployed container images, then other idle VMs; every candidate
-must fit the task's sub-budget. Runtime output files and deployed images update the per-VM cache state.
-`EbpsmConfig` is injected through `SimulationConfig.ebpsmConfig`, so no hidden budget or cache source
-exists. `EbpsmIntegrationTest` runs two staggered workflows. The subset uses a fixed declared VM pool
-and does not claim Docker deployment, elastic provisioning, or full WaaS corpus reproduction.
+PE-compatible VMs with required input data, then deployed container images, then other idle compatible
+VMs; every candidate must fit the task's sub-budget. Network transfer estimates use decimal MB/s,
+PE compatibility is mandatory, and duration keeps the declared per-PE work convention. Output files and deployed images enter the cache
+only after a successful Task, never at dispatch or after a failed attempt. `EbpsmConfig` is injected
+through `SimulationConfig.ebpsmConfig`, so no hidden budget or cache source exists.
+`EbpsmIntegrationTest` runs two staggered workflows; direct tests cover PE, bandwidth-budget and
+unsuccessful-output counterexamples. The subset uses a fixed declared VM pool and does not claim
+Docker deployment, elastic provisioning, or full WaaS corpus reproduction.
 
 ### DVFS Slack Allocation and Tier Consumption (R-PAPER-10, 2026-11-08)
 
-`DVFS_SLACK` starts from a HEFT allocation and iteratively tries lower tiers. A downgrade is accepted
-only when the complete schedule meets the deadline and total energy, including busy and idle power,
-strictly decreases. `DvfsSlackRegistry` stores one tier per logical Task; `DvfsSlackSchedulingAlgorithm`
-implements `FrequencyTierSelector` and looks up the logical Task inside each Job, not the zero-based
-Job ID. The standard runner consumes the selected tier through the existing admission-time DVFS
-mechanism. This is a greedy subset, not a global DVFS optimality or full paper-corpus claim.
+`DVFS_SLACK` starts from the maintained SHARED HEFT allocation and reservation order, including
+root release, storage stage-in, PE compatibility and multi-PE duration. A downgrade is accepted only
+when the complete schedule meets the deadline and total energy strictly decreases under the runtime
+law: default-tier idle power over the whole makespan for every declared VM, plus each assigned tier's
+dynamic power over its busy interval. Unused VMs and terminal idle time therefore participate in the
+acceptance decision. `DvfsSlackRegistry` stores one tier per logical Task;
+`DvfsSlackSchedulingAlgorithm` implements `FrequencyTierSelector` and looks up the logical Task inside
+each Job, not the zero-based Job ID. The standard runner consumes the selected tier through the
+existing admission-time DVFS mechanism. This is a greedy subset, not a global DVFS optimality or full
+paper-corpus claim.
 
 ### CRCH Synchronized-Checkpoint Recovery (R-PAPER-11, 2026-11-08)
 
-`CRCH` implements the checkpointing part of the 2019 CRCH paper. Completed checkpoints are derived
-from `floor(elapsed / checkpointIntervalSeconds)`, and retry work is `max(0, originalMi - savedMi)`.
-`ReclusteringEngine.process` registers the recovery for the retry Job, while `CrchSchedulingAlgorithm`
-avoids the failed VM when an alternative exists. `FTCLUSTERING_CRCH` is an explicit standard-runner
-mode and does not relax the historical DC/DR/BLOCK/VERTICAL rejection rules. The subset does not
-implement replication-count learning or PCA clustering. M49/M50 guard saved-work and alternative-VM
-semantics; `CrchIntegrationTest` verifies a real failure and recovery.
+`CRCH` implements the checkpointing part of the 2019 CRCH paper. A checkpoint commits only after
+its compute interval plus the configured checkpoint overhead fits in elapsed execution time; saved
+work is capped at the original task length. Retry work is the remaining MI plus one recovery-overhead
+MI equivalent. `ReclusteringEngine.process` registers the recovery for the retry Job, while
+`CrchSchedulingAlgorithm` avoids the failed VM when an alternative exists. `FTCLUSTERING_CRCH` is an
+explicit standard-runner mode and does not relax the historical DC/DR/BLOCK/VERTICAL rejection rules.
+The subset does not implement replication-count learning or PCA clustering. M49/M50 guard saved-work
+and alternative-VM semantics; direct tests cover overhead-delayed checkpoints and capped saved work;
+`CrchIntegrationTest` verifies a real failure and recovery.
 
 ### DHEFT Ready-Task and Pairwise Bandwidth (R-PAPER-12, 2026-11-08)
 
-`DHEFT` follows the official WorkflowSim DHEFT planner. Ready Tasks are scheduled in DAG order;
-for every VM, the start is `max(availableVM, parentFinish + bytes / min(bw_parent,bw_vm))` and the
-finish is start plus raw-MI execution time. The earliest finisher wins with deterministic VM-ID
-tie-breaking. This is a static ready-DAG subset, not a full dynamic-arrival workflow model.
-`DheftPlannerTest` verifies a cross-VM bandwidth case and cycle rejection; `DheftIntegrationTest`
-verifies LOCAL PlanningContext integration. M51/M52 guard minimum-bandwidth and parent-finish rules.
+`DHEFT` follows the official WorkflowSim DHEFT planner. The complete current ready wave is
+scheduled in task-ID order before children unlocked by that wave enter the next wave. For every
+PE-compatible VM, the start is `max(availableVM, parentFinish + bytes / (1e6 * min(bw_parent,bw_vm)))`
+where the declared VM bandwidths are decimal MB/s; the direct problem API stores the converted rates
+in bytes/s. The finish adds `rawMI / vmMips` under the maintained per-PE-work convention.
+The earliest finisher wins with
+deterministic VM-ID tie-breaking, and duplicate parent OUTPUT declarations count once per child INPUT.
+This is a static ready-DAG subset, not a full dynamic-arrival workflow model. `DheftPlannerTest`
+verifies cross-VM bandwidth, ready-wave and cycle cases; `DheftAdapterTest` verifies units, duplicate
+membership and PE filtering; `DheftIntegrationTest` verifies LOCAL PlanningContext integration.
+M51/M52 guard minimum-bandwidth and parent-finish rules.
 
 ## Metrics and Observation Samples
 

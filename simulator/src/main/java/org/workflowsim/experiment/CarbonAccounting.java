@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.workflowsim.platform.PlatformProfile;
+import org.workflowsim.utils.Parameters;
 
 /**
  * Two carbon-dimension accountings (BAT-C1, 2026-10-28), both riding on energy quantities that
@@ -23,7 +24,9 @@ import org.workflowsim.platform.PlatformProfile;
  * integral max(0, P_fleet(t) - green) dt. The fleet timeline is rebuilt from the compute Job
  * intervals of the report (per-VM union -- the retry-interval union semantics match the energy
  * chain), and power = sum idle + active VM count * per-VM dynamic power (v1 assumes uniform fleet
- * dynamic power, see the honesty boundary).</p>
+ * dynamic power, see the honesty boundary). Only the two CAWOSCHED planning labels instead use the
+ * configured deadline horizon and each active Job's own flat-VM dynamic delta, matching their
+ * timed-planner objective; non-CaWoSched reports preserve the v1 convention.</p>
  */
 public final class CarbonAccounting {
 
@@ -135,7 +138,8 @@ public final class CarbonAccounting {
      * Budget model. Rebuilds the per-VM busy union from the compute Job intervals of the report,
      * then the fleet concurrency curve, then the per-window excess integral. Following the v1
      * constraint, the fleet dynamic power is the delta P of the first VM (uniform fleet, the
-     * honesty boundary is declared).
+     * honesty boundary is declared). CAWOSCHED_SLACK/PRESSURE take the separate full-deadline,
+     * heterogeneous-flat-VM compatibility branch below; all other labels stay on this v1 path.
      */
     public static CarbonAccounting budgetModel(SimulationReport report, PlatformProfile profile) {
         List<PlatformProfile.CarbonWindow> windows = profile.getCarbonWindows();
@@ -157,6 +161,11 @@ public final class CarbonAccounting {
         }
         if (anyTiered) {
             return budgetModelWithTiers(report, profile, windows);
+        }
+        Parameters.PlanningAlgorithm planning = report.getConfig().getPlanningAlgorithm();
+        if (planning == Parameters.PlanningAlgorithm.CAWOSCHED_SLACK
+                || planning == Parameters.PlanningAlgorithm.CAWOSCHED_PRESSURE) {
+            return budgetModelCaWoSchedFlat(report, profile, windows);
         }
         double idleSum = 0.0;
         double dynamicPerVm = 0.0;
@@ -223,6 +232,80 @@ public final class CarbonAccounting {
             }
             if (acc > 0.0) {
                 windowExcess.put(Integer.valueOf(j), acc);
+                total += acc;
+            }
+        }
+        return new CarbonAccounting(0.0, 0.0, 0.0, Collections.emptyMap(), total, windowExcess);
+    }
+
+    /**
+     * CaWoSched flat-fleet compatibility: integrate the configured deadline horizon and fold each
+     * active Job by its own VM's max-idle dynamic watts. Other planners retain the historical
+     * first-VM uniform-delta/makespan branch above; the tiered branch is likewise unchanged.
+     */
+    private static CarbonAccounting budgetModelCaWoSchedFlat(
+            SimulationReport report, PlatformProfile profile, List<PlatformProfile.CarbonWindow> windows) {
+        double horizon = report.getConfig().getDeadline();
+        if (!(horizon > 0.0) || !Double.isFinite(horizon)) {
+            throw new IllegalArgumentException("CaWoSched budget accounting requires a positive deadline horizon");
+        }
+        double idleSum = 0.0;
+        for (PlatformProfile.VmSpec spec : profile.getVms()) {
+            if (!spec.hasPowerModel()) {
+                throw new IllegalArgumentException("Budget carbon model requires powered VMs (BAT-C1)");
+            }
+            idleSum += spec.getIdlePowerWatts();
+        }
+        TreeMap<Double, Double> ends = new TreeMap<Double, Double>();
+        for (SimulationReport.JobOutcome job : report.getJobs()) {
+            if (job.getClassType() != 2) {
+                continue;
+            }
+            double start = job.getStartTime();
+            double finish = job.getFinishTime();
+            if (finish <= start) {
+                continue;
+            }
+            PlatformProfile.VmSpec spec = vmSpec(profile, job.getVmId());
+            if (spec == null) {
+                throw new IllegalArgumentException("Job " + job.getJobId() + " references undeclared VM "
+                        + job.getVmId() + ": the CaWoSched fleet-power curve cannot be built");
+            }
+            double dynamic = spec.getMaxPowerWatts() - spec.getIdlePowerWatts();
+            bumpDouble(ends, start, dynamic);
+            bumpDouble(ends, finish, -dynamic);
+        }
+        List<double[]> segments = new ArrayList<double[]>();
+        double active = 0.0;
+        double previous = 0.0;
+        for (Map.Entry<Double, Double> entry : ends.entrySet()) {
+            double time = entry.getKey().doubleValue();
+            if (time >= horizon) {
+                break;
+            }
+            if (time > previous) {
+                segments.add(new double[] {previous, time, idleSum + active});
+            }
+            active += entry.getValue().doubleValue();
+            previous = time;
+        }
+        if (previous < horizon) {
+            segments.add(new double[] {previous, horizon, idleSum + active});
+        }
+        Map<Integer, Double> windowExcess = new LinkedHashMap<Integer, Double>();
+        double total = 0.0;
+        for (int index = 0; index < windows.size(); index++) {
+            PlatformProfile.CarbonWindow window = windows.get(index);
+            double acc = 0.0;
+            for (double[] segment : segments) {
+                double lo = Math.max(segment[0], window.getStartSeconds());
+                double hi = Math.min(segment[1], window.getEndSeconds());
+                if (hi > lo) {
+                    acc += Math.max(0.0, segment[2] - window.getGreenWatts()) * (hi - lo);
+                }
+            }
+            if (acc > 0.0) {
+                windowExcess.put(Integer.valueOf(index), Double.valueOf(acc));
                 total += acc;
             }
         }

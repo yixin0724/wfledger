@@ -887,6 +887,234 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                                 where + ": window order clause must fire: " + json.dumps(report["issues"][:2]))
 
 
+class CaWoSchedBudgetAuditTests(unittest.TestCase):
+    """Hand-derived CaWoSched report horizon and flat heterogeneous-fleet oracles."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def audit_status(self, manifest_path, report_name):
+        report = Path(self.temp.name) / (report_name + ".json")
+        evidence.main(["--output", str(report), str(manifest_path)])
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def make_flat_budget(self, name, planner, deadline=10, green=0.0):
+        root = self.root / name
+        make_bundle(root)
+        source = root / "flow.dax"
+        source.write_text(
+            '<adag version="3.3"><job id="a" name="a" runtime="1"><uses file="x" link="input" size="0.5"/></job>'
+            '<job id="b" name="b" runtime="2"><uses file="x" link="input" size="0.5"/></job>'
+            '<child ref="b"><parent ref="a"/></child></adag>', encoding="utf-8")
+        doc = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
+        doc["inputs"][0].update({
+            "sha256": fingerprint(source)[0],
+            "sizeBytes": fingerprint(source)[1],
+            "declaredVersion": "3.3",
+            "taskCount": 2,
+        })
+        doc["workflowProfile"]["taskCount"] = 2
+        doc["workflowGraph"] = [
+            {"taskId": 1, "parentIds": [], "childIds": [2]},
+            {"taskId": 2, "parentIds": [1], "childIds": []},
+        ]
+        second_job = copy.deepcopy(doc["result"]["jobs"][1])
+        second_job.update({
+            "jobId": 2,
+            "vmId": 1,
+            "submissionTime": 1.21,
+            "startTime": 1.21,
+            "finishTime": 3.21,
+            "executionTime": 2.0,
+            "responseTime": 2.0,
+            "cpuTime": 2.0,
+            "modeledCpuEnvelopeCost": 6.0,
+            "modeledProcessingCost": 6.0 + 0.1 * 0.5 / 1_000_000.0,
+            "taskIds": [2],
+        })
+        doc["result"]["jobs"].append(second_job)
+        second_task = copy.deepcopy(doc["result"]["tasks"][0])
+        second_task.update({
+            "taskId": 2,
+            "jobId": 2,
+            "vmId": 1,
+            "startTime": 1.21,
+            "finishTime": 3.21,
+            "lengthMi": 2000,
+            "effectiveExecutionLengthMi": 2000,
+            "depth": 2,
+        })
+        doc["result"]["tasks"].append(second_task)
+        events_path = root / "run.events.jsonl"
+        events = [json.loads(line) for line in events_path.read_text(encoding="utf-8").splitlines()]
+        transfer = 0.5 / 1_000_000.0
+        for event_type, time, attrs in (
+            ("JOB_READY", 1.21, {}),
+            ("SCHEDULING_CYCLE", 1.21, {"decisionElapsedNanos": 250_750}),
+            ("SCHEDULING_DECISION", 1.21, {}),
+            ("DATA_STAGE_IN_MODELED", 1.21, {
+                "requiredFileBytes": 0.5,
+                "modeledTransferSeconds": transfer,
+                "modeledTransferFileCount": 1,
+            }),
+            ("TASK_EXECUTION_MODELED", 3.21, {
+                "taskStartTime": 1.21,
+                "taskFinishTime": 3.21,
+                "effectiveExecutionLengthMi": 2000,
+            }),
+            ("JOB_RETURNED", 3.21, {}),
+        ):
+            events.append({
+                "sequence": len(events),
+                "simulationTime": time,
+                "type": event_type,
+                "jobId": 2,
+                "taskIds": [2],
+                "attributes": attrs,
+            })
+        events_path.write_text("".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
+        doc["events"]["eventCount"] = len(events)
+        doc["configuration"].update({
+            "planningAlgorithm": planner,
+            "schedulingAlgorithm": "STATIC",
+            "deadline": deadline,
+            "fileSystem": "SHARED",
+            "dataMovementModel": {"kind": "LEGACY_WORKFLOWSIM_V1"},
+            "failureModel": {"generatorMode": "FAILURE_NONE"},
+            "overheadModel": {},
+        })
+        first, second = doc["platform"]["vms"][0], copy.deepcopy(doc["platform"]["vms"][0])
+        first.update({"idlePowerWatts": 10.0, "maxPowerWatts": 110.0})
+        second.update({"id": 1, "idlePowerWatts": 20.0, "maxPowerWatts": 220.0})
+        doc["platform"]["vms"] = [first, second]
+        doc["configuration"]["vmCount"] = 2
+        doc["result"]["actualVmHostAssignments"] = {"0": 0, "1": 1}
+        doc["platform"]["carbonWindows"] = [
+            {"startSeconds": 0.0, "endSeconds": 5.0, "greenWatts": green},
+            {"startSeconds": 5.0, "endSeconds": 10.0, "greenWatts": green},
+        ]
+        bandwidth = 0.1 * 0.5 / 1_000_000.0
+        transfer = 0.5 / 1_000_000.0
+        end = 3.21
+        doc["result"]["simulationEndSeconds"] = end
+        doc["metrics"]["makespanSeconds"] = end
+        doc["metrics"]["logicalTaskCompletionSeconds"] = end
+        doc["metrics"].update({
+            "deadlineObservationEnabled": True,
+            "deadlineObservationOutcome": "MET",
+            "deadlineMet": True,
+            "deadlineSlackSeconds": float(deadline) - end,
+            "jobOutcomeCount": 3,
+            "computeJobOutcomeCount": 2,
+            "successfulJobOutcomeCount": 3,
+            "successfulComputeJobOutcomeCount": 2,
+            "logicalTaskCount": 2,
+            "successfullyCompletedLogicalTaskCount": 2,
+            "logicalTasksNotYetSuccessfullyCompletedCount": 0,
+            "initialComputeJobOutcomeCount": 2,
+            "logicalTaskAttemptCount": 2,
+            "computeJobOutcomeThroughputPerSecond": 2.0 / end,
+            "meanComputeJobRunTimeSeconds": 1.5,
+            "meanJobResponseTimeSeconds": 1.5,
+            "vmLevelSlowdownObservationCount": 2,
+            "trueSlowdownObservationCount": 2,
+            "totalWaitingTimeObservationCount": 2,
+            "successOnlyWaitingObservationCount": 2,
+            "readyToDecisionObservationCount": 2,
+            "decisionToStartObservationCount": 2,
+            "schedulingCycleCount": 3,
+            "totalSchedulingDecisionWallClockNanos": 601_500,
+            "dataStageInModelObservationCount": 2,
+            "modeledDataTransferFileCount": 2,
+            "totalModeledDataTransferSeconds": 2.0 * transfer,
+            "totalModeledRequiredInputBytes": 1.0,
+            "totalModeledProcessingCost": 9.33 + 3.0 * bandwidth,
+            "totalModeledCpuEnvelopeCost": 9.33,
+            "totalModeledDeclaredFileBandwidthCost": 3.0 * bandwidth,
+            "totalModeledDeclaredFileBytes": 1.5,
+            "totalVmModeledBusyIntervalSeconds": 3.11,
+            "meanVmModeledIntervalUtilization": 3.11 / (2.0 * end),
+            "vmModeledBusyTimeCoefficientOfVariation": 0.445 / 1.555,
+            "vmUtilizationJainFairnessIndex": 3.11**2 / (2.0 * (1.11**2 + 2.0**2)),
+            "exactTaskTimingObservationCount": 2,
+        })
+        doc["metrics"]["vmMetrics"]["0"].update({
+            "reportedCpuTimeSeconds": 1.11,
+            "modeledBusyIntervalSeconds": 1.11,
+            "modeledIntervalUtilization": 1.11 / end,
+            "reportedCpuTimeOverMakespan": 1.11 / end,
+        })
+        doc["metrics"]["vmMetrics"]["1"] = {
+            "vmId": 1,
+            "jobOutcomeCount": 1,
+            "reportedCpuTimeSeconds": 2.0,
+            "modeledBusyIntervalSeconds": 2.0,
+            "modeledIntervalUtilization": 2.0 / end,
+            "reportedCpuTimeOverMakespan": 2.0 / end,
+        }
+        vm0_energy = 10.0 * end + 100.0 * (0.11 + 1.0)
+        vm1_energy = 20.0 * end + 200.0 * 2.0
+        total_energy = vm0_energy + vm1_energy
+        doc["energyMetrics"] = {
+            "totalEnergyJoules": total_energy,
+            "meanVmEnergyJoules": total_energy / 2.0,
+            "peakPowerWatts": 330.0,
+            "energyMakespanProductJouleSeconds": total_energy * end,
+            "vmEnergyJoules": {"0": vm0_energy, "1": vm1_energy},
+        }
+        manifest = root / "run.manifest.json"
+        bind_sidecars(manifest, doc)
+        return manifest, doc
+
+    def test_cawosched_full_deadline_and_heterogeneous_flat_power(self):
+        """Dynamic 100*1+200*2=500 plus idle 30*10=300 => 800 W*s, split 650+150."""
+        bundle, doc = self.make_flat_budget("cawosched-budget", "CAWOSCHED_SLACK")
+        doc["carbonMetrics"] = {
+            "totalCarbonGrams": 0.0,
+            "meanVmCarbonGrams": 0.0,
+            "carbonMakespanProductGramSeconds": 0.0,
+            "perVmCarbonGrams": {},
+            "totalCarbonExcessWattSeconds": 800.0,
+            "windowExcessWattSeconds": {"0": 650.0, "1": 150.0},
+        }
+        bundle.write_text(json.dumps(doc), encoding="utf-8")
+        report = self.audit_status(bundle, "cawosched-budget-report")
+        self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
+
+    def test_cawosched_pressure_uses_same_horizon_and_power_law(self):
+        bundle, doc = self.make_flat_budget("cawosched-pressure-budget", "CAWOSCHED_PRESSURE")
+        doc["carbonMetrics"] = {
+            "totalCarbonGrams": 0.0,
+            "meanVmCarbonGrams": 0.0,
+            "carbonMakespanProductGramSeconds": 0.0,
+            "perVmCarbonGrams": {},
+            "totalCarbonExcessWattSeconds": 800.0,
+            "windowExcessWattSeconds": {"0": 650.0, "1": 150.0},
+        }
+        bundle.write_text(json.dumps(doc), encoding="utf-8")
+        report = self.audit_status(bundle, "cawosched-pressure-report")
+        self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
+
+    def test_non_cawosched_keeps_first_vm_and_makespan(self):
+        """Legacy: idle 30*3.21 + first-VM dynamic 100*(1+2) = 396.3 W*s."""
+        bundle, doc = self.make_flat_budget("ordinary-budget", "SHARED_STORAGE_HEFT")
+        doc["carbonMetrics"] = {
+            "totalCarbonGrams": 0.0,
+            "meanVmCarbonGrams": 0.0,
+            "carbonMakespanProductGramSeconds": 0.0,
+            "perVmCarbonGrams": {},
+            "totalCarbonExcessWattSeconds": 396.3,
+            "windowExcessWattSeconds": {"0": 396.3},
+        }
+        bundle.write_text(json.dumps(doc), encoding="utf-8")
+        report = self.audit_status(bundle, "ordinary-budget-report")
+        self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
+
+
 class DvfsTierAuditTests(unittest.TestCase):
     """BAT-D3 (2026-10-29): DVFS per-tier energy/carbon recompute self-test -- expected values come only
     from the hand-derived extended conservation law
@@ -932,10 +1160,25 @@ class DvfsTierAuditTests(unittest.TestCase):
         doc["energyMetrics"] = {
             "totalEnergyJoules": total,
             "meanVmEnergyJoules": total,  # single-VM mean = total
-            "peakPowerWatts": 400.0,      # default tier (first table entry) P_max -- the Java-side fleet peak convention
+            "peakPowerWatts": 400.0,      # max declared tier P_max (the default is also the maximum in these fixtures)
             "energyMakespanProductJouleSeconds": total * end,
             "vmEnergyJoules": {"0": total},
         }
+
+    def test_nonmonotonic_tier_peak_uses_max_declared_tier(self):
+        """The default tier is 400 W but the occupied non-default tier is 900 W: nameplate peak is 900 W.
+
+        The same hand-conservation partition as the positive two-tier case gives
+        E = 100*1.21 + (400-100)*0.11 + (900-100)*1.0 = 121+33+800 = 954 J.
+        A default-only 400 W peak is neither the declared maximum nor an upper bound on active power.
+        """
+        bundle, doc = self.make_tier_manifest("dvfs-nonmonotonic-peak")
+        doc["platform"]["vms"][0]["frequencyTiers"][1]["maxPowerWatts"] = 900.0
+        self.store_energy(doc, 954.0)
+        doc["energyMetrics"]["peakPowerWatts"] = 900.0
+        bundle.write_text(json.dumps(doc), encoding="utf-8")
+        report = self.audit_status(bundle, "tier-nonmonotonic-peak")
+        self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
 
     def test_tiered_energy_recompute_matches_hand_law(self):
         """Positive case: E = 100*1.21 + 0.11*(400-100) + 1.0*(200-100) = 121+33+100 = 254 J.
