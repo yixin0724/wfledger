@@ -30,6 +30,7 @@ import org.workflowsim.experiment.SimulationEventType;
 import org.workflowsim.failure.FailureParameters;
 import org.workflowsim.planning.BasePlanningAlgorithm;
 import org.workflowsim.planning.CaWoSchedPlanningAlgorithm;
+import org.workflowsim.planning.DheftPlanningAlgorithm;
 import org.workflowsim.planning.DvfsSlackPlanningAlgorithm;
 import org.workflowsim.planning.GreenHeftPlanningAlgorithm;
 import org.workflowsim.planning.IcpcpPlanningAlgorithm;
@@ -439,6 +440,9 @@ public final class WorkflowPlanner extends SimEntity {
                 break;
             case DVFS_SLACK:
                 planner = new DvfsSlackPlanningAlgorithm(planningContext);
+                break;
+            case DHEFT:
+                planner = new DheftPlanningAlgorithm(planningContext);
                 break;
             case PSO:
                 planner = new PSOPlanningAlgorithm();

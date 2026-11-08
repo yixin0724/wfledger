@@ -108,6 +108,7 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `IC_PCP` | SHARED DAG | critical-parent PCP with EST/LFT, minimum incremental path cost and deadline slack |
 | `NETWORK_HEFT` | SHARED DAG | fair-shared bottleneck flow stretching with iterative HEFT rescheduling |
 | `DVFS_SLACK` | SHARED DAG | HEFT mapping followed by iterative energy-decreasing slack allocation |
+| `DHEFT` | LOCAL DAG | ready-task EFT with pairwise minimum bandwidth and actual parent finish times |
 
 ## Combination rules
 
@@ -128,6 +129,7 @@ mean multiple Jobs can be dispatched simultaneously.
 | DVFS slack DAG | DVFS_SLACK / DVFS_SLACK | SHARED + positive deadline and per-VM frequency tiers; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix, no tiers, or deadline <= 0 |
 | CaWoSched timed DAG | CAWOSCHED_SLACK / CAWOSCHED_PRESSURE / STATIC | SHARED + `legacyWorkflowsimV1()` + complete `carbonWindows`; no failure, no overhead | rejected |
 | LOCAL DAG | LOCAL family / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead | usable |
+| DHEFT DAG | DHEFT / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |
 | NACO DNC DAG | NACO_GA_HEFT / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |
 | coherent pre-mapping | RANDOM / STATIC | V2 requires LOCAL; V3 allows LOCAL/SHARED; no overhead, optional Fat-tree, V3 must declare SOURCE storage | usable |
 | coherent online assignment | INVALID / STATIC with assignment explicitly enabled | same physical prerequisites as the row above; bind at control-ready, then prepare inputs | usable |

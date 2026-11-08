@@ -151,6 +151,8 @@ public class Parameters {
         NETWORK_HEFT,
         /** HEFT allocation with iterative DVFS slack allocation. */
         DVFS_SLACK,
+        /** DHEFT ready-task planning with pairwise minimum VM bandwidth. */
+        DHEFT,
         /**
          * PSO (particle swarm optimization) mapping planner -- a paper reproduction (Pandey
          * et al., AINA 2010; reference open-source implementation meysamhit/workflowsim-pso).

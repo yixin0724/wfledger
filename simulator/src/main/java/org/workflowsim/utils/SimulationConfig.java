@@ -817,7 +817,8 @@ public final class SimulationConfig {
             if (planningAlgorithm == PlanningAlgorithm.LOCAL_HEFT
                     || planningAlgorithm == PlanningAlgorithm.LOCAL_CPOP
                     || planningAlgorithm == PlanningAlgorithm.LOCAL_PEFT
-                    || planningAlgorithm == PlanningAlgorithm.NACO_GA_HEFT) {
+                    || planningAlgorithm == PlanningAlgorithm.NACO_GA_HEFT
+                    || planningAlgorithm == PlanningAlgorithm.DHEFT) {
                 String label = planningAlgorithm.name();
                 if (fileSystem != ReplicaCatalog.FileSystem.LOCAL) {
                     throw new IllegalArgumentException(label + " requires ReplicaCatalog.FileSystem.LOCAL; "

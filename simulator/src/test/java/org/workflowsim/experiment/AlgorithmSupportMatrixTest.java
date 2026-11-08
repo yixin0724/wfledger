@@ -75,6 +75,7 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.IC_PCP,
                 PlanningAlgorithm.NETWORK_HEFT,
                 PlanningAlgorithm.DVFS_SLACK,
+                PlanningAlgorithm.DHEFT,
                 PlanningAlgorithm.PSO,
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,
@@ -155,7 +156,8 @@ class AlgorithmSupportMatrixTest {
         boolean localComm = algorithm == PlanningAlgorithm.LOCAL_HEFT
                 || algorithm == PlanningAlgorithm.LOCAL_CPOP
                 || algorithm == PlanningAlgorithm.LOCAL_PEFT
-                || algorithm == PlanningAlgorithm.NACO_GA_HEFT;
+                || algorithm == PlanningAlgorithm.NACO_GA_HEFT
+                || algorithm == PlanningAlgorithm.DHEFT;
         SimulationConfig.Builder builder = SimulationConfig.builder("workflow.dax", 1)
                 .planningAlgorithm(algorithm)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC);

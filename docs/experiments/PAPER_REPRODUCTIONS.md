@@ -250,5 +250,19 @@ an alternative VM for the retry. A real FAILURE_VM run completes with one failed
 The checkpoint-only subset does not implement replication-count learning, PCA clustering, or the full
 CRCH replication heuristic.
 
+## DHEFT — Distributed HEFT
+
+| Item | Record |
+|---|---|
+| Official source | WorkflowSim `DHEFTPlanningAlgorithm`, [source file](https://github.com/WorkflowSim/WorkflowSim-1.0/blob/master/sources/org/workflowsim/planning/DHEFTPlanningAlgorithm.java), Apache License 2.0 |
+| Platform classes | `org.workflowsim.planning.dheft` and `DheftPlanningAlgorithm` |
+| Verification | `DheftPlannerTest`, `DheftIntegrationTest`; M51/M52 |
+| Status | `VERIFIED_DHEFT_CORE` for ready-task EFT with pairwise minimum bandwidth |
+
+DHEFT releases dependency-ready Tasks and evaluates each VM's earliest start from its current
+availability and each parent's actual finish time plus `bytes / min(bw_i,bw_j)`. The selected VM is
+the earliest finisher with deterministic ID tie-breaking. This is the static ready-DAG subset of the
+official algorithm, not a claim of full dynamic workflow-arrival or production-cluster semantics.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

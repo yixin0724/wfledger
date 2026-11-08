@@ -115,6 +115,7 @@ public final class AlgorithmCatalog {
             case IC_PCP:
             case NETWORK_HEFT:
             case DVFS_SLACK:
+            case DHEFT:
             case PSO:
             case LOCAL_HEFT:
             case LOCAL_CPOP:
@@ -500,6 +501,9 @@ public final class AlgorithmCatalog {
             case DVFS_SLACK:
                 dvfsSlackPlanner(values);
                 break;
+            case DHEFT:
+                dheftPlanner(values);
+                break;
             case PSO:
                 psoPlanner(values);
                 break;
@@ -517,6 +521,17 @@ public final class AlgorithmCatalog {
                 break;
         }
         return values;
+    }
+
+    private static void dheftPlanner(Map<String, Object> values) {
+        values.put("decisionLayer", "STATIC_DAG_DHEFT");
+        values.put("inputDomain", "LOCAL_DAG_WITH_PAIRWISE_VM_BANDWIDTH");
+        values.put("decisionRule", "Ready-task EFT with pairwise minimum bandwidth and parent finish times");
+        values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
+        values.put("verification", "DHEFT_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations("Static ready-DAG subset; not a claim of full dynamic workflow arrival semantics"));
     }
 
     private static void dvfsSlackPlanner(Map<String, Object> values) {

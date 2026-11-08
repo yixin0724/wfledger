@@ -430,6 +430,20 @@ REGISTRY = [
         old="                if (recovery != null && vm.getId() == recovery.getFailedVmId()) {",
         new="                if (false) {",
         killers="CrchSchedulingAlgorithmTest"),
+    dict(
+        id="M51",
+        name="DHEFT uses maximum instead of minimum pairwise bandwidth",
+        file="simulator/src/main/java/org/workflowsim/planning/dheft/DheftProblem.java",
+        old="        return Math.min(bandwidthByVm.get(firstVmId), bandwidthByVm.get(secondVmId));",
+        new="        return Math.max(bandwidthByVm.get(firstVmId), bandwidthByVm.get(secondVmId));",
+        killers="DheftPlannerTest"),
+    dict(
+        id="M52",
+        name="DHEFT ignores parent finish time",
+        file="simulator/src/main/java/org/workflowsim/planning/dheft/DheftPlanner.java",
+        old="                    start = Math.max(start, parent.getFinishSeconds() + communication);",
+        new="                    start = available.getOrDefault(vmId, 0.0);",
+        killers="DheftPlannerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

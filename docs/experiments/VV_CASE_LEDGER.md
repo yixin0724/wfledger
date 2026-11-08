@@ -93,6 +93,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-EBPSM-001` | `VERIFIED_BUDGET_CACHE_CORE`: SFTD, input/container cache preference, budget gate, staggered multi-workflow integration and M46/M47; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No Docker deployment, elastic provisioning, MCPA substitution, or full WaaS corpus claim |
 | `PAPER-DVFS-001` | `VERIFIED_SLACK_CORE`: HEFT allocation, energy-decreasing slack optimization, logical-Task tier registry, full runner tier verification and M48; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No global DVFS optimality or full paper-corpus claim |
 | `PAPER-CRCH-001` | `VERIFIED_RECOVERY_CORE`: synchronized checkpoints, remaining-work retry, alternative VM, real failure recovery and M49/M50; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No replication-count learning, PCA clustering, or full CRCH replication claim |
+| `PAPER-DHEFT-001` | `VERIFIED_DHEFT_CORE`: ready-task EFT, pairwise minimum bandwidth, parent finish, LOCAL integration and M51/M52; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full dynamic-arrival or production-cluster claim |
 
 ## 5. Change and review discipline
 

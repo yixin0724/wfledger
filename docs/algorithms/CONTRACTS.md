@@ -265,6 +265,15 @@ mode and does not relax the historical DC/DR/BLOCK/VERTICAL rejection rules. The
 implement replication-count learning or PCA clustering. M49/M50 guard saved-work and alternative-VM
 semantics; `CrchIntegrationTest` verifies a real failure and recovery.
 
+### DHEFT Ready-Task and Pairwise Bandwidth (R-PAPER-12, 2026-11-08)
+
+`DHEFT` follows the official WorkflowSim DHEFT planner. Ready Tasks are scheduled in DAG order;
+for every VM, the start is `max(availableVM, parentFinish + bytes / min(bw_parent,bw_vm))` and the
+finish is start plus raw-MI execution time. The earliest finisher wins with deterministic VM-ID
+tie-breaking. This is a static ready-DAG subset, not a full dynamic-arrival workflow model.
+`DheftPlannerTest` verifies a cross-VM bandwidth case and cycle rejection; `DheftIntegrationTest`
+verifies LOCAL PlanningContext integration. M51/M52 guard minimum-bandwidth and parent-finish rules.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.
