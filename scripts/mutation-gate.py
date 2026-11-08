@@ -491,7 +491,7 @@ REGISTRY = [
         name="Reshi-M reapplies prediction noise inside its comparator",
         file="simulator/src/main/java/org/workflowsim/scheduling/ReshiSchedulingAlgorithm.java",
         old="                .averageRuntimeFor(job.getTaskList().get(0).getType());",
-        new="                .averageRuntimeFor(job.getTaskList().get(0).getType()) * (1.0 + configuration().getPredictionError().runtime(job));",
+        new="                .averageRuntimeFor(job.getTaskList().get(0).getType())\n                        * (1.0 + configuration().getPredictionError().runtime(job));",
         killers="ReshiSchedulingAlgorithmTest"),
     dict(
         id="M61",
@@ -518,15 +518,15 @@ REGISTRY = [
         id="M64",
         name="CRCH ignores checkpoint overhead when committing progress",
         file="simulator/src/main/java/org/workflowsim/utils/CrchRegistry.java",
-        old="                    + active.getCheckpointOverheadSeconds();",
-        new="                    + 0.0;",
+        old="            double candidate = checkpointedWorkSeconds\n                    + active.getCheckpointIntervalSeconds()\n                    + active.getCheckpointOverheadSeconds();",
+        new="            double candidate = checkpointedWorkSeconds + active.getCheckpointIntervalSeconds() + 0.0;",
         killers="CrchRegistryTest"),
     dict(
         id="M65",
         name="EDP heuristic double-counts default idle during busy execution",
         file="simulator/src/main/java/org/workflowsim/WorkflowScheduler.java",
-        old="                    + defaultTier.getIdlePowerWatts() * (makespanEstimate - estimatedSeconds);",
-        new="                    + defaultTier.getIdlePowerWatts() * makespanEstimate;",
+        old="            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds\n                    + defaultTier.getIdlePowerWatts() * (makespanEstimate - estimatedSeconds);",
+        new="            double energyEstimate =\n                    tier.getMaxPowerWatts() * estimatedSeconds + defaultTier.getIdlePowerWatts() * makespanEstimate;",
         killers="FrequencyTierAssignmentTest"),
 ]
 
