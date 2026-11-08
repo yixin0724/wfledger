@@ -1,0 +1,14 @@
+scripts/mutation-gate.py
+  h_adc77830afcf4d 494,521-522,528-529
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4551d8cfbb1d8cd36b205435385414593637b504",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
