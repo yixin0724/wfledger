@@ -3,7 +3,9 @@ package org.workflowsim.experiments.comparison;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.workflowsim.data.DataMovementModel;
 import org.workflowsim.exception.SimulationExecutionException;
@@ -73,12 +75,35 @@ public final class CrossPaperComparison {
         for (SimulationReport.JobOutcome job : report.getJobs()) {
             modeledCost += job.getModeledProcessingCost();
         }
+        Map<Integer, Integer> mapping = new LinkedHashMap<Integer, Integer>();
+        for (SimulationReport.TaskOutcome task : report.getTasks()) {
+            mapping.put(task.getTaskId(), task.getVmId());
+        }
+        double energyResidual = 0.0;
+        for (SimulationReport.VmSummary vm : report.getVmSummaries().values()) {
+            PlatformProfile.VmSpec spec = findVm(platform, vm.getVmId());
+            energyResidual += spec.getIdlePowerWatts() * report.getMakespan()
+                    + (spec.getMaxPowerWatts() - spec.getIdlePowerWatts()) * vm.getTotalCpuTime();
+        }
+        energyResidual = Math.abs(energyResidual - report.getEnergyAccounting().getTotalEnergyJoules());
         return new RunResult(
                 label,
                 report.getMakespan(),
                 report.getEnergyAccounting().getTotalEnergyJoules(),
                 modeledCost,
+                energyResidual,
+                null,
+                mapping,
                 report.isWorkflowCompletedSuccessfully());
+    }
+
+    private static PlatformProfile.VmSpec findVm(PlatformProfile platform, int vmId) {
+        for (PlatformProfile.VmSpec vm : platform.getVms()) {
+            if (vm.getId() == vmId) {
+                return vm;
+            }
+        }
+        throw new IllegalArgumentException("No VM declaration for energy recomputation " + vmId);
     }
 
     public static final class RunResult {
@@ -86,6 +111,9 @@ public final class CrossPaperComparison {
         private final double makespanSeconds;
         private final double energyJoules;
         private final double modeledProcessingCost;
+        private final double energyResidualJoules;
+        private final Double plannerCost;
+        private final Map<Integer, Integer> mapping;
         private final boolean completed;
 
         private RunResult(
@@ -93,11 +121,17 @@ public final class CrossPaperComparison {
                 double makespanSeconds,
                 double energyJoules,
                 double modeledProcessingCost,
+                double energyResidualJoules,
+                Double plannerCost,
+                Map<Integer, Integer> mapping,
                 boolean completed) {
             this.algorithm = algorithm;
             this.makespanSeconds = makespanSeconds;
             this.energyJoules = energyJoules;
             this.modeledProcessingCost = modeledProcessingCost;
+            this.energyResidualJoules = energyResidualJoules;
+            this.plannerCost = plannerCost;
+            this.mapping = Collections.unmodifiableMap(new LinkedHashMap<Integer, Integer>(mapping));
             this.completed = completed;
         }
 
@@ -115,6 +149,34 @@ public final class CrossPaperComparison {
 
         public double getModeledProcessingCost() {
             return modeledProcessingCost;
+        }
+
+        public double getEnergyResidualJoules() {
+            return energyResidualJoules;
+        }
+
+        public Double getPlannerCost() {
+            return plannerCost;
+        }
+
+        /** Attaches a cost computed directly by the paper planner, not by runtime accounting. */
+        public RunResult withPlannerCost(double value) {
+            if (!(value >= 0.0) || !Double.isFinite(value)) {
+                throw new IllegalArgumentException("Planner cost must be finite and non-negative");
+            }
+            return new RunResult(
+                    algorithm,
+                    makespanSeconds,
+                    energyJoules,
+                    modeledProcessingCost,
+                    energyResidualJoules,
+                    value,
+                    mapping,
+                    completed);
+        }
+
+        public Map<Integer, Integer> getMapping() {
+            return mapping;
         }
 
         public boolean isCompleted() {

@@ -49,7 +49,7 @@ miss.)
 
 | Mutant | Outcome |
 |---|---|
-| Repository gate (`make mutation-gate` plus `make mutation-gate-experiments`, 52 registered mutants after the DHEFT R-PAPER-12 work; M12–M19 added 2026-11-03, M20/M21 for cap/revision, M22/M23 for B1, M24–M26 for upstream references, M27 for Montage, M28 for tied Wilcoxon, M29 for tick, M30 for Workbench, M31 for profile fingerprints) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M52 are verified red-first at the killers stage in the B1–B5 and R-PAPER-01/02/03/04/05/06/07/08/09/10/11/12 close-outs |
+| Repository gate (`make mutation-gate` plus `make mutation-gate-experiments`, 53 registered mutants after the R-COMPARE-02 audit correction; M12–M19 added 2026-11-03, M20/M21 for cap/revision, M22/M23 for B1, M24–M26 for upstream references, M27 for Montage, M28 for tied Wilcoxon, M29 for tick, M30 for Workbench, M31 for profile fingerprints) | M1–M11 11/11 KILLED (full battery); M12–M19 8/8 KILLED (red-first, per-mutant gate runs); M20 1/1 KILLED (20/20 aggregate); M21 1/1 KILLED (21/21 aggregate, 0 survived, 0 stale, 437 s); M22–M53 are verified red-first at the killers stage in the B1–B5, R-PAPER-01/02/03/04/05/06/07/08/09/10/11/12, and R-COMPARE-02 close-outs |
 | B1: `mutable()` stops copying (copy-on-write disabled) | KILLED by `RuntimeHistoryIsolationTest` |
 | A2: budget always takes the v1 path | KILLED by `CarbonAccountingTest` |
 | A1: `frequencyTiers` rebuilt as empty | KILLED by six rerun tests |
@@ -241,3 +241,4 @@ recurrence; no historical ledger rows were removed.
 | R-PAPER-11 | Failure retry lacked a literature checkpoint-recovery scheduler | VERIFIED_RECOVERY_CORE — CRCH remaining-work retry and alternative VM; M49/M50 guard saved work and failed-VM avoidance |
 | R-PAPER-12 | Pairwise communication-aware DHEFT was missing from the LOCAL planner family | VERIFIED_DHEFT_CORE — DHEFT ready-task EFT and minimum bandwidth; M51/M52 guard bandwidth and parent finish |
 | R-COMPARE-01 | Paper algorithms lacked a shared-scene comparison | VERIFIED_COMPARISON_SCENE — real SHARED/LOCAL comparison with energy and cost invariants; no mixed-model ranking |
+| R-COMPARE-02 | Initial scene tied energy and mixed planner/runtime cost semantics | VERIFIED_COMPARISON_SCENE — heterogeneous power, distinct mappings, direct IC-PCP planner cost, independent energy residual, M53 |

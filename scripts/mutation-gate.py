@@ -448,6 +448,14 @@ REGISTRY = [
 
 EXPERIMENTS_REGISTRY = [
     dict(
+        id="M53",
+        name="Cross-paper comparison drops direct IC-PCP planner cost",
+        file="experiments/src/main/java/org/workflowsim/experiments/comparison/CrossPaperComparison.java",
+        old="                    value,",
+        new="                    null,",
+        killers="CrossPaperComparisonTest",
+        module="experiments"),
+    dict(
         id="M30",
         name="Workbench drops the event-recorder cap from the simulation allowlist",
         file="experiments/src/main/java/org/workflowsim/experiments/workbench/WorkbenchConfig.java",

@@ -45,7 +45,7 @@ and a linked contract revision, not a silent update to match production output.
 | DVFS slack allocation | `PAPER` / `CONTRACT` | `DvfsSlackOptimizerTest` and `DvfsSlackIntegrationTest`; energy/deadline-gated downscaling and runtime tier consumption, M48 |
 | CRCH checkpoint recovery | `PAPER` | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, and `CrchIntegrationTest`; saved-work and alternative-VM recovery, M49/M50 |
 | DHEFT | `PAPER` | `DheftPlannerTest` and `DheftIntegrationTest`; pairwise bandwidth and parent-finish EFT, M51/M52 |
-| Cross-paper scenes | `CONTRACT` | `CrossPaperComparisonTest`; SHARED/LOCAL scene separation, completion, energy and cost invariants |
+| Cross-paper scenes | `CONTRACT` | `CrossPaperComparisonTest`; SHARED/LOCAL separation, distinct mappings, direct planner cost, independent energy residual, M53 |
 | Tick and profile semantics | `CONTRACT` / `INVARIANT` | `SimulationTickSensitivityTest` and `DataflowStateProfileSmokeTest`; no numerical-convergence or timing-threshold claim |
 | Large-scale and campaign makespans | `GOLDEN_REGRESSION` | `LargeWorkflowScaleRegressionTest` and `FatTreeCampaignGoldenIntegrationTest`; drift detection only, not paper or real-platform proof |
 | Frozen standard/power/carbon/DVFS bundles | `GOLDEN_REGRESSION` | Freshly restored tar archives independently audited by `verify-study-evidence.py`; historical protocol identity, not current regeneration or real validation |
