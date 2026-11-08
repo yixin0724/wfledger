@@ -679,15 +679,18 @@ public final class SimulationConfig {
          * PLAT-7 DATA/SHARED rejection.
          */
         private void validateSchedulerCombinations() {
-            if (planningAlgorithm != PlanningAlgorithm.INVALID && schedulingAlgorithm != SchedulingAlgorithm.STATIC) {
+            if (planningAlgorithm != PlanningAlgorithm.INVALID
+                    && schedulingAlgorithm != SchedulingAlgorithm.STATIC
+                    && schedulingAlgorithm != SchedulingAlgorithm.DVFS_SLACK) {
                 throw new IllegalArgumentException("A planning algorithm assigns VM mappings and requires "
-                        + "SchedulingAlgorithm.STATIC dispatch");
+                        + "SchedulingAlgorithm.STATIC or DVFS_SLACK dispatch");
             }
             if (planningAlgorithm == PlanningAlgorithm.INVALID
-                    && schedulingAlgorithm == SchedulingAlgorithm.STATIC
+                    && (schedulingAlgorithm == SchedulingAlgorithm.STATIC
+                            || schedulingAlgorithm == SchedulingAlgorithm.DVFS_SLACK)
                     && !dataflowAssignmentConfig.isEnabled()) {
                 throw new IllegalArgumentException(
-                        "SchedulingAlgorithm.STATIC requires a planning algorithm " + "that assigns VM mappings");
+                        schedulingAlgorithm + " requires a planning algorithm " + "that assigns VM mappings");
             }
             // PLAT-7: the DATA algorithm matches replica sites by VM ID for its locality verdict,
             // while replicas under SHARED mode are registered by datacenter name; the two never
@@ -716,7 +719,8 @@ public final class SimulationConfig {
                     || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
                     || planningAlgorithm == PlanningAlgorithm.MO_HEFT
                     || planningAlgorithm == PlanningAlgorithm.IC_PCP
-                    || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT) {
+                    || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT
+                    || planningAlgorithm == PlanningAlgorithm.DVFS_SLACK) {
                 if (fileSystem != ReplicaCatalog.FileSystem.SHARED) {
                     throw new IllegalArgumentException(planningAlgorithm + " requires shared storage");
                 }
@@ -736,8 +740,9 @@ public final class SimulationConfig {
                             + "transfer estimates remain aligned");
                 }
             }
-            if (planningAlgorithm == PlanningAlgorithm.IC_PCP && deadline <= 0L) {
-                throw new IllegalArgumentException("IC_PCP requires a positive workflow deadline");
+            if ((planningAlgorithm == PlanningAlgorithm.IC_PCP || planningAlgorithm == PlanningAlgorithm.DVFS_SLACK)
+                    && deadline <= 0L) {
+                throw new IllegalArgumentException(planningAlgorithm + " requires a positive workflow deadline");
             }
             // The task-by-VM cost matrix is folded in by the STATIC dispatch path
             // (MI = seconds * vm.mips); an online scheduler does not fold it in, so the matrix
@@ -776,7 +781,8 @@ public final class SimulationConfig {
                         || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
                         || planningAlgorithm == PlanningAlgorithm.MO_HEFT
                         || planningAlgorithm == PlanningAlgorithm.IC_PCP
-                        || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT) {
+                        || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT
+                        || planningAlgorithm == PlanningAlgorithm.DVFS_SLACK) {
                     throw new IllegalArgumentException("A task cost matrix cannot be combined with "
                             + planningAlgorithm + ": the shared-storage planning track estimates "
                             + "execution times from raw task lengths and does not consume the matrix, "

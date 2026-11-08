@@ -38,6 +38,7 @@ import org.workflowsim.scheduling.CarbonWindowDeferSchedulingAlgorithm;
 import org.workflowsim.scheduling.CwsRankMinRoundRobinSchedulingAlgorithm;
 import org.workflowsim.scheduling.DataAwareSchedulingAlgorithm;
 import org.workflowsim.scheduling.DeferralAwareSchedulingAlgorithm;
+import org.workflowsim.scheduling.DvfsSlackSchedulingAlgorithm;
 import org.workflowsim.scheduling.EbpsmSchedulingAlgorithm;
 import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
 import org.workflowsim.scheduling.FastestVmSchedulingAlgorithm;
@@ -292,6 +293,9 @@ public class WorkflowScheduler extends DatacenterBroker {
                 break;
             case EBPSM:
                 algorithm = new EbpsmSchedulingAlgorithm();
+                break;
+            case DVFS_SLACK:
+                algorithm = new DvfsSlackSchedulingAlgorithm();
                 break;
             case STATIC:
                 if (Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_SLACK

@@ -399,3 +399,13 @@ No surveyed DVFS extension of ANY workflow simulator carries a conservation-law
 invariant or an independent recompute chain. The v2 target: the first DVFS
 extension where every per-tier joule — and therefore every gram of carbon — is
 independently verifiable by a third party with one Python command.
+
+## 6. R-PAPER-10: DVFS Slack Allocation (2026-11-08)
+
+`DVFS_SLACK` adds a planner/scheduler pair on top of the existing tier contract. The planner starts
+from HEFT mapping and accepts a lower tier only when the complete schedule meets the deadline and
+total energy strictly decreases. The registry keys are logical Task IDs, while the scheduler looks up
+that Task through `Job.getTaskList()`; stage-in Jobs remain outside the compute-tier contract.
+`DVFS_SLACK` is accepted as an explicit static dispatch label in the planning/scheduler combination
+check and must have a completed planning result. This is a greedy slack-allocation subset, not a
+claim of global DVFS optimality or a replacement for the existing DEFAULT/MIN_POWER/EDP policies.

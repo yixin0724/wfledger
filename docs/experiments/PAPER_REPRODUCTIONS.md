@@ -216,5 +216,22 @@ arrivals complete through the standard runner. The current subset uses a fixed d
 explicit cache declarations, not Docker deployment, elastic VM provisioning, or a full WaaS corpus.
 The closed MCPA alternative was not reproduced or mislabeled.
 
+## DVFS Frequency Scaling — ICPPW 2014
+
+| Item | Record |
+|---|---|
+| Paper | Ilia Pietri, Rizos Sakellariou, *Energy-Aware Workflow Scheduling Using Frequency Scaling*, 43rd International Conference on Parallel Processing Workshops, 2014 |
+| Primary source | [DOI](https://doi.org/10.1109/ICPPW.2014.26), [paper abstract](https://dl.acm.org/doi/10.1109/ICPPW.2014.26) |
+| Platform classes | `org.workflowsim.planning.dvfs`, `DvfsSlackPlanningAlgorithm`, `DvfsSlackSchedulingAlgorithm`, and `DvfsSlackRegistry` |
+| Verification | `DvfsSlackOptimizerTest`, `DvfsSlackIntegrationTest`; M48 |
+| Status | `VERIFIED_SLACK_CORE` for HEFT mapping plus iterative energy-decreasing DVFS slack allocation |
+
+The planner starts from a HEFT allocation and repeatedly tries lower tiers only when the complete
+schedule remains within the deadline and total energy decreases. It includes busy and idle power
+in the comparison, not just task energy. The scheduler consumes the planner's per-task tier through
+`FrequencyTierSelector`, and the full runner verifies every COMPUTE Job receives the selected tier.
+This is a greedy slack-allocation subset, not a proof of the full paper algorithm, global DVFS
+optimality, or a reproduction of its synthetic workload corpus.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

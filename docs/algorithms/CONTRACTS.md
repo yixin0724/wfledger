@@ -246,6 +246,15 @@ must fit the task's sub-budget. Runtime output files and deployed images update 
 exists. `EbpsmIntegrationTest` runs two staggered workflows. The subset uses a fixed declared VM pool
 and does not claim Docker deployment, elastic provisioning, or full WaaS corpus reproduction.
 
+### DVFS Slack Allocation and Tier Consumption (R-PAPER-10, 2026-11-08)
+
+`DVFS_SLACK` starts from a HEFT allocation and iteratively tries lower tiers. A downgrade is accepted
+only when the complete schedule meets the deadline and total energy, including busy and idle power,
+strictly decreases. `DvfsSlackRegistry` stores one tier per logical Task; `DvfsSlackSchedulingAlgorithm`
+implements `FrequencyTierSelector` and looks up the logical Task inside each Job, not the zero-based
+Job ID. The standard runner consumes the selected tier through the existing admission-time DVFS
+mechanism. This is a greedy subset, not a global DVFS optimality or full paper-corpus claim.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

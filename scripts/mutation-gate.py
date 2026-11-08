@@ -409,6 +409,13 @@ REGISTRY = [
         old="            if (cost <= budget + 1.0e-9",
         new="            if (true",
         killers="EbpsmSchedulingAlgorithmTest"),
+    dict(
+        id="M48",
+        name="DVFS slack allocation accepts an energy-increasing downgrade",
+        file="simulator/src/main/java/org/workflowsim/planning/dvfs/DvfsSlackOptimizer.java",
+        old="                    if (candidate.getMakespanSeconds() <= deadlineSeconds + 1.0e-9\n                            && candidate.getTotalEnergyJoules() < bestEnergy - 1.0e-9) {",
+        new="                    if (candidate.getMakespanSeconds() <= deadlineSeconds + 1.0e-9 && true) {",
+        killers="DvfsSlackOptimizerTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

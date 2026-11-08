@@ -104,6 +104,8 @@ public class Parameters {
         RESHI_M,
         /** EBPSM multi-workflow budget and cache-aware scheduling. */
         EBPSM,
+        /** STATIC dispatch with planner-selected per-task DVFS tiers. */
+        DVFS_SLACK,
         INVALID
     }
 
@@ -145,6 +147,8 @@ public class Parameters {
         IC_PCP,
         /** Network-Aware HEFT with shared-bottleneck flow stretching. */
         NETWORK_HEFT,
+        /** HEFT allocation with iterative DVFS slack allocation. */
+        DVFS_SLACK,
         /**
          * PSO (particle swarm optimization) mapping planner -- a paper reproduction (Pandey
          * et al., AINA 2010; reference open-source implementation meysamhit/workflowsim-pso).
@@ -664,6 +668,7 @@ public class Parameters {
         carbonWindows = Collections.emptyList();
         ReshiRegistry.clear();
         EbpsmRegistry.clear();
+        DvfsSlackRegistry.clear();
         SimulationRandom.reset(randomSeed);
     }
 

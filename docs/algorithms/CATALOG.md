@@ -43,6 +43,7 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `RESHI_C` | direct-child-count descending with explicit Reshi task-node ranking |
 | `RESHI_M` | historical-average-runtime descending with explicit Reshi task-node ranking |
 | `EBPSM` | multi-workflow SFTD budget distribution plus input/container cache preference and budget-gated dispatch |
+| `DVFS_SLACK` | STATIC dispatch with one planner-selected frequency tier per logical Task |
 | `DATA` | chooses the idle compatible VM with the fewest non-local real input bytes; requires LOCAL |
 | `RL_POLICY` | the policy registered via `RlEnvironment.runEpisode(...)` selects the VM list index |
 | `STATIC` | executes an existing mapping/binding; with a full static plan it additionally enforces the per-VM order — it is not an independent optimization algorithm |
@@ -105,6 +106,7 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `MO_HEFT` | SHARED DAG | HEFT-ordered beam search with non-dominated filtering, crowding and balanced makespan-energy choice |
 | `IC_PCP` | SHARED DAG | critical-parent PCP with EST/LFT, minimum incremental path cost and deadline slack |
 | `NETWORK_HEFT` | SHARED DAG | fair-shared bottleneck flow stretching with iterative HEFT rescheduling |
+| `DVFS_SLACK` | SHARED DAG | HEFT mapping followed by iterative energy-decreasing slack allocation |
 
 ## Combination rules
 
@@ -122,6 +124,7 @@ mean multiple Jobs can be dispatched simultaneously.
 | MOHEFT DAG | MO_HEFT / STATIC | SHARED + declared per-VM power; no failure, no overhead; raw task lengths only | rejected without power or with frequency tiers |
 | IC-PCP DAG | IC_PCP / STATIC | SHARED + positive deadline and declared VM costs; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix or deadline <= 0 |
 | Network-Aware HEFT DAG | NETWORK_HEFT / STATIC | SHARED + file-carrying DAG and shared bottleneck; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |
+| DVFS slack DAG | DVFS_SLACK / DVFS_SLACK | SHARED + positive deadline and per-VM frequency tiers; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix, no tiers, or deadline <= 0 |
 | CaWoSched timed DAG | CAWOSCHED_SLACK / CAWOSCHED_PRESSURE / STATIC | SHARED + `legacyWorkflowsimV1()` + complete `carbonWindows`; no failure, no overhead | rejected |
 | LOCAL DAG | LOCAL family / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead | usable |
 | NACO DNC DAG | NACO_GA_HEFT / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |

@@ -31,7 +31,8 @@ class AlgorithmSupportMatrixTest {
                 SchedulingAlgorithm.CWS_RANKMIN_RR,
                 SchedulingAlgorithm.RESHI_C,
                 SchedulingAlgorithm.RESHI_M,
-                SchedulingAlgorithm.EBPSM);
+                SchedulingAlgorithm.EBPSM,
+                SchedulingAlgorithm.DVFS_SLACK);
         EnumSet<SchedulingAlgorithm> unavailable = EnumSet.of(
                 SchedulingAlgorithm.MINMIN,
                 SchedulingAlgorithm.MAXMIN,
@@ -72,6 +73,7 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.MO_HEFT,
                 PlanningAlgorithm.IC_PCP,
                 PlanningAlgorithm.NETWORK_HEFT,
+                PlanningAlgorithm.DVFS_SLACK,
                 PlanningAlgorithm.PSO,
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,
@@ -127,6 +129,13 @@ class AlgorithmSupportMatrixTest {
                     .schedulingAlgorithm(algorithm)
                     .build();
         }
+        if (algorithm == SchedulingAlgorithm.DVFS_SLACK) {
+            return SimulationConfig.builder("workflow.dax", 1)
+                    .planningAlgorithm(PlanningAlgorithm.DVFS_SLACK)
+                    .schedulingAlgorithm(algorithm)
+                    .deadline(100L)
+                    .build();
+        }
         return SimulationConfig.builder("workflow.dax", 1)
                 .schedulingAlgorithm(algorithm)
                 // The locality verdict of the DATA algorithm requires LOCAL file system
@@ -149,7 +158,7 @@ class AlgorithmSupportMatrixTest {
         SimulationConfig.Builder builder = SimulationConfig.builder("workflow.dax", 1)
                 .planningAlgorithm(algorithm)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC);
-        if (algorithm == PlanningAlgorithm.IC_PCP) {
+        if (algorithm == PlanningAlgorithm.IC_PCP || algorithm == PlanningAlgorithm.DVFS_SLACK) {
             builder.deadline(100L);
         }
         if (localComm) {

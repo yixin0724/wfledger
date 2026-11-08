@@ -52,6 +52,7 @@ public final class AlgorithmCatalog {
             case RESHI_C:
             case RESHI_M:
             case EBPSM:
+            case DVFS_SLACK:
                 return true;
             case MINMIN:
             case MAXMIN:
@@ -112,6 +113,7 @@ public final class AlgorithmCatalog {
             case MO_HEFT:
             case IC_PCP:
             case NETWORK_HEFT:
+            case DVFS_SLACK:
             case PSO:
             case LOCAL_HEFT:
             case LOCAL_CPOP:
@@ -269,6 +271,9 @@ public final class AlgorithmCatalog {
             case EBPSM:
                 ebpsmScheduler(values);
                 break;
+            case DVFS_SLACK:
+                dvfsSlackScheduler(values);
+                break;
             case READY_BATCH_MCT:
                 readyBatchMctScheduler(values);
                 break;
@@ -404,6 +409,16 @@ public final class AlgorithmCatalog {
         values.put("limitations", limitations("Static-DAG/idle-VM adaptation only; not the dynamic CWS API"));
     }
 
+    private static void dvfsSlackScheduler(Map<String, Object> values) {
+        values.put("decisionLayer", "STATIC_DISPATCH_PLANNER_SELECTED_DVFS");
+        values.put("inputDomain", "MAPPED_JOBS_WITH_PLANNER_SELECTED_TIERS");
+        values.put("decisionRule", "Consume one declared tier per Job from the DVFS slack planner");
+        values.put("requiredPlanner", PlanningAlgorithm.DVFS_SLACK.name());
+        values.put("verification", "DVFS_SLACK_REGRESSION_COVERED");
+        values.put(
+                "limitations", limitations("Requires a completed DVFS_SLACK planning result and declared tier tables"));
+    }
+
     private static void ebpsmScheduler(Map<String, Object> values) {
         values.put("decisionLayer", "ONLINE_MULTI_WORKFLOW_BUDGET_CACHE");
         values.put("inputDomain", "MULTI_WORKFLOW_DAG_WITH_TASK_BUDGETS_AND_CACHES");
@@ -468,6 +483,9 @@ public final class AlgorithmCatalog {
             case NETWORK_HEFT:
                 networkHeftPlanner(values);
                 break;
+            case DVFS_SLACK:
+                dvfsSlackPlanner(values);
+                break;
             case PSO:
                 psoPlanner(values);
                 break;
@@ -485,6 +503,17 @@ public final class AlgorithmCatalog {
                 break;
         }
         return values;
+    }
+
+    private static void dvfsSlackPlanner(Map<String, Object> values) {
+        values.put("decisionLayer", "STATIC_DAG_DVFS_SLACK");
+        values.put("inputDomain", "SHARED_DAG_WITH_FREQUENCY_TIERS_AND_POSITIVE_DEADLINE");
+        values.put("decisionRule", "HEFT mapping followed by iterative energy-decreasing slack allocation");
+        values.put("requiredScheduler", SchedulingAlgorithm.DVFS_SLACK.name());
+        values.put("verification", "DVFS_SLACK_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations("Greedy slack subset; no exact global DVFS optimum or full paper corpus claim"));
     }
 
     private static void networkHeftPlanner(Map<String, Object> values) {
