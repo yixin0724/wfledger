@@ -1,0 +1,58 @@
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmSupportMatrixTest.java
+  h_adc77830afcf4d 34-35,76,132-138,161
+docs/experiments/VV_CASE_LEDGER.md
+  h_adc77830afcf4d 94
+simulator/src/main/java/org/workflowsim/planning/dvfs/DvfsSlackSchedule.java
+  h_adc77830afcf4d 1-76
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  h_adc77830afcf4d 41,297-299
+simulator/src/main/java/org/workflowsim/planning/dvfs/DvfsSlackTask.java
+  h_adc77830afcf4d 1-39
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  h_adc77830afcf4d 55,116,274-276,412-421,486-488,508-518
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 66,101,106,112
+simulator/src/main/java/org/workflowsim/utils/DvfsSlackRegistry.java
+  h_adc77830afcf4d 1-31
+simulator/src/main/java/org/workflowsim/WorkflowPlanner.java
+  h_adc77830afcf4d 33,440-442
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  h_adc77830afcf4d 45
+docs/experiments/PAPER_REPRODUCTIONS.md
+  h_adc77830afcf4d 219-235
+docs/advanced/DVFS_DIMENSION_DESIGN.md
+  h_adc77830afcf4d 402-411
+simulator/src/test/java/org/workflowsim/planning/DvfsSlackIntegrationTest.java
+  h_adc77830afcf4d 1-71
+scripts/mutation-gate.py
+  h_adc77830afcf4d 412-418
+simulator/src/main/java/org/workflowsim/scheduling/DvfsSlackSchedulingAlgorithm.java
+  h_adc77830afcf4d 1-22
+simulator/src/main/java/org/workflowsim/planning/DvfsSlackPlanningAlgorithm.java
+  h_adc77830afcf4d 1-78
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  h_adc77830afcf4d 682-684,686,689-690,693,722-723,743-745,784-785
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 249-257
+simulator/src/main/java/org/workflowsim/planning/dvfs/DvfsSlackOptimizer.java
+  h_adc77830afcf4d 1-113
+docs/algorithms/CATALOG.md
+  h_adc77830afcf4d 46,109,127
+simulator/src/test/java/org/workflowsim/planning/dvfs/DvfsSlackOptimizerTest.java
+  h_adc77830afcf4d 1-55
+docs/experiments/AUDIT_COVERAGE.md
+  h_adc77830afcf4d 52,240
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  h_adc77830afcf4d 107-108,150-151,671
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "64a5ef9fe10d31ab3c331b351a5e57815d2cc308",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
