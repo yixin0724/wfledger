@@ -35,6 +35,7 @@ import org.workflowsim.experiment.SimulationEventType;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.scheduling.BaseSchedulingAlgorithm;
 import org.workflowsim.scheduling.CarbonWindowDeferSchedulingAlgorithm;
+import org.workflowsim.scheduling.CrchSchedulingAlgorithm;
 import org.workflowsim.scheduling.CwsRankMinRoundRobinSchedulingAlgorithm;
 import org.workflowsim.scheduling.DataAwareSchedulingAlgorithm;
 import org.workflowsim.scheduling.DeferralAwareSchedulingAlgorithm;
@@ -296,6 +297,9 @@ public class WorkflowScheduler extends DatacenterBroker {
                 break;
             case DVFS_SLACK:
                 algorithm = new DvfsSlackSchedulingAlgorithm();
+                break;
+            case CRCH:
+                algorithm = new CrchSchedulingAlgorithm();
                 break;
             case STATIC:
                 if (Parameters.getPlanningAlgorithm() == Parameters.PlanningAlgorithm.CAWOSCHED_SLACK

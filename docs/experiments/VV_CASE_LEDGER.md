@@ -92,6 +92,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-NETWORK-HEFT-001` | `VERIFIED_BOTTLENECK_CORE`: shared-bottleneck stretching, independent parent-edge durations, iterative HEFT, 25→32 case and M45; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full TCP model, automatic path detection, or full Grid corpus claim |
 | `PAPER-EBPSM-001` | `VERIFIED_BUDGET_CACHE_CORE`: SFTD, input/container cache preference, budget gate, staggered multi-workflow integration and M46/M47; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No Docker deployment, elastic provisioning, MCPA substitution, or full WaaS corpus claim |
 | `PAPER-DVFS-001` | `VERIFIED_SLACK_CORE`: HEFT allocation, energy-decreasing slack optimization, logical-Task tier registry, full runner tier verification and M48; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No global DVFS optimality or full paper-corpus claim |
+| `PAPER-CRCH-001` | `VERIFIED_RECOVERY_CORE`: synchronized checkpoints, remaining-work retry, alternative VM, real failure recovery and M49/M50; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No replication-count learning, PCA clustering, or full CRCH replication claim |
 
 ## 5. Change and review discipline
 

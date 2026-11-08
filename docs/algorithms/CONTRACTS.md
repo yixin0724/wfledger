@@ -255,6 +255,16 @@ implements `FrequencyTierSelector` and looks up the logical Task inside each Job
 Job ID. The standard runner consumes the selected tier through the existing admission-time DVFS
 mechanism. This is a greedy subset, not a global DVFS optimality or full paper-corpus claim.
 
+### CRCH Synchronized-Checkpoint Recovery (R-PAPER-11, 2026-11-08)
+
+`CRCH` implements the checkpointing part of the 2019 CRCH paper. Completed checkpoints are derived
+from `floor(elapsed / checkpointIntervalSeconds)`, and retry work is `max(0, originalMi - savedMi)`.
+`ReclusteringEngine.process` registers the recovery for the retry Job, while `CrchSchedulingAlgorithm`
+avoids the failed VM when an alternative exists. `FTCLUSTERING_CRCH` is an explicit standard-runner
+mode and does not relax the historical DC/DR/BLOCK/VERTICAL rejection rules. The subset does not
+implement replication-count learning or PCA clustering. M49/M50 guard saved-work and alternative-VM
+semantics; `CrchIntegrationTest` verifies a real failure and recovery.
+
 ## Metrics and Observation Samples
 
 The metrics are computed by [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>), not by production-platform telemetry. All times are simulated seconds; wall-clock decision cost is reported separately.

@@ -372,22 +372,25 @@ public final class SimulationRunner {
     }
 
     /**
-     * In the standard runner only the no-op reclustering has an execution-level retry contract.
-     * The other historical reclustering heuristics still contain hard-coded, unverified tuning
-     * rules, so they are reachable only through the old API.
+     * The standard runner supports NOOP retry and the explicit CRCH checkpoint-recovery model.
+     * Historical DC/DR/BLOCK/VERTICAL reclustering heuristics still contain hard-coded, unverified
+     * tuning rules, so they are reachable only through the old API.
      */
     private static void validateSupportedFailureModel(SimulationConfig config) {
-        if (config.getFailureModel().getClusteringAlgorithm()
-                != FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP) {
+        FailureParameters.FTCluteringAlgorithm algorithm =
+                config.getFailureModel().getClusteringAlgorithm();
+        if (algorithm != FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP
+                && algorithm != FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_CRCH) {
             throw new SimulationConfigurationException("Failure reclustering algorithm "
-                    + config.getFailureModel().getClusteringAlgorithm()
-                    + " is legacy compatibility code and is not supported by SimulationRunner; "
-                    + "use FTCLUSTERING_NOOP for the verified retry model");
+                    + algorithm + " is legacy compatibility code and is not supported by SimulationRunner; "
+                    + "use FTCLUSTERING_NOOP or the explicit CRCH recovery model");
         }
-        if (config.getFailureModel().getMonitorMode() != FailureParameters.FTCMonitor.MONITOR_NONE) {
-            throw new SimulationConfigurationException("SimulationRunner supports MONITOR_NONE only: under the "
-                    + "verified FTCLUSTERING_NOOP retry model, other monitor modes do not alter recovery "
-                    + "or scheduling and must not be treated as a research factor");
+        if (algorithm != FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_CRCH
+                && config.getFailureModel().getMonitorMode() != FailureParameters.FTCMonitor.MONITOR_NONE) {
+            throw new SimulationConfigurationException(
+                    "SimulationRunner supports MONITOR_NONE only outside CRCH: under the "
+                            + "verified FTCLUSTERING_NOOP retry model, other monitor modes do not alter recovery "
+                            + "or scheduling and must not be treated as a research factor");
         }
     }
 

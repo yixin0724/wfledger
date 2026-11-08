@@ -32,7 +32,8 @@ class AlgorithmSupportMatrixTest {
                 SchedulingAlgorithm.RESHI_C,
                 SchedulingAlgorithm.RESHI_M,
                 SchedulingAlgorithm.EBPSM,
-                SchedulingAlgorithm.DVFS_SLACK);
+                SchedulingAlgorithm.DVFS_SLACK,
+                SchedulingAlgorithm.CRCH);
         EnumSet<SchedulingAlgorithm> unavailable = EnumSet.of(
                 SchedulingAlgorithm.MINMIN,
                 SchedulingAlgorithm.MAXMIN,

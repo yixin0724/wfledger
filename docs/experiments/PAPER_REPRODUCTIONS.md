@@ -233,5 +233,22 @@ in the comparison, not just task energy. The scheduler consumes the planner's pe
 This is a greedy slack-allocation subset, not a proof of the full paper algorithm, global DVFS
 optimality, or a reproduction of its synthetic workload corpus.
 
+## CRCH — Replication Heuristics and Checkpointing (2019)
+
+| Item | Record |
+|---|---|
+| Paper | Amrith Rajagopal Setlur, S. Jaya Nirmala, Har Simrat Singh, Sudhanshu Khoriya, *An Efficient Fault Tolerant Workflow Scheduling Approach using Replication Heuristics and Checkpointing in the Cloud*, Journal of Parallel and Distributed Computing, 2019 |
+| Primary source | [arXiv:1810.06361v2](https://arxiv.org/html/1810.06361v2), [publisher record](https://www.sciencedirect.com/science/article/abs/pii/S0743731518306580) |
+| License | CC BY 4.0 |
+| Platform classes | `CrchRegistry`, `CrchRecovery`, `CrchSchedulingAlgorithm`, and the `FTCLUSTERING_CRCH` retry path |
+| Verification | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, `CrchIntegrationTest`; M49/M50 |
+| Status | `VERIFIED_RECOVERY_CORE` for synchronized-checkpoint remaining-work retry and alternative-VM selection |
+
+The implementation records completed synchronized checkpoints in session state, computes the remaining
+MI from the latest checkpoint, registers a recovery result at `ReclusteringEngine.process`, and chooses
+an alternative VM for the retry. A real FAILURE_VM run completes with one failed VM and one stable VM.
+The checkpoint-only subset does not implement replication-count learning, PCA clustering, or the full
+CRCH replication heuristic.
+
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
 and the [V&V case ledger](<VV_CASE_LEDGER.md>).

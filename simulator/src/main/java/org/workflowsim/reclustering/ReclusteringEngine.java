@@ -23,12 +23,15 @@ import java.util.Map;
 
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.Log;
+import org.cloudbus.cloudsim.core.CloudSim;
 import org.workflowsim.FileItem;
 import org.workflowsim.Job;
 import org.workflowsim.Task;
 import org.workflowsim.failure.FailureMonitor;
 import org.workflowsim.failure.FailureParameters;
 import org.workflowsim.failure.FailureRecord;
+import org.workflowsim.utils.CrchRecovery;
+import org.workflowsim.utils.CrchRegistry;
 import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 
@@ -148,6 +151,21 @@ public class ReclusteringEngine {
                  */
             case FTCLUSTERING_VERTICAL:
                 jobList = VerticalReclustering(jobList, job, id);
+                break;
+            case FTCLUSTERING_CRCH:
+                CrchRecovery recovery = CrchRegistry.recordFailure(
+                        job.getTaskList().get(0).getCloudletId(),
+                        job.getVmId(),
+                        job.getExecStartTime(),
+                        CloudSim.clock(),
+                        job.getEffectiveExecutionLengthMi(),
+                        CrchRegistry.getVmMips(job.getVmId()));
+                long remaining = recovery.getRemainingWorkMi();
+                if (remaining <= 0L) {
+                    remaining = 1L;
+                }
+                CrchRegistry.registerRetry(id, recovery);
+                jobList.add(createJob(id, job, remaining, job.getTaskList(), true));
                 break;
             default:
                 throw new IllegalStateException("Unsupported fault-tolerant clustering algorithm: "

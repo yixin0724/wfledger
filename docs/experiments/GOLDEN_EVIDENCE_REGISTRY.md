@@ -43,6 +43,7 @@ and a linked contract revision, not a silent update to match production output.
 | Network-Aware HEFT | `PAPER` | `NetworkHeftPlannerTest` and `NetworkHeftIntegrationTest`; shared-bottleneck stretching and 25→32 direction, M45 |
 | EBPSM | `PAPER` / `CONTRACT` | `EbpsmBudgetDistributorTest`, `EbpsmSchedulingAlgorithmTest`, and `EbpsmIntegrationTest`; SFTD, cache preference and budget gate, M46/M47 |
 | DVFS slack allocation | `PAPER` / `CONTRACT` | `DvfsSlackOptimizerTest` and `DvfsSlackIntegrationTest`; energy/deadline-gated downscaling and runtime tier consumption, M48 |
+| CRCH checkpoint recovery | `PAPER` | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, and `CrchIntegrationTest`; saved-work and alternative-VM recovery, M49/M50 |
 | Tick and profile semantics | `CONTRACT` / `INVARIANT` | `SimulationTickSensitivityTest` and `DataflowStateProfileSmokeTest`; no numerical-convergence or timing-threshold claim |
 | Large-scale and campaign makespans | `GOLDEN_REGRESSION` | `LargeWorkflowScaleRegressionTest` and `FatTreeCampaignGoldenIntegrationTest`; drift detection only, not paper or real-platform proof |
 | Frozen standard/power/carbon/DVFS bundles | `GOLDEN_REGRESSION` | Freshly restored tar archives independently audited by `verify-study-evidence.py`; historical protocol identity, not current regeneration or real validation |

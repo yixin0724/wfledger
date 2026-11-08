@@ -53,6 +53,7 @@ public final class AlgorithmCatalog {
             case RESHI_M:
             case EBPSM:
             case DVFS_SLACK:
+            case CRCH:
                 return true;
             case MINMIN:
             case MAXMIN:
@@ -274,6 +275,9 @@ public final class AlgorithmCatalog {
             case DVFS_SLACK:
                 dvfsSlackScheduler(values);
                 break;
+            case CRCH:
+                crchScheduler(values);
+                break;
             case READY_BATCH_MCT:
                 readyBatchMctScheduler(values);
                 break;
@@ -407,6 +411,16 @@ public final class AlgorithmCatalog {
         values.put("decisionRule", "CWS descendant-PROCESS rank descending, input bytes ascending, persistent RR");
         values.put("verification", "PAPER_FIGURE_AND_COMPARATOR_REGRESSION_COVERED");
         values.put("limitations", limitations("Static-DAG/idle-VM adaptation only; not the dynamic CWS API"));
+    }
+
+    private static void crchScheduler(Map<String, Object> values) {
+        values.put("decisionLayer", "ONLINE_CHECKPOINT_RECOVERY");
+        values.put("inputDomain", "DAG_WITH_CRCH_FAILURE_RETRY_AND_CHECKPOINTS");
+        values.put("decisionRule", "Synchronized checkpoint remaining-work retry and alternative-VM selection");
+        values.put("verification", "CRCH_RECOVERY_REGRESSION_COVERED");
+        values.put(
+                "limitations",
+                limitations("Checkpointing only; no replication-count learning or full CRCH clustering module"));
     }
 
     private static void dvfsSlackScheduler(Map<String, Object> values) {

@@ -77,6 +77,7 @@ public final class SimulationConfig {
     private final FrequencyPolicy frequencyPolicy;
     private final org.workflowsim.utils.ReshiConfig reshiConfig;
     private final org.workflowsim.utils.EbpsmConfig ebpsmConfig;
+    private final org.workflowsim.utils.CrchConfig crchConfig;
     private final int eventRecorderCap;
 
     private SimulationConfig(Builder builder) {
@@ -104,6 +105,7 @@ public final class SimulationConfig {
         this.frequencyPolicy = builder.frequencyPolicy;
         this.reshiConfig = builder.reshiConfig;
         this.ebpsmConfig = builder.ebpsmConfig;
+        this.crchConfig = builder.crchConfig;
         this.eventRecorderCap = builder.eventRecorderCap;
     }
 
@@ -249,6 +251,11 @@ public final class SimulationConfig {
         return ebpsmConfig;
     }
 
+    /** @return explicit CRCH checkpoint interval and overhead, or null when CRCH is not configured */
+    public org.workflowsim.utils.CrchConfig getCrchConfig() {
+        return crchConfig;
+    }
+
     /**
      * AUD-F07 follow-up (2026-11-04, post-completion review): @return the retention cap of the
      * run's event recorder. A run that reaches the cap fails fast with an actionable exception
@@ -359,6 +366,13 @@ public final class SimulationConfig {
 
         private org.workflowsim.utils.ReshiConfig reshiConfig;
         private org.workflowsim.utils.EbpsmConfig ebpsmConfig;
+        private org.workflowsim.utils.CrchConfig crchConfig;
+
+        /** Supplies CRCH checkpoint interval and overhead for this run. */
+        public Builder crchConfig(org.workflowsim.utils.CrchConfig value) {
+            this.crchConfig = value;
+            return this;
+        }
 
         /** Supplies explicit EBPSM task budgets, caches, and storage rates for this run. */
         public Builder ebpsmConfig(org.workflowsim.utils.EbpsmConfig value) {

@@ -106,6 +106,8 @@ public class Parameters {
         EBPSM,
         /** STATIC dispatch with planner-selected per-task DVFS tiers. */
         DVFS_SLACK,
+        /** CRCH synchronized-checkpoint recovery scheduling. */
+        CRCH,
         INVALID
     }
 
@@ -669,6 +671,7 @@ public class Parameters {
         ReshiRegistry.clear();
         EbpsmRegistry.clear();
         DvfsSlackRegistry.clear();
+        CrchRegistry.clear();
         SimulationRandom.reset(randomSeed);
     }
 

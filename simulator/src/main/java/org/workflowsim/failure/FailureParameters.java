@@ -56,7 +56,9 @@ public class FailureParameters {
         FTCLUSTERING_DR,
         FTCLUSTERING_NOOP,
         FTCLUSTERING_BLOCK,
-        FTCLUSTERING_VERTICAL
+        FTCLUSTERING_VERTICAL,
+        /** CRCH synchronized-checkpoint recovery. */
+        FTCLUSTERING_CRCH
     }
     /**
      * Failure monitoring mode.

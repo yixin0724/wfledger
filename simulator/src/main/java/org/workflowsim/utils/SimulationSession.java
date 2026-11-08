@@ -55,6 +55,9 @@ public final class SimulationSession implements AutoCloseable {
         if (config.getEbpsmConfig() != null) {
             EbpsmRegistry.configure(config.getEbpsmConfig());
         }
+        if (config.getCrchConfig() != null) {
+            CrchRegistry.configure(config.getCrchConfig());
+        }
         Parameters.setRandomSeed(config.getRandomSeed());
         Parameters.setRuntimeScale(config.getRuntimeScale());
         Parameters.setRuntimeReferenceMips(config.getRuntimeReferenceMips());

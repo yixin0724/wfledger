@@ -44,6 +44,7 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `RESHI_M` | historical-average-runtime descending with explicit Reshi task-node ranking |
 | `EBPSM` | multi-workflow SFTD budget distribution plus input/container cache preference and budget-gated dispatch |
 | `DVFS_SLACK` | STATIC dispatch with one planner-selected frequency tier per logical Task |
+| `CRCH` | synchronized-checkpoint remaining-work retry with alternative-VM selection |
 | `DATA` | chooses the idle compatible VM with the fewest non-local real input bytes; requires LOCAL |
 | `RL_POLICY` | the policy registered via `RlEnvironment.runEpisode(...)` selects the VM list index |
 | `STATIC` | executes an existing mapping/binding; with a full static plan it additionally enforces the per-VM order — it is not an independent optimization algorithm |

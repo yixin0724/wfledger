@@ -416,6 +416,20 @@ REGISTRY = [
         old="                    if (candidate.getMakespanSeconds() <= deadlineSeconds + 1.0e-9\n                            && candidate.getTotalEnergyJoules() < bestEnergy - 1.0e-9) {",
         new="                    if (candidate.getMakespanSeconds() <= deadlineSeconds + 1.0e-9 && true) {",
         killers="DvfsSlackOptimizerTest"),
+    dict(
+        id="M49",
+        name="CRCH recovery ignores completed checkpoint work",
+        file="simulator/src/main/java/org/workflowsim/utils/CrchRegistry.java",
+        old="        long savedMi = (long) Math.floor(checkpoints * active.getCheckpointIntervalSeconds() * vmMips);",
+        new="        long savedMi = 0L;",
+        killers="CrchRegistryTest"),
+    dict(
+        id="M50",
+        name="CRCH retry selects the failed VM again",
+        file="simulator/src/main/java/org/workflowsim/scheduling/CrchSchedulingAlgorithm.java",
+        old="                if (recovery != null && vm.getId() == recovery.getFailedVmId()) {",
+        new="                if (false) {",
+        killers="CrchSchedulingAlgorithmTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [
