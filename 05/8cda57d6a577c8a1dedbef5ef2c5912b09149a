@@ -1,0 +1,19 @@
+experiments/src/main/java/org/workflowsim/experiments/comparison/CrossPaperComparison.java
+  s_74c394365f705a::t_a77c89b0052cbd 1-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "058cda57d6a577c8a1dedbef5ef2c5912b09149a",
+  "prompts": {},
+  "sessions": {
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
