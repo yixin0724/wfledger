@@ -491,7 +491,7 @@ REGISTRY = [
         name="Reshi-M reapplies prediction noise inside its comparator",
         file="simulator/src/main/java/org/workflowsim/scheduling/ReshiSchedulingAlgorithm.java",
         old="                .getTaskHistory()\n                .averageRuntimeFor(job.getTaskList().get(0).getType());",
-        new="                        .getTaskHistory()\n                        .averageRuntimeFor(job.getTaskList().get(0).getType())\n                * configuration().getPredictionErrorModel().sampleFactor(\n                        configuration().getPredictionErrorFraction(),\n                        org.workflowsim.utils.SimulationRandom.newJavaRandom(\"scheduling.reshi\"));",
+        new="                        .getTaskHistory()\n                        .averageRuntimeFor(job.getTaskList().get(0).getType())\n                * configuration()\n                        .getPredictionErrorModel()\n                        .sampleFactor(\n                                configuration().getPredictionErrorFraction(),\n                                org.workflowsim.utils.SimulationRandom.newJavaRandom(\"scheduling.reshi\"));",
         killers="ReshiSchedulingAlgorithmTest"),
     dict(
         id="M61",
