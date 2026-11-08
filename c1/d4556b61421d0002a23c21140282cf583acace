@@ -1,0 +1,29 @@
+docs/algorithms/CATALOG.md
+  s_74c394365f705a::t_de628809bd99db 111,132
+docs/algorithms/CONTRACTS.md
+  s_74c394365f705a::t_838468a8feca97 268-276
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  s_74c394365f705a::t_a28500b94da1c5 47
+docs/experiments/VV_CASE_LEDGER.md
+  s_74c394365f705a::t_94a914b9cc29c4 96
+simulator/src/main/java/org/workflowsim/WorkflowPlanner.java
+  s_74c394365f705a::t_ed2f4604df3f7f 33,444-446
+simulator/src/main/java/org/workflowsim/utils/Parameters.java
+  s_74c394365f705a::t_6db7a156a30d83 154-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c1d4556b61421d0002a23c21140282cf583acace",
+  "prompts": {},
+  "sessions": {
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
