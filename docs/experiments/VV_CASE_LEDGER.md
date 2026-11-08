@@ -94,6 +94,7 @@ management. Each row is reported independently; there is no average or pass/fail
 | `PAPER-DVFS-001` | `VERIFIED_SLACK_CORE`: HEFT allocation, energy-decreasing slack optimization, logical-Task tier registry, full runner tier verification and M48; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No global DVFS optimality or full paper-corpus claim |
 | `PAPER-CRCH-001` | `VERIFIED_RECOVERY_CORE`: synchronized checkpoints, remaining-work retry, alternative VM, real failure recovery and M49/M50; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No replication-count learning, PCA clustering, or full CRCH replication claim |
 | `PAPER-DHEFT-001` | `VERIFIED_DHEFT_CORE`: ready-task EFT, pairwise minimum bandwidth, parent finish, LOCAL integration and M51/M52; see [paper reproductions](<PAPER_REPRODUCTIONS.md>) | No full dynamic-arrival or production-cluster claim |
+| `PAPER-COMPARE-001` | `VERIFIED_COMPARISON_SCENE`: SHARED five-algorithm and LOCAL two-algorithm real-runner scenes with energy/cost checks; see [cross-paper comparison](<CROSS_PAPER_COMPARISON.md>) | Single two-task DAG only; no universal ranking or mixed-model population |
 
 ## 5. Change and review discipline
 

@@ -62,6 +62,8 @@ and superseded audit drafts are not long-term entry points.
   current anchors, golden change discipline, and performance evidence boundaries.
 - [Paper algorithm reproductions](<experiments/PAPER_REPRODUCTIONS.md>): implemented literature algorithms,
   official artifacts, verification cases, and adaptation boundaries.
+- [Cross-paper comparison scenes](<experiments/CROSS_PAPER_COMPARISON.md>): compatible SHARED/LOCAL scenes,
+  real runner results, metric calibers, and comparison boundaries.
 - [Independent V&V review protocol](<experiments/VV_REVIEW_PROTOCOL.md>): structured walkthrough,
   independence requirements, assessment record, and the current review status.
 - [Independent V&V review record (2026-11-04)](<experiments/VV_REVIEW_2026-11-04.md>): findings,
