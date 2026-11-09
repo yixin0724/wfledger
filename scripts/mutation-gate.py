@@ -534,7 +534,7 @@ REGISTRY = [
         file="simulator/src/main/java/org/workflowsim/WorkflowEngine.java",
         old="        if (job.getCloudletStatus() == Cloudlet.SUCCESS) {\n            receivedSuccessfulJobIds.add(job.getCloudletId());\n        }",
         new="        receivedSuccessfulJobIds.add(job.getCloudletId());",
-        killers="CrchIntegrationTest"),
+        killers="WorkflowEngineDependencyGateTest,CrchIntegrationTest"),
     dict(
         id="M67",
         name="CRCH retry overwrites remaining work with the original task length",
