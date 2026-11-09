@@ -1,0 +1,79 @@
+docs/advanced/MUTATION_GATE.md
+  s_24f59fb6b2f10b::t_9722863e92a411 84-85,120,125,131
+docs/algorithms/CONTRACTS.md
+  s_5ab7165dac7fa6::t_249625c7a235b4 301-305
+docs/experiments/ALGORITHM_EXPERIMENT_AUDIT.md
+  s_24f59fb6b2f10b::t_84c9bc87476335 1-41
+docs/experiments/AUDIT_COVERAGE.md
+  s_24f59fb6b2f10b::t_6360cd057b9950 52,246
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  s_5ab7165dac7fa6::t_a830ab4f5cc8a8 50
+experiments/src/main/java/org/workflowsim/experiments/audit/AlgorithmMetricAudit.java
+  s_74c394365f705a::t_4c70a1134a8f1d 23-24,27-43,46-55,106,110,142,146,156,160,168,172,197-200,213-216
+experiments/src/test/java/org/workflowsim/experiments/audit/AlgorithmExperimentAuditTest.java
+  s_74c394365f705a::t_08997bd0af1c65 1-350
+experiments/src/test/java/org/workflowsim/experiments/audit/AlgorithmMetricAuditTest.java
+  s_74c394365f705a::t_34ccda314dc56b 284,288
+simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java
+  s_24f59fb6b2f10b::t_d859ee748d09db 727-731
+simulator/src/main/java/org/workflowsim/WorkflowEngine.java
+  s_74c394365f705a::t_dff062e79f2fb1 84,1351-1353,1472-1474,1478,1702,1705-1707
+simulator/src/main/java/org/workflowsim/reclustering/ReclusteringEngine.java
+  s_bd1d932ef9ef3e::t_d44064259e049f 93
+simulator/src/test/java/org/workflowsim/planning/CrchIntegrationTest.java
+  s_24f59fb6b2f10b::t_beaeb9184fd752 3,28-76
+simulator/src/test/java/org/workflowsim/planning/IcpcpIntegrationTest.java
+  s_bd1d932ef9ef3e::t_9eb12d9c05e88f 5,11,14,25-169
+simulator/src/test/java/org/workflowsim/planning/icpcp/IcpcpAdapterTest.java
+  s_74c394365f705a::t_c3ba7274313773 39-63
+simulator/src/test/java/org/workflowsim/planning/icpcp/IcpcpPlannerTest.java
+  s_1bd856a819664d::t_2a81e57f444c6e 78-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c403820445675feb27a9891f13a2b9bf9d3b41af",
+  "prompts": {},
+  "sessions": {
+    "s_1bd856a819664d": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "d43c7717-460b-4c9b-8587-78aceaf49dd9",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_5ab7165dac7fa6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19efc-8193-7e71-a665-fdeaba5244e1",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_bd1d932ef9ef3e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bdfd-c88c-7cc0-ba8f-b8eabec6f471",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
