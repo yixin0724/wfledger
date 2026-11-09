@@ -1,0 +1,24 @@
+.gitignore
+  h_adc77830afcf4d 86
+docs/README.md
+  h_adc77830afcf4d 75-76
+docs/experiments/ENERGY_BASELINE_COMPARISON.md
+  h_adc77830afcf4d 1-81
+experiments/src/main/java/org/workflowsim/experiments/energy/EnergyBaselineComparison.java
+  h_adc77830afcf4d 1-290
+experiments/src/test/java/org/workflowsim/experiments/energy/EnergyBaselineComparisonIntegrationTest.java
+  h_adc77830afcf4d 1-28
+experiments/src/test/java/org/workflowsim/experiments/energy/EnergyBaselineComparisonTest.java
+  h_adc77830afcf4d 1-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ef82e390dcc3850be281f5af2f38264cd7f973d9",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
