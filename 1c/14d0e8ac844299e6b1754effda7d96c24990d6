@@ -1,0 +1,22 @@
+README.md
+  h_adc77830afcf4d 35
+docs/README.md
+  h_adc77830afcf4d 63-64
+docs/algorithms/METRICS_CARD.md
+  h_adc77830afcf4d 91-99
+docs/experiments/README.md
+  h_adc77830afcf4d 1-102
+experiments/README.md
+  h_adc77830afcf4d 19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1c14d0e8ac844299e6b1754effda7d96c24990d6",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
