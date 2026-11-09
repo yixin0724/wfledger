@@ -60,8 +60,8 @@ REGISTRY = [
         id="M3",
         name="dependency gate inverted (only unsatisfied jobs pass)",
         file="simulator/src/main/java/org/workflowsim/WorkflowEngine.java",
-        old="            if (!receivedJobIds.contains(job.getCloudletId())) {",
-        new="            if (receivedJobIds.contains(job.getCloudletId())) {",
+        old="            if (!receivedSuccessfulJobIds.contains(job.getCloudletId())) {",
+        new="            if (receivedSuccessfulJobIds.contains(job.getCloudletId())) {",
         killers="MetamorphicGapIntegrationTest,ReproducibilityTest"),
     dict(
         id="M4",
@@ -528,6 +528,20 @@ REGISTRY = [
         old="            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds\n                    + defaultTier.getIdlePowerWatts() * (makespanEstimate - estimatedSeconds);",
         new="            double energyEstimate =\n                    tier.getMaxPowerWatts() * estimatedSeconds + defaultTier.getIdlePowerWatts() * makespanEstimate;",
         killers="FrequencyTierAssignmentTest"),
+    dict(
+        id="M66",
+        name="Failed parent releases its child before a successful retry",
+        file="simulator/src/main/java/org/workflowsim/WorkflowEngine.java",
+        old="        if (job.getCloudletStatus() == Cloudlet.SUCCESS) {\n            receivedSuccessfulJobIds.add(job.getCloudletId());\n        }",
+        new="        receivedSuccessfulJobIds.add(job.getCloudletId());",
+        killers="CrchIntegrationTest"),
+    dict(
+        id="M67",
+        name="CRCH retry overwrites remaining work with the original task length",
+        file="simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java",
+        old="            if (org.workflowsim.utils.CrchRegistry.hasRecovery(job.getCloudletId())) {",
+        new="            if (false) {",
+        killers="CrchIntegrationTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

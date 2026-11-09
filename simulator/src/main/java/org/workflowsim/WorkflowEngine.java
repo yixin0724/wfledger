@@ -81,7 +81,7 @@ public final class WorkflowEngine extends SimEntity {
      * historical implementation scanned the list linearly, which is O(n^2) overall on large
      * workflows. This index provides O(1) lookup and is maintained in sync with the list.</p>
      */
-    private final Set<Integer> receivedJobIds = new HashSet<Integer>();
+    private final Set<Integer> receivedSuccessfulJobIds = new HashSet<Integer>();
     /**
      * Mapping from retry Job ID to the original failed Job ID (PLAT-13).
      *
@@ -1348,7 +1348,9 @@ public final class WorkflowEngine extends SimEntity {
         }
 
         getJobsReceivedList().add(job);
-        receivedJobIds.add(job.getCloudletId());
+        if (job.getCloudletStatus() == Cloudlet.SUCCESS) {
+            receivedSuccessfulJobIds.add(job.getCloudletId());
+        }
         jobsSubmitted--;
         if (getJobsList().isEmpty() && jobsSubmitted == 0) {
             if (coherentDataflow != null) {
@@ -1467,13 +1469,13 @@ public final class WorkflowEngine extends SimEntity {
             // immediately following is not skipped.
             Job job = list.get(i);
             // The Cloudlet finished flag cannot represent this engine's dependency release state.
-            // PLAT-18: the dependency gate uses the O(1) receivedJobIds mirror index instead of a
-            // linear scan.
-            if (!receivedJobIds.contains(job.getCloudletId())) {
+            // PLAT-18: the dependency gate uses the O(1) successful-parent mirror index instead of a
+            // linear scan; a failed attempt never releases its children.
+            if (!receivedSuccessfulJobIds.contains(job.getCloudletId())) {
                 List<Job> parentList = job.getParentList();
                 boolean flag = true;
                 for (Job parent : parentList) {
-                    if (!receivedJobIds.contains(parent.getCloudletId())) {
+                    if (!receivedSuccessfulJobIds.contains(parent.getCloudletId())) {
                         flag = false;
                         break;
                     }
@@ -1697,10 +1699,12 @@ public final class WorkflowEngine extends SimEntity {
         this.jobsReceivedList = jobsReceivedList;
         // PLAT-18: the mirror index must stay in sync with the list; rebuild it when the list
         // is replaced wholesale.
-        receivedJobIds.clear();
+        receivedSuccessfulJobIds.clear();
         if (jobsReceivedList != null) {
             for (Cloudlet item : jobsReceivedList) {
-                receivedJobIds.add(item.getCloudletId());
+                if (item.getCloudletStatus() == Cloudlet.SUCCESS) {
+                    receivedSuccessfulJobIds.add(item.getCloudletId());
+                }
             }
         }
     }

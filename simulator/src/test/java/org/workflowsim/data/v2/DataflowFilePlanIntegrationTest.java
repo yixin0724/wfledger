@@ -94,8 +94,8 @@ class DataflowFilePlanIntegrationTest {
             assertEquals(99, retry.getCloudletId());
             assertEquals(Arrays.asList(1), taskIds(retry));
             assertNotSame(producer.getTaskList().get(0), retry.getTaskList().get(0));
-            assertEquals(
-                    2, consumer.getParentList().size(), "old retry rewiring retains original and retry parent Jobs");
+            assertEquals(1, consumer.getParentList().size(), "retry replaces the failed parent in the dependency list");
+            assertSame(retry, consumer.getParentList().get(0));
             List<DataflowFilePlan.InputDemand> demands = plan.demandsFor(taskIds(consumer));
             assertEquals(1, demands.size());
             assertEquals(2, demands.get(0).getReferenceCount());

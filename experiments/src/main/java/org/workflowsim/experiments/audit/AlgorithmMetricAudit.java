@@ -20,10 +20,39 @@ public final class AlgorithmMetricAudit {
             throws SimulationExecutionException {
         SimulationReport report = new SimulationRunner().run(config, platform);
         Map<Integer, Integer> mapping = new LinkedHashMap<Integer, Integer>();
+        Map<Integer, SimulationReport.TaskOutcome> successfulTasks =
+                new LinkedHashMap<Integer, SimulationReport.TaskOutcome>();
         for (SimulationReport.TaskOutcome task : report.getTasks()) {
             mapping.put(task.getTaskId(), task.getVmId());
+            if (task.getTaskStatus() == org.cloudbus.cloudsim.Cloudlet.SUCCESS) {
+                SimulationReport.TaskOutcome previous = successfulTasks.get(task.getTaskId());
+                if (previous == null || task.getFinishTime() < previous.getFinishTime()) {
+                    successfulTasks.put(task.getTaskId(), task);
+                }
+            }
+        }
+        double dependencyResidual = 0.0;
+        for (SimulationReport.TaskNode node : report.getWorkflowGraph()) {
+            SimulationReport.TaskOutcome child = successfulTasks.get(node.getTaskId());
+            for (Integer parentId : node.getParentIds()) {
+                SimulationReport.TaskOutcome parent = successfulTasks.get(parentId);
+                if (child != null && parent != null) {
+                    double residual = parent.getFinishTime() - child.getStartTime();
+                    dependencyResidual = Math.max(dependencyResidual, residual);
+                }
+            }
         }
         double independentEnergy = 0.0;
+        double expectedPeak = 0.0;
+        for (PlatformProfile.VmSpec spec : platform.getVms()) {
+            double maximum = spec.getMaxPowerWatts();
+            for (PlatformProfile.FrequencyTier tier : spec.getFrequencyTiers()) {
+                maximum = Math.max(maximum, tier.getMaxPowerWatts());
+            }
+            expectedPeak += maximum;
+        }
+        double peakResidual =
+                Math.abs(expectedPeak - report.getEnergyAccounting().getPeakPowerWatts());
         for (SimulationReport.VmSummary vm : report.getVmSummaries().values()) {
             PlatformProfile.VmSpec spec = findVm(platform, vm.getVmId());
             if (spec.hasFrequencyTiers()) {
@@ -74,9 +103,11 @@ public final class AlgorithmMetricAudit {
                 report.getEnergyAccounting().getTotalEnergyJoules(),
                 modeledCost,
                 energyResidual,
+                peakResidual,
                 costResidual,
                 makespanResidual,
                 tailResidual,
+                Math.max(0.0, dependencyResidual),
                 mapping,
                 report.isWorkflowCompletedSuccessfully());
     }
@@ -108,9 +139,11 @@ public final class AlgorithmMetricAudit {
         private final double energyJoules;
         private final double modeledProcessingCost;
         private final double energyResidualJoules;
+        private final double peakResidualWatts;
         private final double costResidual;
         private final double makespanResidualSeconds;
         private final double tailResidualSeconds;
+        private final double dependencyResidualSeconds;
         private final Map<Integer, Integer> mapping;
         private final boolean completed;
 
@@ -120,9 +153,11 @@ public final class AlgorithmMetricAudit {
                 double energyJoules,
                 double modeledProcessingCost,
                 double energyResidualJoules,
+                double peakResidualWatts,
                 double costResidual,
                 double makespanResidualSeconds,
                 double tailResidualSeconds,
+                double dependencyResidualSeconds,
                 Map<Integer, Integer> mapping,
                 boolean completed) {
             this.label = label;
@@ -130,9 +165,11 @@ public final class AlgorithmMetricAudit {
             this.energyJoules = energyJoules;
             this.modeledProcessingCost = modeledProcessingCost;
             this.energyResidualJoules = energyResidualJoules;
+            this.peakResidualWatts = peakResidualWatts;
             this.costResidual = costResidual;
             this.makespanResidualSeconds = makespanResidualSeconds;
             this.tailResidualSeconds = tailResidualSeconds;
+            this.dependencyResidualSeconds = dependencyResidualSeconds;
             this.mapping = Collections.unmodifiableMap(new LinkedHashMap<Integer, Integer>(mapping));
             this.completed = completed;
         }
@@ -157,6 +194,10 @@ public final class AlgorithmMetricAudit {
             return energyResidualJoules;
         }
 
+        public double getPeakResidualWatts() {
+            return peakResidualWatts;
+        }
+
         public double getCostResidual() {
             return costResidual;
         }
@@ -167,6 +208,10 @@ public final class AlgorithmMetricAudit {
 
         public double getTailResidualSeconds() {
             return tailResidualSeconds;
+        }
+
+        public double getDependencyResidualSeconds() {
+            return dependencyResidualSeconds;
         }
 
         public Map<Integer, Integer> getMapping() {

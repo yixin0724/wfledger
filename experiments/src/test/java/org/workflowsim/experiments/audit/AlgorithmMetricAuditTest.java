@@ -281,9 +281,11 @@ class AlgorithmMetricAuditTest {
     private static void assertClean(AlgorithmMetricAudit.AuditResult result) {
         assertTrue(result.isCompleted(), result.getLabel());
         assertTrue(result.getEnergyResidualJoules() < 1.0e-6, result.getLabel());
+        assertTrue(result.getPeakResidualWatts() < 1.0e-6, result.getLabel());
         assertTrue(result.getCostResidual() < 1.0e-6, result.getLabel() + " costResidual=" + result.getCostResidual());
         assertTrue(result.getMakespanResidualSeconds() < 1.0e-6, result.getLabel());
         assertTrue(result.getTailResidualSeconds() < 1.0e-6, result.getLabel());
+        assertTrue(result.getDependencyResidualSeconds() < 1.0e-6, result.getLabel());
     }
 
     private static PlatformProfile platform() {

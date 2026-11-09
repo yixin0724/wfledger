@@ -724,6 +724,11 @@ public class WorkflowDatacenter extends Datacenter {
             if (job.getTaskList().size() == 1 && job.getTaskList().get(0).hasVmExecutionCostSeconds()) {
                 computeLengthMi = job.getTaskList().get(0).getEffectiveExecutionLengthMi();
             }
+            if (org.workflowsim.utils.CrchRegistry.hasRecovery(job.getCloudletId())) {
+                for (Task task : job.getTaskList()) {
+                    task.setEffectiveExecutionLengthMi(computeLengthMi);
+                }
+            }
         }
         // Keep compute work separate from CloudSim's mutable, stage-in-inclusive envelope.
         // A retry starts here from pure compute work and resolves its matrix again.

@@ -37,6 +37,31 @@ class IcpcpAdapterTest {
     }
 
     @Test
+    void fanInAdapterProducesAfeasibleProblem() {
+        Task parent = task(1, 1000L, 1);
+        Task second = task(2, 2000L, 1);
+        Task third = task(3, 3000L, 1);
+        Task join = task(4, 1000L, 1);
+        FileItem output = file("x", 1_000_000.0, FileType.OUTPUT);
+        parent.addFile(output);
+        parent.addFile(output);
+        for (Task child : Arrays.asList(second, third, join)) {
+            child.addFile(file("x", 1_000_000.0, FileType.INPUT));
+        }
+        connect(parent, second);
+        connect(parent, third);
+        connect(second, join);
+        connect(third, join);
+        List<CondorVM> vms = Arrays.asList(vm(3, 1000.0, 1, 100L), vm(8, 500.0, 1, 50L));
+
+        IcpcpProblem problem =
+                IcpcpAdapter.toProblem(Arrays.asList(parent, second, third, join), vms, platform(vms, 15), 1000.0);
+        IcpcpSchedule schedule = new IcpcpPlanner(problem).schedule();
+
+        assertEquals(4, schedule.getTaskPlans().size());
+    }
+
+    @Test
     void fasterOnePeVmCannotCaptureATwoPeTaskAndBootstrapUsesTheFallbackVm() {
         Task task = task(1, 100L, 2);
         List<CondorVM> vms = Arrays.asList(vm(3, 2.0, 1, 100L), vm(8, 1.0, 2, 100L));

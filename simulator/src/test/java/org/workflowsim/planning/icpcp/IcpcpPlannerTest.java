@@ -76,6 +76,36 @@ class IcpcpPlannerTest {
     }
 
     @Test
+    void fanInWithSharedParentInputRemainsFeasible() {
+        Map<Integer, Double> childrenA = new LinkedHashMap<Integer, Double>();
+        childrenA.put(2, 0.0133333333333);
+        childrenA.put(3, 0.0133333333333);
+        IcpcpTask first = new IcpcpTask(1, values(1.0, 2.0), Collections.<Integer>emptyList(), childrenA);
+        IcpcpTask second = new IcpcpTask(
+                2,
+                values(2.0666666667, 4.0666666667),
+                Collections.singletonList(1),
+                Collections.singletonMap(4, 0.0133333333333));
+        IcpcpTask third = new IcpcpTask(
+                3,
+                values(3.0666666667, 6.0666666667),
+                Collections.singletonList(1),
+                Collections.singletonMap(4, 0.0133333333333));
+        IcpcpTask fourth =
+                new IcpcpTask(4, values(1.0666666667, 2.0666666667), Arrays.asList(2, 3), Collections.emptyMap());
+        Map<Integer, Double> costs = new LinkedHashMap<Integer, Double>();
+        costs.put(0, 1.0);
+        costs.put(1, 1.0);
+
+        IcpcpSchedule schedule = new IcpcpPlanner(
+                        new IcpcpProblem(Arrays.asList(first, second, third, fourth), 1000.0, 1.0, costs, 0.21))
+                .schedule();
+
+        assertTrue(schedule.getMakespanSeconds() < 20.0);
+        assertTrue(schedule.getMinimumSlackSeconds() >= 0.0);
+    }
+
+    @Test
     void billingPeriodCostUsesTheDeclaredRatePerSecondForTheWholeRoundedPeriod() {
         IcpcpTask only = new IcpcpTask(
                 1,

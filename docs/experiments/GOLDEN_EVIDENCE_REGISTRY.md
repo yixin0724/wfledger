@@ -47,6 +47,7 @@ and a linked contract revision, not a silent update to match production output.
 | DHEFT | `PAPER` | `DheftPlannerTest` and `DheftIntegrationTest`; pairwise bandwidth and parent-finish EFT, M51/M52 |
 | Cross-paper scenes | `CONTRACT` | `CrossPaperComparisonTest`; SHARED/LOCAL separation, distinct mappings, direct planner cost, independent energy residual, M53 |
 | Algorithm/metric audit | `PAPER` / `CONTRACT` / `INVARIANT` | `AlgorithmMetricAuditTest` plus family counterexamples; independent makespan/energy/cost/tail recomputation and M54–M65 |
+| Algorithm experiment audit | `INVARIANT` / `PAPER` | `AlgorithmExperimentAuditTest` 82-run matrix and `CrchIntegrationTest`; successful-parent ordering and CRCH remaining MI, M66/M67 |
 | Tick and profile semantics | `CONTRACT` / `INVARIANT` | `SimulationTickSensitivityTest` and `DataflowStateProfileSmokeTest`; no numerical-convergence or timing-threshold claim |
 | Large-scale and campaign makespans | `GOLDEN_REGRESSION` | `LargeWorkflowScaleRegressionTest` and `FatTreeCampaignGoldenIntegrationTest`; drift detection only, not paper or real-platform proof |
 | Frozen standard/power/carbon/DVFS bundles | `GOLDEN_REGRESSION` | Freshly restored tar archives independently audited by `verify-study-evidence.py`; historical protocol identity, not current regeneration or real validation |

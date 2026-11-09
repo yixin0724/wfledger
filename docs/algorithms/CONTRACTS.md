@@ -298,9 +298,11 @@ work is capped at the original task length. Retry work is the remaining MI plus 
 MI equivalent. `ReclusteringEngine.process` registers the recovery for the retry Job, while
 `CrchSchedulingAlgorithm` avoids the failed VM when an alternative exists. `FTCLUSTERING_CRCH` is an
 explicit standard-runner mode and does not relax the historical DC/DR/BLOCK/VERTICAL rejection rules.
-The subset does not implement replication-count learning or PCA clustering. M49/M50 guard saved-work
-and alternative-VM semantics; direct tests cover overhead-delayed checkpoints and capped saved work;
-`CrchIntegrationTest` verifies a real failure and recovery.
+The subset does not implement replication-count learning or PCA clustering. A failed parent never
+releases its child; retry creation replaces the failed parent in the dependency list, and CRCH
+remaining MI is preserved in execution and TaskOutcome timing. M49/M50 guard saved-work and
+alternative-VM semantics; direct tests cover overhead-delayed checkpoints and capped saved work;
+`CrchIntegrationTest` verifies a real failure, successful-parent ordering and remaining-work timing.
 
 ### DHEFT Ready-Task and Pairwise Bandwidth (R-PAPER-12, 2026-11-08)
 
