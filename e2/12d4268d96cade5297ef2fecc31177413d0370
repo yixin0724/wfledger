@@ -1,0 +1,79 @@
+README.md
+  s_38e072a1703a74::t_d474ddcb46a945 8
+docs/README.md
+  s_38e072a1703a74::t_7368e378fb46ea 20,28,39-45,81,88-91
+docs/SCIENCE-POSITION.md
+  s_38e072a1703a74::t_0d942221a49086 91-92,97-104
+docs/advanced/COHERENT_DATAFLOW_CONTRACT.md
+  s_38e072a1703a74::t_aca09988a751d6 1,16,67
+docs/advanced/FAT_TREE_DESIGN.md
+  s_38e072a1703a74::t_e31d7ef50d0311 71,77
+docs/advanced/FILE_LIFECYCLE_FORMAT.md
+  s_74c394365f705a::t_48dbca558f842b 1,3,18,20
+docs/advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md
+  s_74c394365f705a::t_415f5854eb3a8a 1,3
+docs/advanced/STORAGE_DATAFLOW_CONTRACT.md
+  s_38e072a1703a74::t_53bccc66e8f57c 1,3,13,37,107,117
+docs/algorithms/CATALOG.md
+  s_38e072a1703a74::t_ea8fe7f8301aee 149
+docs/algorithms/CONTRACTS.md
+  s_38e072a1703a74::t_ffdbd225a8bc22 87
+docs/experiments/AUDIT_COVERAGE.md
+  s_74c394365f705a::t_119fc610399870 227
+docs/experiments/CAMPAIGNS.md
+  s_38e072a1703a74::t_6f2b47c62ac5b3 110
+docs/experiments/REPRODUCIBILITY.md
+  s_38e072a1703a74::t_d7c178d7724f76 72
+docs/experiments/RERUN_DIFF_CONTRACT.md
+  s_38e072a1703a74::t_796fa3b125fa97 77,168
+docs/experiments/VV_CASE_LEDGER.md
+  s_38e072a1703a74::t_044cd812ab9a25 84
+docs/experiments/VV_REVIEW.md
+  s_38e072a1703a74::t_329515bfe5b9ab 1,7-8
+docs/experiments/VV_REVIEW_PROTOCOL.md
+  s_38e072a1703a74::t_d4c4393c360c68 5,13
+docs/getting-started/CODE_CONFIG_EXPERIMENTS.md
+  s_38e072a1703a74::t_11e5d95577e19c 87,95-99,126-127,201,212-213
+docs/getting-started/WORKBENCH.md
+  s_38e072a1703a74::t_c16ec8f8126245 20,38-41,43,49,59,61,63,85,97,99,101,109,119,123,138-140,142,144,160-162,165,173,177
+experiments/studies/README.md
+  s_38e072a1703a74::t_ef7805a1594334 10,67
+experiments/studies/fattree-scheduling-campaign/RETENTION.md
+  s_38e072a1703a74::t_8134ac48f7c040 3
+experiments/studies/network-limited-r10/PROTOCOL.md
+  s_38e072a1703a74::t_97b516dbf10402 3
+experiments/studies/sensitivity-r13-v2/PROTOCOL.md
+  s_38e072a1703a74::t_f84155066aae3b 16
+experiments/studies/sensitivity-r13/PROTOCOL.md
+  s_38e072a1703a74::t_7ed70e87f4173f 18
+experiments/studies/sensitivity-r13/RESULTS.md
+  s_38e072a1703a74::t_9861045327c5c9 18
+scripts/check-docs.py
+  s_38e072a1703a74::t_69128aeb2705e9 83-87,643-650
+scripts/test-check-docs.py
+  s_38e072a1703a74::t_553cf2193baa40 69-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e212d4268d96cade5297ef2fecc31177413d0370",
+  "prompts": {},
+  "sessions": {
+    "s_38e072a1703a74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bf32-10e9-7023-8acf-dcdf576f0c20",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
