@@ -68,6 +68,8 @@ and superseded audit drafts are not long-term entry points.
   corrected semantics, independent runtime-metric recomputation, and mutation coverage.
 - [Algorithm experiment audit](<experiments/ALGORITHM_EXPERIMENT_AUDIT.md>): real DAG/resource/failure/seed
   matrix, invariants, metamorphic checks, and experiment-only defect fixes.
+- [Traditional makespan baseline comparison](<experiments/MAKESPAN_BASELINE_COMPARISON.md>): HEFT,
+  Min-Min, Max-Min, MCT, FCFS and Round-Robin on real scientific DAX workflows.
 - [Independent V&V review protocol](<experiments/VV_REVIEW_PROTOCOL.md>): structured walkthrough,
   independence requirements, assessment record, and the current review status.
 - [Independent V&V review record (2026-11-04)](<experiments/VV_REVIEW_2026-11-04.md>): findings,
