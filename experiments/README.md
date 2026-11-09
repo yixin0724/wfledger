@@ -16,7 +16,8 @@ mvn -pl :workflowsim-workbench -am compile exec:java \
 ```
 
 Every experiment uses a dedicated output directory, and the console prints the offline
-report location. For a first run, see the [Quick start](<../docs/getting-started/QUICK_START.md>);
+report location. The [experiment index](<../docs/experiments/README.md>) links the maintained
+makespan and energy reports, result artifacts, and reproduction commands. For a first run, see the [Quick start](<../docs/getting-started/QUICK_START.md>);
 configuration, preflight, report regeneration, and failure handling are covered in the
 [Workbench guide](<../docs/getting-started/WORKBENCH.md>).
 

@@ -60,6 +60,8 @@ and superseded audit drafts are not long-term entry points.
   Montage WfInstances verification, input populations, units, and validation boundaries.
 - [Golden and reference-evidence registry](<experiments/GOLDEN_EVIDENCE_REGISTRY.md>): legal oracle classes,
   current anchors, golden change discipline, and performance evidence boundaries.
+- [Experiment index](<experiments/README.md>): makespan, scale, energy, algorithm audits,
+  result artifacts, reproduction commands, and evidence boundaries.
 - [Paper algorithm reproductions](<experiments/PAPER_REPRODUCTIONS.md>): implemented literature algorithms,
   official artifacts, verification cases, and adaptation boundaries.
 - [Cross-paper comparison scenes](<experiments/CROSS_PAPER_COMPARISON.md>): compatible SHARED/LOCAL scenes,

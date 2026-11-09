@@ -32,6 +32,7 @@ Experiment outputs under `output/` are working products with an explicit retenti
 - Build experiments with the Java API: [code-configuration guide](<docs/getting-started/CODE_CONFIG_EXPERIMENTS.md>)
 - Build, test, and tooling commands: [build guide](<docs/getting-started/BUILD.md>)
 - Implemented papers and reproduction boundaries: [paper algorithm reproductions](<docs/experiments/PAPER_REPRODUCTIONS.md>)
+- Makespan and energy experiment index: [experiment index](<docs/experiments/README.md>)
 - Browse by topic: [documentation center](<docs/README.md>)
 
 ## Choose an example

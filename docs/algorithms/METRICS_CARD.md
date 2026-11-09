@@ -88,3 +88,12 @@ an independent measurement.
 2. For slowdown/waiting: declare the window baseline (ready vs submit) and the denominator floor (10 seconds).
 3. Cross-paper comparisons are limited to identical conventions and identical denominators; when citing "bounded slowdown", state the floor value.
 4. Always state in the threats-to-validity section: all metrics are products of the declared simulation model, not measurements of a production system.
+
+## Experiment Reading Map
+
+For applied examples of these conventions, use the [experiment index](<../experiments/README.md>).
+The [traditional makespan report](<../experiments/MAKESPAN_BASELINE_COMPARISON.md>) demonstrates why
+waiting time and makespan can rank algorithms differently. The [scale report](<../experiments/MAKESPAN_SCALE_COMPARISON.md>)
+shows how high parallelism can compress those differences. The [energy report](<../experiments/ENERGY_BASELINE_COMPARISON.md>)
+shows why MIN_POWER and DVFS slack trade energy against makespan, and why a planner's compute-energy
+objective can differ from total fleet energy. These are controlled observations, not additional metric definitions.
