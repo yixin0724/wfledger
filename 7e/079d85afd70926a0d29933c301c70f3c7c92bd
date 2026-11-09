@@ -1,0 +1,45 @@
+docs/experiments/CAMPAIGNS.md
+  s_74c394365f705a::t_7365155f19f946 110
+docs/experiments/RERUN_DIFF_CONTRACT.md
+  s_74c394365f705a::t_1ab41074fab75f 168
+experiments/studies/PROTOCOL_COMPATIBILITY.md
+  s_6d1635d141c0bd::t_004043a409fa3f 20,48,50
+experiments/studies/README.md
+  s_74c394365f705a::t_4983b25572e407 8-14,17,74
+experiments/studies/fattree-scheduling-campaign/RETENTION.md
+  s_74c394365f705a::t_e48ce739e50255 3
+experiments/studies/network-limited-r10/PROTOCOL.md
+  s_74c394365f705a::t_e2561f9abc5a40 3
+experiments/studies/sensitivity-r13-v2/PROTOCOL.md
+  s_74c394365f705a::t_880977ad77459e 16
+experiments/studies/sensitivity-r13/PROTOCOL.md
+  s_74c394365f705a::t_cdb16eaa365b1d 18
+experiments/studies/sensitivity-r13/RESULTS.md
+  s_74c394365f705a::t_f9e1a3b2e41e70 18
+experiments/studies/verification/VV_REVIEW.md
+  s_74c394365f705a::t_d422db114aeed9 77-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7e079d85afd70926a0d29933c301c70f3c7c92bd",
+  "prompts": {},
+  "sessions": {
+    "s_6d1635d141c0bd": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "8ed393c3-801e-4d15-8fc2-3f34894797f3",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_74c394365f705a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19fe9-60f1-7550-b98e-1b6f5370283f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
