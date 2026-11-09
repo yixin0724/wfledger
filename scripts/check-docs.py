@@ -80,6 +80,11 @@ _HTML_TAG = re.compile(
     r"</?[A-Za-z][A-Za-z0-9-]*(?:\s+(?:[^'\">]|'[^']*'|\"[^\"]*\")*)?\s*/?>"
 )
 _LINE_ANCHOR = re.compile(r"L([0-9]+)(?:-L([0-9]+))?\Z")
+_VERSIONED_DOCUMENT_NAME = re.compile(r"(?:^|[-_])v[0-9]+(?:[._-]|$)", re.IGNORECASE)
+_AI_WORDING = re.compile(
+    r"\b(?:AI|AIC|LLM|ChatGPT|Claude|DeepSeek|machine learning|deep learning|artificial intelligence)\b",
+    re.IGNORECASE,
+)
 
 
 class Issue(NamedTuple):
@@ -635,6 +640,14 @@ def check_documents(root: Union[str, Path], document_paths: Iterable[Union[str, 
         except (OSError, RuntimeError, UnicodeError, ValueError) as error:
             issues.append(Issue(source_name, 1, source_name, "cannot read Markdown as UTF-8 text: " + str(error)))
             continue
+        if _VERSIONED_DOCUMENT_NAME.search(source.name):
+            issues.append(Issue(source_name, 1, source_name,
+                                "versioned document filename; use a model-descriptive name"))
+        ai_match = _AI_WORDING.search(content)
+        if ai_match:
+            line = content.count("\n", 0, ai_match.start()) + 1
+            issues.append(Issue(source_name, line, ai_match.group(0),
+                                "AI-related wording is not allowed in maintained documentation"))
         visible = _visible_markdown(content)
         definitions, visible, errors = _references(visible)
         issues.extend(Issue(source_name, line, target, reason) for line, target, reason in errors)

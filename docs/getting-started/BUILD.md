@@ -69,7 +69,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-dataflow-assignment.py
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-dataflow-profile.py
 ```
 
-The self-tests verify the checkers on positive and negative cases; they do not prove that any real study has passed an audit. The [CI configuration](<../../.github/workflows/ci.yml>) additionally generates Java V1 network, V2 file, V3 storage, and online assignment evidence, then checks the actual artifacts with Python; that file is authoritative for the corresponding production fixtures and cross-language acceptance commands. `mvn verify` covers the Java gates only and does not include these Python checks.
+The self-tests verify the checkers on positive and negative cases; they do not prove that any real study has passed an audit. The [CI configuration](<../../.github/workflows/ci.yml>) additionally generates Java network, coherent-file, bounded-storage, and online assignment evidence, then checks the actual artifacts with Python; that file is authoritative for the corresponding production fixtures and cross-language acceptance commands. `mvn verify` covers the Java gates only and does not include these Python checks.
 
 ## Mutation gate
 
@@ -138,7 +138,7 @@ node scripts/test-report-checker.cjs /absolute/new-browser-output/browser-fixtur
 
 Replace the two absolute-path placeholders; the output directory must not already exist. This test entry point lives in test sources, so it needs `test-compile` and `-Dexec.classpathScope=test`.
 
-The matrix covers algorithm/seed tags, multiple seeds, single-report regeneration, failure states, and large graphs, plus the V1/V2/V3 and online action panels. It checks run selection, VM/task filtering, dependency focus, graph truncation, the 390px layout, exact numbers, no browser errors, and no extra network or file reads; counterexample scripts confirm that these checks can actually fail. Java tests do not execute browser JavaScript and cannot replace this step.
+The matrix covers algorithm/seed tags, multiple seeds, single-report regeneration, failure states, and large graphs, plus the network, coherent-file, bounded-storage, and online action panels. It checks run selection, VM/task filtering, dependency focus, graph truncation, the 390px layout, exact numbers, no browser errors, and no extra network or file reads; counterexample scripts confirm that these checks can actually fail. Java tests do not execute browser JavaScript and cannot replace this step.
 
 On macOS, an installed Google Chrome is preferred; otherwise Playwright Chromium is used. On any system, the browser executable can be specified via `WORKFLOWSIM_CHROME`:
 
@@ -189,7 +189,7 @@ mvn -Pcore-exec -pl :workflowsim -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiment.ExperimentCampaignValidator \
   '-Dexec.args="/absolute/output/experiment-campaign-index.json"'
 
-# independent check of V1/V2/V3 evidence plus the applicable online-binding context
+# independent check of network, coherent-file, bounded-storage, and online-binding evidence
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-network-ledger.py \
   /absolute/output/run.manifest.json --json
 ```

@@ -15,7 +15,7 @@
 > `w(child,p')` and the exit `OCT=0`. The current executor produces
 > `sensitivity-response-r13-v2`, not the legacy results on this page; the current contract and the
 > retained corrected study are in
-> [protocol revisions](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>) and
+> [protocol revisions](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL.md>) and
 > [study-impact re-verification](<../correctness-repair/RESULTS.md>).
 >
 > The `output/...` paths in this document are optional retention locations of the original

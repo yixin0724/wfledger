@@ -7,7 +7,7 @@ experiment module's standard source directories; general run operations are desc
 
 ## Currently executable protocols
 
-[Protocol revisions and certification scope](<../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>)
+[Protocol revisions and certification scope](<../../docs/experiments/NETWORK_STUDY_PROTOCOL.md>)
 is the single maintained register of the current protocol IDs, the accepted historical
 identities, and the full/smoke plan-unit counts; this page does not repeat that table.
 [NetworkStudyPlan](<../src/main/java/org/workflowsim/experiments/network/NetworkStudyPlan.java>)
@@ -64,7 +64,7 @@ formula. The legacy numbers, the "homogeneous degeneration / heterogeneous activ
 narratives, and the correctness account of the time record only that non-standard
 implementation and cannot directly evaluate standard PEFT. How the current protocol relates
 to these records is defined in the
-[protocol revisions](<../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>); the
+[protocol revisions](<../../docs/experiments/NETWORK_STUDY_PROTOCOL.md>); the
 primary-source fixture note for the standard algorithm is
 [here](<../../simulator/src/test/resources/dax/peft-paper-example.SOURCE.md>).
 

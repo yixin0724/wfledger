@@ -66,6 +66,17 @@ class DocumentTests(unittest.TestCase):
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                               encoding="utf-8", check=False)
 
+    def test_rejects_versioned_document_filename(self):
+        issues, _ = self.check("# Current Guide\n", name="guide-v2.md")
+        self.assertEqual(1, len(issues))
+        self.assertIn("versioned document filename", issues[0].reason)
+
+    def test_rejects_ai_wording_without_touching_protocol_identifiers(self):
+        self.assert_clean("# Current Guide\n`COHERENT_FILE_DATAFLOW_V2`\n", 0)
+        issues, _ = self.check("# Guide\nAI-assisted review\n")
+        self.assertEqual(1, len(issues))
+        self.assertIn("AI-related wording", issues[0].reason)
+
     def test_relative_file_directory_and_anchor_only_links(self):
         self.put("guide.md", "# Guide\n")
         (self.root / "assets").mkdir()

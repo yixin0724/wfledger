@@ -17,7 +17,7 @@ and superseded audit drafts are not long-term entry points.
 
 ## Choosing algorithms, inputs, and models
 
-- [Algorithm catalog](<algorithms/CATALOG.md>): decision layers, available labels, combination limits, and legacy-name migration.
+- [Algorithm catalog](<algorithms/CATALOG.md>): decision layers, available labels, combination limits, and label compatibility.
 - [Algorithm and metrics contracts](<algorithms/CONTRACTS.md>): computation volume, communication, ordering, primary-paper correspondence, metric conventions, and verification boundaries.
 - [Paper-metrics conventions card](<algorithms/METRICS_CARD.md>): per-metric literature-convention differences and citation advice.
 - [Workflow inputs and datasets](<../datasets/README.md>): repository-bundled inputs, optional corpora, provenance, conversion, and format constraints.
@@ -25,7 +25,7 @@ and superseded audit drafts are not long-term entry points.
 - [Energy dimension design](<advanced/ENERGY_DIMENSION_DESIGN.md>): the implemented and audited energy dimension, power-model architecture, metric surface, and declared scope.
 - [Carbon dimension design](<advanced/CARBON_DIMENSION_DESIGN.md>): the two
   literature carbon accountings (intensity multiplier vs green-budget excess),
-  the v1 architecture riding the audited energy chain, and the deliberate omissions.
+  the current architecture riding the audited energy chain, and the deliberate omissions.
 - [DVFS dimension design](<advanced/DVFS_DIMENSION_DESIGN.md>): the third axis of
   the energy trilogy (measure → price → control) — per-tier frequency tables,
   the admission-assignment PE contract, the extended conservation law, and the
@@ -36,13 +36,13 @@ and superseded audit drafts are not long-term entry points.
 
 | Topic | Document |
 |---|---|
-| File identity, true sources, replica visibility, and the CPU input barrier | [Coherent file dataflow V2](<advanced/COHERENT_DATAFLOW_V2_CONTRACT.md>) |
-| Bounded SOURCE, post-commit reads, and required output write-back | [Storage dataflow V3](<advanced/STORAGE_DATAFLOW_V3_CONTRACT.md>) |
-| VM selection at control-ready, nominal scores, and action certification scope | [Online target assignment](<advanced/ONLINE_DATAFLOW_ASSIGNMENT_V1_CONTRACT.md>) |
-| Exact fields and validation rules of the per-file sidecar | [File lifecycle format](<advanced/FILE_LIFECYCLE_V2_FORMAT.md>) |
-| Format, roles, and strict reading of the V1 group ledger | [Network ledger format](<advanced/NETWORK_LEDGER_FORMAT.md>) |
-| V1 stable-allocation certificates, exact accounting, and truncated prefixes | [Ledger validation and metrics](<advanced/NETWORK_LEDGER_VALIDATION.md>) |
-| Java-independent V1/V2/V3 and online check entry points | [Shared-core Python evidence verification](<advanced/NETWORK_LEDGER_PYTHON.md>) |
+| File identity, true sources, replica visibility, and the CPU input barrier | [Coherent file dataflow](<advanced/COHERENT_DATAFLOW_CONTRACT.md>) |
+| Bounded SOURCE, post-commit reads, and required output write-back | [Storage dataflow](<advanced/STORAGE_DATAFLOW_CONTRACT.md>) |
+| VM selection at control-ready, nominal scores, and action certification scope | [Online target assignment](<advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) |
+| Exact fields and validation rules of the per-file sidecar | [File lifecycle format](<advanced/FILE_LIFECYCLE_FORMAT.md>) |
+| Format, roles, and strict reading of the group network ledger | [Network ledger format](<advanced/NETWORK_LEDGER_FORMAT.md>) |
+| Stable-allocation certificates, exact accounting, and truncated prefixes | [Ledger validation and metrics](<advanced/NETWORK_LEDGER_VALIDATION.md>) |
+| Java-independent evidence verification and online check entry points | [Shared-core Python evidence verification](<advanced/NETWORK_LEDGER_PYTHON.md>) |
 | Same verified snapshot, exact text, and bounded previews | [Offline network and action reports](<advanced/NETWORK_REPORT_DISPLAY.md>) |
 
 ## Experiments, replay, and statistics
@@ -78,32 +78,21 @@ and superseded audit drafts are not long-term entry points.
   MOHEFT, MIN_POWER, EDP_HEURISTIC and DVFS slack on real scientific workflows.
 - [Independent V&V review protocol](<experiments/VV_REVIEW_PROTOCOL.md>): structured walkthrough,
   independence requirements, assessment record, and the current review status.
-- [Independent V&V review record (2026-11-04)](<experiments/VV_REVIEW_2026-11-04.md>): findings,
+- [Independent V&V review record](<experiments/VV_REVIEW.md>): findings,
   corpus-blocker closure, capability/results assessments, and residual boundaries.
 - [Evidence replay and difference comparison](<experiments/RERUN_DIFF_CONTRACT.md>): configuration rebuilding, verdicts, exact core quantities, and the small set of volatile fields.
-- [Protocol identity and historical-evidence boundaries](<experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>): which legacy identities remain readable and why legacy results are not conclusions about the current implementation.
 - [Independent study-audit tooling](<../scripts/STUDY_AUDIT.md>): the actual scope of general evidence/statistics checks, distinguished from dataflow-specific certificates.
 
 ## Standard benchmark
 
-- [Standard Benchmark `benchmark-standard-v1`](<benchmark/STANDARD_BENCHMARK.md>): the frozen
-  public comparison of the maintained algorithm corpus — 160 audited runs, each verifiable
-  by a third party with one Python command; includes the power variant
-  `benchmark-standard-power-v1`, the carbon variant `benchmark-standard-carbon-v1`
-  (intensity grid + budget-model demonstration family), and the power variant's statistical
-  analysis
-  [Energy Portrait of the Algorithm Corpus](<benchmark/ENERGY_PORTRAIT.md>) —
-  the first auditable energy study of the platform's algorithm corpus
-  (conservation on all 160 runs, one Holm-significant EDP finding).
-
-## Platform history
-
-- [Platform engineering history](<history/PLATFORM_ENGINEERING.md>): the single narrative record of the correctness, uplift, regularization, and observability waves.
+- [Standard benchmark suite](<benchmark/STANDARD_BENCHMARK.md>): a frozen public comparison
+  of the maintained algorithm corpus — 160 audited runs, each verifiable by a third party with
+  one Python command; includes power and carbon variants and the statistical analysis
+  [Energy Portrait of the Algorithm Corpus](<benchmark/ENERGY_PORTRAIT.md>).
 
 ## Research, positioning and quality
 
 - [Science position statement](<SCIENCE-POSITION.md>): research identity, validity standard (internal validity), competitive positioning, and threats to validity.
-- The durable record of those engineering rounds lives in the [platform engineering history](<history/PLATFORM_ENGINEERING.md>).
 
 ## Maintenance
 
@@ -111,12 +100,3 @@ and superseded audit drafts are not long-term entry points.
 - [Mutation gate](<advanced/MUTATION_GATE.md>): registered-mutant zero-survival gate, killer-test ledger, and growth rules.
 - [Dataflow state and performance measurement](<advanced/DATAFLOW_STATE_COPY_PERFORMANCE.md>): immutable history/active working set, measurement conventions, and repeatable comparisons.
 - [Experiment module notes](<../experiments/README.md>): module responsibilities and maintenance entry point.
-
-## Retention policy for historical material
-
-Original numbers, preregistrations, input provenance, and necessary compatibility protocols
-of historical experiments are retained in their data/reference directories with explicit
-versions and limitations; they are neither current user guidance nor new scientific
-conclusions. To identify retained studies, see the
-[study data notes](<../experiments/studies/README.md>); the rest of the development history
-is available from Git and is not repeated in this navigation.

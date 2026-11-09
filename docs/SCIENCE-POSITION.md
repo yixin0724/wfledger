@@ -88,32 +88,20 @@ Two declarations that differ from common misunderstandings:
   real trace; boundary declarations precede any "close to real" generalization narrative
   (unlike the vague claims common in this field).
 - Structural validity: every maintained algorithm carries a literature or textbook anchor
-  (deviations explicitly declared); the legacy clustering/reclustering paths are
-  explicitly rejected by SimulationRunner, preventing "historical compatibility code"
-  from leaking into research semantics.
+  (deviations explicitly declared); unsupported clustering/reclustering paths are
+  explicitly rejected by SimulationRunner, preventing compatibility code from leaking into research semantics.
 - Construct validity: per-metric differences between our metric definitions and the
   closest literature conventions (denominator floors, ready-baseline windows,
   nearest-rank quantiles) are declared item by item in the conventions card.
 
-## 6. Open boundaries (currently declared as-is)
+## 6. Declared boundaries
 
-- F-006/F-007 (event observability gaps) → **closed (2026-10-23 contract revision,
-  user-adjudicated)**: `SIMULATION_TERMINATED` and `JOB_EXECUTION_STARTED` entered
-  events v1; the makespan/terminal-tail/deadline-slack and decision-to-start/waiting
-  families are now independently recomputable at the event level; pre-revision evidence
-  keeps its declared boundary. The recompute boundary change is documented in
-  RERUN_DIFF_CONTRACT.
-- Independent Python recomputation covers **78/78 scalars (100%)**: chain E (2026-10-20)
-  closed the deadline family — six fields (exact recompute across the
-  MET/MISSED_LATE/NOT_REQUESTED branches) — and the controlledSharedStorage four
-  (including all UNAVAILABLE branches, matrix-authoritative semantics, and (long)
-  truncation rounding) under a three-state disposition. The 2026-10-23 F-006/F-007
-  events contract revision further extends recomputation from the manifest level to the
-  event level (terminal-clock identity, job-execution-start coverage, and derived
-  cross-checks are built into the independent auditors).
-- Legacy defects inherited from original WorkflowSim / CloudSim 3 code paths (6 fixed:
-  F-001/004/005/008/009 + the M5/M7 test blind spots); the narrative lives in the
-  [platform engineering history](<history/PLATFORM_ENGINEERING.md>).
+- The current verification scope, case dispositions, and retained-evidence boundaries are recorded in
+  [audit coverage](<experiments/AUDIT_COVERAGE.md>) and the [V&V case ledger](<experiments/VV_CASE_LEDGER.md>).
+  Retained artifacts support their declared contracts; they are not current capability or regeneration claims.
+- Independent Python recomputation covers the declared scalar and event families, including deadline,
+  controlled shared storage, terminal-clock identity, job execution start, and derived cross-checks.
+  The exact supported domain is enforced by the current quality gate rather than by a version label.
 
 ---
 **Conclusion sentence (single paragraph, quotable standalone)**: WorkflowSim-yixin is a

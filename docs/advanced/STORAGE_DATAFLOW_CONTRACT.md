@@ -1,6 +1,6 @@
-# Bounded SOURCE and Shared-Storage Dataflow V3
+# Bounded SOURCE and Shared-Storage Dataflow
 
-V3 adds bounded read/write/NIC resources, a physical storage attachment path, and required-output write-back to the coherent file dataflow. Execution, the standalone sidecar, Java/Python validation, configuration rebuild, exact rerun, and offline reporting all use the same versioned contract; a V3 certificate cannot be converted into, or relabeled as, V2.
+The storage model adds bounded read/write/NIC resources, a physical storage attachment path, and required-output write-back to the coherent file dataflow. Execution, the standalone sidecar, Java/Python validation, configuration rebuild, exact rerun, and offline reporting all use the same declared contract; a storage certificate cannot be converted into, or relabeled as, a coherent-file certificate.
 
 
 ## Model and Configuration
@@ -10,7 +10,7 @@ V3 adds bounded read/write/NIC resources, a physical storage attachment path, an
 | Sharing model | `COHERENT_STORAGE_DATAFLOW_V3`; `DataMovementModel.coherentStorageDataflowV3()` |
 | Contention-free control | `COHERENT_STORAGE_DATAFLOW_NO_CONTENTION_V3`; `coherentStorageDataflowNoContentionV3()` |
 | Default target assignment | RANDOM planning, STATIC dispatch |
-| Optional online assignment | explicit `CONTROL_READY_ONLINE_ASSIGNMENT_V1`, INVALID planning, STATIC dispatch; see the [online assignment contract](<ONLINE_DATAFLOW_ASSIGNMENT_V1_CONTRACT.md>) |
+| Optional online assignment | explicit `CONTROL_READY_ONLINE_ASSIGNMENT_V1`, INVALID planning, STATIC dispatch; see the [online assignment contract](<ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) |
 | Execution | NONE clustering, one logical Task per Job; SPACE_SHARED; no overheads; controlled NOOP CPU retries |
 | File system | LOCAL, or the SHARED post-commit cached read defined below |
 | Capture | `FILE_STORAGE_LIFECYCLE_V3`; `NetworkEvidenceConfig.storageLifecycleV3(B)`, where `B` is a record budget in `1..2147483647` |
@@ -34,7 +34,7 @@ All three bandwidths are finite positive numbers in decimal MB/s; after multipli
 
 The Workbench attachment Host is chosen among its already-created `0..VM count−1` hosts; the Java platform API may declare a dedicated storage Host. Fat-tree `k` is even `2..32` for Java/the codec and even `2..16` for Workbench; the configuration must additionally satisfy the corresponding Host/edge capacity constraints.
 
-`sourceStorage` must, and must only, appear together with a storage V3 model; invalid combinations are rejected before session creation. The legacy `PlatformProfile.StorageSpec`, the Harddrive timing estimate, and the [coherent V2](<COHERENT_DATAFLOW_V2_CONTRACT.md>) SOURCE meaning of an unlimited, fabric-bypassing sink are all unchanged. What is bounded is the service rate, **not storage space**; there is currently no capacity exhaustion, eviction, multi-store consistency, storage failure, packet-loss retransmission, or real-hardware calibration.
+`sourceStorage` must, and must only, appear together with a storage V3 model; invalid combinations are rejected before session creation. The legacy `PlatformProfile.StorageSpec`, the Harddrive timing estimate, and the [coherent V2](<COHERENT_DATAFLOW_CONTRACT.md>) SOURCE meaning of an unlimited, fabric-bypassing sink are all unchanged. What is bounded is the service rate, **not storage space**; there is currently no capacity exhaustion, eviction, multi-store consistency, storage failure, packet-loss retransmission, or real-hardware calibration.
 
 ## Physical Resource Paths
 
@@ -104,7 +104,7 @@ The root must contain exactly `schema,modelKind,recording,certificateScope,polic
 
 `filePlan` keeps the shared logical file/control plan. `fabric` holds **exactly five entries**: `locations,resources,vmHostAssignments,topology,sourceStorage`; the storage object contains exactly the four parameters above, the resource table must contain READ/WRITE/NIC consistent under conversion, and the physical VM placement must be complete even without a topology. The sharing flag denotes cross-flow capacity sharing, while `storeBackedInputs`/`inputAccess` denote the access policy; they must not be conflated.
 
-The common event envelope is `sequence,observedTime,type,payload`; sequences are contiguous from 1, and observed times are monotonic and never exceed the capture watermark. Relative to the [file V2 format](<FILE_LIFECYCLE_V2_FORMAT.md>), V3's standalone syntax differences are:
+The common event envelope is `sequence,observedTime,type,payload`; sequences are contiguous from 1, and observed times are monotonic and never exceed the capture watermark. Relative to the [file V2 format](<FILE_LIFECYCLE_FORMAT.md>), V3's standalone syntax differences are:
 
 | Event | V3 payload fields |
 |---|---|
@@ -114,7 +114,7 @@ The common event envelope is `sequence,observedTime,type,payload`; sequences are
 
 `destination` is a typed location, `purpose=INPUT|OUTPUT`, and `ownerJobId` must correspond to the actual requester or the owner of a successful output. Output resolution is `ALREADY_STORED`, `ZERO`, `NEW_COPY`, or `JOIN_EXISTING`; the first two carry a null copyOrdinal. When an output joins an existing ticket, that event's source is the VM that completed successfully this time, while the ticket retains the original owner and the earliest origin. V2's `destinationVmId` admission field and continuous input-resolution syntax must not be grafted onto V3.
 
-The shared strict JSON/numeric rules, zero and fractional bytes, unrepresentable clocks, copy-residual upper bounds, and provenance checks are defined in the [file format's numeric contract](<FILE_LIFECYCLE_V2_FORMAT.md#numeric-and-settlement-boundaries>); the closed V2/V3 entrances each select their own syntax, and an input document cannot extend the contract on its own.
+The shared strict JSON/numeric rules, zero and fractional bytes, unrepresentable clocks, copy-residual upper bounds, and provenance checks are defined in the [file format's numeric contract](<FILE_LIFECYCLE_FORMAT.md#numeric-and-settlement-boundaries>); the closed V2/V3 entrances each select their own syntax, and an input document cannot extend the contract on its own.
 
 ## Validation, Replay, and Display Boundaries
 

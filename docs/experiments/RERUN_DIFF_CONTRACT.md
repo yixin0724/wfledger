@@ -74,7 +74,7 @@ The online-assignment configuration, the `dataflowComputeRequests`, the `DATAFLO
 
 When the V1 ledger on either side is TRUNCATED, the report adds `networkEvidenceCoverageNote`: even an `IDENTICAL_CORE` only says that the retained records and the aggregated observations agree; an unknown suffix cannot be attested. When both sides are OFF or the capture is complete, this placeholder field is not added. The complete V2/V3 lifecycle is likewise not a per-interval fluid service-area certificate.
 
-Format and certification scope are in the [V1 ledger](<../advanced/NETWORK_LEDGER_FORMAT.md>), [V2 lifecycle](<../advanced/FILE_LIFECYCLE_V2_FORMAT.md>), [V3 storage](<../advanced/STORAGE_DATAFLOW_V3_CONTRACT.md>), and [online assignment](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_V1_CONTRACT.md>) documents.
+Format and certification scope are in the [V1 ledger](<../advanced/NETWORK_LEDGER_FORMAT.md>), [V2 lifecycle](<../advanced/FILE_LIFECYCLE_FORMAT.md>), [V3 storage](<../advanced/STORAGE_DATAFLOW_CONTRACT.md>), and [online assignment](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) documents.
 
 ## Comparison Rules
 
@@ -165,4 +165,4 @@ Usage/output-directory errors are 64, unexpected exceptions are 70. Classified f
 
 Validation coverage of the current chain is in the [core comparison tests](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/EvidenceCoreDifferTest.java>), the [rerun integration tests](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/RerunDiffExecutorIntegrationTest.java>), and the [online-action rerun tests](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/DataflowAssignmentRerunIntegrationTest.java>). They verify behavior with explicit fixtures and do not take optional local historical outputs as proof that the current run succeeded.
 
-Study-protocol integrity and the actual rerun are different checks; see the [protocol identity notes](<NETWORK_STUDY_PROTOCOL_REVISIONS.md>). Retain the original evidence, the new run, and the diff report; old fields, protocol identity, or golden values must not be modified to erase a genuine divergence.
+Study-protocol integrity and the actual rerun are different checks; see the [protocol identity notes](<NETWORK_STUDY_PROTOCOL.md>). Retain the original evidence, the new run, and the diff report; old fields, protocol identity, or golden values must not be modified to erase a genuine divergence.

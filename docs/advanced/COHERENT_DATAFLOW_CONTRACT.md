@@ -1,4 +1,4 @@
-# Coherent File Dataflow V2
+# Coherent File Dataflow
 
 ## Applicable Models and Configuration
 
@@ -13,7 +13,7 @@
 | Network | endpoints, or Fat-tree paths over the physical VM→Host placement |
 | SOURCE | an explicit unlimited sink that bypasses the fabric; not a bounded storage device |
 
-Java's Fat-tree configuration restricts even `k=2..32`, and Workbench restricts even `k=2..16`. All combinations and numeric support domains are checked at the configuration/run boundary. A bounded SOURCE and required-output write-back use [storage V3](<STORAGE_DATAFLOW_V3_CONTRACT.md>) and must not silently change V2's meaning. Additional constraints for online assignment are in the [online assignment contract](<ONLINE_DATAFLOW_ASSIGNMENT_V1_CONTRACT.md>).
+Java's Fat-tree configuration restricts even `k=2..32`, and Workbench restricts even `k=2..16`. All combinations and numeric support domains are checked at the configuration/run boundary. A bounded SOURCE and required-output write-back use the [storage dataflow contract](<STORAGE_DATAFLOW_CONTRACT.md>) and must not silently change the coherent file model's meaning. Additional constraints for online assignment are in the [online assignment contract](<ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>).
 
 ## Logical File Plan
 
@@ -64,4 +64,4 @@ The Fat-tree structure, deterministic routing, and sharing mechanics are describ
 
 V2 uses the standalone `FILE_LIFECYCLE_V2` sidecar. It checks per-file identity, provenance, requests, copies, visibility, and CPU causality, and it **does not certify unrecorded per-interval fluid service accounting**. A V1 group-level ledger cannot be relabeled into per-file proof.
 
-Complete artifact export requires a complete capture; an insufficient budget is rejected before artifact I/O but does not change the physical execution. With recording OFF in the default non-online assignment mode, the core file plan is still retained, which does not mean zero network. See the [lifecycle format](<FILE_LIFECYCLE_V2_FORMAT.md>), the [rerun difference contract](<../experiments/RERUN_DIFF_CONTRACT.md>), and the [capability matrix](<DATAFLOW_CAPABILITY_MATRIX.md>) for details.
+Complete artifact export requires a complete capture; an insufficient budget is rejected before artifact I/O but does not change the physical execution. With recording OFF in the default non-online assignment mode, the core file plan is still retained, which does not mean zero network. See the [lifecycle format](<FILE_LIFECYCLE_FORMAT.md>), the [rerun difference contract](<../experiments/RERUN_DIFF_CONTRACT.md>), and the [capability matrix](<DATAFLOW_CAPABILITY_MATRIX.md>) for details.

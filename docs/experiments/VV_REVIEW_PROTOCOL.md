@@ -2,7 +2,7 @@
 
 This protocol defines the independent technical review required before a research claim is
 released. The current status is **INDEPENDENT_AI_REVIEW_COMPLETED** with residual boundaries; no
-human independent signoff is claimed. See the [2026-11-04 review record](<VV_REVIEW_2026-11-04.md>)
+human independent signoff is claimed. See the [2026-11-04 review record](<VV_REVIEW.md>)
 for the findings, capability/results assessments, and approval scope.
 
 ## Reviewer and independence
@@ -10,7 +10,7 @@ for the findings, capability/results assessments, and approval scope.
 The reviewer must not be the author of the implementation or of the expected-value derivation under
 review. Record the reviewer, date, materials, conflicts of interest, and whether the reviewer had
 access to the original inputs, source, contracts, test output, and retained evidence. A green build
-or an AI-generated summary is not a substitute for this record.
+or an automatically generated summary is not a substitute for this record.
 
 ## Structured walkthrough
 

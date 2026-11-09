@@ -1,6 +1,6 @@
 # Fat-tree Historical Campaign: Provenance, Parameters, and Retention
 
-> This directory holds the **historical numbers of the R8 recalibration run**; it is neither a certification nor a golden value for the current execution semantics. Later corrections to CPOP, network allocation, CPU work, and LOCAL data-availability time have changed some results; historical artifacts must not be overwritten, nor the new model adjusted, in pursuit of bit-for-bit agreement. For the later study identities and the validation boundary see [protocol revisions](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL_REVISIONS.md>).
+> This directory holds the **historical numbers of the R8 recalibration run**; it is neither a certification nor a golden value for the current execution semantics. Later corrections to CPOP, network allocation, CPU work, and LOCAL data-availability time have changed some results; historical artifacts must not be overwritten, nor the new model adjusted, in pursuit of bit-for-bit agreement. For the later study identities and the validation boundary see [protocol revisions](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL.md>).
 
 ## Retained Artifacts and Reference Period
 

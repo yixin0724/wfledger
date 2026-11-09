@@ -146,7 +146,7 @@ requiring a non-INVALID planner — not a waiver granted to arbitrary STATIC con
 It cannot be combined with RANDOM pre-planning; a NOOP retry reuses the logical binding.
 Workbench requires matching full-lifecycle capture; Java OFF runs provide no online-action
 export attestation. Details are in the
-[online assignment contract](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_V1_CONTRACT.md>) and
+[online assignment contract](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) and
 the [capability matrix](<../advanced/DATAFLOW_CAPABILITY_MATRIX.md>).
 
 Matrix availability does not mean every planner optimizes on the matrix: time-aware

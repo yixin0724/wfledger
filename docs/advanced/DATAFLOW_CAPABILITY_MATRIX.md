@@ -11,19 +11,19 @@ self-declared contract validated fail-fast; label in the manifest; see the
 
 | Branch | Input/storage semantics | Copying and CPU | Optional target assignment |
 |---|---|---|---|
-| The five original V1 models | Keep their respective existing abstractions; the newer versions must not silently reinterpret them | Keep the existing group-level/staged input rules | Still follow the original support matrix; CPU online scheduling/RL must not be taken directly as a new network strategy |
+| The five original data-movement models | Keep their respective existing abstractions; the coherent file and bounded-storage models must not silently reinterpret them | Keep the existing group-level/staged input rules | Still follow the original support matrix; CPU online scheduling/RL must not be taken directly as a new network strategy |
 | COHERENT_FILE_DATAFLOW_V2 and its no-sharing control | LOCAL; SOURCE aggregates explicitly without limit and bypasses the fabric; optional actual Fat-tree paths | Per-file real sources, frozen paths, same-destination merging, observed visibility, and a CPU input barrier | Default RANDOM/STATIC; or explicit control-ready assignment + STATIC |
 | COHERENT_STORAGE_DATAFLOW_V3 and its no-sharing control | Bounded read/write/shared-NIC and access-Host resources; LOCAL, or SHARED cache reads after the SOURCE commit | Every successful output (including unused/zero-byte ones) commits to SOURCE, the CPU may overlap with the write-back, and the ending waits for the drain | Same as above; a NOOP retry of the same logical Task keeps the original VM |
 
-Coherent V2/V3 require one Task per Job, NONE clustering, SPACE_SHARED, no overheads, and controlled NOOP retries. The actual Java topology and the Workbench scale caps are checked under the existing contracts; arbitrary mixing across algorithm tracks is not allowed.
+Coherent file and bounded-storage models require one Task per Job, NONE clustering, SPACE_SHARED, no overheads, and controlled NOOP retries. The actual Java topology and the Workbench scale caps are checked under the existing contracts; arbitrary mixing across algorithm tracks is not allowed.
 
-Online target assignment is the independent configuration `CONTROL_READY_ONLINE_ASSIGNMENT_V1`, not a new physical Kind and not a CPU remapper. Passive observation reads the committed state; the nominal input/CPU reservation policy selects an actually compatible VM at control readiness, and only then does input preparation happen. For the complete specification see the [online assignment contract](<ONLINE_DATAFLOW_ASSIGNMENT_V1_CONTRACT.md>).
+Online target assignment is the independent configuration `CONTROL_READY_ONLINE_ASSIGNMENT_V1`, not a new physical Kind and not a CPU remapper. Passive observation reads the committed state; the nominal input/CPU reservation policy selects an actually compatible VM at control readiness, and only then does input preparation happen. For the complete specification see the [online assignment contract](<ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>).
 
 ## Evidence and Validation Scope
 
 | Evidence | What is verified | What is not claimed |
 |---|---|---|
-| V1 group ledger | Group/resource service, FCT, and the corresponding context under the declared model | Per-file protocols, TCP connections, or actual hardware throughput |
+| Group network ledger | Group/resource service, FCT, and the corresponding context under the declared model | Per-file protocols, TCP connections, or actual hardware throughput |
 | FILE_LIFECYCLE_V2 | File identity, source, path, admission, merging, settlement/visibility, and CPU causality | Unrecorded per-interval fluid service areas |
 | FILE_STORAGE_LIFECYCLE_V3 | All of the above, plus restricted SOURCE, input waiting, and the obligations of all successful outputs | Complex storage coherence, capacity/eviction/failure protocols |
 | Online action main events | Assignment, PE/MI, CPU reservations, nominal input boundaries, logged scores, and the fixed retry VM | Exact active-flow balances, a full replay of future contention, or global optimality |
@@ -51,7 +51,7 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
   gain `energyAware`/`powerModelRequired`/`energyObjectiveWeight`; declaring
   `powerModelRequired` on a profile without power fields is rejected fail-fast at registration,
   not silently downgraded. See the [energy dimension design](<ENERGY_DIMENSION_DESIGN.md>)
-  for the survey anchors and the v2 DVFS/carbon reservations.
+  for the survey anchors and the DVFS/carbon model boundaries.
 
 - Report surface (closed BAT-E7, 2026-10-28): the offline HTML report renders a dedicated energy
   panel for powered runs, showing the manifest's `energyMetrics` values verbatim; the earlier
@@ -82,12 +82,12 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
 - The Python [auditor](<../../scripts/verify-study-evidence.py>) (independent of the Java production path) recomputes both families
   from the manifest alone (BAT-C2): grams from the recomputed per-VM energy and the declared intensities;
   the excess integral from the same compute-job intervals that feed the busy-interval/energy checks
-  (fleet power = Σ idle + concurrent × per-VM active delta; the v1 fleet is homogeneous — the design's
+  (fleet power = Σ idle + concurrent × per-VM active delta; the original fleet is homogeneous — the design's
   stated honest boundary). Declared runs are required to carry the section, and the mutual-exclusion and
-  sorted-window clauses are enforced; undeclared runs are skipped, so legacy manifests are unaffected.
+  sorted-window clauses are enforced; undeclared runs are skipped, so retained manifests are unaffected.
 - Workbench JSON surface (BAT-C3): the uniform `platform.carbonIntensityGramsPerKWh` row, rejected
   up front when the power fields are absent (carbon multiplies the energy chain, so an unpowered
-  declaration is vacuous). The v1 Workbench does **not** accept `carbonWindows` — budget-window
+  declaration is vacuous). The Workbench does **not** accept `carbonWindows` — budget-window
   scenarios are research-protocol declarations, not workbench platform knobs.
 - Registry declarations gained `carbonObjectiveWeight` (positive weight implies the carbon/energy-aware
   flags through the same implication lattice as the energy triple, because both carbon accountings sit
@@ -97,7 +97,7 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
   2026-11-02): it defers the ready batch into the next strictly-cleaner declared window (each Job
   at most once) and the scheduler arms the wake-up event; see the as-built note in
   [the carbon design](<CARBON_DIMENSION_DESIGN.md>) §2.5. Because the engine reads
-  `carbonWindows` and the v1 workbench surface deliberately excludes budget windows, the
+  `carbonWindows` and the Workbench surface deliberately excludes budget windows, the
   Workbench rejects this label at validation time (with a pointer to the SimulationRunner
   API) instead of letting a run fail halfway; a platform without windows is refused by the
   runner itself rather than silently degraded to plain FCFS.
@@ -117,17 +117,17 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
   the declared default, powers satisfying `max ≥ idle ≥ 0` — and **mutually exclusive**
   with the flat power fields (the tier table replaces them, one source of truth). A tiered
   VM counts as *powered* for the energy and carbon chains; a non-tiered platform is the
-  v1 single-tier mode and stays bit-identical.
+  single-tier mode and stays bit-identical.
 - **Assignment at admission** (BAT-D2): each compute Job gets exactly one tier when
   dispatched to a VM — no mid-Job switching, keeping the one-rectangle-per-Job
   auditability. Job length carries the `vm.mips/tier.mips` scaling while the declared
   work stays untouched; per-task model windows use the assigned tier speed (BAT-D6 —
-  the Python auditor kills a v1-speed window next to a slow-tier claim). The
+  the Python auditor kills a default-speed window next to a slow-tier claim). The
   config-level `frequencyPolicy` (`DEFAULT` / `MIN_POWER` / `EDP_HEURISTIC`) selects
   the session-wide fallback selection; non-DEFAULT on an all-plain platform is
   rejected fail-fast (a silently inert policy is misleading evidence).
 - The **extended conservation law** `E_vm = P_idle(default)×T_sim +
-  Σ_tier[(P_max(tier) − P_idle(default))×busy(tier)]` degenerates exactly to the v1 law
+  Σ_tier[(P_max(tier) − P_idle(default))×busy(tier)]` degenerates exactly to the original law
   without tiers; the per-tier busy ledger is reconstructable from the manifest's per-Job
   `tierMips` keys alone (tiers unique by mips), and the Python
   [auditor](<../../scripts/verify-study-evidence.py>) (independent of the Java production path) recomputes per-tier energy and the
@@ -140,7 +140,7 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
   `dvfsAware + frequencyTiersRequired + powerModelRequired` and is the first SPI
   consumer of the scheduling-time per-Job tier API
   ([FrequencyTierSelector](<../../simulator/src/main/java/org/workflowsim/scheduling/FrequencyTierSelector.java>)).
-- The frozen tri-dimensional benchmark `benchmark-standard-dvfs-v1` (5-tier P-state table
+- The frozen tri-dimensional benchmark (5-tier P-state table
   + uniform 380 g/kWh intensity; 90-cell representative subset, honest disclosure and
   results in the [benchmark doc](<../benchmark/STANDARD_BENCHMARK.md>)) is the
   dimension's public comparison surface, incl. the two-sided break-even observation.
@@ -157,7 +157,7 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
   `mips`, unknown policy) is still refused loudly as `RECONSTRUCTION_REJECTED`.
   Budget carbon under tiers is also closed (2026-11-02, A2): `CarbonAccounting.budgetModel`
   uses the per-tier fleet-power curve (Σ default-tier idle + per-Job tier dynamic share,
-  flat VMs keeping their v1 contribution) whenever any VM declares a table, and a
+  flat VMs keeping their original contribution) whenever any VM declares a table, and a
   Java-generated tiered+windows bundle audits clean under the Python auditor.
 
 ## Performance Optimizations Do Not Change the Semantics Above
@@ -166,4 +166,4 @@ A transaction copies only the active working set and the changed replica rows; t
 
 ## Unimplemented Capabilities
 
-Packet-level TCP/retransmission/ECN, switch queue implementations, adaptive routing, complex coherence/multi-storage protocols, bounded cache eviction, neural-network trainers, real-cluster calibration, and cloud-provider billing are outside the current implementation. Passing validation or improved performance within these boundaries must not be read as these capabilities being present.
+Packet-level TCP/retransmission/ECN, switch queue implementations, adaptive routing, complex coherence/multi-storage protocols, bounded cache eviction, specialized training frameworks, real-cluster calibration, and cloud-provider billing are outside the current implementation. Passing validation or improved performance within these boundaries must not be read as these capabilities being present.

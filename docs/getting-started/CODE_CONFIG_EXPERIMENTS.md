@@ -84,7 +84,7 @@ relative-to-configuration-file rule.
 - [SimulationConfig](<../../simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java>)
   is an immutable configuration; `build()` validates the combination, and the runner
   continues to validate inputs, platform, cost coverage, and execution prerequisites.
-  Defaults are FCFS, no planning, SHARED, and legacy data movement with failure and overhead
+  Defaults are FCFS, no planning, SHARED, and the original data movement with failure and overhead
   disabled; the seed should be declared explicitly.
 - The standard runner requires NONE clustering, SPACE_SHARED VMs, and PE-compatible
   placement; each VM dispatches at most one Job at a time, which does not mean every task
@@ -92,11 +92,11 @@ relative-to-configuration-file rule.
 - `PlatformProfiles.homogeneousLocal` creates a platform with one VM per Host, each VM at
   1000 MIPS / 1 PE / 512 MB; the `Local` in the name does not configure the file system. The
   VM count in the configuration must match the platform.
-- Offline planning requires STATIC dispatch. The explicit online assignment of coherent
-  V2/V3 is a separate decision layer that may use INVALID/STATIC and must not be conflated
-  with ordinary online CPU scheduling.
-- V1, coherent V2, and bounded-storage V3 differ in data readiness, output commit, and
-  recording semantics. Do not swap one enum while ignoring the file-system, topology, SOURCE
+- Offline planning requires STATIC dispatch. Explicit online assignment for coherent file and
+  bounded-storage models is a separate decision layer that may use INVALID/STATIC and must not be
+  conflated with ordinary online CPU scheduling.
+- The original, coherent-file, and bounded-storage models differ in data readiness, output commit,
+  and recording semantics. Do not swap one enum while ignoring the file-system, topology, SOURCE
   storage, or evidence-mode requirements; see the
   [capability and combination matrix](<../advanced/DATAFLOW_CAPABILITY_MATRIX.md>).
 
@@ -123,8 +123,8 @@ SimulationConfig config = SimulationConfig.builder(workflow, vmCount)
 ```
 
 Shared-storage planners require no failure/overhead, NONE clustering, and SPACE_SHARED, and
-they reject task-cost matrices. LOCAL planners use a different V1 pre-execution model and
-are not estimators for coherent V2/V3. See the
+they reject task-cost matrices. LOCAL planners use a different pre-execution model and
+are not estimators for coherent file or bounded-storage models. See the
 [algorithm contracts](<../algorithms/CONTRACTS.md>) for complete combinations and paper
 adaptation scope.
 
@@ -198,7 +198,7 @@ and the [algorithm contracts](<../algorithms/CONTRACTS.md>).
 `runEpisode(config, platform, policy)`, providing observations, actions, trajectories, and
 rewards — not a learning algorithm. The online target assignment of coherent models is a
 different interface from this RL hook; see the
-[online assignment contract](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_V1_CONTRACT.md>).
+[online assignment contract](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>).
 
 ## Reading and saving results
 
@@ -209,8 +209,8 @@ different interface from this RL hook; see the
   read them as logical-task counts. Waiting, slowdown, cost, and utilization each carry
   their own observation scope; see the [metrics contracts](<../algorithms/CONTRACTS.md>) and
   [SimulationMetrics](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java>).
-- `ExperimentArtifactWriter.write(...)` writes manifest v4, metrics v2, and events v1, with
-  v3 provenance inside the manifest; matching network/lifecycle sidecars are written when
+- `ExperimentArtifactWriter.write(...)` writes the declared manifest, metrics, events, and
+  provenance formats; matching network/lifecycle sidecars are written when
   recording is enabled. A manifest alone is not a complete evidence bundle.
 - The same directory and runId replace artifacts of the same name. Individual files are
   written via temporary-then-replace, atomic where supported; the whole evidence bundle is

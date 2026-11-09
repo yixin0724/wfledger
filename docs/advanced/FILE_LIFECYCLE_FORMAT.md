@@ -1,6 +1,6 @@
-# V2 File Lifecycle Evidence Format
+# File Lifecycle Evidence Format
 
-The V2 certificate describes logical files, the actually visible sources, ordered resource paths, same-destination merges, settlement observations, and CPU input causality. It is **not a per-interval fluid service/rate-area accounting certificate**, and it must not be used to relabel the old V1 group ledger as per-file proof.
+The file-lifecycle certificate describes logical files, the actually visible sources, ordered resource paths, same-destination merges, settlement observations, and CPU input causality. It is **not a per-interval fluid service/rate-area accounting certificate**, and it must not be used to relabel the original group network ledger as per-file proof.
 
 
 ## Version, Recording, and Run Scope
@@ -15,9 +15,9 @@ The V2 certificate describes logical files, the actually visible sources, ordere
 | schema | `workflowsim-file-lifecycle-v2` |
 | certificateScope | `FILE_LIFECYCLE_NOT_FLUID_SERVICE_ACCOUNTING_V2` |
 
-Runs use LOCAL, NONE clustering (one logical Task per Job), SPACE_SHARED, no overheads, a single bound datacenter, and controlled NOOP retries. The default is RANDOM mapping + STATIC dispatch; explicit online binding uses INVALID + STATIC together with the [online assignment contract](<ONLINE_DATAFLOW_ASSIGNMENT_V1_CONTRACT.md>). Once the workflow arrival/control dependencies are satisfied and the target is fixed, inputs are requested at the current observation; no transfers are made retroactively.
+Runs use LOCAL, NONE clustering (one logical Task per Job), SPACE_SHARED, no overheads, a single bound datacenter, and controlled NOOP retries. The default is RANDOM mapping + STATIC dispatch; explicit online binding uses INVALID + STATIC together with the [online assignment contract](<ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>). Once the workflow arrival/control dependencies are satisfied and the target is fixed, inputs are requested at the current observation; no transfers are made retroactively.
 
-The V2 SOURCE is explicitly an unbounded sink and bypasses the fabric; required output uploads and finite storage resources belong to the separate [Storage V3](<STORAGE_DATAFLOW_V3_CONTRACT.md>) and must not be written into this version's certificate. For run physics and source rules see the [Coherent V2 contract](<COHERENT_DATAFLOW_V2_CONTRACT.md>).
+The V2 SOURCE is explicitly an unbounded sink and bypasses the fabric; required output uploads and finite storage resources belong to the separate [Storage V3](<STORAGE_DATAFLOW_CONTRACT.md>) and must not be written into this version's certificate. For run physics and source rules see the [Coherent V2 contract](<COHERENT_DATAFLOW_CONTRACT.md>).
 
 Export accepts only complete captures. Insufficient budget, truncation, or context contradictions are rejected before artifacts are created/replaced, without changing the simulation physics. In ordinary non-online modes, OFF still retains the core `dataflowPlan` and generates no lifecycle sidecar; online attestation cannot be exported from an OFF run alone. This format does not change the metrics, truncation support, or OFF shape of the original V1 group ledger.
 
