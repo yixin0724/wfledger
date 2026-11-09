@@ -72,6 +72,8 @@ and superseded audit drafts are not long-term entry points.
   Min-Min, Max-Min, MCT, FCFS and Round-Robin on real scientific DAX workflows.
 - [1000 and 5000 task makespan comparison](<experiments/MAKESPAN_SCALE_COMPARISON.md>): scale behavior,
   waiting time, slowdown, throughput and energy on Montage, CyberShake and Inspiral.
+- [Energy and EDP baseline comparison](<experiments/ENERGY_BASELINE_COMPARISON.md>): HEFT, GreenHEFT,
+  MOHEFT, MIN_POWER, EDP_HEURISTIC and DVFS slack on real scientific workflows.
 - [Independent V&V review protocol](<experiments/VV_REVIEW_PROTOCOL.md>): structured walkthrough,
   independence requirements, assessment record, and the current review status.
 - [Independent V&V review record (2026-11-04)](<experiments/VV_REVIEW_2026-11-04.md>): findings,
