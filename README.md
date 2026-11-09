@@ -3,64 +3,68 @@
 [![CI](https://github.com/yixin0724/workflowsim-research/actions/workflows/ci.yml/badge.svg)](https://github.com/yixin0724/workflowsim-research/actions/workflows/ci.yml)
 [![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE)
 
-WorkflowSim is a discrete-event simulator for research on scientific workflow scheduling. It covers task dependencies, compute resources, storage, data transfer, and scheduling decisions in a single declarative model, and emits auditable, replayable experiment results.
+WorkflowSim is a discrete-event simulator for scientific workflow scheduling research. It models task dependencies, compute resources, storage, data transfer, and scheduling decisions in one declarative experiment, and produces replayable results with machine-checkable evidence.
 
-Simulation results support controlled, same-condition research comparisons; they are not substitutes for real-cluster monitoring, production-network prediction, or cloud-provider billing. The project provides the Java simulation environment and scheduling-policy interfaces.
+The simulator supports controlled comparisons under declared conditions. Its results are not substitutes for production-cluster monitoring, real-network prediction, or cloud-provider billing.
 
-
-## Quick Start
+## Quick start
 
 Requires **JDK 17+ and Maven 3.6.3+**. From the repository root:
 
 ```bash
-# Validate inputs, parameters, and algorithm combinations
+# Validate the example configuration
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   -Dexec.args="validate experiments/configs/online-comparison.json"
 
-# Run experiments and generate the offline interactive report
+# Run the experiment and generate the offline report
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   -Dexec.args="run experiments/configs/online-comparison.json output/workbench"
 ```
 
-Open `index.html` in the output root to browse experiment history, and `report.html` inside an experiment directory for scheme comparisons, task timelines, waiting time, and resource utilization. Each run uses a dedicated output directory; failure causes and completed results are both retained.
+Open `index.html` in the output root to browse experiment records. Each experiment directory contains a `report.html` with scheme comparisons, task timelines, waiting time, and resource utilization. Completed results and failure causes are retained separately.
 
-Experiment outputs under `output/` are working products with an explicit retention policy: uncompressed study and workbench directories are regenerable and can be removed with `make clean-output`, while every retained evidence original is kept as an `output/*.tar.gz` archive (the per-directory ignore annotations in `.gitignore` record which archives are the originals).
-
-- Run from configuration and read reports: [Workbench guide](<docs/getting-started/WORKBENCH.md>)
-- Build experiments with the Java API: [code-configuration guide](<docs/getting-started/CODE_CONFIG_EXPERIMENTS.md>)
-- Build, test, and tooling commands: [build guide](<docs/getting-started/BUILD.md>)
-- Implemented papers and reproduction boundaries: [paper algorithm reproductions](<docs/experiments/PAPER_REPRODUCTIONS.md>)
-- Makespan and energy experiment index: [experiment index](<docs/experiments/README.md>)
-- Browse by topic: [documentation center](<docs/README.md>)
+Generated files belong under `output/` and are not source inputs. Use `make clean-output` to remove regenerable working outputs when they are no longer needed.
 
 ## Choose an example
 
 | Goal | Configuration |
 |---|---|
 | Compare online CPU scheduling policies | [Online scheduling comparison](<experiments/configs/online-comparison.json>) |
-| Use network contention models | [Network comparison](<experiments/configs/network-comparison.json>) |
-| Inspect per-file source, transfer, and CPU input gating | [Coherent file dataflow V2](<experiments/configs/coherent-file-dataflow-v2.json>) |
-| Simulate bounded SOURCE storage and required output write-back | [Bounded storage dataflow V3](<experiments/configs/storage-dataflow-v3.json>) |
-| Select a VM at control-ready time, then transfer inputs | [Online target assignment with bounded storage](<experiments/configs/online-storage-dataflow-v1.json>) |
+| Model network contention | [Network comparison](<experiments/configs/network-comparison.json>) |
+| Inspect per-file sources, transfers, and CPU input gating | [Coherent file dataflow](<experiments/configs/coherent-file-dataflow-v2.json>) |
+| Simulate bounded SOURCE storage and required output write-back | [Bounded storage dataflow](<experiments/configs/storage-dataflow-v3.json>) |
+| Select a VM at control-ready time before transferring inputs | [Online target assignment](<experiments/configs/online-storage-dataflow-v1.json>) |
 
-Examples use different support matrices; experiments cannot be constructed by arbitrarily mixing algorithms, file systems, and network options. The full scope is defined in the [dataflow capability matrix](<docs/advanced/DATAFLOW_CAPABILITY_MATRIX.md>) and the [algorithm catalog](<docs/algorithms/CATALOG.md>).
+Examples have different support matrices. Do not mix algorithms, file systems, and network options arbitrarily; consult the [capability matrix](<docs/advanced/DATAFLOW_CAPABILITY_MATRIX.md>) and [algorithm catalog](<docs/algorithms/CATALOG.md>).
+
+## Explore experiment results
+
+| Topic | Report |
+|---|---|
+| HEFT, Min-Min, Max-Min, MCT, FCFS, and Round-Robin | [Traditional makespan comparison](<docs/experiments/MAKESPAN_BASELINE_COMPARISON.md>) |
+| 1000 and 5000 task workflows | [Scale comparison](<docs/experiments/MAKESPAN_SCALE_COMPARISON.md>) |
+| HEFT, GreenHEFT, MOHEFT, MIN_POWER, EDP selection, and DVFS slack | [Energy and EDP comparison](<docs/experiments/ENERGY_BASELINE_COMPARISON.md>) |
+| Implemented literature algorithms and verification scope | [Paper reproductions](<docs/experiments/PAPER_REPRODUCTIONS.md>) |
+| All reports, result files, reproduction commands, and evidence boundaries | [Experiment index](<docs/experiments/README.md>) |
+
+These reports describe specific simulation scenes, not universal algorithm rankings. Always compare the workflow, VM platform, storage model, power model, and metric definitions before interpreting a result.
 
 ## Capability overview
 
 | Area | Scope |
 |---|---|
 | Workflow inputs | Pegasus DAX XML and WfCommons WfFormat / WfInstances JSON; dependencies, work volume, and file declarations are read, while source-machine timelines are not replayed |
-| Platform | Explicit Host/VM specifications, deterministic VM placement, capacity prechecks, and declared costs; CPU oversubscription, VM migration, and hardware monitoring are not simulated |
-| Scheduling and planning | Online CPU scheduling, independent-task static planning, controlled SHARED-storage / LOCAL DAG planning, plus explicitly labeled random and search baselines |
-| Coherent data transfer | V2 per-file source, path, merge, and visibility semantics; optional endpoint contention or actual Fat-tree path contention |
-| Bounded storage | V3 storage with bounded read/write/NIC bandwidths, SOURCE attached to a host, asynchronous materialization of successful outputs, and terminal draining |
-| Online target assignment | Binds an actual compatible VM from submitted network observations and projected CPU reservation; STATIC dispatch then follows; NOOP retries reuse the binding |
-| Experiment control | Staggered multi-workflow arrivals, failure/retry under supported combinations, post-hoc deadline observation, matrix-based computation cost |
-| Policy integration | `RlEnvironment` / `RlPolicy` state, action, and reward interfaces; external policies must satisfy the corresponding model constraints |
+| Platform | Explicit Host/VM specifications, deterministic placement, capacity prechecks, declared costs, and optional power or frequency tiers |
+| Scheduling and planning | Online CPU scheduling, independent-task static planning, controlled SHARED-storage and LOCAL DAG planning, plus labeled random and search baselines |
+| Coherent file dataflow | Per-file sources, paths, merging, replica visibility, and CPU input barriers; optional endpoint or Fat-tree contention |
+| Bounded storage | Bounded read/write/NIC bandwidths, SOURCE attachment, asynchronous output materialization, and terminal draining |
+| Online target assignment | VM selection from submitted network observations and projected CPU reservations before input preparation |
+| Experiment control | Staggered workflow arrivals, supported failure/retry combinations, deadline observation, and matrix-based computation cost |
+| Custom policies | Registered scheduling and planning contracts with explicit model requirements and fail-fast validation |
 
-The standard `SimulationRunner` uses SPACE_SHARED VMs without task clustering. Runs are serialized within a single JVM; batch-level parallelism requires separate processes. Online target assignment and online CPU scheduling are distinct decision phases and must not be conflated into one algorithm.
+The maintained runner uses SPACE_SHARED VMs and accepts NONE task clustering only. Simulations are serialized within a JVM; larger experiment matrices require separate processes. Online target assignment and online CPU scheduling are distinct decision phases.
 
 ## Execution pipeline and project layout
 
@@ -72,35 +76,34 @@ workflow + SimulationConfig + PlatformProfile
     → SimulationReport → evidence validation → offline report / exact replay
 ```
 
-- `simulator/` — the simulation core, platform, algorithms, network, policy interfaces, and tests.
-- `experiments/` — the unified entry point, examples, experiment executors, and reporting; part of the default Maven reactor.
-- `datasets/` — workflow inputs and the [dataset notes](<datasets/README.md>).
-- `scripts/` — independent evidence validation, browser acceptance, and performance comparison tooling.
-- `docs/` — current usage guides, model contracts, and maintenance notes, in English.
+- `simulator/` — simulation core, platform, algorithms, network, policy interfaces, and tests.
+- `experiments/` — Workbench, examples, experiment drivers, reports, and retained study protocols.
+- `datasets/` — workflow inputs and [dataset notes](<datasets/README.md>).
+- `scripts/` — independent evidence checks, browser acceptance, and performance comparison tools.
+- `docs/` — user guides, model contracts, experiment reports, and maintenance notes.
 
 The core module does not depend on the experiment module.
 
-## Experiment results and the research boundary
+## Documentation and development
 
-Standard artifacts comprise manifest v4, metrics v2, and events v1; network sidecars are engaged by an explicit recording mode. Hashes, sizes, event ordering, and declared context are cross-checked, and replay compares JSON values exactly — no tolerance is used to mask changes in scientific quantities.
+| Task | Guide |
+|---|---|
+| Run configurations and read reports | [Workbench guide](<docs/getting-started/WORKBENCH.md>) |
+| Build experiments with the Java API | [Code-configuration guide](<docs/getting-started/CODE_CONFIG_EXPERIMENTS.md>) |
+| Understand algorithm and metric definitions | [Algorithm contracts](<docs/algorithms/CONTRACTS.md>) and [metrics card](<docs/algorithms/METRICS_CARD.md>) |
+| Build, test, and use tooling | [Build guide](<docs/getting-started/BUILD.md>) |
+| Browse all documentation | [Documentation center](<docs/README.md>) |
 
-- Lifecycle evidence proves source, path, input/output, and CPU causality within its declared scope; it is not automatically an interval-by-interval fluid-service accounting.
-- Online-action evidence validates binding, computation claims, nominal-input bounds, and recorded scores; it does not prove exact real-time balances, future contention, or global optimality.
-- File reference volume is not network traffic, abstract cost is not a bill, and runner wall-clock time is not simulated time. Exact statistical conventions are defined in the [reproducibility contract](<docs/experiments/REPRODUCIBILITY.md>) and the [replay contract](<docs/experiments/RERUN_DIFF_CONTRACT.md>).
-- Paper fixtures and compatibility data validate only their versions and conditions; they cannot directly substitute for conclusions about the current code.
-
-## Development and verification
+Run the complete local acceptance gate before submitting changes:
 
 ```bash
 make quality-gate
 ```
 
-The joint gate covers unit, semantic, and integration tests, coverage floors, core-API Javadoc, independent Python checks, documentation, language, and dataset integrity. Browser acceptance and both registered mutation families are described in the [build guide](<docs/getting-started/BUILD.md>). For performance comparisons, first check state, capture, and action-fingerprint equality, then report wall time and allocation deltas, following the [state-copy performance notes](<docs/advanced/DATAFLOW_STATE_COPY_PERFORMANCE.md>).
-
-The [V&V case ledger](<docs/experiments/VV_CASE_LEDGER.md>) and [golden-evidence registry](<docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md>) distinguish verification, validation, and labeled regression evidence; real-platform validation is not implied by a green build.
+The gate covers unit and integration tests, coverage floors, core-API Javadoc, independent Python checks, documentation, language, and dataset integrity. Metric conventions, replay rules, and evidence scope are defined in the [reproducibility contract](<docs/experiments/REPRODUCIBILITY.md>) and [replay contract](<docs/experiments/RERUN_DIFF_CONTRACT.md>).
 
 ## License and citation
 
-Released under the **GNU General Public License, version 2 or (at your option) any later version** ([LICENSE](LICENSE)). The simulator embeds the CloudSim 3 toolkit (`simulator/src/main/java/org/cloudbus/`), which is distributed under the GNU GPL by The University of Melbourne and is therefore the reason this project cannot be relicensed under a permissive license; its original notices are retained in every file.
+Released under the **GNU General Public License, version 2 or (at your option) any later version** ([LICENSE](LICENSE)). The simulator embeds the CloudSim 3 toolkit (`simulator/src/main/java/org/cloudbus/`), distributed under the GNU GPL by The University of Melbourne; its original notices are retained.
 
-To cite this software, use the metadata in [CITATION.cff](CITATION.cff) — GitHub renders it through the "Cite this repository" button, and reference managers import it directly.
+To cite this software, use [CITATION.cff](CITATION.cff). GitHub exposes the metadata through the "Cite this repository" button, and reference managers can import it directly.
