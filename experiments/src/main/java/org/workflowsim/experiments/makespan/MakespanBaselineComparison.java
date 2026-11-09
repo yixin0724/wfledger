@@ -60,31 +60,44 @@ public final class MakespanBaselineComparison {
             if (!Files.isRegularFile(workflow)) {
                 throw new IllegalArgumentException("Missing scientific workflow " + workflow);
             }
-            for (Parameters.SchedulingAlgorithm algorithm : Arrays.asList(
-                    Parameters.SchedulingAlgorithm.STATIC,
-                    Parameters.SchedulingAlgorithm.READY_BATCH_MINMIN,
-                    Parameters.SchedulingAlgorithm.READY_BATCH_MAXMIN,
-                    Parameters.SchedulingAlgorithm.READY_BATCH_MCT,
-                    Parameters.SchedulingAlgorithm.FCFS,
-                    Parameters.SchedulingAlgorithm.READY_BATCH_ROUNDROBIN)) {
-                Parameters.PlanningAlgorithm planner = algorithm == Parameters.SchedulingAlgorithm.STATIC
-                        ? Parameters.PlanningAlgorithm.SHARED_STORAGE_HEFT
-                        : Parameters.PlanningAlgorithm.INVALID;
-                SimulationConfig config = SimulationConfig.builder(workflow.toString(), 4)
-                        .planningAlgorithm(planner)
-                        .schedulingAlgorithm(algorithm)
-                        .fileSystem(ReplicaCatalog.FileSystem.SHARED)
-                        .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
-                        .costModel(Parameters.CostModel.VM)
-                        .runtimeReferenceMips(1000.0)
-                        .randomSeed(7L)
-                        .build();
-                SimulationReport report = new SimulationRunner().run(config, platform);
-                results.add(Result.from(
-                        dataset,
-                        planner == Parameters.PlanningAlgorithm.INVALID ? algorithm.name() : planner.name(),
-                        report));
-            }
+            results.addAll(runDataset(workflow, dataset));
+        }
+        return Collections.unmodifiableList(results);
+    }
+
+    public static List<Result> runDataset(Path workflow, String dataset) throws SimulationExecutionException {
+        return runDataset(workflow, dataset, SimulationConfig.DEFAULT_EVENT_RECORDER_CAP);
+    }
+
+    public static List<Result> runDataset(Path workflow, String dataset, int eventRecorderCap)
+            throws SimulationExecutionException {
+        PlatformProfile platform = platform();
+        List<Result> results = new ArrayList<Result>();
+        for (Parameters.SchedulingAlgorithm algorithm : Arrays.asList(
+                Parameters.SchedulingAlgorithm.STATIC,
+                Parameters.SchedulingAlgorithm.READY_BATCH_MINMIN,
+                Parameters.SchedulingAlgorithm.READY_BATCH_MAXMIN,
+                Parameters.SchedulingAlgorithm.READY_BATCH_MCT,
+                Parameters.SchedulingAlgorithm.FCFS,
+                Parameters.SchedulingAlgorithm.READY_BATCH_ROUNDROBIN)) {
+            Parameters.PlanningAlgorithm planner = algorithm == Parameters.SchedulingAlgorithm.STATIC
+                    ? Parameters.PlanningAlgorithm.SHARED_STORAGE_HEFT
+                    : Parameters.PlanningAlgorithm.INVALID;
+            SimulationConfig config = SimulationConfig.builder(workflow.toString(), 4)
+                    .planningAlgorithm(planner)
+                    .schedulingAlgorithm(algorithm)
+                    .fileSystem(ReplicaCatalog.FileSystem.SHARED)
+                    .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
+                    .costModel(Parameters.CostModel.VM)
+                    .runtimeReferenceMips(1000.0)
+                    .eventRecorderCap(eventRecorderCap)
+                    .randomSeed(7L)
+                    .build();
+            SimulationReport report = new SimulationRunner().run(config, platform);
+            results.add(Result.from(
+                    dataset,
+                    planner == Parameters.PlanningAlgorithm.INVALID ? algorithm.name() : planner.name(),
+                    report));
         }
         return Collections.unmodifiableList(results);
     }
@@ -92,6 +105,11 @@ public final class MakespanBaselineComparison {
     public static void main(String[] args) throws Exception {
         Path output = args.length == 0 ? Paths.get("output", "makespan-baseline", "results.json") : Paths.get(args[0]);
         List<Result> results = run();
+        writeResults(output, results);
+        System.out.println("Wrote " + results.size() + " baseline results to " + output);
+    }
+
+    public static void writeResults(Path output, List<Result> results) throws java.io.IOException {
         JsonArray array = new JsonArray();
         for (Result result : results) {
             array.add(result.toJson());
@@ -104,7 +122,6 @@ public final class MakespanBaselineComparison {
                 output,
                 (new GsonBuilder().setPrettyPrinting().create().toJson(array) + "\n")
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        System.out.println("Wrote " + results.size() + " baseline results to " + output);
     }
 
     private static PlatformProfile platform() {
@@ -218,7 +235,7 @@ public final class MakespanBaselineComparison {
             return new Result(dataset, algorithm, report);
         }
 
-        private JsonObject toJson() {
+        public JsonObject toJson() {
             JsonObject value = new JsonObject();
             value.addProperty("dataset", dataset);
             value.addProperty("algorithm", algorithm);
