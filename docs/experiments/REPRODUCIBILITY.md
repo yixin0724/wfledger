@@ -69,7 +69,7 @@ The [manifest writer](<../../simulator/src/main/java/org/workflowsim/experiment/
 
 [Provenance](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentProvenance.java>) distinguishes core components from optional research components and records the source tree, module/root POMs, binaries, classpath string digests, and working directory where obtainable; JVM/OS information is kept separately in the manifest's `runtime` object. Component roots are derived from the classes' code sources, not guessed from the working directory; when source code is unavailable, the missing state is recorded explicitly.
 
-These content hashes are not Git commit numbers, author authentication, or release signatures; the classpath string hash is not complete proof of all external dependency contents either. A research handover must additionally retain version information for build dependencies and for external policies or resource inputs. The protocol logical ID and the hash of the protocol's original bytes bind the study identity; current and compatibility identities are in the [network study protocol notes](<NETWORK_STUDY_PROTOCOL.md>).
+These content hashes are not Git commit numbers, author authentication, or release signatures; the classpath string hash is not complete proof of all external dependency contents either. A research handover must additionally retain version information for build dependencies and for external policies or resource inputs. The protocol logical ID and the hash of the protocol's original bytes bind the study identity; current and compatibility identities are in the [network study protocol notes](<../../experiments/studies/PROTOCOL_COMPATIBILITY.md>).
 
 ## Validation, Rerun, and Retention
 

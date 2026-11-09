@@ -74,7 +74,7 @@ basis of the decision.
 
 ## Supporting records
 
-- [V&V case and golden-evidence ledger](<VV_CASE_LEDGER.md>)
-- [Golden and reference-evidence registry](<GOLDEN_EVIDENCE_REGISTRY.md>)
-- [Application structural benchmarks](<APPLICATION_BENCHMARKS.md>)
+- [V&V case and golden-evidence ledger](<../../../docs/experiments/VV_CASE_LEDGER.md>)
+- [Golden and reference-evidence registry](<../../../docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md>)
+- [Application structural benchmarks](<../../../docs/experiments/APPLICATION_BENCHMARKS.md>)
 - [Independent V&V review protocol](<VV_REVIEW_PROTOCOL.md>)

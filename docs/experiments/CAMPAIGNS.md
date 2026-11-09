@@ -107,7 +107,7 @@ mvn -pl :workflowsim-workbench -am compile exec:java \
   '-Dexec.args="/absolute/new-network-study/network-study.json"'
 ```
 
-The executor freezes the actual declaration of [NetworkStudyPlan](<../../experiments/src/main/java/org/workflowsim/experiments/network/NetworkStudyPlan.java>) into the output's `protocol.json`; it does not read old Markdown to decide what gets run. The output additionally contains the generated inputs, the per-run evidence, `network-study.json`, and an automatic results table. The current and read-only-compatible identities are listed in the [protocol identity note](<NETWORK_STUDY_PROTOCOL.md>); conditions must not be modified while continuing to use the same registered ID.
+The executor freezes the actual declaration of [NetworkStudyPlan](<../../experiments/src/main/java/org/workflowsim/experiments/network/NetworkStudyPlan.java>) into the output's `protocol.json`; it does not read old Markdown to decide what gets run. The output additionally contains the generated inputs, the per-run evidence, `network-study.json`, and an automatic results table. The current and read-only-compatible identities are listed in the [protocol identity note](<../../experiments/studies/PROTOCOL_COMPATIBILITY.md>); conditions must not be modified while continuing to use the same registered ID.
 
 ### Inputs and Eligibility
 

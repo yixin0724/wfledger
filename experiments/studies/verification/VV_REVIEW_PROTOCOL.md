@@ -44,5 +44,5 @@ No aggregate credibility score is permitted. A critical `CHANGES_REQUIRED` or `R
 blocks the associated claim even if every other item passes. After any semantic, input, referent,
 platform, or metric change, the affected cases must be reviewed again.
 
-See [V&V case and golden-evidence ledger](<VV_CASE_LEDGER.md>) and
-[golden and reference-evidence registry](<GOLDEN_EVIDENCE_REGISTRY.md>).
+See [V&V case and golden-evidence ledger](<../../../docs/experiments/VV_CASE_LEDGER.md>) and
+[golden and reference-evidence registry](<../../../docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md>).

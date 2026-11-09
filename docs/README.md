@@ -76,10 +76,6 @@ and superseded audit drafts are not long-term entry points.
   waiting time, slowdown, throughput and energy on Montage, CyberShake and Inspiral.
 - [Energy and EDP baseline comparison](<experiments/ENERGY_BASELINE_COMPARISON.md>): HEFT, GreenHEFT,
   MOHEFT, MIN_POWER, EDP_HEURISTIC and DVFS slack on real scientific workflows.
-- [Independent V&V review protocol](<experiments/VV_REVIEW_PROTOCOL.md>): structured walkthrough,
-  independence requirements, assessment record, and the current review status.
-- [Independent V&V review record](<experiments/VV_REVIEW.md>): findings,
-  corpus-blocker closure, capability/results assessments, and residual boundaries.
 - [Evidence replay and difference comparison](<experiments/RERUN_DIFF_CONTRACT.md>): configuration rebuilding, verdicts, exact core quantities, and the small set of volatile fields.
 - [Independent study-audit tooling](<../scripts/STUDY_AUDIT.md>): the actual scope of general evidence/statistics checks, distinguished from dataflow-specific certificates.
 

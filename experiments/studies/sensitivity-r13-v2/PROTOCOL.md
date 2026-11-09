@@ -13,7 +13,7 @@
 - Protocol ID: `sensitivity-response-r13-v2` (registered by
   [NetworkStudyPlan](<../../src/main/java/org/workflowsim/experiments/network/NetworkStudyPlan.java>);
   identity semantics governed by
-  [NETWORK_STUDY_PROTOCOL_REVISIONS](<../../../docs/experiments/NETWORK_STUDY_PROTOCOL.md>)).
+  [NETWORK_STUDY_PROTOCOL_REVISIONS](<../PROTOCOL_COMPATIBILITY.md>)).
 - Execution declaration: `WORK_CONSERVING_TASK_EXECUTION_V2`.
 - LOCAL_PEFT algorithm identity: `PEFT_SUCCESSOR_COST_OCT_EXIT_ZERO_V2` (successor cost
   `w(child, p')`, exit `OCT = 0`; ready-list discipline per commit 37d3258).
