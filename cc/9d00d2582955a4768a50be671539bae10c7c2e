@@ -1,0 +1,19 @@
+docs/experiments/MAKESPAN_SCALE_COMPARISON.md
+  s_24f59fb6b2f10b::t_488d56822b0e9b 1-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cc9d00d2582955a4768a50be671539bae10c7c2e",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
