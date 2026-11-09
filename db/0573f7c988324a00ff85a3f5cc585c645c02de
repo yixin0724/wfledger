@@ -1,0 +1,14 @@
+README.md
+  h_adc77830afcf4d 6,8,10,15,20,26,28,35-40,42-52,59-65,67,79-83,87,89-95,97,103,107,109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "db0573f7c988324a00ff85a3f5cc585c645c02de",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
