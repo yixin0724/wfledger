@@ -57,6 +57,7 @@ public final class WorkbenchConfig {
         if (name.length() > 128) {
             throw new IllegalArgumentException("Experiment name is too long");
         }
+        ExecutionMode executionMode = executionMode(root);
         List<String> paths = readWorkflowPaths(path, root);
         List<Double> arrivals = readArrivals(root, paths);
         JsonObject platformObject = object(root, "platform");
@@ -67,7 +68,8 @@ public final class WorkbenchConfig {
         SimulationConfig.FrequencyPolicy frequencyPolicy = frequencyPolicy(platformObject, platform);
         SimulationModels models = readSimulationModels(root, platform);
         List<Long> seeds = readSeeds(root);
-        List<Candidate> candidates = readCandidates(root, paths, arrivals, platform, models, seeds, frequencyPolicy);
+        List<Candidate> candidates =
+                readCandidates(root, paths, arrivals, platform, models, seeds, frequencyPolicy, executionMode);
         return new WorkbenchConfig(name, root.deepCopy(), platform, candidates, seeds);
     }
 
@@ -94,6 +96,7 @@ public final class WorkbenchConfig {
                 "configuration",
                 "schema",
                 "name",
+                "executionMode",
                 "workflowPaths",
                 "workflowArrivalSeconds",
                 "platform",
@@ -102,6 +105,22 @@ public final class WorkbenchConfig {
                 "seeds");
         if (!SCHEMA.equals(text(root, "schema", null))) {
             throw new IllegalArgumentException("Unsupported configuration schema");
+        }
+    }
+
+    private enum ExecutionMode {
+        COMBINED_WORKFLOWS,
+        PER_WORKFLOW
+    }
+
+    private static ExecutionMode executionMode(JsonObject root) {
+        String value = text(root, "executionMode", "COMBINED_WORKFLOWS");
+        try {
+            return ExecutionMode.valueOf(value);
+        } catch (IllegalArgumentException unknownMode) {
+            throw new IllegalArgumentException(
+                    "configuration.executionMode must be COMBINED_WORKFLOWS or PER_WORKFLOW, got: " + value,
+                    unknownMode);
         }
     }
 
@@ -159,6 +178,8 @@ public final class WorkbenchConfig {
                 "minEventIntervalSeconds",
                 "eventRecorderCap",
                 "deadlineSeconds",
+                "deadlineSecondsByWorkflow",
+                "costModel",
                 "taskCostMatrix",
                 "fixedEndpoint",
                 "networkEvidence");
@@ -180,7 +201,17 @@ public final class WorkbenchConfig {
         if (movement.isCoherentStorageDataflowV3() != (platform.getSourceStorage() != null)) {
             throw new IllegalArgumentException("sourceStorage must be declared exactly for storage V3 models");
         }
-        return new SimulationModels(sim, fs, movement, networkEvidence);
+        return new SimulationModels(sim, fs, movement, networkEvidence, costModel(sim));
+    }
+
+    private static Parameters.CostModel costModel(JsonObject sim) {
+        String value = text(sim, "costModel", "DATACENTER");
+        try {
+            return Parameters.CostModel.valueOf(value);
+        } catch (IllegalArgumentException unknownModel) {
+            throw new IllegalArgumentException(
+                    "simulation.costModel must be DATACENTER or VM, got: " + value, unknownModel);
+        }
     }
 
     /** Random seed read and uniqueness validation, extracted verbatim. */
@@ -199,11 +230,7 @@ public final class WorkbenchConfig {
         return seeds;
     }
 
-    /**
-     * Algorithm candidate and configuration assembly, extracted verbatim. BAT-D4 (2026-10-29) adds the
-     * frequency-policy parameter: the policy is a configuration-level (SimulationConfig)
-     * declaration injected with the same value into every candidate.
-     */
+    /** Assemble the algorithm matrix, optionally expanding every algorithm once per workflow input. */
     private static List<Candidate> readCandidates(
             JsonObject root,
             List<String> paths,
@@ -211,70 +238,146 @@ public final class WorkbenchConfig {
             PlatformProfile platform,
             SimulationModels models,
             List<Long> seeds,
-            SimulationConfig.FrequencyPolicy frequencyPolicy) {
+            SimulationConfig.FrequencyPolicy globalFrequencyPolicy,
+            ExecutionMode executionMode) {
         List<Candidate> candidates = new ArrayList<Candidate>();
-        Set<String> ids = new HashSet<String>();
+        Set<String> algorithmIds = new HashSet<String>();
+        Set<String> candidateIds = new HashSet<String>();
+        Map<String, Long> deadlines = deadlineSecondsByWorkflow(models.sim, paths, executionMode);
+        long defaultDeadline = models.sim.has("deadlineSeconds")
+                ? longValue(models.sim.get("deadlineSeconds"), "deadlineSeconds")
+                : 0L;
+        JsonArray algorithms = array(root, "algorithms");
         String track = null;
-        for (JsonElement item : array(root, "algorithms")) {
-            if (!item.isJsonObject()) {
-                throw new IllegalArgumentException("algorithms must contain objects");
+        int expansionCount = executionMode == ExecutionMode.PER_WORKFLOW ? paths.size() : 1;
+        for (int workflowIndex = 0; workflowIndex < expansionCount; workflowIndex++) {
+            boolean perWorkflow = executionMode == ExecutionMode.PER_WORKFLOW;
+            List<String> candidatePaths = perWorkflow ? Collections.singletonList(paths.get(workflowIndex)) : paths;
+            List<Double> candidateArrivals =
+                    perWorkflow ? Collections.singletonList(arrivals.get(workflowIndex)) : arrivals;
+            String workflowPath = perWorkflow ? paths.get(workflowIndex) : null;
+            long deadline = defaultDeadline;
+            if (perWorkflow) {
+                String basename = workflowBasename(workflowPath);
+                if (deadlines.containsKey(basename)) {
+                    deadline = deadlines.get(basename).longValue();
+                }
             }
-            JsonObject algorithm = item.getAsJsonObject();
-            fields(algorithm, "algorithm", "id", "scheduler", "planner", "dataflowAssignment");
-            org.workflowsim.data.v2.DataflowAssignmentConfig assignment = algorithm.has("dataflowAssignment")
-                    ? org.workflowsim.data.v2.DataflowAssignmentConfig.decodeConfig(algorithm.get("dataflowAssignment"))
-                    : org.workflowsim.data.v2.DataflowAssignmentConfig.off();
-            if (assignment.isEnabled()
-                    && (!models.movement.usesCoherentDataflowRuntime() || !models.networkEvidence.isEnabled())) {
-                throw new IllegalArgumentException(
-                        "Online destination binding in Workbench requires a coherent model and complete lifecycle "
-                                + "recording");
+            for (JsonElement item : algorithms) {
+                if (!item.isJsonObject()) {
+                    throw new IllegalArgumentException("algorithms must contain objects");
+                }
+                JsonObject algorithm = item.getAsJsonObject();
+                fields(algorithm, "algorithm", "id", "scheduler", "planner", "dataflowAssignment", "frequencyPolicy");
+                org.workflowsim.data.v2.DataflowAssignmentConfig assignment = algorithm.has("dataflowAssignment")
+                        ? org.workflowsim.data.v2.DataflowAssignmentConfig.decodeConfig(
+                                algorithm.get("dataflowAssignment"))
+                        : org.workflowsim.data.v2.DataflowAssignmentConfig.off();
+                if (assignment.isEnabled()
+                        && (!models.movement.usesCoherentDataflowRuntime() || !models.networkEvidence.isEnabled())) {
+                    throw new IllegalArgumentException(
+                            "Online destination binding in Workbench requires a coherent model and complete lifecycle "
+                                    + "recording");
+                }
+                String algorithmId = text(algorithm, "id", null);
+                if (!algorithmId.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+                        || (workflowIndex == 0 && !algorithmIds.add(algorithmId))) {
+                    throw new IllegalArgumentException("Algorithm IDs must be unique safe identifiers");
+                }
+                String candidateId = perWorkflow ? perWorkflowCandidateId(workflowPath, algorithmId) : algorithmId;
+                if (!candidateIds.add(candidateId)) {
+                    throw new IllegalArgumentException("Candidate IDs must be unique safe identifiers");
+                }
+                Parameters.PlanningAlgorithm planner =
+                        Parameters.PlanningAlgorithm.valueOf(text(algorithm, "planner", "INVALID"));
+                ResolvedScheduler resolved = resolveSchedulerPolicy(algorithm, assignment, planner);
+                rejectWorkbenchExcludedScheduler(resolved.scheduler);
+                track = requireSameDecisionLayer(track, assignment, planner);
+                SimulationConfig.FrequencyPolicy candidateFrequencyPolicy =
+                        algorithmFrequencyPolicy(algorithm, algorithmId, globalFrequencyPolicy, platform);
+                org.workflowsim.utils.SimulationConfig.Builder configBuilder = SimulationConfig.builder(
+                                candidatePaths, platform.getVms().size())
+                        .workflowArrivalSeconds(candidateArrivals)
+                        .fileSystem(models.fileSystem)
+                        .dataMovementModel(models.movement)
+                        .networkEvidence(models.networkEvidence)
+                        .dataflowAssignment(assignment)
+                        .schedulingAlgorithm(resolved.scheduler)
+                        .planningAlgorithm(planner)
+                        .randomSeed(seeds.get(0))
+                        .costModel(models.costModel)
+                        .frequencyPolicy(candidateFrequencyPolicy);
+                if (resolved.registeredProvider != null) {
+                    configBuilder.registeredSchedulingAlgorithm(resolved.registeredProvider);
+                }
+                SimulationConfig config = configBuilder
+                        .runtimeScale(decimal(models.sim, "runtimeScale", 1, true))
+                        .runtimeReferenceMips(decimal(models.sim, "runtimeReferenceMips", 1000, true))
+                        .cloudSimMinEventIntervalSeconds(decimal(models.sim, "minEventIntervalSeconds", 0.1, true))
+                        .eventRecorderCap(integer(
+                                models.sim,
+                                "eventRecorderCap",
+                                SimulationConfig.DEFAULT_EVENT_RECORDER_CAP,
+                                1,
+                                Integer.MAX_VALUE))
+                        .deadline(deadline)
+                        .taskCostMatrix(matrix(models.sim))
+                        .build();
+                candidates.add(new Candidate(candidateId, algorithmId, workflowPath, config));
             }
-            String id = text(algorithm, "id", null);
-            if (!id.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}") || !ids.add(id)) {
-                throw new IllegalArgumentException("Algorithm IDs must be unique safe identifiers");
-            }
-            Parameters.PlanningAlgorithm planner =
-                    Parameters.PlanningAlgorithm.valueOf(text(algorithm, "planner", "INVALID"));
-            ResolvedScheduler resolved = resolveSchedulerPolicy(algorithm, assignment, planner);
-            rejectWorkbenchExcludedScheduler(resolved.scheduler);
-            track = requireSameDecisionLayer(track, assignment, planner);
-            org.workflowsim.utils.SimulationConfig.Builder configBuilder = SimulationConfig.builder(
-                            paths, platform.getVms().size())
-                    .workflowArrivalSeconds(arrivals)
-                    .fileSystem(models.fileSystem)
-                    .dataMovementModel(models.movement)
-                    .networkEvidence(models.networkEvidence)
-                    .dataflowAssignment(assignment)
-                    .schedulingAlgorithm(resolved.scheduler)
-                    .planningAlgorithm(planner)
-                    .randomSeed(seeds.get(0))
-                    .frequencyPolicy(frequencyPolicy);
-            if (resolved.registeredProvider != null) {
-                configBuilder.registeredSchedulingAlgorithm(resolved.registeredProvider);
-            }
-            SimulationConfig config = configBuilder
-                    .runtimeScale(decimal(models.sim, "runtimeScale", 1, true))
-                    .runtimeReferenceMips(decimal(models.sim, "runtimeReferenceMips", 1000, true))
-                    .cloudSimMinEventIntervalSeconds(decimal(models.sim, "minEventIntervalSeconds", 0.1, true))
-                    .eventRecorderCap(integer(
-                            models.sim,
-                            "eventRecorderCap",
-                            SimulationConfig.DEFAULT_EVENT_RECORDER_CAP,
-                            1,
-                            Integer.MAX_VALUE))
-                    .deadline(
-                            models.sim.has("deadlineSeconds")
-                                    ? longValue(models.sim.get("deadlineSeconds"), "deadlineSeconds")
-                                    : 0)
-                    .taskCostMatrix(matrix(models.sim))
-                    .build();
-            candidates.add(new Candidate(id, config));
         }
         if (candidates.isEmpty() || candidates.size() * seeds.size() > 500) {
             throw new IllegalArgumentException("An experiment needs 1..500 runs");
         }
         return candidates;
+    }
+
+    private static String workflowBasename(String workflowPath) {
+        return new java.io.File(workflowPath).getName();
+    }
+
+    private static String perWorkflowCandidateId(String workflowPath, String algorithmId) {
+        String basename = workflowBasename(workflowPath);
+        int extension = basename.lastIndexOf('.');
+        String stem = extension < 0 ? basename : basename.substring(0, extension);
+        String candidateId = stem + "__" + algorithmId;
+        if (!candidateId.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")) {
+            throw new IllegalArgumentException(
+                    "PER_WORKFLOW candidate IDs must be unique safe identifiers; invalid workflow basename or ID: "
+                            + candidateId);
+        }
+        return candidateId;
+    }
+
+    private static Map<String, Long> deadlineSecondsByWorkflow(
+            JsonObject sim, List<String> paths, ExecutionMode executionMode) {
+        if (!sim.has("deadlineSecondsByWorkflow")) {
+            return Collections.emptyMap();
+        }
+        if (executionMode != ExecutionMode.PER_WORKFLOW) {
+            throw new IllegalArgumentException(
+                    "simulation.deadlineSecondsByWorkflow is only allowed with executionMode=PER_WORKFLOW");
+        }
+        Set<String> knownBasenames = new HashSet<String>();
+        for (String path : paths) {
+            knownBasenames.add(workflowBasename(path));
+        }
+        Map<String, Long> deadlines = new LinkedHashMap<String, Long>();
+        for (Map.Entry<String, JsonElement> entry :
+                object(sim, "deadlineSecondsByWorkflow").entrySet()) {
+            String basename = entry.getKey();
+            if (!knownBasenames.contains(basename)) {
+                throw new IllegalArgumentException(
+                        "simulation.deadlineSecondsByWorkflow contains unknown workflow basename: " + basename);
+            }
+            long deadline = longValue(entry.getValue(), "simulation.deadlineSecondsByWorkflow." + basename);
+            if (deadline < 0L) {
+                throw new IllegalArgumentException(
+                        "simulation.deadlineSecondsByWorkflow values must be nonnegative integers");
+            }
+            deadlines.put(basename, Long.valueOf(deadline));
+        }
+        return deadlines;
     }
 
     /** Private extraction structure for the scheduling-policy resolution in readCandidates. */
@@ -373,16 +476,19 @@ public final class WorkbenchConfig {
         final ReplicaCatalog.FileSystem fileSystem;
         final DataMovementModel movement;
         final NetworkEvidenceConfig networkEvidence;
+        final Parameters.CostModel costModel;
 
         SimulationModels(
                 JsonObject sim,
                 ReplicaCatalog.FileSystem fileSystem,
                 DataMovementModel movement,
-                NetworkEvidenceConfig networkEvidence) {
+                NetworkEvidenceConfig networkEvidence,
+                Parameters.CostModel costModel) {
             this.sim = sim;
             this.fileSystem = fileSystem;
             this.movement = movement;
             this.networkEvidence = networkEvidence;
+            this.costModel = costModel;
         }
     }
 
@@ -472,7 +578,8 @@ public final class WorkbenchConfig {
                 // every VM); frequencyPolicy is the configuration-level assignment policy enum
                 // (DEFAULT/MIN_POWER/EDP_HEURISTIC; the default DEFAULT degenerates to v1).
                 "frequencyTiers",
-                "frequencyPolicy");
+                "frequencyPolicy",
+                "vmProfiles");
         JsonArray mips = array(value, "vmMips");
         if (mips.size() < 1 || mips.size() > 64) {
             throw new IllegalArgumentException("vmMips requires 1..64 VMs");
@@ -493,7 +600,7 @@ public final class WorkbenchConfig {
         // the PlatformProfile.FrequencyTier constructor checks, and strict descending table order is
         // rejected by the BAT-D1 check of the 13-argument VmSpec constructor; domain rules are not
         // duplicated here.
-        List<PlatformProfile.FrequencyTier> frequencyTiers = frequencyTiers(value);
+        List<PlatformProfile.FrequencyTier> frequencyTiers = frequencyTiers(value, "platform");
         // BAT-D4 mirrors the single-source-of-truth clause of PlatformProfile (BAT-D1): the
         // frequency-tier table and the flat power fields are mutually exclusive -- the first-tier
         // power pair <b>replaces</b> the flat pair (idempotent exclusion is backstopped by the VmSpec
@@ -505,6 +612,9 @@ public final class WorkbenchConfig {
                             + " the tier table REPLACES the flat fields — one source of truth"
                             + " (BAT-D4, DVFS_DIMENSION_DESIGN.md §2.5)");
         }
+        double cpuCostPerSecond = decimal(value, "cpuCostPerSecond", 3, false);
+        Map<Integer, VmProfile> vmProfiles =
+                vmProfiles(value, mips.size(), idlePowerWatts, maxPowerWatts, cpuCostPerSecond, frequencyTiers);
         // BAT-C3 (2026-10-28): optional uniform carbon intensity (gCO2/kWh; nonnegative and
         // finite, 0 is legal = an already-declared zero-carbon-intensity grid). Carbon multiplies the
         // energy chain (the intensity model recomputes E), and without a power profile the intensity
@@ -522,15 +632,15 @@ public final class WorkbenchConfig {
         if (carbonIntensityGramsPerKWh != null
                 && frequencyTiers == null
                 && idlePowerWatts <= 0.0
-                && maxPowerWatts <= 0.0) {
+                && maxPowerWatts <= 0.0
+                && !anyVmProfileHasPower(vmProfiles)) {
             throw new IllegalArgumentException("platform.carbonIntensityGramsPerKWh ("
                     + carbonIntensityGramsPerKWh
-                    + ") requires a powered platform: declare platform.idlePowerWatts/maxPowerWatts"
-                    + " or platform.frequencyTiers — carbon multiplies the energy chain and an unpowered"
-                    + " profile makes the accounting vacuous (BAT-C3)");
+                    + ") requires a powered platform: declare platform.idlePowerWatts/maxPowerWatts,"
+                    + " platform.frequencyTiers, or powered platform.vmProfiles — carbon multiplies the energy"
+                    + " chain and an unpowered profile makes the accounting vacuous (BAT-C3)");
         }
-        PlatformProfile.CostSpec costs =
-                new PlatformProfile.CostSpec(decimal(value, "cpuCostPerSecond", 3, false), 0, 0, 0);
+        PlatformProfile.CostSpec costs = new PlatformProfile.CostSpec(cpuCostPerSecond, 0, 0, 0);
         PlatformProfile.Builder result = PlatformProfile.builder("workbench-platform")
                 .costs(costs)
                 .storage(new PlatformProfile.StorageSpec(
@@ -541,6 +651,9 @@ public final class WorkbenchConfig {
                 throw new IllegalArgumentException("vmMips exceeds workbench limit");
             }
             result.addHost(new PlatformProfile.HostSpec(id, 2, speed * 2, 2048, Math.max(10000L, bandwidth), 1000000));
+            VmProfile profile = vmProfiles.get(Integer.valueOf(id));
+            PlatformProfile.CostSpec vmCosts =
+                    profile == null ? null : new PlatformProfile.CostSpec(profile.cpuCostPerSecond, 0, 0, 0);
             result.addVm(new PlatformProfile.VmSpec(
                     id,
                     speed,
@@ -550,16 +663,125 @@ public final class WorkbenchConfig {
                     10000,
                     "Xen",
                     PlatformProfile.CloudletSchedulerMode.SPACE_SHARED,
-                    null,
-                    idlePowerWatts,
-                    maxPowerWatts,
+                    vmCosts,
+                    profile == null ? idlePowerWatts : profile.idlePowerWatts,
+                    profile == null ? maxPowerWatts : profile.maxPowerWatts,
                     carbonIntensityGramsPerKWh,
-                    frequencyTiers));
+                    profile == null ? frequencyTiers : profile.frequencyTiers));
             result.pinVmToHost(id, id);
         }
         applySourceStorage(value, result, mips);
         applyNetworkTopology(value, result, mips);
         return result.build();
+    }
+
+    private static final class VmProfile {
+        final double idlePowerWatts;
+        final double maxPowerWatts;
+        final double cpuCostPerSecond;
+        final List<PlatformProfile.FrequencyTier> frequencyTiers;
+
+        VmProfile(
+                double idlePowerWatts,
+                double maxPowerWatts,
+                double cpuCostPerSecond,
+                List<PlatformProfile.FrequencyTier> frequencyTiers) {
+            this.idlePowerWatts = idlePowerWatts;
+            this.maxPowerWatts = maxPowerWatts;
+            this.cpuCostPerSecond = cpuCostPerSecond;
+            this.frequencyTiers = frequencyTiers;
+        }
+    }
+
+    private static Map<Integer, VmProfile> vmProfiles(
+            JsonObject platform,
+            int vmCount,
+            double globalIdlePowerWatts,
+            double globalMaxPowerWatts,
+            double globalCpuCostPerSecond,
+            List<PlatformProfile.FrequencyTier> globalFrequencyTiers) {
+        if (!platform.has("vmProfiles")) {
+            return Collections.emptyMap();
+        }
+        JsonArray declared = array(platform, "vmProfiles");
+        if (declared.size() == 0) {
+            throw new IllegalArgumentException("platform.vmProfiles must be a non-empty array when declared");
+        }
+        boolean globalFlatPower =
+                declaredPlatformField(platform, "idlePowerWatts") || declaredPlatformField(platform, "maxPowerWatts");
+        boolean globalTiers = globalFrequencyTiers != null;
+        Map<Integer, VmProfile> profiles = new LinkedHashMap<Integer, VmProfile>();
+        for (JsonElement item : declared) {
+            if (!item.isJsonObject()) {
+                throw new IllegalArgumentException("platform.vmProfiles entries must be objects");
+            }
+            JsonObject entry = item.getAsJsonObject();
+            fields(
+                    entry,
+                    "vmProfiles",
+                    "vmId",
+                    "idlePowerWatts",
+                    "maxPowerWatts",
+                    "cpuCostPerSecond",
+                    "frequencyTiers");
+            if (!entry.has("vmId")) {
+                throw new IllegalArgumentException("platform.vmProfiles.vmId is required");
+            }
+            long vmId = longValue(entry.get("vmId"), "platform.vmProfiles.vmId");
+            if (vmId < 0L || vmId >= vmCount) {
+                throw new IllegalArgumentException(
+                        "platform.vmProfiles.vmId must correspond to a vmMips index in 0.." + (vmCount - 1));
+            }
+            Integer id = Integer.valueOf((int) vmId);
+            if (profiles.containsKey(id)) {
+                throw new IllegalArgumentException("platform.vmProfiles.vmId values must be unique: " + vmId);
+            }
+            boolean profileFlatPower = entry.has("idlePowerWatts") || entry.has("maxPowerWatts");
+            boolean profileTiers = entry.has("frequencyTiers");
+            if ((globalFlatPower && (profileFlatPower || profileTiers))
+                    || (globalTiers && (profileFlatPower || profileTiers))
+                    || (profileFlatPower && profileTiers)) {
+                throw new IllegalArgumentException(
+                        "platform.idlePowerWatts/maxPowerWatts or platform.frequencyTiers and"
+                                + " platform.vmProfiles.idlePowerWatts/maxPowerWatts/frequencyTiers are mutually"
+                                + " exclusive: one source of truth is required per power model");
+            }
+            double idlePowerWatts = decimal(entry, "idlePowerWatts", globalIdlePowerWatts, false);
+            double maxPowerWatts = decimal(entry, "maxPowerWatts", globalMaxPowerWatts, false);
+            if (idlePowerWatts > maxPowerWatts) {
+                throw new IllegalArgumentException("platform.vmProfiles VM " + vmId + " idlePowerWatts ("
+                        + idlePowerWatts + ") exceeds maxPowerWatts (" + maxPowerWatts + ")");
+            }
+            List<PlatformProfile.FrequencyTier> tiers = globalFrequencyTiers;
+            if (profileTiers) {
+                if (entry.get("frequencyTiers").isJsonNull()) {
+                    throw new IllegalArgumentException(
+                            "platform.vmProfiles.frequencyTiers must be a non-empty array when declared");
+                }
+                tiers = frequencyTiers(entry, "platform.vmProfiles");
+            }
+            profiles.put(
+                    id,
+                    new VmProfile(
+                            idlePowerWatts,
+                            maxPowerWatts,
+                            decimal(entry, "cpuCostPerSecond", globalCpuCostPerSecond, false),
+                            tiers));
+        }
+        return profiles;
+    }
+
+    private static boolean declaredPlatformField(JsonObject platform, String key) {
+        return platform.has(key) && !platform.get(key).isJsonNull();
+    }
+
+    private static boolean anyVmProfileHasPower(Map<Integer, VmProfile> profiles) {
+        for (VmProfile profile : profiles.values()) {
+            if (profile.idlePowerWatts > 0.0 || profile.maxPowerWatts > 0.0 || profile.frequencyTiers != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -572,23 +794,23 @@ public final class WorkbenchConfig {
      *
      * @return tier table in declaration order; {@code null} when it is not declared
      */
-    private static List<PlatformProfile.FrequencyTier> frequencyTiers(JsonObject value) {
+    private static List<PlatformProfile.FrequencyTier> frequencyTiers(JsonObject value, String subject) {
         if (!value.has("frequencyTiers") || value.get("frequencyTiers").isJsonNull()) {
             return null;
         }
         JsonArray declared = array(value, "frequencyTiers");
         if (declared.size() == 0) {
-            throw new IllegalArgumentException(
-                    "platform.frequencyTiers must be a non-empty array when declared (BAT-D4;"
-                            + " omit the field for the v1 single-tier platform)");
+            throw new IllegalArgumentException(subject
+                    + ".frequencyTiers must be a non-empty array when declared (BAT-D4;"
+                    + " omit the field for the v1 single-tier platform)");
         }
         List<PlatformProfile.FrequencyTier> tiers = new ArrayList<PlatformProfile.FrequencyTier>();
         for (JsonElement item : declared) {
             if (!item.isJsonObject()) {
-                throw new IllegalArgumentException("platform.frequencyTiers entries must be objects");
+                throw new IllegalArgumentException(subject + ".frequencyTiers entries must be objects");
             }
             JsonObject tier = item.getAsJsonObject();
-            fields(tier, "frequencyTiers", "mips", "idlePowerWatts", "maxPowerWatts");
+            fields(tier, subject + ".frequencyTiers", "mips", "idlePowerWatts", "maxPowerWatts");
             tiers.add(new PlatformProfile.FrequencyTier(
                     decimal(tier, "mips", -1, true),
                     decimal(tier, "idlePowerWatts", -1, false),
@@ -621,14 +843,36 @@ public final class WorkbenchConfig {
         }
         if (policy != SimulationConfig.FrequencyPolicy.DEFAULT && !anyVmHasFrequencyTiers(platform)) {
             throw new IllegalArgumentException("platform.frequencyPolicy (" + policy
-                    + ") requires platform.frequencyTiers: on an all-plain platform the policy would be"
-                    + " silently inert (BAT-D4)");
+                    + ") requires platform.frequencyTiers or platform.vmProfiles[].frequencyTiers: on an all-plain"
+                    + " platform the policy would be silently inert (BAT-D4)");
         }
         return policy;
     }
 
-    /** BAT-D4: @return whether any VM in the platform profile declared a frequency-tier table
-     * (a uniform table makes the result all true or all false). */
+    private static SimulationConfig.FrequencyPolicy algorithmFrequencyPolicy(
+            JsonObject algorithm,
+            String algorithmId,
+            SimulationConfig.FrequencyPolicy globalPolicy,
+            PlatformProfile platform) {
+        String policyText = text(algorithm, "frequencyPolicy", globalPolicy.name());
+        SimulationConfig.FrequencyPolicy policy;
+        try {
+            policy = SimulationConfig.FrequencyPolicy.valueOf(policyText);
+        } catch (IllegalArgumentException unknownPolicy) {
+            throw new IllegalArgumentException(
+                    "algorithm.frequencyPolicy for algorithm '" + algorithmId
+                            + "' must be one of DEFAULT, MIN_POWER, EDP_HEURISTIC, got: " + policyText,
+                    unknownPolicy);
+        }
+        if (policy != SimulationConfig.FrequencyPolicy.DEFAULT && !anyVmHasFrequencyTiers(platform)) {
+            throw new IllegalArgumentException("algorithm.frequencyPolicy (" + policy + ") for algorithm '"
+                    + algorithmId + "' requires platform.frequencyTiers or"
+                    + " platform.vmProfiles[].frequencyTiers; the policy would otherwise be silently inert");
+        }
+        return policy;
+    }
+
+    /** BAT-D4: @return whether any VM in the platform profile declared a frequency-tier table. */
     private static boolean anyVmHasFrequencyTiers(PlatformProfile platform) {
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
             if (spec.hasFrequencyTiers()) {
@@ -766,15 +1010,20 @@ public final class WorkbenchConfig {
     }
 
     /**
-     * One experiment candidate as parsed from Workbench JSON: unique algorithm id plus its fully
-     * validated SimulationConfig; members are deliberately public and final within the package scope.
+     * One experiment candidate as parsed from Workbench JSON. {@code id} is unique within the expanded matrix;
+     * {@code algorithmId} retains the declared algorithm identity; {@code workflowPath} is the single input in
+     * PER_WORKFLOW mode and {@code null} in COMBINED_WORKFLOWS mode; {@code config} is fully validated.
      */
     public static final class Candidate {
         public final String id;
+        public final String algorithmId;
+        public final String workflowPath;
         public final SimulationConfig config;
 
-        Candidate(String id, SimulationConfig config) {
+        Candidate(String id, String algorithmId, String workflowPath, SimulationConfig config) {
             this.id = id;
+            this.algorithmId = algorithmId;
+            this.workflowPath = workflowPath;
             this.config = config;
         }
     }

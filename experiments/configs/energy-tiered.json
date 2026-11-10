@@ -1,0 +1,122 @@
+{
+  "schema": "workflowsim-workbench-v1",
+  "name": "Energy and EDP with tiered VM frequency profiles",
+  "executionMode": "PER_WORKFLOW",
+  "workflowPaths": [
+    "../../datasets/dax/montage/n50/Montage_50.dax",
+    "../../datasets/dax/montage/n100/Montage_100.dax",
+    "../../datasets/dax/cybershake/n50/CyberShake_50.dax",
+    "../../datasets/dax/sipht/n60/Sipht_60.dax",
+    "../../datasets/dax/inspiral/n50/Inspiral_50.dax"
+  ],
+  "platform": {
+    "vmMips": [500, 1000, 1500, 2000],
+    "bandwidthMbPerSecond": 100,
+    "storageTransferMbPerSecond": 15,
+    "vmProfiles": [
+      {
+        "vmId": 0,
+        "cpuCostPerSecond": 1,
+        "frequencyTiers": [
+          {
+            "mips": 500,
+            "idlePowerWatts": 5,
+            "maxPowerWatts": 50
+          },
+          {
+            "mips": 250,
+            "idlePowerWatts": 2.5,
+            "maxPowerWatts": 10
+          }
+        ]
+      },
+      {
+        "vmId": 1,
+        "cpuCostPerSecond": 2,
+        "frequencyTiers": [
+          {
+            "mips": 1000,
+            "idlePowerWatts": 10,
+            "maxPowerWatts": 100
+          },
+          {
+            "mips": 500,
+            "idlePowerWatts": 5,
+            "maxPowerWatts": 20
+          }
+        ]
+      },
+      {
+        "vmId": 2,
+        "cpuCostPerSecond": 4,
+        "frequencyTiers": [
+          {
+            "mips": 1500,
+            "idlePowerWatts": 15,
+            "maxPowerWatts": 150
+          },
+          {
+            "mips": 750,
+            "idlePowerWatts": 7.5,
+            "maxPowerWatts": 30
+          }
+        ]
+      },
+      {
+        "vmId": 3,
+        "cpuCostPerSecond": 8,
+        "frequencyTiers": [
+          {
+            "mips": 2000,
+            "idlePowerWatts": 20,
+            "maxPowerWatts": 200
+          },
+          {
+            "mips": 1000,
+            "idlePowerWatts": 10,
+            "maxPowerWatts": 40
+          }
+        ]
+      }
+    ]
+  },
+  "simulation": {
+    "fileSystem": "SHARED",
+    "dataMovementModel": "LEGACY_WORKFLOWSIM_V1",
+    "costModel": "VM",
+    "runtimeReferenceMips": 1000,
+    "eventRecorderCap": 200000,
+    "deadlineSecondsByWorkflow": {
+      "Montage_50.dax": 150,
+      "Montage_100.dax": 300,
+      "CyberShake_50.dax": 3500,
+      "Sipht_60.dax": 3500,
+      "Inspiral_50.dax": 3000
+    }
+  },
+  "algorithms": [
+    {
+      "id": "heft-default",
+      "planner": "SHARED_STORAGE_HEFT",
+      "scheduler": "STATIC"
+    },
+    {
+      "id": "min-power",
+      "planner": "SHARED_STORAGE_HEFT",
+      "scheduler": "STATIC",
+      "frequencyPolicy": "MIN_POWER"
+    },
+    {
+      "id": "edp-heuristic",
+      "planner": "SHARED_STORAGE_HEFT",
+      "scheduler": "STATIC",
+      "frequencyPolicy": "EDP_HEURISTIC"
+    },
+    {
+      "id": "dvfs-slack",
+      "planner": "DVFS_SLACK",
+      "scheduler": "DVFS_SLACK"
+    }
+  ],
+  "seeds": [7]
+}

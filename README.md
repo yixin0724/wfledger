@@ -23,7 +23,7 @@ mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.args="run experiments/configs/online-comparison.json output/workbench"
 ```
 
-Open `index.html` in the output root to browse experiment records. Each experiment directory contains a `report.html` with scheme comparisons, task timelines, waiting time, and resource utilization. Completed results and failure causes are retained separately.
+Open `index.html` in the output root to browse experiment records. Each experiment directory contains a `report.html` with detailed timelines and a `summary.html` / `summary.json` / `summary.csv` comparing workflow, algorithm, waiting time, slowdown, makespan, energy, EDP, cost, and completion counts. Completed results and failure causes are retained separately.
 
 Generated files belong under `output/` and are not source inputs. Use `make clean-output` to remove regenerable working outputs when they are no longer needed.
 
@@ -32,6 +32,12 @@ Generated files belong under `output/` and are not source inputs. Use `make clea
 | Goal | Configuration |
 |---|---|
 | Compare online CPU scheduling policies | [Online scheduling comparison](<experiments/configs/online-comparison.json>) |
+| Compare static HEFT across seven scientific workflows | [Static makespan baseline](<experiments/configs/makespan-static-baseline.json>) |
+| Compare five online makespan algorithms across seven workflows | [Online makespan baseline](<experiments/configs/makespan-online-baseline.json>) |
+| Compare static HEFT at 1000 and 5000 tasks | [Static scale study](<experiments/configs/makespan-static-scale.json>) |
+| Compare online makespan algorithms at 1000 and 5000 tasks | [Online scale study](<experiments/configs/makespan-online-scale.json>) |
+| Compare energy-aware planners with flat power | [Flat-power energy study](<experiments/configs/energy-flat.json>) |
+| Compare frequency policies and DVFS slack | [Tiered-power energy study](<experiments/configs/energy-tiered.json>) |
 | Model network contention | [Network comparison](<experiments/configs/network-comparison.json>) |
 | Inspect per-file sources, transfers, and CPU input gating | [Coherent file dataflow](<experiments/configs/coherent-file-dataflow-v2.json>) |
 | Simulate bounded SOURCE storage and required output write-back | [Bounded storage dataflow](<experiments/configs/storage-dataflow-v3.json>) |

@@ -1,0 +1,68 @@
+{
+  "schema": "workflowsim-workbench-v1",
+  "name": "Energy-aware planning with flat VM power profiles",
+  "executionMode": "PER_WORKFLOW",
+  "workflowPaths": [
+    "../../datasets/dax/montage/n50/Montage_50.dax",
+    "../../datasets/dax/montage/n100/Montage_100.dax",
+    "../../datasets/dax/cybershake/n50/CyberShake_50.dax",
+    "../../datasets/dax/sipht/n60/Sipht_60.dax",
+    "../../datasets/dax/inspiral/n50/Inspiral_50.dax"
+  ],
+  "platform": {
+    "vmMips": [500, 1000, 1500, 2000],
+    "bandwidthMbPerSecond": 100,
+    "storageTransferMbPerSecond": 15,
+    "vmProfiles": [
+      {
+        "vmId": 0,
+        "cpuCostPerSecond": 1,
+        "idlePowerWatts": 5,
+        "maxPowerWatts": 50
+      },
+      {
+        "vmId": 1,
+        "cpuCostPerSecond": 2,
+        "idlePowerWatts": 10,
+        "maxPowerWatts": 100
+      },
+      {
+        "vmId": 2,
+        "cpuCostPerSecond": 4,
+        "idlePowerWatts": 15,
+        "maxPowerWatts": 150
+      },
+      {
+        "vmId": 3,
+        "cpuCostPerSecond": 8,
+        "idlePowerWatts": 20,
+        "maxPowerWatts": 200
+      }
+    ]
+  },
+  "simulation": {
+    "fileSystem": "SHARED",
+    "dataMovementModel": "LEGACY_WORKFLOWSIM_V1",
+    "costModel": "VM",
+    "runtimeReferenceMips": 1000,
+    "eventRecorderCap": 200000
+  },
+  "algorithms": [
+    {
+      "id": "heft",
+      "planner": "SHARED_STORAGE_HEFT",
+      "scheduler": "STATIC"
+    },
+    {
+      "id": "green",
+      "planner": "GREEN_HEFT",
+      "scheduler": "STATIC"
+    },
+    {
+      "id": "mo",
+      "planner": "MO_HEFT",
+      "scheduler": "STATIC"
+    }
+  ],
+  "seeds": [7]
+}

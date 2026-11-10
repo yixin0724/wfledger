@@ -12,6 +12,12 @@ The [review protocol](<verification/VV_REVIEW_PROTOCOL.md>) and
 user setup instructions or a current capability matrix; the public entry point remains the
 [documentation center](<../../docs/README.md>).
 
+## Derived research inputs
+
+The [makespan-scale inputs](<makespan-scale/README.md>) document the exact five-copy construction of
+the 5000-task Montage, CyberShake, and Inspiral workflows used by the standard scale configuration.
+They are controlled composite inputs, not new empirical workflow traces.
+
 ## Currently executable protocols
 
 [Protocol revisions and certification scope](<PROTOCOL_COMPATIBILITY.md>)

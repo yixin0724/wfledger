@@ -2,6 +2,7 @@ package org.workflowsim.experiments.workbench;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.workflowsim.experiments.workbench.WorkbenchTestSupport.algorithm;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.workflowsim.platform.PlatformProfile;
+import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
 import com.google.gson.JsonArray;
@@ -342,6 +344,378 @@ class WorkbenchConfigTest {
             table.add(tier);
         }
         return table;
+    }
+
+    @Test
+    void combinedExecutionModeRemainsTheDefaultAndPreservesCandidateIdentity() throws Exception {
+        JsonObject root = base();
+        workflow(directory, "other.dax", true);
+        root.getAsJsonArray("workflowPaths").add("other.dax");
+        algorithms(root, algorithm("fcfs", "FCFS", null), algorithm("minmin", "READY_BATCH_MINMIN", null));
+
+        WorkbenchConfig loaded = read(root);
+        List<String> combinedPaths = Arrays.asList(
+                directory.resolve("workflow.dax").toAbsolutePath().normalize().toString(),
+                directory.resolve("other.dax").toAbsolutePath().normalize().toString());
+        assertEquals(2, loaded.getCandidates().size());
+        for (int index = 0; index < loaded.getCandidates().size(); index++) {
+            WorkbenchConfig.Candidate candidate = loaded.getCandidates().get(index);
+            String algorithmId = index == 0 ? "fcfs" : "minmin";
+            assertEquals(algorithmId, candidate.id);
+            assertEquals(algorithmId, candidate.algorithmId);
+            assertNull(candidate.workflowPath);
+            assertEquals(combinedPaths, candidate.config.getWorkflowPaths());
+            assertEquals(Arrays.asList(0.0, 0.0), candidate.config.getWorkflowArrivalSeconds());
+            assertEquals(Parameters.CostModel.DATACENTER, candidate.config.getCostModel());
+            assertEquals(0L, candidate.config.getDeadline());
+            assertEquals(SimulationConfig.FrequencyPolicy.DEFAULT, candidate.config.getFrequencyPolicy());
+        }
+        assertEquals(3.0, loaded.getPlatform().getCosts().getCpuPerSecond(), 0.0);
+
+        JsonObject explicit = root.deepCopy();
+        explicit.addProperty("executionMode", "COMBINED_WORKFLOWS");
+        WorkbenchConfig explicitlyCombined = read(explicit);
+        assertEquals("fcfs", explicitlyCombined.getCandidates().get(0).id);
+        assertEquals(
+                combinedPaths, explicitlyCombined.getCandidates().get(0).config.getWorkflowPaths());
+    }
+
+    @Test
+    void perWorkflowExpandsEveryInputAndAlgorithmWithSafeStableIdentities() throws Exception {
+        workflow(directory, "alpha.dax", true);
+        workflow(directory, "beta.dax", true);
+        JsonObject root = configuration("alpha.dax", 2);
+        root.getAsJsonArray("workflowPaths").add("beta.dax");
+        root.addProperty("executionMode", "PER_WORKFLOW");
+        algorithms(root, algorithm("fcfs", "FCFS", null), algorithm("minmin", "READY_BATCH_MINMIN", null));
+        JsonArray arrivals = new JsonArray();
+        arrivals.add(1.5);
+        arrivals.add(2.5);
+        root.add("workflowArrivalSeconds", arrivals);
+        root.getAsJsonObject("simulation").addProperty("deadlineSeconds", 7);
+        JsonObject deadlines = new JsonObject();
+        deadlines.addProperty("beta.dax", 99);
+        root.getAsJsonObject("simulation").add("deadlineSecondsByWorkflow", deadlines);
+
+        WorkbenchConfig loaded = read(root);
+        assertEquals(4, loaded.getCandidates().size());
+        String[] expectedIds = {"alpha__fcfs", "alpha__minmin", "beta__fcfs", "beta__minmin"};
+        String[] expectedAlgorithms = {"fcfs", "minmin", "fcfs", "minmin"};
+        String[] expectedFiles = {"alpha.dax", "alpha.dax", "beta.dax", "beta.dax"};
+        long[] expectedDeadlines = {7L, 7L, 99L, 99L};
+        double[] expectedArrivals = {1.5, 1.5, 2.5, 2.5};
+        for (int index = 0; index < expectedIds.length; index++) {
+            WorkbenchConfig.Candidate candidate = loaded.getCandidates().get(index);
+            String path = directory
+                    .resolve(expectedFiles[index])
+                    .toAbsolutePath()
+                    .normalize()
+                    .toString();
+            assertEquals(expectedIds[index], candidate.id);
+            assertEquals(expectedAlgorithms[index], candidate.algorithmId);
+            assertEquals(path, candidate.workflowPath);
+            assertEquals(Arrays.asList(path), candidate.config.getWorkflowPaths());
+            assertEquals(Arrays.asList(expectedArrivals[index]), candidate.config.getWorkflowArrivalSeconds());
+            assertEquals(expectedDeadlines[index], candidate.config.getDeadline());
+        }
+    }
+
+    @Test
+    void perWorkflowRejectsUnsafeOrCollidingCandidateIdsAndUnknownExecutionModes() throws Exception {
+        workflow(directory, "bad name.dax", true);
+        JsonObject unsafe = configuration("bad name.dax", 2);
+        unsafe.addProperty("executionMode", "PER_WORKFLOW");
+        rejectRead(unsafe, "safe identifiers");
+
+        workflow(directory.resolve("one"), "same.dax", true);
+        workflow(directory.resolve("two"), "same.dax", true);
+        JsonObject collision = configuration("one/same.dax", 2);
+        collision.getAsJsonArray("workflowPaths").add("two/same.dax");
+        collision.addProperty("executionMode", "PER_WORKFLOW");
+        rejectRead(collision, "unique");
+
+        JsonObject unknown = base();
+        unknown.addProperty("executionMode", "SEPARATE");
+        rejectRead(unknown, "executionMode");
+    }
+
+    @Test
+    void simulationCostModelDefaultsToDatacenterAndInjectsTheDeclaredModel() throws Exception {
+        JsonObject declared = base();
+        declared.getAsJsonObject("simulation").addProperty("costModel", "VM");
+        for (WorkbenchConfig.Candidate candidate : read(declared).getCandidates()) {
+            assertEquals(Parameters.CostModel.VM, candidate.config.getCostModel());
+        }
+
+        JsonObject defaults = base();
+        assertEquals(
+                Parameters.CostModel.DATACENTER,
+                read(defaults).getCandidates().get(0).config.getCostModel());
+
+        JsonObject unknown = base();
+        unknown.getAsJsonObject("simulation").addProperty("costModel", "PER_VM");
+        rejectRead(unknown, "costModel");
+    }
+
+    @Test
+    void perWorkflowDeadlinesRejectCombinedModeUnknownNamesAndInvalidValues() throws Exception {
+        JsonObject combined = base();
+        combined.getAsJsonObject("simulation").add("deadlineSecondsByWorkflow", new JsonObject());
+        rejectRead(combined, "PER_WORKFLOW");
+
+        JsonObject unknown = base();
+        unknown.addProperty("executionMode", "PER_WORKFLOW");
+        JsonObject unknownDeadline = new JsonObject();
+        unknownDeadline.addProperty("unknown.dax", 10);
+        unknown.getAsJsonObject("simulation").add("deadlineSecondsByWorkflow", unknownDeadline);
+        rejectRead(unknown, "unknown workflow basename");
+
+        JsonObject negative = base();
+        negative.addProperty("executionMode", "PER_WORKFLOW");
+        JsonObject negativeDeadline = new JsonObject();
+        negativeDeadline.addProperty("workflow.dax", -1);
+        negative.getAsJsonObject("simulation").add("deadlineSecondsByWorkflow", negativeDeadline);
+        rejectRead(negative, "nonnegative");
+
+        JsonObject fractional = base();
+        fractional.addProperty("executionMode", "PER_WORKFLOW");
+        JsonObject fractionalDeadline = new JsonObject();
+        fractionalDeadline.addProperty("workflow.dax", 1.5);
+        fractional.getAsJsonObject("simulation").add("deadlineSecondsByWorkflow", fractionalDeadline);
+        rejectRead(fractional, "exact integer");
+
+        JsonObject zero = base();
+        zero.addProperty("executionMode", "PER_WORKFLOW");
+        JsonObject zeroDeadline = new JsonObject();
+        zeroDeadline.addProperty("workflow.dax", 0);
+        zero.getAsJsonObject("simulation").add("deadlineSecondsByWorkflow", zeroDeadline);
+        assertEquals(0L, read(zero).getCandidates().get(0).config.getDeadline());
+    }
+
+    @Test
+    void algorithmFrequencyPolicyOverridesGlobalPolicyAndRequiresTiers() throws Exception {
+        JsonObject root = base();
+        JsonObject platform = root.getAsJsonObject("platform");
+        platform.add("frequencyTiers", tiers(2000.0, 250.0, 400.0, 1000.0, 220.0, 280.0));
+        platform.addProperty("frequencyPolicy", "MIN_POWER");
+        JsonObject inherited = algorithm("inherited", "FCFS", null);
+        JsonObject edp = algorithm("edp", "READY_BATCH_MINMIN", null);
+        edp.addProperty("frequencyPolicy", "EDP_HEURISTIC");
+        JsonObject plain = algorithm("plain", "READY_BATCH_MCT", null);
+        plain.addProperty("frequencyPolicy", "DEFAULT");
+        algorithms(root, inherited, edp, plain);
+
+        WorkbenchConfig loaded = read(root);
+        assertEquals(
+                SimulationConfig.FrequencyPolicy.MIN_POWER,
+                loaded.getCandidates().get(0).config.getFrequencyPolicy());
+        assertEquals(
+                SimulationConfig.FrequencyPolicy.EDP_HEURISTIC,
+                loaded.getCandidates().get(1).config.getFrequencyPolicy());
+        assertEquals(
+                SimulationConfig.FrequencyPolicy.DEFAULT,
+                loaded.getCandidates().get(2).config.getFrequencyPolicy());
+
+        JsonObject tierless = base();
+        JsonObject override = tierless.getAsJsonArray("algorithms").get(0).getAsJsonObject();
+        override.addProperty("frequencyPolicy", "MIN_POWER");
+        IllegalArgumentException rejection = assertThrows(
+                IllegalArgumentException.class,
+                () -> WorkbenchConfig.read(json(directory.resolve("tierless.json"), tierless)));
+        assertContains(rejection, "algorithm.frequencyPolicy");
+        assertContains(rejection, "frequencyTiers");
+        assertContains(rejection, "fcfs");
+
+        JsonObject unknown = base();
+        unknown.getAsJsonArray("algorithms").get(0).getAsJsonObject().addProperty("frequencyPolicy", "TURBO");
+        rejectRead(unknown, "algorithm.frequencyPolicy");
+    }
+
+    @Test
+    void vmProfilesInjectIndependentPowerCostsAndFrequencyTierTables() throws Exception {
+        JsonObject root = base();
+        root.getAsJsonObject("platform").getAsJsonArray("vmMips").add(1000.0);
+        root.getAsJsonObject("platform").addProperty("cpuCostPerSecond", 4.5);
+        JsonObject dvfs = root.getAsJsonArray("algorithms").get(0).getAsJsonObject();
+        dvfs.addProperty("frequencyPolicy", "MIN_POWER");
+        JsonArray profiles = new JsonArray();
+
+        JsonObject flat = vmProfile(0);
+        flat.addProperty("idlePowerWatts", 100.0);
+        flat.addProperty("maxPowerWatts", 200.0);
+        flat.addProperty("cpuCostPerSecond", 1.25);
+        profiles.add(flat);
+
+        JsonObject firstTiered = vmProfile(1);
+        firstTiered.add("frequencyTiers", tiers(2000.0, 150.0, 300.0, 1000.0, 100.0, 200.0));
+        profiles.add(firstTiered);
+
+        JsonObject secondTiered = vmProfile(2);
+        secondTiered.addProperty("cpuCostPerSecond", 2.5);
+        secondTiered.add("frequencyTiers", tiers(3000.0, 180.0, 360.0, 1500.0, 120.0, 240.0));
+        profiles.add(secondTiered);
+        root.getAsJsonObject("platform").add("vmProfiles", profiles);
+
+        WorkbenchConfig loaded = read(root);
+        List<PlatformProfile.VmSpec> vms = loaded.getPlatform().getVms();
+        assertEquals(3, vms.size());
+        assertEquals(100.0, vms.get(0).getIdlePowerWatts(), 0.0);
+        assertEquals(200.0, vms.get(0).getMaxPowerWatts(), 0.0);
+        assertEquals(1.25, vms.get(0).getCosts().getCpuPerSecond(), 0.0);
+        assertTrue(!vms.get(0).hasFrequencyTiers());
+        assertEquals(0.0, vms.get(1).getIdlePowerWatts(), 0.0);
+        assertEquals(4.5, vms.get(1).getCosts().getCpuPerSecond(), 0.0);
+        assertEquals(2000.0, vms.get(1).getFrequencyTiers().get(0).getMips(), 0.0);
+        assertEquals(1000.0, vms.get(1).getFrequencyTiers().get(1).getMips(), 0.0);
+        assertEquals(2.5, vms.get(2).getCosts().getCpuPerSecond(), 0.0);
+        assertEquals(3000.0, vms.get(2).getFrequencyTiers().get(0).getMips(), 0.0);
+        assertEquals(150.0, vms.get(1).getFrequencyTiers().get(0).getIdlePowerWatts(), 0.0);
+        assertEquals(180.0, vms.get(2).getFrequencyTiers().get(0).getIdlePowerWatts(), 0.0);
+        assertEquals(
+                SimulationConfig.FrequencyPolicy.MIN_POWER,
+                loaded.getCandidates().get(0).config.getFrequencyPolicy());
+
+        JsonObject defaults = base();
+        JsonArray defaultProfiles = new JsonArray();
+        defaultProfiles.add(vmProfile(0));
+        defaultProfiles.add(vmProfile(1));
+        defaults.getAsJsonObject("platform").add("vmProfiles", defaultProfiles);
+        for (PlatformProfile.VmSpec vm : read(defaults).getPlatform().getVms()) {
+            assertEquals(3.0, vm.getCosts().getCpuPerSecond(), 0.0);
+            assertTrue(!vm.hasPowerModel());
+            assertTrue(!vm.hasFrequencyTiers());
+        }
+    }
+
+    @Test
+    void vmProfilesInheritGlobalPowerOrTiersWhenTheyDeclareOnlyCosts() throws Exception {
+        JsonObject flat = base();
+        flat.getAsJsonObject("platform").addProperty("idlePowerWatts", 40.0);
+        flat.getAsJsonObject("platform").addProperty("maxPowerWatts", 80.0);
+        JsonArray flatProfiles = new JsonArray();
+        JsonObject priced = vmProfile(0);
+        priced.addProperty("cpuCostPerSecond", 1.5);
+        flatProfiles.add(priced);
+        flatProfiles.add(vmProfile(1));
+        flat.getAsJsonObject("platform").add("vmProfiles", flatProfiles);
+        for (PlatformProfile.VmSpec vm : read(flat).getPlatform().getVms()) {
+            assertEquals(40.0, vm.getIdlePowerWatts(), 0.0);
+            assertEquals(80.0, vm.getMaxPowerWatts(), 0.0);
+        }
+
+        JsonObject tiered = base();
+        tiered.getAsJsonObject("platform").add("frequencyTiers", tiers(2000.0, 150.0, 300.0, 1000.0, 100.0, 200.0));
+        JsonArray tieredProfiles = new JsonArray();
+        tieredProfiles.add(vmProfile(0));
+        tieredProfiles.add(vmProfile(1));
+        tiered.getAsJsonObject("platform").add("vmProfiles", tieredProfiles);
+        for (PlatformProfile.VmSpec vm : read(tiered).getPlatform().getVms()) {
+            assertEquals(2, vm.getFrequencyTiers().size());
+            assertEquals(2000.0, vm.getFrequencyTiers().get(0).getMips(), 0.0);
+            assertEquals(3.0, vm.getCosts().getCpuPerSecond(), 0.0);
+        }
+    }
+
+    @Test
+    void vmProfilesRejectEmptyDuplicateOutOfRangeAndUnknownDeclarations() throws Exception {
+        JsonObject empty = base();
+        empty.getAsJsonObject("platform").add("vmProfiles", new JsonArray());
+        rejectRead(empty, "non-empty");
+
+        JsonObject duplicate = base();
+        JsonArray duplicates = new JsonArray();
+        duplicates.add(vmProfile(0));
+        duplicates.add(vmProfile(0));
+        duplicate.getAsJsonObject("platform").add("vmProfiles", duplicates);
+        rejectRead(duplicate, "unique");
+
+        for (int invalidId : Arrays.asList(-1, 2)) {
+            JsonObject outside = base();
+            JsonArray profiles = new JsonArray();
+            profiles.add(vmProfile(invalidId));
+            outside.getAsJsonObject("platform").add("vmProfiles", profiles);
+            rejectRead(outside, "vmMips");
+        }
+
+        JsonObject fractional = base();
+        JsonArray fractionalProfiles = new JsonArray();
+        JsonObject fractionalProfile = new JsonObject();
+        fractionalProfile.addProperty("vmId", 0.5);
+        fractionalProfiles.add(fractionalProfile);
+        fractional.getAsJsonObject("platform").add("vmProfiles", fractionalProfiles);
+        rejectRead(fractional, "exact integer");
+
+        JsonObject unknown = base();
+        JsonArray unknownProfiles = new JsonArray();
+        JsonObject unknownProfile = vmProfile(0);
+        unknownProfile.addProperty("mips", 500.0);
+        unknownProfiles.add(unknownProfile);
+        unknown.getAsJsonObject("platform").add("vmProfiles", unknownProfiles);
+        rejectRead(unknown, "vmProfiles has unknown field: mips");
+
+        JsonObject inverted = base();
+        JsonArray invertedProfiles = new JsonArray();
+        JsonObject invertedProfile = vmProfile(0);
+        invertedProfile.addProperty("idlePowerWatts", 200.0);
+        invertedProfile.addProperty("maxPowerWatts", 100.0);
+        invertedProfiles.add(invertedProfile);
+        inverted.getAsJsonObject("platform").add("vmProfiles", invertedProfiles);
+        rejectRead(inverted, "maxPowerWatts");
+    }
+
+    @Test
+    void vmProfilesRejectGlobalAndPerVmPowerOrTierDoubleSources() throws Exception {
+        JsonObject flatMix = base();
+        flatMix.getAsJsonObject("platform").addProperty("idlePowerWatts", 40.0);
+        flatMix.getAsJsonObject("platform").addProperty("maxPowerWatts", 80.0);
+        JsonArray flatProfiles = new JsonArray();
+        JsonObject flatProfile = vmProfile(0);
+        flatProfile.addProperty("idlePowerWatts", 30.0);
+        flatProfiles.add(flatProfile);
+        flatMix.getAsJsonObject("platform").add("vmProfiles", flatProfiles);
+        IllegalArgumentException flatRejection = assertThrows(
+                IllegalArgumentException.class,
+                () -> WorkbenchConfig.read(json(directory.resolve("flat-mix.json"), flatMix)));
+        assertContains(flatRejection, "vmProfiles");
+        assertContains(flatRejection, "idlePowerWatts");
+
+        JsonObject tierMix = base();
+        tierMix.getAsJsonObject("platform").add("frequencyTiers", tiers(2000.0, 150.0, 300.0, 1000.0, 100.0, 200.0));
+        JsonArray tierProfiles = new JsonArray();
+        JsonObject tierProfile = vmProfile(0);
+        tierProfile.add("frequencyTiers", tiers(1800.0, 140.0, 280.0));
+        tierProfiles.add(tierProfile);
+        tierMix.getAsJsonObject("platform").add("vmProfiles", tierProfiles);
+        IllegalArgumentException tierRejection = assertThrows(
+                IllegalArgumentException.class,
+                () -> WorkbenchConfig.read(json(directory.resolve("tier-mix.json"), tierMix)));
+        assertContains(tierRejection, "vmProfiles");
+        assertContains(tierRejection, "frequencyTiers");
+
+        JsonObject crossMix = base();
+        crossMix.getAsJsonObject("platform").addProperty("idlePowerWatts", 40.0);
+        crossMix.getAsJsonObject("platform").addProperty("maxPowerWatts", 80.0);
+        JsonArray crossProfiles = new JsonArray();
+        JsonObject crossProfile = vmProfile(0);
+        crossProfile.add("frequencyTiers", tiers(1800.0, 140.0, 280.0));
+        crossProfiles.add(crossProfile);
+        crossMix.getAsJsonObject("platform").add("vmProfiles", crossProfiles);
+        rejectRead(crossMix, "one source of truth");
+
+        JsonObject withinProfile = base();
+        JsonArray bothProfiles = new JsonArray();
+        JsonObject both = vmProfile(0);
+        both.addProperty("idlePowerWatts", 40.0);
+        both.add("frequencyTiers", tiers(1800.0, 140.0, 280.0));
+        bothProfiles.add(both);
+        withinProfile.getAsJsonObject("platform").add("vmProfiles", bothProfiles);
+        rejectRead(withinProfile, "one source of truth");
+    }
+
+    private static JsonObject vmProfile(int vmId) {
+        JsonObject profile = new JsonObject();
+        profile.addProperty("vmId", vmId);
+        return profile;
     }
 
     @Test

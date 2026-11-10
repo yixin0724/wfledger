@@ -150,6 +150,25 @@ class WorkbenchIntegrationTest {
                     manifest, displayedRun.getAsJsonObject("manifest"), "HTML must display the validated evidence");
         }
         assertEquals(new HashSet<String>(Arrays.asList("fcfs:17", "fcfs:23", "minmin:17", "minmin:23")), cells);
+        JsonObject summary = object(experiment.resolve("summary.json"));
+        assertEquals("workflowsim-experiment-summary-v1", summary.get("schema").getAsString());
+        assertEquals(4, summary.get("runCount").getAsInt());
+        assertEquals(4, summary.get("successfulRuns").getAsInt());
+        assertEquals(4, summary.getAsJsonArray("runs").size());
+        for (JsonElement item : summary.getAsJsonArray("runs")) {
+            JsonObject run = item.getAsJsonObject();
+            assertTrue(run.has("meanWaitingSeconds"));
+            assertTrue(run.has("meanTrueSlowdown"));
+            assertTrue(run.has("energyJoules"));
+            assertTrue(run.has("energyDelayProduct"));
+            assertTrue(run.has("modeledProcessingCost"));
+            assertEquals(
+                    run.get("logicalTasks").getAsInt(),
+                    run.get("completedTasks").getAsInt());
+        }
+        String csv = text(experiment.resolve("summary.csv"));
+        assertTrue(csv.startsWith("workflow,algorithm,candidate,seed,status,makespanSeconds"));
+        assertEquals(5, csv.split("\\n").length);
         String html = text(experiment.resolve("report.html"));
         assertFalse(html.contains("@@TITLE@@"));
         assertFalse(html.contains("@@DATA@@"));

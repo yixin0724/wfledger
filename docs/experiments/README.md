@@ -34,6 +34,10 @@ Result files:
 
 Result file: [35-run energy JSON](<../../output/energy-baseline/results.json>).
 
+Workbench example outputs: [makespan](<../../output/workbench-makespan/>),
+[scale](<../../output/workbench-scale/>), and [energy](<../../output/workbench-energy/>). Each contains the
+standard configuration, per-run evidence, detailed report, and unified HTML/JSON/CSV summaries.
+
 ## Algorithm and execution audits
 
 | Report | Coverage | Purpose |
@@ -51,14 +55,31 @@ Result file: [35-run energy JSON](<../../output/energy-baseline/results.json>).
 Run from the repository root with JDK 17+ and Maven 3.6.3+:
 
 ```bash
-# Traditional makespan comparison (42 runs)
-mvn -pl :workflowsim-workbench -am -Dtest=MakespanBaselineComparisonTest test
+# Static HEFT and online makespan comparisons (7 + 35 runs)
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
+  -Dexec.args="run experiments/configs/makespan-static-baseline.json output/makespan-static-study"
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
+  -Dexec.args="run experiments/configs/makespan-online-baseline.json output/makespan-online-study"
 
-# 1000 and 5000 task scale comparison (36 runs)
-mvn -pl :workflowsim-workbench -am -Dtest=MakespanScaleComparisonTest test
+# Static HEFT and online scale comparisons (6 + 30 runs)
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
+  -Dexec.args="run experiments/configs/makespan-static-scale.json output/makespan-static-scale-study"
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
+  -Dexec.args="run experiments/configs/makespan-online-scale.json output/makespan-online-scale-study"
 
-# Energy and EDP comparison (35 runs)
-mvn -pl :workflowsim-workbench -am -Dtest=EnergyBaselineComparisonTest test
+# Energy-aware planners with flat power (15 runs)
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
+  -Dexec.args="run experiments/configs/energy-flat.json output/energy-flat-study"
+
+# Frequency policies and DVFS slack with tiered power (20 runs)
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
+  -Dexec.args="run experiments/configs/energy-tiered.json output/energy-tiered-study"
 
 # Algorithm and metric audits
 mvn -pl :workflowsim-workbench -am -Dtest=AlgorithmMetricAuditTest test
@@ -66,21 +87,12 @@ mvn -pl :workflowsim-workbench -am -Dtest=AlgorithmExperimentAuditTest test
 mvn -pl :workflowsim-workbench -am -Dtest=CrossPaperComparisonTest test
 ```
 
-Write the JSON artifacts through the corresponding drivers:
-
-```bash
-mvn -q -pl :workflowsim-workbench -am compile exec:java \
-  -Dexec.mainClass=org.workflowsim.experiments.makespan.MakespanBaselineComparison \
-  -Dexec.args=output/makespan-baseline/results.json
-
-mvn -q -pl :workflowsim-workbench -am compile exec:java \
-  -Dexec.mainClass=org.workflowsim.experiments.makespan.MakespanScaleComparison \
-  -Dexec.args=output/makespan-scale/results.json
-
-mvn -q -pl :workflowsim-workbench -am compile exec:java \
-  -Dexec.mainClass=org.workflowsim.experiments.energy.EnergyBaselineComparison \
-  -Dexec.args=output/energy-baseline/results.json
-```
+Each generated experiment directory contains `summary.html`, `summary.json`, and `summary.csv`,
+plus the detailed `report.html` and the per-run evidence packages. The summaries include workflow,
+algorithm, waiting time, slowdown, makespan, energy, EDP, cost, and completion counts. Static HEFT and
+online ready-job scheduling deliberately use separate configurations because they are different decision layers.
+The generated 113 runs were cross-checked against the corresponding independent drivers with zero differences in
+makespan, waiting time, true slowdown, energy, or modeled processing cost.
 
 The complete acceptance command is `make quality-gate`; it includes Maven, coverage, independent
 Python checks, documentation, language and dataset checks. A separate mutation run is required for

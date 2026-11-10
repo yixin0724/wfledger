@@ -35,6 +35,12 @@ Relative paths in CLI arguments are resolved against the working directory; insi
 | Research subject | Configuration |
 | --- | --- |
 | Plain CPU online scheduling | [online comparison](<../../experiments/configs/online-comparison.json>) |
+| Compare static HEFT across seven scientific workflows | [static makespan baseline](<../../experiments/configs/makespan-static-baseline.json>) |
+| Compare five online makespan algorithms across seven workflows | [online makespan baseline](<../../experiments/configs/makespan-online-baseline.json>) |
+| Compare static HEFT at 1000 and 5000 tasks | [static scale study](<../../experiments/configs/makespan-static-scale.json>) |
+| Compare online makespan algorithms at 1000 and 5000 tasks | [online scale study](<../../experiments/configs/makespan-online-scale.json>) |
+| Compare energy-aware planners with flat power | [flat-power energy study](<../../experiments/configs/energy-flat.json>) |
+| Compare frequency policies and DVFS slack | [tiered-power energy study](<../../experiments/configs/energy-tiered.json>) |
 | Fat-tree and static mapping | [network comparison](<../../experiments/configs/network-comparison.json>), [enabling the group-level ledger](<../../experiments/configs/network-ledger-comparison.json>) |
 | Coherent per-file dataflow | [shared resources](<../../experiments/configs/coherent-file-dataflow-v2.json>), [isolated-path bottleneck](<../../experiments/configs/coherent-file-dataflow-isolated-v2.json>) |
 | Bounded storage and output write-back | [shared resources](<../../experiments/configs/storage-dataflow-v3.json>), [isolated-path bottleneck](<../../experiments/configs/storage-dataflow-isolated-v3.json>) |
@@ -48,6 +54,7 @@ Simply replace the configuration argument of `run` with the chosen file. The pai
 | --- | --- |
 | `schema` | Declared by the Workbench configuration contract |
 | `name` | Display name, at most 128 characters; a default name is used when omitted |
+| `executionMode` | Optional `COMBINED_WORKFLOWS` (default) or `PER_WORKFLOW`; the latter runs every algorithm separately for every input |
 | `workflowPaths` | 1–32 DAX/XML or WfFormat JSON inputs |
 | `workflowArrivalSeconds` | Optional list of non-negative seconds, equal in length to the inputs, all zeros by default; counted from simulation time zero |
 | `platform.vmMips` | 1–64 positive finite values, each not exceeding `1e12`; every VM is pinned to a dedicated Host, 1 PE, SPACE_SHARED |
@@ -59,6 +66,7 @@ Simply replace the configuration argument of `run` with the chosen file. The pai
 | `platform.carbonIntensityGramsPerKWh` | Optional uniform carbon intensity in gCO₂/kWh, non-negative and finite (BAT-C3, 2026-10-28); requires the power fields — carbon multiplies the energy chain, so a declaration without `idlePowerWatts`/`maxPowerWatts` is rejected up front; emits the conditional `carbonMetrics` section (intensity family) in every run's manifest; carbon windows are not part of the Workbench surface |
 | `platform.frequencyTiers` | Optional uniform DVFS tier table (BAT-D4, 2026-10-29): a non-empty array of `{mips, idlePowerWatts, maxPowerWatts}` objects applied identically to every VM; `mips` strictly descending (the first tier is the default — never an implicit max), `mips` positive finite, powers satisfy `max ≥ idle ≥ 0`; mutually exclusive with `idlePowerWatts`/`maxPowerWatts` — the tier table replaces the flat fields (one source of truth), and a declaration carrying both faces is rejected citing both; a tiered platform counts as powered for the energy and carbon chains |
 | `platform.frequencyPolicy` | Optional per-Job tier assignment policy, one of `DEFAULT`, `MIN_POWER`, `EDP_HEURISTIC` (BAT-D4, 2026-10-29); absent resolves to `DEFAULT` (every Job runs at the first tier); a non-DEFAULT policy without a declared `frequencyTiers` table is rejected up front — the policy would be silently inert on an all-plain platform |
+| `platform.vmProfiles` | Optional per-VM declarations of `vmId`, power, `cpuCostPerSecond`, and `frequencyTiers`; VM IDs refer to the `vmMips` entries, and global/per-VM declarations of the same power source are rejected |
 | `platform.networkTopology` | Optional Fat-tree declaration: `k`, `linkBandwidthMbPerSecond`, `coreSwitchCount`, `hostEdgePlacements`; Workbench supports even k in the range 2–16 |
 | `platform.sourceStorage` | Constrained SOURCE, required only for bounded storage; fields are described below |
 | `simulation.fileSystem` | `SHARED` or `LOCAL`, default SHARED; model/algorithm constraints still apply |
@@ -66,10 +74,12 @@ Simply replace the configuration argument of `run` with the chosen file. The pai
 | `simulation.runtimeScale` / `runtimeReferenceMips` | Positive finite values, defaults 1 / 1000; conversion parameters from input runtime to model MI |
 | `simulation.minEventIntervalSeconds` | Positive finite value, default 0.1 |
 | `simulation.eventRecorderCap` | Optional strictly positive integer, default 20000; retention cap of the run's event stream (AUD-F07 follow-up, 2026-11-04) — the run fails fast when the cap is reached, and a non-default value round-trips through the manifest's `configuration.eventRecorderCap` |
+| `simulation.costModel` | Optional `DATACENTER` (default) or `VM`; selects the declared runtime cost caliber |
 | `simulation.deadlineSeconds` | Optional non-negative signed-long integer, 0 means not requested; post-hoc observation only, it changes neither scheduling nor termination |
+| `simulation.deadlineSecondsByWorkflow` | Optional basename-to-deadline object for `PER_WORKFLOW`; each key must name a declared input, and each value overrides the global deadline for that run |
 | `simulation.taskCostMatrix` | Optional `{taskId, vmId, executionSeconds}` array covering all logical tasks × VMs; requires a STATIC path and cannot be combined with the SHARED_STORAGE planner |
 | `simulation.networkEvidence` | Optional recording object; mode and budget must be present together, see the recording table |
-| `algorithms` | Each entry carries a unique `id` matching `[A-Za-z0-9][A-Za-z0-9._-]{0,63}`; `scheduler`, `planner`, `dataflowAssignment` may be declared |
+| `algorithms` | Each entry carries a unique `id` matching `[A-Za-z0-9][A-Za-z0-9._-]{0,63}`; `scheduler`, `planner`, `dataflowAssignment`, and an optional per-algorithm `frequencyPolicy` may be declared |
 | `seeds` | 1–100 mutually distinct signed-long integers, default `[42]`; algorithms × seeds must not exceed 500 |
 
 Without a planner the default is INVALID/FCFS; with a non-INVALID planner declared the default is STATIC; the default dispatcher for explicit online binding is also STATIC. See the [algorithm catalog](<../algorithms/CATALOG.md>) for each algorithm's specific prerequisites; the fact that the JSON fields parse does not by itself make every combination valid.
@@ -153,6 +163,9 @@ output-root/
     configuration.json
     experiment.json
     report.html
+    summary.html
+    summary.json
+    summary.csv
     runs/<algorithm>-s<seed>/
       result.manifest.json
       result.metrics.json
@@ -162,7 +175,7 @@ output-root/
       result.storage-lifecycle.json # bounded-storage records only; the three sidecars are mutually exclusive
 ```
 
-The manifest, provenance, metrics, and event formats are declared by the artifact contract. After the files are written, the evidence is validated, and the report is then generated from that same validation snapshot. A single run failure records its root cause and the other schemes continue; failures do not enter the completion-time ranking; the `run` command exits non-zero when there are failed or unfinished runs.
+The manifest, provenance, metrics, and event formats are declared by the artifact contract. `summary.html`, `summary.json`, and `summary.csv` present the same run rows with workflow, algorithm, waiting time, slowdown, makespan, energy, EDP, cost, and completion counts. After the files are written, the evidence is validated, and the report is then generated from that same validation snapshot. A single run failure records its root cause and the other schemes continue; failures do not enter the completion-time ranking; the `run` command exits non-zero when there are failed or unfinished runs.
 
 A forced interruption can leave a RUNNING state together with completed evidence; check it through the history page and do not treat it as a success. `history` shows corrupted records and does not silently ignore them. When multiple processes write the same output root, you should rebuild the history only after all processes have ended; simulations inside the same JVM are serial.
 

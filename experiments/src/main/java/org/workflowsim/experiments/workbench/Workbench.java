@@ -149,6 +149,13 @@ public final class Workbench {
         String runId = candidate.id + "-s" + seed;
         Map<String, Object> row = new LinkedHashMap<String, Object>();
         row.put("candidate", candidate.id);
+        row.put("algorithm", candidate.algorithmId);
+        List<String> workflowPaths = candidate.config.getWorkflowPaths();
+        row.put(
+                "workflow",
+                workflowPaths.size() == 1
+                        ? Paths.get(workflowPaths.get(0)).getFileName().toString()
+                        : "combined");
         row.put("seed", seed);
         Map<String, Object> reportRow = new LinkedHashMap<String, Object>(row);
         try {
@@ -163,6 +170,20 @@ public final class Workbench {
                     "manifest",
                     directory.relativize(artifacts.getManifest()).toString().replace('\\', '/'));
             row.put("makespanSeconds", report.getMakespan());
+            org.workflowsim.experiment.SimulationMetrics metrics = report.getMetrics();
+            row.put("meanWaitingSeconds", metrics.getMeanComputeTotalWaitingTimeSeconds());
+            row.put("meanTrueSlowdown", metrics.getMeanComputeTrueSlowdown());
+            row.put("meanReadyToDecisionSeconds", metrics.getMeanComputeReadyToDecisionDelaySeconds());
+            row.put("meanDecisionToStartSeconds", metrics.getMeanComputeDecisionToStartDelaySeconds());
+            row.put("meanRunTimeSeconds", metrics.getMeanComputeJobRunTimeSeconds());
+            row.put("meanResponseSeconds", metrics.getMeanJobResponseTimeSeconds());
+            row.put("throughputJobsPerSecond", metrics.getComputeJobOutcomeThroughputPerSecond());
+            row.put("meanVmUtilization", metrics.getMeanVmModeledIntervalUtilization());
+            row.put("energyJoules", report.getEnergyAccounting().getTotalEnergyJoules());
+            row.put("energyDelayProduct", report.getEnergyAccounting().getEnergyMakespanProductJouleSeconds());
+            row.put("modeledProcessingCost", metrics.getTotalModeledProcessingCost());
+            row.put("logicalTasks", metrics.getLogicalTaskCount());
+            row.put("completedTasks", metrics.getSuccessfullyCompletedLogicalTaskCount());
             reportRow.put("status", status);
             evidence.attachTo(reportRow);
         } catch (Exception failure) {
@@ -201,6 +222,7 @@ public final class Workbench {
                         : "FAILED_OR_INCOMPLETE");
         experiment.put("finishedAt", Instant.now().toString());
         ExperimentArtifactWriter.writeJson(directory.resolve("experiment.json"), experiment);
+        ExperimentSummaryWriter.write(config.getName(), rows, directory);
         HtmlReports.experiment(config.getName(), display, directory.resolve("report.html"));
         history(root);
     }
