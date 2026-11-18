@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** MOHEFT Pareto front plus one deterministic balanced schedule for execution. */
 public final class MoHeftResult {
     private final List<MoHeftSchedule> paretoFront;
     private final MoHeftSchedule balancedSchedule;

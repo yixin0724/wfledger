@@ -18,10 +18,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Bounded display of a validated V3 storage-lifecycle certificate, not fluid-service accounting.
- * Only strings, structural booleans, nulls and deeply immutable maps/lists leave this class.
- */
 final class StorageLifecycleReportView {
     static final int COPY_LIMIT = 64,
             RESOURCE_LIMIT = 64,
@@ -33,13 +29,12 @@ final class StorageLifecycleReportView {
 
     private StorageLifecycleReportView() {}
 
-    /** Null means OFF; only the caller can attest to validation against an enclosing run. */
     static Map<String, Object> fromDecoded(StorageLifecycleCodec.Decoded decoded, boolean contextValidated) {
         return decoded == null ? null : new StorageLifecycleReportView().project(decoded, contextValidated);
     }
 
     private Map<String, Object> project(StorageLifecycleCodec.Decoded decoded, boolean contextValidated) {
-        // One defensive, already-validated snapshot: no I/O, redecoding, or raw history in the result.
+
         JsonObject document = decoded.getDocument();
         JsonObject plan = document.getAsJsonObject("filePlan");
         JsonObject capture = document.getAsJsonObject("capture");
@@ -103,10 +98,9 @@ final class StorageLifecycleReportView {
         return freeze(root);
     }
 
-    /** Event scan stage of project() (verbatim relocation; the three large case arms are relocated separately). */
     private StorageScan scanLifecycleEvents(JsonArray rawEvents, Map<DataflowFilePlan.FileId, BigDecimal> fileBytes) {
         StorageScan scan = new StorageScan();
-        // Scan the whole capture before applying display caps, including late settlements/readiness.
+
         for (JsonElement value : rawEvents) {
             JsonObject event = value.getAsJsonObject();
             JsonObject payload = event.getAsJsonObject("payload");
@@ -143,8 +137,6 @@ final class StorageLifecycleReportView {
                     scan.lastCpuFinish = maximum(scan.lastCpuFinish, finished);
                     break;
                 case "OUTPUT_RESOLVED":
-                    // ZERO publishes now. NEW_COPY/JOIN_EXISTING publish at OUTPUT settlement;
-                    // ALREADY_STORED is not a new commit, nor is any EXTERNAL_SEEDED observation.
                     if ("ZERO".equals(payload.get("resolution").getAsString())) {
                         scan.lastStoreCommit = maximum(scan.lastStoreCommit, exact(event.get("observedTime")));
                     }
@@ -156,12 +148,11 @@ final class StorageLifecycleReportView {
         return scan;
     }
 
-    /** COPY_SETTLED event arm (verbatim relocation). */
     private void applyCopySettled(JsonObject event, JsonObject payload, StorageScan scan) {
         long ordinal = payload.get("copyOrdinal").getAsLong();
         scan.settlements.put(ordinal, event);
         JsonObject admitted = scan.admissions.get(ordinal).getAsJsonObject("payload");
-        // Declared whole-object payload, not rate * elapsed or size minus a numerical residual.
+
         BigDecimal bytes = exact(admitted.get("bytes"));
         if (isOutput(admitted)) {
             scan.totals.settledOutput = scan.totals.settledOutput.add(bytes);
@@ -172,20 +163,18 @@ final class StorageLifecycleReportView {
         scan.totals.residual = scan.totals.residual.add(exact(payload.get("remainingAfterService")));
     }
 
-    /** INPUT_WAITING_FOR_STORE event arm (verbatim relocation). */
     private void applyInputWaiting(
             JsonObject payload, StorageScan scan, Map<DataflowFilePlan.FileId, BigDecimal> fileBytes) {
         DataflowFilePlan.FileId waitingFile = fileKey(payload.getAsJsonObject("fileId"));
         scan.jobs.get(payload.get("jobId").getAsInt()).storeWaits.add(waitingFile);
         BigDecimal waitingReferences =
                 BigDecimal.valueOf(payload.get("referenceCount").getAsLong());
-        // Required references already exist at request, even before their source commits.
+
         scan.totals.references = scan.totals.references.add(waitingReferences);
         scan.totals.requiredBytes =
                 scan.totals.requiredBytes.add(fileBytes.get(waitingFile).multiply(waitingReferences));
     }
 
-    /** INPUT_RESOLVED event arm (verbatim relocation). */
     private void applyInputResolved(
             JsonObject event,
             JsonObject payload,
@@ -208,8 +197,7 @@ final class StorageLifecycleReportView {
             scan.totals.joinedReferences = scan.totals.joinedReferences.add(references);
         }
         if ("NEW_COPY".equals(resolution) || "JOIN_EXISTING".equals(resolution)) {
-            // Match the runtime's actual resolution-order binary64 accumulation, including
-            // a joined copy's full estimate even when its owner is another Job attempt.
+
             job.nominalInputSeconds += scan.admissions
                     .get(payload.get("copyOrdinal").getAsLong())
                     .getAsJsonObject("payload")
@@ -217,13 +205,12 @@ final class StorageLifecycleReportView {
                     .getAsDouble();
         }
         if (deferred) {
-            // Every deferred STORE wait starts at request; overlapping waits are not additive.
+
             job.storeGateWait =
                     job.storeGateWait.max(exact(event.get("observedTime")).subtract(job.requestedAt));
         }
     }
 
-    /** Copy row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> copiesRows(StorageLifecycleCodec.Decoded decoded, StorageScan scan) {
         List<Map<String, Object>> copies = new ArrayList<>();
         for (Map.Entry<Long, JsonObject> entry : scan.admissions.entrySet()) {
@@ -235,7 +222,6 @@ final class StorageLifecycleReportView {
         return copies;
     }
 
-    /** Resource row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> resourceRows(JsonArray rawResources) {
         List<Map<String, Object>> resources = new ArrayList<>();
         for (int i = 0; i < Math.min(RESOURCE_LIMIT, rawResources.size()); i++) {
@@ -248,7 +234,6 @@ final class StorageLifecycleReportView {
         return resources;
     }
 
-    /** Event row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> eventRows(JsonArray rawEvents, StorageScan scan) {
         List<Map<String, Object>> events = new ArrayList<>();
         for (int i = 0; i < Math.min(EVENT_LIMIT, rawEvents.size()); i++) {
@@ -257,7 +242,6 @@ final class StorageLifecycleReportView {
         return events;
     }
 
-    /** Job row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> jobRows(StorageScan scan) {
         List<Map<String, Object>> jobRows = new ArrayList<>();
         for (Job job : scan.jobs.values()) {
@@ -269,10 +253,6 @@ final class StorageLifecycleReportView {
         return jobRows;
     }
 
-    /**
-     * Private relocation holder for the project() event-scan aggregates (declaration types and
-     * initialization order of the original local variables preserved).
-     */
     private static final class StorageScan {
         final Map<Long, JsonObject> admissions = new LinkedHashMap<>();
         final Map<Long, JsonObject> settlements = new HashMap<>();
@@ -287,7 +267,7 @@ final class StorageLifecycleReportView {
         store.put(
                 "attachmentHostId",
                 integer(fabric.getAsJsonObject("sourceStorage").get("attachmentHostId")));
-        // Display the validated physical inventory, not a fresh MB/s conversion or guessed bottleneck.
+
         for (JsonElement value : resources) {
             JsonObject resource = value.getAsJsonObject();
             String key;
@@ -324,7 +304,7 @@ final class StorageLifecycleReportView {
         row.put("fileId", fileLabel(payload.getAsJsonObject("fileId")));
         row.put("source", location(source.getAsJsonObject("location")));
         row.put("destination", location(payload.getAsJsonObject("destination")));
-        // The selected holder, original producer, and copy's owning Job are three separate facts.
+
         row.put("producerTaskId", integer(origin.get("producerTaskId")));
         row.put("producerJobAttemptId", integer(origin.get("jobAttemptId")));
         row.put("originLocation", location(origin.getAsJsonObject("location")));
@@ -362,7 +342,7 @@ final class StorageLifecycleReportView {
         row.put("sequence", integer(event.get("sequence")));
         row.put("type", type);
         row.put("observedTime", quantity(event.get("observedTime")));
-        // A copy event displays its admission owner, NOT a claim that it serves only that Job.
+
         row.put("jobId", integer(copy == null ? payload.get("jobId") : copy.get("ownerJobId")));
         row.put(
                 "taskId",
@@ -378,7 +358,6 @@ final class StorageLifecycleReportView {
         return freeze(row);
     }
 
-    /** Bound individual labels/lists, never the whole detail: numeric text must remain exact. */
     private String detail(String type, JsonObject payload, JsonObject copy) {
         switch (type) {
             case "EXTERNAL_SEEDED":
@@ -433,7 +412,7 @@ final class StorageLifecycleReportView {
     }
 
     private static DataflowFilePlan.FileId fileKey(JsonObject file) {
-        // Clipped display labels must never become identity keys for references or deferred waits.
+
         return DataflowFilePlan.FileId.of(
                 file.get("workflowInputIndex").getAsInt(), file.get("name").getAsString());
     }
@@ -521,7 +500,7 @@ final class StorageLifecycleReportView {
     }
 
     private static String decimal(BigDecimal value) {
-        // Unabridged plain decimal, including subnormals and exact sums beyond binary64's range.
+
         return value == null ? null : value.stripTrailingZeros().toPlainString();
     }
 
@@ -562,7 +541,7 @@ final class StorageLifecycleReportView {
             row.put("dataReadyAt", decimal(dataReadyAt));
             row.put("cpuStartedAt", decimal(cpuStartedAt));
             row.put("finishedAt", decimal(finishedAt));
-            // A STORE-unresolved prefix has only a partial estimate. Do not present it as final.
+
             row.put("nominalInputSeconds", storeWaits.isEmpty() ? decimal(new BigDecimal(nominalInputSeconds)) : null);
             row.put(
                     "observedPreparationSeconds",

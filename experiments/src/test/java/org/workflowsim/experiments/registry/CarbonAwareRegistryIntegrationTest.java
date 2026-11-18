@@ -32,22 +32,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * C5-lite (2026-10-28): the registry accepts <b>carbon-aware</b> scheduling declarations
- * end-to-end — the closing demonstrator of the carbon-dimension extension
- * (docs/advanced/CARBON_DIMENSION_DESIGN.md §2.5).
- *
- * <p>Design: the registered CARBON_DEFER_FIRST provider declares
- * powerModelRequired + carbonObjectiveWeight 1.0 (energyAware implied — both v1 carbon
- * accountings ride the conserved energy chain). The test locks the three acceptance
- * surfaces: (1) SPI discovery and the fail-fast power gate, (2) a full standard-runner run on
- * a <b>powered platform with declared carbon windows</b>, so the report produces
- * <b>budget-model</b> carbon accounting, and (3) an evidence bundle that validates and carries
- * a non-{@code null} {@code carbonMetrics} section with a hand-derivable excess floor:
- * fleet power never falls below Σ idle = 500 W, window 1 green budget = 300 W, so every
- * second inside window 1 contributes at least (500−300) W of excess — an invariant, not an
- * implementation output.</p>
- */
 class CarbonAwareRegistryIntegrationTest {
 
     @TempDir
@@ -68,14 +52,13 @@ class CarbonAwareRegistryIntegrationTest {
 
     @Test
     void carbonAwareRegistryLabelRunsBudgetModelAndExportsValidatedEvidence() throws Exception {
-        // 1. The provider must be discovered through the standard SPI (registry acceptance).
+
         SchedulingAlgorithmProvider provider = AlgorithmRegistry.find(CarbonDeferFirstSchedulerProvider.LABEL);
         assertSame(CarbonDeferFirstSchedulerProvider.class, provider.getClass(), "SPI discovery");
         assertTrue(provider.declaration().isCarbonAware(), "carbon-aware declaration");
         assertTrue(provider.declaration().isPowerModelRequired(), "power gate is part of the declaration");
         assertTrue(provider.declaration().isEnergyAware(), "v1 carbon rides the energy chain");
 
-        // 2. Fail-fast gate: powerModelRequired rejects an unpowered platform (clauses cited).
         IllegalArgumentException unpowered = assertThrows(
                 IllegalArgumentException.class,
                 () -> AlgorithmRegistry.validate(
@@ -92,7 +75,6 @@ class CarbonAwareRegistryIntegrationTest {
                 unpowered.getMessage().contains("powerModelRequired"),
                 "rejection must cite the power clause: " + unpowered.getMessage());
 
-        // 3. Full powered run with DECLARED CARBON WINDOWS → budget-model accounting.
         Path dax = bagDax();
         PlatformProfile platform = poweredPlatformWithCarbonWindows();
         SimulationConfig config = SimulationConfig.builder(dax.toString(), 2)
@@ -119,8 +101,6 @@ class CarbonAwareRegistryIntegrationTest {
                         + ", floor=" + floor);
         assertTrue(carbon.getTotalCarbonGrams() == 0.0, "budget model leaves the intensity family zero");
 
-        // 4. Evidence chain: the carbon-aware run exports a validated bundle whose manifest
-        // serializes the platform's carbon windows and carries the conditional carbonMetrics.
         ExperimentArtifactWriter.ExperimentArtifacts artifacts =
                 ExperimentArtifactWriter.write(report, tempDir.resolve("carbon-aware-evidence"), "result");
         ExperimentArtifactValidator.validate(artifacts.getManifest());
@@ -169,11 +149,6 @@ class CarbonAwareRegistryIntegrationTest {
         return path;
     }
 
-    /**
-     * Two powered uniform VMs (250 W idle / 400 W max) with two declared green windows:
-     * [0,60) @ 300 W and [60,120) @ 100 W. The idle floor alone (2×250 = 500 W) exceeds
-     * the first window's 300 W budget, so the run banks a hand-derivable positive excess.
-     */
     private PlatformProfile poweredPlatformWithCarbonWindows() {
         PlatformProfile.Builder builder = PlatformProfile.builder("c5-carbon-budget");
         int[] ids = {0, 1};

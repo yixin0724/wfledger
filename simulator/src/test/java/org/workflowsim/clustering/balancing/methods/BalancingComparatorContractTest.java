@@ -11,18 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * F-005 (review engineering C15): order-conservation contract of the balancing-clustering
- * runtime-length comparator.
- *
- * <p>Project-rule source (conservation law): an ascending comparator must satisfy -- after
- * sorting with that comparator, the <b>comparison result of adjacent elements is
- * non-decreasing</b>; any two TaskSets with different runtimes must not be reported as
- * "equal". The historical implementation narrowed {@code (int)(long difference)} to the
- * low 32 bits, so a difference that is an exact multiple of 2^32 was judged "equal". Real
- * impact case: for large clustering runtimes (MIPS scaling MI) beyond the int domain the
- * comparison collapses and LPT bin packing degrades to the input order.</p>
- */
 class BalancingComparatorContractTest {
 
     private static TaskSet runtime(long cloudletLength) {
@@ -35,8 +23,7 @@ class BalancingComparatorContractTest {
     void runtimeIncreasingSortsInExactAscendingOrder() {
         List<TaskSet> list =
                 new ArrayList<TaskSet>(Arrays.asList(runtime(1_000L), runtime(3000L), runtime(500L), runtime(2_000L)));
-        // First inject an arrangement whose input order is the reverse of the target order,
-        // so an all-zero comparator cannot pass by stability alone.
+
         Collections.reverse(list);
         List<TaskSet> sorted = new ArrayList<TaskSet>(list);
         Collections.sort(sorted, HorizontalRuntimeBalancing.RUNTIME_INCREASING);
@@ -48,11 +35,7 @@ class BalancingComparatorContractTest {
 
     @Test
     void runtimeIncreasingDistinguishesIntWrapAroundDifferences() {
-        // F-005 red case: (int)(1 - 2^32) keeps the low 32 bits == 1 (the direction being
-        // correct is a coincidence), while (int)(2^32 - 1) == -1 has the wrong direction.
-        // The conservation law requires: every distinguishable runtime order must be
-        // correct. Use 1 rather than 0 as the baseline: Cloudlet silently keeps the
-        // default 1 for lengths <= 0.
+
         List<TaskSet> pair = new ArrayList<TaskSet>(Arrays.asList(runtime(4294967296L), runtime(1L)));
         Collections.sort(pair, HorizontalRuntimeBalancing.RUNTIME_INCREASING);
         assertEquals(
@@ -60,9 +43,6 @@ class BalancingComparatorContractTest {
                 runtimes(pair),
                 "two runtimes differing by 2^32 must be distinguishable (red test F-005: narrowing wrap-around)");
 
-        // Asymmetric deviation probe: the difference between 0 and 2^32+1 narrows to 1 (the
-        // direction happens to be correct), but the difference between 0 and 2^32-1 narrows to
-        // -1 (the direction is wrong) -- the other face of the same defect.
         List<TaskSet> asymmetric = new ArrayList<TaskSet>(Arrays.asList(runtime(4294967295L), runtime(1L)));
         Collections.sort(asymmetric, HorizontalRuntimeBalancing.RUNTIME_INCREASING);
         assertEquals(

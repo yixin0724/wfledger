@@ -5,7 +5,6 @@ import org.workflowsim.planning.dheft.DheftAdapter;
 import org.workflowsim.planning.dheft.DheftPlanner;
 import org.workflowsim.planning.dheft.DheftSchedule;
 
-/** DHEFT static planning with official ready-wave semantics and pairwise byte-rate bandwidth. */
 public final class DheftPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;

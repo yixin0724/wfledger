@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-/** Full energy/makespan comparison on real scientific workflows. */
 class EnergyBaselineComparisonTest {
 
     @Test

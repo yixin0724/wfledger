@@ -30,7 +30,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
-/** Checks a registered protocol and its evidence; integrity validation is not a current-code rerun. */
 public final class NetworkStudyValidator {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
 
@@ -87,7 +86,6 @@ public final class NetworkStudyValidator {
         }
     }
 
-    /** Path/protocol and plan loading stage (verbatim move from validate()). */
     private static RetainedStudy loadRetainedStudy(Path indexPath) throws IOException {
         Path root = indexPath.toAbsolutePath().normalize().getParent();
         Path realRoot = root.toRealPath();
@@ -111,7 +109,6 @@ public final class NetworkStudyValidator {
         return new RetainedStudy(index, root, realRoot, plan, registered, protocolSha256);
     }
 
-    /** Validation of a single study run index entry and its evidence (verbatim move). */
     private static void validateStudyRun(
             JsonObject run,
             RetainedStudy retained,
@@ -173,11 +170,6 @@ public final class NetworkStudyValidator {
         validateRunEvidence(run, workflow, cell, evidence);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateStudyRun; statements verbatim; order unchanged.
-     * Scope: only resolves and validates the manifest evidence path targeted by a single study
-     * run (confined to the retained study directory) and enforces the v4 schema.
-     */
     private static JsonObject readValidatedManifest(JsonObject run, RetainedStudy retained) throws IOException {
         String relative = text(run, "manifest");
         Path manifest = retained.root.resolve(relative).normalize();
@@ -194,7 +186,6 @@ public final class NetworkStudyValidator {
         return evidence;
     }
 
-    /** Consistency check between the designed experiment manifest metrics and the index (verbatim move). */
     private static void validateRunEvidence(JsonObject run, JsonObject workflow, String cell, JsonObject evidence)
             throws IOException {
         if (evidence.getAsJsonArray("inputs").size() != 1) {
@@ -224,7 +215,6 @@ public final class NetworkStudyValidator {
         match(run, "meanVmUtilization", metrics, "meanVmModeledIntervalUtilization");
     }
 
-    /** Private moved structure holding the study context retained by validate(). */
     private static final class RetainedStudy {
         final JsonObject index;
         final Path root;
@@ -249,7 +239,6 @@ public final class NetworkStudyValidator {
         }
     }
 
-    /** Private moved structure for the cross-run validation progress of validate(). */
     private static final class ValidationState {
         final Set<String> expected;
         String datasetIdentity;
@@ -259,7 +248,6 @@ public final class NetworkStudyValidator {
         }
     }
 
-    /** Registered declarations contain no filesystem state, so archived inputs need not be present. */
     private static NetworkStudyPlan registeredPlan(JsonObject plan) throws IOException {
         NetworkStudyPlan registered = NetworkStudyPlan.canonical(text(plan, "mode"), text(plan, "protocol"));
         JsonObject expected = JSON.toJsonTree(registered.asMap()).getAsJsonObject();
@@ -330,7 +318,7 @@ public final class NetworkStudyValidator {
         if (!"EXPLICIT_ABSOLUTE_DATASET_ROOT".equals(text(dataset, "resolutionPolicy"))) {
             throw new IOException("Unknown study input resolution policy");
         }
-        // Historical source/binary hashes are provenance, not claims about this checkout.
+
         return text(dataset, "root");
     }
 
@@ -358,8 +346,6 @@ public final class NetworkStudyValidator {
         actualConfig.remove("algorithmContract");
         if (registered.isHistoricalProtocol()) {
             expectedConfig.remove("executionSemantics");
-            // Do not remove it from actualConfig: corrected-model evidence cannot impersonate
-            // a historical protocol, whose original v4 manifests had no such declaration.
         }
         if (!ExactJsonValues.equal(expectedConfig, actualConfig)) {
             throw new IOException("Fixed study simulation conditions/model revision differ: " + cell);
@@ -385,7 +371,6 @@ public final class NetworkStudyValidator {
         }
     }
 
-    /** Only the registered study's published observations are subject to these value domains. */
     private static void requireMetricNumber(JsonElement value, String field, boolean utilization) throws IOException {
         if (value == null
                 || !value.isJsonPrimitive()
@@ -401,8 +386,7 @@ public final class NetworkStudyValidator {
         if (!Double.isFinite(exact.doubleValue()) || exact.signum() < 0) {
             throw new IOException("Study metric must be finite and nonnegative: " + field);
         }
-        // Check the declared decimal value, not a rounded double: tiny negatives and values
-        // just above one must not be accepted as -0.0 or 1.0 after binary64 conversion.
+
         if (utilization && exact.compareTo(BigDecimal.ONE) > 0) {
             throw new IOException("Study modeled interval utilization must be within [0,1]: " + field);
         }

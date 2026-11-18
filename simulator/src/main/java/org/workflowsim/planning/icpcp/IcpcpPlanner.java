@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** One-phase IC-PCP: partial critical paths, EST/LFT, and minimum-cost path assignment. */
 public final class IcpcpPlanner {
 
     private static final int START_ID = -1;

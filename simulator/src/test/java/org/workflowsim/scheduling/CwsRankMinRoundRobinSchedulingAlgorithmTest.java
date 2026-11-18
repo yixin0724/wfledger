@@ -11,7 +11,6 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Job;
 import org.workflowsim.utils.Parameters;
 
-/** Comparator and persistent-VM-cursor checks for the static CWS RankMin-RR adaptation. */
 class CwsRankMinRoundRobinSchedulingAlgorithmTest {
 
     @Test
@@ -51,8 +50,6 @@ class CwsRankMinRoundRobinSchedulingAlgorithmTest {
 
         scheduler.run();
 
-        // FileItem.isRealInputFile excludes the first Job's same-named input/output pair:
-        // real inputs are 0 versus 50 bytes, so the internally supplied Job sorts first.
         assertEquals(Arrays.asList(internallySupplied, externallySupplied), scheduler.getScheduledList());
     }
 

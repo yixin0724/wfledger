@@ -5,10 +5,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/**
- * Closed, trusted codec contracts. A document never chooses or extends its own grammar:
- * the public V2 and V3 entry points supply one of these constants before validation.
- */
 enum LifecycleContract {
     FILE_V2(
             false,

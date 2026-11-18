@@ -11,17 +11,6 @@ import org.workflowsim.failure.FailureModelConfig;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * BAT-R8 (2026-10-27, eighth review round) -- seam x seam matrix batch S2: the contract
- * clauses of the registration interface (reject leg) have never been tested under seam
- * combinations. R7 proved that combinations of seams are the real unaudited zone.
- *
- * <p>Expected-value provenance: the contract clauses of AlgorithmRegistry.validate
- * themselves -- every rejection message must name the constraint (not silence, not
- * implementation output). Drive validate() directly (which locks the clauses more precisely
- * than going through the full runner); the six dimensions are supplied explicitly by
- * ValidationInput.</p>
- */
 class RegisteredAxesRejectIntegrationTest {
 
     private static final String LABEL = "ENERGY_LPT_FIRST";
@@ -66,9 +55,7 @@ class RegisteredAxesRejectIntegrationTest {
 
     @Test
     void everyClauseGreenTogetherStillValidates() {
-        // The converse of the counter-example: all six dimensions align with the contract
-        // (legacy model, no matrix, no failure, INVALID, with power) -- the same chain must
-        // be allowed through, which proves the reject leg is not a blanket rejection.
+
         assertDoesNotThrow(() -> AlgorithmRegistry.validate(
                 LABEL,
                 new AlgorithmRegistry.ValidationInput(

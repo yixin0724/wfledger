@@ -16,7 +16,6 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** Coordinator checks precede the real Kernel end-to-end test; no optional trace drives state. */
 class CoherentDataflowRuntimeTest {
     @Test
     void fastFanInFileIsVisibleAndReusableBeforeSlowSiblingCompletes() {

@@ -18,20 +18,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Compatibility contract of the campaign DAG set: the pass/reject classification of every
- * candidate DAX by the LOCAL communication-aware planning family (the family that owns the
- * campaign's primary planners LOCAL_HEFT/LOCAL_CPOP).
- *
- * <p>Background: a raw Pegasus/WfCommons DAX allows the same file name to declare different
- * sizes in different jobs; {@code AbstractLocalCommPlanningAlgorithm} treats a replica as a
- * single entity and strictly rejects inconsistent size declarations. Measured classification
- * (2026-09-15 probe): Epigenomics/CyberShake/Inspiral pass at every scale; Montage and Sipht
- * are rejected at every scale (because of the size conflict on fit.txt and on
- * Seq_NC_0025AG05 respectively). The final campaign DAG set equals the passing set (10
- * entries); the exclusion statement in section 2.1 of the design document is backed by this
- * test as its empirical evidence.</p>
- */
 class FatTreeCampaignDagCompatibilityIntegrationTest {
 
     private static final List<String> EXPECTED_PASSED = Arrays.asList(
@@ -49,7 +35,6 @@ class FatTreeCampaignDagCompatibilityIntegrationTest {
     private static final List<String> EXPECTED_REJECTED =
             Arrays.asList("montage-n25", "montage-n50", "montage-n100", "sipht-n30", "sipht-n60", "sipht-n100");
 
-    /** The campaign DAG set equals the compatibility passing set, element for element. */
     @Test
     void campaignDagSetIsExactlyTheCompatibleSet() throws Exception {
         List<FatTreeSchedulingCampaignExecutor.DagScenario> dags =
@@ -61,7 +46,6 @@ class FatTreeCampaignDagCompatibilityIntegrationTest {
         assertEquals(EXPECTED_PASSED, ids, "The campaign DAG set must equal the compatibility passing set");
     }
 
-    /** The classification of all 16 candidate DAX must match the probed partition element for element. */
     @Test
     void localCommFamilyClassificationMatchesTheProbedPartition() throws Exception {
         Log.disable();

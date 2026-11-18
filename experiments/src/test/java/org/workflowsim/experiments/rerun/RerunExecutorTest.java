@@ -21,13 +21,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/**
- * Phase 4 acceptance: the complete rerun pipeline (read -> locate -> rebuild -> simulate ->
- * write the new artifact trio). The new artifact trio must itself be v4 evidence that passes
- * structural validation; the core quantity (makespan) agrees with the original run; a
- * non-empty output directory is refused; an input location failure is propagated as its
- * verdict and writes no rerun artifact.
- */
 class RerunExecutorTest {
 
     private static Path fixtureRun;
@@ -60,12 +53,9 @@ class RerunExecutorTest {
         assertTrue(Files.exists(execution.getArtifacts().getMetrics()));
         assertTrue(Files.exists(execution.getArtifacts().getEvents()));
 
-        // The new artifact trio must itself be a v4 evidence bundle that passes structural
-        // validation.
         RerunEvidence rerunEvidence = RerunEvidenceReader.read(rerunDir);
         assertTrue(rerunEvidence.getEventCount() > 0);
 
-        // The rerun manifest inputs record the paths resolved by phase 2.
         String rerunInputPath = rerunEvidence
                 .getManifest()
                 .getAsJsonArray("inputs")
@@ -75,8 +65,6 @@ class RerunExecutorTest {
                 .getAsString();
         assertEquals(execution.getInputs().get(0).getResolvedPath().toString(), rerunInputPath);
 
-        // Core-quantity spot check: with the same seed and the same machine, makespan must match
-        // bit for bit.
         assertEquals(
                 metricsMakespan(fixtureRun.resolve("result.metrics.json")),
                 metricsMakespan(execution.getArtifacts().getMetrics()));
@@ -105,8 +93,6 @@ class RerunExecutorTest {
         assertFalse(Files.exists(output.resolve("rerun")));
     }
 
-    // ---- helpers ----
-
     private static double metricsMakespan(Path metricsPath) throws Exception {
         JsonObject document = JsonParser.parseString(
                         new String(Files.readAllBytes(metricsPath), StandardCharsets.UTF_8))
@@ -131,10 +117,6 @@ class RerunExecutorTest {
         Files.write(run.resolve("result.manifest.json"), gson.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Rewrite the path in all three places (inputs / workflowPaths / workflowOutcomes), as v4
-     * cross-validation requires.
-     */
     private static void rewriteInputPath(Path run, String newPath) throws Exception {
         JsonObject manifest = readManifest(run);
         manifest.getAsJsonArray("inputs").get(0).getAsJsonObject().addProperty("path", newPath);

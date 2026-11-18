@@ -34,17 +34,12 @@ class SharedStoragePeftPlanningAlgorithmTest {
 
         SharedStorageDagPlanTrace trace = planner.getLastPlanTrace();
         assertEquals("PEFT", trace.getStrategy());
-        // The OCT does not include the execution time of the current Task; the optimistic
-        // fastest execution of the successor of Task 1 is 2.0 seconds, whereas that of
-        // Task 2 is 0.5 seconds, so Task 1 wins the ready-list tie although Task 2 is
-        // itself longer.
+
         assertEquals(2.0, trace.getTaskPlan(1).getPeftRankOctSeconds(), 1.0e-12);
         assertEquals(0.5, trace.getTaskPlan(2).getPeftRankOctSeconds(), 1.0e-12);
         assertEquals(Integer.valueOf(1), trace.getTaskPlan(1).getPeftSelectionOrder());
         assertEquals(Integer.valueOf(2), trace.getTaskPlan(2).getPeftSelectionOrder());
 
-        // The initial stage-in release completes at 0.21 seconds. The EFT of Task 1 on VM 1
-        // is 0.71 and its OCT is 2.0, so the PEFT selection objective is 2.71.
         assertEquals(1, trace.getTaskPlan(1).getVmId());
         assertEquals(2.0, trace.getTaskPlan(1).getPeftOptimisticCostAtSelectedVmSeconds(), 1.0e-12);
         assertEquals(2.71, trace.getTaskPlan(1).getPeftEftPlusOptimisticCostSeconds(), 1.0e-12);

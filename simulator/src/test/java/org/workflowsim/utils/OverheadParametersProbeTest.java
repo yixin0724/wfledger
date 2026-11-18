@@ -14,18 +14,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.Job;
 
-/**
- * R9 runtime-path probe: minimal deterministic fixture for the depth-sampling
- * branches of {@link OverheadParameters}.
- *
- * <p>Previously only the queue-delay channel of this class was covered, by
- * integration tests inside the test JVM (16.2% instruction coverage); the
- * post-processing/clustering/engine delay channels -- depth hit, depth 0 default,
- * absent entry, null maps, empty batch and null job -- were executed only
- * indirectly by a legacy example in a separate JVM, hence invisible to jacoco.
- * This test locks down the semantics of each branch one by one with a minimal Job
- * fixture inside the test JVM.</p>
- */
 class OverheadParametersProbeTest {
 
     @AfterEach
@@ -104,8 +92,6 @@ class OverheadParametersProbeTest {
     void nullJobAndEmptyBatchLogUnsupportedAndYieldZero() {
         OverheadParameters op = new OverheadParameters(0, delayMap(0), delayMap(0), delayMap(0), delayMap(0), 0.0);
 
-        // The historical semantics of a null job / empty batch is to print
-        // "Not yet supported" and return 0; mute the console.
         Log.disable();
         assertEquals(0.0, op.getClustDelay(null), 0.0);
         assertEquals(0.0, op.getQueueDelay(null), 0.0);

@@ -9,16 +9,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Version and shape gate for the supported WfFormat 1.5/1.6 input family (Q05, 2026-11-04).
- * The official schemas are the primary references; this small validator covers their required
- * fields, types, ranges, and the fields consumed by the Java parser. It is not a claim to
- * implement every JSON Schema keyword. Unknown versions and unknown fields fail explicitly
- * instead of being silently discarded by Gson. The project's existing fractional-byte input
- * contract is the documented numeric extension to the official integer file-size type;
- * Nextflow's workflow-level `repo` and `runName` provenance fields are the other explicitly
- * registered compatibility extensions used by the retained WfInstances snapshot.
- */
 final class WfCommonsSchemaValidator {
 
     private static final Set<String> SUPPORTED_VERSIONS =

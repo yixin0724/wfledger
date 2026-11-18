@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.planning.greenheft.GreenHeftProblem;
 import org.workflowsim.planning.greenheft.GreenHeftTask;
 
-/** Hand-derived MOHEFT Pareto, dominance, and balanced-selection checks. */
 class MoHeftPlannerTest {
 
     @Test

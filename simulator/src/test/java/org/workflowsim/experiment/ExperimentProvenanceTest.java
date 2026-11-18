@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Verifies that Maven module source-root resolution does not depend on the JVM working directory. */
 class ExperimentProvenanceTest {
 
     @Test

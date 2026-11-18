@@ -6,15 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Immutable audit record of one maintained shared-storage static DAG plan.
- *
- * <p>The trace records the planner's model-level decision quantities.
- * {@code plannedStartSeconds} is the start of the Job envelope before data
- * stage-in; {@code plannedComputeStartSeconds} is the start of the logical Task
- * compute window after the CloudSim integer-MI stage-in conversion. It is not a
- * production execution trace, nor a network-calibrated schedule.</p>
- */
 public final class SharedStorageDagPlanTrace {
 
     private final String strategy;
@@ -52,23 +43,14 @@ public final class SharedStorageDagPlanTrace {
         return taskPlans.get(taskId);
     }
 
-    /**
-     * Empty for HEFT, DLS, ETF, and PEFT; for CPOP the critical path is
-     * recorded in entry-to-exit order.
-     */
     public List<Integer> getCriticalPathTaskIds() {
         return criticalPathTaskIds;
     }
 
-    /**
-     * HEFT, DLS, ETF, and PEFT make no CPOP critical processor decision, so
-     * this returns {@code null}.
-     */
     public Integer getCriticalProcessorVmId() {
         return criticalProcessorVmId;
     }
 
-    /** Immutable model-level decision record for a single Task. */
     public static final class TaskPlan {
 
         private final int taskId;
@@ -135,72 +117,58 @@ public final class SharedStorageDagPlanTrace {
             return upwardRankSeconds;
         }
 
-        /** Provided only by CPOP traces; other strategies return {@code null}. */
         public Double getCpopDownwardRankSeconds() {
             return cpopDownwardRankSeconds;
         }
 
-        /** Provided only by CPOP traces; other strategies return {@code null}. */
         public Double getCpopPrioritySeconds() {
             return cpopPrioritySeconds;
         }
 
-        /** Provided only by DLS traces; other strategies return {@code null}. */
         public Double getDlsDynamicLevelAtSelection() {
             return dlsDynamicLevelAtSelection;
         }
 
-        /** 1-based DLS selection order; non-DLS strategies return {@code null}. */
         public Integer getDlsSelectionOrder() {
             return dlsSelectionOrder;
         }
 
-        /** Provided only by ETF traces; other strategies return {@code null}. */
         public Double getEtfEarliestStartAtSelection() {
             return etfEarliestStartAtSelection;
         }
 
-        /** 1-based ETF selection order; non-ETF strategies return {@code null}. */
         public Integer getEtfSelectionOrder() {
             return etfSelectionOrder;
         }
 
-        /** VM-averaged optimistic-cost rank for compatibility; provided only by PEFT traces. */
         public Double getPeftRankOctSeconds() {
             return peftRankOctSeconds;
         }
 
-        /** OCT on the selected VM; provided only by PEFT traces. */
         public Double getPeftOptimisticCostAtSelectedVmSeconds() {
             return peftOptimisticCostAtSelectedVmSeconds;
         }
 
-        /** Selected PEFT objective value, that is, inserted EFT plus OCT; provided only by PEFT traces. */
         public Double getPeftEftPlusOptimisticCostSeconds() {
             return peftEftPlusOptimisticCostSeconds;
         }
 
-        /** 1-based PEFT selection order; other strategies return {@code null}. */
         public Integer getPeftSelectionOrder() {
             return peftSelectionOrder;
         }
 
-        /** Planned start of the Job envelope, before the modeled data stage-in. */
         public double getPlannedStartSeconds() {
             return plannedStartSeconds;
         }
 
-        /** Planned finish of the Job envelope, including the modeled data stage-in and computation. */
         public double getPlannedFinishSeconds() {
             return plannedFinishSeconds;
         }
 
-        /** Effective stage-in duration after the CloudSim integer-MI conversion. */
         public double getPlannedDataStageInSeconds() {
             return plannedDataStageInSeconds;
         }
 
-        /** Start of the logical Task compute window after the effective stage-in completes. */
         public double getPlannedComputeStartSeconds() {
             return plannedStartSeconds + plannedDataStageInSeconds;
         }

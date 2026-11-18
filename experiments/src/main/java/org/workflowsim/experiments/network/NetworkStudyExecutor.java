@@ -19,7 +19,6 @@ import org.workflowsim.experiment.SimulationRunner;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Streams an explicit study to independent v4 evidence bundles, then validates its summary. */
 public final class NetworkStudyExecutor {
     public static final String INDEX = "network-study.json";
 
@@ -101,7 +100,6 @@ public final class NetworkStudyExecutor {
         return root.resolve(INDEX);
     }
 
-    /** Execution and evidence writing of a single study cell (moved verbatim). */
     private static Map<String, Object> runStudyCell(
             NetworkStudyPlan.WorkflowCase workflow,
             NetworkStudyPlan.Condition condition,

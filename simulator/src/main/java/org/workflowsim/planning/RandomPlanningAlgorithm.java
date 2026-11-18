@@ -25,21 +25,8 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 import org.workflowsim.utils.SimulationRandom;
 
-/**
- * Random Task-to-compatible-VM mapping baseline controlled by a random seed.
- *
- * <p>It produces only a mapping: DAG dependencies are still enforced by
- * {@code WorkflowEngine}, and no offline execution order is generated. VM candidates are first
- * sorted stably by ID, and the choice among PE-compatible candidates is then made through
- * {@code SimulationRandom}, so the same seed and identical inputs reproduce.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Jun 17, 2013
- */
 public class RandomPlanningAlgorithm extends BasePlanningAlgorithm {
 
-    /** Perform a seed-controlled random mapping over each Task's compatible VM set. */
     @Override
     public void run() {
         Random random = SimulationRandom.newJavaRandom("planning.random");

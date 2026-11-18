@@ -26,27 +26,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Stage 3: reconstruct the v4 manifest back into an executable {@link SimulationConfig} and
- * {@link PlatformProfile} (see the "reconstruction rules" contract).
- *
- * <p>Reconstruction is a faithful translation only: every field takes the recorded manifest
- * value, with no guessing, no default filling, and no silent correction; combination legality is
- * left entirely to the existing builders ({@code SimulationConfig.build},
- * {@code PlatformProfile.build}, {@code FailureModelConfig.build}, and so on). Any validation
- * failure -- including mutually exclusive algorithm combinations, unknown enum names, missing
- * fields, data movement model parameters that disagree with the factory semantics, and VM-Host
- * preflight placement that disagrees with the current placement logic -- is mapped uniformly to
- * {@code RECONSTRUCTION_REJECTED}, which is a legal verdict rather than a program error.</p>
- *
- * <p>{@code configuration.workflowPaths} uses the locations resolved and sha256-verified in
- * stage 2, not the original machine paths recorded in the manifest.</p>
- */
 public final class ManifestConfigRebuilder {
 
     private ManifestConfigRebuilder() {}
 
-    /** Reconstruction product: executable configuration plus platform description. */
     public static final class RebuiltConfiguration {
 
         private final SimulationConfig config;
@@ -66,14 +49,6 @@ public final class ManifestConfigRebuilder {
         }
     }
 
-    /**
-     * Rebuild the configuration and the platform from the evidence-package manifest.
-     *
-     * @param evidence evidence package already validated in stage 1
-     * @param inputs   inputs already located and hash-verified in stage 2
-     * @throws RerunFailureException {@code RECONSTRUCTION_REJECTED}; the exception message carries
-     *         the original validation failure cause and the field path
-     */
     public static RebuiltConfiguration rebuild(RerunEvidence evidence, RerunInputs inputs)
             throws RerunFailureException {
         JsonObject manifest = evidence.getManifest();
@@ -105,8 +80,6 @@ public final class ManifestConfigRebuilder {
                     e);
         }
     }
-
-    // ---- platform ----
 
     private static PlatformProfile rebuildPlatform(JsonObject platform) {
         PlatformProfile.Builder builder = PlatformProfile.builder(requireString(platform, "name", "platform.name"));
@@ -145,19 +118,10 @@ public final class ManifestConfigRebuilder {
                     requireString(vm, "vmm", "platform.vms[].vmm"),
                     schedulerMode,
                     optionalCosts(vm.get("costs"), "platform.vms[].costs"),
-                    // BAT-E4.1 (2026-10-27): power fields are forwarded on a round trip (a
-                    // missing key is treated as 0 = pre-energy historical manifest; non-zero values
-                    // are guarded by the max>=idle check of the VmSpec constructor).
                     optionalNonNegativeDouble(vm.get("idlePowerWatts"), "platform.vms[].idlePowerWatts"),
                     optionalNonNegativeDouble(vm.get("maxPowerWatts"), "platform.vms[].maxPowerWatts"),
                     optionalCarbonIntensity(
                             vm.get("carbonIntensityGramsPerKWh"), "platform.vms[].carbonIntensityGramsPerKWh"),
-                    // A1 (2026-11-02): frequency tier table round-trip rebuild. A missing key or
-                    // an empty table = v1 single-tier platform (legal default); a non-empty table
-                    // is checked by the VmSpec constructor for "strictly descending + mutually
-                    // exclusive with the flat power fields" -- an illegal table in the record must
-                    // be rejected by reconstruction (RECONSTRUCTION_REJECTED), never silently
-                    // corrected.
                     rebuildFrequencyTiers(vm.get("frequencyTiers"))));
             Integer pinned = optionalInt(vm.get("pinnedHostId"));
             if (pinned != null) {
@@ -224,11 +188,6 @@ public final class ManifestConfigRebuilder {
                 placements);
     }
 
-    /**
-     * The deterministic VM-Host preflight placement after reconstruction must match the manifest
-     * record; a mismatch means the current placement logic differs from the version that produced
-     * the evidence, so the rerun is no longer trustworthy and is treated as rejected.
-     */
     private static void verifyPreflightAssignments(JsonObject platformSection, PlatformProfile platform) {
         Map<Integer, Integer> assignments = platform.getVmHostAssignments();
         for (JsonElement element : requireArray(platformSection, "vms", "platform.vms")) {
@@ -243,8 +202,6 @@ public final class ManifestConfigRebuilder {
             }
         }
     }
-
-    // ---- configuration ----
 
     private static SimulationConfig rebuildConfiguration(JsonObject config, RerunInputs inputs) {
         JsonArray recordedPaths = requireArray(config, "workflowPaths", "configuration.workflowPaths");
@@ -281,19 +238,11 @@ public final class ManifestConfigRebuilder {
                         requireDouble(config, "runtimeReferenceMips", "configuration.runtimeReferenceMips"))
                 .cloudSimMinEventIntervalSeconds(requireDouble(
                         config, "cloudSimMinEventIntervalSeconds", "configuration.cloudSimMinEventIntervalSeconds"))
-                // AUD-F07 follow-up (2026-11-04): retention-cap round-trip. A missing key =
-                // pre-outlet shape/default cap, consistent with the conditional emission of
-                // ExperimentManifestWriter; when present, the cap is rebuilt from the
-                // recorded value.
                 .eventRecorderCap(rebuildEventRecorderCap(config.get("eventRecorderCap")))
                 .costModel(enumValue(
                         CostModel.class,
                         requireString(config, "costModel", "configuration.costModel"),
                         "configuration.costModel"))
-                // A1 (2026-11-02): frequency tier assignment policy round-trip. A missing
-                // key = pre-D4 shape/DEFAULT, consistent with the value semantics "missing key
-                // == the only legal DEFAULT"; when present, the policy is rebuilt from the
-                // recorded value.
                 .frequencyPolicy(rebuildFrequencyPolicy(config.get("frequencyPolicy")))
                 .overheadModel(
                         rebuildOverheadModel(requireObject(config, "overheadModel", "configuration.overheadModel")))
@@ -302,20 +251,7 @@ public final class ManifestConfigRebuilder {
                 .failureModel(rebuildFailureModel(requireObject(config, "failureModel", "configuration.failureModel")))
                 .dataMovementModel(rebuildDataMovementModel(
                         requireObject(config, "dataMovementModel", "configuration.dataMovementModel")));
-        // BAT-R7 (2026-10-27 seventh review round, red on the first cross-seam
-        // chain run): evidence rerun of registered-label algorithms.
-        // The manifest records schedulingAlgorithm=INVALID +
-        // registeredSchedulingAlgorithm=<label>, but the rebuilder previously read only the
-        // former -> INVALID has no provider -> RECONSTRUCTION_REJECTED; the evidence of any
-        // registry algorithm had never been rerun (each seam had unit tests; nobody walked the
-        // chain).
-        // Fix: the label is resolved back to a provider through AlgorithmRegistry.find (SPI); when
-        // the classpath does not register that label, fail fast and reject (rerun diagnosis
-        // requires the algorithm to be available on the rerun machine -- consistent with evidence
-        // chain honesty).
-        // Note (continuing the BAT-R4 three-shape discipline): in non-registered historical
-        // evidence the key appears as JSON null (manifest writer serializeNulls) and has() is
-        // true -- null must be excluded too for the key to count as "declared".
+
         if (config.has("registeredSchedulingAlgorithm")
                 && !config.get("registeredSchedulingAlgorithm").isJsonNull()) {
             String registeredLabel = requireString(
@@ -323,7 +259,7 @@ public final class ManifestConfigRebuilder {
             builder.registeredSchedulingAlgorithm(
                     org.workflowsim.experiment.registry.AlgorithmRegistry.find(registeredLabel));
         }
-        // Historical v4 absence is explicitly OFF; a present extension must never be ignored.
+
         if (config.has("networkEvidence")) {
             builder.networkEvidence(
                     org.workflowsim.data.NetworkEvidenceConfigCodec.decodeConfig(config.get("networkEvidence")));
@@ -500,9 +436,7 @@ public final class ManifestConfigRebuilder {
             default:
                 throw new IllegalArgumentException("Unsupported configuration.dataMovementModel.kind: " + kindName);
         }
-        // The endpoint parameters of a shared factory instance are part of the model
-        // semantics; recorded values that disagree mean the manifest comes from an incompatible
-        // model version, so reject instead of silently adopting the factory default.
+
         if (Double.compare(model.getAccessLinkBandwidthMbPerSecond(), access) != 0
                 || Double.compare(model.getAccessLinkLatencySeconds(), latency) != 0
                 || Double.compare(model.getSourceEndpointBandwidthMbPerSecond(), source) != 0) {
@@ -528,8 +462,6 @@ public final class ManifestConfigRebuilder {
         }
         return builder.build();
     }
-
-    // ---- JSON helpers (every failure is IllegalArgumentException, wrapped by rebuild) ----
 
     private static PlatformProfile.CostSpec costSpec(JsonObject costs, String path) {
         return new PlatformProfile.CostSpec(
@@ -618,15 +550,6 @@ public final class ManifestConfigRebuilder {
         return element == null || element.isJsonNull() ? null : Double.valueOf(element.getAsDouble());
     }
 
-    /**
-     * A1 (2026-11-02): round-trip rebuild of {@code platform.vms[].frequencyTiers}.
-     *
-     * <p>A missing key or an empty array = v1 single-tier platform (legal default, with no
-     * guessing at all). Table entries are rebuilt in recorded order; strict descending order,
-     * mutual exclusivity with the flat power fields, and the power range are guarded by the
-     * constructor validation of {@link PlatformProfile.VmSpec} -- this method is a faithful
-     * translation, not a validator.</p>
-     */
     private static List<PlatformProfile.FrequencyTier> rebuildFrequencyTiers(JsonElement element) {
         if (element == null || element.isJsonNull()) {
             return java.util.Collections.emptyList();
@@ -650,24 +573,11 @@ public final class ManifestConfigRebuilder {
         return tiers;
     }
 
-    /**
-     * A1 (2026-11-02): round-trip rebuild of {@code configuration.frequencyPolicy}.
-     *
-     * <p>A missing key or a null value maps to {@code DEFAULT} (the only legal value of pre-D4
-     * frozen evidence; the same rule as the key-absence emission of ExperimentManifestWriter).
-     * Unknown enum names are still rejected by {@code enumValue}, with no downgrade.</p>
-     */
     private static SimulationConfig.FrequencyPolicy rebuildFrequencyPolicy(JsonElement element) {
         if (element == null || element.isJsonNull()) {
             return SimulationConfig.FrequencyPolicy.DEFAULT;
         }
-        // A type error is rejected explicitly here instead of letting getAsString() throw
-        // Gson's IllegalStateException: both end up as RECONSTRUCTION_REJECTED
-        // (RerunDiffExecutor.execute catches IllegalArgumentException and IllegalStateException
-        // alike), but an explicit rejection gives actionable information about "which field, which
-        // type was expected" instead of a framework-level message (A1 review round,
-        // diagnostic-quality fix; that review once misjudged it as a verdict contract hole, since
-        // disproved by measurement).
+
         if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
             throw new IllegalArgumentException("configuration.frequencyPolicy must be a JSON string when present");
         }
@@ -675,16 +585,6 @@ public final class ManifestConfigRebuilder {
                 SimulationConfig.FrequencyPolicy.class, element.getAsString(), "configuration.frequencyPolicy");
     }
 
-    /**
-     * AUD-F07 follow-up (2026-11-04, post-completion review): round-trip rebuild of
-     * {@code configuration.eventRecorderCap}.
-     *
-     * <p>A missing key or a null value maps to the default cap (the only legal value of
-     * pre-outlet frozen evidence; the same rule as the key-absence emission of
-     * ExperimentManifestWriter). Non-numeric, non-exact-integer, and non-positive values are
-     * rejected explicitly -- the same diagnostic-quality rule as
-     * {@code rebuildFrequencyPolicy}, with no downgrade.</p>
-     */
     private static int rebuildEventRecorderCap(JsonElement element) {
         if (element == null || element.isJsonNull()) {
             return SimulationConfig.DEFAULT_EVENT_RECORDER_CAP;
@@ -706,12 +606,6 @@ public final class ManifestConfigRebuilder {
         return (int) value;
     }
 
-    /**
-     * BAT-E4.1 (2026-10-27): optional non-negative power field; a missing key or a null value is
-     * treated as 0 (pre-energy historical shape), while negative and non-numeric values are
-     * rejected explicitly -- power is a physical quantity, and silently accepting an illegal value
-     * violates the explicit-failure discipline.
-     */
     private static Double optionalCarbonIntensity(JsonElement element, String field) {
         if (element == null || element.isJsonNull()) {
             return null;

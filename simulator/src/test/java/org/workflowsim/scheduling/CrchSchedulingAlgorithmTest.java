@@ -13,7 +13,6 @@ import org.workflowsim.utils.CrchConfig;
 import org.workflowsim.utils.CrchRecovery;
 import org.workflowsim.utils.CrchRegistry;
 
-/** CRCH retry VM selection must avoid the failed VM when an alternative exists. */
 class CrchSchedulingAlgorithmTest {
 
     @AfterEach

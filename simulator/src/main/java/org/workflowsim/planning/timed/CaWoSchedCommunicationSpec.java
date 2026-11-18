@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Explicit full-duplex link power and per-edge communication times for CaWoSched. */
 public final class CaWoSchedCommunicationSpec {
 
     private final int sourceVmId;

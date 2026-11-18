@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Failsafe coverage for the full real-scientific-workflow comparison driver. */
 class MakespanBaselineComparisonIntegrationTest {
 
     @TempDir

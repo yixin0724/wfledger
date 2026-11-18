@@ -6,7 +6,6 @@ import org.workflowsim.planning.greenheft.GreenHeftPlanner;
 import org.workflowsim.planning.greenheft.GreenHeftProblem;
 import org.workflowsim.planning.greenheft.GreenHeftSchedule;
 
-/** GreenHEFT static planner using declared VM power profiles. */
 public final class GreenHeftPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;

@@ -18,7 +18,6 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.EbpsmConfig;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** EBPSM cache preference and budget-gated VM selection. */
 class EbpsmSchedulingAlgorithmTest {
 
     @Test

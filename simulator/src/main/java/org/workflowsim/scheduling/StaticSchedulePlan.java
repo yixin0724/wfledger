@@ -10,13 +10,6 @@ import java.util.Map;
 import org.workflowsim.Job;
 import org.workflowsim.utils.Parameters.ClassType;
 
-/**
- * Per-VM static Job order, private to one run.
- *
- * <p>A full static DAG planner writes the Job sequence of each VM; planners that only produce
- * a Task-to-VM mapping deliberately return an empty plan. This object constrains the static
- * dispatch order only and does not interpret the model as a real machine queue.</p>
- */
 public final class StaticSchedulePlan {
 
     private static final StaticSchedulePlan EMPTY =
@@ -39,18 +32,10 @@ public final class StaticSchedulePlan {
         }
     }
 
-    /** Returns the empty plan, for mapping-only or historical-compatibility planners. */
     public static StaticSchedulePlan empty() {
         return EMPTY;
     }
 
-    /**
-     * Builds a plan after a clustering-free conversion of planned Tasks into Jobs.
-     *
-     * <p>If no compute Job carries a planned start time, the run is still mapping-only and Job
-     * order is not enforced. Equal start times on the same VM are broken by ascending Job
-     * ID.</p>
-     */
     public static StaticSchedulePlan fromJobs(List<Job> jobs) {
         Map<Integer, List<Job>> grouped = new LinkedHashMap<Integer, List<Job>>();
         boolean anyPlanned = false;
@@ -105,7 +90,6 @@ public final class StaticSchedulePlan {
         return plan;
     }
 
-    /** Enables absolute planned-start enforcement only for explicitly timed planners. */
     public StaticSchedulePlan withStartTimeEnforcement() {
         StaticSchedulePlan plan = new StaticSchedulePlan(jobIdsByVm);
         plan.startTimeByJob.putAll(startTimeByJob);
@@ -130,7 +114,6 @@ public final class StaticSchedulePlan {
         return ids != null && ids.contains(job.getCloudletId());
     }
 
-    /** Returns the only compute Job that the given VM may dispatch next under this static plan. */
     public Integer nextExpectedJobId(int vmId) {
         List<Integer> ids = jobIdsByVm.get(vmId);
         if (ids == null) {
@@ -140,7 +123,6 @@ public final class StaticSchedulePlan {
         return index < ids.size() ? ids.get(index) : null;
     }
 
-    /** Advances the plan cursor of the VM only after the expected Job has actually been dispatched. */
     public void markDispatched(Job job) {
         Integer expected = nextExpectedJobId(job.getVmId());
         if (expected == null || expected.intValue() != job.getCloudletId()) {

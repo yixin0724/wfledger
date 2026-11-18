@@ -12,7 +12,6 @@ import org.workflowsim.Task;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** Converts WorkflowSim tasks and VM bandwidth declarations into DHEFT inputs. */
 public final class DheftAdapter {
 
     private DheftAdapter() {}
@@ -23,7 +22,7 @@ public final class DheftAdapter {
         }
         Map<Integer, Double> bandwidth = new LinkedHashMap<Integer, Double>();
         for (CondorVM vm : vms) {
-            // WorkflowSim declares decimal MB/s while file sizes and DheftEdge use bytes.
+
             bandwidth.put(vm.getId(), vm.getBw() * 1.0e6);
         }
         List<DheftTask> converted = new ArrayList<DheftTask>();

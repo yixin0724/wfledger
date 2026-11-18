@@ -10,10 +10,6 @@ import java.util.Map;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
 
-/**
- * Descriptive statistics summary for one campaign, with the admissible statistical
- * interpretation stated explicitly.
- */
 public final class ExperimentCampaignSummary {
 
     private static final double CONFIDENCE_LEVEL = 0.95;
@@ -65,10 +61,7 @@ public final class ExperimentCampaignSummary {
         List<ComparisonSummary> comparisonSummaries = new ArrayList<ComparisonSummary>();
         for (Map.Entry<String, List<CellSummary>> entry : candidatesByGroup.entrySet()) {
             CellSummary baseline = baselines.get(entry.getKey());
-            // (AUD-F06, 2026-11-03) All non-baseline candidates of one comparison
-            // group form one Holm family, including comparisons whose paired test
-            // produced no p value; the declared family size is the correction
-            // multiplier base.
+
             List<ComparisonSummary> family = new ArrayList<ComparisonSummary>();
             List<Double> rawPValues = new ArrayList<Double>();
             for (CellSummary candidate : entry.getValue()) {
@@ -89,25 +82,14 @@ public final class ExperimentCampaignSummary {
         return new ExperimentCampaignSummary(cellSummaries, comparisonSummaries);
     }
 
-    /**
-     * Return the descriptive summary of each declared cell.
-     *
-     * @return immutable cell summary list in plan declaration order
-     */
     public List<CellSummary> getCells() {
         return cells;
     }
-    /**
-     * Return the comparison summary of each non-baseline candidate against its
-     * declared baseline.
-     *
-     * @return immutable comparison summary list
-     */
+
     public List<ComparisonSummary> getComparisons() {
         return comparisons;
     }
 
-    /** Aggregated observations for one declared cell. */
     public static final class CellSummary {
         private final String cellId;
         private final String comparisonGroup;
@@ -118,25 +100,11 @@ public final class ExperimentCampaignSummary {
         private final MetricSummary makespanSeconds;
         private final MetricSummary modeledProcessingCost;
         private final MetricSummary successfulLogicalTaskCompletionRate;
-        /**
-         * PLAT-10: replication-level aggregation of the core performance metrics
-         * (waiting, slowdown ratio, utilization, fairness).
-         */
+
         private final MetricSummary meanComputeTotalWaitingTimeSeconds;
-        /**
-         * Replication-level aggregation of the true slowdown ratio.
-         *
-         * <p>Slowdown ratio semantics are always >= 1.0, so the 0.0 of a run without
-         * observations is an illegal sample; therefore only runs with
-         * {@code trueSlowdownObservationCount > 0} are aggregated, and this field is
-         * {@code null} when no run has an observation (rather than polluting the mean
-         * and confidence interval with 0.0).</p>
-         */
+
         private final MetricSummary meanComputeTrueSlowdown;
-        /**
-         * Number of runs that contributed a true slowdown sample (the remaining runs
-         * have no observation and are excluded from the aggregation).
-         */
+
         private final int trueSlowdownObservationRunCount;
 
         private final MetricSummary meanVmModeledIntervalUtilization;
@@ -223,10 +191,6 @@ public final class ExperimentCampaignSummary {
                     successfulWorkflowCompletion);
         }
 
-        /**
-         * Run-sample aggregation stage of from() (verbatim extraction of the PLAT-10
-         * illegal-sample exclusion semantics for runs without observations).
-         */
         private static RunSampleAccumulator accumulateRuns(
                 ExperimentPlan.Cell cell, List<ExperimentCampaignResult.Run> runs) {
             RunSampleAccumulator samples = new RunSampleAccumulator();
@@ -249,14 +213,7 @@ public final class ExperimentCampaignSummary {
                 samples.completionRates.add(
                         Double.valueOf(run.getReport().getMetrics().getSuccessfulLogicalTaskCompletionRate()));
                 SimulationMetrics metrics = run.getReport().getMetrics();
-                // PLAT-10: core performance metrics enter replication-level aggregation, so a
-                // campaign comparison no longer has only makespan/cost/completion rate. The
-                // 0.0/1.0 of waiting/utilization/fairness without observations are legal
-                // values (same definition as a single run); but true slowdown semantics are
-                // always >= 1.0, so the 0.0 of a run without observations is an illegal
-                // sample that must be excluded rather than filled, otherwise it
-                // systematically lowers the replication mean and pollutes the confidence
-                // interval.
+
                 samples.meanWaitingTimes.add(Double.valueOf(metrics.getMeanComputeTotalWaitingTimeSeconds()));
                 if (metrics.getTrueSlowdownObservationCount() > 0) {
                     samples.meanTrueSlowdowns.add(Double.valueOf(metrics.getMeanComputeTrueSlowdown()));
@@ -285,10 +242,6 @@ public final class ExperimentCampaignSummary {
             return samples;
         }
 
-        /**
-         * Private verbatim-extraction structure for from() sample aggregation (direct
-         * field reads and writes, no forwarding behavior).
-         */
         private static final class RunSampleAccumulator {
             private List<Long> seeds;
             private List<Double> makespans;
@@ -340,71 +293,36 @@ public final class ExperimentCampaignSummary {
         public MetricSummary getSuccessfulLogicalTaskCompletionRate() {
             return successfulLogicalTaskCompletionRate;
         }
-        /** @return replication-level summary of the per-run mean total waiting time in seconds */
+
         public MetricSummary getMeanComputeTotalWaitingTimeSeconds() {
             return meanComputeTotalWaitingTimeSeconds;
         }
-        /**
-         * Return the replication-level summary of the per-run mean true slowdown ratio.
-         *
-         * <p>Only runs with {@code trueSlowdownObservationCount > 0} are aggregated
-         * (slowdown ratio semantics are always >= 1.0, so the 0.0 of a run without
-         * observations must not be mixed in). Returns {@code null} when no run in the
-         * cell has an observation; callers should use
-         * {@link #getTrueSlowdownObservationRunCount()} to determine availability.</p>
-         *
-         * @return true slowdown replication summary; {@code null} when no observation is available
-         */
+
         public MetricSummary getMeanComputeTrueSlowdown() {
             return meanComputeTrueSlowdown;
         }
-        /**
-         * @return number of runs in the cell that contributed a true slowdown sample
-         *         ({@code 0..replicationCount})
-         */
+
         public int getTrueSlowdownObservationRunCount() {
             return trueSlowdownObservationRunCount;
         }
-        /** @return replication-level summary of the per-run mean VM utilization */
+
         public MetricSummary getMeanVmModeledIntervalUtilization() {
             return meanVmModeledIntervalUtilization;
         }
-        /** @return replication-level summary of the per-run VM utilization Jain fairness index */
+
         public MetricSummary getVmUtilizationJainFairnessIndex() {
             return vmUtilizationJainFairnessIndex;
         }
-        /**
-         * Return the replication-level complete workflow success rate and the proportion
-         * interval that applies to it.
-         *
-         * <p>It differs from the task-level completion proportion of
-         * {@link #getSuccessfulLogicalTaskCompletionRate()}.</p>
-         *
-         * @return workflow-run completion summary
-         */
+
         public WorkflowRunCompletionSummary getWorkflowRunCompletion() {
             return workflowRunCompletion;
         }
-        /**
-         * Return the logical completion-time summary conditioned on fully successful
-         * workflows only.
-         *
-         * @return successful-workflow conditional completion-time summary
-         */
+
         public ConditionalMetricSummary getSuccessfulWorkflowLogicalCompletionSeconds() {
             return successfulWorkflowLogicalCompletionSeconds;
         }
     }
 
-    /**
-     * Makespan comparison of the candidate minus the baseline.
-     *
-     * <p>The Wilcoxon signed-rank test on the paired series
-     * ({@link #getPairedSignificance()}) provides a conservative
-     * distribution-difference verdict; because random sampling is not yet event-keyed,
-     * that test result does not constitute a CRN paired-inference claim (see the
-     * inference-boundary statement of {@link PairedWilcoxonSignificance}).</p>
-     */
     public static final class ComparisonSummary {
         private final String comparisonGroup;
         private final String baselineCellId;
@@ -545,10 +463,6 @@ public final class ExperimentCampaignSummary {
                     false);
         }
 
-        /**
-         * Copy of {@code raw} carrying the within-family Holm correction outcome;
-         * the raw comparison itself stays immutable. (AUD-F06, 2026-11-03)
-         */
         static ComparisonSummary withHolm(
                 ComparisonSummary raw, Double holmAdjustedPValue, boolean significantAfterHolmAtDefaultAlpha) {
             return new ComparisonSummary(
@@ -620,25 +534,15 @@ public final class ExperimentCampaignSummary {
         public double getCandidateMeanMakespanSeconds() {
             return candidateMeanMakespanSeconds;
         }
-        /**
-         * Candidate mean makespan divided by baseline mean makespan; returns {@code null}
-         * when the baseline is zero.
-         */
+
         public Double getMeanMakespanRatio() {
             return meanMakespanRatio;
         }
-        /**
-         * Baseline mean makespan divided by candidate mean makespan; returns {@code null}
-         * when the candidate is zero. This value is not a serial speedup.
-         */
+
         public Double getBaselineRelativeMakespanSpeedup() {
             return baselineRelativeMakespanSpeedup;
         }
-        /**
-         * Makespan reduction percentage relative to the declared baseline; returns
-         * {@code null} when baseline makespan is zero. This value is descriptive only and
-         * is not an effect-size estimate.
-         */
+
         public Double getMakespanImprovementPercent() {
             return makespanImprovementPercent;
         }
@@ -650,10 +554,7 @@ public final class ExperimentCampaignSummary {
         public double getCandidateMeanModeledProcessingCost() {
             return candidateMeanModeledProcessingCost;
         }
-        /**
-         * Candidate mean modeled cost divided by baseline mean cost; returns {@code null}
-         * when the baseline is zero.
-         */
+
         public Double getMeanModeledProcessingCostRatio() {
             return meanModeledProcessingCostRatio;
         }
@@ -661,15 +562,7 @@ public final class ExperimentCampaignSummary {
         public double getSuccessfulLogicalTaskCompletionRateDelta() {
             return successfulLogicalTaskCompletionRateDelta;
         }
-        /**
-         * Return the candidate minus baseline workflow-run full success rate.
-         *
-         * <p>This is a descriptive difference; it carries no significance or interval
-         * inference for the difference between the two proportions.</p>
-         *
-         * @return the difference when both cells have a definable workflow-run success
-         *         rate; otherwise {@code null}
-         */
+
         public Double getSuccessfulWorkflowRunRateDelta() {
             return successfulWorkflowRunRateDelta;
         }
@@ -677,46 +570,20 @@ public final class ExperimentCampaignSummary {
         public String getInferenceStatus() {
             return inferenceStatus;
         }
-        /**
-         * @return Wilcoxon signed-rank significance test result on the paired makespan
-         * series; the status is {@code UNAVAILABLE_INDEPENDENT_REPLICATIONS_ARE_NOT_PAIRED}
-         * for the independent-replication design
-         */
+
         public PairedWilcoxonSignificance getPairedSignificance() {
             return pairedSignificance;
         }
-        /**
-         * Holm step-down adjusted p value within this comparison's candidate
-         * family; the family is every non-baseline candidate of the same
-         * comparison group, including comparisons whose paired test produced no
-         * p value, which still consume correction budget under the platform's
-         * registered conservative convention. Multiplicity-aware consumers must
-         * read this field (or {@link #isSignificantAfterHolmAtDefaultAlpha()})
-         * instead of the raw paired test result.
-         *
-         * @return the adjusted p value, or {@code null} when the paired test
-         *         produced no p value
-         */
+
         public Double getHolmAdjustedPValue() {
             return holmAdjustedPValue;
         }
-        /**
-         * @return whether the Holm adjusted p value is strictly below
-         *         {@link PairedWilcoxonSignificance#DEFAULT_ALPHA}; always
-         *         {@code false} when no adjusted value exists
-         */
+
         public boolean isSignificantAfterHolmAtDefaultAlpha() {
             return significantAfterHolmAtDefaultAlpha;
         }
     }
 
-    /**
-     * Replication-level summary of complete logical workflow completion.
-     *
-     * <p>It is a different estimand from the logical Task completion proportion inside a
-     * single run: one success here requires that every logical Task of that run was
-     * completed by a successful compute Job.</p>
-     */
     public static final class WorkflowRunCompletionSummary {
         private final int declaredRunCount;
         private final int eligibleWorkflowRunCount;
@@ -776,10 +643,7 @@ public final class ExperimentCampaignSummary {
         public int getDeclaredRunCount() {
             return declaredRunCount;
         }
-        /**
-         * @return number of runs with at least one logical Task, whose success or
-         *         incomplete outcome is definable
-         */
+
         public int getEligibleWorkflowRunCount() {
             return eligibleWorkflowRunCount;
         }
@@ -791,34 +655,20 @@ public final class ExperimentCampaignSummary {
         public int getIncompleteWorkflowRunCount() {
             return incompleteWorkflowRunCount;
         }
-        /**
-         * @return number of runs without a definable logical workflow, counted as
-         *         neither success nor failure
-         */
+
         public int getNoLogicalTaskRunCount() {
             return noLogicalTaskRunCount;
         }
-        /**
-         * Return the complete workflow success rate at the model-run level.
-         *
-         * @return successes divided by eligible runs; {@code null} when there is no eligible run
-         */
+
         public Double getSuccessfulWorkflowRunRate() {
             return successfulWorkflowRunRate;
         }
-        /**
-         * @return Wilson score interval that is interpretable as inference only under the
-         *         independent-replication design
-         */
+
         public ProportionConfidenceInterval getWilsonConfidenceInterval() {
             return wilsonConfidenceInterval;
         }
     }
 
-    /**
-     * Summarize only run samples that satisfy an explicit condition, avoiding imputation
-     * with the simulation end time of failed runs.
-     */
     public static final class ConditionalMetricSummary {
         private final String population;
         private final int successfulWorkflowRunCount;
@@ -874,7 +724,6 @@ public final class ExperimentCampaignSummary {
                     "AVAILABLE_SUCCESSFUL_WORKFLOW_RUNS_ONLY");
         }
 
-        /** @return fixed to {@code SUCCESSFUL_WORKFLOW_RUNS_ONLY} */
         public String getPopulation() {
             return population;
         }
@@ -890,7 +739,7 @@ public final class ExperimentCampaignSummary {
         public int getUnavailableCompletionTimeCount() {
             return unavailableCompletionTimeCount;
         }
-        /** @return conditional sample summary; {@code null} when there is no successful workflow run */
+
         public MetricSummary getSummary() {
             return summary;
         }
@@ -900,7 +749,6 @@ public final class ExperimentCampaignSummary {
         }
     }
 
-    /** Wilson score interval for the binary workflow-run success rate, or the reason it is unavailable. */
     public static final class ProportionConfidenceInterval {
         private final boolean available;
         private final double confidenceLevel;
@@ -969,7 +817,6 @@ public final class ExperimentCampaignSummary {
         }
     }
 
-    /** 95% mean confidence interval whose sample summary and applicability conditions are explicitly labeled. */
     public static final class MetricSummary {
         private final List<Double> samples;
         private final int sampleSize;
@@ -1050,7 +897,6 @@ public final class ExperimentCampaignSummary {
         }
     }
 
-    /** Mean confidence interval, or a machine-readable status stating why it is unavailable. */
     public static final class ConfidenceInterval {
         private final boolean available;
         private final double confidenceLevel;

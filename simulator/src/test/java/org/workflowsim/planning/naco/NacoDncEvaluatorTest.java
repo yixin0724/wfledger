@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** Hand-derived DNC and HEFT checks for NACO 2023 (R-PAPER-03). */
 class NacoDncEvaluatorTest {
 
     @Test
@@ -53,8 +52,6 @@ class NacoDncEvaluatorTest {
 
         NacoSchedule schedule = new NacoDncEvaluator().heft(problem);
 
-        // Independent rank recurrence: rank(child)=3 and rank(parent)=1+3=4.
-        // The valid schedule is parent 2 then child 1, with finish times 1 and 4.
         assertEquals(1.0, schedule.getTaskPlan(2).getFinishSeconds(), 1.0e-9);
         assertEquals(1.0, schedule.getTaskPlan(1).getStartSeconds(), 1.0e-9);
         assertEquals(4.0, schedule.getMakespanSeconds(), 1.0e-9);

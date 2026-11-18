@@ -19,18 +19,10 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters.FileType;
 
-/**
- * Deep-frozen logical-file/producer index for the separately versioned dataflow lifecycle.
- * This pure component is not a SimulationConfig model and never changes the legacy catalog,
- * Task objects, depths, FileItems or parent-Job grouping. Capture it before clustering.
- * Sizes describe surviving resolved FileItems; declarations discarded by a parser cannot
- * be recovered here. Equal scoped names must have equal finite nonnegative binary64 sizes.
- */
 public final class DataflowFilePlan {
-    /** Write-once resolved-file identity contract, not a physical movement-model identifier. */
+
     public static final String CONTRACT_VERSION = "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2";
 
-    /** A run's input index and its exact existing parser file key; names are not split or renamed. */
     public static final class FileId implements Comparable<FileId> {
         private final int workflowInputIndex;
         private final String name;
@@ -39,22 +31,18 @@ public final class DataflowFilePlan {
             this.workflowInputIndex = workflowInputIndex;
             this.name = name;
         }
-        /**
-         * @param workflowInputIndex nonnegative submitted input ordinal
-         * @param name exact nonempty file key
-         * @return immutable key
-         */
+
         public static FileId of(int workflowInputIndex, String name) {
             if (workflowInputIndex < 0 || name == null || name.isEmpty()) {
                 throw bad("File identity needs a nonnegative workflow input and nonempty name");
             }
             return new FileId(workflowInputIndex, name);
         }
-        /** @return submitted input index */
+
         public int getWorkflowInputIndex() {
             return workflowInputIndex;
         }
-        /** @return exact resolved key, including any parser namespace */
+
         public String getName() {
             return name;
         }
@@ -88,7 +76,6 @@ public final class DataflowFilePlan {
         }
     }
 
-    /** One resolved write-once logical object, independent of publishing Job attempts and locations. */
     public static final class FileDefinition {
         private final FileId id;
         private final double bytes;
@@ -101,33 +88,32 @@ public final class DataflowFilePlan {
             producerTaskId = builder.producer;
             consumers = immutableList(builder.consumers);
         }
-        /** @return scoped logical identity */
+
         public FileId getId() {
             return id;
         }
-        /** @return finite modeled bytes, not a content hash or measured storage size */
+
         public double getBytes() {
             return bytes;
         }
-        /** @return logical producer ID, or null for an external input */
+
         public Integer getProducerTaskId() {
             return producerTaskId;
         }
-        /** @return distinct sorted logical consumers */
+
         public List<Integer> getConsumerTaskIds() {
             return consumers;
         }
-        /** @return true when no logical Task produces this identity */
+
         public boolean isExternal() {
             return producerTaskId == null;
         }
-        /** @return an output with no declared consumer; no upload is implied */
+
         public boolean isWorkflowOutput() {
             return producerTaskId != null && consumers.isEmpty();
         }
     }
 
-    /** One external-to-selection input demand, preserving multiplicity separately from unique payload. */
     public static final class InputDemand {
         private final FileDefinition file;
         private final long referenceCount;
@@ -138,19 +124,19 @@ public final class DataflowFilePlan {
             referenceCount = builder.references;
             consumers = immutableList(builder.consumers);
         }
-        /** @return immutable logical object; its bytes are transferred at most once per demand */
+
         public FileDefinition getFile() {
             return file;
         }
-        /** @return all surviving input references, not a transfer count */
+
         public long getReferenceCount() {
             return referenceCount;
         }
-        /** @return exact binary64 file bytes times reference multiplicity, possibly beyond double range */
+
         public BigDecimal getReferenceBytes() {
             return new BigDecimal(file.bytes).multiply(BigDecimal.valueOf(referenceCount));
         }
-        /** @return distinct sorted logical consumers in this selection */
+
         public List<Integer> getConsumerTaskIds() {
             return consumers;
         }
@@ -188,16 +174,6 @@ public final class DataflowFilePlan {
         files = immutableList(resolved.values());
     }
 
-    /**
-     * Freeze resolved declarations and a DAG without mutating or retaining Task/FileItem objects.
-     * Unique producers must be control ancestors of their consumers. Multi-writer and in-place
-     * identities are rejected instead of being guessed. Validation uses iterative graph walks,
-     * not recursive traversal or a dense all-pairs ancestor matrix.
-     * @param tasks logical Tasks before clustering or retry expansion (empty is a valid empty plan)
-     * @param taskWorkflowIndices exact logical Task ID to submitted input-index mapping
-     * @return deeply immutable file plan
-     * @throws IllegalArgumentException for inconsistent graph, scope, identity or surviving sizes
-     */
     public static DataflowFilePlan capture(List<Task> tasks, Map<Integer, Integer> taskWorkflowIndices) {
         if (tasks == null || taskWorkflowIndices == null) {
             throw bad("Tasks and workflow indices are required");
@@ -237,11 +213,6 @@ public final class DataflowFilePlan {
         return new DataflowFilePlan(nodes, files);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from capture; statements verbatim; order unchanged.
-     * Scope: resolves only the INPUT/OUTPUT files declared by one Task into the node bookkeeping
-     * (input counts/output set) and the global file builder (unique producer, byte consistency).
-     */
     private static void resolveTaskFiles(Node node, Map<FileId, FileBuilder> files, int id, int workflow, Task task) {
         for (FileItem item : task.getFileList()) {
             if (item == null || (item.getType() != FileType.INPUT && item.getType() != FileType.OUTPUT)) {
@@ -274,23 +245,22 @@ public final class DataflowFilePlan {
         }
     }
 
-    /** @return versioned resolved-size/write-once contract */
     public String getContractVersion() {
         return CONTRACT_VERSION;
     }
-    /** @return sorted logical IDs; no Job attempt IDs are stored */
+
     public List<Integer> getTaskIds() {
         return taskIds;
     }
-    /** @return immutable Task to workflow-input index map */
+
     public Map<Integer, Integer> getTaskWorkflowIndices() {
         return workflowIndices;
     }
-    /** @return immutable scoped-key-ordered logical objects */
+
     public List<FileDefinition> getFiles() {
         return files;
     }
-    /** @param taskId logical Task ID @return immutable direct control parents */
+
     public List<Integer> getParentTaskIds(int taskId) {
         List<Integer> row = parents.get(taskId);
         if (row == null) {
@@ -298,11 +268,7 @@ public final class DataflowFilePlan {
         }
         return row;
     }
-    /**
-     * @param id scoped identity
-     * @return its definition
-     * @throws IllegalArgumentException for unknown identity
-     */
+
     public FileDefinition getFile(FileId id) {
         FileDefinition file = id == null ? null : byId.get(id);
         if (file == null) {
@@ -310,10 +276,7 @@ public final class DataflowFilePlan {
         }
         return file;
     }
-    /**
-     * @param taskId logical Task ID
-     * @return immutable scoped input-reference multiplicities
-     */
+
     public Map<FileId, Long> getInputReferences(int taskId) {
         Map<FileId, Long> row = inputs.get(taskId);
         if (row == null) {
@@ -321,10 +284,7 @@ public final class DataflowFilePlan {
         }
         return row;
     }
-    /**
-     * @param taskId logical Task ID
-     * @return unique sorted output identities
-     */
+
     public List<FileId> getOutputFiles(int taskId) {
         List<FileId> row = outputs.get(taskId);
         if (row == null) {
@@ -333,14 +293,6 @@ public final class DataflowFilePlan {
         return row;
     }
 
-    /**
-     * Normalize the input references of a logical Task subset, such as a Job/retry's members.
-     * Same-identity references form one demand, retaining counts and consumers. A producer
-     * in the selection makes that object internal. Separate workflow inputs never alias.
-     * This declares required objects only: it does not schedule, select replicas or publish them.
-     * @param logicalTaskIds distinct known logical IDs, in any order; empty is allowed
-     * @return immutable scoped-key-ordered unique demands, including zero-byte references
-     */
     public List<InputDemand> demandsFor(Collection<Integer> logicalTaskIds) {
         if (logicalTaskIds == null) {
             throw bad("Logical Task selection is required");

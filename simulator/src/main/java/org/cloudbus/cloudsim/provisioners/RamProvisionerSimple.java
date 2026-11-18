@@ -13,33 +13,15 @@ import java.util.Map;
 
 import org.cloudbus.cloudsim.Vm;
 
-/**
- * RamProvisionerSimple is an extension of RamProvisioner which uses a best-effort policy to
- * allocate memory to a VM.
- *
- * @author Rodrigo N. Calheiros
- * @author Anton Beloglazov
- * @since CloudSim Toolkit 1.0
- */
 public class RamProvisionerSimple extends RamProvisioner {
 
-    /** The RAM table. */
     private Map<String, Integer> ramTable;
 
-    /**
-     * Instantiates a new ram provisioner simple.
-     *
-     * @param availableRam the available ram
-     */
     public RamProvisionerSimple(int availableRam) {
         super(availableRam);
         setRamTable(new HashMap<String, Integer>());
     }
 
-    /*
-     * (non-Javadoc)
-     * @see cloudsim.provisioners.RamProvisioner#allocateRamForVm(cloudsim.Vm, int)
-     */
     @Override
     public boolean allocateRamForVm(Vm vm, int ram) {
         int maxRam = vm.getRam();
@@ -62,10 +44,6 @@ public class RamProvisionerSimple extends RamProvisioner {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see cloudsim.provisioners.RamProvisioner#getAllocatedRamForVm(cloudsim.Vm)
-     */
     @Override
     public int getAllocatedRamForVm(Vm vm) {
         if (getRamTable().containsKey(vm.getUid())) {
@@ -74,10 +52,6 @@ public class RamProvisionerSimple extends RamProvisioner {
         return 0;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see cloudsim.provisioners.RamProvisioner#deallocateRamForVm(cloudsim.Vm)
-     */
     @Override
     public void deallocateRamForVm(Vm vm) {
         if (getRamTable().containsKey(vm.getUid())) {
@@ -87,20 +61,12 @@ public class RamProvisionerSimple extends RamProvisioner {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * @see cloudsim.provisioners.RamProvisioner#deallocateRamForVm(cloudsim.Vm)
-     */
     @Override
     public void deallocateRamForAllVms() {
         super.deallocateRamForAllVms();
         getRamTable().clear();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see cloudsim.provisioners.RamProvisioner#isSuitableForVm(cloudsim.Vm, int)
-     */
     @Override
     public boolean isSuitableForVm(Vm vm, int ram) {
         int allocatedRam = getAllocatedRamForVm(vm);
@@ -112,20 +78,10 @@ public class RamProvisionerSimple extends RamProvisioner {
         return result;
     }
 
-    /**
-     * Gets the ram table.
-     *
-     * @return the ram table
-     */
     protected Map<String, Integer> getRamTable() {
         return ramTable;
     }
 
-    /**
-     * Sets the ram table.
-     *
-     * @param ramTable the ram table
-     */
     protected void setRamTable(Map<String, Integer> ramTable) {
         this.ramTable = ramTable;
     }

@@ -1,11 +1,5 @@
-"""Shared implementation core of the Python ledger/dataflow audits (AUD-F08).
 
-Uses stdlib binary64 + exact rational arithmetic. The contract checkers share
-this one core; the independence claimed is independence from the Java
-production path -- no JVM, WorkflowSim allocator, simulation replay or
-transport model is invoked -- not four separate implementations.
-Truncated tails get necessary checks only, never full-capture certification.
-"""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -27,25 +21,20 @@ PAYLOADS = {"CAPACITY": "capacity", "START": "start", "RATE_CHANGE": "rateChange
             "SERVICE_SEGMENT": "serviceSegment", "COMPLETE": "complete"}
 LONG_MIN, LONG_MAX, INT_MAX = -(1 << 63), (1 << 63)-1, (1 << 31)-1
 
-
 class CheckError(ValueError):
-    """Invalid or contradictory network evidence, not a missing optional observation."""
-
+    pass
 
 def need(ok, message):
     if not ok:
         raise CheckError(message)
 
-
 def keys(value, expected, name="object"):
     need(isinstance(value, dict) and set(value) == set(expected), f"{name}: missing/unknown fields")
     return value
 
-
 def required(value, key):
     need(isinstance(value, dict) and key in value, f"missing {key}")
     return value[key]
-
 
 def num(value):
     need(type(value) in (int, float, Decimal), "expected JSON number, not a coercion")
@@ -60,12 +49,10 @@ def num(value):
     except (ValueError, OverflowError) as error:
         raise CheckError("invalid numeric value") from error
 
-
 def whole(value, lo=LONG_MIN, hi=LONG_MAX):
     n = num(value)
     need(n == n.to_integral_value() and lo <= n <= hi, "expected exact in-range integer")
     return int(n)
-
 
 def f64(value, nonnegative=False, positive=False):
     n = num(value)
@@ -78,33 +65,26 @@ def f64(value, nonnegative=False, positive=False):
     need(not positive or result > 0, "non-positive scalar")
     return result
 
-
 def q(value):
-    """Exact rational of an already-normalized binary64 scalar."""
-    return Fraction.from_float(float(value))
 
+    return Fraction.from_float(float(value))
 
 def wire_fraction(value):
     return Fraction(num(value))
-
 
 def word(value):
     need(type(value) is str, "expected text")
     return value
 
-
 def array(value):
     need(isinstance(value, list), "expected array")
     return value
 
-
 def words(value):
     return [word(item) for item in array(value)]
 
-
 def same64(a, b, message):
     need(a == b, message)
-
 
 def mean34(value, count):
     if not count:
@@ -114,14 +94,12 @@ def mean34(value, count):
         ctx.prec, ctx.rounding = 34, ROUND_HALF_EVEN
         return float(Decimal(ratio.numerator) / Decimal(ratio.denominator))
 
-
 def decimal_text(value):
     if value.denominator == 1:
         return str(value.numerator)
     with localcontext() as ctx:
         ctx.prec = 10000
         return str(Decimal(value.numerator) / Decimal(value.denominator))
-
 
 def decode_json(text):
     need(type(text) is str, "JSON input must be text")
@@ -158,31 +136,25 @@ def decode_json(text):
             raise
         raise CheckError("invalid network JSON") from error
 
-
 def read_document(path):
     try:
         return decode_json(Path(path).read_text(encoding="utf-8"))
     except (OSError, UnicodeError) as error:
         raise CheckError("cannot read valid UTF-8 evidence: " + str(path)) from error
 
-
 def option(raw):
     keys(raw, ("mode", "maxTraceRecords"), "networkEvidence")
     need(raw["mode"] == "FLUID_GROUP_LEDGER_V1", "unsupported recording mode")
     return whole(raw["maxTraceRecords"], 1, INT_MAX)
 
-
 def profile(scale, terms):
     return min(q(math.ulp(scale))*8*(terms+1), q(scale)/10**12)
-
 
 def near(a, b, terms):
     return abs(q(a)-q(b)) <= profile(max(a, b), terms)
 
-
 def tolerance(size):
     return min(size*.5, max(1e-9*size, 4.0*math.ulp(size)))
-
 
 def normalize_event(raw, index):
     keys(raw, ("sequence", "type", "effectiveTime", "observedTime", "transferId", "admissionOrdinal", *PAYLOADS.values()), "event")
@@ -219,9 +191,8 @@ def normalize_event(raw, index):
     if kind == "SERVICE_SEGMENT": same64(effective, normalized["intervalEnd"], "service effective/end mismatch")
     return dict(kind=kind, effective=effective, observed=observed, id=tid, ordinal=ordinal, body=normalized)
 
-
 class TraceAudit:
-    """Protocol phase reader; allocations are checked by bottleneck witnesses, not recomputed by filling."""
+
     def __init__(self, snapshot, budget):
         keys(snapshot, ("status", "events", "droppedCount", "engineTime"), "trace")
         self.status = word(snapshot["status"])
@@ -472,10 +443,8 @@ class TraceAudit:
                       meanNotificationLagSeconds=mean34(sum(map(q, lags), Fraction(0)), len(lags)), flows=flows, resources=resources)
         return result
 
-
 def audit_trace(snapshot, budget):
     return TraceAudit(snapshot, budget).run()
-
 
 def compare(expected, actual, path="metrics"):
     if expected is None: need(actual is None, "expected explicit null at " + path)
@@ -491,7 +460,6 @@ def compare(expected, actual, path="metrics"):
     elif type(expected) is bool: need(type(actual) is bool and expected == actual, "boolean mismatch at " + path)
     else: need(expected == word(actual), "text mismatch at " + path)
 
-
 def input_counters(raw):
     if raw is None: return None
     keys(raw, ("scope", "referenceCount", "localReferenceCount", "requiredReferenceBytes", "localReferenceBytes", "transferableReferenceBytes"), "input counters")
@@ -502,7 +470,6 @@ def input_counters(raw):
     need((count != 0 or required_bytes == 0) and (local != 0 or local_bytes == 0) and
          (count != local or local_bytes == required_bytes), "input count/byte inconsistency")
     return count, local, required_bytes, local_bytes, transfer
-
 
 def _verified(doc):
     keys(doc, ("schema", "flowUnit", "numericProfile", "accountingVersion", "units", "evidence", "metrics"), "ledger")
@@ -544,7 +511,6 @@ def _verified(doc):
     compare(expected, doc["metrics"])
     return engine, metrics
 
-
 def verify_document(doc):
     engine, metrics = _verified(doc)
     complete = engine.status == "COMPLETE"
@@ -557,15 +523,11 @@ def verify_document(doc):
                             ("admittedPayloadBytes", "servicedBalanceDeltaBytes", "modeledRateAreaBytes", "completionResidualBytes", "remainingLedgerBytes")} if complete else None,
                 meanEffectiveFctSeconds=metrics["meanEffectiveFctSeconds"])
 
-
-# Manifest/context checks: no generic CPU/statistical-study certification is implied.
-
 def _sum_rounding(scale, terms):
     return Fraction(0) if scale < sys.float_info.min else q(math.ulp(scale))*2*(terms+1)
 
-
 class Topology:
-    """Small arithmetic view; never allocate the untrusted topology's full link graph."""
+
     def __init__(self, raw, hosts):
         need(isinstance(raw, dict) and raw.get("kind") == "FAT_TREE", "Fat-tree declaration")
         self.k = whole(required(raw, "k"), 2, INT_MAX)
@@ -627,7 +589,6 @@ class Topology:
                 return indexes[0] < self.k and indexes[1] < self.half and coordinates[0] < self.cores and indexes[1] == coordinates[0]//self.half
             return False
         return direction(a, b) or direction(b, a)
-
 
 def check_context(manifest, document, events):
     e = document["evidence"]; snap = e["traceSnapshot"]
@@ -743,12 +704,11 @@ def check_context(manifest, document, events):
         need(len(completions) == len(bindings), "unfinished run input groups")
         need(demand[4] == 0 if admitted == 0 else abs(admitted-demand[4]) <= _sum_rounding(biggest, refs+1), "admission/reference rounding gap too large")
 
-
 def inspect_path(path):
     path = Path(path).absolute(); doc = read_document(path)
     need(isinstance(doc, dict), "root must be an object")
     if doc.get("schema") == SCHEMA: return verify_document(doc)
-    # Lazy closed V2/V3 dispatch: the V1 document/context checks stay unchanged.
+
     if doc.get("schema") == "workflowsim-storage-lifecycle-v3":
         from _storage_lifecycle_audit import verify_document as verify_storage_lifecycle
         return verify_storage_lifecycle(doc)
@@ -757,8 +717,7 @@ def inspect_path(path):
         return verify_file_lifecycle(doc)
     config = doc.get("configuration")
     if (isinstance(config, dict) and "dataflowAssignment" in config) or "dataflowComputeRequests" in doc:
-        # Fail closed before legacy OFF dispatch; online is an explicit, known
-        # coherent configuration, never an algorithmContract-only declaration.
+
         from _dataflow_assignment_audit import _configuration
         _configuration(doc)
     model = config.get("dataMovementModel") if isinstance(config, dict) else None

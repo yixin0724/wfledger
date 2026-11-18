@@ -33,10 +33,6 @@ class AlgorithmCatalogTest {
         assertEquals("CORE_DECISION_SEMANTICS_UNDER_DECLARED_MODEL", contract.get("reproductionStandard"));
     }
 
-    // R9: the historical HEFT/DHEFT labels and their provisional contract entries were removed
-    // together; the former manifestContractPreservesExistingHeftQualificationBoundary no longer
-    // applies.
-
     @Test
     void sharedStorageHeftDeclaresItsControlledExecutionDomain() {
         SimulationConfig config = SimulationConfig.builder("workflow.dax", 2)
@@ -128,7 +124,6 @@ class AlgorithmCatalogTest {
     void dataSchedulerDoesNotClaimEndpointRateOrLatencyAwareness() {
         SimulationConfig config = SimulationConfig.builder("workflow.dax", 2)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.DATA)
-                // The DATA algorithm locality verdict requires LOCAL file system mode (PLAT-7 check).
                 .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                 .build();
 

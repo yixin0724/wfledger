@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import com.google.gson.Gson;
 
-/** NF002A's constant-time diagnostic join must not infer ordinal from external ID. */
 class TransferAdmissionOrdinalTest {
     @Test
     void readsActualOrdinalWithoutAdvancingEmittingRecordsOrChangingPrediction() {

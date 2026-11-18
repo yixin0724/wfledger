@@ -36,10 +36,6 @@ class DataMovementModelTest {
         assertTrue(!model.isLegacyWorkflowsimV1());
     }
 
-    /**
-     * R8 audit (F8): the two contention factories previously had no direct unit test; this pins the
-     * mutual exclusivity of the kind predicates and the shared instance.
-     */
     @Test
     void contentionFactoriesExposeConsistentKindPredicates() {
         DataMovementModel endpoint = DataMovementModel.preExecutionTransferDelayWithContentionV1();

@@ -11,22 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Independent validation of the published NF001 observation grammar.
- * It checks scalar integration and max-min bottleneck certificates, never invoking
- * the production allocator. It establishes internal consistency, not authenticity
- * of a wholly rewritten history or reconstruction of deliberately dropped records.
- * A truncated tail receives only observed-grammar and necessary-bound checks; it
- * is not a certificate that an arbitrary unseen continuation exists. Only stable
- * boundaries through certifiedThroughSequence have full allocation certificates.
- */
 public final class TransferTraceValidator {
-    /** Exact scalar binary64 operations; allocation sums use the documented bounded ULP profile. */
+
     public static final String NUMERIC_PROFILE = "BINARY64_SCALAR_MAXMIN_8ULP_CAPPED_1E_MINUS12_V1";
 
     private TransferTraceValidator() {}
 
-    /** Immutable coverage/grammar result, not a network performance summary. */
     public static final class Result {
         private final TransferTraceSnapshot.Status captureStatus;
         private final int recordCount;
@@ -47,66 +37,48 @@ public final class TransferTraceValidator {
             tailPhase = p.tail;
             minimumMissingRecords = p.minimumMissing;
         }
-        /** @return input capture status, not a claim that all admitted flows finished */
+
         public TransferTraceSnapshot.Status getCaptureStatus() {
             return captureStatus;
         }
-        /** @return true only when no records were dropped and all mandatory phases were validated */
+
         public boolean isCompleteCapture() {
             return captureStatus == TransferTraceSnapshot.Status.COMPLETE;
         }
-        /** @return retained record count */
+
         public int getRecordCount() {
             return recordCount;
         }
-        /** @return validated START count in the retained prefix */
+
         public long getAdmissionCount() {
             return admissionCount;
         }
-        /** @return validated COMPLETE count in the retained prefix */
+
         public long getCompletionCount() {
             return completionCount;
         }
-        /** @return retained-prefix open admission count, not a reconstructed truncated-run total */
+
         public int getOpenFlowCount() {
             return openFlowCount;
         }
-        /** @return last sequence ending a certified stable boundary */
+
         public long getCertifiedThroughSequence() {
             return certifiedThroughSequence;
         }
-        /** @return grammar phase at the retained tail */
+
         public String getTailPhase() {
             return tailPhase;
         }
-        /** @return known lower bound on records missing from an unfinished retained phase */
+
         public long getMinimumMissingRecords() {
             return minimumMissingRecords;
         }
-        /** @return versioned numerical comparison contract */
+
         public String getNumericProfile() {
             return NUMERIC_PROFILE;
         }
     }
 
-    /**
-     * Validate capture shape, phase ordering, scalar service/settlement, and final allocations.
-     * Truncated prefixes can end inside a batch; no complete-run metrics are implied.
-     *
-     * <p>Scalar formulas are checked as exact numeric binary64 values (signed zero is
-     * equivalent). Resource loads are accumulated with exact BigDecimal representations
-     * of the recorded doubles. Their bound is 8*(occupancyTerms+1)*ulp(capacity).
-     * Bottleneck-rate ties use 8*(activeFlows+1)*ulp(max(compared rates)). Both
-     * budgets are capped at 1e-12 times their scale using exact decimal arithmetic,
-     * so a multi-ULP budget cannot hide a large fraction of a subnormal rate/capacity.
-     * Coarsely represented overcommit is rejected, not certified as rounding noise.
-     * This allocation profile is not the byte-completion tolerance.</p>
-     *
-     * @param snapshot immutable engine trace or untrusted reconstructed equivalent
-     * @param maxTraceRecords declared capture budget; zero only for DISABLED
-     * @return immutable coverage and grammar result
-     * @throws IllegalArgumentException for malformed or inconsistent evidence
-     */
     public static Result validate(TransferTraceSnapshot snapshot, int maxTraceRecords) {
         Parser parser = new Parser(snapshot, maxTraceRecords);
         parser.run();
@@ -236,10 +208,6 @@ public final class TransferTraceValidator {
             validateTraceTail();
         }
 
-        /**
-         * 2026-10-26 complexity extraction from run(); statements verbatim; order unchanged.
-         * Scope: post-replay horizon drain, final watermark/cut checks, and tail phase assignment only.
-         */
         private void validateTraceTail() {
             if (partial) {
                 return;
@@ -258,8 +226,7 @@ public final class TransferTraceValidator {
                 same(cursor, snapshot.getEngineTime(), "Complete capture omits active service before its watermark");
             }
             if (truncated && !active.isEmpty() && cursor < snapshot.getEngineTime()) {
-                // Do not replay unknown arrivals. They cost START plus a record for their own
-                // later progress; every already-active flow still requires a service/removal.
+
                 cut("UNOBSERVED_TIME_PROGRESS", progressMinimum(snapshot.getEngineTime(), false));
                 return;
             }
@@ -267,11 +234,6 @@ public final class TransferTraceValidator {
             tail = truncated ? "PREFIX_AT_BOUNDARY" : "READY";
         }
 
-        /**
-         * Capacity-transition handler extracted from {@link #run()} (2026-10-23; statements
-         * verbatim): capacity may only change with no active flows, must not precede the
-         * engine cursor, and always advances the certified prefix.
-         */
         private void applyCapacityEvent(TransferTraceEvent e) {
             require(active.isEmpty(), at("Capacity changed while flows active"));
             require(e.getEffectiveTime() >= cursor, at("Capacity precedes engine cursor"));
@@ -281,11 +243,6 @@ public final class TransferTraceValidator {
             certified = index;
         }
 
-        /**
-         * Admission handler extracted from {@link #run()} (2026-10-23; statements verbatim).
-         * Returns the admission-rate revaluation result: {@code false} stops the replay loop
-         * at this event, exactly as the former inline {@code break}.
-         */
         private boolean applyAdmissionEvent(TransferTraceEvent e) {
             if (active.isEmpty()) {
                 require(e.getEffectiveTime() >= cursor, at("Admission precedes cursor"));
@@ -303,12 +260,6 @@ public final class TransferTraceValidator {
             return rates(admitted.ordinal, e.getObservedTime(), "ADMISSION_RATE_CHANGES");
         }
 
-        /**
-         * Service/settlement handler extracted from {@link #run()} (2026-10-23; statements
-         * verbatim). Sets the observed horizon and reports whether the following allocation
-         * step succeeded; {@code false} stops the replay loop exactly as the former inline
-         * {@code break}.
-         */
         private boolean applyServiceEvent(TransferTraceEvent e) {
             require(!active.isEmpty(), at("Service/settlement without active flows"));
             require(e.getObservedTime() > cursor, at("Advance must observe a later time"));
@@ -342,10 +293,6 @@ public final class TransferTraceValidator {
             return true;
         }
 
-        /**
-         * 2026-10-26 complexity extraction from rates(); statements verbatim; order unchanged.
-         * Scope: the truncated tail's still-variable-rate bound and cut only; false stops the replay.
-         */
         private boolean truncatedTailProceeds(Long excluded, long previousOrdinal, String phase) {
             if (index == events.size() && truncated) {
                 Set<Long> variable = new HashSet<Long>();
@@ -370,12 +317,10 @@ public final class TransferTraceValidator {
                     cut(phase, missing);
                     return false;
                 }
-                // No legal future rate event can repair this allocation: it is already fixed.
             }
             return true;
         }
 
-        /** Conservative event lower bound when unobserved admissions/rate changes may precede time progress. */
         long progressMinimum(double observed, boolean unseenRatesMayPrecede) {
             if (active.isEmpty() || !(cursor < observed)) {
                 return 0L;
@@ -401,8 +346,7 @@ public final class TransferTraceValidator {
             long direct = (elapsed > 0.0 ? active.size() : 0L)
                     + settlements
                     + (end < observed ? active.size() - settlements : 0L);
-            // A new admission costs START plus its own progress/removal. An unknown RATE
-            // costs one event. Neither can remove the obligation of each already-active flow.
+
             long altered = active.size() + (unseenRatesMayPrecede ? 1L : 2L);
             return Math.max(active.size(), Math.min(direct, altered));
         }
@@ -450,10 +394,6 @@ public final class TransferTraceValidator {
             return true;
         }
 
-        /**
-         * 2026-10-26 complexity extraction from step(); statements verbatim; order unchanged.
-         * Scope: post-interval settlement classification only; it fills the after/settled containers.
-         */
         private void classifySettlement(
                 List<Flow> before,
                 Flow earliest,
@@ -470,11 +410,6 @@ public final class TransferTraceValidator {
             }
         }
 
-        /**
-         * SERVICE_SEGMENT emission batch extracted from {@link #step()} (2026-10-23;
-         * statements verbatim, shares the replay cursor's state). Returns {@code false} when
-         * the truncated cut fires, exactly like the former inline early return.
-         */
         private boolean validateServiceBatch(
                 List<Flow> before,
                 List<Flow> settled,
@@ -508,11 +443,6 @@ public final class TransferTraceValidator {
             return true;
         }
 
-        /**
-         * COMPLETE emission cohort extracted from {@link #step()} (2026-10-23; statements
-         * verbatim). Returns {@code false} when the truncated cut fires, exactly like the
-         * former inline early return; consummates removal bookkeeping per settled flow.
-         */
         private boolean validateCompletionCohort(List<Flow> settled, long continuation, double observed) {
             for (int i = 0; i < settled.size(); i++) {
                 if (index == events.size()) {
@@ -537,7 +467,6 @@ public final class TransferTraceValidator {
             return true;
         }
 
-        /** Necessary bounds on final rates already fixed by a truncated transition. */
         void fixedAllocationBounds(Set<Long> variable) {
             Map<String, Resource> fixed = new LinkedHashMap<String, Resource>();
             for (Flow flow : active.values()) {
@@ -551,7 +480,7 @@ public final class TransferTraceValidator {
                         r = new Resource(capacity);
                         fixed.put(key, r);
                     }
-                    r.terms++; // Keep the profile's ALL-active occupancy scale, not just fixed users.
+                    r.terms++;
                     if (!variable.contains(flow.ordinal)) {
                         r.load = r.load.add(decimal(flow.rate));
                         r.maximumRate = Math.max(r.maximumRate, flow.rate);
@@ -567,18 +496,13 @@ public final class TransferTraceValidator {
             requireFixedBottleneckCertificates(variable, fixed, variableUpper);
         }
 
-        /**
-         * 2026-10-26 complexity extraction from fixedAllocationBounds(); statements verbatim; order unchanged.
-         * Scope: the per-flow fixed-prefix max-min certificate search only; bounds stay in the caller.
-         */
         private void requireFixedBottleneckCertificates(
                 Set<Long> variable, Map<String, Resource> fixed, Map<Long, BigDecimal> variableUpper) {
             for (Flow flow : active.values()) {
                 if (variable.contains(flow.ordinal) || near(flow.rate, flow.nominal, active.size())) {
                     continue;
                 }
-                // Any final user no greater than this rate within the capped relative profile
-                // must be <= rate/(1-1e-12). Ceiling arithmetic is a conservative upper bound.
+
                 BigDecimal tieUpper = decimal(flow.rate)
                         .divide(
                                 BigDecimal.ONE.subtract(new BigDecimal("1e-12")),
@@ -616,12 +540,6 @@ public final class TransferTraceValidator {
             }
         }
 
-        /**
-         * Upper bounds for still-variable prefix flows extracted from
-         * {@link #fixedAllocationBounds(Set)} (2026-10-23; statements verbatim): each variable
-         * flow's nominal rate capped by remaining shareable capacity on every fixed resource,
-         * with ceiling division against its resource multiplicity.
-         */
         private Map<Long, BigDecimal> variableUpperBounds(Set<Long> variable, Map<String, Resource> fixed) {
             Map<Long, BigDecimal> variableUpper = new HashMap<Long, BigDecimal>();
             for (Flow flow : active.values()) {
@@ -780,10 +698,6 @@ public final class TransferTraceValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from shape(); statements verbatim; order unchanged.
-     * Scope: the CAPACITY payload shape checks only; other payload families stay in the caller.
-     */
     private static void shapeCapacity(TransferTraceEvent e) {
         require(
                 e.getCapacity() != null && e.getTransferId() == null && e.getAdmissionOrdinal() == null,

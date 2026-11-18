@@ -30,54 +30,6 @@ import org.workflowsim.utils.SimulationConfig.FrequencyPolicy;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * BAT-V4 (2026-10-29 test-engineer adversarial round, DVFS round five): rerun
- * compatibility of DVFS evidence -- "an honest loud red, not a crash, not -green, not
- * silence".
- *
- * <p>This round (a real CLI rerun against the D5 frozen baseline bundles) found two
- * real defects, locked red->green here:</p>
- * <ol>
- *   <li><b>Runtime rejection escapes the verdict contract (real defect #1)</b>: when the
- *       manifest of three-dimensional (tiered+carbon) evidence is rebuilt,
- *       {@code ManifestConfigRebuilder} strips the frequency tiers (the documented
- *       forward contract); the rebuilt "no power + carbon intensity" illegal
- *       half-declared platform throws {@code IllegalArgumentException} (the BAT-C1
- *       half-declaration law) while {@code SimulationReport} is constructed. No rerun
- *       had <b>caught that exception</b>: it bubbled up to the CLI usage fallback
- *       ("rerun refused", exit 64) and <b>neither report was written</b> -- exactly the
- *       crash-class failure that the contract's execution-flow section eliminates with
- *       "a runtime rejection is a legal form of RECONSTRUCTION_REJECTED". Fix:
- *       RerunExecutor maps IllegalArgumentException/IllegalStateException/
- *       SimulationConfigurationException from the execution phase uniformly to
- *       RECONSTRUCTION_REJECTED (reports still written, exit 4).</li>
- *   <li><b>False core divergence of historical v1 evidence (real defect #2)</b>: since
- *       D4 the configuration section writes frequencyPolicy unconditionally -- pre-D4
- *       frozen evidence (the power-v1/carbon-v1/standard-v1 baselines) gains a
- *       {@code /configuration/frequencyPolicy &lt;missing&gt; vs "DEFAULT"} single-point
- *       core divergence on every rerun, degrading the whole batch from IDENTICAL_CORE to
- *       DIVERGED (this test reproduces it with an equivalent bundle that deletes the key
- *       to restore the pre-D4 shape; the fix is the key-default emission rule in
- *       ExperimentManifestWriter, see FrequencyTierManifestEmissionTest).</li>
- * </ol>
- *
- * <p>Three sources for the expectations: RERUN_DIFF_CONTRACT.md (verdict semantics /
- * exit-code table) + DVFS_DIMENSION_DESIGN.md section 2.4 ("a tiered manifest rerun
- * fails on the recorded red divergence, not silently" -- the carbon-free tiered form
- * goes through the differ's loud red; the three-dimensional form is rejected at runtime
- * by current code after rebuilding -> RECONSTRUCTION_REJECTED of the verdict contract).
- * Reruns of v1 evidence (tierless flat power) must stay IDENTICAL_CORE.</p>
- *
- * <p><b>A1 (2026-11-02 user adjudication): tiered evidence is rerunnable again.</b>
- * {@code ManifestConfigRebuilder} now round-trips
- * {@code platform.vms[].frequencyTiers} and {@code configuration.frequencyPolicy}, so the
- * "tiered" and "tiered+carbon" evidence move from "runtime rejection / loud red on the
- * tier evidence surface" to <b>IDENTICAL_CORE</b>. The old contract (rebuild strips the
- * tiers -> rejection or leaf-by-leaf loud red) is anchored by the first two tests of
- * this class and rewritten here against the new contract; the obligation "a failed
- * rebuild must stay loud" has not disappeared -- a malformed table (not strictly
- * descending) is still refused by the rebuilder, anchored by the third test.</p>
- */
 class DvfsRerunLoudRedIntegrationTest {
 
     @TempDir
@@ -96,16 +48,6 @@ class DvfsRerunLoudRedIntegrationTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    /**
-     * A1 main anchor (2026-11-02): a rerun of three-dimensional (tiered+carbon) evidence
-     * must be IDENTICAL_CORE.
-     *
-     * <p>Before the fix: the rebuilder stripped the frequency tiers -> the rebuilt
-     * platform ("carbon intensity + no power") violated the BAT-C1 half-declaration law
-     * -> runtime rejection (RECONSTRUCTION_REJECTED). After the fix: the tier table and
-     * the assignment policy round-trip through the manifest, the rebuilt platform is
-     * isomorphic to the original run, and the rerun matches leaf by leaf.</p>
-     */
     @Test
     void triDimensionalDvfsEvidenceRerunsIdenticallyOnceTiersRoundTrip() throws Exception {
         Path study = directory.resolve("tri");
@@ -125,12 +67,6 @@ class DvfsRerunLoudRedIntegrationTest {
                 "no core divergence may survive: " + pointers(report.getCoreDivergences()));
     }
 
-    /**
-     * A1 second anchor: carbon-free tiered evidence also reruns IDENTICAL_CORE, and the
-     * rerun side must <b>carry</b> the tier table and the per-Job tier identity -- the
-     * rebuild is not "it happens to match after degrading to v1", it really rebuilds the
-     * tiers.
-     */
     @Test
     void tieredEvidenceRerunsIdenticallyAndTheRebuiltSideCarriesTheTierTable() throws Exception {
         Path study = directory.resolve("tiered");
@@ -147,11 +83,6 @@ class DvfsRerunLoudRedIntegrationTest {
         assertTrue(rerunManifest.contains("MIN_POWER"), "the rebuilt side must carry the frequency policy");
     }
 
-    /**
-     * The loud-refusal obligation has not disappeared: when the tier table in the
-     * manifest is malformed (not strictly descending), the rebuilder still refuses it and
-     * maps to RECONSTRUCTION_REJECTED (report written, exit 4).
-     */
     @Test
     void malformedTierTableInTheRecordedManifestIsStillRejectedLoudly() throws Exception {
         Path study = directory.resolve("malformed");
@@ -169,7 +100,6 @@ class DvfsRerunLoudRedIntegrationTest {
                 "the refusal must cite the tier table as the cause: " + reason);
     }
 
-    /** v1 evidence (tierless flat power): the rerun must stay green (BAT-E5 invariant regression slot). */
     @Test
     void v1FlatPowerEvidenceStillRerunsIdentically() throws Exception {
         Path study = directory.resolve("v1");
@@ -180,13 +110,6 @@ class DvfsRerunLoudRedIntegrationTest {
         assertEquals(0, report.getExitCode(), "IDENTICAL_CORE exit code");
     }
 
-    /**
-     * Red->red->green anchor for defect #2: pre-D4-shaped v1 evidence (configuration
-     * section without the frequencyPolicy key -- the actual shape of every frozen
-     * power-v1/carbon-v1/standard-v1 bundle) must still be IDENTICAL_CORE. The value
-     * semantics are equivalent (missing key == the only legal DEFAULT on a tierless
-     * platform); a divergence can only be a false signal of the emission surface.
-     */
     @Test
     void preD4ShapedV1EvidenceRerunsIdentically() throws Exception {
         Path study = directory.resolve("legacy");
@@ -202,13 +125,6 @@ class DvfsRerunLoudRedIntegrationTest {
         assertEquals(0, report.getExitCode());
     }
 
-    /**
-     * A1 x A2 interaction (2026-11-02 review round): a bundle with tiers + carbon windows
-     * (budget model) must still rerun IDENTICAL_CORE. This path exercises two new things
-     * at once: tier table rebuild (A1) and the per-tier fleet power curve (A2) -- the
-     * windows are rebuilt independently by the rebuilder, the tier table is rebuilt by
-     * VmSpec, and both sides must match.
-     */
     @Test
     void tieredBudgetCarbonEvidenceRerunsIdentically() throws Exception {
         Path study = directory.resolve("tiered-budget");
@@ -225,19 +141,6 @@ class DvfsRerunLoudRedIntegrationTest {
         assertTrue(rerunManifest.contains("carbonMetrics"), "the rebuilt run must produce budget carbon again");
     }
 
-    // ------------------------------------------------------------------
-    // helpers
-    // ------------------------------------------------------------------
-
-    /** Erase the frequencyPolicy member from the run-manifest configuration: the pre-D4 frozen shape. */
-    /**
-     * Adversarial surface (A1 round): the rebuilder performs a faithful translation only,
-     * so any "the record contradicts itself" shape must be refused as
-     * RECONSTRUCTION_REJECTED rather than half-run. Four shapes, one anchor each: tier
-     * table and flat power coexist (one source of truth) / tier without mips (missing
-     * physical quantity) / unknown policy enum / non-DEFAULT policy with no tiers in the
-     * record (which would silently go inert at runtime).
-     */
     @Test
     void manifestDeclaringBothTierTableAndFlatPowerIsRejected() throws Exception {
         assertRejectedAfter(run -> addFlatPowerBesidesTiers(run), "one source of truth", "BOTH frequencyTiers");
@@ -301,7 +204,6 @@ class DvfsRerunLoudRedIntegrationTest {
         return doc.getAsJsonObject("platform").getAsJsonArray("vms").get(0).getAsJsonObject();
     }
 
-    /** Tier table plus flat power coexist: the BAT-D1 one-source-of-truth law must refuse it. */
     private static void addFlatPowerBesidesTiers(Path runDirectory) throws Exception {
         JsonObject doc = readManifest(runDirectory);
         JsonObject vm = firstVm(doc);
@@ -310,10 +212,6 @@ class DvfsRerunLoudRedIntegrationTest {
         writeManifest(runDirectory, doc);
     }
 
-    /**
-     * A tier without mips: the physical quantity is missing, so the rebuilder must fail
-     * explicitly instead of filling in a default.
-     */
     private static void dropFirstTierMips(Path runDirectory) throws Exception {
         JsonObject doc = readManifest(runDirectory);
         com.google.gson.JsonArray tiers = firstVm(doc).getAsJsonArray("frequencyTiers");
@@ -321,23 +219,18 @@ class DvfsRerunLoudRedIntegrationTest {
         writeManifest(runDirectory, doc);
     }
 
-    /** Write the policy field as a non-string (JSON number): a type error must still follow the verdict contract. */
     private static void setRawFrequencyPolicy(Path runDirectory, int value) throws Exception {
         JsonObject doc = readManifest(runDirectory);
         doc.getAsJsonObject("configuration").addProperty("frequencyPolicy", value);
         writeManifest(runDirectory, doc);
     }
 
-    /** Unknown policy enum: do not degrade to DEFAULT. */
     private static void setFrequencyPolicy(Path runDirectory, String policy) throws Exception {
         JsonObject doc = readManifest(runDirectory);
         doc.getAsJsonObject("configuration").addProperty("frequencyPolicy", policy);
         writeManifest(runDirectory, doc);
     }
 
-    /**
-     * Erase the tier table but keep (or inject) a non-DEFAULT policy.
-     */
     private static void stripTierTable(Path runDirectory) throws Exception {
         JsonObject doc = readManifest(runDirectory);
         for (com.google.gson.JsonElement element :
@@ -347,10 +240,6 @@ class DvfsRerunLoudRedIntegrationTest {
         writeManifest(runDirectory, doc);
     }
 
-    /**
-     * Reverse the tier order recorded in the manifest: mips becomes strictly ascending,
-     * which is an illegal table the rebuilder must refuse.
-     */
     private static void scrambleTierOrder(Path runDirectory) throws Exception {
         Path manifest = runDirectory.resolve("result.manifest.json");
         JsonObject doc = JsonParser.parseString(new String(Files.readAllBytes(manifest), StandardCharsets.UTF_8))
@@ -371,11 +260,7 @@ class DvfsRerunLoudRedIntegrationTest {
         JsonObject doc = JsonParser.parseString(new String(Files.readAllBytes(manifest), StandardCharsets.UTF_8))
                 .getAsJsonObject();
         JsonObject configuration = doc.getAsJsonObject("configuration");
-        // After the BAT-V4.2 fix, the manifest of a v1 tierless run omits this key by
-        // default anyway (a bit-for-bit restoration of the pre-D4 frozen shape); before
-        // the fix the key was emitted unconditionally, so delete it here to reproduce the
-        // actual shape of the frozen bundles -- whatever the current emission surface
-        // does, this test anchors "the keyless original <em>must</em> rerun green".
+
         configuration.remove("frequencyPolicy");
         assertTrue(
                 !configuration.has("frequencyPolicy"),
@@ -423,28 +308,18 @@ class DvfsRerunLoudRedIntegrationTest {
                 + "</adag>\n";
     }
 
-    /** Single-tier platform: tier speed = VM base speed 1000 (clock identical to v1), pair (250/400). */
     private static PlatformProfile tieredPlatform() {
         return tierPlatform(new double[][] {{1000.0, 250.0, 400.0}}, null);
     }
 
-    /**
-     * Two-tier platform: used only by the "illegal tier table" contrast test (a
-     * single-tier table cannot encode an illegal order).
-     */
     private static PlatformProfile twoTierPlatform() {
         return tierPlatform(new double[][] {{1000.0, 250.0, 400.0}, {500.0, 100.0, 118.75}}, null);
     }
 
-    /**
-     * Three-dimensional platform: the same table plus a uniform carbon intensity of 380
-     * (the fleet profile of the D5 frozen baseline).
-     */
     private static PlatformProfile tieredCarbonPlatform() {
         return tierPlatform(new double[][] {{1000.0, 250.0, 400.0}}, Double.valueOf(380.0));
     }
 
-    /** v1 flat-power platform (250/400), using the same power pair as the tiered platform. */
     private static PlatformProfile plainPoweredPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("v4-v1-plain");
         builder.addHost(new PlatformProfile.HostSpec(0, 2, 2000, 2048, 10000L, 1000000L));
@@ -454,10 +329,6 @@ class DvfsRerunLoudRedIntegrationTest {
         return builder.build();
     }
 
-    /**
-     * Tiered plus carbon-window platform: frequency tier table and budget windows
-     * declared together (the A1 x A2 interaction surface).
-     */
     private static PlatformProfile tieredBudgetPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("v4-tiered-budget");
         java.util.List<PlatformProfile.FrequencyTier> tiers = java.util.Arrays.asList(

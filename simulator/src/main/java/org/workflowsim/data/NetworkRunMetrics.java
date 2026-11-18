@@ -3,17 +3,15 @@ package org.workflowsim.data;
 import java.math.BigDecimal;
 import java.math.MathContext;
 
-/** Transfer metrics plus separately observed V1 grouped-input locality; not an inference from service shortfalls. */
 public final class NetworkRunMetrics {
-    /** Availability of complete-capture locality quantities. */
+
     public enum LocalityStatus {
-        /** Recording was OFF. */
         DISABLED,
-        /** Flow evidence was truncated; do not publish complete-capture locality totals. */
+
         TRUNCATED_TRACE,
-        /** A manually supplied trace has no actual input-reference observations. */
+
         INPUT_COUNTERS_UNAVAILABLE,
-        /** Both complete trace and actual aggregate observations are present. */
+
         AVAILABLE
     }
 
@@ -65,55 +63,51 @@ public final class NetworkRunMetrics {
                             .doubleValue();
         }
     }
-    /**
-     * Validate and summarize a frozen run capture. Null means OFF, not complete zero traffic.
-     * @param evidence captured run evidence, null when OFF
-     * @return immutable transfer and locality summary
-     */
+
     public static NetworkRunMetrics calculate(NetworkRunEvidence evidence) {
         return new NetworkRunMetrics(evidence);
     }
-    /** @return grouped-reference scope, not unique-file/cache-capacity semantics */
+
     public String getLocalityScope() {
         return localityScope;
     }
-    /** @return validated flow metrics, or null when OFF */
+
     public NetworkTraceMetrics getTransferMetrics() {
         return transferMetrics;
     }
-    /** @return explicit locality availability */
+
     public LocalityStatus getLocalityStatus() {
         return localityStatus;
     }
-    /** @return reference count, or null when unavailable */
+
     public Long getInputReferenceCount() {
         return inputReferenceCount;
     }
-    /** @return actual local skip count, or null */
+
     public Long getLocalInputReferenceCount() {
         return localInputReferenceCount;
     }
-    /** @return exact input reference bytes, or null */
+
     public BigDecimal getRequiredInputReferenceBytes() {
         return requiredInputReferenceBytes;
     }
-    /** @return bytes actually skipped as local, not numerical settlement */
+
     public BigDecimal getLocalInputReferenceBytes() {
         return localInputReferenceBytes;
     }
-    /** @return exact nonlocal-reference bytes before group-sum rounding */
+
     public BigDecimal getTransferableInputReferenceBytes() {
         return transferableInputReferenceBytes;
     }
-    /** @return signed legacy group-admission minus exact transferable-reference byte gap */
+
     public BigDecimal getAdmittedMinusTransferableReferenceBytes() {
         return admittedMinusTransferableReferenceBytes;
     }
-    /** @return local-reference bytes/required-reference bytes, null without a denominator/coverage */
+
     public Double getLocalByteFraction() {
         return localByteFraction;
     }
-    /** @return actual local reference count/total reference count, null without a denominator/coverage */
+
     public Double getLocalReferenceFraction() {
         return localReferenceFraction;
     }

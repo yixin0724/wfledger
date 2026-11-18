@@ -80,10 +80,7 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.LOCAL_HEFT,
                 PlanningAlgorithm.LOCAL_CPOP,
                 PlanningAlgorithm.LOCAL_PEFT);
-        // R9: the historical HEFT/DHEFT labels were removed together with their
-        // unaligned implementations, so the legacy partition is the empty set; the
-        // partition assertion still guards the contract that every enum label is
-        // explicitly classified.
+
         EnumSet<PlanningAlgorithm> legacy = EnumSet.noneOf(PlanningAlgorithm.class);
 
         assertExactPartition(PlanningAlgorithm.class, supported, legacy);
@@ -140,8 +137,6 @@ class AlgorithmSupportMatrixTest {
         }
         return SimulationConfig.builder("workflow.dax", 1)
                 .schedulingAlgorithm(algorithm)
-                // The locality verdict of the DATA algorithm requires LOCAL file system
-                // mode (PLAT-7 validation).
                 .fileSystem(
                         algorithm == SchedulingAlgorithm.DATA
                                 ? ReplicaCatalog.FileSystem.LOCAL
@@ -165,9 +160,7 @@ class AlgorithmSupportMatrixTest {
             builder.deadline(100L);
         }
         if (localComm) {
-            // Communication modelling for LOCAL_HEFT/LOCAL_CPOP/LOCAL_PEFT requires
-            // LOCAL file system mode plus the pre-execution transfer delay data movement
-            // model (configuration-layer validation).
+
             builder.fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                     .dataMovementModel(DataMovementModel.preExecutionTransferDelayV1());
         } else {

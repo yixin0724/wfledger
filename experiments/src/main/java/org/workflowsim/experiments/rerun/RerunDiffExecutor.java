@@ -12,53 +12,18 @@ import java.util.List;
 import org.workflowsim.exception.SimulationExecutionException;
 import org.workflowsim.failure.RetryLimitExceededException;
 
-/**
- * D2 stage 6: single entry point for the rerun and the difference comparison (contract sections
- * "Command and Input Conventions" and "Execution and Snapshot Boundaries").
- *
- * <pre>
- * mvn -pl :workflowsim-workbench -am compile exec:java \
- *   -Dexec.mainClass=org.workflowsim.experiments.rerun.RerunDiffExecutor \
- *   -Dexec.args="&lt;run-dir&gt; &lt;output-dir&gt;"
- * </pre>
- *
- * <p>The execution flow is chained exactly as the contract specifies: read and validate the
- * three-piece bundle ({@link RerunEvidenceReader}) -> locate the inputs and check their hashes
- * ({@link RerunInputResolver}) -> rebuild the configuration
- * ({@link ManifestConfigRebuilder}) -> rerun through the standard path and persist a new
- * three-piece bundle ({@link RerunExecutor}) -> compare the core quantities
- * ({@link EvidenceCoreDiffer}) -> generate {@code rerun-report.json} + {@code rerun-report.md}.
- * Every step fails fast, and the verdict maps to an independent exit code (see
- * {@link RerunVerdict}), so it can serve directly as a CI gate.</p>
- *
- * <p>Semantics: a failure of the simulation execution phase itself
- * ({@link SimulationExecutionException} or {@link RetryLimitExceededException}) is likewise
- * reported as {@code RECONSTRUCTION_REJECTED} -- the contract defines that conclusion as a
- * legitimate exposure of "historical evidence is incompatible with the current code semantics";
- * a run-phase rejection is one of its forms, and the failure reason states that it occurred in
- * the execution phase.</p>
- */
 public final class RerunDiffExecutor {
 
-    /** Machine-readable report file name. */
     public static final String REPORT_JSON_NAME = "rerun-report.json";
 
-    /** Human-readable report file name. */
     public static final String REPORT_MARKDOWN_NAME = "rerun-report.md";
 
-    /** Command-line usage-error exit code (does not overlap any verdict code). */
     static final int EXIT_USAGE = 64;
 
-    /** Unexpected-exception exit code (does not overlap any verdict code). */
     static final int EXIT_UNEXPECTED = 70;
 
     private RerunDiffExecutor() {}
 
-    /**
-     * CLI entry point: verdict exit code 0-5; usage error 64; unexpected exception 70.
-     *
-     * @param args {@code <run-dir> <output-dir>}
-     */
     public static void main(String[] args) {
         if (args.length != 2) {
             System.err.println("Usage: RerunDiffExecutor <run-dir> <output-dir>");
@@ -81,23 +46,6 @@ public final class RerunDiffExecutor {
         }
     }
 
-    /**
-     * Execute the full rerun and difference comparison for a single run, and write the report
-     * into the output directory.
-     *
-     * <p>A failure path (verdict other than IDENTICAL/DIVERGED) produces no new {@code rerun/}
-     * three-piece bundle, but both reports are still written, carrying the failure reason and
-     * details such as candidate paths.</p>
-     *
-     * @param runDirectory evidence directory of a single run (containing the v4 three-piece
-     *     bundle)
-     * @param outputDirectory output directory: must not exist or must be empty
-     * @return complete report object (identical to what was written to disk)
-     * @throws IOException reading evidence or writing the report failed
-     * @throws IllegalArgumentException an argument is null
-     * @throws IllegalStateException the output directory already exists and is not empty (no
-     *     existing file is overwritten)
-     */
     public static RerunReport execute(Path runDirectory, Path outputDirectory) throws IOException {
         if (runDirectory == null || outputDirectory == null) {
             throw new IllegalArgumentException("Run directory and output directory are required");
@@ -137,23 +85,7 @@ public final class RerunDiffExecutor {
         } catch (IllegalArgumentException
                 | IllegalStateException
                 | org.workflowsim.exception.SimulationConfigurationException e) {
-            // BAT-V4.1 (2026-10-29 test-engineer adversarial round / DVFS fifth round, red ->
-            // green): a run-phase law rejection must stay inside the verdict contract and must
-            // not bubble up as a usage-class exit (exit 64, both reports not written at all --
-            // that is the crash-class failure the contract section "Classified
-            // simulation-execution exceptions ... map to RECONSTRUCTION_REJECTED" exists to
-            // eliminate). Actual hit path: during rebuilding, ManifestConfigRebuilder strips
-            // the frequency tier from tiered+carbon three-dimensional evidence (D5 forward
-            // contract), and the rebuilt "no power + carbon intensity" half-declared platform
-            // is rejected by the BAT-C1 half-declaration law with an IllegalArgumentException
-            // when the SimulationReport is constructed -- semantically this is a legitimate
-            // exposure of "historical evidence incompatible with the current code"
-            // (the recorded failure path of DVFS_DIMENSION_DESIGN.md section 2.4) and must land
-            // as RECONSTRUCTION_REJECTED with the report still written (exit 4), not as a
-            // crash. The same class of exception during the rebuilding phase is already
-            // wrapped into RerunFailureException by ManifestConfigRebuilder (the previous
-            // catch); such an exception reaching this point unwrapped can only come from the
-            // simulation execution or the report-writing phase.
+
             report = failureReport(
                     builder,
                     evidence,

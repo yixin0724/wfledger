@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 
 import com.google.gson.Gson;
 
-/** NF002A immutable group bindings and bounded run-level snapshots, independent of CloudSim. */
 class NetworkRunEvidenceTest {
     private static final DataMovementModel.Kind ENDPOINT =
             DataMovementModel.Kind.PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1;

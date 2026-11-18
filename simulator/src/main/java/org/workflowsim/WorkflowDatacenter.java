@@ -52,52 +52,26 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationTiming;
 import org.workflowsim.utils.TaskExecutionModel;
 
-/**
- * Workflow-specific datacenter that layers {@link Job}, {@link CondorVM}, input file replica
- * and task-level timing evidence handling on top of the CloudSim {@link Datacenter}.
- *
- * <p>The submission lifecycle is: validate the event payload and the target VM; set the resource
- * billing parameters of the Job; for a stage-in Job register file replicas, for a compute Job
- * estimate the input transfer time from the {@link DataMovementModel}; then hand the Job to the
- * CloudletScheduler of the VM and schedule the next datacenter processing event. Completion
- * detection first decides the failure outcome of a compute Job, then registers output replicas
- * only for successful logical Tasks, and finally returns the completed Cloudlet to its user.
- *
- * <p>The class delegates shared-link contention of the selected model to the fluid engine; it
- * implements no physical storage capacity allocation and no retry policy. It fails fast and
- * throws {@link IllegalStateException} when the payload is not a {@link Job}, when the target VM
- * is missing or is not a {@link CondorVM}, or when replica and bandwidth constraints are invalid.
- * Recovery of a failed Job is the responsibility of the workflow engine and the reclustering
- * flow.
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class WorkflowDatacenter extends Datacenter {
 
-    /** Run-local event evidence sink, disabled by default. */
     private SimulationEventRecorder eventRecorder = SimulationEventRecorder.disabled();
-    /** Run-local input data movement model, defaulting to the historical WorkflowSim v1 semantics. */
+
     private DataMovementModel dataMovementModel = DataMovementModel.legacyWorkflowsimV1();
-    /**
-     * Fluid transfer contention engine under link contention models; created lazily, see
-     * {@link #getTransferContentionEngine()}.
-     */
+
     private TransferContentionEngine transferContentionEngine;
-    /** Run-local opt-in; no global Parameters flag is consulted. */
+
     private NetworkEvidenceConfig networkEvidenceConfig = NetworkEvidenceConfig.off();
-    /** Bounded early-admission metadata, allocated only when recording an enabled binding. */
+
     private Map<Long, NetworkFlowBinding> networkFlowBindings;
-    /** Enabled-only aggregate input observations; no per-file history is retained. */
+
     private NetworkInputDemandTracker inputDemandTracker;
-    /** Placed topology used by the Fat-tree link contention model (installed by the standard runner; may be null). */
+
     private org.workflowsim.network.FatTreeTopology fatTreeTopology;
 
     private org.workflowsim.data.v2.CoherentDataflowRuntime coherentDataflow;
     private int coherentEngineId = -1;
     private org.workflowsim.data.v2.DataflowStorageSpec sourceStorage;
-    /** @param storage explicit bounded storage for the dedicated storage version */
+
     public void setSourceStorage(org.workflowsim.data.v2.DataflowStorageSpec storage) {
         if (storage == null || sourceStorage != null || !dataMovementModel.isCoherentStorageDataflowV3()) {
             throw new IllegalArgumentException("Storage spec requires one storage-V3 installation");
@@ -105,7 +79,6 @@ public class WorkflowDatacenter extends Datacenter {
         sourceStorage = storage;
     }
 
-    /** @param runtime same run-owned coordinator as the engine/planner @param engineId owning workflow engine */
     public void setCoherentDataflowRuntime(org.workflowsim.data.v2.CoherentDataflowRuntime runtime, int engineId) {
         if (runtime == null
                 || engineId < 0
@@ -123,7 +96,7 @@ public class WorkflowDatacenter extends Datacenter {
         }
         return coherentDataflow;
     }
-    /** Bind routes to actual created VM placements, never the logical producer's planned host. */
+
     void initializeCoherentFabric() {
         org.workflowsim.data.v2.CoherentDataflowRuntime runtime = requireCoherentRuntime();
         if (runtime.isFabricBound()) {
@@ -147,7 +120,7 @@ public class WorkflowDatacenter extends Datacenter {
                                 : org.workflowsim.data.v2.DataTransferFabric.fatTree(
                                         capacities, hosts, fatTreeTopology, sources));
     }
-    /** Actual-created immutable compute options for the engine's opt-in destination binding. */
+
     java.util.List<org.workflowsim.data.v2.DataflowVmAssigner.VmOption> actualDataflowVmOptions() {
         java.util.List<org.workflowsim.data.v2.DataflowVmAssigner.VmOption> result = new ArrayList<>();
         for (Host host : getVmAllocationPolicy().getHostList()) {
@@ -158,13 +131,13 @@ public class WorkflowDatacenter extends Datacenter {
         }
         return Collections.unmodifiableList(result);
     }
-    /** @return independently versioned file lifecycle capture, null for OFF/V1 */
+
     public org.workflowsim.data.v2.FileLifecycleEvidence captureFileLifecycleEvidence() {
         return networkEvidenceConfig.getMode() == NetworkEvidenceConfig.Mode.FILE_LIFECYCLE_V2
                 ? requireCoherentRuntime().captureEvidence()
                 : null;
     }
-    /** @return separately versioned storage capture, null for OFF/V1/V2 */
+
     public org.workflowsim.data.v2.StorageLifecycleEvidence captureStorageLifecycleEvidence() {
         return networkEvidenceConfig.getMode() == NetworkEvidenceConfig.Mode.FILE_STORAGE_LIFECYCLE_V3
                 ? requireCoherentRuntime().captureStorageEvidence()
@@ -179,22 +152,6 @@ public class WorkflowDatacenter extends Datacenter {
         return ids;
     }
 
-    /**
-     * Create a workflow datacenter.
-     *
-     * <p>{@code storageList} is passed to the CloudSim superclass and also provides the maximum
-     * transfer rate in the shared-storage input transfer model. When the shared-storage model is
-     * used, the list should contain at least one storage device with a finite positive transfer
-     * rate; that condition is validated when the transfer time is actually estimated, rather than
-     * changing the historical initialization behavior at construction time.
-     *
-     * @param name datacenter entity name
-     * @param characteristics datacenter resource and cost characteristics
-     * @param vmAllocationPolicy VM-to-Host allocation policy
-     * @param storageList available storage device list
-     * @param schedulingInterval CloudSim datacenter scheduling interval
-     * @throws Exception when the CloudSim datacenter initialization fails
-     */
     public WorkflowDatacenter(
             String name,
             DatacenterCharacteristics characteristics,
@@ -205,12 +162,6 @@ public class WorkflowDatacenter extends Datacenter {
         super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
     }
 
-    /**
-     * Install the event recorder used by this datacenter inside one simulation run.
-     *
-     * @param value non-null run-private recorder
-     * @throws IllegalArgumentException when the recorder is {@code null}
-     */
     public void setEventRecorder(SimulationEventRecorder value) {
         if (value == null) {
             throw new IllegalArgumentException("Event recorder cannot be null");
@@ -218,15 +169,6 @@ public class WorkflowDatacenter extends Datacenter {
         this.eventRecorder = value;
     }
 
-    /**
-     * Install the data movement time model for this run.
-     *
-     * <p>The model only determines the input stage-in transfer duration and the evidence records of
-     * a compute Job; it does not change the logical registration rules of the replica catalog.
-     *
-     * @param value non-null run-private data movement model
-     * @throws IllegalArgumentException when the model is {@code null}
-     */
     public void setDataMovementModel(DataMovementModel value) {
         if (value == null) {
             throw new IllegalArgumentException("Data movement model cannot be null");
@@ -234,17 +176,10 @@ public class WorkflowDatacenter extends Datacenter {
         this.dataMovementModel = value;
     }
 
-    /** Return the data movement time model of this run. */
     public DataMovementModel getDataMovementModel() {
         return dataMovementModel;
     }
 
-    /**
-     * Install run-local observation before the fluid engine is created.
-     * @param value required immutable option; OFF preserves the old default
-     * @throws IllegalArgumentException for a null option
-     * @throws IllegalStateException after engine creation
-     */
     public void setNetworkEvidenceConfig(NetworkEvidenceConfig value) {
         if (value == null) {
             throw new IllegalArgumentException("Network evidence configuration cannot be null");
@@ -255,12 +190,10 @@ public class WorkflowDatacenter extends Datacenter {
         networkEvidenceConfig = value;
     }
 
-    /** @return immutable run-local observation option */
     public NetworkEvidenceConfig getNetworkEvidenceConfig() {
         return networkEvidenceConfig;
     }
 
-    /** Observe the locality decision already made by the original grouped-input loop. */
     void recordNetworkInputDemand(FileItem file, boolean local) {
         if (networkEvidenceConfig.getMode() != NetworkEvidenceConfig.Mode.FLUID_GROUP_LEDGER_V1) {
             return;
@@ -277,7 +210,6 @@ public class WorkflowDatacenter extends Datacenter {
         inputDemandTracker.record(file.getSize(), local);
     }
 
-    /** Copy attribution after successful admission, before any later advance can remove it. */
     void recordNetworkFlowBinding(
             long transferId,
             Job job,
@@ -293,7 +225,7 @@ public class WorkflowDatacenter extends Datacenter {
             throw new IllegalStateException("Cannot bind a network flow before a successful transfer admission");
         }
         long ordinal = transferContentionEngine.getActiveTransferAdmissionOrdinal(transferId);
-        // Each START consumes at least one record. Later ordinals cannot be in a retained prefix.
+
         if (ordinal > networkEvidenceConfig.getMaxTraceRecords()) {
             return;
         }
@@ -320,11 +252,6 @@ public class WorkflowDatacenter extends Datacenter {
         networkFlowBindings.put(ordinal, binding);
     }
 
-    /**
-     * Freeze current trace and bounded attribution without creating or advancing an engine.
-     * @return immutable enabled evidence, or null when OFF
-     * @throws IllegalStateException if retained admissions and bindings disagree
-     */
     public NetworkRunEvidence captureNetworkEvidence() {
         if (networkEvidenceConfig.getMode() != NetworkEvidenceConfig.Mode.FLUID_GROUP_LEDGER_V1) {
             return null;
@@ -345,12 +272,6 @@ public class WorkflowDatacenter extends Datacenter {
                 inputDemand);
     }
 
-    /**
-     * Install the placed topology used by the Fat-tree link contention model.
-     *
-     * @param value non-null placed topology (hosts covering every Host of the platform)
-     * @throws IllegalArgumentException when the topology is {@code null}
-     */
     public void setFatTreeTopology(org.workflowsim.network.FatTreeTopology value) {
         if (value == null) {
             throw new IllegalArgumentException("Fat-tree topology cannot be null");
@@ -358,25 +279,10 @@ public class WorkflowDatacenter extends Datacenter {
         this.fatTreeTopology = value;
     }
 
-    /** Return the installed Fat-tree topology; models without a declared topology return {@code null}. */
     public org.workflowsim.network.FatTreeTopology getFatTreeTopology() {
         return fatTreeTopology;
     }
 
-    /**
-     * Return (creating lazily) the fluid transfer contention engine used by the link contention
-     * models; other data movement models return {@code null}.
-     *
-     * <p>Creation registers the network interface bandwidth of every VM as endpoint capacity (key
-     * {@code "VM:<vmId>"}, capacity {@code vm.getBw() * 1000000} bytes/second); the SOURCE endpoint
-     * registers no capacity (unbounded). The Fat-tree model additionally registers every topology
-     * link capacity (a duplex link is split into per-direction resource keys, capacity = uniform
-     * link bandwidth). The workflow engine drives the engine state in the data-ready and
-     * advance-check events.</p>
-     *
-     * @return contention engine instance; {@code null} when the data movement model is not a link
-     *         contention model
-     */
     public TransferContentionEngine getTransferContentionEngine() {
         if (!dataMovementModel.isPreExecutionTransferDelayWithContentionV1()
                 && !dataMovementModel.isFatTreeContentionV1()) {
@@ -403,16 +309,6 @@ public class WorkflowDatacenter extends Datacenter {
         return transferContentionEngine;
     }
 
-    /**
-     * Return the sequence of link resource keys occupied by a transfer from the source VM to the
-     * destination VM under the Fat-tree topology; non-Fat-tree models return an empty list. A
-     * transfer between VMs on the same host occupies no topology link.
-     *
-     * @param sourceVmId source VM identifier
-     * @param destinationVmId destination VM identifier
-     * @param userId user identifier
-     * @return list of link resource keys of the deterministic route
-     */
     public java.util.List<String> fatTreePathResources(int sourceVmId, int destinationVmId, int userId) {
         if (!dataMovementModel.isFatTreeContentionV1() || fatTreeTopology == null) {
             return java.util.Collections.emptyList();
@@ -426,22 +322,6 @@ public class WorkflowDatacenter extends Datacenter {
         return fatTreeTopology.route(sourceHost.getId(), destinationHost.getId());
     }
 
-    /**
-     * Pure estimate of the transfer seconds of a given set of real input files on the target VM of a
-     * compute Job (no side effects).
-     *
-     * <p>The bandwidth rules match historical WorkflowSim v1: the shared file system takes the
-     * maximum storage transfer rate, while the local file system takes, per file, the fastest
-     * accessible replica ({@code SOURCE} site uses the target VM bandwidth, a VM site uses
-     * {@code min(bw_src, bw_dst)}), and zero when the file is already on the target VM. This method
-     * registers no replica; the pre-execution transfer delay model uses it to estimate at
-     * data-ready time, and the planner mirror runtime uses it for its own estimate.</p>
-     *
-     * @param files candidate files (only real input files among them are counted)
-     * @param job target compute Job
-     * @return transfer seconds
-     * @throws Exception when a required replica or VM cannot be resolved
-     */
     public double estimateTransferSecondsForFiles(List<FileItem> files, Job job) throws Exception {
         if (dataMovementModel.usesCoherentDataflowRuntime()) {
             throw new UnsupportedOperationException(
@@ -484,20 +364,6 @@ public class WorkflowDatacenter extends Datacenter {
         return time;
     }
 
-    /**
-     * Determine whether a file is already local to the target Job (the same locality semantics as
-     * {@link #estimateTransferSecondsForFiles}).
-     *
-     * <p>Under the LOCAL file system a replica list that contains the target VM means local with
-     * zero transfer seconds; under the SHARED file system every real input file is charged at the
-     * shared storage rate, so no local hit exists. R8 audit fix (F2): on this basis the contention
-     * model creates flows only for bytes that really move, keeping the same semantics as the
-     * seconds.</p>
-     *
-     * @param file real input file under test
-     * @param job target compute Job
-     * @return true when no transfer is needed (local hit)
-     */
     public boolean isFileLocalForJob(FileItem file, Job job) {
         if (ReplicaCatalog.getFileSystem() == ReplicaCatalog.FileSystem.SHARED) {
             return false;
@@ -506,17 +372,6 @@ public class WorkflowDatacenter extends Datacenter {
         return siteList != null && siteList.contains(Integer.toString(job.getVmId()));
     }
 
-    /**
-     * Register replicas of all real input files of one compute Job on the target VM.
-     *
-     * <p>The pre-execution transfer delay model registers replicas only when the transfer
-     * completes, so other Jobs inside the transfer window do not misjudge these files as locally
-     * present. The shared file system has no VM-level replica registration, so the call is a
-     * no-op.</p>
-     *
-     * @param job compute Job whose input transfer has completed
-     * @throws Exception when the target VM cannot be resolved
-     */
     public void registerStageInReplicasForComputeJob(Job job) throws Exception {
         if (ReplicaCatalog.getFileSystem() != ReplicaCatalog.FileSystem.LOCAL) {
             return;
@@ -541,16 +396,6 @@ public class WorkflowDatacenter extends Datacenter {
         }
     }
 
-    /**
-     * Estimate the transfer seconds of a single file to the target VM under the historical
-     * WorkflowSim v1 local rules.
-     *
-     * @param file input file
-     * @param siteList registered replica locations
-     * @param job target compute Job
-     * @return transfer seconds; 0 when the target VM already holds a replica
-     * @throws Exception when the target or source VM cannot be resolved
-     */
     private double localStageInSecondsForFile(FileItem file, List siteList, Job job) throws Exception {
         int vmId = job.getVmId();
         int userId = job.getUserId();
@@ -565,22 +410,22 @@ public class WorkflowDatacenter extends Datacenter {
         boolean requiredFileStagein = true;
         double maxBwth = 0.0;
         for (Iterator it = siteList.iterator(); it.hasNext(); ) {
-            // site denotes one registered replica location of this file.
+
             String site = (String) it.next();
             if (site.equals(this.getName())) {
                 continue;
             }
-            /** The file is already on the target VM, so no stage-in is required. */
+
             if (site.equals(Integer.toString(vmId))) {
                 requiredFileStagein = false;
                 break;
             }
             double bwth;
             if (site.equals(Parameters.SOURCE)) {
-                // Under the historical rules, a source-to-VM transfer is limited only by the target VM bandwidth.
+
                 bwth = vm.getBw();
             } else {
-                // Under the historical rules, a VM-to-VM transfer is limited by the smaller of the two bandwidths.
+
                 int sourceVmId;
                 try {
                     sourceVmId = Integer.parseInt(site);
@@ -606,30 +451,9 @@ public class WorkflowDatacenter extends Datacenter {
         return 0.0;
     }
 
-    /**
-     * Process the submission event of one workflow Job.
-     *
-     * <p>The event payload must be a {@link Job}, and the VM the Job points to must exist and be a
-     * {@link CondorVM}. A completed Job is not executed again but is still returned to its user;
-     * when acknowledgement is requested a failure acknowledgement is returned as well. A stage-in
-     * Job only registers file locations, while a compute Job first estimates the input data
-     * movement and records evidence, and only then calls the CloudletScheduler.
-     *
-     * <p>After a successful submission, if a finite completion time can be derived, a
-     * {@link org.cloudbus.cloudsim.core.CloudSimTags#VM_DATACENTER_EVENT} is scheduled to itself;
-     * a success acknowledgement is sent when acknowledgement is requested. Any validation, data
-     * movement or VM access error is wrapped as an {@link IllegalStateException}, and no success
-     * acknowledgement or Cloudlet return event is fabricated.
-     *
-     * @param ev CloudSim event whose payload is a Job
-     * @param ack whether a submit acknowledgement must be sent to the user owning the Job
-     * @pre ev != null
-     * @post $none
-     */
     @Override
     protected void processCloudletSubmit(SimEvent ev, boolean ack) {
-        // A change to an execution set is a work-accounting boundary, not a periodic tick.
-        // Settle existing work and idle clocks before adding the new Job, even within cadence.
+
         updateCloudletProcessing(true);
 
         try {
@@ -648,7 +472,6 @@ public class WorkflowDatacenter extends Datacenter {
             projectComputeExecutionLength(job, vm);
             applyCostModelResourceParameters(job, vm);
 
-            /** A stage-in Job registers file locations only; semantics follow the replica file system mode. */
             if (job.getClassType() == ClassType.STAGE_IN.value) {
                 stageInFile2FileSystem(job);
             }
@@ -660,8 +483,6 @@ public class WorkflowDatacenter extends Datacenter {
         checkCloudletCompletion();
     }
 
-    /** Submit response for an already completed Job (failure ack + return event; transcribed
-     * verbatim from processCloudletSubmit). */
     private void returnFinishedJobToUser(Job job, boolean ack) {
         String name = CloudSim.getEntityName(job.getUserId());
         Log.printLine(getName() + ": Warning - Cloudlet #" + job.getCloudletId() + " owned by " + name
@@ -669,15 +490,12 @@ public class WorkflowDatacenter extends Datacenter {
         Log.printLine("Therefore, it is not being executed again");
         Log.printLine();
 
-        // A completed Cloudlet is not executed again; the acknowledgement (when requested) and the
-        // return event are still required, otherwise the upstream entity waiting on it blocks forever.
         if (ack) {
             int[] data = new int[3];
             data[0] = getId();
             data[1] = job.getCloudletId();
             data[2] = CloudSimTags.FALSE;
 
-            // The acknowledgement event uses the unique CloudSim tag that corresponds to the submit operation.
             int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
             sendNow(job.getUserId(), tag, data);
         }
@@ -687,7 +505,6 @@ public class WorkflowDatacenter extends Datacenter {
         return;
     }
 
-    /** Resolve the CondorVM referenced by a submitted Job (transcribed verbatim). */
     private CondorVM resolveSubmittedJobVm(Job job) {
         int userId = job.getUserId();
         int vmId = job.getVmId();
@@ -705,17 +522,9 @@ public class WorkflowDatacenter extends Datacenter {
         return vm;
     }
 
-    /** Project the heterogeneous cost matrix and set the job length (transcribed verbatim). */
     private void projectComputeExecutionLength(Job job, CondorVM vm) {
         int vmId = job.getVmId();
-        /**
-         * Task-by-VM heterogeneous cost matrix projection: STATIC dispatching converts the exact
-         * execution seconds of a logical task into a job length here (MI = round(seconds * vm.mips)),
-         * so that the runtime execution time matches the paper cost table (subject to CloudSim
-         * integer MI rounding). The retry path goes through this method as well, so the conversion
-         * applies automatically. Tasks that carry no projection keep the original MI/mips scaling
-         * behavior.
-         */
+
         long computeLengthMi = job.getEffectiveExecutionLengthMi();
         if (job.getClassType() == ClassType.COMPUTE.value) {
             for (Task task : job.getTaskList()) {
@@ -730,17 +539,14 @@ public class WorkflowDatacenter extends Datacenter {
                 }
             }
         }
-        // Keep compute work separate from CloudSim's mutable, stage-in-inclusive envelope.
-        // A retry starts here from pure compute work and resolves its matrix again.
+
         job.setEffectiveExecutionLengthMi(computeLengthMi);
         job.setCloudletLength(computeLengthMi);
     }
 
-    /** Write the billing parameters according to the cost model (transcribed verbatim). */
     private void applyCostModelResourceParameters(Job job, CondorVM vm) {
         switch (Parameters.getCostModel()) {
             case DATACENTER:
-                // Write the billing parameters of this datacenter or VM under the configured cost model.
                 job.setResourceParameter(
                         getId(),
                         getCharacteristics().getCostPerSecond(),
@@ -754,7 +560,6 @@ public class WorkflowDatacenter extends Datacenter {
         }
     }
 
-    /** Compute the input data movement time of a Job as the CloudletScheduler transfer-time parameter. */
     private double resolveComputeJobTransferSeconds(Job job) throws Exception {
         double fileTransferTime = 0.0;
         if (job.getClassType() == ClassType.COMPUTE.value) {
@@ -764,16 +569,7 @@ public class WorkflowDatacenter extends Datacenter {
             } else if (dataMovementModel.isPreExecutionTransferDelayV1()
                     || dataMovementModel.isPreExecutionTransferDelayWithContentionV1()
                     || dataMovementModel.isFatTreeContentionV1()) {
-                // The paper-semantics path (PRE_EXECUTION_TRANSFER_DELAY_V1), the link contention path
-                // (R2 PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1) and the Fat-tree topology
-                // contention path: the input transfer is already modeled by the engine at data-ready
-                // time as a pre-execution delay (under contention models concurrent transfers share
-                // the VM endpoint bandwidth fairly, and under Fat-tree the shared links along the
-                // deterministic route are added on top), so the transfer window may overlap the busy
-                // period of the target VM; the transfer is no longer folded into the execution
-                // envelope here -- the VM is occupied only by the compute MI, and computation starts
-                // at submit time. DATA_STAGE_IN_MODELED evidence and input replica registration are
-                // handled by the engine inside the transfer window.
+
                 fileTransferTime = 0.0;
             } else {
                 DataTransferEstimate estimate = estimateDataStageInForComputeJob(job.getFileList(), job);
@@ -796,11 +592,9 @@ public class WorkflowDatacenter extends Datacenter {
         return fileTransferTime;
     }
 
-    /** Envelope check, scheduler submit, busy-VM contract check, task windows, completion event and
-     * acknowledgement (transcribed verbatim). */
     private void submitJobToScheduler(Job job, CondorVM vm, double fileTransferTime, boolean ack) {
         int vmId = job.getVmId();
-        // Validate the total envelope before CloudSim converts MI * PEs to long instructions.
+
         double envelopeMi = job.getCloudletLength() + vm.getMips() * fileTransferTime;
         if (!Double.isFinite(envelopeMi) || envelopeMi >= (double) Long.MAX_VALUE) {
             throw new IllegalArgumentException("Stage-in overflows the executable Job envelope");
@@ -813,14 +607,7 @@ public class WorkflowDatacenter extends Datacenter {
             sendNow(coherentEngineId, WorkflowSimTags.COHERENT_DATAFLOW_CHECK, null);
         }
         double estimatedFinishTime = scheduler.cloudletSubmit(job, fileTransferTime);
-        // Fail-fast: the busy-VM submission path. CloudSim returns 0.0 for a busy VM and keeps the
-        // job QUEUED (execStartTime unset, retaining the default 0.0); if execution continued,
-        // updateTaskExecTime would anchor the task time window at ~0.0 -- earlier than the
-        // JOB_READY instant of that job, which forms a time inversion and makes FailureGenerator
-        // attribute failures wrongly from the corrupted window (silent data corruption).
-        // The standard WorkflowSim scheduling contract is that every algorithm dispatches jobs only
-        // to idle VMs, so submitting to a busy VM is a contract violation and must fail explicitly
-        // instead of degrading silently.
+
         if (!(estimatedFinishTime > 0.0) || Double.isInfinite(estimatedFinishTime)) {
             throw new IllegalStateException(getName()
                     + " received a Job submitted to a busy VM (cloudlet "
@@ -847,24 +634,7 @@ public class WorkflowDatacenter extends Datacenter {
             sendNow(job.getUserId(), tag, data);
         }
     }
-    /**
-     * Convert the MI length that CloudSim actually appends to the Job into the effective stage-in
-     * duration.
-     *
-     * <p>CloudSim represents {@code fileTransferTime} as an integer MI, so the effective duration is
-     * {@code (Job length after submit - Job length before submit) / vmMips}, which may differ from
-     * the requested data movement seconds by a rounding difference. The requested value is still
-     * written to the evidence record separately, and the result of this method must not replace the
-     * data model observation.
-     *
-     * @param job Job already passed to the CloudletScheduler
-     * @param vm VM that executes the Job
-     * @param cloudletLengthBeforeStageIn Job length before submit (MI)
-     * @param requestedStageInSeconds transfer seconds requested by the data movement model
-     * @return stage-in seconds actually injected by CloudSim
-     * @throws IllegalArgumentException when the requested time or the VM MIPS is invalid
-     * @throws IllegalStateException when the scheduler unexpectedly shortens the Job length
-     */
+
     private double effectiveCloudletStageInSeconds(
             Job job, Vm vm, long cloudletLengthBeforeStageIn, double requestedStageInSeconds) {
         if (requestedStageInSeconds < 0.0
@@ -882,40 +652,10 @@ public class WorkflowDatacenter extends Datacenter {
         return addedMi / vm.getMips();
     }
 
-    /**
-     * Derive the contiguous compute time window of every original Task inside a Job from the model,
-     * and write the task-level evidence events.
-     *
-     * <p>The first Task starts at the execution start time of the Job plus the effective stage-in
-     * duration, and subsequent Tasks advance serially in order by {@code taskLengthMi /
-     * executionSpeed}. What is updated here is the task-level model window; CloudSim does not allow
-     * the real finish time of the Job to be rewritten at this point, so the two must not be
-     * conflated into one piece of execution evidence.</p>
-     *
-     * <p>BAT-D6 (2026-10-29): the execution speed is the frequency-tier speed assigned when this
-     * Job is dispatched ({@code job.getTierMips()}, tiers are unique by MIPS); a Job without a tier
-     * (tierless VM of the v1 platform / hybrid platform, non-compute bookkeeping) keeps the VM
-     * declared speed -- strictly the same source as the Job length scaling of
-     * {@code WorkflowScheduler.assignFrequencyTier} (work unchanged, duration = work/tier speed).
-     * The previous convention (always the VM speed) produced, when the tier speed differs from the
-     * VM base speed, out-of-window task windows where the Task finishes after its Job -- the
-     * independent Python audit of {@code task-window-within-job}/{@code cpu-lower-bound} catches it
-     * immediately (the D2 missed gap, not retainable behavior).</p>
-     *
-     * @param job submitted clustered Job
-     * @param vm executing VM
-     * @param effectiveStageInSeconds stage-in seconds actually in effect in CloudSim
-     * @param requestedStageInSeconds stage-in seconds requested by the data movement model
-     */
     private void updateTaskExecTime(Job job, Vm vm, double effectiveStageInSeconds, double requestedStageInSeconds) {
-        // CloudSim converts fileTransferTime into appended integer MI; the task time window starts
-        // after that effective duration, while the original requested value is preserved separately
-        // as a data movement model observation.
+
         double startTime = job.getExecStartTime() + effectiveStageInSeconds;
-        // F-007 contract revision (2026-10-23, user-adjudicated): record the execution start of
-        // this Job instance ahead of its TASK_EXECUTION_MODELED family, carrying the envelope
-        // start and both data-stage seconds so the decision-to-start / waiting families stay
-        // recomputable from the event stream without relying on exactJobTiming luck.
+
         eventRecorder.record(
                 SimulationEventType.JOB_EXECUTION_STARTED,
                 CloudSim.clock(),
@@ -930,18 +670,14 @@ public class WorkflowDatacenter extends Datacenter {
                         "modeledJobStartSeconds",
                         Double.valueOf(startTime)));
         boolean firstTask = true;
-        // BAT-D6 (2026-10-29): the execution speed of the task-level model window is the assigned tier
-        // speed of this Job (tierless = VM declared speed) -- the same convention as the scheduler
-        // scaling of the Job cloudlet length, so the task windows stay inside the actual execution
-        // window of the Job (work keeps the declared MI, duration = work/tier speed).
+
         Double assignedTierMips = job.getTierMips();
         double executionSpeedMips = assignedTierMips != null ? assignedTierMips.doubleValue() : vm.getMips();
         for (Task task : job.getTaskList()) {
             task.setExecStartTime(startTime);
             double taskRuntime = task.getEffectiveExecutionLengthMi() / executionSpeedMips;
             startTime += taskRuntime;
-            // CloudSim does not support rewriting the Job finish time here, so only the Task-level model
-            // finish instant is recorded.
+
             task.setTaskFinishTime(startTime);
             eventRecorder.record(
                     SimulationEventType.TASK_EXECUTION_MODELED,
@@ -968,7 +704,6 @@ public class WorkflowDatacenter extends Datacenter {
         }
     }
 
-    /** Return the total bytes of the real input files in the list; outputs of the same Job are not counted. */
     private static double realInputBytes(List<FileItem> files) {
         double result = 0.0;
         for (FileItem file : files) {
@@ -979,32 +714,16 @@ public class WorkflowDatacenter extends Datacenter {
         return result;
     }
 
-    /**
-     * Register file replicas for a stage-in Job.
-     *
-     * <p>Regardless of whether this run uses the local or the shared file system, the current
-     * implementation registers the file in {@link ReplicaCatalog} under the datacenter name. The
-     * operation updates the logical replica catalog; it allocates no physical storage capacity and
-     * copies no file content. The real data movement duration is modeled separately when a compute
-     * Job is submitted.
-     *
-     * @param job stage-in Job
-     * @pre $none
-     * @post $none
-     */
     private void stageInFile2FileSystem(Job job) {
         List<FileItem> fList = job.getFileList();
 
         for (FileItem file : fList) {
             switch (ReplicaCatalog.getFileSystem()) {
-                    /** The local file system also uses the datacenter name as the logical replica location. */
                 case LOCAL:
                     ReplicaCatalog.addFileToStorage(file.getName(), this.getName());
-                    /** Physical ClusterStorage writes are still not wired in; kept as a placeholder for future work. */
-                    // ClusterStorage storage = (ClusterStorage) getStorageList().get(0);
-                    // storage.addFile(file);
+
                     break;
-                    /** The shared file system likewise registers at the shared endpoint of the current datacenter. */
+
                 case SHARED:
                     ReplicaCatalog.addFileToStorage(file.getName(), this.getName());
                     break;
@@ -1014,36 +733,10 @@ public class WorkflowDatacenter extends Datacenter {
         }
     }
 
-    /**
-     * Stage-in extension point kept for historical subclasses; returns the estimated transfer
-     * seconds of one compute Job.
-     *
-     * <p>The standard run path obtains seconds, real input bytes and file count from the more
-     * complete {@link DataTransferEstimate}, so that the evidence record covers every quantity; old
-     * subclasses that override this method still keep their original calling convention.
-     *
-     * @param requiredFiles candidate input files
-     * @param job compute Job about to execute
-     * @return estimated data stage-in seconds
-     * @throws Exception when a replica or VM cannot be resolved
-     */
     protected double processDataStageInForComputeJob(List<FileItem> requiredFiles, Job job) throws Exception {
         return estimateDataStageInForComputeJob(requiredFiles, job).getTransferSeconds();
     }
 
-    /**
-     * Compute the input transfer estimate of one Job from the current data movement model.
-     *
-     * <p>Both modes count only files for which {@link FileItem#isRealInputFile(List)} is true. The
-     * historical model keeps the WorkflowSim v1 bandwidth selection rules; the fixed-endpoint model
-     * accumulates {@code latency + bytes / (1,000,000 * bottleneckRate)} per file and models neither
-     * concurrency nor shared-link contention.
-     *
-     * @param requiredFiles candidate input files
-     * @param job target compute Job
-     * @return immutable estimate carrying time, byte count and file count
-     * @throws Exception when a required replica or VM cannot be resolved
-     */
     private DataTransferEstimate estimateDataStageInForComputeJob(List<FileItem> requiredFiles, Job job)
             throws Exception {
         if (dataMovementModel.usesCoherentDataflowRuntime()) {
@@ -1059,7 +752,6 @@ public class WorkflowDatacenter extends Datacenter {
         return fixedEndpointDataStageIn(requiredFiles, job, requiredBytes, requiredFileCount);
     }
 
-    /** Return the number of real input files; outputs produced inside the same Job are not counted. */
     private static int realInputFileCount(List<FileItem> files) {
         int result = 0;
         for (FileItem file : files) {
@@ -1070,22 +762,6 @@ public class WorkflowDatacenter extends Datacenter {
         return result;
     }
 
-    /**
-     * Accumulate the transfer duration of every real input file under the fixed-endpoint,
-     * contention-free model.
-     *
-     * <p>The shared file system uses the maximum transfer rate of the shared storage; the local
-     * file system selects the shortest single-file transfer time over the replicas reachable from
-     * the target VM. Each file is added independently, so parallel transfers, cache eviction and
-     * shared-link contention are not expressed.
-     *
-     * @param requiredFiles candidate input files
-     * @param job target compute Job
-     * @param requiredBytes already counted total bytes of real input
-     * @param requiredFileCount already counted number of real input files
-     * @return transfer estimate of the fixed-endpoint model
-     * @throws Exception when a replica or the target VM cannot be resolved
-     */
     private DataTransferEstimate fixedEndpointDataStageIn(
             List<FileItem> requiredFiles, Job job, double requiredBytes, int requiredFileCount) throws Exception {
         double time = 0.0;
@@ -1113,22 +789,6 @@ public class WorkflowDatacenter extends Datacenter {
         return new DataTransferEstimate(time, requiredBytes, requiredFileCount);
     }
 
-    /**
-     * Select the shortest single-file transfer time over the replicas reachable from the target VM
-     * for the local file system.
-     *
-     * <p>If the target VM already holds a replica, zero is returned immediately; a source endpoint,
-     * the shared endpoint and another VM replica are each evaluated at the available endpoint
-     * bandwidth, and the file is registered on the target VM only after the minimum is taken. A
-     * replica site that is not a string or cannot be parsed as a valid endpoint is treated as a
-     * configuration error and fails.
-     *
-     * @param file input file
-     * @param job target compute Job
-     * @param siteList registered replica locations
-     * @return fixed-endpoint transfer seconds of the selected replica
-     * @throws Exception when the target or source VM cannot be resolved
-     */
     private double fixedEndpointLocalTransferSeconds(FileItem file, Job job, List siteList) throws Exception {
         int destinationVmId = job.getVmId();
         int userId = job.getUserId();
@@ -1171,10 +831,6 @@ public class WorkflowDatacenter extends Datacenter {
         return best;
     }
 
-    /**
-     * Look up a VM of one user inside this datacenter, and fail fast with an operation-scoped
-     * exception when it is missing.
-     */
     private Vm requiredVm(int vmId, int userId, String operation) {
         Host host = getVmAllocationPolicy().getHost(vmId, userId);
         if (host == null) {
@@ -1187,12 +843,6 @@ public class WorkflowDatacenter extends Datacenter {
         return vm;
     }
 
-    /**
-     * Return the largest finite positive transfer rate in the shared storage list.
-     *
-     * <p>This is a controlled simplification of the fixed-endpoint model: it selects no
-     * concrete storage device and simulates no multi-file contention.
-     */
     private double sharedStorageTransferRate() {
         double maxRate = 0.0;
         for (Storage storage : getStorageList()) {
@@ -1204,13 +854,6 @@ public class WorkflowDatacenter extends Datacenter {
         return maxRate;
     }
 
-    /**
-     * Compute the single-file transfer seconds under the fixed-endpoint model.
-     *
-     * <p>The effective bandwidth is the smaller of the endpoint bandwidth and the access
-     * link bandwidth; the formula is
-     * {@code accessLinkLatencySeconds + fileSizeBytes / (1,000,000 * effectiveRateMbPerSecond)}.
-     */
     private double fixedEndpointTransferSeconds(FileItem file, double endpointBandwidth, String endpoint) {
         double rate = Math.min(endpointBandwidth, dataMovementModel.getAccessLinkBandwidthMbPerSecond());
         if (!(rate > 0.0) || Double.isInfinite(rate) || Double.isNaN(rate)) {
@@ -1220,63 +863,34 @@ public class WorkflowDatacenter extends Datacenter {
         return dataMovementModel.getAccessLinkLatencySeconds() + file.getSize() / (double) Consts.MILLION / rate;
     }
 
-    /**
-     * Retain the historical stage-in estimation behavior of WorkflowSim v1.
-     *
-     * <p>The shared file system takes the largest transfer rate in the storage list; the
-     * local file system first recognizes a replica already present on the target VM and
-     * otherwise takes the largest bandwidth among the available sources. This compatibility
-     * path adds no access link latency, simulates neither contention nor capacity, and
-     * only updates the logical replica directory after estimation; it must not be
-     * interpreted as a physical network topology model.
-     *
-     * @param requiredFiles candidate input files
-     * @param job target compute Job
-     * @return transfer seconds produced by the historical rule
-     * @throws Exception when replica or VM resolution fails
-     */
     private double legacyProcessDataStageInForComputeJob(List<FileItem> requiredFiles, Job job) throws Exception {
-        // Estimate the transfer seconds of every real input file by the historical bandwidth
-        // rule first, then register the input replicas on the target VM. The order of
-        // estimation and registration does not affect the result: the estimate of a single
-        // file only reads that file's replica directory.
+
         double time = estimateTransferSecondsForFiles(requiredFiles, job);
         registerStageInReplicasForComputeJob(job);
         return time;
     }
 
-    /**
-     * Advance Cloudlet processing on every Host/VM and schedule the next datacenter event
-     * at the predictable completion instant.
-     *
-     * <p>The startup phase keeps the historical {@code 0.111} time threshold so that the
-     * initial processing loop is not skipped by the CloudSim minimum event interval; after
-     * that, updates occur only when the minimum event interval is satisfied. The threshold
-     * is a simulation-event compatibility condition, not part of the task run time or of
-     * the data movement model.
-     */
     @Override
     protected void updateCloudletProcessing() {
         updateCloudletProcessing(false);
     }
 
-    /** Settle work before execution-set changes; cadence limits periodic updates only. */
     private void updateCloudletProcessing(boolean executionSetChanging) {
         if (executionSetChanging
                 || CloudSim.clock() < 0.111
                 || CloudSim.clock() >= getLastProcessTime() + CloudSim.getMinTimeBetweenEvents()) {
             List<? extends Host> list = getVmAllocationPolicy().getHostList();
             double smallerTime = Double.MAX_VALUE;
-            // Iterate every Host and require its VMs to advance to the current simulation time.
+
             for (Host host : list) {
-                // Notify the VMs of the Host to update their execution state.
+
                 double time = host.updateVmsProcessing(CloudSim.clock());
-                // Collect the earliest predicted completion instant of the next Cloudlet.
+
                 if (time < smallerTime) {
                     smallerTime = time;
                 }
             }
-            // Normalize to a completion instant that meets the CloudSim minimum event interval.
+
             if (smallerTime != Double.MAX_VALUE) {
                 smallerTime = SimulationTiming.earliestCloudletCompletionTime(
                         CloudSim.clock(), smallerTime, CloudSim.getMinTimeBetweenEvents());
@@ -1288,20 +902,6 @@ public class WorkflowDatacenter extends Datacenter {
         }
     }
 
-    /**
-     * Take every Cloudlet already finished by the VM schedulers and return it to its owning
-     * user.
-     *
-     * <p>Each completed compute Job first runs the failure verdict against its recorded Task
-     * execution time windows, and only then registers output file replicas of successful
-     * Tasks. Registration is a logical directory update; it represents neither physical data
-     * copying nor capacity validation, and output of a failed Task never enters the
-     * directory. Only afterwards is the completion result returned to the scheduler through
-     * {@code CLOUDLET_RETURN}.
-     *
-     * @pre $none
-     * @post $none
-     */
     @Override
     protected void checkCloudletCompletion() {
         List<? extends Host> list = getVmAllocationPolicy().getHostList();
@@ -1311,8 +911,7 @@ public class WorkflowDatacenter extends Datacenter {
                     Cloudlet cl = vm.getCloudletScheduler().getNextFinishedCloudlet();
                     if (cl != null) {
                         if (cl instanceof Job && ((Job) cl).getClassType() == ClassType.COMPUTE.value) {
-                            // The failure verdict must complete before output replicas are registered, so a
-                            // failed attempt cannot pollute the replica directory.
+
                             FailureGenerator.generate((Job) cl);
                         }
                         register(cl);
@@ -1322,21 +921,7 @@ public class WorkflowDatacenter extends Datacenter {
             }
         }
     }
-    /**
-     * Register the successful outputs of one completed {@link Task} (including its subclass
-     * {@link Job}) as available replicas.
-     *
-     * <p>A compute Job submits each contained logical Task separately, and only output of
-     * Tasks whose status is {@link Cloudlet#SUCCESS} becomes visible. This supports
-     * selective retry: Tasks that already succeeded within the same clustered Job can keep
-     * their artifacts, while artifacts of failed Tasks do not become downstream input. The
-     * shared file system registers the datacenter name and the local file system registers
-     * the executing VM ID. The method assumes the caller has already verified that the
-     * Cloudlet belongs to the Task hierarchy; a missing Host/VM still fails on access
-     * according to the original behavior.
-     *
-     * @param cl completed workflow Cloudlet
-     */
+
     private void register(Cloudlet cl) {
         if (!(cl instanceof Task)) {
             throw new IllegalArgumentException("Completed workflow cloudlet is not a Task");
@@ -1382,17 +967,6 @@ public class WorkflowDatacenter extends Datacenter {
         registerSuccessfulTaskOutputs((Task) cl, storageLocation);
     }
 
-    /**
-     * Commit the outputs of one logical Task to the already resolved logical location.
-     *
-     * <p>The method is package-private so that core semantic tests can directly verify that
-     * a failed Task does not pollute the replica directory. The caller must already have
-     * completed the final status verdict for that Task.</p>
-     *
-     * @param task logical Task that has completed and had its status judged
-     * @param storageLocation logical location of the output replicas
-     * @return number of newly committed output files; zero for a failed Task
-     */
     static int registerSuccessfulTaskOutputs(Task task, String storageLocation) {
         if (task == null || storageLocation == null || storageLocation.trim().isEmpty()) {
             throw new IllegalArgumentException("Task and non-empty output storage location are required");
@@ -1410,7 +984,6 @@ public class WorkflowDatacenter extends Datacenter {
         return registered;
     }
 
-    /** Immutable data movement estimate shared by transfer commits, event evidence, and aggregate metrics. */
     private static final class DataTransferEstimate {
         private final double transferSeconds;
         private final double requiredFileBytes;

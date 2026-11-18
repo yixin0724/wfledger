@@ -13,7 +13,6 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** Direct kernel boundaries, with a real resource record and independently derived limits. */
 class ResCloudletWorkAccountingTest {
     private SimulationSession session;
     private static final long LIMIT_MI = Long.MAX_VALUE / 1_000_000L;

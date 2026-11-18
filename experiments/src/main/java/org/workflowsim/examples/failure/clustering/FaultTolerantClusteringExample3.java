@@ -36,60 +36,34 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Historical fault-tolerance teaching example that uses dynamic reclustering.
- *
- * <p>It illustrates the legacy path that reorganizes tasks after a job failure. The example is
- * not a standard research experiment entry point, and the in-model failure and recovery times
- * must not be read as measurements of a real production system.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Dec 31, 2013
- */
 public class FaultTolerantClusteringExample3 extends FaultTolerantClusteringExample1 {
 
-    // ======================== Static example entry point ========================
-    /**
-     * Run the dynamic reclustering scenario with a single datacenter and a single storage.
-     */
     public static void main(String[] args) {
 
         try {
             ExampleCliSupport.begin("fault-clustering-dr");
-            // Step 1: configure the historical WorkflowSim static parameters.
-            /** Number of requested VMs; fewer may actually be created when resources are insufficient. */
-            int vmNum = 20; // Number of VMs.
-            /** Adjust the DAX path to the dataset location on this machine. */
+
+            int vmNum = 20;
+
             String daxPath = ExampleCliSupport.singleDax(args, ExampleCliSupport.DEFAULT_DAX_PATH);
             File daxFile = new File(daxPath);
             if (!daxFile.exists()) {
                 Log.printLine("Warning: Please replace daxPath with the physical path in your working environment!");
                 return;
             }
-            /* Fault-tolerance parameters. */
-            /**
-             * MONITOR_JOB records by task depth, MONITOR_VM records by VM identifier, MONITOR_ALL
-             * aggregates every record, and MONITOR_NONE records no failure.
-             */
+
             FailureParameters.FTCMonitor ftc_monitor = FailureParameters.FTCMonitor.MONITOR_JOB;
-            /** FTCFailure decides the granularity at which the generator picks failure arrival distributions. */
+
             FailureParameters.FTCFailure ftc_failure = FailureParameters.FTCFailure.FAILURE_JOB;
-            /**
-             * This historical example selects the estimator-based dynamic fault-tolerant
-             * reclustering strategy.
-             */
+
             FailureParameters.FTCluteringAlgorithm ftc_method = FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_DR;
-            /** The generator matrix is built per workflow level; 11 is a historical Montage scenario assumption. */
-            int maxLevel = 11; // Maximum level count of the historical example.
+
+            int maxLevel = 11;
 
             DistributionGenerator[][] failureGenerators = new DistributionGenerator[vmNum][maxLevel];
 
             for (int level = 0; level < maxLevel; level++) {
-                /*
-                 * Every level reuses the same Weibull inter-arrival parameters; this is an
-                 * abstract scenario setting, not a calibrated task failure rate.
-                 */
+
                 DistributionGenerator generator = new DistributionGenerator(
                         DistributionGenerator.DistributionFamily.WEIBULL,
                         ExampleCliSupport.LEGACY_CLUSTERING_DEMO_FAILURE_INTERVAL_SCALE,
@@ -101,19 +75,16 @@ public class FaultTolerantClusteringExample3 extends FaultTolerantClusteringExam
                     failureGenerators[vmId][level] = generator;
                 }
             }
-            /** The MINMIN scheduler decides the mapping in this scenario, so the planner is disabled. */
+
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.SHARED;
 
-            /** Inject no additional overhead. */
             OverheadParameters op = new OverheadParameters(0, null, null, null, null, 0);
 
-            /** Regular task clustering is off; the fault-tolerant recovery strategy handles failures afterwards. */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.NONE;
             ClusteringParameters cp = new ClusteringParameters(0, 0, method, null);
 
-            /** Initialize the legacy failure state, static parameters, and file catalog. */
             FailureParameters.init(ftc_method, ftc_monitor, ftc_failure, failureGenerators);
             Parameters.init(vmNum, daxPath, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
@@ -121,27 +92,22 @@ public class FaultTolerantClusteringExample3 extends FaultTolerantClusteringExam
             FailureMonitor.init();
             FailureGenerator.init();
 
-            // Initialize CloudSim before creating any simulated entity.
-            int num_user = 1; // Number of simulated users.
+            int num_user = 1;
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // Whether to record the CloudSim event trace.
+            boolean trace_flag = false;
 
-            // Initialize the CloudSim event engine.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
-            /** Create a workflow planner with a single scheduler. */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
-            /** Obtain the corresponding workflow execution engine. */
+
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
-            /** Create the VM list; a VM's userId is the identifier of the scheduler that manages it. */
+
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
-            /** Submit the VM list to the workflow execution engine. */
             wfEngine.submitVmList(vmlist0, 0);
 
-            /** Bind the datacenter to that scheduler. */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 
             CloudSim.startSimulation();

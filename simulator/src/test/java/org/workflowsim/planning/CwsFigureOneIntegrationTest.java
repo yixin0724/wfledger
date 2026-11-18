@@ -15,7 +15,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Reproduces the CWS paper Figure 1 five-to-four-unit scheduling direction (R-PAPER-02). */
 class CwsFigureOneIntegrationTest {
 
     @TempDir

@@ -7,7 +7,6 @@ import org.workflowsim.planning.moheft.MoHeftPlanner;
 import org.workflowsim.planning.moheft.MoHeftResult;
 import org.workflowsim.planning.moheft.MoHeftSchedule;
 
-/** MOHEFT multi-objective static planner with a deterministic balanced execution choice. */
 public final class MoHeftPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;

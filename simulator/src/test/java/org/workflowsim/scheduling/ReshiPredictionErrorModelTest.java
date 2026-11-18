@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.ReshiPredictionErrorModel;
 import org.workflowsim.utils.SimulationRandom;
 
-/** Prediction-error distribution, clamp, and named-stream reproducibility checks. */
 class ReshiPredictionErrorModelTest {
 
     @Test

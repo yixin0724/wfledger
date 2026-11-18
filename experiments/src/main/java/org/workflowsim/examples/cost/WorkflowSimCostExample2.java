@@ -34,83 +34,51 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Historical cost model teaching example that outputs the result computed per VM.
- *
- * <p>It contrasts with the example that bills per datacenter and serves to explain the
- * legacy cost fields; these values are model observations, not cloud provider prices or
- * bill predictions, and this class is not a standard research experiment entry point.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 6, 2014
- */
 public class WorkflowSimCostExample2 extends WorkflowSimCostExample1 {
 
-    // ======================== Static example entry point ========================
-    /**
-     * Run the per-VM cost scenario on a single datacenter and a single storage.
-     */
     public static void main(String[] args) {
         try {
             ExampleCliSupport.begin("cost-vm");
-            // Step 1: configure the historical static WorkflowSim parameters.
-            /**
-             * Number of VMs requested; if resources are insufficient, fewer VMs than
-             * requested may actually be created.
-             */
-            int vmNum = 20; // Number of VMs.
-            /** Adjust the DAX path to the dataset location on this machine. */
+
+            int vmNum = 20;
+
             String daxPath = ExampleCliSupport.singleDax(args, ExampleCliSupport.DEFAULT_DAX_PATH);
             File daxFile = new File(daxPath);
             if (!daxFile.exists()) {
                 Log.printLine("Warning: Please replace daxPath with the physical path in your working environment!");
                 return;
             }
-            /**
-             * The MINMIN scheduler decides the mapping in this scenario, so the planner is
-             * disabled. On this historical path, planning and scheduling are not two mapping
-             * stages that can be optimized independently at the same time.
-             */
+
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.LOCAL;
 
-            /** Select the legacy per-VM cost model; the default model bills per datacenter. */
             Parameters.setCostModel(Parameters.CostModel.VM);
 
-            /** Inject no additional overhead. */
             OverheadParameters op = new OverheadParameters(0, null, null, null, null, 0);
 
-            /** Perform no task clustering. */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.NONE;
             ClusteringParameters cp = new ClusteringParameters(0, 0, method, null);
 
-            /** Initialize the historical static parameters and the file replica catalog. */
             Parameters.init(vmNum, daxPath, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
 
-            // Initialize CloudSim before creating any simulated entity.
-            int num_user = 1; // Number of simulated users.
+            int num_user = 1;
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // Whether to record the CloudSim event trace.
+            boolean trace_flag = false;
 
-            // Initialize the CloudSim event engine.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
-            /** Create a workflow planner that holds a single scheduler. */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
-            /** Obtain the workflow engine associated with the planner. */
+
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
-            /** Create the VM list; the userId of a VM is the id of its scheduler. */
+
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
-            /** Submit the VM list to the workflow engine. */
             wfEngine.submitVmList(vmlist0, 0);
 
-            /** Bind the datacenter to that scheduler. */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 
             CloudSim.startSimulation();
@@ -127,22 +95,20 @@ public class WorkflowSimCostExample2 extends WorkflowSimCostExample1 {
 
     protected static List<CondorVM> createVM(int userId, int vms) {
 
-        // Create the VM container that is later submitted to the workflow engine.
         LinkedList<CondorVM> list = new LinkedList<>();
-        // Abstract resource specification of the VM.
-        long size = 10000; // Image size (MB)
-        int ram = 512; // VM memory (MB)
+
+        long size = 10000;
+        int ram = 512;
         int mips = 1000;
         long bw = 1000;
-        int pesNumber = 1; // Number of CPU cores
-        String vmm = "Xen"; // Virtual machine monitor name
+        int pesNumber = 1;
+        String vmm = "Xen";
 
-        // Create the VMs with abstract unit price fields.
         CondorVM[] vm = new CondorVM[vms];
-        double cost = 3.0; // Abstract computation unit price.
-        double costPerMem = 0.05; // Abstract memory unit price.
-        double costPerStorage = 0.1; // Abstract storage unit price.
-        double costPerBw = 0.1; // Abstract bandwidth unit price.
+        double cost = 3.0;
+        double costPerMem = 0.05;
+        double costPerStorage = 0.1;
+        double costPerBw = 0.1;
         for (int i = 0; i < vms; i++) {
             double ratio = 1.0;
             vm[i] = new CondorVM(

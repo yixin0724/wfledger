@@ -6,9 +6,8 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 
-/** Frozen V2 file lifecycle capture; distinct from a fluid rate/service-accounting certificate. */
 public final class FileLifecycleEvidence {
-    /** Complete-only export requires no dropped lifecycle operations. */
+
     public enum Status {
         COMPLETE,
         TRUNCATED
@@ -37,17 +36,7 @@ public final class FileLifecycleEvidence {
         this.fabric = fabric.deepCopy();
         this.events = Collections.unmodifiableList(new ArrayList<>(events));
     }
-    /**
-     * Freeze detached capture data. Full structural/lifecycle validation is performed by the codec.
-     * @param budget positive record budget
-     * @param dropped dropped operation count
-     * @param observedThrough final runtime observation
-     * @param shared inter-flow capacity sharing policy
-     * @param plan resolved logical plan
-     * @param fabric actual resource/placement snapshot
-     * @param events retained prefix
-     * @return immutable evidence
-     */
+
     public static FileLifecycleEvidence capture(
             int budget,
             long dropped,
@@ -71,12 +60,6 @@ public final class FileLifecycleEvidence {
         return new FileLifecycleEvidence(budget, dropped, observedThrough, shared, plan, fabric, events);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from capture; statements verbatim; order unchanged.
-     * Scope: validates only that the retained event prefix is non-empty, that sequence
-     * numbers increase contiguously, and that observation times are non-decreasing and
-     * never exceed the final observation.
-     */
     private static void validatePrefixOrder(List<FileLifecycleEvent> events, double observedThrough) {
         long sequence = 1;
         double previous = 0;
@@ -90,35 +73,35 @@ public final class FileLifecycleEvidence {
             previous = event.getObservedTime();
         }
     }
-    /** @return complete versus lost prefix */
+
     public Status getStatus() {
         return droppedRecords == 0 ? Status.COMPLETE : Status.TRUNCATED;
     }
-    /** @return lifecycle record cap, not byte cap */
+
     public int getMaxRecords() {
         return maxRecords;
     }
-    /** @return dropped lifecycle operations */
+
     public long getDroppedRecords() {
         return droppedRecords;
     }
-    /** @return final observation without advancing service */
+
     public double getObservedThrough() {
         return observedThrough;
     }
-    /** @return true for shared resources, false for isolated single-flow caps */
+
     public boolean isShared() {
         return shared;
     }
-    /** @return defensive resolved-plan copy */
+
     public JsonObject getFilePlan() {
         return filePlan.deepCopy();
     }
-    /** @return defensive actual-fabric copy */
+
     public JsonObject getFabric() {
         return fabric.deepCopy();
     }
-    /** @return immutable retained events */
+
     public List<FileLifecycleEvent> getEvents() {
         return events;
     }

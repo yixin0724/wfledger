@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Disposable handcrafted V3 bundle/context oracles; stdlib, no JVM/subprocess.
 
-The lifecycle timelines come from independent hand-declared storage tests.
-Manifest/main expectations are assembled from those declarations, never from
-verifier facts or generated Java artifacts. All negative bundles repair hashes.
-"""
 import contextlib
 import copy
 from decimal import Decimal
@@ -26,30 +21,23 @@ from _file_lifecycle_context import verify_context as verify_v2_context
 from _storage_lifecycle_audit import verify_document as verify_lifecycle
 from _storage_lifecycle_context import inspect_path as inspect_context, verify_context
 
-
 def load(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
-
 hand = load('storage_context_hand_oracles', HERE / 'test-storage-lifecycle.py')
 cli = load('storage_context_cli', HERE / 'verify-network-ledger.py')
-
 
 def key(row):
     return row['workflowInputIndex'], row['name']
 
-
 def ordered(row):
     return row['workflowInputIndex'], row['name'].encode('utf-16-be', 'surrogatepass')
 
-
 def model_document(factory, byte_scale=1000000):
-    """Only adapt parser numbering and VM bandwidth units, not lifecycle behavior."""
-    # JSON has values, not Python aliases: one hand replica dict may have been
-    # reused in several events. Detach occurrences before renumbering origins.
+
     doc = json.loads(json.dumps(factory()))
     ids = {row['taskId']: i + 1 for i, row in enumerate(sorted(doc['filePlan']['tasks'],
            key=lambda r: (r['workflowInputIndex'], r['taskId'])))}
@@ -83,17 +71,14 @@ def model_document(factory, byte_scale=1000000):
         elif event['type'] == 'COPY_SETTLED':
             p['remainingAfterService'] *= byte_scale
     if factory is hand.deferred_magnitudes:
-        # Complete the hand prefix at a legal late observation. Scalar-service
-        # certification is intentionally not upgraded into a fluid proof.
+
         at = 9007199254740992 + 9007199254.740992
         doc['events'] += [hand.settle(4, at, at), hand.ready(11, at), hand.cpu(11, 2, at), hand.finish(11, 2, 2, at + 4)]
         hand.seal(doc)
     return doc
 
-
 def failure_generator(family='WEIBULL'):
     return dict(family=family, scale=2, shape=1, priorShape=None, priorScale=None, likelihoodPrior=None)
-
 
 def failure_policy(mode='FAILURE_NONE', budget=0, family='WEIBULL', dense=None, keyed=None):
     if dense is None:
@@ -104,9 +89,8 @@ def failure_policy(mode='FAILURE_NONE', budget=0, family='WEIBULL', dense=None, 
                 generatorAddressing='VM_ID_KEYED_ROWS' if keyed else 'DENSE_VM_ID_MATRIX',
                 generators=copy.deepcopy(dense), generatorsByVmId=copy.deepcopy(keyed))
 
-
 def retry_only(failures=1, zero_output=False):
-    """Input-free attempts isolate STATIC VM inheritance from replica locality."""
+
     events = []
     for attempt in range(failures + 1):
         jid, start = 10 + attempt, 2 * attempt
@@ -118,9 +102,8 @@ def retry_only(failures=1, zero_output=False):
                          [hand.file('zero', 0, 0)] if zero_output else [], events,
                          hand.fabric(((1, 40, 10), (2, 40, 20))))
 
-
 def remap_failed_attempt(bundle, job=10, vm=2):
-    """Repair every per-attempt VM anchor, but deliberately violate retry inheritance."""
+
     for row in bundle.manifest['result']['jobs'] + bundle.manifest['result']['tasks']:
         if row['jobId'] == job:
             row['vmId'] = vm
@@ -134,7 +117,6 @@ def remap_failed_attempt(bundle, job=10, vm=2):
                 p['destinationVmId'] = vm
             elif 'vmId' in p:
                 p['vmId'] = vm
-
 
 class Bundle:
     def __init__(self, root, factory=lambda: hand.roundtrip(store_inputs=True), enabled=True, byte_scale=1000000):
@@ -294,7 +276,6 @@ class Bundle:
         (self.root / 'result.events.jsonl').write_text(''.join(json.dumps(e, allow_nan=False) + '\n' for e in self.events), encoding='utf-8')
         self.rehash()
 
-
 class StorageContextTests(unittest.TestCase):
     def bundle(self, factory=lambda: hand.roundtrip(store_inputs=True), enabled=True, byte_scale=1000000):
         temp = tempfile.TemporaryDirectory(prefix='storage-context-hand-')
@@ -332,7 +313,7 @@ class StorageContextTests(unittest.TestCase):
         self.assertTrue(r['lifecycleQuiescent'])
         self.assertEqual(1, b.main_event('JOB_RETURNED', 10)['simulationTime'])
         b.main_event('JOB_RETURNED', 10)['simulationTime'] = 4
-        self.bad(b)  # CPU return is not async writeback completion.
+        self.bad(b)
         b = self.bundle(hand.zero_and_sink)
         del b.ledger['events'][6]
         hand.seal(b.ledger)
@@ -369,7 +350,7 @@ class StorageContextTests(unittest.TestCase):
         stage['simulationTime'] = 2
         b.events.sort(key=lambda e: e['simulationTime'])
         b.resequence()
-        self.bad(b)  # Monotonic and rehashed, but using the V2 request-time stage anchor.
+        self.bad(b)
         b = self.bundle()
         b.main_event('JOB_READY')['simulationTime'] = 6
         b.events.sort(key=lambda e: e['simulationTime'])
@@ -490,20 +471,20 @@ class StorageContextTests(unittest.TestCase):
             b.manifest['configuration']['fileSystem'] = 'SHARED'
             self.bad(b)
         b = self.bundle(hand.same_vm_gate)
-        # Fabric and VM cache remain valid, but the shared commit barrier cannot vanish.
+
         b.ledger['events'] = b.ledger['events'][:7] + [hand.resolve(11, 'data', 'LOCAL', 1, 2, count=3), hand.ready(11, 2)]
         hand.seal(b.ledger)
         self.bad(b)
 
     def test_platform_attachment_and_vm_mapping_without_topology(self):
         b = self.bundle()
-        b.manifest['platform']['sourceStorage']['attachmentHostId'] = 20  # real host, wrong fabric attachment
+        b.manifest['platform']['sourceStorage']['attachmentHostId'] = 20
         self.bad(b)
         b = self.bundle()
         b.ledger['fabric']['sourceStorage']['attachmentHostId'] = 999
         b.manifest['platform']['sourceStorage']['attachmentHostId'] = 999
         self.assertEqual('VALID_COMPLETE', verify_lifecycle(b.ledger)['status'])
-        self.bad(b)  # standalone cannot know undeclared platform host membership
+        self.bad(b)
         for change in (lambda b: b.manifest['platform']['vms'][0].update(bandwidth=41),
                        lambda b: b.manifest['platform']['vms'][0].update(preflightHostId=20),
                        lambda b: b.manifest['platform']['vms'][0].update(pinnedHostId=20),
@@ -689,8 +670,7 @@ class StorageContextTests(unittest.TestCase):
                 b = self.bundle(hand.failed_retry, enabled=capture)
                 self.assertEqual('VALID_COMPLETE' if capture else 'DISABLED', inspect_path(b.path)['status'])
                 b.manifest['configuration']['failureModel'] = failure_policy()
-                # Everything except the external failure policy is unchanged;
-                # a complete standalone lifecycle remains individually valid.
+
                 self.assertTrue(verify_lifecycle(b.ledger)['lifecycleQuiescent'])
                 self.bad(b)
 
@@ -715,7 +695,7 @@ class StorageContextTests(unittest.TestCase):
                     self.assertEqual('VALID_COMPLETE' if capture else 'DISABLED', inspect_path(b.path)['status'])
                     remap_failed_attempt(b)
                     self.assertTrue(verify_lifecycle(b.ledger)['lifecycleQuiescent'])
-                    self.bad(b)  # Repaired hashes/each-attempt VM checks cannot hide retry remapping.
+                    self.bad(b)
 
     def test_off_result_rows_enforce_retry_lower_bound_and_static_vm(self):
         for remap in (False, True):
@@ -728,14 +708,14 @@ class StorageContextTests(unittest.TestCase):
             else:
                 b.manifest['configuration']['failureModel']['maxTotalRetryJobs'] = 1
             b.resequence()
-            self.bad(b)  # Deleting main retry rows cannot weaken necessary result-only checks.
+            self.bad(b)
         b = self.bundle(lambda: retry_only(0), enabled=False)
         for name in ('jobs', 'tasks'):
             extra = copy.deepcopy(b.manifest['result'][name][0])
             extra.update(jobId=11, startTime=2, finishTime=3)
             b.manifest['result'][name].append(extra)
         b.manifest['result']['simulationEndSeconds'] = 3
-        self.bad(b)  # NONE budget0 cannot have another attempt even if both claim success.
+        self.bad(b)
 
     def test_zero_disabled_budget_and_enabled_no_failure_controls(self):
         for capture in (True, False):
@@ -744,15 +724,14 @@ class StorageContextTests(unittest.TestCase):
             self.assertEqual(0, b.manifest['configuration']['failureModel']['maxTotalRetryJobs'])
             report = inspect_path(b.path)
             self.assertFalse(report['fluidServiceAccountingCertified'])
-            # Enabling a generator does not require a failure to have occurred;
-            # no random samples or failure probabilities are being certified.
+
             b.manifest['configuration']['failureModel'] = failure_policy('FAILURE_ALL', 1)
             b.write()
             self.assertEqual('VALID_COMPLETE' if capture else 'DISABLED', inspect_path(b.path)['status'])
         b = self.bundle(lambda: retry_only(0))
         b.manifest['configuration']['failureModel'] = failure_policy(family='NORMAL')
         b.write()
-        self.assertTrue(inspect_path(b.path)['contextualRunChecked'])  # unused disabled family may be NORMAL
+        self.assertTrue(inspect_path(b.path)['contextualRunChecked'])
 
     def test_modern_failure_budgets_and_generator_layouts_are_strict(self):
         for value in (-1, -2, 0, 2147483648, True, '1', None, .5):
@@ -853,7 +832,7 @@ class StorageContextTests(unittest.TestCase):
         remap_failed_attempt(b)
         root, doc, events = copy.deepcopy((b.manifest, b.ledger, b.events))
         kind = 'COHERENT_FILE_DATAFLOW_V2'
-        root['configuration']['failureModel'] = failure_policy()  # intentionally impossible in V3, legacy V2 scope unchanged
+        root['configuration']['failureModel'] = failure_policy()
         root['configuration']['dataMovementModel'].update(kind=kind,
             contentionSemantics='COHERENT_FILES_CHECKED_SHARED_MAX_MIN_V2',
             transferStartSemantics='DEPENDENCY_READY_AT_OBSERVATION_V2;PER_FILE_SETTLEMENT_OBSERVATION_V2;COALESCED_FILE_DESTINATION')
@@ -1019,7 +998,6 @@ class StorageContextTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertEqual(1, cli.main([str(b.path), '--json']))
         self.assertEqual('EVIDENCE_INVALID', json.loads(output.getvalue())['status'])
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

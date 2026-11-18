@@ -31,7 +31,6 @@ import org.workflowsim.planning.SharedStorageDagPlanner.Strategy;
 import org.workflowsim.planning.SharedStorageDlsEtfSlotAuditSupport.Kernel;
 import org.workflowsim.utils.Parameters;
 
-/** Exact slot semantics and independent small-plan expectations for the DLS/ETF query-reuse audit. */
 class SharedStorageDlsEtfSlotSemanticsAuditTest {
     @Test
     void leadingInternalTinyAndTouchingGapsKeepTheOriginalComparisons() throws Exception {
@@ -66,7 +65,7 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
         assertTrue(subUlp > 0.0);
         assertEquals(bits(2.0), bits(2.0 + subUlp));
         checkSlot(touching, 2.0, subUlp, 2.0);
-        // Checking progress only at the original readiness would miss this later rounded stop.
+
         double large = Math.scalb(1.0, 53);
         checkSlot(new double[][] {{0.0, large}, {large, 2.0 * large}}, 0.0, 1.0, large);
     }
@@ -159,15 +158,15 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
             long oldLength = fixture.mi[0];
             fixture.mi[0] += 1000L;
             tasks.get(0).setCloudletLength(fixture.mi[0]);
-            planner.setVmList(fixture.vms(true)); // Same IDs/specifications, new VM object identities.
+            planner.setVmList(fixture.vms(true));
             SharedStorageDagPlanTrace changed = runPublic(planner);
             assertReference(fixture, strategy, reference(fixture, strategy), changed);
             assertNotEquals(saved, snapshot(changed), "Changed source work must be visible");
             assertEquals(saved, snapshot(original), "A later run must not mutate its predecessor's trace");
 
             boolean oldEdge = fixture.edges[0][1];
-            fixture.edges[0][1] = !oldEdge; // Both alternatives remain acyclic.
-            planner.setTaskList(fixture.tasks(true)); // New Task objects with the same IDs.
+            fixture.edges[0][1] = !oldEdge;
+            planner.setTaskList(fixture.tasks(true));
             planner.setVmList(fixture.vms(false));
             assertReference(fixture, strategy, reference(fixture, strategy), runPublic(planner));
 
@@ -218,7 +217,6 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
         return trace;
     }
 
-    /** Array declarations, independent rank DP and exhaustive ready-pair/endpoint enumeration. */
     private static Reference reference(Fixture fixture, Strategy strategy) {
         Reference result = new Reference(fixture.n, fixture.vmIds.length);
         for (int task = 0; task < fixture.n; task++) {
@@ -238,8 +236,7 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
             }
             result.rank[task] = total / compatible;
         }
-        // Fixture indices, unlike task IDs, are a declared topological order. No production depth,
-        // rank helper, execution-cost getter or optimized slot helper produces these expectations.
+
         for (int task = fixture.n - 1; task >= 0; task--) {
             double tail = 0.0;
             for (int child = task + 1; child < fixture.n; child++) {

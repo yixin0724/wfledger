@@ -31,77 +31,20 @@ import org.workflowsim.utils.SimulationConstants;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
-/**
- * WfCommons workflow-instance JSON parser.
- *
- * <p>The parser converts the WfCommons JSON representation into the existing WorkflowSim
- * {@link Task}, {@link FileItem}, and DAG model, so that the downstream clustering,
- * planning, and scheduling logic need not be aware of input-format differences.</p>
- *
- * <p>Unit conventions (consistent with the DAX parsing in {@link WorkflowParser}):</p>
- * <ul>
- * <li>Runtime: WfFormat uses {@code runtimeInSeconds}. The parser converts it into millions
- * of instructions (MI) through {@link Parameters#getRuntimeReferenceMips()}, then multiplies
- * by {@link Parameters#getRuntimeScale()}, and floors it at
- * {@link SimulationConstants#MIN_TASK_LENGTH_MI}, because CloudSim does not accept a
- * smaller Cloudlet length.</li>
- * <li>File size: WfFormat uses {@code sizeInBytes}, and the WorkflowSim {@link FileItem}
- * also stores bytes. {@link WorkflowDatacenter} divides by {@code Consts.MILLION} when it
- * computes the transfer time.</li>
- * </ul>
- */
 public final class WfCommonsJsonParser {
 
-    /**
-     * Minimum Cloudlet length of a task (MI).
-     *
-     * <p>{@link SimulationConstants#MIN_TASK_LENGTH_MI} is used to ensure numerical
-     * stability.</p>
-     */
     private static final long MIN_CLOUDLET_LENGTH = SimulationConstants.MIN_TASK_LENGTH_MI;
 
     private final Gson gson;
 
-    /** Creates a parser that decodes with Gson. */
     public WfCommonsJsonParser() {
         this.gson = new Gson();
     }
 
-    /**
-     * Parses one WfCommons JSON instance and converts it into a WorkflowSim task graph.
-     *
-     * @param path JSON file path
-     * @param userId CloudSim user id that owns every generated task
-     * @param firstTaskId first task id that may be assigned by this conversion
-     * @return the converted tasks, the next available task id, and the input report
-     * @throws IOException when the file cannot be read or the JSON syntax is invalid
-     * @throws WorkflowValidationException when the input cannot be represented as a valid
-     *         WorkflowSim task graph
-     */
     public ParseResult parse(String path, int userId, int firstTaskId) throws IOException {
         return parse(path, userId, firstTaskId, null);
     }
 
-    /**
-     * Parses one WfCommons JSON instance and optionally names the input scope used for logical
-     * file identity.
-     *
-     * <p>This overload serves multi-workflow submission from {@link WorkflowParser}. The scope
-     * changes only internal keys in {@link FileItem}, the task file requirements, and the
-     * replica catalog; the file ids, file sizes, task ids, and DAG relations declared in the
-     * JSON stay as they are. Passing {@code null} makes the behavior exactly identical to the
-     * historical three-argument API.</p>
-     *
-     * @param path JSON file path
-     * @param userId CloudSim user id that owns every generated task
-     * @param firstTaskId first task id that may be assigned by this conversion
-     * @param fileNamespace stable file scope of the current input in a multi-input submission;
-     *        {@code null} for a single input
-     * @return the converted tasks, the next available task id, and the input report
-     * @throws IOException when the file cannot be read or the JSON syntax is invalid
-     * @throws WorkflowValidationException when the input cannot be represented as a valid
-     *         WorkflowSim task graph
-     */
     ParseResult parse(String path, int userId, int firstTaskId, String fileNamespace) throws IOException {
         if (path == null || path.trim().length() == 0) {
             throw new IllegalArgumentException("WfCommons JSON path cannot be empty");
@@ -118,8 +61,7 @@ public final class WfCommonsJsonParser {
         WfCommonsInstance instance;
         Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
         try {
-            // Q05 (2026-11-04): validate the official 1.5/1.6 field surface before Gson
-            // binding, so a new schema version or an unknown field cannot disappear silently.
+
             com.google.gson.JsonObject document =
                     com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
             WfCommonsSchemaValidator.validate(document);
@@ -138,8 +80,7 @@ public final class WfCommonsJsonParser {
         Map<String, SpecTask> specTasks = indexSpecTasks(instance.workflow.specification.tasks);
         Map<String, Task> tasksByWfCommonsId = new LinkedHashMap<>();
         Map<String, FileItem> fileItemsByNameAndType = new HashMap<>();
-        // F-009: local first-declaration table -- commit to the global catalog only after the
-        // whole instance passes dependency-symmetry and DAG validation.
+
         Map<String, FileItem> firstDeclaredInputs = new LinkedHashMap<>();
         List<Task> tasks = new ArrayList<>();
 
@@ -164,18 +105,13 @@ public final class WfCommonsJsonParser {
         WorkflowDagValidator.validateAndAssignDepths(tasks);
 
         report.setTaskCount(tasks.size());
-        // F-009: only after all structural validation passes are the first-round INPUT
-        // declarations committed to the global replica catalog.
+
         commitFirstDeclaredInputs(firstDeclaredInputs);
 
         Log.printLine("Parsed WfCommons JSON " + file.getName() + " with " + tasks.size() + " tasks.");
         return new ParseResult(tasks, nextTaskId, report);
     }
 
-    /**
-     * Single-task construction stage of parse() (moved verbatim: the F-009 first-declaration
-     * table semantics and the item order are preserved).
-     */
     private Task buildTask(
             int taskId,
             SpecTask specTask,
@@ -253,9 +189,7 @@ public final class WfCommonsJsonParser {
                     || file.sizeInBytes < 0.0) {
                 throw new WorkflowValidationException("Invalid WfCommons file size for " + file.id);
             }
-            // R8 audit fix (architecture channel P1-4): duplicate file ids used to be a
-            // last-wins silent overwrite, so when the two declarations disagreed on size the
-            // transferred byte count depended on the JSON declaration order. Fail fast.
+
             Double previousSize = fileSizes.put(file.id, file.sizeInBytes);
             if (previousSize != null && Double.compare(previousSize.doubleValue(), file.sizeInBytes) != 0) {
                 throw new WorkflowValidationException("Duplicate WfCommons file id " + file.id
@@ -274,9 +208,7 @@ public final class WfCommonsJsonParser {
             if (task.runtimeInSeconds == null) {
                 throw new WorkflowValidationException("Missing WfCommons execution runtime for task " + task.id);
             }
-            // R8 audit fix (architecture channel P1-4): duplicate execution task ids used to
-            // be a last-wins silent overwrite, so the task length depended on the JSON
-            // declaration order. Fail fast.
+
             Double previousRuntime = runtimes.put(task.id, task.runtimeInSeconds);
             if (previousRuntime != null && Double.compare(previousRuntime.doubleValue(), task.runtimeInSeconds) != 0) {
                 throw new WorkflowValidationException("Duplicate WfCommons execution task id "
@@ -316,10 +248,7 @@ public final class WfCommonsJsonParser {
 
     private static long toCloudletLength(double runtimeSeconds, String taskId, WorkflowInputReport report) {
         double length = Parameters.getRuntimeReferenceMips() * runtimeSeconds * Parameters.getRuntimeScale();
-        // R8 audit fix (architecture channel P1-4): overflow guard mirroring the DAX
-        // path -- an oversized runtime times the reference MIPS times scale can be Infinity or
-        // exceed Long.MAX_VALUE, and the original implementation silently clamped it to
-        // Long.MAX_VALUE through a (long) cast, producing untraceable length pollution.
+
         if (Double.isNaN(length) || Double.isInfinite(length) || length > Long.MAX_VALUE) {
             throw new WorkflowValidationException("Invalid converted runtime for WfCommons task " + taskId + ": "
                     + runtimeSeconds + " s overflows cloudlet length");
@@ -353,23 +282,13 @@ public final class WfCommonsJsonParser {
             String scopedFileName = scopedFileName(fileNamespace, fileName);
             FileItem item = getOrCreateFileItem(fileItemsByNameAndType, fileName, scopedFileName, fileSizes, fileType);
             taskFiles.add(item);
-            // F-009 fix (2026-10-19): during parsing the file is registered only in the local
-            // first-declaration table; commitFirstDeclaredInputs commits it to the global
-            // catalog after all structural and DAG validation passes. A failed parse no longer
-            // leaves a half-committed state (the pollution would replace the file size of a
-            // retried parse in the same JVM through the first-declared rule). Behavioral
-            // equivalence: the historical cross-parse semantics of "an existing entry is not
-            // overwritten" is preserved on commit.
+
             if (fileType == FileType.INPUT && !firstDeclaredInputs.containsKey(scopedFileName)) {
                 firstDeclaredInputs.put(scopedFileName, item);
             }
         }
     }
 
-    /**
-     * Commits this round's first-round INPUT declarations to the global catalog in one step
-     * after validation passes (idempotent, existing entries are never overwritten).
-     */
     private static void commitFirstDeclaredInputs(Map<String, FileItem> firstDeclaredInputs) {
         for (Map.Entry<String, FileItem> entry : firstDeclaredInputs.entrySet()) {
             if (!ReplicaCatalog.containsFile(entry.getKey())) {
@@ -401,13 +320,6 @@ public final class WfCommonsJsonParser {
         return item;
     }
 
-    /**
-     * Generates the internal logical file identity used by multi-input submission.
-     *
-     * <p>The rule must match the DAX path of {@link WorkflowParser}: a single input keeps the
-     * original file name, while multiple inputs isolate identical WfCommons file ids with the
-     * input scope.</p>
-     */
     private static String scopedFileName(String fileNamespace, String originalFileName) {
         if (fileNamespace == null) {
             return originalFileName;
@@ -425,13 +337,6 @@ public final class WfCommonsJsonParser {
         }
     }
 
-    /**
-     * Rejects inconsistent edge declarations before converting raw WfFormat edges into the
-     * bidirectional {@link Task} graph.
-     *
-     * <p>The input must not be "repaired" by taking the union of parent and child edges; doing
-     * so would hide format errors in the research instance itself.</p>
-     */
     private static void validateDeclaredDependencySymmetry(
             List<SpecTask> specTaskList, Map<String, SpecTask> specTasks) {
         Map<String, Set<String>> parentMembership = new HashMap<>();
@@ -478,7 +383,6 @@ public final class WfCommonsJsonParser {
         }
     }
 
-    /** A local membership snapshot for one symmetry-validation call, never retained across parses. */
     private static boolean declares(
             String taskId, List<String> references, String expected, Map<String, Set<String>> membership) {
         if (references == null) {
@@ -536,7 +440,6 @@ public final class WfCommonsJsonParser {
         }
     }
 
-    /** Immutable result of a WfCommons parse. */
     public static final class ParseResult {
 
         private final List<Task> tasks;
@@ -549,17 +452,14 @@ public final class WfCommonsJsonParser {
             this.inputReport = inputReport;
         }
 
-        /** @return tasks converted in specification task order */
         public List<Task> getTasks() {
             return tasks;
         }
 
-        /** @return first task id available to subsequent inputs */
         public int getNextTaskId() {
             return nextTaskId;
         }
 
-        /** @return report describing the input format and the normalization process */
         public WorkflowInputReport getInputReport() {
             return inputReport;
         }

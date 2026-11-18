@@ -31,7 +31,6 @@ import org.workflowsim.utils.ReshiRankTable;
 import org.workflowsim.utils.ReshiTaskHistory;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Real algorithm experiment matrix used to find defects that static small examples miss. */
 class AlgorithmExperimentAuditTest {
 
     private static final List<String> SHARED =

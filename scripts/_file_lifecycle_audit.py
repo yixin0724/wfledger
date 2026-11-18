@@ -1,18 +1,5 @@
-"""Shared-core, complete-history V2 file-lifecycle verifier (stdlib only).
 
-Use ``_network_audit.decode_json`` before ``verify_document`` so integer IDs and
-counters are checked as exact JSON numbers, not after lossy float conversion.
-Only that module's lexical/number helpers are shared; no V1 verifier, JVM,
-production selector, replica state, allocator, or simulation is invoked.
 
-``verify_document(document)`` returns detached, JSON-serializable summary/facts
-or raises ``Invalid`` (the existing audit CheckError, a ValueError subclass).
-It does not mutate the caller. COMPLETE certifies a consistent captured history,
-not authentication, fluid-service accounting, or completion of the enclosing
-run. An operation-boundary prefix may still have active copies/waiting jobs.
-Manifest, Task/result, workflow-arrival and main-event joins belong to the
-artifact-context validator, not this standalone document verifier.
-"""
 from __future__ import annotations
 
 from collections import Counter, deque
@@ -31,7 +18,7 @@ FILE_IDENTITY = "SCOPED_RESOLVED_WRITE_ONCE_FILES_V2"
 SHARED = "COHERENT_FILE_DATAFLOW_V2"
 ISOLATED = "COHERENT_FILE_DATAFLOW_NO_CONTENTION_V2"
 INT_MAX, LONG_MAX = (1 << 31) - 1, (1 << 63) - 1
-SOURCE = (1, "source")                 # Typed order: numeric VMs, then SOURCE.
+SOURCE = (1, "source")
 POLICIES = dict(fileIdentity=FILE_IDENTITY,
                 release="DEPENDENCY_READY_AT_OBSERVATION_V2",
                 visibility="PER_FILE_SETTLEMENT_OBSERVATION_V2",
@@ -50,44 +37,35 @@ PAYLOAD_KEYS = {
 }
 ACQUISITIONS = {"EXTERNAL_SEED", "TASK_OUTPUT", "COPY_SETTLEMENT", "ZERO_BYTE_REFERENCE"}
 
-
 def _need(condition, message):
     if not condition:
         raise Invalid(message)
-
 
 def _object(value, keys, name):
     _need(type(value) is dict and set(value) == set(keys), name + ": missing/unknown fields")
     return value
 
-
 def _array(value):
     _need(type(value) is list, "expected JSON array")
     return value
-
 
 def _text(value):
     _need(type(value) is str, "expected JSON text")
     return value
 
-
 def _id(value):
     return _integer(value, 0, INT_MAX)
-
 
 def _count(value, positive=False):
     return _integer(value, 1 if positive else 0, LONG_MAX)
 
-
 def _time(value):
     return _number(value, nonnegative=True)
-
 
 def _capacity(value):
     result = _number(value, positive=True)
     _need(result >= sys.float_info.min, "capacity/rate must be a positive normal binary64")
     return result
-
 
 def _file_id(raw):
     _object(raw, ("workflowInputIndex", "name"), "fileId")
@@ -95,16 +73,12 @@ def _file_id(raw):
     _need(bool(name), "empty file name")
     return scope, name
 
-
 def _file_order(ident):
-    # The writer's String ordering is UTF-16 code-unit order, not Python's
-    # Unicode-code-point order. Identity itself remains the exact unsplit name.
-    return ident[0], ident[1].encode("utf-16-be", "surrogatepass")
 
+    return ident[0], ident[1].encode("utf-16-be", "surrogatepass")
 
 def _file_json(ident):
     return dict(workflowInputIndex=ident[0], name=ident[1])
-
 
 def _location(raw):
     _object(raw, ("kind", "vmId", "sourceId"), "location")
@@ -116,18 +90,15 @@ def _location(raw):
           _text(raw["sourceId"]) == "source", "only the default typed SOURCE is supported")
     return SOURCE
 
-
 def _location_json(location):
     return dict(kind="VM" if location[0] == 0 else "SOURCE",
                 vmId=location[1] if location[0] == 0 else None,
                 sourceId=None if location[0] == 0 else "source")
 
-
 @dataclass(frozen=True)
 class _File:
     size: float
     producer: int | None
-
 
 @dataclass(frozen=True)
 class _Task:
@@ -136,9 +107,8 @@ class _Task:
     inputs: dict
     outputs: tuple
 
-
 class _Plan:
-    """Keyed declarations plus iterative graph checks; never expand references."""
+
     def __init__(self, raw):
         _object(raw, ("contractVersion", "tasks", "files"), "filePlan")
         _need(_text(raw["contractVersion"]) == FILE_IDENTITY, "unsupported file plan contract")
@@ -196,8 +166,7 @@ class _Plan:
                 if indegrees[child] == 0:
                     queue.append(child)
         _need(visited == len(self.tasks), "Task graph contains a cycle")
-        # Search only ancestors needed by this consumer; no recursive DFS or
-        # dense all-pairs transitive closure (and no dependence on multiplicity).
+
         for task in self.tasks.values():
             needed = {self.files[fid].producer for fid in task.inputs} - {None}
             seen, queue = set(), deque(task.parents)
@@ -215,9 +184,8 @@ class _Plan:
         _need(ident in self.files, "unknown file identity")
         return ident
 
-
 class _Fabric:
-    """Independent bounded Fat-tree arithmetic and exact resource-key closure."""
+
     _fields = ("locations", "resources", "vmHostAssignments", "topology")
     _requires_hosts = False
 
@@ -260,8 +228,7 @@ class _Fabric:
                 self.placements[host] = pod, edge
                 per_edge[pod, edge] += 1
                 _need(per_edge[pod, edge] <= self.half, "too many hosts at one edge")
-            # k was bounded BEFORE these loops. Include even currently unused
-            # physical links, both directions, and access links for placed hosts.
+
             links = set()
             for host, (pod, edge) in self.placements.items():
                 self._duplex(links, "ACC:" + str(host), f"EDGE:{pod}:{edge}")
@@ -313,14 +280,13 @@ class _Fabric:
         if source[0] == 0:
             path.append("VM:" + str(source[1]))
             path.extend(self._links(self.hosts.get(source[1]), self.hosts.get(destination[1])))
-        # SOURCE deliberately has no endpoint/access/link charge. A VM source
-        # shares its one VM resource between sending and receiving.
+
         path.append("VM:" + str(destination[1]))
         rate = min(self.capacities[key] / count for key, count in Counter(path).items())
         return tuple(path), rate
 
     def _links(self, sh, dh):
-        """Literal host-to-host routing shared by the two closed wire contracts."""
+
         if not self.has_topology or sh == dh:
             return ()
         sp, se = self.placements[sh]
@@ -340,14 +306,12 @@ class _Fabric:
         path.append(f"LINK:{destination_edge}->ACC:{dh}")
         return tuple(path)
 
-
 @dataclass(frozen=True)
 class _Origin:
     task: int | None
     job: int | None
     location: tuple
     observed: float
-
 
 @dataclass(frozen=True)
 class _Replica:
@@ -366,7 +330,6 @@ class _Replica:
                                 location=_location_json(self.origin.location), observedAt=self.origin.observed),
                     copiedFrom=None if self.copied_from is None else _location_json(self.copied_from),
                     copyOrdinal=self.ordinal)
-
 
 @dataclass
 class _Job:
@@ -388,7 +351,6 @@ class _Job:
     success: bool | None = None
     ready_queued: bool = False
 
-
 @dataclass
 class _Copy:
     ordinal: int
@@ -406,22 +368,14 @@ class _Copy:
     residual: float | None = None
     settled_sequence: int | None = None
 
-
 def _settlement_bound(copy, effective, residual):
-    """Necessary scalar bound, NOT a reconstruction of contended service.
 
-    The subtraction, division and absolute finish use binary64 operations.
-    Clock slack is 8 ULPs of the largest clock spacing, capped at 1e-12 of
-    the absolute clock scale. Keep this explicit: arbitrary relative epsilons
-    (or requiring all B bytes instead of B-residual) change the certificate.
-    """
     lower = copy.release + ((copy.size - residual) / copy.rate)
     _need(math.isfinite(lower), "unrepresentable minimum settlement time")
     allowance = min(8.0 * max(math.ulp(copy.release), math.ulp(effective), math.ulp(lower)),
                     1e-12 * max(copy.release, effective, lower))
     _need(effective >= lower or lower - effective <= allowance,
           "settlement precedes the residual-aware standalone minimum")
-
 
 class _Replay:
     def __init__(self, plan, fabric, observed_through, contract, policies):
@@ -493,7 +447,7 @@ class _Replay:
         _need(bool(holders) and destination not in holders, "missing visible remote source / already local")
         _need(all(replica.visible <= now for replica in holders.values()), "future source replica")
         if self.plan.files[fid].size == 0:
-            # Zero-byte references need no service: every visible holder ties.
+
             return holders[min(holders)], None, None
         candidates = []
         for location, replica in holders.items():
@@ -512,8 +466,7 @@ class _Replay:
 
     def _put_replica(self, replica):
         holders = self.replicas.setdefault(replica.file, {})
-        # First visibility/provenance wins, including an output appearing while
-        # an older copy to that destination is still active.
+
         holders.setdefault(replica.location, replica)
 
     def _publish(self, replica, now):
@@ -568,7 +521,7 @@ class _Replay:
         self._admit_copy(p, now, sequence, fid, self.current_request, destination, expected, path, rate)
 
     def _admit_copy(self, p, now, sequence, fid, owner, destination, expected, path, rate):
-        """Validate one independently selected ticket; callers enforce operation ownership."""
+
         size = _number(p["bytes"], positive=True)
         _need(size == self.plan.files[fid].size, "admission bytes differ from file declaration")
         target = fid, destination
@@ -729,10 +682,9 @@ class _Replay:
             replicas.extend(replica.json() for _, replica in sorted(self.replicas[fid].items()))
         return dict(jobs=jobs, copies=copies, replicas=replicas, successfulTaskIds=sorted(self.successful))
 
-
 @dataclass(frozen=True)
 class _Contract:
-    """Private closed grammar, selected by an entrypoint, never by untrusted input."""
+
     schema: str
     mode: str
     scope: str
@@ -744,14 +696,12 @@ class _Contract:
     fabric: type
     replay: type
 
-
 _V2 = _Contract(SCHEMA, MODE, CERTIFICATE_SCOPE, SHARED, ISOLATED,
                 (tuple(POLICIES.items()),), tuple(PAYLOAD_KEYS.items()),
                 frozenset(ACQUISITIONS), _Fabric, _Replay)
 
-
 def _verify_document(document, contract):
-    """Common strict lexical/plan/replay envelope; contracts are private constants."""
+
     _object(document, ("schema", "modelKind", "recording", "certificateScope", "policies", "capture",
                        "filePlan", "fabric", "events"), "root")
     _need(_text(document["schema"]) == contract.schema, "unsupported lifecycle schema")
@@ -804,21 +754,12 @@ def _verify_document(document, contract):
     result.update(replay._summary())
     return result
 
-
 def verify_document(document):
-    """Validate a strict-decoded V2 document; return detached facts or Invalid.
 
-    IDs/counters are exact integers in their declared Java ranges. Byte/time/
-    rate tokens model binary64 values. Declaration arrays are keyed collections;
-    canonical request/seed/output order is derived independently, never from
-    caller array order. No active-copy or unfinished-job tail is called DISABLED.
-    This public entrypoint is fixed to V2, including its original return shape.
-    """
     return _verify_document(document, _V2)
 
-
 def inspect_path(path):
-    """Read one UTF-8 V2 sidecar, not a manifest; invalid/unreadable input raises Invalid."""
+
     try:
         document = decode_json(Path(path).read_text(encoding="utf-8"))
     except (OSError, UnicodeError) as error:

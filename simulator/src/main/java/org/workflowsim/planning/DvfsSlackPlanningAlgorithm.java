@@ -14,7 +14,6 @@ import org.workflowsim.planning.dvfs.DvfsSlackTask;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.DvfsSlackRegistry;
 
-/** HEFT allocation followed by iterative DVFS slack allocation and tier registration. */
 public final class DvfsSlackPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;

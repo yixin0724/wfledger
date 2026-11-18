@@ -14,7 +14,6 @@ import org.workflowsim.Task;
 import org.workflowsim.reclustering.ReclusteringEngine;
 import org.workflowsim.utils.Parameters.ClassType;
 
-/** Verifies that the failure monitor isolates observations at the declared VM/depth granularity. */
 class FailureMonitorTest {
 
     @AfterEach
@@ -50,8 +49,7 @@ class FailureMonitorTest {
                 FailureParameters.FTCFailure.FAILURE_NONE,
                 null);
         FailureMonitor.init();
-        // VM 0 already carries a failure observation; VM 2 carries none. DC must keep one whole
-        // three-task retry cluster for VM 2.
+
         FailureMonitor.postFailureRecord(new FailureRecord(1.0, 1, 1, 3, 0, 0, 0));
         Job failed = computeJob(40, 2, task(1, 100L), task(2, 200L), task(3, 300L));
 

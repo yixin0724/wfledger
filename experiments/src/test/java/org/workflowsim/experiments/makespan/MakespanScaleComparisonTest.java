@@ -9,7 +9,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Full 1000/5000-task makespan comparison. */
 class MakespanScaleComparisonTest {
 
     @TempDir

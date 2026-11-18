@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable Network-Aware HEFT task. */
 public final class NetworkHeftTask {
     private final int taskId;
     private final Map<Integer, Double> computeSecondsByVm;

@@ -23,7 +23,6 @@ import org.workflowsim.experiment.SimulationRunner;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** One entry point for validating/running experiments, evidence reports and recoverable history. */
 public final class Workbench {
     private Workbench() {}
 
@@ -135,10 +134,6 @@ public final class Workbench {
         return directory;
     }
 
-    /**
-     * Executes one candidate-by-seed run and writes its evidence (moved verbatim from the inner loop
-     * body of {@code run()}).
-     */
     private static RunOutcome executeCandidateRun(
             WorkbenchConfig.Candidate candidate,
             long seed,
@@ -196,10 +191,6 @@ public final class Workbench {
         return new RunOutcome(row, reportRow);
     }
 
-    /**
-     * Finalizes the index and the HTML report (moved verbatim from the {@code finally} body of
-     * {@code run()}).
-     */
     private static void finalizeExperiment(
             WorkbenchConfig config,
             List<Map<String, Object>> rows,
@@ -227,7 +218,6 @@ public final class Workbench {
         history(root);
     }
 
-    /** Private carrier structure for the result of {@code executeCandidateRun} (moved verbatim). */
     private static final class RunOutcome {
         final Map<String, Object> row, reportRow;
 

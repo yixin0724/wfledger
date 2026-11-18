@@ -15,26 +15,6 @@
  */
 package org.workflowsim.scheduling;
 
-/**
- * Originally named MinMinSchedulingAlgorithm.
- *
- * <p>Note: this implementation is not the classic Min-Min (Braun et al. 2001). The actual
- * behavior is an SPT (Shortest Processing Time) - fastest-idle variant: first select the
- * shortest task, then select the fastest idle VM. For ready-batch Min-Min see
- * {@link ReadyBatchMinMinSchedulingAlgorithm}.</p>
- *
- * <p><strong>Compatibility boundary:</strong> retained solely for historical source
- * compatibility; the standard research entry point rejects this label, and results of this
- * class must not be claimed as classic Min-Min.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- * @deprecated Behavior is inconsistent with classic Min-Min; renamed to
- *             {@link SptFastestIdleSchedulingAlgorithm}.
- *             The ready-batch implementation is
- *             {@link ReadyBatchMinMinSchedulingAlgorithm}.
- */
 @Deprecated
 public class MinMinSchedulingAlgorithm extends SptFastestIdleSchedulingAlgorithm {
 

@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Immutable, deterministic root seed sequence used by one experiment cell. */
 public final class SeedPlan {
 
     private static final long GOLDEN_GAMMA = 0x9e3779b97f4a7c15L;
@@ -31,30 +30,11 @@ public final class SeedPlan {
         this.seeds = Collections.unmodifiableList(new ArrayList<Long>(seeds));
     }
 
-    /**
-     * Creates a deterministic run plan that contains a single root seed.
-     *
-     * @param seed root seed used by this deterministic run
-     * @return deterministic seed plan with exactly one replication
-     */
     public static SeedPlan deterministic(long seed) {
         return new SeedPlan(
                 RandomizationDesign.DETERMINISTIC, Long.valueOf(seed), Collections.singletonList(Long.valueOf(seed)));
     }
 
-    /**
-     * Deterministically derives multiple seeds from an explicit root seed using the
-     * SplitMix64 mixing function.
-     *
-     * <p>This is reproducible seed derivation, not a random sampling.</p>
-     *
-     * @param design randomization interpretation adopted by the plan
-     * @param rootSeed root seed used for derivation
-     * @param replicationCount number of replications to derive, must be positive
-     * @return immutable plan containing the derived seed sequence
-     * @throws IllegalArgumentException if the design is null, the replication count is not
-     *         positive, or a deterministic design has a replication count other than one
-     */
     public static SeedPlan derived(RandomizationDesign design, long rootSeed, int replicationCount) {
         if (design == null || replicationCount <= 0) {
             throw new IllegalArgumentException("Randomization design and positive replication count are required");
@@ -71,16 +51,6 @@ public final class SeedPlan {
         return new SeedPlan(design, Long.valueOf(rootSeed), values);
     }
 
-    /**
-     * Creates a plan from a root seed sequence fully specified by the caller.
-     *
-     * @param design randomization interpretation adopted by the plan
-     * @param seeds root seed sequence that must be non-repeating and contain at least one
-     *        element
-     * @return immutable explicit seed plan that records no derivation root
-     * @throws IllegalArgumentException if the design or the seed sequence violates the
-     *         plan constraints
-     */
     public static SeedPlan explicit(RandomizationDesign design, List<Long> seeds) {
         return new SeedPlan(design, null, seeds);
     }

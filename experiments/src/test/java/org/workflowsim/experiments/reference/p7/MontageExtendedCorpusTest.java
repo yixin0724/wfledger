@@ -13,10 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- * Opt-in verification of all 17 locally retained Montage WfInstances inputs. This class is
- * excluded by default and runs only under the explicit `extended-corpus` Maven profile (VV-NEW-01).
- */
 class MontageExtendedCorpusTest {
 
     @BeforeEach

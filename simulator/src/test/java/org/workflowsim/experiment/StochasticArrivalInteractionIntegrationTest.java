@@ -36,15 +36,9 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
-/**
- * Four joint-model cells, twelve runs: base A/B/C/D, reverse-order exact replay, then deadline observers.
- * These are replay/causality properties, not independent statistical samples or cross-cell performance claims.
- * WED has no per-batch sample ledger: replay includes its trajectory, but does not independently reconstruct
- * its random draws or identify WED alone from ready-to-decision waiting. Queue/post samples are recorded.
- */
 class StochasticArrivalInteractionIntegrationTest {
     private static final long[] RAW_MI = {500L, 1000L, 750L};
-    // Independently calculated from the explicit seconds table and VM MIPS: no production cost helper.
+
     private static final long[][] MATRIX_MI = {{750L, 2500L}, {1500L, 1000L}, {1000L, 1750L}};
     private static final Set<Integer> SOURCE_IDS = new HashSet<Integer>(Arrays.asList(1, 2, 3, 4, 5, 6));
 
@@ -91,7 +85,7 @@ class StochasticArrivalInteractionIntegrationTest {
             baselineRetries += retries;
             baselines.put(cell.id, report);
         }
-        // Interleave different matrices/arrivals/seeds before replay, rather than only testing adjacent runs.
+
         for (int index = cells.size() - 1; index >= 0; index--) {
             Cell cell = cells.get(index);
             SimulationReport replay = runner.run(configs.get(cell.id), platform);
@@ -110,7 +104,7 @@ class StochasticArrivalInteractionIntegrationTest {
                     cell.id + " deadline must not change decisions, arrivals, overhead samples, or retries");
         }
         assertEquals(12, runs);
-        // No per-cell failure-count golden. Only base runs count toward actual interaction coverage.
+
         assertTrue(
                 baselineRetries > 0,
                 "No base cell exercised a retry: " + baselineRetryCounts
@@ -450,7 +444,6 @@ class StochasticArrivalInteractionIntegrationTest {
         assertTrue(actual + tolerance >= earliest, context + " time " + actual + " precedes " + earliest);
     }
 
-    /** Remove only the two documented host wall-clock samples, never stochastic/model evidence. */
     private static List<Object> trajectory(SimulationReport report) {
         List<Object> rows = new ArrayList<Object>();
         rows.add(Arrays.asList(

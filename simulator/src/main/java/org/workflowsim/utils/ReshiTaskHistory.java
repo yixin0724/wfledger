@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Historical average task runtimes used by Reshi-M, with explicit missing-value semantics. */
 public final class ReshiTaskHistory {
 
     private final Map<String, Double> averageRuntimeSecondsByTaskType;

@@ -8,11 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 
-/**
- * Full-branch contract for {@link DistributionSpec} validation and generator creation:
- * parameter finiteness, the NORMAL scale exemption, all-or-nothing priors, and the binding
- * of the generator to the named random stream.
- */
 class DistributionSpecTest {
 
     @Test
@@ -39,8 +34,7 @@ class DistributionSpecTest {
 
     @Test
     void priorsMustBeSuppliedTogetherAndBeFinite() {
-        // The public withPriors API takes primitives, so the "partial priors" branch is unreachable;
-        // the reachable rejection path is "all supplied but not finite".
+
         assertThrows(
                 IllegalArgumentException.class,
                 () -> DistributionSpec.withPriors(DistributionFamily.GAMMA, 1.0, 1.0, Double.NaN, 3.0, 1.0));
@@ -52,7 +46,7 @@ class DistributionSpecTest {
                 IllegalArgumentException.class,
                 () -> DistributionSpec.withPriors(
                         DistributionFamily.GAMMA, 1.0, 1.0, 2.0, 3.0, Double.NEGATIVE_INFINITY));
-        // All supplied and finite -> accepted and read back unchanged.
+
         DistributionSpec spec = DistributionSpec.withPriors(DistributionFamily.GAMMA, 1.5, 2.5, 3.5, 4.5, 0.25);
         assertEquals(3.5, spec.getPriorShape(), 0.0);
         assertEquals(4.5, spec.getPriorScale(), 0.0);

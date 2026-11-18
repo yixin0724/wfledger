@@ -6,15 +6,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Builds the paper's communication-enhanced DAG from a fixed compute plan. */
 public final class CommunicationEnhancedPlan {
 
     private CommunicationEnhancedPlan() {}
 
-    /**
-     * Adds one ordered communication activity for every cross-resource dependency and rewrites
-     * the child dependency to that activity. Missing links or edge durations fail explicitly.
-     */
     public static TimedPlan fromComputePlan(TimedPlan computePlan, List<CaWoSchedCommunicationSpec> links) {
         if (computePlan == null || links == null) {
             throw new IllegalArgumentException("Compute plan and communication links are required");

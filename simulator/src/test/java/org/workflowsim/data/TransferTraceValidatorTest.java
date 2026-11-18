@@ -21,7 +21,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/** NF002B1: independent grammar/certificate validation, not a call to the production allocator. */
 class TransferTraceValidatorTest {
     private static final Gson JSON = new Gson();
     private static final int BUDGET = 10000;
@@ -145,8 +144,7 @@ class TransferTraceValidatorTest {
     @Test
     void coarseSubnormalCapacityOvercommitIsDetectedNotCertifiedAsRoundingNoise() {
         double q = Double.MIN_VALUE;
-        // These finite positive inputs expose the old allocator's coarse division resolution.
-        // Observability must flag 4q of allocation against 3q capacity, not bless a 33% overload.
+
         TransferContentionEngine e = engine();
         e.setEndpointCapacity("A", 3 * q);
         add(e, 1, 1, 1, 0, "A");

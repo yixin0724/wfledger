@@ -14,7 +14,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Finite delays must remain finite and positive after addition to the current double clock. */
 class SimulationTimeValidationTest {
     private SimulationSession session;
 
@@ -76,7 +75,6 @@ class SimulationTimeValidationTest {
         assertEquals(0.11, SimulationTiming.earliestCloudletCompletionTime(0.0, 0.01, 0.1), 1e-12);
     }
 
-    /** Two events only: the old implementation terminates instead of hanging this regression. */
     private static final class ClockProbe extends SimEntity {
         private final double firstDelay;
         private final double nextDelay;

@@ -17,18 +17,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Same-JVM serial cross-configuration contamination IT: runs mutually distinct
- * configurations back to back inside one JVM (DAG planner / random planner / online
- * scheduler, different DAX, different platform, different seed), then reruns the earlier
- * configurations -- any static state leak (replica catalog, random stream registry,
- * global parameters, CloudSim clock) makes a rerun drift from the first run.
- *
- * <p>The existing {@code repeatedDaxRunsProduceEquivalentAuditableReports} covers only
- * adjacent double runs of the same configuration; this IT covers the alternating order
- * A->B->C->A'->B'->C', in which different configurations sit in between, which is the
- * real shape of a researcher's batch experiments.</p>
- */
 class CrossConfigurationContaminationIntegrationTest {
 
     @AfterEach
@@ -139,7 +127,6 @@ class CrossConfigurationContaminationIntegrationTest {
         return result.toString();
     }
 
-    /** Deterministic replay deliberately excludes wall-clock decision cost. */
     private static String logicalEventFingerprint(SimulationReport report) {
         StringBuilder result = new StringBuilder();
         for (SimulationEvent event : report.getEvents()) {

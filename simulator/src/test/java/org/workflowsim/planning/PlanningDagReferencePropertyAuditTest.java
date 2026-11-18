@@ -28,17 +28,10 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
-/**
- * Independent small-graph decisions, not golden makespans or a runtime metric oracle.
- * Expectations use integer-index adjacency, iterative topological DP, exhaustive critical paths
- * (at most 12 nodes), and enumeration of possible reservation starts rather than planner helpers.
- * Edge files have one producer and one consumer, so LOCAL arrival has a direct pairwise oracle;
- * replica reuse and external-input timing remain the subject of their dedicated regressions.
- */
 class PlanningDagReferencePropertyAuditTest {
     private static final int CASES = 24;
     private static final double EPSILON = 1.0e-9;
-    // The minimum-ID VM is always 1000 MIPS: 110 MI bootstrap, then one 0.1 s release interval.
+
     private static final double BOOTSTRAP = 0.11 + 0.1;
     private static final int STORAGE_MB_PER_SECOND = 8;
 
@@ -91,7 +84,7 @@ class PlanningDagReferencePropertyAuditTest {
             assertReference(fixture, algorithm, expected, original, subject);
             Actual permuted = run(fixture, algorithm, true);
             assertReference(fixture, algorithm, expected, permuted, subject + " permuted");
-            // IDs, not input-list order, are the deterministic tie contract for these planners.
+
             assertEquals(snapshot(original), snapshot(permuted), subject + " exact permutation replay");
         }
     }
@@ -117,7 +110,7 @@ class PlanningDagReferencePropertyAuditTest {
                     long mi = f.projected ? Math.round(f.costSeconds[task][vm] * f.mips[vm]) : f.lengthMi[task];
                     r.work[task][vm] = mi / f.mips[vm];
                 } else {
-                    // SHARED permits no task matrix and truncates its input delay to integer MI.
+
                     long inputMi = (long) (inputSeconds * f.mips[vm]);
                     r.work[task][vm] = (f.lengthMi[task] + inputMi) / f.mips[vm];
                     r.stageIn[task][vm] = inputMi / f.mips[vm];
@@ -127,8 +120,7 @@ class PlanningDagReferencePropertyAuditTest {
             }
             r.meanWork[task] /= count;
         }
-        // Only arrays from the generated declaration feed these expectations. No Task depths,
-        // TaskExecutionModel, planner rank/OCT getter, or production scheduling helper is used.
+
         for (int index = order.length - 1; index >= 0; index--) {
             int task = order[index];
             double tail = 0.0;
@@ -160,7 +152,7 @@ class PlanningDagReferencePropertyAuditTest {
                     }
                     worst = Math.max(worst, best);
                 }
-                r.oct[task][vm] = worst; // No children => zero, not current-task work.
+                r.oct[task][vm] = worst;
                 r.rankOct[task] += worst;
                 count++;
             }
@@ -323,7 +315,6 @@ class PlanningDagReferencePropertyAuditTest {
         return arrival;
     }
 
-    /** Every feasible first gap starts at readiness or an existing interval's end. */
     private static double firstGap(List<Interval> intervals, double ready, double duration) {
         TreeSet<Double> candidates = new TreeSet<Double>();
         candidates.add(ready);
@@ -398,7 +389,6 @@ class PlanningDagReferencePropertyAuditTest {
         return result;
     }
 
-    /** Exhaustive path enumeration is deliberately independent of the production greedy walk. */
     private static List<Integer> longestPath(Fixture f, Reference r, boolean local) {
         int entry = -1;
         for (int task = 0; task < f.n; task++) {

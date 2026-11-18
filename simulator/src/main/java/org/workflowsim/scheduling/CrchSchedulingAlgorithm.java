@@ -9,7 +9,6 @@ import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.utils.CrchRecovery;
 import org.workflowsim.utils.CrchRegistry;
 
-/** CRCH ready-Job dispatcher with recovery-aware alternative-VM selection. */
 public final class CrchSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     @Override

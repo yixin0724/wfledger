@@ -26,7 +26,6 @@ import org.workflowsim.utils.SimulationConfig;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-/** NF002A: Java opt-in only; no new physics or model support policy. */
 class NetworkEvidenceConfigTest {
     @Test
     void offIsASingletonAndEveryDefaultConfigurationUsesIt() {

@@ -12,7 +12,6 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 import org.workflowsim.platform.PlatformProfile;
 
-/** PE compatibility and multi-PE duration oracle for GreenHEFT and MOHEFT. */
 class GreenHeftAdapterTest {
 
     @Test

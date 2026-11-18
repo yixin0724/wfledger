@@ -22,19 +22,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * BAT-R7 (2026-10-27, seventh review round) -- cross-seam combination chain: registered-label
- * algorithm x powered platform x rerun path. No earlier review round exercised the three in
- * series (R1-R6 each guarded its own seam).
- *
- * <p>Key question: the registration interface's powerModelRequired validation, the manifest's
- * power serialization, EvidenceCoreDiffer's energy-absence equivalence, and
- * ManifestConfigRebuilder's power forwarding -- each seam being green does not mean the whole
- * chain is green. This test runs one powered run with the registered ENERGY_LPT_FIRST provider
- * (hosted in the experiments test domain, visible through SPI), then reruns it through the
- * whole-chain RerunDiffExecutor: the verdict must be IDENTICAL_CORE and the rerun-side energy
- * consumption must equal the original bit for bit.</p>
- */
 class RegisteredPoweredRerunIntegrationTest {
 
     @TempDir
@@ -55,8 +42,7 @@ class RegisteredPoweredRerunIntegrationTest {
 
     @Test
     void registeredPoweredAlgorithmRerunsIdenticallyEndToEnd() throws Exception {
-        // 1. Locate the provider through the registration surface (ServiceLoader) -- constructing
-        // it directly with new would bypass the interface.
+
         SchedulingAlgorithmProvider provider =
                 org.workflowsim.experiment.registry.AlgorithmRegistry.find("ENERGY_LPT_FIRST");
         assertEquals(
@@ -64,7 +50,6 @@ class RegisteredPoweredRerunIntegrationTest {
                 provider.getClass(),
                 "the SPI must surface the E5 provider in this classpath");
 
-        // 2. Original run: registered algorithm x powered platform.
         Path run = directory.resolve("study/runs/original");
         Path input = run.getParent().getParent().resolve("inputs/bag.dax");
         Files.createDirectories(input.getParent());
@@ -75,7 +60,7 @@ class RegisteredPoweredRerunIntegrationTest {
                 .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                 .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
                 .randomSeed(20261027L)
-                .deadline(400) // BAT-R9: deadline joins the registration chain (an axis cut when R8 set its goal)
+                .deadline(400)
                 .registeredSchedulingAlgorithm(provider)
                 .build();
         PlatformProfile platform = poweredPlatform();
@@ -85,16 +70,12 @@ class RegisteredPoweredRerunIntegrationTest {
         }
         ExperimentArtifactWriter.write(report, run, "result");
 
-        // 3. Whole-chain rerun: rebuild (read the registered label + power) -> rerun -> compare
-        // core quantities.
         Path output = directory.resolve("study/runs/rerun");
         RerunReport result = RerunDiffExecutor.execute(run, output);
         java.nio.file.Files.write(
                 directory.resolve("verdict.json"), result.toJson().getBytes(StandardCharsets.UTF_8));
         assertEquals(RerunVerdict.IDENTICAL_CORE, result.getVerdict(), result.toJson());
 
-        // 4. Bit-exact energy replay: the rerun side's total energy equals the original side
-        // exactly (the conservation law is guaranteed by the same engine).
         com.google.gson.JsonObject original = com.google.gson.JsonParser.parseString(
                         new String(Files.readAllBytes(run.resolve("result.manifest.json")), StandardCharsets.UTF_8))
                 .getAsJsonObject();
@@ -105,8 +86,7 @@ class RegisteredPoweredRerunIntegrationTest {
                 original.getAsJsonObject("energyMetrics").get("totalEnergyJoules"),
                 repeat.getAsJsonObject("energyMetrics").get("totalEnergyJoules"),
                 "energy must replay bit-exactly across the registered-algorithm rerun");
-        // The registered label must appear verbatim in both manifests (equivalence on the INVALID
-        // enum string is not enough).
+
         assertEquals(
                 original.getAsJsonObject("configuration").get("registeredSchedulingAlgorithm"),
                 repeat.getAsJsonObject("configuration").get("registeredSchedulingAlgorithm"));

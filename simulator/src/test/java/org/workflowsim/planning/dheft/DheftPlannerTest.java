@@ -10,7 +10,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** Hand-derived DHEFT pairwise-bandwidth and parent-finish checks. */
 class DheftPlannerTest {
 
     @Test
@@ -50,9 +49,6 @@ class DheftPlannerTest {
         DheftSchedule schedule = new DheftPlanner()
                 .schedule(new DheftProblem(Arrays.asList(first, child, independent), bandwidthBytesPerSecond));
 
-        // Official DHEFT forms the initial ready wave [1,3]. Task 3 therefore reserves VM0
-        // [1,11], after which task 2 finishes at 12 on VM1. Letting newly-ready task 2 jump
-        // ahead of task 3 instead reserves VM0 [1,11] for task 2 and inflates makespan to 15.
         assertEquals(0, schedule.getVmId(3));
         assertEquals(1.0, schedule.getTaskPlan(3).getStartSeconds(), 1.0e-9);
         assertEquals(1, schedule.getVmId(2));

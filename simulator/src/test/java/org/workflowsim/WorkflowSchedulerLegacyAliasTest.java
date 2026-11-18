@@ -17,16 +17,6 @@ import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 
-/**
- * Pins the explicit legacy declaration of the deprecated scheduling labels (AUD-F10).
- *
- * <p>The four deprecated labels never silently bind their historical policies anymore:
- * without the declaration the scheduler fails fast and names the actual policy and the
- * maintained replacement, SimulationRunner keeps rejecting the labels, and only an
- * explicit {@code Parameters.enableLegacySchedulingAliases()} declaration (made by
- * ExampleCliSupport on behalf of the historical examples) unlocks the byte-identical
- * historical bindings.</p>
- */
 class WorkflowSchedulerLegacyAliasTest {
 
     @BeforeEach

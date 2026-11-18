@@ -28,7 +28,6 @@ import org.workflowsim.utils.ReshiRankTable;
 import org.workflowsim.utils.ReshiTaskHistory;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Cross-cutting runtime metric oracles; algorithm-specific semantics remain in their own tests. */
 class AlgorithmMetricAuditTest {
 
     @TempDir

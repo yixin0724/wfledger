@@ -19,12 +19,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Rebuilds generic campaign aggregates from validated per-run evidence. The verifier never
- * trusts the serialized summary as its input and never rewrites the campaign (Q02, 2026-11-04).
- * Statistical primitives are shared, while every aggregation and serialized summary field is
- * independently reconstructed from the plan and manifest metrics.
- */
 final class ExperimentCampaignSummaryVerifier {
 
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();

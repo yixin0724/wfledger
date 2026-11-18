@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable, ordered observation event produced by one WorkflowSim run. */
 public final class SimulationEvent {
 
     private final long sequence;

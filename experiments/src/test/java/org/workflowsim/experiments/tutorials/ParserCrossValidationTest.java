@@ -18,13 +18,11 @@ import org.workflowsim.WfCommonsJsonParser;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/** Tutorial cross-validation test for the DAX/WfCommons JSON parsing path. */
 class ParserCrossValidationTest {
 
     private static final String WF_JSON_RELATIVE_PATH = "wfformat/montage/n100/montage-100-000.json";
     private static Path workflowPath;
 
-    /** Initializes the static state required by the parser and validates the Maven-injected test dataset. */
     @BeforeAll
     static void setUp() {
         Parameters.init(
@@ -52,8 +50,7 @@ class ParserCrossValidationTest {
         if (!workflowPath.startsWith(datasetRoot.normalize())) {
             throw new IllegalStateException("Invalid tutorial input path: " + workflowPath);
         }
-        // R9 resident-corpus guard: montage-100-000.json (145 KB) is committed (see the .gitignore
-        // negation); this test must run in the standard build and may no longer be skipped.
+
         assertTrue(Files.isRegularFile(workflowPath), "Resident WfCommons corpus must be present at " + workflowPath);
     }
 

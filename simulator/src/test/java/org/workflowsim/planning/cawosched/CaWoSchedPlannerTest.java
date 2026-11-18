@@ -11,7 +11,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.platform.PlatformProfile;
 
-/** Primary-source and hand-derived checks for the compute-only CaWoSched core (R-PAPER-01). */
 class CaWoSchedPlannerTest {
 
     private static final double EPSILON = 1.0e-9;

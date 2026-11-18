@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Static GreenHEFT: HEFT upward rank with minimum-energy task-to-VM selection. */
 public final class GreenHeftPlanner {
 
     public GreenHeftSchedule schedule(GreenHeftProblem problem) {

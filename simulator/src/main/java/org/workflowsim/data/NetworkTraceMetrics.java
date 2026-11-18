@@ -8,15 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Immutable metrics over a semantically validated complete fluid capture.
- * In V1 workflow captures a flow is a parent/external group, not a file.
- * Exact decimal arithmetic on the recorded binary64 inputs keeps serviced
- * balance deltas, rate-area and numerical settlement distinct. Truncated or
- * disabled captures expose validation diagnostics, not fabricated zero totals.
- */
 public final class NetworkTraceMetrics {
-    /** Exact representation of binary64 inputs, then unrounded decimal products/sums. */
+
     public static final String ACCOUNTING_VERSION = "EXACT_BINARY64_INPUT_DECIMAL_V1";
 
     private final String accountingVersion = ACCOUNTING_VERSION;
@@ -36,7 +29,6 @@ public final class NetworkTraceMetrics {
     private final List<FlowSummary> flows;
     private final List<ResourceUsage> resources;
 
-    /** Deeply immutable per-admission accounting and censored/complete timing. */
     public static final class FlowSummary {
         private final long externalTransferId, admissionOrdinal;
         private final boolean complete;
@@ -68,65 +60,64 @@ public final class NetworkTraceMetrics {
             completionResidualBytes = a.residual;
             remainingBytes = a.remaining;
         }
-        /** @return caller ID; may be reused by a later admission */
+
         public long getExternalTransferId() {
             return externalTransferId;
         }
-        /** @return unique engine admission ordinal */
+
         public long getAdmissionOrdinal() {
             return admissionOrdinal;
         }
-        /** @return whether a COMPLETE record exists for this admission */
+
         public boolean isComplete() {
             return complete;
         }
-        /** @return admission effective/observed time */
+
         public double getAdmissionTime() {
             return admissionTime;
         }
-        /** @return effective completion time, or null when censored */
+
         public Double getCompletionEffectiveTime() {
             return completionEffectiveTime;
         }
-        /** @return observed completion time, or null when censored */
+
         public Double getCompletionObservedTime() {
             return completionObservedTime;
         }
-        /** @return effective-time difference, possibly zero despite positive service */
+
         public Double getEffectiveFctSeconds() {
             return effectiveFctSeconds;
         }
-        /** @return observed-time difference, not substituted for effective FCT */
+
         public Double getObservedFctSeconds() {
             return observedFctSeconds;
         }
-        /** @return observed minus effective completion time, or null when censored */
+
         public Double getNotificationLagSeconds() {
             return notificationLagSeconds;
         }
-        /** @return original modeled payload */
+
         public BigDecimal getDemandBytes() {
             return demandBytes;
         }
-        /** @return exact sum of recorded before-minus-after balances */
+
         public BigDecimal getServicedBalanceDeltaBytes() {
             return servicedBalanceDeltaBytes;
         }
-        /** @return exact sum of recorded rate times original elapsed */
+
         public BigDecimal getModeledRateAreaBytes() {
             return modeledRateAreaBytes;
         }
-        /** @return numerical removal, not traffic */
+
         public BigDecimal getCompletionResidualBytes() {
             return completionResidualBytes;
         }
-        /** @return outstanding recorded balance */
+
         public BigDecimal getRemainingBytes() {
             return remainingBytes;
         }
     }
 
-    /** Resource occupancy is not unique delivered bytes; repeated keys add repeated load. */
     public static final class ResourceUsage {
         private final String resourceKey;
         private final Double lastDeclaredCapacityBytesPerSecond;
@@ -145,27 +136,27 @@ public final class NetworkTraceMetrics {
                             .divide(a.capacityArea, MathContext.DECIMAL128)
                             .doubleValue();
         }
-        /** @return exact resource key */
+
         public String getResourceKey() {
             return resourceKey;
         }
-        /** @return last declared finite capacity; null if never bounded */
+
         public Double getLastDeclaredCapacityBytesPerSecond() {
             return lastDeclaredCapacityBytesPerSecond;
         }
-        /** @return all modeled occupancy area, including epochs before capacity registration */
+
         public BigDecimal getRateAreaBytes() {
             return rateAreaBytes;
         }
-        /** @return occupancy area only while this resource had a declared capacity */
+
         public BigDecimal getBoundedRateAreaBytes() {
             return boundedRateAreaBytes;
         }
-        /** @return capacity times elapsed for each positive service batch, counted once */
+
         public BigDecimal getCapacityAreaBytes() {
             return capacityAreaBytes;
         }
-        /** @return bounded-epoch area/capacity-area; null without a positive denominator, excludes global idle */
+
         public Double getIntegrationEpochUtilization() {
             return integrationEpochUtilization;
         }
@@ -244,14 +235,6 @@ public final class NetworkTraceMetrics {
         resources = Collections.unmodifiableList(resourceRows);
     }
 
-    /**
-     * Validate first, then aggregate without accessing or advancing a live engine.
-     * COMPLETE means the capture is available, not that all its flows completed.
-     * @param snapshot immutable trace
-     * @param maxTraceRecords declared retained-record budget, zero for DISABLED
-     * @return immutable metrics; whole-capture quantities unavailable for OFF/TRUNCATED
-     * @throws IllegalArgumentException for invalid evidence
-     */
     public static NetworkTraceMetrics calculate(TransferTraceSnapshot snapshot, int maxTraceRecords) {
         TransferTraceValidator.Result validated = TransferTraceValidator.validate(snapshot, maxTraceRecords);
         if (!validated.isCompleteCapture()) {
@@ -322,7 +305,7 @@ public final class NetworkTraceMetrics {
                     }
                     break;
                 case RATE_CHANGE:
-                    break; // Rates are already linked/certified; service rows carry the actual rate used.
+                    break;
                 case SERVICE_SEGMENT:
                     TransferTraceEvent.ServiceSegment s = e.getServiceSegment();
                     BigDecimal elapsed = exact(s.getElapsed());
@@ -374,83 +357,82 @@ public final class NetworkTraceMetrics {
                 : sum.divide(BigDecimal.valueOf(count), MathContext.DECIMAL128).doubleValue();
     }
 
-    /** @return exact-input accounting version */
     public String getAccountingVersion() {
         return accountingVersion;
     }
-    /** @return immutable validation/coverage diagnostics */
+
     public TransferTraceValidator.Result getValidation() {
         return validation;
     }
-    /** @return whether complete-capture metrics are available */
+
     public boolean isAvailable() {
         return validation.isCompleteCapture();
     }
-    /** @return dropped record count, not silently reconstructed */
+
     public long getDroppedRecordCount() {
         return droppedRecordCount;
     }
-    /** @return engine snapshot watermark, not a truncated-prefix service cutoff */
+
     public double getEngineTime() {
         return engineTime;
     }
-    /** @return all admitted payload, or null when unavailable */
+
     public BigDecimal getAdmittedPayloadBytes() {
         return admittedPayloadBytes;
     }
-    /** @return completed demand, not transmitted service */
+
     public BigDecimal getCompletedDemandBytes() {
         return completedDemandBytes;
     }
-    /** @return exact sum of before-minus-after balances, or null */
+
     public BigDecimal getServicedBalanceDeltaBytes() {
         return servicedBalanceDeltaBytes;
     }
-    /** @return exact sum of rate times original elapsed, or null */
+
     public BigDecimal getModeledRateAreaBytes() {
         return modeledRateAreaBytes;
     }
-    /** @return numerical settlement residuals, not traffic */
+
     public BigDecimal getCompletionResidualBytes() {
         return completionResidualBytes;
     }
-    /** @return outstanding ledger balance, or null */
+
     public BigDecimal getRemainingLedgerBytes() {
         return remainingLedgerBytes;
     }
-    /** @return signed rate-area minus balance-debit discrepancy */
+
     public BigDecimal getRateAreaMinusBalanceDeltaBytes() {
         return rateAreaMinusBalanceDeltaBytes;
     }
-    /** @return positive-elapsed integration batch count, or null */
+
     public Integer getIntegrationEpochCount() {
         return integrationEpochCount;
     }
-    /** @return complete-flow FCT sample count, or null */
+
     public Integer getCompletedFctSampleCount() {
         return completedFctSampleCount;
     }
-    /** @return completed-flow effective FCT mean, or null without samples/coverage */
+
     public Double getMeanEffectiveFctSeconds() {
         return meanEffectiveFctSeconds;
     }
-    /** @return exact nearest-rank 95th percentile, or null */
+
     public Double getP95EffectiveFctSeconds() {
         return p95EffectiveFctSeconds;
     }
-    /** @return maximum completed-flow effective FCT, or null */
+
     public Double getMaxEffectiveFctSeconds() {
         return maxEffectiveFctSeconds;
     }
-    /** @return mean observed-minus-effective completion lag, or null */
+
     public Double getMeanNotificationLagSeconds() {
         return meanNotificationLagSeconds;
     }
-    /** @return immutable per-admission rows; empty when unavailable */
+
     public List<FlowSummary> getFlows() {
         return flows;
     }
-    /** @return immutable resource rows; empty when unavailable */
+
     public List<ResourceUsage> getResources() {
         return resources;
     }

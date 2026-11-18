@@ -13,16 +13,6 @@ import java.util.TreeMap;
 
 import org.workflowsim.platform.PlatformProfile;
 
-/**
- * Compute-only CaWoSched core for a fixed Task-to-VM mapping and per-VM order.
- *
- * <p>The implementation follows Schweisgut et al. (ICPP 2025): ASAP uses earliest starts;
- * slack/pressure scheduling evaluates tasks by the initial EST/LST scores, chooses the
- * highest-green-budget interval start inside each current [EST,LST] range, breaks equal budgets
- * by earliest start, and otherwise falls back to EST. No task mapping, ordering, preemption, or
- * communication-processor model is changed. This is a post-planning component, not a claim that
- * WorkflowSim's ordinary STATIC dispatcher already enforces absolute start times.</p>
- */
 public final class CaWoSchedPlanner {
 
     private static final double EPSILON = 1.0e-9;
@@ -46,10 +36,6 @@ public final class CaWoSchedPlanner {
         this(sourceTasks, sourceWindows, deadlineSeconds, Collections.<Integer, Double>emptyMap());
     }
 
-    /**
-     * @param declaredIdleWattsByVm optional complete fleet idle-power declaration, including
-     *     task-less VMs; without it, only task-bearing VMs contribute to the idle baseline
-     */
     public CaWoSchedPlanner(
             List<CaWoSchedTask> sourceTasks,
             List<PlatformProfile.CarbonWindow> sourceWindows,
@@ -72,12 +58,10 @@ public final class CaWoSchedPlanner {
         this.idleWattsSum = idleWattsSum(tasks, declaredIdleWattsByVm);
     }
 
-    /** Returns the same fixed mapping/order with every task placed at its earliest start. */
     public CaWoSchedPlan planAsap() {
         return schedule(null, false, false, false);
     }
 
-    /** Returns the slack- or pressure-scored greedy schedule. */
     public CaWoSchedPlan plan(Score score) {
         if (score == null) {
             throw new IllegalArgumentException("CaWoSched score is required");
@@ -85,7 +69,6 @@ public final class CaWoSchedPlanner {
         return schedule(score, false, false, false);
     }
 
-    /** Returns a power-weighted, refined, and optionally locally improved schedule. */
     public CaWoSchedPlan plan(Score score, boolean weighted, boolean refined, boolean localSearch) {
         if (score == null) {
             throw new IllegalArgumentException("CaWoSched score is required");
@@ -93,7 +76,6 @@ public final class CaWoSchedPlanner {
         return schedule(score, weighted, refined, localSearch);
     }
 
-    /** Exact dynamic programming for at most six ordered activities on one resource. */
     public CaWoSchedPlan planExactSingleProcessor() {
         if (tasks.size() > 6) {
             throw new IllegalArgumentException("Exact CaWoSched DP is limited to six activities");
@@ -164,8 +146,7 @@ public final class CaWoSchedPlanner {
             return result;
         }
         List<Double> result = new ArrayList<Double>();
-        // R-PAPER-01D audit: the exact DP needs the complete E-schedule candidate
-        // set, including blocks longer than the three-task heuristic refinement cap.
+
         for (Interval interval : refinedIntervals(tasks.size())) {
             result.add(interval.start);
         }

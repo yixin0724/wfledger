@@ -30,20 +30,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * External grad-student exercise (2026-10-26, BAT-3 acceptance driver).
- *
- * <p>This test lives entirely in the experiment module's test tree and adds a NOVEL online
- * scheduling algorithm with zero modifications to the core tree: a provider
- * ({@link GradStudentBwFirstSchedulerProvider}) discovered through the standard Java
- * ServiceLoader SPI, whose self-declared contract is consumed by the runner's fail-fast
- * matrix. The exercise then runs a full simulation, exports a complete v4 evidence bundle,
- * and validates it — proving an outside researcher can take a novel heuristic to an
- * audited evidence pack without touching platform internals.</p>
- *
- * <p>The provider is registered through the accompanying service file:
- * {@code META-INF/services/org.workflowsim.experiment.registry.SchedulingAlgorithmProvider}.</p>
- */
 class GradStudentSchedulerExerciseIntegrationTest {
 
     private boolean logWasDisabled;
@@ -62,21 +48,15 @@ class GradStudentSchedulerExerciseIntegrationTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    /**
-     * The exercise: register (SPI) + run + export evidence + validate, all through public
-     * surfaces only. Assertions verify the registry gate, the run completion, and the
-     * validated evidence bundle.
-     */
     @Test
     void novelRegistryAlgorithmRunsAndProducesValidatedEvidence() throws Exception {
-        // 1. The grad student's provider is on the classpath through the SPI file.
+
         SchedulingAlgorithmProvider provider = AlgorithmRegistry.find(GradStudentBwFirstSchedulerProvider.LABEL);
         org.junit.jupiter.api.Assertions.assertSame(
                 GradStudentBwFirstSchedulerProvider.class,
                 provider.getClass(),
                 "the ServiceLoader must discover the test-tree provider");
 
-        // 2. Self-declared contract: incompatibilities must fail fast.
         org.junit.jupiter.api.Assertions.assertThrows(
                 IllegalArgumentException.class,
                 () -> AlgorithmRegistry.validate(
@@ -88,7 +68,6 @@ class GradStudentSchedulerExerciseIntegrationTest {
                                 new org.workflowsim.failure.FailureModelConfig.Builder().build(),
                                 null)));
 
-        // 3. A full run through the standard runner with the registered algorithm.
         Path workflow = exerciseDax();
         PlatformProfile platform = exercisePlatform();
         SimulationConfig config = SimulationConfig.builder(workflow.toString(), 2)
@@ -105,7 +84,6 @@ class GradStudentSchedulerExerciseIntegrationTest {
                 "the registered algorithm must complete the exercise workflow");
         org.junit.jupiter.api.Assertions.assertEquals(4, report.getTasks().size(), "the exercise DAG has four tasks");
 
-        // 4. Export a complete evidence bundle and validate it (the audited deliverable).
         Path output = tempDir.resolve("grad-student-evidence");
         String runId = "grad-bw-first-s20261026";
         ExperimentArtifactWriter.ExperimentArtifacts artifacts = ExperimentArtifactWriter.write(report, output, runId);
@@ -113,7 +91,6 @@ class GradStudentSchedulerExerciseIntegrationTest {
                 ExperimentArtifactValidator.validate(artifacts.getManifest());
         org.junit.jupiter.api.Assertions.assertNotNull(result.getEvents(), "bundle must contain an events sidecar");
 
-        // 5. The manifest records the registered label — the label, not the INVALID enum.
         com.google.gson.JsonObject manifest = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(
                         java.nio.file.Files.newInputStream(artifacts.getManifest()), StandardCharsets.UTF_8))
                 .getAsJsonObject();
@@ -132,11 +109,6 @@ class GradStudentSchedulerExerciseIntegrationTest {
                         .getAsString());
     }
 
-    /**
-     * A novel scheduling heuristic distinct from every built-in: among idle compatible VMs,
-     * prefer the one with the LARGEST bandwidth (ties by smallest VM ID) — deliberately
-     * different from FCFS (smallest VM ID first).
-     */
     static final class GradStudentBwFirstSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
         @Override
@@ -153,7 +125,7 @@ class GradStudentSchedulerExerciseIntegrationTest {
                         }
                     }
                 }
-                // No idle compatible VM is left: the remaining Jobs wait for a later scheduling event.
+
                 if (best == null) {
                     break;
                 }
@@ -164,7 +136,6 @@ class GradStudentSchedulerExerciseIntegrationTest {
         }
     }
 
-    /** The grad student's SPI provider: label + declaration + fresh policy per run. */
     public static final class GradStudentBwFirstSchedulerProvider implements SchedulingAlgorithmProvider {
 
         static final String LABEL = "GRAD_BW_FIRST";
@@ -191,9 +162,6 @@ class GradStudentSchedulerExerciseIntegrationTest {
         }
     }
 
-    // ---- Fixtures ----
-
-    /** Two-layer four-task DAG with inter-layer files. */
     private Path exerciseDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");

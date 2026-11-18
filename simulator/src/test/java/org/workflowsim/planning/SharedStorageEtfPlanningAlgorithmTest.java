@@ -34,11 +34,7 @@ class SharedStorageEtfPlanningAlgorithmTest {
 
         SharedStorageDagPlanTrace trace = planner.getLastPlanTrace();
         assertEquals("ETF", trace.getStrategy());
-        // With every root Task having an earliest start of 0.21 seconds, root is selected
-        // first because it has the higher static b-level. Once root is reserved on VM 0,
-        // Task 3 can start at 0.21 seconds on VM 1, whereas Task 2 must wait until root
-        // completes at 1.21 seconds. ETF therefore selects Task 3 second, even though the
-        // static b-level of Task 2 is larger.
+
         assertTrue(trace.getTaskPlan(2).getUpwardRankSeconds()
                 > trace.getTaskPlan(3).getUpwardRankSeconds());
         assertEquals(0.21, trace.getTaskPlan(1).getEtfEarliestStartAtSelection(), 1.0e-12);

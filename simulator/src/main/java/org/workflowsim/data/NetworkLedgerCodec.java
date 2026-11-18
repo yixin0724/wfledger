@@ -14,11 +14,10 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/** Strict, versioned network sidecar codec. Decoding rebuilds immutable objects, never Gson-populates final DTOs. */
 public final class NetworkLedgerCodec {
-    /** Network sidecar schema; the manifest/old metrics/main events keep their existing versions. */
+
     public static final String SCHEMA = "workflowsim-network-ledger-v1";
-    /** Role used by the enclosing experiment artifact manifest. */
+
     public static final String ARTIFACT_ROLE = "network-ledger";
 
     private static final Gson JSON =
@@ -27,7 +26,6 @@ public final class NetworkLedgerCodec {
 
     private NetworkLedgerCodec() {}
 
-    /** Immutable reconstructed evidence and independently recomputed metrics. */
     public static final class Decoded {
         private final NetworkRunEvidence evidence;
         private final NetworkRunMetrics metrics;
@@ -36,21 +34,16 @@ public final class NetworkLedgerCodec {
             this.evidence = evidence;
             this.metrics = metrics;
         }
-        /** @return immutable reconstructed run capture */
+
         public NetworkRunEvidence getEvidence() {
             return evidence;
         }
-        /** @return immutable validated/recomputed metrics, never trusted supplied summaries */
+
         public NetworkRunMetrics getMetrics() {
             return metrics;
         }
     }
 
-    /**
-     * Produce a fresh transport tree after semantic validation and metric calculation.
-     * @param evidence explicitly enabled run capture
-     * @return new mutable transport tree; changing it cannot change the capture
-     */
     public static JsonObject document(NetworkRunEvidence evidence) {
         if (evidence == null) {
             throw bad("Enabled network evidence is required");
@@ -71,19 +64,11 @@ public final class NetworkLedgerCodec {
         wireNumbers(root, 0);
         return root;
     }
-    /** @param evidence enabled capture @return formatted JSON with explicit nullable members */
+
     public static String encode(NetworkRunEvidence evidence) {
         return JSON.toJson(document(evidence));
     }
 
-    /**
-     * Decode required fields/types and reject duplicated keys, unknown fields, malformed
-     * evidence or forged summaries. Binary64 fields compare as binary64 values; exact
-     * decimal quantities/IDs are never compared by lossy double conversion.
-     * @param json complete JSON document
-     * @return immutable validated evidence and recomputed summaries
-     * @throws IllegalArgumentException for invalid content
-     */
     public static Decoded decode(String json) {
         JsonObject root = parseDocument(json);
         keys(root, "schema", "flowUnit", "numericProfile", "accountingVersion", "units", "evidence", "metrics");
@@ -122,18 +107,13 @@ public final class NetworkLedgerCodec {
         } catch (IllegalStateException invalidBindings) {
             throw new IllegalArgumentException("Invalid network capture binding consistency", invalidBindings);
         }
-        // Also rejects surplus truncated bindings or nonempty fields laundered through empty().
+
         same(JSON.toJsonTree(evidence), raw, "evidence");
         NetworkRunMetrics metrics = NetworkRunMetrics.calculate(evidence);
         same(JSON.toJsonTree(metrics), root.get("metrics"), "metrics");
         return new Decoded(evidence, metrics);
     }
 
-    /**
-     * Read the ON-only configuration extension; absence is handled as OFF by the caller.
-     * @param value required object, not null/false/OFF
-     * @return immutable enabled recording option
-     */
     public static NetworkEvidenceConfig decodeConfig(JsonElement value) {
         JsonObject config = object(value, "networkEvidence");
         keys(config, "mode", "maxTraceRecords");
@@ -220,7 +200,6 @@ public final class NetworkLedgerCodec {
         return flowEvent(sequence, effective, observed, type, p, id, ordinal);
     }
 
-    /** Flow-event branch of {@code event()} (START/RATE_CHANGE/SERVICE_SEGMENT/COMPLETE, moved verbatim). */
     private static TransferTraceEvent flowEvent(
             long sequence,
             double effective,
@@ -341,8 +320,6 @@ public final class NetworkLedgerCodec {
         return input;
     }
 
-    /** Typed semantic equality: expected Number runtime types distinguish binary64 from exact decimal/integer
-     * fields. */
     private static void same(JsonElement expected, JsonElement actual, String path) {
         if (expected == null || expected.isJsonNull()) {
             if (actual == null || !actual.isJsonNull()) {
@@ -370,10 +347,6 @@ public final class NetworkLedgerCodec {
         samePrimitive(expected, actual, path);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from same(); statements verbatim; order unchanged.
-     * Scope: keyed object-tree equality by field-name set and per-key recursion.
-     */
     private static void sameObject(JsonElement expected, JsonElement actual, String path) {
         JsonObject left = expected.getAsJsonObject(), right = object(actual, path);
         if (!left.keySet().equals(right.keySet())) {
@@ -384,10 +357,6 @@ public final class NetworkLedgerCodec {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from same(); statements verbatim; order unchanged.
-     * Scope: primitive leaf equality by Number runtime type, boolean, then text.
-     */
     private static void samePrimitive(JsonElement expected, JsonElement actual, String path) {
         JsonPrimitive primitive = expected.getAsJsonPrimitive();
         if (primitive.isNumber()) {
@@ -422,15 +391,7 @@ public final class NetworkLedgerCodec {
             decimal(value, "encoded number");
         }
     }
-    /**
-     * Read strict JSON syntax into a fresh transport object while preserving numeric types.
-     * This lexical helper does NOT validate network semantics or supplied metrics; use
-     * {@link #decode(String)} for a certificate. It also supports exact numeric tokens
-     * longer than Gson JsonReader's 1024-character buffer, within our 4096-character limit.
-     * @param json complete JSON object
-     * @return fresh JSON tree with exact BigDecimal numeric primitives
-     * @throws IllegalArgumentException for invalid syntax or numeric/depth limits
-     */
+
     public static JsonObject parseDocument(String json) {
         if (json == null) {
             throw bad("Network ledger JSON is required");
@@ -444,7 +405,6 @@ public final class NetworkLedgerCodec {
         return object(value, "network ledger JSON");
     }
 
-    /** RFC 8259 lexical grammar only; semantic reconstruction stays in the codec above. */
     private static final class JsonSyntax {
         final String text;
         int at;
@@ -500,10 +460,6 @@ public final class NetworkLedgerCodec {
             throw error("Expected JSON value");
         }
 
-        /**
-         * 2026-10-26 complexity extraction from value(); statements verbatim; order unchanged.
-         * Scope: quoted-key object parsing with duplicate-key rejection and depth-carrying recursion.
-         */
         JsonObject objectValue(int depth) {
             at++;
             JsonObject object = new JsonObject();
@@ -535,7 +491,7 @@ public final class NetworkLedgerCodec {
             int start = at;
             take('-');
             if (take('0')) {
-                /* A following digit is rejected by the enclosing delimiter grammar. */
+
             } else if (peek() >= '1' && peek() <= '9') {
                 digits(start);
             } else {
@@ -623,10 +579,6 @@ public final class NetworkLedgerCodec {
             throw error("Unterminated string");
         }
 
-        /**
-         * 2026-10-26 complexity extraction from string(); statements verbatim; order unchanged.
-         * Scope: four-hex-digit Unicode escape decoding with per-digit range rejection.
-         */
         void appendUnicodeEscape(StringBuilder result) {
             if (text.length() - at < 4) {
                 throw error("Incomplete Unicode escape");

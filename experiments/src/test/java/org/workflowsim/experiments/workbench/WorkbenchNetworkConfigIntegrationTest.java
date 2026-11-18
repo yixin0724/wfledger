@@ -43,7 +43,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/** NF002D1: opt-in configuration reaches each real candidate/seed without changing legacy OFF. */
 class WorkbenchNetworkConfigIntegrationTest {
     @TempDir
     Path directory;

@@ -14,11 +14,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/**
- * Bounded display of validated online bindings and logged nominal scores, not actual input waits.
- * Only strings, structural booleans, nulls and deeply immutable maps/lists leave this class.
- * No lifecycle, live progress, filesystem access or further validation is needed here.
- */
 final class DataflowAssignmentReportView {
     static final int ACTION_LIMIT = 64, CANDIDATE_LIMIT = 12;
 
@@ -29,16 +24,15 @@ final class DataflowAssignmentReportView {
 
     private DataflowAssignmentReportView() {}
 
-    /** Null means that the enclosing run has no validated online-assignment evidence. */
     static Map<String, Object> fromValidated(DataflowAssignmentValidator.Result checked) {
         if (checked == null) {
             return null;
         }
-        // Exactly one defensive, already-validated snapshot; never expose its JSON nodes.
+
         JsonArray assignments = checked.getAssignments();
         long conditionalStoreCount = 0;
         BigDecimal joinedInputCopyCount = BigDecimal.ZERO;
-        // Summaries cover every assignment and its actual selected candidate, before either cap.
+
         for (JsonElement value : assignments) {
             JsonObject selected = selected(value.getAsJsonObject().getAsJsonObject("attributes"));
             if (selected.get("conditionalStoreWait").getAsBoolean()) {
@@ -61,7 +55,7 @@ final class DataflowAssignmentReportView {
         root.put("schema", "workflowsim-dataflow-assignment-display-v1");
         root.put("contextValidated", true);
         root.put("auditScope", checked.getScope());
-        // Bounded nominal estimates are not an exact replay or a contention/progress certificate.
+
         root.put("liveProgressReplayed", false);
         root.put("assignmentMode", metadata(first, "assignmentMode", MODE));
         root.put("assignmentPolicy", metadata(first, "assignmentPolicy", POLICY));
@@ -80,7 +74,7 @@ final class DataflowAssignmentReportView {
     private static Map<String, Object> action(JsonObject main) {
         JsonObject attrs = main.getAsJsonObject("attributes");
         JsonArray candidates = attrs.getAsJsonArray("candidates");
-        // Resolve from the complete candidate domain, even when its winner is not displayed.
+
         JsonObject chosen = selected(attrs);
         Map<String, Object> row = map();
         row.put("sequence", scalar(attrs.get("assignmentSequence")));
@@ -141,11 +135,10 @@ final class DataflowAssignmentReportView {
                 return candidate;
             }
         }
-        // The public validator's Result guarantees this invariant; this is not a second audit.
+
         throw new IllegalStateException("Validated assignment has no selected candidate");
     }
 
-    /** Explicit field lists keep raw main/lifecycle history and workflow labels out of the view. */
     private static Map<String, Object> fields(JsonObject source, String... names) {
         Map<String, Object> row = map();
         for (String name : names) {
@@ -178,8 +171,6 @@ final class DataflowAssignmentReportView {
         return primitive.getAsString();
     }
 
-    // Preserve the validated JSON decimal value, not a rounded binary64 approximation of it.
-    // Numeric text is never clipped, epsilon-rounded, or formatted as a date/scientific notation.
     private static BigDecimal exact(JsonElement value) {
         return new BigDecimal(value.getAsString());
     }

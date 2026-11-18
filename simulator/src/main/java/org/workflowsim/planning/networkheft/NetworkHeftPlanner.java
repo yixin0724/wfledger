@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Network-Aware HEFT with flow stretching and iterative re-scheduling. */
 public final class NetworkHeftPlanner {
 
     private final NetworkHeftFlowStretcher stretcher = new NetworkHeftFlowStretcher();
@@ -191,7 +190,6 @@ public final class NetworkHeftPlanner {
         });
     }
 
-    /** One compute-only reservation; transfers do not occupy the VM. */
     private static final class Reservation {
         private final int taskId;
         private final double start;

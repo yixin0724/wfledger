@@ -23,7 +23,6 @@ import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 
-/** Fixed lookup oracles and structural checks; no timing gates or production debug API. */
 class PersistentHistoryMapTest {
     @Test
     void emptyAndMissingQueriesDoNotInventMappings() throws ReflectiveOperationException {
@@ -186,7 +185,7 @@ class PersistentHistoryMapTest {
             parentExpected.put("stable-" + i, "value-" + i);
             probes.add("stable-" + i);
         }
-        // Each branch crosses the full carry from seven writes to eight.
+
         PersistentHistoryMap<String, String> child =
                 parent.with("shared", "child").with("child-only", "C");
         PersistentHistoryMap<String, String> sibling =
@@ -197,7 +196,6 @@ class PersistentHistoryMapTest {
         Map<String, String> siblingExpected = stringSnapshot(parentExpected, "shared", "sibling", "sibling-only", "S");
         Map<String, String> nestedExpected = stringSnapshot(childExpected, "shared", "nested", "nested-only", "N");
 
-        // Advance ancestors and siblings after descendants already exist, then advance descendants too.
         PersistentHistoryMap<String, String> parentNext =
                 parent.with("shared", "parent-next").with("parent-only", "P");
         PersistentHistoryMap<String, String> childNext =
@@ -489,8 +487,7 @@ class PersistentHistoryMapTest {
 
     @Test
     void binaryCarryWorkShapeHasSmallRootsAndOccasionalLinearMerges() throws ReflectiveOperationException {
-        // Count newly published chunk entries, not timing or hidden temporary allocations.
-        // For 1024 distinct writes the binary carry geometry gives exactly 6144 such entries.
+
         PersistentHistoryMap<Integer, Integer> map = PersistentHistoryMap.empty();
         long publishedEntries = 0;
         long rootReferences = 0;
@@ -522,7 +519,7 @@ class PersistentHistoryMapTest {
 
     @Test
     void longWriteCountIsCheckedForBothInsertsAndOverwritesBeforeCarrying() throws ReflectiveOperationException {
-        // Repeated equal writes can legitimately compress every level to one entry.
+
         List<Map<String, String>> levels =
                 new ArrayList<>(Collections.nCopies(63, Collections.singletonMap("same", "original")));
         PersistentHistoryMap<String, String> exhausted = syntheticMap(levels, Long.MAX_VALUE, 1);
@@ -548,7 +545,7 @@ class PersistentHistoryMapTest {
 
     @Test
     void intDistinctSizeOverflowRejectsNewKeysButStillAllowsOverwrites() throws ReflectiveOperationException {
-        // Synthetic cached size avoids allocating billions of keys. No existing final fields are changed.
+
         List<Map<String, String>> levels = new ArrayList<>(Collections.<Map<String, String>>nCopies(32, null));
         levels.set(31, Collections.singletonMap("present", "original"));
         long writes = 1L << 31;
@@ -596,7 +593,6 @@ class PersistentHistoryMapTest {
         return snapshot;
     }
 
-    // White-box checks stay in the test: production exposes only the locked lookup/update API.
     private static Object rootOf(PersistentHistoryMap<?, ?> map) throws ReflectiveOperationException {
         Field field = PersistentHistoryMap.class.getDeclaredField("root");
         field.setAccessible(true);
@@ -670,7 +666,6 @@ class PersistentHistoryMapTest {
         }
     }
 
-    /** Payloads have no mutable members; independent snapshot maps may safely share them. */
     private static final class ImmutableValue {
         private final long sequence;
         private final String tag;

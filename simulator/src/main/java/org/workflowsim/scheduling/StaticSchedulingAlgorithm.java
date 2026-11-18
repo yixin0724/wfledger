@@ -29,19 +29,6 @@ import org.workflowsim.Job;
 import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.utils.Parameters.ClassType;
 
-/**
- * Runtime dispatcher for a static mapping result.
- *
- * <p>It does not reselect the Task-to-VM mapping; it relies on the VM ID that the planner set
- * in advance and checks whether the compute Job is already mapped. Only when
- * {@link StaticSchedulePlan} is non-empty are compute Jobs released in the per-VM order that
- * the planner produced; mapping-only planners and historical planners keep an empty plan and
- * are still dispatched through the engine's ordinary ready/idle lifecycle.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Jun 17, 2013
- */
 public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     private static final double TIME_EPSILON = 1.0e-9;
@@ -50,7 +37,7 @@ public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
     private boolean strictDataflowBindings;
     private double nextWakeSeconds = Double.POSITIVE_INFINITY;
     private int deferredJobCount;
-    /** Enable fail-fast bound-compute validation for the explicit online-assignment contract. */
+
     public void requireDataflowBindings() {
         strictDataflowBindings = true;
     }
@@ -96,16 +83,11 @@ public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             return;
         }
 
-        // Model-generated non-compute Jobs (currently stage-in) are not part of the Task
-        // planner's plan and must be dispatched first.
         dispatchInPlannedOrder(vmIds, mId2Vm, fallbackRewrittenJobIds, fallbackVmId);
     }
 
-    /** Binding validation and fallback stage of run(); a verbatim port of the PLAT-15 recording semantics. */
     private List<Integer> applyBindingRules(Map<Integer, CondorVM> mId2Vm, int fallbackVmId) {
-        // PLAT-15: record the Jobs whose VM mapping was rewritten by the fallback. When such a
-        // Job later fails the strict-order plan check, the error message can point at the true
-        // root cause (a missing planner mapping) instead of reporting only the symptom.
+
         List<Integer> fallbackRewrittenJobIds = new ArrayList<Integer>();
         for (Object item : getCloudletList()) {
             Cloudlet cloudlet = (Cloudlet) item;
@@ -136,25 +118,18 @@ public class StaticSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         return fallbackRewrittenJobIds;
     }
 
-    /**
-     * Strict-order planned dispatch stage of run(); a verbatim port of the PLAT-15 root-cause
-     * hint and of the per-VM expected-Job dispatch.
-     */
     private void dispatchInPlannedOrder(
             List<Integer> vmIds,
             Map<Integer, CondorVM> mId2Vm,
             List<Integer> fallbackRewrittenJobIds,
             int fallbackVmId) {
-        // Model-generated non-compute Jobs (currently stage-in) are not part of the Task
-        // planner's plan and must be dispatched first.
+
         for (Object item : getCloudletList()) {
             Job job = (Job) item;
             if (job.getClassType() != ClassType.COMPUTE.value) {
                 scheduleIfIdle(job, mId2Vm);
             } else if (!staticSchedulePlan.isPlanned(job)) {
-                // PLAT-15: separate the two root causes -- a planner omission (the Job was
-                // first rewritten by the fallback) versus a missing entry in the plan itself --
-                // so that the error message does not mislead.
+
                 String rootCauseHint = fallbackRewrittenJobIds.contains(job.getCloudletId())
                         ? " Root cause: the job arrived without a planner VM mapping and was"
                                 + " rewritten to fallback VM " + fallbackVmId + "; the planner must"

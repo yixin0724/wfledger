@@ -21,21 +21,8 @@ import java.util.List;
 
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * Dispersion metric for task-set impact factors.
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class ImpactFactorVariance implements BalancingMetric {
 
-    /**
-     * Compute the dispersion of the impact factors of the task sets.
-     *
-     * @param list task sets to inspect
-     * @return impact-factor dispersion; zero when fewer than two sets are present
-     */
     @Override
     public double getMetric(List<TaskSet> list) {
         if (list == null || list.size() <= 1) {
@@ -46,7 +33,7 @@ public class ImpactFactorVariance implements BalancingMetric {
             sum += task.getImpactFactor();
         }
         double mean = sum / list.size();
-        // Log.printLine("sum: " + sum );
+
         sum = 0.0;
         for (TaskSet task : list) {
             double var = task.getImpactFactor();

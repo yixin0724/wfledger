@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable Network-Aware HEFT DAG and shared-bottleneck capacity. */
 public final class NetworkHeftProblem {
     private final List<NetworkHeftTask> tasks;
     private final Map<Integer, NetworkHeftTask> tasksById;

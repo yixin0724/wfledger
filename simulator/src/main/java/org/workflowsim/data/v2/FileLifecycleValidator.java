@@ -23,18 +23,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Independent read-side state machine. Deliberately does not use the runtime, replica catalog,
- * selector, topology router or service allocator. All state below is rebuilt from checked wire
- * facts; only the public immutable event/evidence factories are shared with the write side.
- */
 final class FileLifecycleValidator {
     private static final int MAX_NUMBER_DIGITS = 4096;
     private static final Location SOURCE = new Location(-1);
 
     private FileLifecycleValidator() {}
 
-    /** Read-only route adapter for independent action audits; never uses the runtime router. */
     static final class ReadFabric {
         private final Fabric fabric;
 
@@ -89,7 +83,6 @@ final class FileLifecycleValidator {
         new Plan(object(plan, "filePlan"));
     }
 
-    /** The original entry point remains pinned to V2, even though the event carrier is shared. */
     static Result validate(JsonObject root) {
         return validate(root, LifecycleContract.FILE_V2);
     }
@@ -136,7 +129,7 @@ final class FileLifecycleValidator {
         equal(policies, "sharing", shared ? "SHARED_MAX_MIN" : "ISOLATED_PATH_BOTTLENECK");
         JsonObject capture = object(root.get("capture"), "capture");
         keys(capture, "status", "observedThrough", "retainedRecords", "droppedRecords");
-        equal(capture, "status", "COMPLETE"); // TRUNCATED is not a first-version certificate.
+        equal(capture, "status", "COMPLETE");
         double watermark = number(capture.get("observedThrough"), "observedThrough");
         JsonArray rows = array(root.get("events"), "events");
         require(whole(capture.get("droppedRecords"), "droppedRecords") == 0, "Complete capture lost history");
@@ -206,7 +199,6 @@ final class FileLifecycleValidator {
         }
     }
 
-    /** -1 denotes the sole supported typed SOURCE, not a VM/resource string alias. */
     private static final class Location implements Comparable<Location> {
         final int vm;
 
@@ -365,14 +357,10 @@ final class FileLifecycleValidator {
                             "Unknown or cross-scope producer");
                 }
             }
-            // Sparse iterative walks permit ANY control ancestor, not only a direct parent.
+
             requireAncestralProducers();
         }
 
-        /**
-         * 2026-10-26 complexity extraction from validateGraphAndFiles(); statements verbatim; order unchanged.
-         * Scope: the per-task input-producer ancestry walk only; graph/topology checks stay in the caller.
-         */
         private void requireAncestralProducers() {
             for (TaskRow task : tasks.values()) {
                 Set<Integer> required = new HashSet<>();
@@ -494,8 +482,7 @@ final class FileLifecycleValidator {
             JsonArray assignments = array(raw.get("vmHostAssignments"), "vmHostAssignments");
             if (isNull(raw.get("topology"))) {
                 require(storage || assignments.size() == 0, "V2 endpoint-only fabric cannot carry host assignments");
-                // V3 freezes actual hosts even without topology. Platform membership of this
-                // attachment and these hosts belongs to the caller's final platform join.
+
             } else {
                 parseTopology(object(raw.get("topology"), "topology"), expected);
             }
@@ -518,10 +505,6 @@ final class FileLifecycleValidator {
                     "Physical resources must exactly match the versioned endpoint, link and store inventory");
         }
 
-        /**
-         * Fabric construction topology stage (k, core count, placement, link pairing,
-         * capacity reconciliation, moved verbatim).
-         */
         private void parseTopology(JsonObject topology, Set<String> expected) {
             keys(topology, "kind", "k", "coreSwitchCount", "linkBandwidthBytesPerSecond", "hostPlacements");
             equal(topology, "kind", "FAT_TREE");
@@ -570,7 +553,7 @@ final class FileLifecycleValidator {
 
         private void storeResource(JsonObject store, String field, String resource) {
             double mb = number(store.get(field), field);
-            double bytes = mb * 1_000_000.0; // Same specified binary64 conversion, never integer rounding.
+            double bytes = mb * 1_000_000.0;
             require(
                     mb > 0 && Double.isFinite(bytes) && bytes >= Double.MIN_NORMAL,
                     "Storage bandwidth must convert to positive normal finite bytes/s");
@@ -613,7 +596,7 @@ final class FileLifecycleValidator {
                 resources.add(STORE_NIC);
                 resources.add(STORE_WRITE);
             }
-            // Only the pinned V2 contract omits SOURCE service and attachment links.
+
             return new Route(resources, capacities);
         }
 
@@ -622,9 +605,7 @@ final class FileLifecycleValidator {
                 return;
             }
             Placement src = placements.get(srcHost), dst = placements.get(dstHost);
-            // AUD-F12: the deterministic fat-tree rules have one Java source -- the same
-            // static decision the runtime route() delegates to; the Python auditor keeps an
-            // independent recompute (cross-language dual implementation is the evidence design).
+
             resources.addAll(
                     FatTreeTopology.routingLinks(srcHost, src.pod, src.edge, dstHost, dst.pod, dst.edge, cores, half));
         }
@@ -758,8 +739,7 @@ final class FileLifecycleValidator {
         final TaskRow task;
         final Location destination;
         final double requestedAt;
-        // Initial unclassified references, active target-copy waits, and uncommitted store
-        // waits are disjoint. SOURCE visibility alone never satisfies a remote VM input.
+
         final Set<FileKey> unresolved, pending = new HashSet<>(), waitingStore = new HashSet<>();
         double isolatedTotal;
         boolean ready, started, finished, success;
@@ -783,7 +763,6 @@ final class FileLifecycleValidator {
         }
     }
 
-    /** A successful completion publishes every VM output first, then resolves each store obligation. */
     private static final class OutputOperation {
         final Job job;
         final double at;
@@ -797,7 +776,6 @@ final class FileLifecycleValidator {
         }
     }
 
-    /** Deferred inputs are per Job and file, separate from the same-target copy waiter index. */
     private static final class DeferredInput {
         final Job job;
         final FileKey file;
@@ -845,8 +823,7 @@ final class FileLifecycleValidator {
         }
 
         void event(FileLifecycleEvent.Type type, JsonObject p, double at) {
-            // These are atomic observed operations, not an attempt to infer missing service intervals.
-            // READY takes priority inside an output operation or between deferred resolvers.
+
             requireEventOrder(type, at);
             if (type != FileLifecycleEvent.Type.EXTERNAL_SEEDED) {
                 require(unseeded.isEmpty(), "All external files must be seeded before runtime operations");
@@ -888,10 +865,6 @@ final class FileLifecycleValidator {
             }
         }
 
-        /**
-         * 2026-10-26 complexity extraction from event(); statements verbatim; order unchanged.
-         * Scope: the immediate-successor ordering guard chain only; event dispatch stays in the caller.
-         */
         private void requireEventOrder(FileLifecycleEvent.Type type, double at) {
             if (!dueReady.isEmpty()) {
                 require(
@@ -922,10 +895,6 @@ final class FileLifecycleValidator {
             }
         }
 
-        /**
-         * 2026-10-26 complexity extraction from event(); statements verbatim; order unchanged.
-         * Scope: the pending-initial-request successor constraint only, as one branch of the order chain.
-         */
         private void requireResolvedAtRequest(FileLifecycleEvent.Type type, double at) {
             require(
                     at == request.requestedAt
@@ -961,7 +930,7 @@ final class FileLifecycleValidator {
                 require(successfulTasks.contains(parent), "Control parent has no successful logical outcome");
             }
             Location destination = fabric.vm(p.get("destinationVmId"));
-            // Canonical plan order, not deferred-resolution arrival order. Never expand multiplicity.
+
             long references = 0;
             double referenceBytes = 0;
             for (Map.Entry<FileKey, Long> input : task.inputs.entrySet()) {
@@ -1004,7 +973,6 @@ final class FileLifecycleValidator {
             endRequestIfResolved(at);
         }
 
-        /** Locate the one input operation allowed now; no public runtime/selector is called. */
         private Job inputOwner(FileKey file, double at) {
             Job owner;
             if (request != null) {
@@ -1132,7 +1100,7 @@ final class FileLifecycleValidator {
             Copy copy = resolveAdmission(p, file, owner, source, resolution, local, at);
             if (copy != null) {
                 owner.pending.add(file.id);
-                // Nominal input seconds follow actual resolution order, unlike reference-byte totals.
+
                 owner.isolatedTotal = finiteSum(owner.isolatedTotal, copy.seconds);
                 waiters.computeIfAbsent(copy.target(), ignored -> new LinkedHashSet<>())
                         .add(owner.id);
@@ -1151,7 +1119,6 @@ final class FileLifecycleValidator {
             }
         }
 
-        /** Four-way resolution stage of resolve() (LOCAL/ZERO/NEW_COPY/JOIN_EXISTING, moved verbatim). */
         private Copy resolveAdmission(
                 JsonObject p, FileRow file, Job owner, Location source, String resolution, Replica local, double at) {
             Copy copy = null;
@@ -1193,10 +1160,6 @@ final class FileLifecycleValidator {
             return copy;
         }
 
-        /**
-         * 2026-10-26 complexity extraction from resolveAdmission(); statements verbatim; order unchanged.
-         * Scope: the NEW_COPY case body only; returns the frozen admission as the caller's result.
-         */
         private Copy resolveNewCopyAdmission(JsonObject p, FileRow file, Job owner, Location source, Replica local) {
             long newOrdinal = positiveLong(p.get("copyOrdinal"), "copyOrdinal");
             Copy copy = needsResolution;
@@ -1256,10 +1219,6 @@ final class FileLifecycleValidator {
             continueOutputs();
         }
 
-        /**
-         * 2026-10-26 complexity extraction from resolveOutput(); statements verbatim; order unchanged.
-         * Scope: the four-way output disposal switch only; it reports whether a SOURCE publication happened.
-         */
         private boolean resolveOutputResolution(
                 JsonObject p,
                 Job owner,
@@ -1298,8 +1257,7 @@ final class FileLifecycleValidator {
                                     && existing.output
                                     && existing == byTarget.get(new Target(file.id, SOURCE)),
                             "Output JOIN_EXISTING must reuse the active same-file SOURCE upload");
-                    // The event's source is THIS completion's VM; the joined ticket retains its
-                    // original owner's VM and first source provenance, which may be different.
+
                     break;
                 default:
                     throw bad("Unsupported output resolution");
@@ -1307,10 +1265,6 @@ final class FileLifecycleValidator {
             return published;
         }
 
-        /**
-         * 2026-10-26 complexity extraction from resolveOutput(); statements verbatim; order unchanged.
-         * Scope: the output NEW_COPY case body only; discharges the immediately preceding frozen upload.
-         */
         private void resolveNewOutputCopy(JsonObject p, Job owner, FileRow file, Location source, Replica stored) {
             long ordinal = positiveLong(p.get("copyOrdinal"), "copyOrdinal");
             Copy copy = needsResolution;
@@ -1339,8 +1293,7 @@ final class FileLifecycleValidator {
             double tolerance =
                     Math.min(copy.file.bytes * .5, Math.max(copy.file.bytes * 1e-9, 4 * Math.ulp(copy.file.bytes)));
             require(residual <= tolerance, "Settlement residual exceeds the scalar numerical completion bound");
-            // Necessary isolated lower bound, NOT a replay of contended service area. In
-            // particular, standaloneRate * elapsed need not be finite for contended service.
+
             double lower = copy.release + ((copy.file.bytes - residual) / copy.rate);
             double allowed = Math.min(
                     8 * Math.max(Math.ulp(copy.release), Math.max(Math.ulp(effective), Math.ulp(lower))),
@@ -1431,8 +1384,7 @@ final class FileLifecycleValidator {
                 publish(new Replica(file, location, at, "TASK_OUTPUT", origin, null, null));
             }
             if (contract.storage) {
-                // Establish ALL obligations now, including zero and unused outputs. An omitted
-                // output operation is invalid even when it would have admitted no positive copy.
+
                 for (FileKey file : job.task.outputs) {
                     if (visible(file, SOURCE) == null) {
                         pendingOutputs.add(file);
@@ -1475,7 +1427,7 @@ final class FileLifecycleValidator {
 
         private void publish(Replica proposal) {
             Map<Location, Replica> holders = replicas.computeIfAbsent(proposal.file, ignored -> new TreeMap<>());
-            // A later output/settlement cannot rewrite the first visible acquisition or root origin.
+
             if (!holders.containsKey(proposal.location)) {
                 holders.put(proposal.location, proposal);
             }

@@ -20,7 +20,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** End-to-end acceptance of the declarative research configurations. */
 class StandardResearchConfigurationsIntegrationTest {
 
     @TempDir

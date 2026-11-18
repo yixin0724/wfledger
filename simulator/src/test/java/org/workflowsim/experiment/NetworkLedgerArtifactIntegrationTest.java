@@ -41,7 +41,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Actual ON bundles and coherently rehashed semantic attacks; no historical outputs are edited. */
 class NetworkLedgerArtifactIntegrationTest {
     @TempDir
     Path temporary;
@@ -361,7 +360,7 @@ class NetworkLedgerArtifactIntegrationTest {
             JsonObject input = ledger.getAsJsonObject("evidence").getAsJsonObject("inputDemand");
             assertEquals(2, input.get("referenceCount").getAsInt());
             assertEquals(0, input.get("localReferenceCount").getAsInt());
-            input.addProperty("localReferenceCount", 1); // zero-byte alleged local hit leaves byte totals unchanged
+            input.addProperty("localReferenceCount", 1);
             ledger = recompute(ledger);
             replaceLedger(files, ledger);
             assertThrows(IOException.class, () -> ExperimentArtifactValidator.validate(files.getManifest()));
@@ -461,7 +460,7 @@ class NetworkLedgerArtifactIntegrationTest {
         role(manifest, "events").addProperty("sizeBytes", Files.size(files.getEvents()));
         ExperimentArtifactWriter.writeJson(files.getManifest(), manifest);
         assertThrows(IOException.class, () -> ExperimentArtifactValidator.validate(files.getManifest()));
-        // Both false external STARTs remain visible in this prefix; generic codec still accepts it.
+
         JsonObject truncated = ledger.deepCopy(),
                 prefixTrace = truncated.getAsJsonObject("evidence").getAsJsonObject("traceSnapshot");
         JsonArray completeRows = prefixTrace.getAsJsonArray("events"), prefixRows = new JsonArray();

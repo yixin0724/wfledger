@@ -1,8 +1,7 @@
 package org.workflowsim.data.v2;
 
-/** Typed logical data location. This identity does not imply a route, capacity or storage service. */
 public final class DataLocation implements Comparable<DataLocation> {
-    /** Location category; arbitrary SOURCE labels cannot masquerade as VM identities. */
+
     public enum Kind {
         VM,
         SOURCE
@@ -17,38 +16,32 @@ public final class DataLocation implements Comparable<DataLocation> {
         this.vmId = vmId;
         this.sourceId = sourceId;
     }
-    /**
-     * @param vmId nonnegative actual VM identifier
-     * @return immutable VM location
-     */
+
     public static DataLocation vm(int vmId) {
         if (vmId < 0) {
             throw new IllegalArgumentException("VM location ID must be nonnegative");
         }
         return new DataLocation(Kind.VM, vmId, null);
     }
-    /**
-     * @param sourceId exact nonempty modeled storage/source identifier
-     * @return immutable source location
-     */
+
     public static DataLocation source(String sourceId) {
         if (sourceId == null || sourceId.isEmpty()) {
             throw new IllegalArgumentException("SOURCE location needs a nonempty ID");
         }
         return new DataLocation(Kind.SOURCE, -1, sourceId);
     }
-    /** @return typed category */
+
     public Kind getKind() {
         return kind;
     }
-    /** @return VM ID; rejects a SOURCE location */
+
     public int getVmId() {
         if (kind != Kind.VM) {
             throw new IllegalStateException("Not a VM location");
         }
         return vmId;
     }
-    /** @return exact SOURCE identifier; rejects a VM location */
+
     public String getSourceId() {
         if (kind != Kind.SOURCE) {
             throw new IllegalStateException("Not a SOURCE location");

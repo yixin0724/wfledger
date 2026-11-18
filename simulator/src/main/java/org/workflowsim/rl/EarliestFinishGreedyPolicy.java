@@ -3,21 +3,6 @@ package org.workflowsim.rl;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Baseline policy: each ready Job selects the idle compatible VM with the earliest expected
- * completion (ECT = length / mips).
- *
- * <p>This is the reference policy of the RL track, used to verify the closed environment loop and to
- * provide a comparable lower-bound baseline:</p>
- * <ul>
- *   <li>Decisions follow the Job arrival order of the observation; for the same Job, VMs with equal
- *       ECT go to the smaller VM ID;</li>
- *   <li>Within one update each VM receives at most one Job (consistent with the ready-batch scheduler
- *       contract): a VM already reserved in this round counts as unavailable, and later Jobs fall
- *       through to the next-best VM;</li>
- *   <li>A Job with no idle compatible VM returns {@link RlPolicy#NO_ASSIGNMENT}.</li>
- * </ul>
- */
 public final class EarliestFinishGreedyPolicy implements RlPolicy {
 
     @Override

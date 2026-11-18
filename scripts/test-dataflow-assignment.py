@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""NF005B hand-oracle action/context tests; stdlib only, no Java/subprocess.
 
-Expected actions are literal arithmetic on hand timelines, never constructed
-from checker facts. Bundle mutations repair hashes unless testing hash checks.
-Run: python3 -B scripts/test-dataflow-assignment.py
-"""
 import contextlib
 import copy
 from decimal import Decimal
@@ -25,13 +20,11 @@ import _dataflow_assignment_audit as audit
 import _file_lifecycle_context as v2_context
 import _storage_lifecycle_context as v3_context
 
-
 def load(name, filename):
     spec = importlib.util.spec_from_file_location(name, HERE / filename)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
 
 v2 = load("nf005b_v2_bundles", "test-file-lifecycle-context.py")
 v3 = load("nf005b_v3_bundles", "test-storage-lifecycle-context.py")
@@ -42,27 +35,22 @@ POLICY = "NOMINAL_INPUT_EARLIEST_RESERVATION_V1"
 SCOPE = "BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1"
 ACTION = "DATAFLOW_VM_ASSIGNED"
 
-
 def candidate(vm, inputs, cpu, compute, score, wait=False, joined=0):
     return dict(vmId=vm, compatible=True, inputSeconds=inputs, cpuAvailableAt=cpu, computeSeconds=compute,
                 scoreFinishSeconds=score, conditionalStoreWait=wait, joinedInputCopies=joined)
-
 
 def incompatible(vm):
     return dict(vmId=vm, compatible=False, inputSeconds=None, cpuAvailableAt=None, computeSeconds=None,
                 scoreFinishSeconds=None, conditionalStoreWait=None, joinedInputCopies=None)
 
-
 def spec(rows, copies=0, jobs=0, pending=0, binding="INITIAL"):
     return dict(rows=rows, copies=copies, jobs=jobs, pending=pending, binding=binding)
 
-
 def costs(rows):
-    """Coordinates supplied by a hand oracle, not by any checker result."""
+
     return dict(unit="EXECUTION_SECONDS", runtimeConversion="ROUND_SECONDS_TIMES_VM_MIPS_TO_POSITIVE_INTEGER_MI",
                 entries=[dict(taskId=tid, vmId=vm, executionSeconds=seconds)
                          for tid, columns in rows.items() for vm, seconds in columns.items()])
-
 
 def install(bundle, expected, *, lengths=None, pes=None, mips=None, request_pes=None, matrix=None, effective=None):
     root, config = bundle.manifest, bundle.manifest["configuration"]
@@ -83,7 +71,7 @@ def install(bundle, expected, *, lengths=None, pes=None, mips=None, request_pes=
         task_pes, job_pes = (request_pes or {}).get(tid, (1, 1))
         row.update(lengthMi=length, effectiveExecutionLengthMi=effective_length)
         root["dataflowComputeRequests"].append(dict(jobId=jid, taskId=tid, taskPes=task_pes, jobPes=job_pes, lengthMi=length))
-        # These are independently supplied fixture inputs, not checker facts.
+
         execution_metadata[jid] = dict(taskLengthMi=length, effectiveExecutionLengthMi=effective_length,
                                        taskTimingScope="MODEL_DERIVED_COMPUTE_WINDOW")
     storage = bundle.ledger["schema"] == "workflowsim-storage-lifecycle-v3"
@@ -115,11 +103,9 @@ def install(bundle, expected, *, lengths=None, pes=None, mips=None, request_pes=
     bundle.write()
     return bundle
 
-
 def one_task(vm=2, now=0, finish=1, vms=((2, 10), (10, 20), (99, 30))):
     return h2.document([h2.task(0)], [], [h2.request(10, 0, vm, now), h2.ready(10, now),
                        h2.cpu(10, vm, now), h2.finish(10, 0, vm, finish)], h2.endpoints(vms))
-
 
 def reservation_timeline():
     return h2.document([h2.task(t) for t in range(4)], [], [
@@ -129,7 +115,6 @@ def reservation_timeline():
         h2.finish(11, 1, 2, 11), h2.cpu(13, 2, 11), h2.finish(12, 2, 2, 12), h2.finish(13, 3, 2, 13)],
         h2.endpoints(((2, 10),)))
 
-
 def ordered_reservations():
     events = []
     for jid, tid in ((30, 0), (20, 1), (10, 2), (40, 3)):
@@ -137,7 +122,6 @@ def ordered_reservations():
     for jid, tid, start, finish in ((30, 0, 1, 1.1), (20, 1, 2, 2.2), (10, 2, 3, 3.3), (40, 3, 4, 4.1)):
         events += [h2.cpu(jid, 2, start), h2.finish(jid, tid, 2, finish)]
     return h2.document([h2.task(t) for t in range(4)], [], events, h2.endpoints(((2, 10),)))
-
 
 def cached_store():
     doc = h3.cached_peer()
@@ -154,7 +138,6 @@ def cached_store():
         elif p.get("jobId") == 11 and event["type"] in ("JOB_DATA_READY", "JOB_CPU_STARTED", "TASK_FINISHED"):
             event["observedTime"] = 26 if event["type"] == "TASK_FINISHED" else 25
     return h3.seal(doc)
-
 
 class AssignmentTests(unittest.TestCase):
     def bundle(self, factory=one_task, storage=False, **kwargs):
@@ -283,8 +266,7 @@ class AssignmentTests(unittest.TestCase):
 
     def test_global_main_sequence_zero_and_null_noncompute_preamble(self):
         for b in (self.simple(), self.roundtrip(True)):
-            # Real main streams begin with a zero-based non-compute event, whose
-            # identities/class are null; assignmentSequence is independently 1.
+
             b.events.insert(0, dict(sequence=0, simulationTime=0, type="WORKFLOW_PARSED", jobId=None,
                                     vmId=None, classType=None, taskIds=[], attributes={}))
             b.resequence()
@@ -292,7 +274,7 @@ class AssignmentTests(unittest.TestCase):
             self.assertEqual(0, b.events[0]["sequence"])
             self.assertEqual(1, report["assignmentFacts"][0]["assignmentSequence"])
             self.assertEqual(1, next(e for e in b.events if e["type"] == ACTION)["sequence"])
-            # Gaps in global sequencing still reject independently of actions.
+
             b.events[0]["sequence"] = 1
             with self.assertRaisesRegex(CheckError, "nonconsecutive main event sequence"):
                 audit.verify_context(b.manifest, b.ledger, b.events)
@@ -429,7 +411,7 @@ class AssignmentTests(unittest.TestCase):
         for isolated in (False, True):
             for value in (.125, .75, 1):
                 b = self.fanin(isolated)
-                self.row(b, 12, 1)["inputSeconds"] = value  # CPU availability=3 dominates all these estimates.
+                self.row(b, 12, 1)["inputSeconds"] = value
                 report = self.good(b)
                 self.assertFalse(report["liveProgressReplayed"])
                 self.assertFalse(report["assignmentFacts"][2]["candidates"][1]["inputBounds"]["knownExact"])
@@ -446,7 +428,7 @@ class AssignmentTests(unittest.TestCase):
         self.row(b, 11, 1).update(inputSeconds=9, scoreFinishSeconds=11)
         self.bad(b, "outside nominal")
         b = self.fanin()
-        self.row(b, 13, 2).update(inputSeconds=1, scoreFinishSeconds=7)  # Ignore faster VM2 cache.
+        self.row(b, 13, 2).update(inputSeconds=1, scoreFinishSeconds=7)
         self.bad(b, "outside nominal")
 
     def test_local_vs_shared_source_policy_is_independent_of_capacity_kind(self):
@@ -566,9 +548,7 @@ class AssignmentTests(unittest.TestCase):
                 self.bad(b)
 
     def test_scoped_file_count_is_unique_current_inputs_not_plan_refs_or_copies(self):
-        # Four declared files: external plus three outputs. The producer requests
-        # one input; its child requests x twice and zero once, all local metadata.
-        # Thus scoped counts are 1,2, not plan=4, child references=3 or copies=0.
+
         for storage in (False, True):
             h = h3 if storage else h2
             def timeline():
@@ -1048,7 +1028,6 @@ class AssignmentTests(unittest.TestCase):
         with contextlib.redirect_stdout(output):
             self.assertEqual(1, cli.main([str(b.path), "--json"]))
         self.assertEqual("EVIDENCE_INVALID", json.loads(output.getvalue())["status"])
-
 
 if __name__ == "__main__":
     unittest.main()

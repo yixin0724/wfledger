@@ -35,82 +35,37 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Single entry point that converts workflow input into a WorkflowSim {@link Task} DAG.
- *
- * <p>DAX XML is parsed by default; an input whose extension is {@code .json} is delegated to
- * {@link WfCommonsJsonParser} to parse a WfCommons WfFormat instance. Both paths convert the
- * runtime in seconds carried by the input into million instructions (MI) using the reference MIPS
- * and the runtime scale factor, and normalize a too-small length with the normalization recorded
- * explicitly.</p>
- *
- * <p>Version contract (R8 audit, architecture channel P1-4): the DAX {@code version} attribute and
- * the WfCommons {@code schemaVersion} are only recorded into {@link WorkflowInputReport} as
- * evidence and are not validated. Parsing semantics follow the Pegasus DAX 3.x structure and the
- * WfCommons 1.x implementation; the DAX {@code size} attribute keeps the upstream WorkflowSim
- * historical convention of interpreting it directly as bytes (the Pegasus 3.x schema nominally
- * uses KB, a factor of 1024 apart -- the platform bandwidth calibration and golden values are both
- * based on the "as bytes" semantics); unit or structure differences in DAX 2.x or future major
- * versions are unverified, so reconcile the unit semantics manually before using input from a
- * non-target version.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Aug 23, 2013
- * @date Nov 9, 2014
- */
 public final class WorkflowParser {
 
     private static final long MIN_CLOUDLET_LENGTH = 100L;
 
-    /** Single DAX or JSON input path. */
     private final String daxPath;
-    /** Multiple DAX or JSON input paths. */
+
     private final List<String> daxPaths;
-    /** All tasks produced by the most recent parse. */
+
     private List<Task> taskList;
 
-    /** Conversion report for each input consumed by the most recent parse. */
     private final List<WorkflowInputReport> inputReports;
 
-    /**
-     * R5 dynamic arrival: mapping from each task number to its source input index in the most
-     * recent parse.
-     *
-     * <p>Task numbers are assigned consecutively across inputs, and input indices correspond
-     * one-to-one to the positions in {@link #inputReports}.</p>
-     */
     private final Map<Integer, Integer> taskWorkflowIndices;
-    /** CloudSim user ID written when a task is created. */
+
     private final int userId;
 
-    /** Next assignable task number; supports submitting several workflows in sequence. */
     private int jobIdStartsFrom;
 
-    /** @return task list produced by the most recent parse */
     @SuppressWarnings("unchecked")
     public List<Task> getTaskList() {
         return taskList;
     }
 
-    /**
-     * Replace the task list of the current parse result.
-     *
-     * @param taskList new task list
-     */
     protected void setTaskList(List<Task> taskList) {
         this.taskList = taskList;
     }
-    /** Temporary index from DAX job name to task object. */
+
     protected Map<String, Task> mName2Task;
-    /** Directed task-ID pairs seen in the current DAX input; lists retain first-declaration order. */
+
     private final Set<Long> daxDependencyEdges = new HashSet<>();
 
-    /**
-     * Create a workflow parser.
-     *
-     * @param userId CloudSim user ID to which every parsed task belongs
-     */
     public WorkflowParser(int userId) {
         this.userId = userId;
         this.mName2Task = new HashMap<>();
@@ -123,15 +78,6 @@ public final class WorkflowParser {
         this.taskWorkflowIndices = new HashMap<>();
     }
 
-    /**
-     * Parse the configured workflow input or inputs.
-     *
-     * <p>DAX XML is still the default format; a file ending in {@code .json} is parsed as a
-     * WfCommons workflow instance. Every call first clears the tasks, the name index, and the input
-     * reports of the previous run, so the result does not accumulate across parses.</p>
-     *
-     * @throws WorkflowValidationException when no input is configured or any input is invalid
-     */
     public void parse() {
         setTaskList(new ArrayList<Task>());
         mName2Task.clear();
@@ -155,14 +101,6 @@ public final class WorkflowParser {
         }
     }
 
-    /**
-     * Parse a single input and register the tasks it produces under the given workflow index
-     * (used by R5 dynamic arrival).
-     *
-     * @param path input file path
-     * @param fileNamespace file scope of a multi-input submission; {@code null} for a single input
-     * @param workflowIndex index of this input within the current submission
-     */
     private void parseInputWithWorkflowIndex(String path, String fileNamespace, int workflowIndex) {
         int firstTaskId = this.jobIdStartsFrom;
         parseWorkflowFile(path, fileNamespace);
@@ -171,31 +109,14 @@ public final class WorkflowParser {
         }
     }
 
-    /**
-     * Return the mapping from task number to source input index of the most recent parse (used by
-     * R5 dynamic arrival).
-     *
-     * @return unmodifiable mapping; with a single input every task index is 0
-     */
     public Map<Integer, Integer> getTaskWorkflowIndices() {
         return Collections.unmodifiableMap(taskWorkflowIndices);
     }
 
-    /**
-     * Return the immutable reports of the inputs consumed by the most recent parse.
-     *
-     * @return one report per DAX or WfCommons input
-     */
     public List<WorkflowInputReport> getInputReports() {
         return Collections.unmodifiableList(inputReports);
     }
 
-    /**
-     * Parse a single workflow input by file extension.
-     *
-     * @param path workflow file path; DAX uses {@code .dax}/{@code .xml}, WfCommons uses
-     * {@code .json}
-     */
     private void parseWorkflowFile(String path, String fileNamespace) {
         if (path == null || path.trim().isEmpty()) {
             throw new WorkflowValidationException("Workflow input path cannot be empty");
@@ -213,11 +134,6 @@ public final class WorkflowParser {
         throw new WorkflowValidationException("Unsupported workflow input format: " + path);
     }
 
-    /**
-     * Parse a WfCommons WfFormat JSON workflow instance.
-     *
-     * @param path JSON file path
-     */
     private void parseWfCommonsJsonFile(String path, String fileNamespace) {
         try {
             WfCommonsJsonParser.ParseResult result =
@@ -233,20 +149,10 @@ public final class WorkflowParser {
         }
     }
 
-    /**
-     * Parse a DAX XML file with JDOM.
-     *
-     * <p>All task definitions are built first, then parent-child relations are parsed, and the DAG
-     * is validated at the end. A missing task is never created implicitly during dependency
-     * parsing, so invalid input cannot be accepted silently.</p>
-     *
-     * @param path DAX XML path
-     */
     private void parseXmlFile(String path, String fileNamespace) {
         try {
             SAXBuilder builder = new SAXBuilder();
-            // Inputs are self-contained evidence. External DTD/entity contents are neither
-            // part of the input fingerprint nor allowed to access local/network resources.
+
             builder.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true);
             builder.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             builder.setFeature("http://xml.org/sax/features/external-general-entities", false);
@@ -268,8 +174,6 @@ public final class WorkflowParser {
             mName2Task.clear();
             daxDependencyEdges.clear();
 
-            // Every task definition must be built first, so that later dependency references can
-            // be strictly resolved and validated.
             for (Element node : list) {
                 if ("job".equalsIgnoreCase(node.getName())) {
                     parsedTasks.add(parseDaxJob(node, report, fileNamespace, firstDeclaredInputs));
@@ -282,12 +186,7 @@ public final class WorkflowParser {
                 }
             }
             WorkflowDagValidator.validateAndAssignDepths(parsedTasks);
-            // F-009 fix (2026-10-19): commit the first-round INPUT declarations into the global
-            // replica catalog only after the structure and DAG validation have fully passed; a
-            // failed parse no longer leaves half-committed entries (such pollution would replace
-            // the new declarations of a retried parse in the same JVM through the "reuse the
-            // first-declared size" rule). Commit keeps the historical cross-parse semantics: an
-            // existing entry is never overwritten.
+
             for (Map.Entry<String, FileItem> entry : firstDeclaredInputs.entrySet()) {
                 if (!ReplicaCatalog.containsFile(entry.getKey())) {
                     ReplicaCatalog.setFile(entry.getKey(), entry.getValue());
@@ -358,19 +257,14 @@ public final class WorkflowParser {
                 requiredAttribute(file, "size", "DAX file " + originalFileName),
                 "size for DAX file " + originalFileName);
         FileItem item;
-        // F-009: an INPUT declaration only interacts with the "local first-round table plus the
-        // existing global catalog" and no longer writes into the global catalog directly; the first
-        // of three sources wins: existing catalog entry (historical cross-parse semantics), then an
-        // earlier declaration in this round, then a new entry.
+
         FileItem registered = ReplicaCatalog.containsFile(fileName)
                 ? ReplicaCatalog.getFile(fileName)
                 : firstDeclaredInputs.get(fileName);
         if (type == FileType.INPUT && registered != null) {
             item = registered;
             if (Double.compare(item.getSize(), size) != 0) {
-                // Relaxed validation: log a warning but keep using the first-declared size. In a
-                // real scientific workflow, the size estimated for the same file can differ across
-                // tasks; this is normal Pegasus DAX output and must not block simulation execution.
+
                 Log.printLine("WARNING: DAX file '" + originalFileName
                         + "' has inconsistent input size declarations: "
                         + "first=" + item.getSize() + ", current=" + size
@@ -379,15 +273,10 @@ public final class WorkflowParser {
         } else {
             item = new FileItem(fileName, size);
             if (type == FileType.INPUT) {
-                // Enter the local first-round table during parsing; commit after the DAG
-                // check passes (see the end of parseXmlFile).
+
                 firstDeclaredInputs.putIfAbsent(fileName, item);
             } else if (registered != null && Double.compare(registered.getSize(), size) != 0) {
-                // R8 audit fix (architecture channel P1-4): a size mismatch between an OUTPUT and
-                // a registered INPUT of the same name was previously completely silent -- when the
-                // two declarations of an intermediate file (upstream output = downstream input)
-                // diverge, the transferred byte count depends on the parse order. Log a warning to
-                // match the INPUT branch.
+
                 Log.printLine("WARNING: DAX file '" + originalFileName
                         + "' output size " + size + " differs from registered input size "
                         + registered.getSize()
@@ -398,18 +287,6 @@ public final class WorkflowParser {
         return item;
     }
 
-    /**
-     * Build the internal logical identity of a file within a multi-input submission.
-     *
-     * <p>Files of the same name in different workflows are not shared by default; only a file
-     * referenced repeatedly within the same input denotes the same logical data object. A
-     * single-input scenario keeps the original file name to preserve the historical API and the
-     * compatibility of existing experiments.</p>
-     *
-     * @param fileNamespace stable scope of the current input; {@code null} for a single input
-     * @param originalFileName original file name declared in the input format
-     * @return internal file identity used by tasks and the replica catalog
-     */
     private static String scopedFileName(String fileNamespace, String originalFileName) {
         if (fileNamespace == null) {
             return originalFileName;

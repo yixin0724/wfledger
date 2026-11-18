@@ -10,15 +10,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Test support that runs the teaching CLI in a separate JVM.
- *
- * <p>The legacy WorkflowSim entry points depend on CloudSim and on several WorkflowSim static
- * states. A test must not call these {@code main} methods sequentially inside one JVM, because
- * the state left by one entry point can mask an initialization defect of another. This helper
- * reuses the runtime classpath strategy of the examples aggregator but keeps every child-process
- * output in the JUnit temporary directory, so that a failure can supply a diagnosable log tail.</p>
- */
 final class CliProcessTestSupport {
 
     static final long DEFAULT_TIMEOUT_SECONDS = 90L;
@@ -26,16 +17,6 @@ final class CliProcessTestSupport {
 
     private CliProcessTestSupport() {}
 
-    /**
-     * Starts a main class from the project root and merges stdout/stderr into a temporary log.
-     *
-     * @param workspaceRoot project root that contains {@code datasets/}
-     * @param logDirectory temporary log directory managed by JUnit
-     * @param mainClass fully qualified name of the main class to execute
-     * @param arguments command-line arguments passed to the main class
-     * @return exit, timeout and output information of the child process
-     * @throws IOException when the child process or the log file cannot be created
-     */
     static ProcessResult runMain(Path workspaceRoot, Path logDirectory, String mainClass, String... arguments)
             throws IOException {
         if (workspaceRoot == null || !Files.isDirectory(workspaceRoot)) {
@@ -92,7 +73,6 @@ final class CliProcessTestSupport {
         return new File(System.getProperty("java.home"), "bin/java").getPath();
     }
 
-    /** Immutable test result of a terminated child process. */
     static final class ProcessResult {
         private final String mainClass;
         private final Path outputPath;
@@ -120,7 +100,6 @@ final class CliProcessTestSupport {
             return output;
         }
 
-        /** Returns assertion diagnostics that carry the log path and the output tail. */
         String diagnostic() {
             String tail = output;
             if (tail.length() > DIAGNOSTIC_OUTPUT_LIMIT) {

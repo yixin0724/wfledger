@@ -9,7 +9,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Standard-checkout verification of the one tracked Montage WfInstances input (B05). */
 class MontageWfInstancesStructuralTest {
 
     @BeforeEach

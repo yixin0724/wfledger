@@ -37,7 +37,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** NF002C: valid network content is core evidence, not only an exempted artifact hash. */
 class NetworkRerunIntegrationTest {
     @TempDir
     Path temporary;
@@ -169,7 +168,7 @@ class NetworkRerunIntegrationTest {
         ledger.add("runtime", runtime);
         Path changed = temporary.resolve("comparison-only.json");
         ExperimentArtifactWriter.writeJson(changed, ledger);
-        // Deliberately bypass the reader only to test the comparator's numeric/namespace contract.
+
         RerunEvidence comparison = new RerunEvidence(
                 evidence.getRunDirectory(),
                 evidence.getManifestPath(),
@@ -200,7 +199,7 @@ class NetworkRerunIntegrationTest {
         Path pa = temporary.resolve("long-number-a.json"), pb = temporary.resolve("long-number-b.json");
         ExperimentArtifactWriter.writeJson(pa, a);
         ExperimentArtifactWriter.writeJson(pb, b);
-        // Comparator-only transport fixtures: these deliberately bypass semantic evidence reconstruction.
+
         RerunEvidence first = new RerunEvidence(
                 source.getRunDirectory(),
                 source.getManifestPath(),

@@ -10,7 +10,6 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
-/** The V2 run driver needs transactional service and completion clocks even when recording is OFF. */
 class CoherentTransferServiceTest {
     @Test
     void sharedAndIsolatedUseTheSameSingleFlowBottleneck() {

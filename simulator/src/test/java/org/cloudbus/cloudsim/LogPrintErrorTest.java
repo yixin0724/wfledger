@@ -10,13 +10,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Pins the controlled error channel added to the vendored CloudSim {@link Log} for the
- * legacy clustering code (AUD-F19): the message line plus the throwable stack trace go
- * through the configured output and respect the global disable switch, so swallowing
- * exceptions into raw {@code printStackTrace} calls can be replaced without changing
- * any control flow.
- */
 public class LogPrintErrorTest {
 
     private OutputStream originalOutput;

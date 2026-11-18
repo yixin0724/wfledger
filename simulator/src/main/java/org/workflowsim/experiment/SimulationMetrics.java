@@ -16,22 +16,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Explicitly named model-level metrics derived from an immutable {@link SimulationReport}.
- * These values describe this simulator run, not measured data of production workflow execution.
- *
- * <p><b>MethodLength precedent (2026-10-23).</b>The only two over-limit sections of this class
- * -- the constructor and {@code assembleMetrics(...)} -- are structurally irreducible: a
- * field-by-field construction of a ~79-field immutable metric ledger plus a single 79-parameter
- * atomic snapshot call. Any "extraction" would only manufacture artificial fragments and break
- * the cohesion of snapshot assembly, and a field-by-field review found no groupable semantic
- * clusters. Under the MethodLength Tier-B precedent ledger these two sites are registered as
- * documented irreducible and are not forced to zero; the only legitimate way to clear the
- * precedent is a contractual reorganization of the metric fields (a schema proposal, not a style
- * refactor).
- * (BAT-D2, 2026-10-29: the +2 fields are the per-tier busy-seconds ledger pair; the precedent
- * registration follows the ledger.)</p>
- */
 public final class SimulationMetrics {
 
     private final double makespanSeconds;
@@ -64,33 +48,33 @@ public final class SimulationMetrics {
     private final double meanJobVmQueueWaitingTimeSeconds;
     private final double meanJobResponseTimeSeconds;
     private final double meanJobVmLevelSlowdown;
-    /** Number of VM-level slowdown observations (only jobs with executionTime > 0.001s; same set as the mean). */
+
     private final int vmLevelSlowdownObservationCount;
 
     private final double meanComputeTotalWaitingTimeSeconds;
     private final double meanComputeTrueSlowdown;
     private final int trueSlowdownObservationCount;
-    /** Total-waiting-time observation count (same scope as true slowdown: compute jobs with complete ready events). */
+
     private final int totalWaitingTimeObservationCount;
-    /** Median total waiting time (seconds); a tail statistic -- scheduling differences often show in the tail. */
+
     private final double medianComputeTotalWaitingTimeSeconds;
-    /** Total waiting time P95 (seconds, nearest-rank method). */
+
     private final double p95ComputeTotalWaitingTimeSeconds;
-    /** Maximum total waiting time (seconds). */
+
     private final double maxComputeTotalWaitingTimeSeconds;
-    /** Median true slowdown; a tail statistic of the distribution. */
+
     private final double medianComputeTrueSlowdown;
-    /** True slowdown P95 (nearest-rank method). */
+
     private final double p95ComputeTrueSlowdown;
-    /** Maximum true slowdown. */
+
     private final double maxComputeTrueSlowdown;
-    /** Success-only mean total waiting time (seconds); conditioned on success, no selection-bias claim. */
+
     private final double successOnlyMeanComputeTotalWaitingTimeSeconds;
-    /** Success-only mean true slowdown; conditioned on success, no selection-bias claim. */
+
     private final double successOnlyMeanComputeTrueSlowdown;
-    /** Observation count of the success-only variant (successful compute jobs with complete ready events). */
+
     private final int successOnlyWaitingObservationCount;
-    /** Retry amplification ratio = logical task attempts / logical tasks; 1.0 with no failures, 0.0 with no tasks. */
+
     private final double retryAmplificationRatio;
 
     private final double meanComputeReadyToDecisionDelaySeconds;
@@ -114,24 +98,11 @@ public final class SimulationMetrics {
     private final double totalVmModeledBusyIntervalSeconds;
     private final double meanVmModeledIntervalUtilization;
     private final double vmModeledBusyTimeCoefficientOfVariation;
-    /** VM utilization Jain fairness index in (0,1]; 1/(1+CV^2) under nonzero load in the same window. */
+
     private final double vmUtilizationJainFairnessIndex;
 
-    /**
-     * BAT-D2 (2026-10-29): per-VM per-tier busy-seconds ledger --
-     * {@code vmId -> (tier MIPS -> busy seconds)}.
-     *
-     * <p>Each Job attempt's [startTime, finishTime) interval is attributed to its assigned tier;
-     * a Job with {@code tierMips == null} (impossible outside a tierless VM -- a tierless VM is
-     * not booked at all) is attributed to that VM's default tier (the first table entry). An empty
-     * map = a v1 run without frequency tiers (the conservation law degenerates to D1's
-     * "all default tier" scope). transient: the serialization surface of the manifest metrics
-     * section does not grow with this ledger (an evidence-surface change belongs to the D3/D4
-     * ledger batch); the Java side exposes it through a getter for energy-conservation auditing
-     * and tests.</p>
-     */
     private final transient Map<Integer, Map<Double, Double>> perTierBusySecondsByVm;
-    /** BAT-D2: fleet total per-tier busy seconds -- {@code tier MIPS -> busy seconds} (TreeMap ascending). */
+
     private final transient Map<Double, Double> fleetPerTierBusySeconds;
 
     private final boolean controlledSharedStorageCriticalPathReferenceAvailable;
@@ -306,19 +277,13 @@ public final class SimulationMetrics {
         this.deadlineTardinessSeconds = deadlineTardinessSeconds;
         this.exactTaskTimingObservationCount = exactTaskTimingObservationCount;
         this.modeledApproximateTaskTimingObservationCount = modeledApproximateTaskTimingObservationCount;
-        // BAT-D2 (2026-10-29): freeze the per-tier ledger -- TreeMap key order keeps determinism (AGENTS #9).
+
         this.perTierBusySecondsByVm =
                 Collections.unmodifiableMap(new LinkedHashMap<Integer, Map<Double, Double>>(perTierBusySecondsByVm));
         this.fleetPerTierBusySeconds =
                 Collections.unmodifiableMap(new java.util.TreeMap<Double, Double>(fleetPerTierBusySeconds));
     }
 
-    /**
-     * Bounded slowdown threshold (seconds).
-     * When computing the slowdown ratio, the execution time floor is set to this value so that
-     * extremely short jobs cannot make the numbers blow up. Follows the standard practice of
-     * Feitelson et al. in scheduling research.
-     */
     private static final double BOUNDED_SLOWDOWN_THRESHOLD_SECONDS = 10.0;
 
     static SimulationMetrics calculate(
@@ -330,9 +295,9 @@ public final class SimulationMetrics {
             List<Task> sourceTasks,
             SimulationConfig config,
             PlatformProfile platform) {
-        // Numerical stability: require a finite makespan so NaN/Infinity cannot silently leak into the metrics
+
         requireFinite(makespan, "makespan");
-        // Validate the finiteness of the time and cost fields of every JobOutcome
+
         for (SimulationReport.JobOutcome job : jobs) {
             requireFinite(job.getSubmissionTime(), "job " + job.getJobId() + " submissionTime");
             requireFinite(job.getStartTime(), "job " + job.getJobId() + " startTime");
@@ -346,9 +311,6 @@ public final class SimulationMetrics {
         Set<Integer> retryJobIds = retryJobIds(events, jobsById);
         EventTiming timing = scanTimingEvents(events);
 
-        // BAT-D2 (2026-10-29): per-VM default-tier MIPS (first table entry) -- a tierless VM does
-        // not enter the map and its busy seconds stay out of the per-tier ledger (v1 degenerates
-        // exactly); intervals of unassigned Jobs on a tiered VM go to the default tier.
         Map<Integer, Double> defaultTierMipsByVm = new LinkedHashMap<Integer, Double>();
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
             if (spec.hasFrequencyTiers()) {
@@ -367,7 +329,6 @@ public final class SimulationMetrics {
                 makespan, jobs, taskOutcomes, sourceTasks, config, platform, jobsById, retryJobIds, timing, vm, acc);
     }
 
-    /** Job settlement scan stage (moved verbatim from calculate(); the compute branch is moved separately). */
     private static JobAccumulators accumulateJobOutcomes(
             List<SimulationReport.JobOutcome> jobs,
             Set<Integer> retryJobIds,
@@ -398,7 +359,6 @@ public final class SimulationMetrics {
         return acc;
     }
 
-    /** Per-compute-Job counting, waiting and slowdown accumulation (moved verbatim from the calculate() branch). */
     private static void accumulateComputeJob(
             SimulationReport.JobOutcome job, JobAccumulators acc, Set<Integer> retryJobIds, EventTiming timing) {
         acc.compute++;
@@ -415,11 +375,9 @@ public final class SimulationMetrics {
         }
         acc.computeRunTimeSum += nonNegative(job.getFinishTime() - job.getStartTime());
 
-        // Accumulate waiting time and response time (all jobs, successful and failed)
         acc.jobWaitingTimeSum += job.getWaitingTime();
         acc.jobResponseTimeSum += job.getResponseTime();
 
-        // Accumulate the slowdown ratio (only jobs with execution time > 0.001 seconds, to avoid division by zero)
         if (job.getExecutionTime() > 0.001) {
             double slowdown = job.getResponseTime() / job.getExecutionTime();
             acc.jobSlowdownSum += slowdown;
@@ -436,14 +394,11 @@ public final class SimulationMetrics {
             acc.decisionToStartSum += job.getStartTime() - decision.doubleValue();
             acc.decisionToStartCount++;
         }
-        // Total waiting time (ready to start of execution): covers scheduler queue waiting + dispatch delay
+
         if (ready != null && job.getStartTime() >= ready.doubleValue()) {
             double trueWait = job.getStartTime() - ready.doubleValue();
             double execTime = nonNegative(job.getFinishTime() - job.getStartTime());
-            // True slowdown (bounded slowdown, Feitelson standard):
-            // max( (true wait + execution time) / max(execution time, 10s), 1.0 )
-            // The 10-second denominator floor prevents numerical blow-up on extremely short jobs;
-            // the outer max(1) keeps the slowdown semantics (there is no "speedup")
+
             double boundedExec = Math.max(execTime, BOUNDED_SLOWDOWN_THRESHOLD_SECONDS);
             double trueSlowdown = Math.max((trueWait + execTime) / boundedExec, 1.0);
 
@@ -454,8 +409,6 @@ public final class SimulationMetrics {
             acc.trueSlowdownCount++;
             acc.trueSlowdownSamples.add(Double.valueOf(trueSlowdown));
 
-            // success-only variant: drop failed attempts so means stay unbiased when comparing schemes
-            // with different failure rates.
             if (job.getStatus() == Cloudlet.SUCCESS) {
                 acc.successOnlyTotalWaitingSum += trueWait;
                 acc.successOnlyTrueSlowdownSum += trueSlowdown;
@@ -464,7 +417,6 @@ public final class SimulationMetrics {
         }
     }
 
-    /** Private move-only structure for the calculate() settlement scope (keeps the original declaration order). */
     private static final class JobAccumulators {
         int compute;
         int stageIn;
@@ -485,7 +437,7 @@ public final class SimulationMetrics {
         int decisionToStartCount;
         double totalWaitingTimeSum;
         int totalWaitingTimeCount;
-        // Distribution samples (median/p95/max) and the success-only variant accumulators.
+
         final List<Double> totalWaitingSamples = new ArrayList<Double>();
         final List<Double> trueSlowdownSamples = new ArrayList<Double>();
         double successOnlyTotalWaitingSum;
@@ -501,12 +453,11 @@ public final class SimulationMetrics {
         double failedComputeCost;
     }
 
-    /** VM freeze stage (moved verbatim from calculate(); BAT-D2 appends the per-tier ledger freeze). */
     private static FrozenVms freezeVmMetrics(double makespan, Map<Integer, MutableVmMetrics> vm) {
         Map<Integer, VmMetrics> frozenVm = new LinkedHashMap<Integer, VmMetrics>();
         List<Double> busyTimes = new ArrayList<Double>();
         double totalBusyInterval = 0.0;
-        // BAT-D2: per-VM per-tier plus fleet total (TreeMap ascending keys -- deterministic traversal).
+
         Map<Integer, Map<Double, Double>> perTierBusy = new LinkedHashMap<Integer, Map<Double, Double>>();
         java.util.TreeMap<Double, Double> fleetPerTierBusy = new java.util.TreeMap<Double, Double>();
         for (Map.Entry<Integer, MutableVmMetrics> entry : vm.entrySet()) {
@@ -533,12 +484,11 @@ public final class SimulationMetrics {
                 Collections.unmodifiableMap(fleetPerTierBusy));
     }
 
-    /** Private move-only structure for the VM freeze stage of calculate(). */
     private static final class FrozenVms {
         final Map<Integer, VmMetrics> frozenVm;
         final List<Double> busyTimes;
         final double totalBusyInterval;
-        /** BAT-D2 (2026-10-29): per-VM per-tier busy seconds + fleet total per-tier busy seconds (immutable). */
+
         final Map<Integer, Map<Double, Double>> perTierBusySecondsByVm;
 
         final Map<Double, Double> fleetPerTierBusySeconds;
@@ -557,7 +507,6 @@ public final class SimulationMetrics {
         }
     }
 
-    /** Logical task completion / critical path / schedule length ratio stage (moved verbatim from calculate()). */
     private static LogicalSupport logicalCompletion(
             double makespan,
             List<SimulationReport.JobOutcome> jobs,
@@ -611,7 +560,6 @@ public final class SimulationMetrics {
                 scheduleLengthRatio);
     }
 
-    /** Private move-only structure for the logical task stage of calculate(). */
     private static final class LogicalSupport {
         final int logicalTaskCount;
         final int logicalSuccesses;
@@ -645,10 +593,6 @@ public final class SimulationMetrics {
         }
     }
 
-    /**
-     * deadline evaluation and exact-timing sample count stage (moved verbatim from calculate();
-     * the BigDecimal exact-semantics comment stays in place).
-     */
     private static DeadlineResults evaluateDeadline(
             SimulationConfig config,
             double makespan,
@@ -656,9 +600,7 @@ public final class SimulationMetrics {
             String logicalTaskCompletionStatus) {
         boolean workflowCompleted = "COMPLETED_SUCCESSFULLY".equals(logicalTaskCompletionStatus);
         boolean deadlineEnabled = config.getDeadline() > 0L;
-        // Preserve the exact long threshold and the exact binary64 clock before subtracting.
-        // BigDecimal.valueOf(makespan) would instead use a rounded shortest decimal string:
-        // at 2^63 that would turn the true one-second miss of Long.MAX_VALUE into 193 seconds.
+
         BigDecimal exactDeadlineSlack = deadlineEnabled
                 ? BigDecimal.valueOf(config.getDeadline()).subtract(new BigDecimal(makespan))
                 : BigDecimal.ZERO;
@@ -682,7 +624,6 @@ public final class SimulationMetrics {
                 exactTaskTimingCount);
     }
 
-    /** Private move-only structure for the deadline stage of calculate(). */
     private static final class DeadlineResults {
         final boolean workflowCompleted;
         final boolean deadlineEnabled;
@@ -710,10 +651,6 @@ public final class SimulationMetrics {
         }
     }
 
-    /**
-     * Assembly stage (moved verbatim from calculate(); the 77-argument constructor call is a single
-     * atomic statement of the immutable snapshot class and is near the rule limit).
-     */
     private static SimulationMetrics assembleMetrics(
             double makespan,
             List<SimulationReport.JobOutcome> jobs,
@@ -731,10 +668,9 @@ public final class SimulationMetrics {
                 logicalCompletion(makespan, jobs, taskOutcomes, sourceTasks, jobsById, retryJobIds, config, platform);
         DeadlineResults deadline =
                 evaluateDeadline(config, makespan, taskOutcomes, logical.logicalTaskCompletionStatus);
-        // -- Metric enhancements: distribution statistics, fairness index, success-only variant, retry amplification --
-        // VM utilization Jain fairness index: (sum u)^2 / (n * sum u^2); equal to the CV in this same window.
+
         double vmUtilizationJainFairnessIndex = jainFairnessIndex(vmUtilizations(frozen.frozenVm));
-        // Waiting/slowdown distribution statistics (nearest rank on the sorted samples gives median/p95/max).
+
         Collections.sort(acc.totalWaitingSamples);
         Collections.sort(acc.trueSlowdownSamples);
         double retryAmplificationRatio =
@@ -818,19 +754,15 @@ public final class SimulationMetrics {
                 deadline.tardiness,
                 deadline.exactTaskTimingCount,
                 taskOutcomes.size() - deadline.exactTaskTimingCount,
-                // BAT-D2 (2026-10-29): per-tier ledger -- empty = a v1 run without tiers (conservation degenerates).
                 frozen.perTierBusySecondsByVm,
                 frozen.fleetPerTierBusySeconds);
     }
 
-    /** Event timing scan stage (moved verbatim from calculate(); PLAT-16 duplicate-event fail-fast stays in place). */
     private static EventTiming scanTimingEvents(List<SimulationEvent> events) {
         EventTiming timing = new EventTiming();
         for (SimulationEvent event : events) {
             if (event.getType() == SimulationEventType.JOB_READY && event.getJobId() != null) {
-                // PLAT-16: each job must have exactly one JOB_READY event (retry jobs use a new jobId).
-                // A duplicate means the event stream is corrupted, and a silent overwrite would quietly
-                // distort the waiting-time metrics, hence fail-fast.
+
                 Double previousReady = timing.readyTimes.put(event.getJobId(), event.getSimulationTime());
                 if (previousReady != null) {
                     throw new IllegalStateException("Duplicate JOB_READY event for job "
@@ -839,8 +771,7 @@ public final class SimulationMetrics {
                             + event.getSimulationTime());
                 }
             } else if (event.getType() == SimulationEventType.SCHEDULING_DECISION && event.getJobId() != null) {
-                // PLAT-16: same as above -- SCHEDULING_DECISION occurs exactly once per job;
-                // a duplicate means the event stream is corrupted.
+
                 Double previousDecision = timing.decisionTimes.put(event.getJobId(), event.getSimulationTime());
                 if (previousDecision != null) {
                     throw new IllegalStateException("Duplicate SCHEDULING_DECISION event for job "
@@ -868,7 +799,6 @@ public final class SimulationMetrics {
         return timing;
     }
 
-    /** Private move-only structure for the event timing scan stage (keeps the original declaration order). */
     private static final class EventTiming {
         final Map<Integer, Double> readyTimes = new LinkedHashMap<Integer, Double>();
         final Map<Integer, Double> decisionTimes = new LinkedHashMap<Integer, Double>();
@@ -882,54 +812,26 @@ public final class SimulationMetrics {
         double totalRequiredInputBytes;
     }
 
-    /**
-     * Return the CloudSim simulation-end time under the historical-convention scope.
-     *
-     * <p>The value may include the workflow-engine lifecycle tail after the last Job returns and
-     * must not be read unconditionally as the successful completion time of the last logical
-     * Task.</p>
-     *
-     * @return simulation-end time in simulated seconds
-     */
     public double getMakespanSeconds() {
         return makespanSeconds;
     }
-    /**
-     * Return the CloudSim simulation-end time of this run.
-     *
-     * @return exactly the same simulated-seconds value as {@link #getMakespanSeconds()}
-     */
+
     public double getSimulationEndSeconds() {
         return makespanSeconds;
     }
-    /**
-     * Return the maximum Job envelope finish instant at which every logical Task is first
-     * completed by a successful compute Job.
-     *
-     * @return completion seconds when all logical Tasks succeed; otherwise {@code null}
-     */
+
     public Double getLogicalTaskCompletionSeconds() {
         return logicalTaskCompletionSeconds;
     }
-    /**
-     * Return {@code COMPLETED_SUCCESSFULLY}, {@code INCOMPLETE_LOGICAL_TASKS}, or
-     * {@code NO_LOGICAL_TASKS}, making explicit whether the logical completion time is available.
-     *
-     * @return logical Task completion status
-     */
+
     public String getLogicalTaskCompletionStatus() {
         return logicalTaskCompletionStatus;
     }
-    /**
-     * Return the lifecycle tail between the last successful logical Task completion and the
-     * CloudSim simulation end.
-     *
-     * @return non-negative simulated seconds when the workflow is complete; otherwise {@code null}
-     */
+
     public Double getTerminalLifecycleTailSeconds() {
         return terminalLifecycleTailSeconds;
     }
-    /** @return number of completed Job attempts, equal to {@link #getJobOutcomeCount()} */
+
     public int getCompletedJobAttemptCount() {
         return jobOutcomeCount;
     }
@@ -937,7 +839,7 @@ public final class SimulationMetrics {
     public int getJobOutcomeCount() {
         return jobOutcomeCount;
     }
-    /** @return number of completed compute Job attempts, including retry attempts */
+
     public int getCompletedComputeAttemptCount() {
         return computeJobOutcomeCount;
     }
@@ -965,11 +867,7 @@ public final class SimulationMetrics {
     public int getFailedComputeJobOutcomeCount() {
         return failedComputeJobOutcomeCount;
     }
-    /**
-     * Return the fraction of successful compute Jobs among all compute Jobs.
-     *
-     * @return successful compute Job outcome rate; zero when there is no compute Job
-     */
+
     public double getSuccessfulComputeJobOutcomeRate() {
         return successfulComputeJobOutcomeRate;
     }
@@ -985,11 +883,7 @@ public final class SimulationMetrics {
     public int getLogicalTasksNotYetSuccessfullyCompletedCount() {
         return logicalTasksNotYetSuccessfullyCompletedCount;
     }
-    /**
-     * Return the fraction of logical tasks completed by at least one successful compute Job.
-     *
-     * @return successful logical task completion rate; zero when there is no logical task
-     */
+
     public double getSuccessfulLogicalTaskCompletionRate() {
         return successfulLogicalTaskCompletionRate;
     }
@@ -997,304 +891,127 @@ public final class SimulationMetrics {
     public boolean isAllLogicalTasksCompletedSuccessfully() {
         return allLogicalTasksCompletedSuccessfully;
     }
-    /**
-     * Return the run-level workflow success indicator.
-     *
-     * <p>It is a completion fact of one run and must not be read on its own as a reliability
-     * probability under a failure distribution. The latter can only be estimated at the campaign
-     * layer from independent replications.</p>
-     *
-     * @return whether every logical Task is completed by a successful compute Job
-     */
+
     public boolean isWorkflowCompletedSuccessfully() {
         return allLogicalTasksCompletedSuccessfully;
     }
-    /**
-     * Return the number of completed compute attempts that do not appear in a
-     * {@code RETRY_JOB_CREATED} event.
-     *
-     * @return initial compute attempt count
-     */
+
     public int getInitialComputeJobOutcomeCount() {
         return initialComputeJobOutcomeCount;
     }
-    /** @return number of retry Jobs created in the event stream */
+
     public int getRetryJobCreatedCount() {
         return retryJobCreatedCount;
     }
-    /** @return number of completed compute attempts confirmed by a retry creation event */
+
     public int getCompletedRetryComputeJobOutcomeCount() {
         return completedRetryComputeJobOutcomeCount;
     }
-    /**
-     * Return the number of logical Task attempts among completed compute Jobs.
-     *
-     * <p>A clustered Job can contribute several Task attempts; retries of the same logical Task
-     * are counted separately.</p>
-     *
-     * @return logical Task attempt count
-     */
+
     public int getLogicalTaskAttemptCount() {
         return logicalTaskAttemptCount;
     }
-    /** @return number of distinct logical Tasks appearing in at least one retry compute Job */
+
     public int getRetriedLogicalTaskCount() {
         return retriedLogicalTaskCount;
     }
-    /**
-     * Return the sum of Job envelope durations of all failed compute attempts.
-     *
-     * <p>It is the failed-execution evidence of the current fail-after-attempt model and is not
-     * automatically equal to the mid-run crash loss or the settleable waste of a real system.</p>
-     *
-     * @return cumulative envelope seconds of failed compute attempts
-     */
+
     public double getFailedComputeAttemptEnvelopeSeconds() {
         return failedComputeAttemptEnvelopeSeconds;
     }
-    /**
-     * Return the sum of the modeled processing cost of failed compute attempts.
-     *
-     * @return abstract cost unit value of failed compute attempts
-     */
+
     public double getFailedComputeAttemptModeledProcessingCost() {
         return failedComputeAttemptModeledProcessingCost;
     }
-    /** @return sum of the modeled processing cost of retry compute attempts */
+
     public double getRetryComputeAttemptModeledProcessingCost() {
         return retryComputeAttemptModeledProcessingCost;
     }
-    /**
-     * Return the compute Job outcome throughput relative to the makespan.
-     *
-     * @return compute Job outcomes per simulated second; zero when the makespan is zero
-     */
+
     public double getComputeJobOutcomeThroughputPerSecond() {
         return computeJobOutcomeThroughputPerSecond;
     }
-    /**
-     * Mean end-to-end duration of the compute Job envelope, including the effective stage-in.
-     *
-     * <p>The sample is <b>all compute Job attempts</b> (failed and retry attempts included), the
-     * same sample scope as {@link #getMeanComputeTotalWaitingTimeSeconds()}.</p>
-     *
-     * @return mean compute Job envelope duration in simulated seconds
-     */
+
     public double getMeanComputeJobRunTimeSeconds() {
         return meanComputeJobRunTimeSeconds;
     }
 
-    /**
-     * Return the mean waiting time of jobs inside the VM queue (arrival at the VM to start of
-     * execution).
-     * <p><strong>Note:</strong> in WorkflowSim every scheduling algorithm dispatches jobs only to
-     * idle VMs, so this value is almost always 0. It measures CloudSim-level VM queueing and does
-     * not include scheduler queue waiting. For the true waiting time use
-     * {@link #getMeanComputeTotalWaitingTimeSeconds()}.</p>
-     *
-     * @return mean VM queue waiting time in simulated seconds (usually 0)
-     */
     public double getMeanJobVmQueueWaitingTimeSeconds() {
         return meanJobVmQueueWaitingTimeSeconds;
     }
 
-    /**
-     * Return the mean job response time (from VM arrival to completion).
-     *
-     * <p><b>Warning: scope definition</b>: the "submission" here is the CloudSim
-     * {@code submissionTime}, that is, the instant the job <strong>arrives at the execution
-     * VM</strong> (set by {@code ResCloudlet} when the VM admits it), <b>not</b> the instant the
-     * job enters the scheduler ready queue. The metric therefore <b>excludes</b> scheduler queue
-     * waiting and dispatch delay.</p>
-     * <p>For the end-to-end "ready -> finish" response time use
-     * {@code mean total waiting time + mean execution time}; for the pure waiting scope use
-     * {@link #getMeanComputeTotalWaitingTimeSeconds()}.</p>
-     *
-     * @return mean job response time in simulated seconds (VM arrival -> completion)
-     */
     public double getMeanJobResponseTimeSeconds() {
         return meanJobResponseTimeSeconds;
     }
 
-    /**
-     * Return the mean VM-level slowdown of jobs (response time based on VM arrival / execution
-     * time).
-     * <p><b>Warning:</b> in WorkflowSim every scheduling algorithm dispatches jobs only to idle
-     * VMs, so this value stays at about 1.0 and is <b>not suitable</b> for comparing scheduling
-     * algorithms. Use {@link #getMeanComputeTrueSlowdown()} as the real scheduling efficiency
-     * metric.</p>
-     * <p>Only jobs with execution time > 0.001 seconds are counted, to avoid division by zero.</p>
-     *
-     * @return dimensionless mean VM-level slowdown (usually about 1.0)
-     */
     public double getMeanJobVmLevelSlowdown() {
         return meanJobVmLevelSlowdown;
     }
 
-    /**
-     * Return the number of VM-level slowdown observations.
-     *
-     * <p>Same set as {@link #getMeanJobVmLevelSlowdown()}: only compute jobs with
-     * {@code executionTime > 0.001s} are counted (an independent gate against ratio blow-up, with
-     * different semantics from the max(exec,10s) denominator clamp of the true slowdown). A count
-     * below the mean's denominator means that extremely short or zero-length jobs were
-     * excluded.</p>
-     *
-     * @return observation count
-     */
     public int getVmLevelSlowdownObservationCount() {
         return vmLevelSlowdownObservationCount;
     }
 
-    /**
-     * Return the mean total waiting time of compute jobs (from ready to start of execution).
-     * <p>This is the central waiting-time metric of scheduling research, equal to
-     * {@code startTime - readyTime}, covering scheduler waiting and dispatch delay.
-     * The pre-execution transfer model also counts data-preparation holding in this waiting; the
-     * legacy model puts stage-in into the execution envelope, so comparisons across data movement
-     * models must declare these differing inclusion scopes together.
-     * Ready times come from {@link SimulationEventType#JOB_READY} events.</p>
-     * <p>Relation to {@link #getMeanComputeReadyToDecisionDelaySeconds()} and
-     * {@link #getMeanComputeDecisionToStartDelaySeconds()}:
-     * total waiting ~= ready-to-decision delay + decision-to-start delay.</p>
-     *
-     * @return mean total waiting time in simulated seconds (ready to start)
-     */
     public double getMeanComputeTotalWaitingTimeSeconds() {
         return meanComputeTotalWaitingTimeSeconds;
     }
 
-    /**
-     * Return the mean true slowdown of compute jobs (ready-based, bounded slowdown).
-     * <p>Definition (Feitelson standard): for each job compute
-     * {@code max((startTime - readyTime + executionTime) / max(executionTime, 10.0), 1.0)},
-     * then take the arithmetic mean. Two boundary treatments:</p>
-     * <ul>
-     *   <li>10-second denominator floor: prevents numerical blow-up on extremely short jobs
-     *   (bounded slowdown)</li>
-     *   <li>result floor 1.0: guarantees no modeled slowdown below one</li>
-     * </ul>
-     * <p>The waiting of short tasks can be masked by the 10-second denominator threshold and by
-     * the floor, so 1.0 is not equivalent to no waiting. When comparing, report the waiting time,
-     * the execution time distribution, and the sample count together.</p>
-     * <p>Difference from {@link #getMeanJobVmLevelSlowdown()}: the latter is based on VM arrival
-     * time and stays 1.0 in WorkflowSim; this metric is based on job ready time and genuinely
-     * reflects the scheduling delay.</p>
-     *
-     * @return dimensionless mean true slowdown (bounded, 10s denominator floor, result floor 1.0)
-     */
     public double getMeanComputeTrueSlowdown() {
         return meanComputeTrueSlowdown;
     }
 
-    /**
-     * Return the number of jobs taking part in the true slowdown computation.
-     * <p>Only jobs satisfying both of the following conditions take part:</p>
-     * <ul>
-     *   <li>a JOB_READY event is recorded (readyTime is not null)</li>
-     *   <li>startTime &gt;= readyTime (valid timestamps)</li>
-     * </ul>
-     *
-     * @return observation count
-     */
     public int getTrueSlowdownObservationCount() {
         return trueSlowdownObservationCount;
     }
 
-    /**
-     * Return the number of total-waiting-time observations (the same set as the true slowdown
-     * samples).
-     *
-     * @return observation count
-     */
     public int getTotalWaitingTimeObservationCount() {
         return totalWaitingTimeObservationCount;
     }
 
-    /** @return median total waiting time (seconds); 0.0 with no observations */
     public double getMedianComputeTotalWaitingTimeSeconds() {
         return medianComputeTotalWaitingTimeSeconds;
     }
 
-    /** @return total waiting time P95 (seconds, nearest-rank method); 0.0 with no observations */
     public double getP95ComputeTotalWaitingTimeSeconds() {
         return p95ComputeTotalWaitingTimeSeconds;
     }
 
-    /** @return maximum total waiting time (seconds); 0.0 with no observations */
     public double getMaxComputeTotalWaitingTimeSeconds() {
         return maxComputeTotalWaitingTimeSeconds;
     }
 
-    /** @return median true slowdown; 0.0 with no observations */
     public double getMedianComputeTrueSlowdown() {
         return medianComputeTrueSlowdown;
     }
 
-    /** @return true slowdown P95 (nearest-rank method); 0.0 with no observations */
     public double getP95ComputeTrueSlowdown() {
         return p95ComputeTrueSlowdown;
     }
 
-    /** @return maximum true slowdown; 0.0 with no observations */
     public double getMaxComputeTrueSlowdown() {
         return maxComputeTrueSlowdown;
     }
 
-    /**
-     * Return the mean total waiting time of successful jobs only (seconds).
-     *
-     * <p>Conditioned on successful attempts only, with no claim that selection bias is removed:
-     * counting the waiting time of failed attempts in the overall mean distorts comparisons across
-     * schemes with different failure rates, so this variant keeps only samples of successfully
-     * completed jobs.</p>
-     *
-     * @return success-only mean total waiting time in simulated seconds; 0.0 with no observations
-     */
     public double getSuccessOnlyMeanComputeTotalWaitingTimeSeconds() {
         return successOnlyMeanComputeTotalWaitingTimeSeconds;
     }
 
-    /**
-     * Return the mean true slowdown of successful jobs only.
-     *
-     * @return success-only mean true slowdown; 0.0 with no observations
-     */
     public double getSuccessOnlyMeanComputeTrueSlowdown() {
         return successOnlyMeanComputeTrueSlowdown;
     }
 
-    /** @return number of observations of the success-only waiting/slowdown variant */
     public int getSuccessOnlyWaitingObservationCount() {
         return successOnlyWaitingObservationCount;
     }
 
-    /**
-     * Return the retry amplification ratio = total logical task attempts / logical task count.
-     *
-     * <p>1.0 with no failures; 0.0 with no logical tasks (this branch carries no SLA meaning; the
-     * consumer must consult {@link #getLogicalTaskCount()}). Measures the total execution overhead
-     * amplification caused by failure recovery.</p>
-     *
-     * @return retry amplification ratio; >=1.0 in the normal closed loop, 0.0 with no logical tasks
-     */
     public double getRetryAmplificationRatio() {
         return retryAmplificationRatio;
     }
 
-    /**
-     * Return the mean delay from a compute Job becoming ready to the scheduler making a decision.
-     *
-     * @return mean ready-to-decision delay in simulated seconds
-     */
     public double getMeanComputeReadyToDecisionDelaySeconds() {
         return meanComputeReadyToDecisionDelaySeconds;
     }
-    /**
-     * Return the mean delay from the scheduler decision to the start of execution of a compute Job.
-     *
-     * @return mean decision-to-start delay in simulated seconds
-     */
+
     public double getMeanComputeDecisionToStartDelaySeconds() {
         return meanComputeDecisionToStartDelaySeconds;
     }
@@ -1310,135 +1027,63 @@ public final class SimulationMetrics {
     public int getSchedulingCycleCount() {
         return schedulingCycleCount;
     }
-    /**
-     * Return the total local JVM wall-clock time consumed by scheduling decisions.
-     *
-     * <p>It is a local-cost observation and must not be used for cross-machine performance
-     * comparison.</p>
-     *
-     * @return scheduling decision wall-clock cost in nanoseconds
-     */
+
     public long getTotalSchedulingDecisionWallClockNanos() {
         return totalSchedulingDecisionWallClockNanos;
     }
-    /**
-     * Number of explicit static-planner decisions observed in the event record.
-     *
-     * @return explicit planner decision observation count
-     */
+
     public int getExplicitPlannerDecisionObservationCount() {
         return explicitPlannerDecisionObservationCount;
     }
-    /**
-     * JVM wall-clock time consumed by explicit planner decisions. This is local algorithm cost
-     * evidence, not simulated time, and cannot serve as a cross-machine performance baseline.
-     *
-     * @return local wall-clock nanoseconds consumed by explicit planner decisions
-     */
+
     public long getTotalPlanningDecisionWallClockNanos() {
         return totalPlanningDecisionWallClockNanos;
     }
-    /**
-     * Number of compute Job data stage-in estimates observed in this run.
-     *
-     * @return data stage-in model observation count
-     */
+
     public int getDataStageInModelObservationCount() {
         return dataStageInModelObservationCount;
     }
-    /**
-     * Number of logical input demand files observed by the configured data movement model.
-     *
-     * <p>A local replica hit can make the modeled stage-in time zero, so this is not the number of
-     * files actually transferred over the network.</p>
-     *
-     * @return number of file transfers counted
-     */
+
     public int getModeledDataTransferFileCount() {
         return modeledDataTransferFileCount;
     }
-    /** @return the same logical input demand file count as {@link #getModeledDataTransferFileCount()} */
+
     public int getModeledRequiredInputDemandFileCount() {
         return modeledDataTransferFileCount;
     }
-    /**
-     * Sum of the nominal stage-in estimate seconds recorded by DATA_STAGE_IN_MODELED.
-     *
-     * <p>Under the pre-execution model the parent group can run in parallel, and the contention
-     * model still records the contention-free nominal estimate here; the sum is therefore neither
-     * the wall-clock time of the whole network nor the sum of actual contention holding durations.
-     * The effect of actual data preparation on a job appears in the ready-to-start waiting and in
-     * the completion instant.</p>
-     *
-     * @return total nominal stage-in estimate in simulated seconds
-     */
+
     public double getTotalModeledDataTransferSeconds() {
         return totalModeledDataTransferSeconds;
     }
-    /**
-     * Total logical input demand bytes counted by the transfer observations above.
-     *
-     * <p>This is not the number of bytes moved over physical links; the current data movement
-     * models keep no such link-level ledger.</p>
-     *
-     * @return total data bytes taken into the model
-     */
+
     public double getTotalModeledRequiredInputBytes() {
         return totalModeledRequiredInputBytes;
     }
-    /** @return the same logical input demand bytes as {@link #getTotalModeledRequiredInputBytes()} */
+
     public double getTotalModeledRequiredInputDemandBytes() {
         return totalModeledRequiredInputBytes;
     }
-    /**
-     * Mean nominal stage-in estimate per compute Job data-model observation.
-     *
-     * @return mean nominal estimate in simulated seconds, not the mean actual contention holding
-     * time
-     */
+
     public double getMeanModeledDataTransferSeconds() {
         return meanModeledDataTransferSeconds;
     }
-    /**
-     * Sum of the modeled processing cost of all completed Job attempts; it may include the integer
-     * MI representation of stage-in and also covers failed and retry attempts, so it is not a cloud
-     * provider price replay.
-     *
-     * @return aggregated modeled processing cost
-     */
+
     public double getTotalModeledProcessingCost() {
         return totalModeledProcessingCost;
     }
-    /**
-     * Return the CPU envelope abstract cost component of all Job attempts.
-     *
-     * @return sum of CPU envelope cost, possibly including the effective stage-in MI
-     */
+
     public double getTotalModeledCpuEnvelopeCost() {
         return totalModeledCpuEnvelopeCost;
     }
-    /**
-     * Return the bandwidth abstract cost component of all Job attempts, priced continuously by
-     * declared file bytes.
-     *
-     * @return sum of declared file bandwidth cost
-     */
+
     public double getTotalModeledDeclaredFileBandwidthCost() {
         return totalModeledDeclaredFileBandwidthCost;
     }
-    /**
-     * Return the total byte equivalent entering the declared-file bandwidth abstract cost.
-     *
-     * @return sum of declared bytes in all Job file tables, not the bytes actually transferred
-     */
+
     public double getTotalModeledDeclaredFileBytes() {
         return totalModeledDeclaredFileBytes;
     }
-    /**
-     * Return the immutable aggregate metrics indexed by VM identifier.
-     *
-     * @return mapping from VM ID to per-VM metrics
-     */
+
     public Map<Integer, VmMetrics> getVmMetrics() {
         return vmMetrics;
     }
@@ -1446,192 +1091,75 @@ public final class SimulationMetrics {
     public double getTotalVmModeledBusyIntervalSeconds() {
         return totalVmModeledBusyIntervalSeconds;
     }
-    /**
-     * Return the mean utilization over all VMs, computed from the union of modeled Job intervals.
-     *
-     * @return mean modeled interval utilization normalized by the makespan
-     */
+
     public double getMeanVmModeledIntervalUtilization() {
         return meanVmModeledIntervalUtilization;
     }
-    /**
-     * Return the coefficient of variation (CV) of modeled busy time across VMs.
-     *
-     * <p>Formula: population standard deviation (/n) / mean; 0.0 for a zero mean or an empty set.
-     * Because utilization and busy time are both divided by the same constant makespan,
-     * CV(busy time) == CV(utilization), and the console label "utilization coefficient of
-     * variation" is numerically equivalent. <b>Note</b>: this uses the population standard
-     * deviation (/n), while the campaign-layer {@code MetricSummary} uses the sample standard
-     * deviation (/(n-1)); mind the convention difference when comparing dispersion across
-     * layers.</p>
-     *
-     * @return busy-time coefficient of variation; 0.0 with no VM or all-zero busy time
-     */
+
     public double getVmModeledBusyTimeCoefficientOfVariation() {
         return vmModeledBusyTimeCoefficientOfVariation;
     }
-    /**
-     * Return the Jain fairness index of VM utilization in (0,1].
-     *
-     * <p>For the same VM set and statistical window, with a nonzero mean,
-     * Jain = 1 / (1 + CV^2), where CV uses the population standard deviation. The metric provides
-     * no load-shape information independent of the CV. With no VM or all-zero utilization it
-     * returns the sentinel 1.0, from which no actual resource efficiency may be inferred.</p>
-     *
-     * @return Jain fairness index
-     */
+
     public double getVmUtilizationJainFairnessIndex() {
         return vmUtilizationJainFairnessIndex;
     }
-    /**
-     * BAT-D2 (2026-10-29): return the per-VM per-tier busy-seconds ledger
-     * {@code vmId -> (tier MIPS -> busy seconds)}.
-     *
-     * <p>Each Job attempt's execution interval is attributed to its assigned tier (an unassigned
-     * attempt goes to the VM's default tier); total busy seconds use the same interval scope as
-     * {@code VmMetrics.getModeledBusyIntervalSeconds()}. An empty map = a v1 run without frequency
-     * tiers (per-tier conservation degenerates to D1's all-default-tier scope).</p>
-     *
-     * @return immutable per-VM per-tier busy-seconds mapping; empty for a run without tiers
-     */
+
     public Map<Integer, Map<Double, Double>> getPerTierBusySecondsByVm() {
         return perTierBusySecondsByVm;
     }
-    /**
-     * BAT-D2 (2026-10-29): return the fleet total per-tier busy seconds
-     * {@code tier MIPS -> busy seconds}.
-     *
-     * <p>Tiers are merged across VMs by MIPS value (a tier is unique by MIPS, so the power pair can
-     * be recovered by matching against the platform frequencyTiers); the TreeMap ascending key
-     * order keeps determinism. An empty map = a v1 run without tiers.</p>
-     *
-     * @return immutable fleet per-tier busy-seconds mapping; empty for a run without tiers
-     */
+
     public Map<Double, Double> getFleetPerTierBusySeconds() {
         return fleetPerTierBusySeconds;
     }
-    /**
-     * Return whether the controlled shared-storage critical path reference applies to the model
-     * scope of this run.
-     *
-     * <p>It requires NONE clustering, no failures, no overhead, and SPACE_SHARED VMs. For data
-     * movement only the historical serial-input model or the fixed-endpoint contention-free model
-     * is accepted; the latter uses the optimistic reference after removing the extra access
-     * latency and bandwidth caps. The pre-execution transfer model can overlap parent inputs, so
-     * this reference is unavailable, but those models are not barred from running.</p>
-     *
-     * @return whether the critical path lower bound reference is available
-     */
+
     public boolean isControlledSharedStorageCriticalPathReferenceAvailable() {
         return controlledSharedStorageCriticalPathReferenceAvailable;
     }
-    /**
-     * Return the scope of the controlled shared-storage critical path reference, or the reason it
-     * is unavailable.
-     *
-     * @return machine-readable reference scope status
-     */
+
     public String getControlledSharedStorageCriticalPathReferenceScope() {
         return controlledSharedStorageCriticalPathReferenceScope;
     }
-    /**
-     * Return the critical path makespan lower bound under the controlled shared-storage model.
-     *
-     * @return lower bound in simulated seconds; zero when the reference is unavailable
-     */
+
     public double getControlledSharedStorageCriticalPathLowerBoundSeconds() {
         return controlledSharedStorageCriticalPathLowerBoundSeconds;
     }
-    /**
-     * Return the ratio of the makespan to the available critical path lower bound.
-     *
-     * @return schedule length ratio; zero when the reference is unavailable or the bound is zero
-     */
+
     public double getControlledSharedStorageScheduleLengthRatio() {
         return controlledSharedStorageScheduleLengthRatio;
     }
-    /**
-     * {@code true} only when the configuration supplies a positive observation threshold.
-     *
-     * @return whether deadline observation was requested
-     */
+
     public boolean isDeadlineObservationEnabled() {
         return deadlineObservationEnabled;
     }
-    /**
-     * Return the time axis used by the deadline comparison.
-     *
-     * @return fixed to {@code SIMULATION_END_SECONDS}, the time axis of the historical makespan
-     */
+
     public String getDeadlineObservationTimeBasis() {
         return deadlineObservationTimeBasis;
     }
-    /**
-     * Return {@code NOT_REQUESTED}, {@code MET}, {@code MISSED_LATE}, or
-     * {@code MISSED_INCOMPLETE_WORKFLOW}.
-     *
-     * @return machine-readable outcome of the deadline observation
-     */
+
     public String getDeadlineObservationOutcome() {
         return deadlineObservationOutcome;
     }
-    /**
-     * Reports the SLA observation only and never affects scheduling decisions.
-     *
-     * @return whether the workflow met the requested deadline
-     */
+
     public boolean isDeadlineMet() {
         return deadlineMet;
     }
-    /**
-     * {@code deadline - makespan} when enabled, zero when no deadline was requested.
-     *
-     * <p>The exact long threshold is first subtracted from the exact binary value of the simulation
-     * clock, and only the final difference is rounded to the double metric. A large integer
-     * threshold is never converted to double first, and the clock's shortest decimal string is
-     * never substituted for its exact value; the deadline outcome uses the sign of the unrounded
-     * difference.</p>
-     *
-     * @return deadline slack in simulated seconds
-     */
+
     public double getDeadlineSlackSeconds() {
         return deadlineSlackSeconds;
     }
-    /**
-     * {@code max(0, makespan - deadline)} when enabled, zero when not requested.
-     *
-     * <p>Uses the same exact threshold difference as {@link #getDeadlineSlackSeconds()} and does
-     * not drop the low bits of the long.</p>
-     *
-     * @return deadline tardiness in simulated seconds
-     */
+
     public double getDeadlineTardinessSeconds() {
         return deadlineTardinessSeconds;
     }
-    /**
-     * Number of single-Task computation windows exactly equal to their Job envelope.
-     *
-     * @return exact task timing observation count
-     */
+
     public int getExactTaskTimingObservationCount() {
         return exactTaskTimingObservationCount;
     }
-    /**
-     * Number of Task windows that differ from their Job envelope.
-     *
-     * @return approximate task timing observation count
-     */
+
     public int getModeledApproximateTaskTimingObservationCount() {
         return modeledApproximateTaskTimingObservationCount;
     }
 
-    /**
-     * Each VM's utilization is based on the union of its modeled Job intervals.
-     *
-     * <p>The busy intervals include the start-to-finish envelope of <b>failed attempts</b> (a
-     * failed execution also occupies the VM's modeled resource window); overlapping intervals are
-     * merged by union and not counted twice.</p>
-     */
     public static final class VmMetrics {
         private final int vmId;
         private final int jobOutcomeCount;
@@ -1685,13 +1213,9 @@ public final class SimulationMetrics {
         private final List<Interval> intervals = new ArrayList<Interval>();
         private int jobs;
         private double cpuTime;
-        /**
-         * BAT-D2 (2026-10-29): the VM's default-tier MIPS (first table entry); null = a v1 VM
-         * without tiers (the whole VM stays out of the per-tier ledger). Resolved at construction
-         * time from the platform declaration, read-only afterwards.
-         */
+
         private final Double defaultTierMips;
-        /** BAT-D2: tier MIPS -> busy seconds (TreeMap ascending keys -- deterministic traversal). */
+
         private final java.util.TreeMap<Double, Double> tierBusySeconds = new java.util.TreeMap<Double, Double>();
 
         private MutableVmMetrics(int vmId, Double defaultTierMips) {
@@ -1703,9 +1227,7 @@ public final class SimulationMetrics {
             jobs++;
             cpuTime += job.getCpuTime();
             intervals.add(new Interval(job.getStartTime(), job.getFinishTime()));
-            // BAT-D2: per-tier attribution -- a Job without an assigned tier (a non-compute attempt)
-            // uses the VM default tier; busy seconds share their source with the busy union (under a
-            // single-Job SPACE_SHARED sequence the per-tier sum equals the union total busy seconds).
+
             if (defaultTierMips != null) {
                 double tier =
                         job.getTierMips() != null ? job.getTierMips().doubleValue() : defaultTierMips.doubleValue();
@@ -1782,17 +1304,6 @@ public final class SimulationMetrics {
         return Math.sqrt(squared / values.size()) / average;
     }
 
-    /**
-     * Nearest-rank percentile.
-     *
-     * <p>The samples must already be sorted ascending; rank = ceil(fraction x n), and
-     * fraction=1.0 gives the maximum. An empty sample returns 0.0 (consistent with the empty-set
-     * convention of the other metrics).</p>
-     *
-     * @param sortedSamples samples sorted in ascending order
-     * @param fraction target quantile (0.5 median / 0.95 P95 / 1.0 maximum)
-     * @return the corresponding quantile value
-     */
     private static double percentile(List<Double> sortedSamples, double fraction) {
         if (sortedSamples.isEmpty()) {
             return 0.0;
@@ -1801,18 +1312,6 @@ public final class SimulationMetrics {
         return sortedSamples.get(Math.max(1, rank) - 1).doubleValue();
     }
 
-    /**
-     * Jain fairness index: (sum u)^2 / (n x sum u^2).
-     *
-     * <p>Range (0,1]; 1.0 means all VM utilizations are equal. For the current identical
-     * observation window, identical VM sample, and nonzero mean load, Jain = 1 / (1 + CV^2); the
-     * two are not independent distribution-shape information. An empty list or all-zero
-     * utilization returns 1.0 (a zero-load convention that does not mean the resources are fully
-     * utilized).</p>
-     *
-     * @param utilizations utilization sample of each VM (>=0)
-     * @return Jain fairness index
-     */
     private static double jainFairnessIndex(List<Double> utilizations) {
         if (utilizations.isEmpty()) {
             return 1.0;
@@ -1830,7 +1329,6 @@ public final class SimulationMetrics {
         return (sum * sum) / (utilizations.size() * sumSquared);
     }
 
-    /** Extract the modeled interval utilization of each VM for the fairness index computation. */
     private static List<Double> vmUtilizations(Map<Integer, VmMetrics> frozenVm) {
         List<Double> result = new ArrayList<Double>();
         for (VmMetrics metrics : frozenVm.values()) {
@@ -1856,7 +1354,6 @@ public final class SimulationMetrics {
         return result;
     }
 
-    /** Build a unique ID index of Job outcomes so downstream metrics cannot silently overwrite attempts. */
     private static Map<Integer, SimulationReport.JobOutcome> jobOutcomesById(List<SimulationReport.JobOutcome> jobs) {
         Map<Integer, SimulationReport.JobOutcome> result = new LinkedHashMap<Integer, SimulationReport.JobOutcome>();
         if (jobs == null) {
@@ -1874,14 +1371,6 @@ public final class SimulationMetrics {
         return result;
     }
 
-    /**
-     * Recover and validate the evidence relation between retry Jobs and their failed parent
-     * attempt from retry creation events.
-     *
-     * <p>All completed Jobs are available when the report is captured, so any retry event without
-     * a matching Job outcome means the evidence package is incomplete, not a partial observation
-     * that may be ignored.</p>
-     */
     private static Set<Integer> retryJobIds(
             List<SimulationEvent> events, Map<Integer, SimulationReport.JobOutcome> jobsById) {
         Set<Integer> result = new HashSet<Integer>();
@@ -1926,7 +1415,6 @@ public final class SimulationMetrics {
         return result;
     }
 
-    /** Use the completion time of a successful compute Job as the available completion boundary of a logical Task. */
     private static Map<Integer, Double> earliestSuccessfulJobFinishByLogicalTask(
             List<SimulationReport.JobOutcome> jobs, Set<Integer> logicalTaskIds) {
         Map<Integer, Double> result = new LinkedHashMap<Integer, Double>();
@@ -2074,14 +1562,6 @@ public final class SimulationMetrics {
         return value < 0.0 ? 0.0 : value;
     }
 
-    /**
-     * Require the value to be finite (not NaN, not infinite), otherwise throw
-     * IllegalStateException.
-     *
-     * @param value the number to check
-     * @param description description of the value, used in the error message
-     * @throws IllegalStateException when the value is NaN or infinite
-     */
     private static void requireFinite(double value, String description) {
         if (Double.isNaN(value) || Double.isInfinite(value)) {
             throw new IllegalStateException(description + " must be finite, was: " + value);

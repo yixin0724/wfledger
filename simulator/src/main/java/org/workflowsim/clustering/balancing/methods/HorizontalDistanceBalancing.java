@@ -27,32 +27,12 @@ import java.util.Map;
 import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * Horizontal balancing clustering method driven by successor-graph distance.
- *
- * <p>Task sets on the same level choose candidate targets by their distance to a shared
- * successor, and job length then breaks ties among the candidates.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
 
-    /**
-     * Creates a graph-distance horizontal balancing method.
-     *
-     * @param levelMap task sets organized by level
-     * @param taskMap logical task to task-set mapping
-     * @param clusterNum target number of clustered jobs per level
-     */
     public HorizontalDistanceBalancing(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
-    /**
-     * Merges task sets by graph distance on every level.
-     */
     @Override
     public void run() {
         Map<Integer, List<TaskSet>> map = getLevelMap();
@@ -61,12 +41,6 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
         }
     }
 
-    /**
-     * Preprocesses the same-level sets, then selects the target set with the closest graph
-     * distance whose capacity still allows it.
-     *
-     * @param taskList same-level task sets to process
-     */
     public void process(List<TaskSet> taskList) {
 
         if (taskList.size() > getClusterNum()) {
@@ -78,39 +52,27 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
             if (clusters_size * getClusterNum() < taskList.size()) {
                 clusters_size++;
             }
-            // This strategy fixes its initial targets by distance preprocessing rather than
-            // sorting by impact factor.
+
             preprocessing(taskList, jobList);
 
             for (TaskSet set : taskList) {
-                // The candidate selector weighs graph distance, capacity and the current job
-                // length together.
+
                 TaskSet job = getCandidateTastSet(jobList, set, clusters_size);
                 addTaskSet2TaskSet(set, job);
                 job.addTask(set.getTaskList());
                 job.setImpactFafctor(set.getImpactFactor());
-                // Update the logical task to target set mapping.
+
                 for (Task task : set.getTaskList()) {
-                    getTaskMap().put(task, job); // dependencies are rebuilt centrally by the caller
-                    // The target set keeps the impact factor defined by the current strategy.
+                    getTaskMap().put(task, job);
                 }
             }
-            taskList.clear(); // the original level sets are replaced by the target job sets
+            taskList.clear();
         }
     }
 
-    /**
-     * Selects the initial seed indices that are farthest apart according to the distance
-     * matrix.
-     *
-     * @param distances lower-triangular distance matrix
-     * @param size number of task sets
-     * @param num number of seeds required
-     * @return indices of the seed task sets
-     */
     private List<Integer> sortDistanceIncreasing(int[][] distances, int size, int num) {
         List<Integer> newList = new ArrayList<>();
-        // First pick the two seeds with the largest distance.
+
         int max = 0;
         int max_i = 0;
         int max_j = 0;
@@ -129,8 +91,8 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
         double max_dist = 0;
         max_i = 0;
         for (int id = 0; id < num - 2; id++) {
-            max_dist = 0; // each round looks for the candidate with the largest average
-            // distance to the seeds already chosen
+            max_dist = 0;
+
             for (int i = 0; i < size; i++) {
                 double dist = getAvgDistance(i, newList, distances);
                 if (max_dist < dist) {
@@ -160,7 +122,7 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
                 avg += distances[id][nId];
             }
         }
-        // Mean distance over the non-empty list.
+
         avg = avg / list.size();
         return avg;
     }
@@ -185,7 +147,7 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
             }
         }
         int job_index = 0;
-        // Indices already chosen as initial seeds are recorded in record.
+
         List<Integer> idList = sortDistanceIncreasing(distances, size, jobList.size());
         for (int max_i : idList) {
             record[index_record] = max_i;
@@ -195,10 +157,9 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
             addTaskSet2TaskSet(set, job);
             job.addTask(set.getTaskList());
             job.setImpactFafctor(set.getImpactFactor());
-            // Update the logical task to target set mapping.
+
             for (Task task : set.getTaskList()) {
-                getTaskMap().put(task, job); // dependencies are rebuilt centrally by the caller
-                // Keep the impact factor defined by the strategy.
+                getTaskMap().put(task, job);
             }
             job_index++;
             if (job_index == jobList.size()) {
@@ -206,10 +167,6 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
             }
         }
 
-        /**
-         * Sort the indices first and delete in reverse order, so that a removal does not
-         * shift the indices still pending removal.
-         */
         Arrays.sort(record);
         for (int i = size - 1; i >= 0 && record[i] >= 0; i--) {
             taskList.remove(record[i]);
@@ -250,7 +207,6 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
                 }
             }
 
-            // With no empty set available, relax step by step to the next smallest distance tier.
             while (returnList.isEmpty()) {
                 map.remove(dis);
                 List<Integer> keys = new ArrayList(map.keySet());
@@ -272,15 +228,6 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
         return returnList;
     }
 
-    /**
-     * Selects the candidate target that can hold the current set and has the smallest graph
-     * distance.
-     *
-     * @param taskList candidate target sets
-     * @param checkSet current set to merge
-     * @param clusters_size maximum number of tasks allowed per target set
-     * @return candidate target set
-     */
     protected TaskSet getCandidateTastSet(ArrayList<TaskSet> taskList, TaskSet checkSet, int clusters_size) {
 
         List<TaskSet> potential = getNextPotentialTaskSets(taskList, checkSet, clusters_size);
@@ -300,15 +247,6 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
         }
     }
 
-    /**
-     * Computes the graph distance of two same-level task sets to their common successor.
-     * Horizontal clustering assumes both sets sit on the same DAG level and is not
-     * applicable to arbitrary cross-level task pairs.
-     *
-     * @param taskA first same-level task set
-     * @param taskB second same-level task set
-     * @return the successor graph distance in even form
-     */
     private int calDistance(TaskSet taskA, TaskSet taskB) {
         if (taskA == null || taskB == null || taskA == taskB) {
             return 0;
@@ -356,9 +294,6 @@ public class HorizontalDistanceBalancing extends HorizontalImpactBalancing {
         return distance * 2;
     }
 }
-/*
- * Simple value object for a graph distance plus its two set indices.
- */
 
 class Distance {
 

@@ -14,14 +14,6 @@ import org.workflowsim.platform.PlatformProfiles;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * AUD-F07 follow-up (2026-11-04, post-completion review): the runner must honor the configured
- * event-recorder cap. Before the configuration outlet, the only way to raise the cap above the
- * default 20000 was the Java constructor {@code new SimulationEventRecorder(n)}, so a
- * config-driven run that legitimately needed more events failed with no adjustment path. The
- * wiring test pins the semantic axis end to end: a cap of 1 makes the second recorded event
- * fail fast with the configured number in the message.
- */
 class SimulationRunnerEventRecorderCapIntegrationTest {
 
     @AfterEach

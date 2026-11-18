@@ -12,21 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Job;
 
-/**
- * Regression test (PLAT-6): a scheduling algorithm must not rewrite the caller-supplied ready queue.
- *
- * <p>Background: {@link BaseSchedulingAlgorithm#setCloudletList(List)} historically held a real
- * reference to the scheduler's ready queue, while {@link FirstFitIdleSchedulingAlgorithm} sorts
- * that list by Cloudlet ID inside {@code run()} -- the leftover sort order leaked back into the
- * scheduler queue and broke arrival order across scheduling cycles (FCFS semantics). The fix makes
- * setCloudletList take a defensive copy, and this test pins that behavior.</p>
- */
 class SchedulingListIsolationTest {
 
     @Test
     void firstFitIdleSortingDoesNotLeakIntoCallerReadyList() {
-        // Arrival order is deliberately the reverse of ascending Cloudlet ID: FirstFitIdle reorders to
-        // ascending ID internally.
+
         Job laterArrival = job(30);
         Job middleArrival = job(20);
         Job firstArrival = job(10);
@@ -38,13 +28,11 @@ class SchedulingListIsolationTest {
         scheduler.setVmList(Arrays.asList(vm(1), vm(2), vm(3)));
         scheduler.run();
 
-        // The caller's list must keep its original arrival order, unaffected by the in-algorithm sort.
         assertEquals(
                 Arrays.<Cloudlet>asList(laterArrival, middleArrival, firstArrival),
                 callerReadyList,
                 "Algorithm-side sorting must not mutate the caller's ready list");
 
-        // The algorithm itself still dispatches in ascending ID order (established FirstFitIdle semantics).
         assertEquals(3, scheduler.getScheduledList().size());
         assertEquals(firstArrival, scheduler.getScheduledList().get(0));
         assertEquals(middleArrival, scheduler.getScheduledList().get(1));
@@ -67,7 +55,7 @@ class SchedulingListIsolationTest {
                 Arrays.asList(higherId, lowerId),
                 callerVmList,
                 "Algorithm-side VM sorting must not mutate the caller's VM list");
-        // FirstFitIdle picks the first idle VM in ascending VM ID order.
+
         assertEquals(3, job.getVmId());
     }
 

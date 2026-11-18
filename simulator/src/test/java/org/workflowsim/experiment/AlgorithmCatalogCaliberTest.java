@@ -7,15 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 
-/**
- * Pins the cost-comparison caliber classification that the campaign construction layer
- * enforces (AUD-F09).
- *
- * <p>An online ready-batch cell decides task-to-VM mappings by the bare length/MIPS ECT,
- * a static planning cell decides them by the TaskExecutionModel matrix seconds, and every
- * other maintained combination makes no mapping-cost comparison at all. The classification
- * changes neither caliber's own comparison semantics.</p>
- */
 class AlgorithmCatalogCaliberTest {
 
     @Test
@@ -63,9 +54,7 @@ class AlgorithmCatalogCaliberTest {
 
     @Test
     void keepsTheStaticPlanningCaliberIndependentOfTheSchedulingLabel() {
-        // Through the legacy Parameters carrier a planner-driven cell can still declare a
-        // non-STATIC scheduling label; the mapping decision and its matrix-based cost
-        // comparison stay with the planner, so the caliber must not follow the label.
+
         assertEquals(
                 AlgorithmCatalog.CostComparisonCaliber.STATIC_PLANNING,
                 AlgorithmCatalog.costComparisonCaliber(PlanningAlgorithm.STATIC_MINMIN, SchedulingAlgorithm.FCFS));

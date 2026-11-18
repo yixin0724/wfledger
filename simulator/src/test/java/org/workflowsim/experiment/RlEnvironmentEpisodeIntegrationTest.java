@@ -22,29 +22,8 @@ import org.workflowsim.rl.RlPolicy;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * End-to-end episode acceptance for the R4 RL track: environment closed loop,
- * determinism, reward contract, decision-trace identity, and explicit failure on error
- * paths.
- *
- * <p>The fixture shares its source with the HEFT paper example
- * ({@code /dax/heft-paper-example.dax}, 3 VMs with mips=1.0) but runs on the online
- * scheduling track (INVALID planning layer, default SHARED file system, legacy data
- * movement model): RL_POLICY belongs to the ready-batch online layer together with
- * FCFS/MINMIN and does not depend on any static mapping premise.</p>
- */
 class RlEnvironmentEpisodeIntegrationTest {
 
-    /**
-     * Episode makespan of the greedy baseline on the paper-example fixture (a deterministic
-     * golden value).
-     *
-     * <p>This value is not comparable with the 190.1 of the static HEFT reproduction: this
-     * episode runs on the online scheduling track (INVALID planning, legacy data movement
-     * model, default SHARED file system), where the DAX runtime maps directly to MI with no
-     * cost-matrix guidance -- it pins down the closed-loop behavior of the RL environment,
-     * not the paper result.</p>
-     */
     private static final double GREEDY_EPISODE_GOLDEN_MAKESPAN = 5116.1;
 
     @Test
@@ -62,8 +41,7 @@ class RlEnvironmentEpisodeIntegrationTest {
     void decisionTraceMatchesFinalReportAssignments() throws Exception {
         RlEpisodeResult episode = runEpisode(new EarliestFinishGreedyPolicy());
         SimulationReport report = episode.getReport();
-        // Every Job is dispatched exactly once, and the decision trace agrees element by
-        // element with the final VM assignment in the report.
+
         assertEquals(report.getTotalJobs(), episode.getDecisions().size(), "decisions cover each Job exactly once");
         Set<Integer> seen = new HashSet<Integer>();
         for (RlDecision decision : episode.getDecisions()) {
@@ -76,11 +54,7 @@ class RlEnvironmentEpisodeIntegrationTest {
 
     @Test
     void rlPolicyWithoutEnvironmentFailsExplicitly() throws Exception {
-        // Running RL_POLICY directly through SimulationRunner, bypassing RlEnvironment:
-        // the registry has no policy, so this must fail explicitly and point at the correct
-        // entry point. After the R8 audit fix (P1-7), configuration-class exceptions are no
-        // longer wrapped into an IllegalStateException about "scheduling algorithm failure"
-        // but reach the caller as SimulationConfigurationException.
+
         SimulationConfigurationException failure = assertThrows(
                 SimulationConfigurationException.class, () -> new SimulationRunner().run(rlConfig(), paperPlatform()));
         assertTrue(
@@ -101,12 +75,11 @@ class RlEnvironmentEpisodeIntegrationTest {
 
     @Test
     void policyContractViolationsAbortTheEpisode() {
-        // Wrong action-array length: a contract violation must abort (the scheduler wraps it
-        // into a uniform ISE, and the real cause lives in the cause chain).
+
         IllegalStateException wrongLength = assertThrows(IllegalStateException.class, () -> new RlEnvironment()
                 .runEpisode(rlConfig(), paperPlatform(), observation -> new int[0]));
         assertTrue(chainMentions(wrongLength, IllegalStateException.class, "action(s)"), wrongLength.toString());
-        // Action out of range: explicit failure.
+
         RlPolicy outOfRange = observation -> {
             int[] actions = new int[observation.getReadyJobs().size()];
             java.util.Arrays.fill(actions, observation.getVms().size());
@@ -115,8 +88,7 @@ class RlEnvironmentEpisodeIntegrationTest {
         IllegalStateException range = assertThrows(IllegalStateException.class, () -> new RlEnvironment()
                 .runEpisode(rlConfig(), paperPlatform(), outOfRange));
         assertTrue(chainMentions(range, IllegalStateException.class, "out-of-range"), range.toString());
-        // Never assigning: the stall is intercepted explicitly by the platform watchdog
-        // rather than producing a silently incomplete report.
+
         SimulationExecutionException stalled =
                 assertThrows(SimulationExecutionException.class, () -> new RlEnvironment()
                         .runEpisode(rlConfig(), paperPlatform(), observation -> {
@@ -130,10 +102,6 @@ class RlEnvironmentEpisodeIntegrationTest {
                 stalled.getMessage());
     }
 
-    /**
-     * Whether the cause chain contains an exception of the given type whose message contains
-     * the keyword.
-     */
     private static boolean chainMentions(Throwable top, Class<? extends Throwable> type, String keyword) {
         Throwable current = top;
         while (current != null) {
@@ -158,7 +126,6 @@ class RlEnvironmentEpisodeIntegrationTest {
                 .build();
     }
 
-    /** Platform isomorphic to the HEFT paper reproduction: 3 VMs with mips=1.0. */
     private static PlatformProfile paperPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("rl-episode-platform");
         for (int id = 0; id < 3; id++) {

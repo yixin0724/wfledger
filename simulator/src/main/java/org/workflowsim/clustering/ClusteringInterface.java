@@ -21,45 +21,15 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Job;
 import org.workflowsim.Task;
 
-/**
- * Common interface for all task clustering policies.
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public interface ClusteringInterface {
 
-    /**
-     * Set the list of logical tasks to cluster.
-     *
-     * @param list the tasks to cluster
-     */
     public void setTaskList(List<Task> list);
 
-    /**
-     * Return the Jobs produced by clustering.
-     *
-     * @return the clustered Job list
-     */
     public List<Job> getJobList();
 
-    /**
-     * Return the current logical task list.
-     *
-     * @return the logical task list
-     */
     public List<Task> getTaskList();
 
-    /**
-     * Run clustering and create the Jobs together with their dependencies.
-     */
     public void run();
 
-    /**
-     * Return the task file references collected during clustering.
-     *
-     * @return the task file list
-     */
     public List<FileItem> getTaskFiles();
 }

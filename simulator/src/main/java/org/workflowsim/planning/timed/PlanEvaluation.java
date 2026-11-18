@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Immutable named metrics produced by a PlanObjectiveEvaluator. */
 public final class PlanEvaluation {
 
     private final Map<String, Double> metrics;

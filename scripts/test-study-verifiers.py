@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small self-contained stdlib tests. No JVM, Maven, retained study, or network is used."""
+
 import copy
 import hashlib
 import importlib.util
@@ -15,27 +15,22 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _study_audit import Audit, EXECUTION_SEMANTICS, exact_equal, java_round, layered_xml, registered_plan
 
-
 def load(name, filename):
     spec = importlib.util.spec_from_file_location(name, HERE / filename)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
-
 evidence = load("independent_evidence", "verify-study-evidence.py")
 statistics = load("independent_statistics", "verify-study-statistics.py")
-
 
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n", encoding="utf-8")
 
-
 def fingerprint(path):
     raw = path.read_bytes()
     return hashlib.sha256(raw).hexdigest(), len(raw)
-
 
 def bind_sidecars(manifest_path, doc):
     metrics = manifest_path.parent / "run.metrics.json"
@@ -45,13 +40,8 @@ def bind_sidecars(manifest_path, doc):
                         for role, path in (("metrics", metrics), ("events", events))]
     write_json(manifest_path, doc)
 
-
 def make_bundle(root, duration=1.0, effective=1000, matrix=False):
-    """Hand-calculated single task: 110 MI stage-in, then one 1000-MI declared task.
 
-    Optional matrix duration/effective MI are explicitly supplied by each test. The input is 0.5 B.
-    Expected metrics below use these elementary quantities, never a checker calculation.
-    """
     root.mkdir(parents=True)
     source = root / "flow.dax"
     source.write_text('<adag version="2.1"><job id="root" name="root" runtime="1"><uses file="x" link="input" size="0.5"/></job></adag>', encoding="utf-8")
@@ -140,9 +130,8 @@ def make_bundle(root, duration=1.0, effective=1000, matrix=False):
     bind_sidecars(manifest, doc)
     return manifest
 
-
 def make_large_clock_bundle(root, lost_cpu_seconds=0.0):
-    """One 300-MI task arrives near 1e9 s; optional 0.02 s loss exceeds the 0.001 s MI quantum."""
+
     manifest = make_bundle(root, duration=0.3, effective=300, matrix=True)
     doc = json.loads(manifest.read_text())
     job = next(j for j in doc["result"]["jobs"] if j["classType"] == 2)
@@ -157,7 +146,7 @@ def make_large_clock_bundle(root, lost_cpu_seconds=0.0):
                modeledCpuEnvelopeCost=3.0 * observed_cpu,
                modeledProcessingCost=3.0 * observed_cpu + job["modeledDeclaredFileBandwidthCost"])
     task["startTime"] += origin
-    task["finishTime"] = honest_end  # Full declared 300-MI modeled window remains unchanged.
+    task["finishTime"] = honest_end
     task["exactJobTiming"] = lost_cpu_seconds == 0.0
     doc["configuration"]["workflowArrivalSeconds"] = [job["startTime"]]
     doc["result"]["simulationEndSeconds"] = honest_end
@@ -171,7 +160,7 @@ def make_large_clock_bundle(root, lost_cpu_seconds=0.0):
             event["attributes"]["taskStartTime"] = task["startTime"]
             event["attributes"]["taskFinishTime"] = task["finishTime"]
     events_path.write_text(''.join(json.dumps(e) + '\n' for e in events), encoding="utf-8")
-    # Elementary accounting from the edited observations, not an invocation of the checker.
+
     stage = next(j for j in doc["result"]["jobs"] if j["classType"] == 1)
     busy = (stage["finishTime"] - stage["startTime"]) + observed_cpu
     reported_cpu = stage["cpuTime"] + observed_cpu
@@ -190,13 +179,8 @@ def make_large_clock_bundle(root, lost_cpu_seconds=0.0):
     bind_sidecars(manifest, doc)
     return manifest
 
-
 def make_statistics_study(root):
-    """Registered smoke declaration with elementary, manually chosen deterministic observations.
 
-    Registration data supplies only fixture identifiers/parameters; all expected results below
-    are literal 100/90/95 or 200/180/190 seconds and exact 10%/5%, p=Holm p=1.
-    """
     root.mkdir(parents=True)
     _, _, plan, _ = registered_plan("peft-comparison-r12-v2", "smoke")
     for w in plan["workflows"]:
@@ -262,7 +246,6 @@ def make_statistics_study(root):
     write_json(root / "network-study.json", index)
     return root / "network-study.json"
 
-
 class IndependentAuditorTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -295,12 +278,11 @@ class IndependentAuditorTests(unittest.TestCase):
         statistics.holm(rows)
         self.assertEqual([Fraction(4, 100), Fraction(3, 100), Fraction(4, 100)], [r["holmExact"] for r in rows])
 
-
     def test_deadline_family_recompute_matches_java_semantics(self):
-        # Chain E: build a bundle that requests a deadline and verify exact Python recomputation of the 6 fields.
+
         manifest = make_bundle(self.root / "deadline", 1.0, 1000, False)
         doc = json.loads(manifest.read_text())
-        doc["configuration"]["deadline"] = 200  # 200 = 2x 100 in place (the threshold value input)
+        doc["configuration"]["deadline"] = 200
         m = doc["metrics"]
         m.update(deadlineObservationEnabled=True, deadlineObservationOutcome="MET",
                  deadlineObservationTimeBasis="SIMULATION_END_SECONDS", deadlineMet=True,
@@ -309,15 +291,15 @@ class IndependentAuditorTests(unittest.TestCase):
         audit = Audit()
         result = evidence.inspect_manifest(manifest, audit)
         self.assertEqual(0, audit.issue_count, audit.report())
-        # Second round: the MISSED_LATE branch
+
         manifest2 = make_bundle(self.root / "deadline-late", 1.0, 1000, False)
         doc2 = json.loads(manifest2.read_text())
-        doc2["configuration"]["deadline"] = 1  # 1 < makespan(1.21) -> late
+        doc2["configuration"]["deadline"] = 1
         m2 = doc2["metrics"]
-        slack2 = 1 - m2["makespanSeconds"]  # negative value -0.21
+        slack2 = 1 - m2["makespanSeconds"]
         m2.update(deadlineObservationEnabled=True, deadlineObservationOutcome="MISSED_LATE",
                   deadlineObservationTimeBasis="SIMULATION_END_SECONDS", deadlineMet=False,
-                  deadlineSlackSeconds=slack2, deadlineTardinessSeconds=-slack2)  # +0.21
+                  deadlineSlackSeconds=slack2, deadlineTardinessSeconds=-slack2)
         bind_sidecars(manifest2, doc2)
         audit2 = Audit()
         result2 = evidence.inspect_manifest(manifest2, audit2)
@@ -333,14 +315,14 @@ class IndependentAuditorTests(unittest.TestCase):
         doc = json.loads(manifest.read_text())
         events_path = manifest.parent / "run.events.jsonl"
         events = [json.loads(line) for line in events_path.read_text().splitlines()]
-        # 1) Numeric truncation: 250.75 nanoseconds truncates to 250 under Java Number.longValue().
+
         end = float(doc["result"]["simulationEndSeconds"])
         events.append({"sequence": len(events), "simulationTime": end, "type": "SCHEDULING_CYCLE",
                        "jobId": None, "taskIds": [], "attributes": {"decisionElapsedNanos": 250.75}})
-        # 2) A non-numeric value (a string) is skipped under instanceof Number semantics, not judged a failure.
+
         events.append({"sequence": len(events), "simulationTime": end, "type": "SCHEDULING_CYCLE",
                        "jobId": None, "taskIds": [], "attributes": {"decisionElapsedNanos": "not-a-number"}})
-        # 3) An explicit planning event contributes 7 nanoseconds; 4) a non-explicit event carrying 99 nanoseconds must be excluded (same rule as Java).
+
         events.append({"sequence": len(events), "simulationTime": end, "type": "PLANNING_COMPLETED",
                        "jobId": None, "taskIds": [], "attributes": {"explicitPlannerDecision": True,
                                                                     "planningDecisionElapsedNanos": 7}})
@@ -362,17 +344,12 @@ class IndependentAuditorTests(unittest.TestCase):
             self.assertIn(key, result["coverage"]["checkedMetrics"])
 
     def test_energy_conservation_recompute_and_corruption_catch(self):
-        """BAT-E2 (2026-10-27): energy-conservation recompute: the positive case (powered platform) passes;
-        tampered total energy is killed.
 
-        Math (Beloglazov Eq.(2) binary specialization, single VM idle=100W max=400W):
-        E = 100*T_sim + (400-100)*T_busy = 121 + 333 = 454 J (default horizon).
-        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "powered"
             make_bundle(root)
             manifest = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
-            # Add the platform power fields
+
             manifest["platform"]["vms"][0]["idlePowerWatts"] = 100.0
             manifest["platform"]["vms"][0]["maxPowerWatts"] = 400.0
             end = manifest["metrics"]["makespanSeconds"]
@@ -389,7 +366,7 @@ class IndependentAuditorTests(unittest.TestCase):
             report_path = Path(tmp) / "energy-report.json"
             evidence.main(["--output", str(report_path), str(root / "run.manifest.json")])
             self.assertEqual(json.loads(report_path.read_text(encoding="utf-8"))["status"], "PASS")
-            # Counterexample: tampered total energy -> the conservation law kills it
+
             manifest["energyMetrics"]["totalEnergyJoules"] = expected_total + 500.0
             (root / "run.manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             bad_report = Path(tmp) / "energy-bad.json"
@@ -400,12 +377,7 @@ class IndependentAuditorTests(unittest.TestCase):
                             "corrupted total energy must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_event_stream_order_sequence_and_blank_lines_are_killed(self):
-        """Review round: the event-stream order/sequence/blank-line checks had no negative case pinning them
-        (implemented but never verified).
 
-        One case per shape: clock regression (event-clock-order), duplicate sequence (event-sequence),
-        blank line (blank line). The verdict is the auditor subprocess exit code (hard errors and FAIL must both be nonzero).
-        """
         def run_case(mutate):
             root = Path(self.root / f"stream-{len(list(self.root.iterdir()))}")
             make_bundle(root)
@@ -439,12 +411,7 @@ class IndependentAuditorTests(unittest.TestCase):
                 self.assertIn(needle, body, name + " must be reported with its contract code")
 
     def test_event_sequence_bounds_must_match_the_stream(self):
-        """Review round (found by cross-language fuzzing): the manifest's self-reported first/lastSequence must bind
-        to the event stream.
 
-        Previously both sides (the Java validator and the Python auditor) only checked eventCount, so tampered
-        sequence bounds could pass the whole bundle -- declared context disagreed with the evidence and nobody noticed.
-        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "sequence"
             make_bundle(root)
@@ -556,13 +523,8 @@ class IndependentAuditorTests(unittest.TestCase):
         outcome = self.cli("verify-study-statistics.py", source, self.root / "pruned.json")
         self.assertEqual(1, outcome.returncode, outcome.stdout + outcome.stderr)
 
-
 def inject_contract_events(manifest, terminal_delta=0.0, start_delta=0.0, duplicate_start=False):
-    """Insert the F-006/F-007 revision events into a make_bundle fixture.
 
-    Elementary quantities only: the job envelope start is the fixture's known 0.21 and the
-    modeled post-stage start equals envelope + effective stage. The tampering knobs corrupt
-    exactly one derivation or identity, proving the independent auditor rejects each."""
     doc = json.loads(manifest.read_text())
     end = float(doc["result"]["simulationEndSeconds"])
     events = [json.loads(line) for line in (manifest.parent / "run.events.jsonl").read_text().splitlines() if line.strip()]
@@ -585,13 +547,7 @@ def inject_contract_events(manifest, terminal_delta=0.0, start_delta=0.0, duplic
     bind_sidecars(manifest, doc)
     return manifest
 
-
 class ContractEventAuditTests(unittest.TestCase):
-    """F-006/F-007 (adjudicated 2026-10-23): terminal and execution-start event cross-checks.
-
-    Legacy streams without the revision events must keep passing unchanged; revision streams
-    must be validated for terminal-clock identity, per-instance uniqueness, derivation
-    arithmetic, and executed-job coverage."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -643,7 +599,7 @@ class ContractEventAuditTests(unittest.TestCase):
         self.assertGreater(audit.counts.get("job-start-coverage", 0), 0, audit.report())
 
     def test_a_declared_revision_contract_requires_its_terminal_marker(self):
-        """AUD-F23: declaring the contract turns the conditional terminal check into a requirement."""
+
         manifest = inject_contract_events(make_bundle(self.root / "declared-terminal"))
         rewrite_stream(manifest, {"SIMULATION_TERMINATED"}, declared="F-006/F-007")
         audit = Audit()
@@ -651,7 +607,7 @@ class ContractEventAuditTests(unittest.TestCase):
         self.assertGreater(audit.counts.get("revision-contract-terminal", 0), 0, audit.report())
 
     def test_a_declared_contract_rejects_a_stream_with_every_marker_removed(self):
-        """AUD-F23: the reproduced evasion -- remove both markers, re-sign, keep result.jobs intact."""
+
         manifest = inject_contract_events(make_bundle(self.root / "declared-markers"))
         rewrite_stream(manifest, {"SIMULATION_TERMINATED", "JOB_EXECUTION_STARTED"},
                        declared="F-006/F-007")
@@ -660,7 +616,7 @@ class ContractEventAuditTests(unittest.TestCase):
         self.assertGreater(audit.counts.get("revision-contract-terminal", 0), 0, audit.report())
 
     def test_an_undeclared_markerless_stream_keeps_the_legacy_boundary(self):
-        """AUD-F23 compatibility pin: retained pre-declaration bundles stay readable (0 issues)."""
+
         manifest = make_bundle(self.root / "undeclared-legacy")
         rewrite_stream(manifest, {"SIMULATION_TERMINATED", "JOB_EXECUTION_STARTED"}, declared=None)
         audit = Audit()
@@ -668,7 +624,7 @@ class ContractEventAuditTests(unittest.TestCase):
         self.assertEqual(0, audit.issue_count, audit.report())
 
     def test_a_declared_contract_with_its_markers_intact_passes(self):
-        """AUD-F23 positive case: the declaration is not a blanket failure."""
+
         manifest = inject_contract_events(make_bundle(self.root / "declared-healthy"))
         rewrite_stream(manifest, set(), declared="F-006/F-007")
         audit = Audit()
@@ -676,21 +632,15 @@ class ContractEventAuditTests(unittest.TestCase):
         self.assertEqual(0, audit.issue_count, audit.report())
 
     def test_an_unknown_declared_contract_is_rejected(self):
-        """AUD-F23: an unknown declaration must not be read as the implemented contract."""
+
         manifest = inject_contract_events(make_bundle(self.root / "declared-unknown"))
         rewrite_stream(manifest, set(), declared="v0")
         audit = Audit()
         evidence.inspect_manifest(manifest, audit)
         self.assertGreater(audit.counts.get("revision-contract", 0), 0, audit.report())
 
-
 def rewrite_stream(manifest, drop_types, declared="keep"):
-    """Delete the named event types, renumber the survivors, and re-sign the manifest.
 
-    AUD-F23 helper: a tamperer who removes markers must also renumber sequences and update the
-    declared count/digest, otherwise the attack is stopped by a plumbing check and never reaches
-    the contract check under test. ``declared`` replaces the events ``revisionContract`` value;
-    the default keeps whatever the fixture already declared, and None removes the key."""
     path = manifest.parent / "run.events.jsonl"
     events = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
     kept = [event for event in events if event["type"] not in drop_types]
@@ -708,13 +658,7 @@ def rewrite_stream(manifest, drop_types, declared="keep"):
     bind_sidecars(manifest, doc)
     return manifest
 
-
 class CarbonDimensionAuditTests(unittest.TestCase):
-    """BAT-C2 (2026-10-28): carbon-dimension recompute self-test -- expected values come only from the
-    dimensional law (E[J]/3.6e6 * I[g/kWh]) and the budget-excess integral (sum max(0, P_fleet(t)-green)*dt),
-    i.e. the two model families contracted in CARBON_DIMENSION_DESIGN.md §1; hand-derived, never the
-    implementation output. declared->required mirrors the energyMetrics powered->required rule
-    (corruption must be killed)."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -728,20 +672,20 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                               capture_output=True, text=True)
 
     def audit_status(self, manifest, report_name):
-        """Run the independent audit CLI once and return the report dict."""
+
         report = Path(self.temp.name) / (report_name + ".json")
         evidence.main(["--output", str(report), str(manifest)])
         return json.loads(report.read_text(encoding="utf-8"))
 
     @staticmethod
     def elementary_energy(manifest):
-        """Elementary quantity: E = 100*end + 300*busy (fixture platform idle=100W max=400W)."""
+
         end = float(manifest["metrics"]["makespanSeconds"])
         busy = float(manifest["metrics"]["vmMetrics"]["0"]["modeledBusyIntervalSeconds"])
         return 100.0 * end + 300.0 * busy, end, busy
 
     def test_carbon_intensity_recompute_and_corruption(self):
-        """Positive case: intensity 380 g/kWh -> grams = E/3.6e6 * 380 passes the audit; tampering +5g must be killed."""
+
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "carbon-intensity"
             make_bundle(root)
@@ -750,12 +694,12 @@ class CarbonDimensionAuditTests(unittest.TestCase):
             manifest["platform"]["vms"][0]["maxPowerWatts"] = 400.0
             manifest["platform"]["vms"][0]["carbonIntensityGramsPerKWh"] = 380.0
             energy, end, _busy = self.elementary_energy(manifest)
-            # energyMetrics is declared too (powered->required, an existing rule).
+
             manifest["energyMetrics"] = {
                 "totalEnergyJoules": energy, "meanVmEnergyJoules": energy, "peakPowerWatts": 400.0,
                 "energyMakespanProductJouleSeconds": energy * end, "vmEnergyJoules": {"0": energy},
             }
-            grams = energy / 3.6e6 * 380.0  # unit law: J -> kWh divides by 3.6e6, then times g/kWh
+            grams = energy / 3.6e6 * 380.0
             manifest["carbonMetrics"] = {
                 "totalCarbonGrams": grams, "meanVmCarbonGrams": grams / 1,
                 "carbonMakespanProductGramSeconds": grams * end, "perVmCarbonGrams": {"0": grams},
@@ -765,7 +709,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             good = self.audit_status(bundle, "carbon-good")
             self.assertEqual("PASS", good["status"], json.dumps(good["issues"][:3]))
-            # Counterexample: tampered total grams -> recompute delta > tolerance -> audit fails, citing totalCarbonGrams
+
             manifest["carbonMetrics"]["totalCarbonGrams"] = grams + 5.0
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             bad = self.audit_status(bundle, "carbon-bad")
@@ -774,7 +718,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                             "corrupted total carbon must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_carbon_missing_when_intensities_declared(self):
-        """BAT-C2 declared->required: carbon intensity declared but the carbonMetrics section missing -> the audit must fail."""
+
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "carbon-missing"
             make_bundle(root)
@@ -787,7 +731,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                 "totalEnergyJoules": energy, "meanVmEnergyJoules": energy, "peakPowerWatts": 400.0,
                 "energyMakespanProductJouleSeconds": energy * end, "vmEnergyJoules": {"0": energy},
             }
-            # Do not write carbonMetrics (deliberate: declared -> required)
+
             bundle = root / "run.manifest.json"
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             report = self.audit_status(bundle, "carbon-missing")
@@ -797,14 +741,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                             "failure must cite the carbonMetrics section: " + json.dumps(report["issues"][:3]))
 
     def test_carbon_budget_window_recompute_and_corruption(self):
-        """Budget model: hand-derived fleet timeline (compute Job intervals plus the sum of idle/concurrency*deltaP) and
-        per-window excess.
 
-        Math (fixture single VM idle=100W max=400W; compute Job interval [0.21, 1.21)):
-        P(t)=400W on [0.21,1.21), 100W elsewhere; window [0,1.5) green 250W -> excess (400-250)*1.0=150 W*s;
-        window [2,5) green 250W -> outside the covered interval, nothing accumulates -> 0. Total 150 agrees with
-        the window sub-map {"0":150}.
-        """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "carbon-budget"
             make_bundle(root)
@@ -829,14 +766,14 @@ class CarbonDimensionAuditTests(unittest.TestCase):
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             good = self.audit_status(bundle, "budget-good")
             self.assertEqual("PASS", good["status"], json.dumps(good["issues"][:3]))
-            # Counterexample 1: tampered total excess -> killed
+
             manifest["carbonMetrics"]["totalCarbonExcessWattSeconds"] = 155.0
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
             bad1 = self.audit_status(bundle, "budget-bad-total")
             self.assertEqual("FAIL", bad1["status"])
             self.assertTrue(any("totalCarbonExcessWattSeconds" in str(i.get("location", "")) for i in bad1["issues"]),
                             "corrupted total excess must be caught: " + json.dumps(bad1["issues"][:2]))
-            # Counterexample 2: window sub-map inconsistent with the total (sub-map != recomputed per-window values) -> killed
+
             manifest["carbonMetrics"]["totalCarbonExcessWattSeconds"] = 150.0
             manifest["carbonMetrics"]["windowExcessWattSeconds"] = {"0": 100.0}
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
@@ -844,7 +781,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
             self.assertEqual("FAIL", bad2["status"])
             self.assertTrue(any("windowExcess" in str(i) for i in bad2["issues"]),
                             "corrupted window sub-map must be caught: " + json.dumps(bad2["issues"][:2]))
-            # Counterexample 3: both models declared (per-VM intensity + platform windows) -> the contract's mutual-exclusion clause kills it
+
             manifest["platform"]["vms"][0]["carbonIntensityGramsPerKWh"] = 380.0
             manifest["carbonMetrics"]["windowExcessWattSeconds"] = {"0": 150.0}
             bundle.write_text(json.dumps(manifest), encoding="utf-8")
@@ -855,7 +792,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                             + json.dumps(both["issues"][:2]))
 
     def test_carbon_windows_must_be_sorted_non_overlapping(self):
-        """Window ordering check: out-of-order/overlap -> the contract clause kills it (mirrors the Java builder validation)."""
+
         for where, windows in (
             ("overlap", [{"startSeconds": 0.0, "endSeconds": 2.0, "greenWatts": 250.0},
                          {"startSeconds": 1.0, "endSeconds": 5.0, "greenWatts": 100.0}]),
@@ -886,9 +823,7 @@ class CarbonDimensionAuditTests(unittest.TestCase):
                 self.assertTrue(any("sorted" in str(i) or "overlapping" in str(i) for i in report["issues"]),
                                 where + ": window order clause must fire: " + json.dumps(report["issues"][:2]))
 
-
 class CaWoSchedBudgetAuditTests(unittest.TestCase):
-    """Hand-derived CaWoSched report horizon and flat heterogeneous-fleet oracles."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -1071,7 +1006,7 @@ class CaWoSchedBudgetAuditTests(unittest.TestCase):
         return manifest, doc
 
     def test_cawosched_full_deadline_and_heterogeneous_flat_power(self):
-        """Dynamic 100*1+200*2=500 plus idle 30*10=300 => 800 W*s, split 650+150."""
+
         bundle, doc = self.make_flat_budget("cawosched-budget", "CAWOSCHED_SLACK")
         doc["carbonMetrics"] = {
             "totalCarbonGrams": 0.0,
@@ -1100,7 +1035,7 @@ class CaWoSchedBudgetAuditTests(unittest.TestCase):
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
 
     def test_non_cawosched_keeps_first_vm_and_makespan(self):
-        """Legacy: idle 30*3.21 + first-VM dynamic 100*(1+2) = 396.3 W*s."""
+
         bundle, doc = self.make_flat_budget("ordinary-budget", "SHARED_STORAGE_HEFT")
         doc["carbonMetrics"] = {
             "totalCarbonGrams": 0.0,
@@ -1114,15 +1049,7 @@ class CaWoSchedBudgetAuditTests(unittest.TestCase):
         report = self.audit_status(bundle, "ordinary-budget-report")
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
 
-
 class DvfsTierAuditTests(unittest.TestCase):
-    """BAT-D3 (2026-10-29): DVFS per-tier energy/carbon recompute self-test -- expected values come only
-    from the hand-derived extended conservation law
-    (DVFS_DIMENSION_DESIGN.md §2.3: E_vm = P_idle(default tier)*T_sim + sum over tiers
-    [(P_max(tier)-P_idle(default tier))*busy(tier)]) plus the per-tier fleet power excess integral; the
-    hand-derived numbers sit in comments next to the assertions, never the implementation output.
-    The positive case passes, per-tier attribution/energy/tier-table tampering is killed one by one, and the
-    v1 inert semantic bit is unchanged (tierless platform + flat power -> D1 energy law passes at its original value)."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -1132,46 +1059,37 @@ class DvfsTierAuditTests(unittest.TestCase):
         self.temp.cleanup()
 
     def audit_status(self, manifest_path, report_name):
-        """Run the independent audit CLI once and return the report dict."""
+
         report = Path(self.temp.name) / (report_name + ".json")
         evidence.main(["--output", str(report), str(manifest_path)])
         return json.loads(report.read_text(encoding="utf-8"))
 
-    # -- fixture: 2-tier platform (2000 default tier 100/400W; 1000 tier 90/200W), VM base speed 1000 --
-    # The compute Job (1000 MI, base speed 1000 -> 1.0s) rides the 1000 tier (== base speed -> the time
-    # surface is bit-for-bit isomorphic to make_bundle, with the tier evidence surface layered on top); the
-    # stage-in bookkeeping envelope (0.11s) carries no tier -> attributed to the default tier.
     TWO_TIERS = [{"mips": 2000.0, "idlePowerWatts": 100.0, "maxPowerWatts": 400.0},
                  {"mips": 1000.0, "idlePowerWatts": 90.0, "maxPowerWatts": 200.0}]
 
     def make_tier_manifest(self, name="dvfs"):
-        """Synthetic manifest path with a tiered platform; the caller writes energyMetrics and friends as needed."""
+
         root = self.root / name
         make_bundle(root, 1.0, 1000, False)
         doc = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
         doc["platform"]["vms"][0]["frequencyTiers"] = [dict(t) for t in self.TWO_TIERS]
         compute = next(j for j in doc["result"]["jobs"] if j["classType"] == 2)
-        compute["tierMips"] = 1000.0  # non-default tier (the default tier is the first table entry, 2000)
+        compute["tierMips"] = 1000.0
         return root / "run.manifest.json", doc
 
     def store_energy(self, doc, total):
-        """Hand-derived quadruple: single-VM total energy total -> mean/peak/EDP computed from the same source."""
+
         end = float(doc["metrics"]["makespanSeconds"])
         doc["energyMetrics"] = {
             "totalEnergyJoules": total,
-            "meanVmEnergyJoules": total,  # single-VM mean = total
-            "peakPowerWatts": 400.0,      # max declared tier P_max (the default is also the maximum in these fixtures)
+            "meanVmEnergyJoules": total,
+            "peakPowerWatts": 400.0,
             "energyMakespanProductJouleSeconds": total * end,
             "vmEnergyJoules": {"0": total},
         }
 
     def test_nonmonotonic_tier_peak_uses_max_declared_tier(self):
-        """The default tier is 400 W but the occupied non-default tier is 900 W: nameplate peak is 900 W.
 
-        The same hand-conservation partition as the positive two-tier case gives
-        E = 100*1.21 + (400-100)*0.11 + (900-100)*1.0 = 121+33+800 = 954 J.
-        A default-only 400 W peak is neither the declared maximum nor an upper bound on active power.
-        """
         bundle, doc = self.make_tier_manifest("dvfs-nonmonotonic-peak")
         doc["platform"]["vms"][0]["frequencyTiers"][1]["maxPowerWatts"] = 900.0
         self.store_energy(doc, 954.0)
@@ -1181,13 +1099,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
 
     def test_tiered_energy_recompute_matches_hand_law(self):
-        """Positive case: E = 100*1.21 + 0.11*(400-100) + 1.0*(200-100) = 121+33+100 = 254 J.
 
-        Per-tier attribution: stage-in bookkeeping [0.1,0.21) has no tier -> default tier for 0.11s; the
-        compute Job [0.21,1.21) carries the 1000 tier for 1.0s (a non-default tier -- the D1 all-at-default
-        view gives 121+300*1.11 = 454 J, and the two must be told apart: this case stores 254 and passes,
-        while the note records the honest observed value 454.)
-        """
         bundle, doc = self.make_tier_manifest("dvfs-good")
         self.store_energy(doc, 254.0)
         bundle.write_text(json.dumps(doc), encoding="utf-8")
@@ -1195,21 +1107,15 @@ class DvfsTierAuditTests(unittest.TestCase):
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
         note = next((n for n in report["notes"] if n["code"] == "dvfs-tier-accounting-observation"), None)
         self.assertIsNotNone(note, "the DVFS observation note must exist")
-        # The observed values are not assertion inputs: the hand-derived values carry a floating tolerance pair (last-digit noise at the 453.99999999999994 level is legal).
+
         self.assertAlmostEqual(254.0, note["perTierTotalEnergyJoules"], delta=1e-9)
         self.assertAlmostEqual(454.0, note["allAtDefaultEnergyJoules"], delta=1e-9)
         self.assertTrue(note["nonDefaultTierBusyObserved"])
 
     def test_tiered_energy_discriminates_all_at_default_forgery(self):
-        """Counterexample 1 (convention discrimination): the manifest records the D1 all-at-default value 454 J
-        while the real per-tier attribution is still present -> killed.
 
-        If the auditor fell back to the D1 convention (or the v1 flat-power convention of 0 J), 454 must not
-        be judged PASS -- paired with the previous case (254 passes), the only recomputation law that satisfies
-        both is the per-tier extension.
-        """
         bundle, doc = self.make_tier_manifest("dvfs-454")
-        self.store_energy(doc, 454.0)  # forged: energy declared under the "all-at-default" convention while the attribution evidence is split
+        self.store_energy(doc, 454.0)
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         report = self.audit_status(bundle, "tier-454")
         self.assertEqual("FAIL", report["status"])
@@ -1217,12 +1123,10 @@ class DvfsTierAuditTests(unittest.TestCase):
                         "forged all-at-default energy must be caught: " + json.dumps(report["issues"][:2]))
 
     def test_tier_attribution_corruption_is_killed(self):
-        """Counterexample 2 ("change one tier's busy seconds"): the compute Job's tier attribution is moved to
-        the default tier -> tier busy times reshuffle (1000 tier 0s / default tier 1.11s) -> recomputed energy
-        454 != stored 254 -> killed."""
+
         bundle, doc = self.make_tier_manifest("dvfs-retier")
         compute = next(j for j in doc["result"]["jobs"] if j["classType"] == 2)
-        compute["tierMips"] = 2000.0  # tampered attribution (still a declared tier -- tier identity legal, energy evidence broken)
+        compute["tierMips"] = 2000.0
         self.store_energy(doc, 254.0)
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         report = self.audit_status(bundle, "tier-retier")
@@ -1232,7 +1136,7 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:2]))
 
     def test_undeclared_tier_mips_is_chain_broken(self):
-        """Counterexample 3: tier mips=1500 is not in the declared table -> the evidence-chain clause mirroring Java tierByMips kills it."""
+
         bundle, doc = self.make_tier_manifest("dvfs-undeclared")
         compute = next(j for j in doc["result"]["jobs"] if j["classType"] == 2)
         compute["tierMips"] = 1500.0
@@ -1245,7 +1149,7 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:2]))
 
     def test_tier_table_ordering_is_validated(self):
-        """Counterexample 4: the tier table is not strictly descending (1000 before 2000) -> the table-order contract (BAT-D1) kills it."""
+
         bundle, doc = self.make_tier_manifest("dvfs-unsorted")
         doc["platform"]["vms"][0]["frequencyTiers"] = [dict(t) for t in reversed(self.TWO_TIERS)]
         self.store_energy(doc, 254.0)
@@ -1255,8 +1159,6 @@ class DvfsTierAuditTests(unittest.TestCase):
         self.assertTrue(any("descending" in str(i) for i in report["issues"]),
                         "non-descending tier table must be rejected: " + json.dumps(report["issues"][:2]))
 
-    # -- BAT-D6 (2026-10-29): expected task-window seconds = work/assigned tier speed (the Java/Python shared-law seam) --
-
     THREE_TIERS = [
         {"mips": 2000.0, "idlePowerWatts": 100.0, "maxPowerWatts": 400.0},
         {"mips": 1000.0, "idlePowerWatts": 90.0, "maxPowerWatts": 200.0},
@@ -1264,14 +1166,7 @@ class DvfsTierAuditTests(unittest.TestCase):
     ]
 
     def test_tier_speed_drives_task_window_recompute(self):
-        """Positive case: a 1000 MI task on the 500 tier -> expected window = 1000/500 = 2.0s (not the VM base
-        speed's 1.0s).
 
-        Hand-derived (make_bundle(duration=2.0)): task/Job window [0.21, 2.21), end=2.21,
-        busy=0.11+2.0=2.11; per-tier energy
-        E = 100*2.21 + (400-100)*0.11 (bookkeeping, default tier) + (150-100)*2.0 (compute, 500 tier)
-          = 221 + 33 + 100 = 354 J; the all-at-default observed value = 221 + 300*2.11 = 854 J.
-        """
         root = self.root / "tier-speed"
         make_bundle(root, 2.0, 1000)
         doc = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
@@ -1290,16 +1185,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         self.assertTrue(note["nonDefaultTierBusyObserved"])
 
     def test_v1_speed_task_window_with_slow_tier_claim_is_killed(self):
-        """Counterexample 5 (seam kill): the duration still follows the VM base speed (1.0s) while the manifest
-        claims the 500 tier -> the expected 2.0s does not match.
 
-        The old convention (task windows always at the VM declared speed) "passes" on this manifest; the
-        tier-speed convention must kill it item by item through effective-task-window / cpu-lower-bound --
-        this is the regression pin for the BAT-D6 Java/Python shared-law seam
-        (WorkflowDatacenter.updateTaskExecTime takes the assigned tier speed). The energy is filled in under
-        the per-tier law (hand-derived: 100*1.21 + 300*0.11 + 50*1.0 = 204 J), so the failure must come from
-        the time window, not from energy noise.
-        """
         root = self.root / "tier-speed-stale"
         make_bundle(root, 1.0, 1000)
         doc = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
@@ -1318,16 +1204,7 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:3]))
 
     def test_tiered_carbon_budget_uses_per_tier_fleet_power(self):
-        """Budget model with per-tier fleet power: hand-derived timeline (compute Job [0.21,1.21) @1000 tier).
 
-        P(t) = P_idle(default tier)=100 (static) + 100 (1000 tier dyn=200-100) = 200W on
-        [0.21,1.21); window [0,1.5) green 150W -> excess (200-150)*1.0 = 50 W*s; window
-        [2,5) with the same green -> 0 outside the interval; total 50 = window sub-map {"0":50}. Reusing the v1 uniform
-        deltaP (tiered VM flat power=0 -> deltaP=0 -> 0W throughout) would make the expected excess always
-        0 != 50 -- this case passing at 50 is the sole ruling that the per-tier convention is in force
-        (tier-ifying the Java-side budget model is a later batch; the D3 forward convention is
-        DVFS_DIMENSION_DESIGN.md §1.5).
-        """
         bundle, doc = self.make_tier_manifest("dvfs-budget")
         doc["platform"]["carbonWindows"] = [
             {"startSeconds": 0.0, "endSeconds": 1.5, "greenWatts": 150.0},
@@ -1342,7 +1219,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         good = self.audit_status(bundle, "tier-budget-good")
         self.assertEqual("PASS", good["status"], json.dumps(good["issues"][:3]))
-        # Counterexample: total excess tampered by +1 -> killed
+
         doc["carbonMetrics"]["totalCarbonExcessWattSeconds"] = 51.0
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         bad = self.audit_status(bundle, "tier-budget-bad")
@@ -1351,16 +1228,11 @@ class DvfsTierAuditTests(unittest.TestCase):
                         "corrupted per-tier fleet excess must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_tiered_carbon_intensity_rides_per_tier_energy(self):
-        """Intensity model ride-through: grams = E/3.6e6 * I (E = the per-tier law's 254 J, intensity 380 g/kWh).
 
-        This case also pins the tier extension of the powered predicate (a tiered VM whose flat fields are
-        all 0 would be misread as unpowered by the v1 predicate -> half-declaration kill; once the tier power
-        gate is idempotent over (flat or tier) it passes under the dimensional law).
-        """
         bundle, doc = self.make_tier_manifest("dvfs-intensity")
         doc["platform"]["vms"][0]["carbonIntensityGramsPerKWh"] = 380.0
         self.store_energy(doc, 254.0)
-        grams = 254.0 / 3.6e6 * 380.0  # unit law: J -> kWh divides by 3.6e6, then times g/kWh
+        grams = 254.0 / 3.6e6 * 380.0
         doc["carbonMetrics"] = {
             "totalCarbonGrams": grams, "meanVmCarbonGrams": grams,
             "carbonMakespanProductGramSeconds": grams * float(doc["metrics"]["makespanSeconds"]),
@@ -1370,7 +1242,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         good = self.audit_status(bundle, "tier-intensity-good")
         self.assertEqual("PASS", good["status"], json.dumps(good["issues"][:3]))
-        # Counterexample: tampered by +5g -> killed
+
         doc["carbonMetrics"]["totalCarbonGrams"] = grams + 5.0
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         bad = self.audit_status(bundle, "tier-intensity-bad")
@@ -1379,9 +1251,7 @@ class DvfsTierAuditTests(unittest.TestCase):
                         "corrupted per-tier ridden grams must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_plain_v1_fixture_stays_on_the_v1_law(self):
-        """v1 inert-bit anchor: the same fixture without frequencyTiers and with flat power 100/400 ->
-        passes at the D1 energy law's original value (121+300*1.11=454 J); audit behavior is bit-for-bit
-        identical to pre-D3."""
+
         root = self.root / "v1-plain"
         make_bundle(root)
         manifest = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
@@ -1389,7 +1259,7 @@ class DvfsTierAuditTests(unittest.TestCase):
         manifest["platform"]["vms"][0]["maxPowerWatts"] = 400.0
         end = manifest["metrics"]["makespanSeconds"]
         busy = manifest["metrics"]["vmMetrics"]["0"]["modeledBusyIntervalSeconds"]
-        expected = 100.0 * end + 300.0 * busy  # = 121 + 333 = 454 J (hand-derived under the D1 law)
+        expected = 100.0 * end + 300.0 * busy
         manifest["energyMetrics"] = {
             "totalEnergyJoules": expected, "meanVmEnergyJoules": expected,
             "peakPowerWatts": 400.0, "energyMakespanProductJouleSeconds": expected * end,
@@ -1398,17 +1268,12 @@ class DvfsTierAuditTests(unittest.TestCase):
         (root / "run.manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
         report = self.audit_status(root / "run.manifest.json", "v1-plain-good")
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
-        # The v1 platform carries no DVFS observation note (the short-circuit bit).
+
         self.assertFalse([n for n in report["notes"] if n["code"] == "dvfs-tier-accounting-observation"],
                          str(report["notes"]))
 
-    # -- BAT-V1/V3 (2026-10-29 test-engineer adversarial round / DVFS round five) -- extra manifest-surface anchors --
-
     def test_declared_but_empty_tier_list_is_killed(self):
-        """BAT-V1 manifest surface: frequencyTiers declared as an empty table -> the BAT-D3 clause kills it
-        (declared-but-empty; mirrors the workbench JSON surface's non-empty-array rejection -- on the
-        programming surface a null/empty List is the v1 degradation of D1, and the manifest emitter never
-        produces an empty table)."""
+
         bundle, doc = self.make_tier_manifest("dvfs-empty-tiers")
         self.store_energy(doc, 254.0)
         doc["platform"]["vms"][0]["frequencyTiers"] = []
@@ -1420,11 +1285,7 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:2]))
 
     def test_platform_default_tier_idle_corruption_is_killed(self):
-        """BAT-V3(c) (the probe number from the real frozen bundle, ported to a synthetic regression anchor):
-        the platform's first tier (the default tier) has idlePowerWatts 100->110 (a 10W idle inflation) ->
-        the conservation law's idle coefficient is tampered with -> the recomputed energy mismatches across
-        the whole family -> killed. Hand-derived: E = 110*1.21 + (400-110)*0.11 + (200-110)*1.0
-        = 133.1+31.9+90 = 255 J != stored 254 J."""
+
         bundle, doc = self.make_tier_manifest("dvfs-idle-corrupt")
         self.store_energy(doc, 254.0)
         doc["platform"]["vms"][0]["frequencyTiers"][0]["idlePowerWatts"] = 110.0
@@ -1436,25 +1297,15 @@ class DvfsTierAuditTests(unittest.TestCase):
                         + json.dumps(report["issues"][:2]))
 
     def test_law_inert_nondefault_tier_corruption_is_honest_observation(self):
-        """BAT-V3 honest boundary (a guard-seam disclosure, not a fix): change a non-default tier's
-        idlePowerWatts that has <b>no busy-second attribution</b> (in-domain legal: <=max) -> the per-tier
-        conservation law consumes only the default tier's idle and each attributed tier's max; there is no
-        second source of truth to compare against -> audit behavior is unchanged. This is the inherent
-        boundary of single-source evidence: any constant inside the bundle is self-consistent with the
-        platform section (the frozen tar's manifest hash is the archive-level tamper surface); pinning this
-        behavior keeps future regressions from raising false alarms (so that "coordination
-        self-consistency" is not mistaken for forgery)."""
+
         bundle, doc = self.make_tier_manifest("dvfs-inert-corrupt")
         self.store_energy(doc, 254.0)
-        # The 1000 tier (attributed 1.0s) stays untouched; the 2000 tier is the default tier -- both are
-        # within the law. This fixture has only two tiers, so only changing the max of a non-default
-        # attributed tier would kill it; constructing "no attribution + non-default" needs a third tier:
+
         doc["platform"]["vms"][0]["frequencyTiers"] = [dict(t) for t in self.THREE_TIERS]
-        doc["platform"]["vms"][0]["frequencyTiers"][2]["idlePowerWatts"] = 85.5  # 500 tier: no attribution
+        doc["platform"]["vms"][0]["frequencyTiers"][2]["idlePowerWatts"] = 85.5
         bundle.write_text(json.dumps(doc), encoding="utf-8")
         report = self.audit_status(bundle, "tier-inert-corrupt")
         self.assertEqual("PASS", report["status"], json.dumps(report["issues"][:3]))
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

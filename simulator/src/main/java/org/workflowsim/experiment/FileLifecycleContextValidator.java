@@ -26,17 +26,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Cross-file V2 certificate: a valid lifecycle must describe this exact final Kernel run.
- *
- * <p><b>Single-use lifecycle (AUD-F15)</b>: an instance accumulates per-Event state in 20+
- * mutable fields, so it validates exactly one report once. {@link #acceptEvent(JsonObject)}
- * and {@link #finish()} reject any call after {@code finish()} -- the validation entries
- * construct a fresh instance per report, which keeps the static methods reentrant, and
- * read-only result access ({@link #getDataflowAssignmentResult()}) stays legal afterwards.
- * Without this latch a reused instance would be caught only accidentally, by whatever
- * per-Event check happens to notice the contamination, or not at all.</p>
- */
 final class FileLifecycleContextValidator {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
     private final Checked decoded;
@@ -64,7 +53,7 @@ final class FileLifecycleContextValidator {
     private int storageRetryBudget;
     private org.workflowsim.data.v2.DataflowAssignmentValidator assignmentAudit;
     private org.workflowsim.data.v2.DataflowAssignmentValidator.Result assignmentResult;
-    /** AUD-F15 single-use latch: set when {@link #finish()} runs, never cleared. */
+
     private boolean lifecycleFinished;
 
     org.workflowsim.data.v2.DataflowAssignmentValidator.Result getDataflowAssignmentResult() {
@@ -92,7 +81,6 @@ final class FileLifecycleContextValidator {
         check.finish();
     }
 
-    /** Known online extensions require the explicit policy and complete matching lifecycle capture. */
     static boolean requiresOnlineAssignmentAudit(JsonObject root) throws IOException {
         JsonObject config = obj(root, "configuration");
         if (!config.has("dataflowAssignment")) {
@@ -128,7 +116,6 @@ final class FileLifecycleContextValidator {
         return true;
     }
 
-    /** Shared coherent OFF/ON core-plan validation; no external input files are reopened. */
     static void validatePlanContext(JsonObject root) throws IOException {
         JsonObject config = obj(root, "configuration"), plan = obj(root, "dataflowPlan");
         String kind = text(obj(config, "dataMovementModel"), "kind");
@@ -140,11 +127,6 @@ final class FileLifecycleContextValidator {
         validateWorkflowScopeMapping(config, root, tasks);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validatePlanContext; statements verbatim; order unchanged. Validates
-     * that the coherent model kind, planning/scheduling algorithms, input-access file system, clustering mode,
-     * and platform storage declaration are all explicitly supported.
-     */
     private static void validatePlanModelAndConfiguration(
             JsonObject root, JsonObject config, String kind, boolean storage) throws IOException {
         if (!isV2(kind) && !storage) {
@@ -164,11 +146,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validatePlanContext; statements verbatim; order unchanged. Validates
-     * that the V2 runtime overhead model is fully disabled: zero workflow-engine interval and bandwidth and
-     * empty delay maps.
-     */
     private static void validatePlanOverheadModel(JsonObject config) throws IOException {
         JsonObject overhead = obj(config, "overheadModel");
         if (whole(need(overhead, "workflowEngineDelayInterval")) != 0 || number(need(overhead, "bandwidth")) != 0) {
@@ -181,10 +158,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validatePlanContext; statements verbatim; order unchanged. Validates
-     * the coherent no-op failure-model pair and, for V3 storage, the full storage failure grammar.
-     */
     private static void validatePlanFailureModel(JsonObject root, JsonObject config, boolean storage)
             throws IOException {
         JsonObject failure = obj(config, "failureModel");
@@ -195,11 +168,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validatePlanContext; statements verbatim; order unchanged. Validates
-     * that the V2 file plan document is schema-valid and its Task identities and control parents equal the
-     * manifest workflowGraph.
-     */
     private static Map<Integer, JsonObject> validatePlanTaskGraph(JsonObject root, JsonObject plan) throws IOException {
         try {
             FileLifecycleCodec.validatePlanDocument(plan);
@@ -219,12 +187,6 @@ final class FileLifecycleContextValidator {
         return tasks;
     }
 
-    /**
-     * Workflow-scope mapping check extracted from {@link #validatePlanContext(JsonObject)}
-     * (2026-10-23; statement order preserved verbatim): the declared arrival vector, the
-     * observed workflow outcomes, and the plan's per-Task input indexation must describe one
-     * contiguous, non-overlapping Task-id partition.
-     */
     private static void validateWorkflowScopeMapping(JsonObject config, JsonObject root, Map<Integer, JsonObject> tasks)
             throws IOException {
         JsonArray inputs = arr(config, "workflowArrivalSeconds"),
@@ -310,11 +272,6 @@ final class FileLifecycleContextValidator {
         verifyFinalLifecycleCoverage();
     }
 
-    /**
-     * 2026-10-26 complexity extraction from FileLifecycleContextValidator(JsonObject, Checked); statements
-     * verbatim; order unchanged. Validates that the manifest recording mode, trace capacity, and model kind match
-     * the decoded lifecycle document.
-     */
     private void validateRecordingMode(JsonObject config, JsonObject document, Checked decoded) throws IOException {
         String model = text(obj(config, "dataMovementModel"), "kind");
         NetworkEvidenceConfig option;
@@ -334,11 +291,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from FileLifecycleContextValidator(JsonObject, Checked); statements
-     * verbatim; order unchanged. Validates the V3 storage document's input-access policy and records the failure
-     * mode and retry budget from the manifest.
-     */
     private void validateStorageDocumentContext(JsonObject config, JsonObject document, Checked decoded)
             throws IOException {
         if (decoded.storage) {
@@ -352,11 +304,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from FileLifecycleContextValidator(JsonObject, Checked); statements
-     * verbatim; order unchanged. Validates that the decoded Job/Task outcome coverage equals the lifecycle's
-     * compute attempt and logical success sets.
-     */
     private void verifyJobOutcomeCoverage(Checked decoded) throws IOException {
         if (!taskOutcomes.keySet().equals(jobs.keySet())
                 || decoded.getRequestedJobCount() != jobs.size()
@@ -368,11 +315,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from FileLifecycleContextValidator(JsonObject, Checked); statements
-     * verbatim; order unchanged. Validates that the final request, CPU, terminal, and readiness lifecycles cover
-     * exactly the observed Job set.
-     */
     private void verifyFinalLifecycleCoverage() throws IOException {
         if (!requested.keySet().equals(jobs.keySet())
                 || !cpu.keySet().equals(jobs.keySet())
@@ -382,10 +324,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * Constructor stage one: dataflowPlan root scopes, file bytes, V3 planned reference totals,
-     * and the arrival sequence (verbatim move; statements unchanged).
-     */
     private void initRootScopes(JsonObject root, JsonObject config, Checked decoded) throws IOException {
         for (JsonElement row : arr(obj(root, "dataflowPlan"), "tasks")) {
             JsonObject task = object(row);
@@ -426,20 +364,11 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * Constructor stage two: Job/Task outcome-set validation (verbatim move; statements
-     * unchanged).
-     */
     private void initJobOutcomes(JsonObject root, JsonObject result, Checked decoded) throws IOException {
         initJobOutcomeRows(result);
         initTaskOutcomeRows(result);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from initJobOutcomes; statements verbatim; order unchanged. Validates
-     * every reported Job outcome's uniqueness, singleton compute class, and in-window timing, indexing each
-     * compute attempt as a Job.
-     */
     private void initJobOutcomeRows(JsonObject result) throws IOException {
         Set<Integer> allJobs = new HashSet<>();
         for (JsonElement row : arr(result, "jobs")) {
@@ -470,20 +399,12 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from initJobOutcomes; statements verbatim; order unchanged. Feeds each
-     * reported Task outcome through the per-attempt Job cross-check.
-     */
     private void initTaskOutcomeRows(JsonObject result) throws IOException {
         for (JsonElement row : arr(result, "tasks")) {
             verifySingleTaskOutcome(object(row));
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from initJobOutcomes; statements verbatim; order unchanged. Validates one
-     * Task attempt against its Job outcome's identity, terminal status, and first-observation uniqueness.
-     */
     private void verifySingleTaskOutcome(JsonObject task) throws IOException {
         int jobId = integer(need(task, "jobId"));
         Job job = jobs.get(jobId);
@@ -501,10 +422,6 @@ final class FileLifecycleContextValidator {
         verifyTaskTimingWindow(task, job);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from initJobOutcomes; statements verbatim; order unchanged. Validates a
-     * Task's modelled timing window stays within its Job bounds and its exactJobTiming claim is truthful.
-     */
     private void verifyTaskTimingWindow(JsonObject task, Job job) throws IOException {
         double taskStart = number(need(task, "startTime")), taskFinish = number(need(task, "finishTime"));
         if (taskStart != job.start || taskFinish < taskStart || taskFinish > job.finish + timeTolerance(job.finish)) {
@@ -516,10 +433,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * Constructor stage three: V2 final-state initialization from the event stream (request,
-     * resolution, readiness, CPU, and terminal events; verbatim move, statements unchanged).
-     */
     private void initFinalLifecycleFromEvents(Checked decoded) throws IOException {
         for (FileLifecycleEvent event : decoded.getEvidence().getEvents()) {
             JsonObject p = event.getPayload();
@@ -690,10 +603,6 @@ final class FileLifecycleContextValidator {
         put(values, id, event);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from acceptEvent; statements verbatim; order unchanged. Validates a
-     * RETRY_JOB_CREATED event's failed-Job provenance and records the retry origin.
-     */
     private void applyMainRetryCreatedEvent(JsonObject event, int id, Job job, double time) throws IOException {
         int failed = integer(need(obj(event, "attributes"), "failedJobId"));
         Job previous = requireJob(failed);
@@ -739,10 +648,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * Per-Job lifecycle anchor validation invoked by finish() (main-event times, dispatch, CPU
-     * envelope, and retry origin; verbatim move, statements unchanged).
-     */
     private void verifyJobLifecycleAnchors(
             Map.Entry<Integer, Job> entry, Set<Integer> initialTasks, Set<Integer> retriedFailures) throws IOException {
         int id = entry.getKey();
@@ -760,11 +665,6 @@ final class FileLifecycleContextValidator {
         verifyReturnedTerminalStatus(id, job, returned, initialTasks, retriedFailures);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from verifyJobLifecycleAnchors; statements verbatim; order unchanged.
-     * Validates the ready/stage-in/execution/returned main-event times against the recorded lifecycle request,
-     * readiness, CPU, and finish anchors.
-     */
     private void verifyMainEventAnchorTimes(
             int id, JsonObject ready, JsonObject stage, JsonObject execution, JsonObject returned) throws IOException {
         if (number(need(ready, "simulationTime")) != requestTime.get(id)
@@ -775,11 +675,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from verifyJobLifecycleAnchors; statements verbatim; order unchanged.
-     * Validates the STATIC scheduling decision window, its matching dispatch anchor, and the zero dispatch/post
-     * overhead requirement.
-     */
     private void verifySchedulingDecisionWindow(
             int id, Job job, JsonObject decision, JsonObject dispatch, JsonObject returned) throws IOException {
         double decided = number(need(decision, "simulationTime"));
@@ -794,11 +689,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from verifyJobLifecycleAnchors; statements verbatim; order unchanged.
-     * Validates the execution event's zero-transfer CPU envelope and, under the online assignment audit, its
-     * certified MI and model-derived timing scope.
-     */
     private void verifyExecutionEnvelope(int id, Job job, JsonObject execution) throws IOException {
         JsonObject attrs = obj(execution, "attributes");
         if (integer(need(attrs, "taskId")) != job.task
@@ -819,11 +709,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from verifyJobLifecycleAnchors; statements verbatim; order unchanged.
-     * Validates the stage-in event's transfer-unit/model attributes with its cross-checked reference totals and
-     * the readiness event's truthful retry-origin claim.
-     */
     private void verifyStageAndReadyAttributes(int id, JsonObject stage, JsonObject ready) throws IOException {
         JsonObject stageAttrs = obj(stage, "attributes");
         requireText(stageAttrs, "transferUnit", decoded.storage ? "LOGICAL_FILE_STORAGE_V3" : "LOGICAL_FILE_V2");
@@ -844,11 +729,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from verifyJobLifecycleAnchors; statements verbatim; order unchanged.
-     * Validates a Job's returned terminal status, failure recovery bookkeeping, and unique initial-attempt
-     * registration.
-     */
     private void verifyReturnedTerminalStatus(
             int id, Job job, JsonObject returned, Set<Integer> initialTasks, Set<Integer> retriedFailures)
             throws IOException {
@@ -872,13 +752,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * Stage-in main-quantity cross-check extracted from
-     * {@link #verifyJobLifecycleAnchors(Map.Entry, Set, Set)} (2026-10-23; statement order
-     * preserved verbatim): the stage-in event's transfer file count, byte volume, modeled
-     * seconds, and copy counters must equal the audited file-lifecycle reference totals, and
-     * the coherent stage-in path must never carry contention-group fields.
-     */
     private void verifyStageInReferenceTotals(int id, JsonObject stageAttrs) throws IOException {
         ReferenceTotals totals = referenceTotals.get(id);
         if (totals == null
@@ -892,10 +765,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * Retry sequencing validation invoked by finish() (failed return, retry creation, readiness;
-     * verbatim move, statements unchanged).
-     */
     private void verifyRetrySequencing(Map.Entry<Integer, Integer> retry) throws IOException {
         JsonObject created = retryEvents.get(retry.getKey()),
                 returned = main("JOB_RETURNED", retry.getValue()),
@@ -931,10 +800,6 @@ final class FileLifecycleContextValidator {
         validateFabricTopology(platform, fabric, vms, hosts, actual);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateFabric; statements verbatim; order unchanged. Indexes the
-     * audited fabric resource capacities keyed by their endpoint descriptors.
-     */
     private static Map<String, Double> fabricResourceCaps(JsonObject fabric) throws IOException {
         Map<String, Double> caps = new HashMap<>();
         for (JsonElement row : arr(fabric, "resources")) {
@@ -944,10 +809,6 @@ final class FileLifecycleContextValidator {
         return caps;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateFabric; statements verbatim; order unchanged. Validates that
-     * the declared fabric VM endpoints cover exactly the platform VM set.
-     */
     private static void validateFabricEndpointCoverage(JsonObject fabric, Map<Integer, JsonObject> vms)
             throws IOException {
         Set<Integer> fabricVms = new HashSet<>();
@@ -962,10 +823,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateFabric; statements verbatim; order unchanged. Validates each
-     * VM's actual host placement and bandwidth capacity against the platform and fabric resource audit.
-     */
     private static void validateFabricVmPlacements(
             Map<Integer, JsonObject> vms, Map<Integer, JsonObject> hosts, JsonObject actual, Map<String, Double> caps)
             throws IOException {
@@ -986,10 +843,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateFabric; statements verbatim; order unchanged. Validates the
-     * storage fabric's source-storage parameters, actual host coverage, and derived store capacities.
-     */
     private static void validateStorageFabric(
             JsonObject platform,
             JsonObject fabric,
@@ -1018,12 +871,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * Topology cross-check extracted from {@link #validateFabric(JsonObject, JsonObject, JsonObject, boolean)}
-     * (2026-10-23; statement order preserved verbatim): fat-tree sizing parameters, link
-     * bandwidth, host coverage, actual-VM host usage, and default or explicit host edge
-     * placements must match declared platform placement rules.
-     */
     private static void validateFabricTopology(
             JsonObject platform,
             JsonObject fabric,
@@ -1044,11 +891,6 @@ final class FileLifecycleContextValidator {
         validateTopologyPlacements(fabric, topology, snapshot, vms, hosts, actual, k, half);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateFabricTopology; statements verbatim; order unchanged.
-     * Validates the fat-tree size constraint and both documents' matching k, core switch, and link bandwidth
-     * capacities.
-     */
     private static void validateTopologySizing(JsonObject topology, JsonObject snapshot, int k) throws IOException {
         if (k < 2 || k > 32 || k % 2 != 0) {
             throw fail("Unsupported V2 topology size");
@@ -1063,10 +905,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateFabricTopology; statements verbatim; order unchanged.
-     * Validates topology host coverage, actual route placement, and default or explicit host edge assignments.
-     */
     private static void validateTopologyPlacements(
             JsonObject fabric,
             JsonObject topology,
@@ -1099,7 +937,7 @@ final class FileLifecycleContextValidator {
             }
         }
     }
-    /** Necessary V3 policy/coverage checks only; no failure samples or RNG cursor is replayed. */
+
     private static void validateStorageFailure(JsonObject root) throws IOException {
         JsonObject failure = obj(obj(root, "configuration"), "failureModel");
         Set<String> expected = new HashSet<>(Arrays.asList(
@@ -1135,11 +973,6 @@ final class FileLifecycleContextValidator {
         validateFailureAttemptHistory(root, enabled, budget);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateStorageFailure; statements verbatim; order unchanged.
-     * Validates the compute-attempt history: unique singleton attempts, success under FAILURE_NONE, STATIC-NOOP
-     * VM stability, and the declared retry budget limit.
-     */
     private static void validateFailureAttemptHistory(JsonObject root, boolean enabled, int budget) throws IOException {
         Map<Integer, Integer> taskVms = new HashMap<>();
         Set<Integer> attempts = new HashSet<>();
@@ -1170,10 +1003,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * Enabled-state failure-generator layout validation called by validateStorageFailure
-     * (verbatim move; statements unchanged).
-     */
     private static void validateEnabledFailureLayout(
             JsonObject root, String mode, String family, JsonArray dense, JsonObject keyed, boolean byVm, int budget)
             throws IOException {
@@ -1188,11 +1017,6 @@ final class FileLifecycleContextValidator {
         validateFailureGeneratorScope(root, generatorRows, mode);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateEnabledFailureLayout; statements verbatim; order unchanged.
-     * Builds the per-VM failure generator rows from the keyed or dense source representation, rejecting malformed
-     * row keys and shapes.
-     */
     private static Map<Integer, JsonArray> buildFailureGeneratorRows(JsonObject keyed, JsonArray dense, boolean byVm)
             throws IOException {
         Map<Integer, JsonArray> generatorRows = new HashMap<>();
@@ -1222,11 +1046,6 @@ final class FileLifecycleContextValidator {
         return generatorRows;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateEnabledFailureLayout; statements verbatim; order unchanged.
-     * Validates each generator row's distribution field set, family, positive scale/shape, and all-or-nothing
-     * prior nullability.
-     */
     private static void validateFailureGeneratorRows(Map<Integer, JsonArray> generatorRows, String family)
             throws IOException {
         for (JsonArray row : generatorRows.values()) {
@@ -1260,10 +1079,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateEnabledFailureLayout; statements verbatim; order unchanged.
-     * Validates that generator rows cover the DAG-depth and VM scope required by the declared failure mode.
-     */
     private static void validateFailureGeneratorScope(
             JsonObject root, Map<Integer, JsonArray> generatorRows, String mode) throws IOException {
         int maxDepth = 0;
@@ -1548,10 +1363,6 @@ final class FileLifecycleContextValidator {
         throw fail(message);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from same; statements verbatim; order unchanged. Compares two JSON object
-     * sub-trees recursively, key sets first, then each key's value.
-     */
     private static void sameObjectTrees(JsonElement a, JsonElement b, String message) throws IOException {
         JsonObject x = a.getAsJsonObject(), y = b.getAsJsonObject();
         if (!x.keySet().equals(y.keySet())) {
@@ -1562,10 +1373,6 @@ final class FileLifecycleContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from same; statements verbatim; order unchanged. Compares two JSON array
-     * sub-trees recursively by exact length, then element-wise.
-     */
     private static void sameArrayTrees(JsonElement a, JsonElement b, String message) throws IOException {
         JsonArray x = a.getAsJsonArray(), y = b.getAsJsonArray();
         if (x.size() != y.size()) {

@@ -33,11 +33,6 @@ class SimulationRunnerAlgorithmContractTest {
         assertLegacySchedulerRejected(SchedulingAlgorithm.ROUNDROBIN);
     }
 
-    // R9: the historical HEFT/DHEFT planner labels were removed together with their
-    // unaligned implementations, so the rejection contract of the former
-    // standardRunnerRejectsLegacyDagPlannersWithUnalignedExecutionModels no longer applies
-    // (the enum contains no legacy DAG planner label).
-
     @Test
     void standardRunnerRejectsLegacyFailureReclustering() {
         SimulationConfig config = SimulationConfig.builder("workflow.dax", 1)

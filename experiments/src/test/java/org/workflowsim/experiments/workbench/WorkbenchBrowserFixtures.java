@@ -19,7 +19,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Generate small, self-contained browser fixtures using the real public Workbench entry points. */
 public final class WorkbenchBrowserFixtures {
     private WorkbenchBrowserFixtures() {}
 
@@ -105,9 +104,6 @@ public final class WorkbenchBrowserFixtures {
         StorageLifecycleBrowserFixtures.append(output, reports, online.resolve("runs/fcfs-s42/result.manifest.json"));
         DataflowAssignmentBrowserFixtures.append(output, reports, online.resolve("runs/fcfs-s42/result.manifest.json"));
 
-        // BAT-E7 (2026-10-28): energy-panel browser fixture -- a real Workbench run on a
-        // powered platform, so the acceptance tool can verify that the energy-panel text
-        // comes from energyMetrics and that the panel stays visible and tamper-aware.
         {
             Path energyInput = output.resolve("energy-panel.dax");
             Files.write(
@@ -124,8 +120,7 @@ public final class WorkbenchBrowserFixtures {
             ExperimentArtifactWriter.writeJson(energyConfigPath, energyConfig);
             Path energyExperiment = Workbench.run(energyConfigPath, output.resolve("energy"));
             reports.add(describe("energy-powered", energyExperiment));
-            // Standalone report fixture: locate the manifest inside the energy experiment UUID
-            // directory (Workbench output layout).
+
             java.util.List<Path> energyManifests = new ArrayList<>();
             try (java.util.stream.Stream<Path> walk = Files.walk(energyExperiment)) {
                 walk.filter(f -> f.getFileName().toString().equals("result.manifest.json"))
@@ -145,10 +140,6 @@ public final class WorkbenchBrowserFixtures {
             reports.add(energyStandaloneSpec);
         }
 
-        // Carbon-dimension panel fixture (2026-11-02): a real run with an intensity declaration.
-        // The values must come from the manifest carbonMetrics (the intensity-multiplier chain),
-        // and the acceptance tool asserts digit-for-digit equality of the panel text on that
-        // basis -- a panel recompute or any bulk rounding is caught by the test.
         {
             Path carbonInput = output.resolve("carbon-panel.dax");
             Files.write(
@@ -186,10 +177,6 @@ public final class WorkbenchBrowserFixtures {
             reports.add(carbonStandaloneSpec);
         }
 
-        // DVFS per-tier panel fixture (2026-11-02): a three-tier platform plus EDP heuristic
-        // assignment, so the per-tier attribution genuinely lands on a non-default tier --
-        // only then does the panel's "sum of tier busy seconds = VM busy-seconds union"
-        // reconciliation badge become discriminating.
         {
             Path dvfsInput = output.resolve("dvfs-panel.dax");
             Files.write(
@@ -238,7 +225,6 @@ public final class WorkbenchBrowserFixtures {
         System.out.println("BROWSER_FIXTURES " + output.resolve("browser-fixtures.json"));
     }
 
-    /** DVFS tier triple (mips / idle power / max power); strict descending order falls back to platform validation. */
     private static JsonObject tier(double mips, double idle, double max) {
         JsonObject tier = new JsonObject();
         tier.addProperty("mips", mips);

@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/** Immutable Reshi task-node ranking supplied by the experiment, not by production output. */
 public final class ReshiRankTable {
 
     private final List<Entry> entries;

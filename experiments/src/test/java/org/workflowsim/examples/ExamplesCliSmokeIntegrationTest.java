@@ -16,14 +16,6 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.io.TempDir;
 import org.workflowsim.examples.failure.clustering.ParameterSweep;
 
-/**
- * Process-level smoke test for the historical teaching CLI.
- *
- * <p>Each catalog descriptor runs in a separate JVM. The test proves only that the default teaching
- * scenario starts, that the completion boundary is machine recognizable, and that invalid input
- * fails with a nonzero status; it does not prove equivalence with the algorithm papers, statistical
- * significance, or that the model has been calibrated against a real platform.</p>
- */
 class ExamplesCliSmokeIntegrationTest {
 
     private static final String MISSING_DAX_PATH = "datasets/dax/__cli-smoke-missing__/missing-workflow.dax";
@@ -95,8 +87,7 @@ class ExamplesCliSmokeIntegrationTest {
     private static String[] invalidArguments(ExampleCatalog.Descriptor descriptor) {
         String id = descriptor.getId();
         if ("multiple-workflows".equals(id)) {
-            // The multi-workflow entry point requires 0 or exactly 3 paths; a single path must
-            // fail before any simulation entity is created.
+
             return new String[] {MISSING_DAX_PATH};
         }
         if ("balanced-clustering".equals(id)

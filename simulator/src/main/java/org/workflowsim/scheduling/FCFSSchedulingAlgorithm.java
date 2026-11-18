@@ -22,20 +22,8 @@ import org.cloudbus.cloudsim.Cloudlet;
 import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
-/**
- * First-come, first-served (FCFS) online scheduler.
- *
- * <p>Scans the ready Jobs in the order they are supplied and, for each Job, selects the first
- * idle compatible VM found in ascending VM ID order. The round ends as soon as no VM is
- * available, so it builds neither a prediction of nor a reservation for future VM idle time.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class FCFSSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
-    /** Perform one FCFS dispatch pass in the current ready order. */
     @Override
     public void run() {
         validateCloudletCompatibility();
@@ -53,8 +41,7 @@ public class FCFSSchedulingAlgorithm extends BaseSchedulingAlgorithm {
                     break;
                 }
             }
-            // No idle compatible VM is available now; the remaining Jobs are left for later
-            // scheduling events.
+
             if (!stillHasVm) {
                 break;
             }

@@ -1,16 +1,5 @@
-"""Shared-core, stdlib-only V3 bounded-storage lifecycle sidecar verifier.
 
-Decode with ``_network_audit.decode_json`` before ``verify_document``. The closed
-V3 grammar reuses only PRIVATE independent V2 lexical/plan/path/replay machinery;
-it never invokes a production selector, replica runtime, allocator, or JVM.
-V2 public entrypoints remain strictly V2. ``Invalid`` is the existing CheckError.
 
-COMPLETE means a consistent operation-boundary history, not a completed run or
-authentication. A prefix may retain output copies or deferred inputs. Scalar
-service/residual bounds are necessary conditions, NOT fluid-service accounting.
-Platform membership without a topology and all manifest/result joins belong to
-the separate contextual validator. No dispatch or bundle loading occurs here.
-"""
 from __future__ import annotations
 
 from collections import Counter, deque
@@ -46,7 +35,6 @@ _PAYLOAD_KEYS = dict(_V2_PAYLOAD_KEYS,
     INPUT_WAITING_FOR_STORE=("jobId", "fileId", "referenceCount"),
     OUTPUT_RESOLVED=("jobId", "taskId", "fileId", "resolution", "copyOrdinal", "source"))
 
-
 class _StorageFabric(_Fabric):
     _fields = (*_Fabric._fields, "sourceStorage")
     _requires_hosts = True
@@ -57,8 +45,7 @@ class _StorageFabric(_Fabric):
         self.store_host = _id(store["attachmentHostId"])
         _need(not self.has_topology or self.store_host in self.placements,
               "SOURCE attachment host is not placed in topology")
-        # MB/s itself may be subnormal, but its exact binary64 multiplication
-        # by decimal 1e6 must produce a positive normal finite B/s capacity.
+
         for field, key in (("readBandwidthMbPerSecond", STORE_READ),
                            ("writeBandwidthMbPerSecond", STORE_WRITE),
                            ("networkBandwidthMbPerSecond", STORE_NIC)):
@@ -79,24 +66,18 @@ class _StorageFabric(_Fabric):
         rate = min(self.capacities[key] / count for key, count in Counter(path).items())
         return tuple(path), rate
 
-
 class _StorageReplay(_Replay):
-    """Closed V3 state machine with separate SOURCE and typed-target wait indices.
 
-    Inherited code checks exact numbers, immutable first visibility, VM-copy
-    joins, CPU/Task transitions, and scalar settlement bounds. The extra queues
-    below describe atomic callbacks, not predicted service or scheduling.
-    """
     def __init__(self, plan, fabric, observed_through, contract, policies):
         super().__init__(plan, fabric, observed_through, contract, policies)
         self.store_inputs = policies["inputAccess"] == STORE_INPUTS
         self.store_waiters, self.source_waits = {}, {}
-        self.resume_due = deque()                # (job, file, SOURCE observation), insertion order
+        self.resume_due = deque()
         self.output_owner = None
         self.output_time = None
         self.outputs_left = deque()
         self.output_started = False
-        self.output_obligations = set()           # unique files, not attempt/reference multiplicity
+        self.output_obligations = set()
         self.output_resolutions = []
         self.copy_purposes = {}
 
@@ -121,9 +102,7 @@ class _StorageReplay(_Replay):
                   "orphan copy/input/output resolution")
 
     def _after_event(self, now):
-        # All output VM replicas are published at TASK_FINISHED. Callback
-        # notifications and output materialization follow canonical file order,
-        # with any immediate readiness/store resumption before the next output.
+
         if (self.output_owner is not None and not self.output_started and
                 not self.ready_due and not self.resume_due):
             if self.outputs_left:
@@ -136,8 +115,7 @@ class _StorageReplay(_Replay):
         super()._job_input_requested(p, now, sequence)
         ident = _id(p["jobId"])
         job = self.jobs[ident]
-        # Count/bytes are already computed in canonical plan order, NOT deferred
-        # resolution order. Every input remains pending until its VM is visible.
+
         job.pending.update(self.plan.tasks[job.task].inputs)
         self.source_waits[ident] = {}
 
@@ -285,8 +263,7 @@ class _StorageReplay(_Replay):
         _need(not self.resume_due, "COMPLETE capture omits atomic SOURCE-commit input resumption")
         _need(self.output_owner is None and not self.outputs_left,
               "COMPLETE capture omits atomic output resolution/commit")
-        # Obligations may remain only as real active uploads. The history can
-        # stop there, but cannot claim quiescence or invent a completed run.
+
         _need(all((fid, SOURCE) in self.active for fid in self.output_obligations),
               "successful output has neither SOURCE closure nor an active upload")
 
@@ -323,24 +300,16 @@ class _StorageReplay(_Replay):
             for j, t, f, r, o, s, at, seq in self.output_resolutions]
         return result
 
-
 _V3 = _Contract(SCHEMA, MODE, CERTIFICATE_SCOPE, SHARED, ISOLATED,
                 (tuple(_POLICIES.items()), tuple(_STORE_POLICIES.items())), tuple(_PAYLOAD_KEYS.items()),
                 frozenset((*_V2_ACQUISITIONS, "ZERO_BYTE_OUTPUT")), _StorageFabric, _StorageReplay)
 
-
 def verify_document(document):
-    """Verify a strict-decoded V3 sidecar; return detached JSON summary/facts.
 
-    Source waits describe per-file intervals, not an additive wall-clock or
-    service-area decomposition. Copy ownership, purpose, provenance and typed
-    destinations remain available to the independent enclosing-run validator.
-    """
     return _verify_document(document, _V3)
 
-
 def inspect_path(path):
-    """Read exactly one standalone UTF-8 V3 sidecar; invalid input raises Invalid."""
+
     try:
         document = decode_json(Path(path).read_text(encoding="utf-8"))
     except (OSError, UnicodeError) as error:

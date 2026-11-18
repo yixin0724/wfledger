@@ -10,13 +10,6 @@ import org.workflowsim.utils.DistributionGenerator;
 import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 import org.workflowsim.utils.DistributionSpec;
 
-/**
- * Immutable failure model description used by a single simulation session.
- *
- * <p>Random distribution generators are created only when the session opens. Sampling therefore
- * happens after the run seed has been installed, and generator state cannot leak into the next
- * run.</p>
- */
 public final class FailureModelConfig {
 
     private static final FailureModelConfig DISABLED = new FailureModelConfig(
@@ -33,7 +26,7 @@ public final class FailureModelConfig {
     private final FailureParameters.FTCFailure generatorMode;
     private final DistributionFamily distributionFamily;
     private final DistributionSpec[][] generatorSpecs;
-    /** Generator rows of the modern VM-level model, keyed by real VM ID; exclusive with the dense matrix. */
+
     private final Map<Integer, DistributionSpec[]> generatorSpecsByVmId;
 
     private final int maxTotalRetryJobs;
@@ -55,7 +48,6 @@ public final class FailureModelConfig {
         this.maxTotalRetryJobs = maxTotalRetryJobs;
     }
 
-    /** Returns the "no failure" default model that ordinary experiments adopt explicitly. */
     public static FailureModelConfig disabled() {
         return DISABLED;
     }
@@ -80,47 +72,26 @@ public final class FailureModelConfig {
         return distributionFamily;
     }
 
-    /**
-     * Returns a copy of the legacy dense specification matrix and never exposes the internal
-     * matrix.
-     *
-     * <p>When the modern VM-ID-keyed configuration of {@link #getGeneratorSpecsByVmId()} is used,
-     * an empty matrix is returned.</p>
-     */
     public DistributionSpec[][] getGeneratorSpecs() {
         return copySpecs(generatorSpecs);
     }
 
-    /**
-     * Returns a copy of the generator rows keyed by real VM ID.
-     *
-     * <p>This form applies only to {@code FAILURE_VM} and {@code FAILURE_VM_JOB}; it prevents
-     * non-contiguous VM identifiers from being misinterpreted as indices of a two-dimensional
-     * array. A legacy dense matrix configuration returns an empty map.</p>
-     */
     public Map<Integer, DistributionSpec[]> getGeneratorSpecsByVmId() {
         return copySpecsByVmId(generatorSpecsByVmId);
     }
 
-    /** @return whether the current model keys generator rows by real VM ID */
     public boolean usesVmIdKeyedGeneratorRows() {
         return !generatorSpecsByVmId.isEmpty();
     }
 
-    /** @return total retry Jobs this run may create; 0 when the failure model is disabled */
     public int getMaxTotalRetryJobs() {
         return maxTotalRetryJobs;
     }
 
-    /** Returns {@code true} when the session must allocate stateful random generators. */
     public boolean isEnabled() {
         return generatorMode != FailureParameters.FTCFailure.FAILURE_NONE;
     }
 
-    /**
-     * Installs the new generator matrices and the stop budget, both scoped by the current run
-     * seed, into the legacy facade.
-     */
     public void applyToFailureParameters(long rootSeed) {
         if (!isEnabled()) {
             FailureParameters.init(
@@ -194,7 +165,6 @@ public final class FailureModelConfig {
         return Collections.unmodifiableMap(new LinkedHashMap<Integer, DistributionSpec[]>(sorted));
     }
 
-    /** The builder validates the configuration structure before any simulation entity is created. */
     public static final class Builder {
 
         private FailureParameters.FTCluteringAlgorithm clusteringAlgorithm =
@@ -232,30 +202,11 @@ public final class FailureModelConfig {
             return this;
         }
 
-        /**
-         * Declares the generator rows by real VM ID.
-         *
-         * <p>This form is only for models whose selection involves the VM dimension; it lets a
-         * platform use non-contiguous VM IDs such as {@code 10} and {@code 20} without building
-         * meaningless rows 0 through 19.</p>
-         *
-         * @param value mapping from VM ID to the specification row of each task depth
-         * @return this builder
-         */
         public Builder generatorSpecsByVmId(Map<Integer, DistributionSpec[]> value) {
             generatorSpecsByVmId = value;
             return this;
         }
 
-        /**
-         * Sets the maximum number of retry Jobs the failure model may create for this run.
-         *
-         * <p>An enabled failure model must set an explicit positive value, so that
-         * high-failure-rate experiments have a recordable stop condition.</p>
-         *
-         * @param value positive upper bound on the total number of retry Jobs
-         * @return this builder
-         */
         public Builder maxTotalRetryJobs(int value) {
             maxTotalRetryJobs = value;
             return this;
@@ -281,12 +232,6 @@ public final class FailureModelConfig {
                     generatorMode == FailureParameters.FTCFailure.FAILURE_NONE ? 0 : maxTotalRetryJobs);
         }
 
-        /**
-         * 2026-10-26 complexity extraction from build; statements verbatim; order unchanged.
-         * Scope: validates only failure-model enablement and generator layout (a disabled model must
-         * define neither generators nor a retry budget; an enabled model takes exactly one layout
-         * whose mode and budget match).
-         */
         private void validateGeneratorLayout() {
             boolean hasDenseMatrix = generatorSpecs.length != 0;
             boolean hasVmIdKeyedRows = !generatorSpecsByVmId.isEmpty();

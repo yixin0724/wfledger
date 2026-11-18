@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-/** Exact CWS rank derivation from the paper's Figure 1 physical DAG (R-PAPER-02). */
 class CwsDagRankTest {
 
     @Test

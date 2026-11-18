@@ -17,15 +17,10 @@ import org.workflowsim.data.TransferContentionEngine;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/**
- * Run-owned V2 coordinator: one transaction spans service, replicas, input waiters and evidence.
- * The Kernel adapter supplies actual observed times and destinations; optional capture is never
- * the authority for release or visibility. Initial executable scope is one logical Task per Job.
- */
 public final class CoherentDataflowRuntime {
-    /** Explicit NF003 external source; bounded storage/output attachment is a later contract. */
+
     public static final DataLocation SOURCE = DataLocation.source("source");
-    /** Immutable preparation quantities; references are not positive-copy traffic. */
+
     public static final class Preparation {
         private final double requiredBytes, isolatedSeconds;
         private final long referenceCount;
@@ -38,23 +33,23 @@ public final class CoherentDataflowRuntime {
             newCopies = copies;
             joinedCopies = joins;
         }
-        /** @return modeled reference bytes, not served byte area */
+
         public double getRequiredBytes() {
             return requiredBytes;
         }
-        /** @return sum of isolated full-object estimates, not observed input waiting */
+
         public double getIsolatedSeconds() {
             return isolatedSeconds;
         }
-        /** @return input-reference multiplicity */
+
         public long getReferenceCount() {
             return referenceCount;
         }
-        /** @return newly admitted positive copies */
+
         public int getNewCopies() {
             return newCopies;
         }
-        /** @return joined active copies */
+
         public int getJoinedCopies() {
             return joinedCopies;
         }
@@ -70,8 +65,6 @@ public final class CoherentDataflowRuntime {
     private JsonObject planDocument, fabricDocument;
     private Frame current;
 
-    /** @param shared enable cross-flow sharing @param recordBudget zero disables capture; positive bounds lifecycle
-     * records */
     public CoherentDataflowRuntime(boolean shared, int recordBudget) {
         this(shared, recordBudget, false, false);
     }
@@ -85,20 +78,15 @@ public final class CoherentDataflowRuntime {
         storageVersion = storage;
         storeBackedInputs = storeInputs;
     }
-    /** @param shared inter-flow sharing @param budget zero or positive capture budget @param storeBackedInputs
-     * store commitment gates input cache/read access @return explicitly versioned storage coordinator */
+
     public static CoherentDataflowRuntime withStorage(boolean shared, int budget, boolean storeBackedInputs) {
         return new CoherentDataflowRuntime(shared, budget, true, storeBackedInputs);
     }
-    /** @return whether bounded store/output semantics are enabled */
+
     public boolean isStorageVersion() {
         return storageVersion;
     }
-    /**
-     * Called once before clustering clears parser Tasks. Seeds only external objects at observation zero.
-     * @param filePlan deep-frozen parsed plan
-     * @param locations known typed VM and SOURCE locations
-     */
+
     public void initializePlan(DataflowFilePlan filePlan, Collection<DataLocation> locations) {
         if (current != null || filePlan == null) {
             throw new IllegalStateException("File plan must be installed exactly once");
@@ -123,10 +111,7 @@ public final class CoherentDataflowRuntime {
         planDocument = encoded;
         commit(staged);
     }
-    /**
-     * Install capacities/routes only after actual VM placement is known.
-     * @param actualFabric immutable actual-placement fabric
-     */
+
     public void bindFabric(DataTransferFabric actualFabric) {
         if (current == null || fabric != null || actualFabric == null) {
             throw new IllegalStateException("Plan must precede one fabric binding");
@@ -146,48 +131,47 @@ public final class CoherentDataflowRuntime {
         fabricDocument = FileLifecycleFormat.fabric(actualFabric);
         current.service = service;
     }
-    /** @return whether actual routes/capacities have been installed */
+
     public boolean isFabricBound() {
         return fabric != null;
     }
-    /** @return frozen plan */
+
     public DataflowFilePlan getFilePlan() {
         if (plan == null) {
             throw new IllegalStateException("No V2 file plan");
         }
         return plan;
     }
-    /** @return defensive plan document for the new model's core manifest */
+
     public JsonObject getFilePlanDocument() {
         return planDocument == null ? null : planDocument.deepCopy();
     }
-    /** @return last committed observation */
+
     public double getCurrentTime() {
         return current == null ? 0 : current.replicas.getObservedThrough();
     }
-    /** @return active positive copies */
+
     public int getActiveCopyCount() {
         return current == null ? 0 : current.copies.size();
     }
-    /** @return positive admissions, separate from input references */
+
     public long getAdmittedCopyCount() {
         return current == null ? 0 : current.replicas.getAdmittedCopyCount();
     }
-    /** @return earliest service finish, or null */
+
     public Double getNextCompletionTime() {
         return current == null ? null : current.nextTime;
     }
-    /** @return immutable current replica state */
+
     public DataReplicaState.Snapshot getReplicaSnapshot() {
         requireBound();
         return current.replicas.snapshot();
     }
-    /** @return passive complete file/active-work observation; reading never advances or drains state */
+
     public DataflowObservation observe() {
         return observation(null);
     }
-    /** @param files required logical-file scope @return passive scoped file view plus global
-     * active-copy/resource/job state */
+
     public DataflowObservation observeFiles(Collection<DataflowFilePlan.FileId> files) {
         if (files == null || plan == null) {
             throw new IllegalArgumentException("Initialized plan and explicit observation scope are required");
@@ -269,7 +253,7 @@ public final class CoherentDataflowRuntime {
                 jobs,
                 frame.outputObligations);
     }
-    /** File-holder view stage of observation() (verbatim move; statement order unchanged). */
+
     private void observeFileViews(
             Frame frame,
             Set<DataflowFilePlan.FileId> selected,
@@ -288,7 +272,6 @@ public final class CoherentDataflowRuntime {
         }
     }
 
-    /** In-flight copies stage of observation() (service/replica/copy three-way reconciliation, verbatim). */
     private void observeCopyViews(
             Frame frame,
             org.workflowsim.data.TransferServiceSnapshot service,
@@ -319,7 +302,6 @@ public final class CoherentDataflowRuntime {
         }
     }
 
-    /** @return newly data-ready Job IDs exactly once */
     public List<Integer> drainReadyJobIds() {
         if (current == null) {
             return Collections.emptyList();
@@ -328,7 +310,7 @@ public final class CoherentDataflowRuntime {
         current.ready.clear();
         return result;
     }
-    /** @return true after all requested Job attempts and positive copies have finished */
+
     public boolean isQuiescent() {
         if (current == null) {
             return false;
@@ -342,15 +324,6 @@ public final class CoherentDataflowRuntime {
         return current.jobs.isEmpty();
     }
 
-    /**
-     * Request a fixed destination only after control dependencies and workflow arrival are released.
-     * @param jobId nonnegative Job attempt ID
-     * @param taskIds singleton logical Task membership (initial NONE-clustering scope)
-     * @param vmId actual fixed target VM
-     * @param now dependency-ready observation
-     * @return initial preparation quantities, not a contended-arrival prediction; storage callers
-     *         must read {@link #getPreparation(int)} after data-ready for final deferred-input totals
-     */
     public Preparation requestJob(int jobId, List<Integer> taskIds, int vmId, double now) {
         if (storageVersion) {
             return requestStorageJob(jobId, taskIds, vmId, now);
@@ -399,7 +372,6 @@ public final class CoherentDataflowRuntime {
         return job.preparation;
     }
 
-    /** Per-demand resolution stage of requestJob(): local/zero/join/new-copy paths plus event records (verbatim). */
     private InputAggregate resolveJobInputs(
             Stage staged,
             Frame frame,
@@ -487,7 +459,7 @@ public final class CoherentDataflowRuntime {
         }
         return aggregate;
     }
-    /** COPY_ADMITTED event recording stage of resolveJobInputs() (verbatim move). */
+
     private void recordCopyAdmitted(
             Stage staged,
             double now,
@@ -512,7 +484,6 @@ public final class CoherentDataflowRuntime {
         }
     }
 
-    /** Private transfer structure for the requestJob() accumulators. */
     private static final class InputAggregate {
         private double bytes;
         private double seconds;
@@ -573,11 +544,6 @@ public final class CoherentDataflowRuntime {
         return job.preparation;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from requestStorageJob; statements verbatim; order unchanged.
-     * Scope: handles only the wait registration of a single input demand before its store commitment
-     * (an uncommitted demand records the pending jobId in the ledger) or its immediate resolution.
-     */
     private void awaitOrResolveStorageInput(
             Stage staged,
             Frame frame,
@@ -780,17 +746,11 @@ public final class CoherentDataflowRuntime {
             resolveStorageInput(staged, job, id, file, count, now, true);
         }
     }
-    /** @param now actual outer completion-check observation */
+
     public void advance(double now) {
         commit(step(now));
     }
-    /**
-     * Enforce a pre-existing data-ready release; a CPU submission cannot create its own permission.
-     * @param jobId prepared Job attempt
-     * @param taskIds actual singleton membership
-     * @param vmId actual submitted VM
-     * @param now CPU submission observation
-     */
+
     public void cpuStarted(int jobId, List<Integer> taskIds, int vmId, double now) {
         requireBound();
         JobState existing = job(jobId, taskIds, vmId, current);
@@ -813,14 +773,7 @@ public final class CoherentDataflowRuntime {
         }
         commit(staged);
     }
-    /**
-     * Publish actual Task outcomes after failure determination, before delayed engine return.
-     * @param jobId submitted attempt
-     * @param taskIds actual singleton Task membership
-     * @param vmId actual execution VM
-     * @param successes terminal per-Task success flags
-     * @param now observed datacenter Job completion
-     */
+
     public void jobFinished(int jobId, List<Integer> taskIds, int vmId, List<Boolean> successes, double now) {
         requireBound();
         JobState existing = job(jobId, taskIds, vmId, current);
@@ -865,11 +818,11 @@ public final class CoherentDataflowRuntime {
         staged.frame.jobs.remove(jobId);
         commit(staged);
     }
-    /** @return frozen bounded capture, null when OFF; no service advancement occurs */
+
     public FileLifecycleEvidence captureEvidence() {
         return storageVersion ? null : captureCommon();
     }
-    /** @return storage-version capture, never a V2 certificate; null when OFF or original V2 */
+
     public StorageLifecycleEvidence captureStorageEvidence() {
         return !storageVersion || budget == 0
                 ? null
@@ -884,8 +837,7 @@ public final class CoherentDataflowRuntime {
         return FileLifecycleEvidence.capture(
                 budget, dropped, getCurrentTime(), shared, planDocument, fabricDocument, events);
     }
-    /** @param jobId input-ready attempt @return final nominal input quantities (may be deferred under storage
-     * policy) */
+
     public Preparation getPreparation(int jobId) {
         JobState job = current.jobs.get(jobId);
         if (job != null) {
@@ -900,7 +852,7 @@ public final class CoherentDataflowRuntime {
         }
         return completed.preparation;
     }
-    /** @param jobId input-ready attempt @return observed preparation latency, not a sum of overlapping waits */
+
     public double getObservedInputPreparationSeconds(int jobId) {
         JobState job = current.jobs.get(jobId);
         if (job != null) {
@@ -1003,16 +955,8 @@ public final class CoherentDataflowRuntime {
         return Collections.unmodifiableList(new ArrayList<>(ids));
     }
 
-    /**
-     * B1 (2026-11-02): obtains a Job state that is safe to write -- if the entry is still shared with
-     * the source frame, it is copied before the write. Every path that mutates JobState must obtain
-     * the object here; read-only paths may keep using {@code frame.jobs.get}.
-     */
     private JobState mutable(Frame frame, int jobId) {
-        // Defense gate: a writable handle may only come from a staged frame. An in-place rewrite of the
-        // committed state (current) would invalidate the transaction rollback semantics and the
-        // "previous frame is immutable" invariant at once, and no test would turn red -- it must fail
-        // explicitly (B1 review round).
+
         if (frame == current) {
             throw new IllegalStateException(
                     "mutable() must be called on a staged frame; the committed state is immutable");
@@ -1153,7 +1097,7 @@ public final class CoherentDataflowRuntime {
             unresolvedStore.putAll(from.unresolvedStore);
         }
     }
-    /** Closed attempts never reenter mutable waiter/service state; only lookup metadata remains. */
+
     private static final class CompletedJob {
         final List<Integer> tasks;
         final int vm;
@@ -1207,12 +1151,9 @@ public final class CoherentDataflowRuntime {
         Double nextTime;
         final Map<DataflowFilePlan.FileId, LinkedHashSet<Integer>> storeWaiters = new LinkedHashMap<>();
         final Set<DataflowFilePlan.FileId> outputObligations = new TreeSet<>();
-        // Mutable copies contain active work only; closed lookup histories share immutable roots.
+
         final Map<Integer, JobState> jobs = new LinkedHashMap<>();
-        // B1 (2026-11-02): copy-on-write ownership. After a fork, jobs <b>shares</b> JobState instances
-        // with the source frame; only ids held in this set may be modified in place, and every write
-        // path first takes a private copy through {@link #mutable}. This eliminates the O(active jobs)
-        // deep copy per transaction (a quadratic allocation over wide active sets).
+
         final java.util.Set<Integer> ownedJobs = new HashSet<>();
         PersistentHistoryMap<Integer, CompletedJob> completedJobs = PersistentHistoryMap.empty();
         PersistentHistoryMap<Integer, Boolean> successfulTasks = PersistentHistoryMap.empty();
@@ -1229,8 +1170,7 @@ public final class CoherentDataflowRuntime {
             replicas = from.replicas.fork();
             service = from.service == null ? null : from.service.fork();
             nextTime = from.nextTime;
-            // B1: shallow copy of the active-job table -- instances are shared, and write paths fork on
-            // demand through mutable() (rollback safe: entries never taken by mutable() are never modified).
+
             jobs.putAll(from.jobs);
             for (Map.Entry<Target, LinkedHashSet<Integer>> entry : from.waiters.entrySet()) {
                 waiters.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));

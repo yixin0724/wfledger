@@ -16,27 +16,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.platform.PlatformProfiles;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Phase 2 metamorphic gap closure (review engineering C08/C168-series).
- *
- * <p>Existing coverage (not duplicated here): ConfigurationMetamorphicIntegrationTest already
- * covers the 117-cell combination matrix and "common data-size conservation", and
- * CrossConfigurationContaminationIntegrationTest already covers alternating configurations in
- * the same JVM without contamination. This class closes two gap relations:</p>
- *
- * <p><b>R1 zero-arrival degeneration (R5 contract)</b>: an explicit
- * {@code workflowArrivalSeconds=[0.0]} and a complete omission (default all-zero) must produce
- * a <b>bitwise identical</b> simulated event stream and task time windows -- the contract
- * states: "when all arrivals are t=0 the engine behavior is bitwise identical to the historical
- * single-instant submission".</p>
- *
- * <p><b>R2 scale separation (computational modeling invariant)</b>: with
- * {@code runtimeScale x 2 and every VM MIPS x 2}, the task MI doubles and the MIPS doubles, so
- * the two cancel -- every task's <b>compute duration must stay exactly unchanged</b> (zero
- * tolerance). This pins the modeling separation "MI conversion is linear + compute duration
- * depends only on sec x scale/mips"; the root stage-in Job (fixed at 110 MI) may change, so only
- * task window durations are asserted.</p>
- */
 class MetamorphicGapIntegrationTest {
 
     @TempDir
@@ -118,8 +97,6 @@ class MetamorphicGapIntegrationTest {
         }
     }
 
-    // ---- shared run and assertion helpers ----
-
     private SimulationReport run(Path workflow, SimulationConfig config) throws Exception {
         return run(workflow, config, 1.0);
     }
@@ -166,10 +143,6 @@ class MetamorphicGapIntegrationTest {
         }
     }
 
-    /**
-     * Four-task pure-chain DAX (runtime 100 seconds, no files) -- far from the 100 MI floor to
-     * avoid floor interference.
-     */
     private Path chainDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");

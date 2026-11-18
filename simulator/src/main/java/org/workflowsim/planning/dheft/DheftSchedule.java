@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable DHEFT schedule with task timing, mapping, and makespan. */
 public final class DheftSchedule {
     private final Map<Integer, Entry> entries;
     private final Map<Integer, Integer> mapping;

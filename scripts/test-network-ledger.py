@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent stdlib network tests: hand oracles only; no JVM, producer, retained study or network."""
+
 import copy
 import hashlib
 import json
@@ -19,7 +19,6 @@ MODEL = "PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1"
 PAYLOADS = ("capacity", "start", "rateChange", "serviceSegment", "complete")
 BIG_ID = (1 << 63) - 1
 
-
 def event(kind, seq, effective=0.0, observed=None, tid=BIG_ID, ordinal=1, **data):
     key = {"CAPACITY": "capacity", "START": "start", "RATE_CHANGE": "rateChange",
            "SERVICE_SEGMENT": "serviceSegment", "COMPLETE": "complete"}[kind]
@@ -31,19 +30,16 @@ def event(kind, seq, effective=0.0, observed=None, tid=BIG_ID, ordinal=1, **data
     row[key] = data
     return row
 
-
 def start(seq=2, size=1000000, nominal=1000000, rate=None, path=None, **kw):
     return event("START", seq, bytes=size, occupiedResources=["source", "VM:7"] if path is None else path,
                  nominalRateBytesPerSecond=nominal, initialRateBytesPerSecond=nominal if rate is None else rate, **kw)
-
 
 def service(seq=3, a=0.0, b=1.0, observed=2.0, elapsed=1.0, rate=1000000, before=1000000, after=0, **kw):
     return event("SERVICE_SEGMENT", seq, b, observed, intervalStart=a, intervalEnd=b, elapsed=elapsed,
                  rateBytesPerSecond=rate, remainingBefore=before, remainingAfter=after, **kw)
 
-
 def ledger():
-    """One 1 MB modeled flow: effective finish1, observed2; independent elementary metrics."""
+
     rows = [event("CAPACITY", 1, resourceKey="VM:7", capacityBytesPerSecond=1000000), start(), service(),
             event("COMPLETE", 4, 1.0, 2.0, remainingAfterService=0)]
     validation = dict(captureStatus="COMPLETE", recordCount=4, admissionCount=1, completionCount=1,
@@ -78,10 +74,8 @@ def ledger():
                              localInputReferenceBytes=0, transferableInputReferenceBytes=1000000,
                              admittedMinusTransferableReferenceBytes=0, localByteFraction=0.0, localReferenceFraction=0.0))
 
-
 def trace(rows, clock, status="COMPLETE", dropped=0):
     return dict(status=status, events=rows, droppedCount=dropped, engineTime=clock)
-
 
 def late_rows():
     return [event("CAPACITY", 1, resourceKey="A", capacityBytesPerSecond=100),
@@ -92,7 +86,6 @@ def late_rows():
             event("RATE_CHANGE", 8, 10, 20, tid=2, ordinal=2, previousRateBytesPerSecond=50, rateBytesPerSecond=100),
             service(9, 10, 15, 20, 5, 100, 500, 0, tid=2, ordinal=2),
             event("COMPLETE", 10, 15, 20, tid=2, ordinal=2, remainingAfterService=0)]
-
 
 def prefix(count):
     doc = ledger()
@@ -106,7 +99,7 @@ def prefix(count):
             m[key] = None
     m["droppedRecordCount"] = 4-count
     m["flows"], m["resources"] = [], []
-    # Hand-derived phase endpoints for the four-record single-flow fixture.
+
     certified, phase, minimum = {1: (1, "PREFIX_AT_BOUNDARY", 0), 2: (2, "UNOBSERVED_TIME_PROGRESS", 2),
                                   3: (2, "COMPLETION_COHORT", 1)}[count]
     m["validation"] = dict(captureStatus="TRUNCATED", recordCount=count, admissionCount=int(count >= 2),
@@ -118,17 +111,14 @@ def prefix(count):
     doc["metrics"]["localityStatus"] = "TRUNCATED_TRACE"
     return doc
 
-
 def write_json(path, doc):
     path.write_text(json.dumps(doc, allow_nan=False), encoding="utf-8")
-
 
 def bind(root, manifest):
     for item in manifest["artifacts"]:
         raw = (root/item["path"]).read_bytes()
         item.update(sha256=hashlib.sha256(raw).hexdigest(), sizeBytes=len(raw))
     write_json(root/"run.manifest.json", manifest)
-
 
 def bundle(root):
     root.mkdir(parents=True, exist_ok=True)
@@ -149,9 +139,8 @@ def bundle(root):
     bind(root, manifest)
     return manifest
 
-
 def two_group_bundle(root, one_job=False):
-    """Two 1MB flows share 1MB/s: 0.5MB/s each, effective2/observed3, exact totals2MB."""
+
     manifest = bundle(root); doc = ledger()
     rows = [event("CAPACITY", 1, resourceKey="VM:7", capacityBytesPerSecond=1000000), start(),
             start(3, rate=500000, tid=BIG_ID-1, ordinal=2),
@@ -183,7 +172,6 @@ def two_group_bundle(root, one_job=False):
     (root/"run.events.jsonl").write_text("".join(json.dumps(e)+"\n" for e in events), encoding="utf-8")
     write_json(root/"run.network-ledger.json", doc); bind(root, manifest)
     return manifest, doc
-
 
 class NetworkCheckerTest(unittest.TestCase):
     def test_complete_hand_oracle_and_long_identity(self):
@@ -437,7 +425,6 @@ class NetworkCheckerTest(unittest.TestCase):
             report = json.loads(completed.stdout)
             self.assertEqual("VALID_COMPLETE", report["status"])
             self.assertTrue(report["completeCaptureCertified"])
-
 
 if __name__ == "__main__":
     unittest.main()

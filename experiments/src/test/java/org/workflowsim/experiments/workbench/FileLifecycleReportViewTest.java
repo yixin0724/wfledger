@@ -34,7 +34,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Real standalone runtime captures, not fabricated CPU-report contexts or service-area certificates. */
 class FileLifecycleReportViewTest {
     private static final int BUDGET = 10000;
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
@@ -251,7 +250,7 @@ class FileLifecycleReportViewTest {
         Map<String, Object> standalone = FileLifecycleReportView.fromDecoded(decoded, false);
         assertEquals(Boolean.FALSE, standalone.get("contextValidated"));
         assertEquals("COMPLETE", standalone.get("captureStatus"));
-        // Exercise the flag contract without manufacturing a matching CPU-report artifact.
+
         Map<String, Object> callerAttested = FileLifecycleReportView.fromDecoded(decoded, true);
         Map<String, Object> expected = new LinkedHashMap<>(standalone);
         expected.put("contextValidated", true);

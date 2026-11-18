@@ -14,7 +14,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationSession;
 
-/** Real PlanningContext integration with file-carrying Network-Aware HEFT tasks. */
 class NetworkHeftIntegrationTest {
 
     @Test

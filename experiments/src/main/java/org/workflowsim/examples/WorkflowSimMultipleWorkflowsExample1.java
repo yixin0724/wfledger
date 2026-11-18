@@ -45,34 +45,19 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Historical teaching example that submits multiple DAX workflows at the same time.
- *
- * <p>This class passes several input paths through the historical static parameters and is
- * suitable for illustrating the legacy multi-workflow assembly; it is not the standard research
- * experiment entry point, and it does not replace the campaign protocol of frozen inputs, seed
- * plans, and evidence artifacts.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Nov 9, 2014
- */
 public class WorkflowSimMultipleWorkflowsExample1 {
 
     protected static List<CondorVM> createVM(int userId, int vms) {
 
-        // Create the VM container and submit it to the workflow execution engine afterwards.
         LinkedList<CondorVM> list = new LinkedList<>();
 
-        // Abstract resource specification of the VMs.
-        long size = 10000; // Image size (MB)
-        int ram = 512; // VM memory (MB)
+        long size = 10000;
+        int ram = 512;
         int mips = 1000;
         long bw = 1000;
-        int pesNumber = 1; // Number of CPU cores
-        String vmm = "Xen"; // Virtual machine monitor name
+        int pesNumber = 1;
+        String vmm = "Xen";
 
-        // Create the VMs with identical specifications.
         CondorVM[] vm = new CondorVM[vms];
 
         for (int i = 0; i < vms; i++) {
@@ -85,84 +70,44 @@ public class WorkflowSimMultipleWorkflowsExample1 {
         return list;
     }
 
-    // ======================== Static example entry point ========================
-    /**
-     * Run the historical multi-workflow scenario with a single datacenter and a single storage.
-     */
     public static void main(String[] args) {
 
         try {
             ExampleCliSupport.begin("multiple-workflows");
-            // Step 1: configure the historical WorkflowSim static parameters.
 
-            /**
-             * When datacenter or Host capacity is insufficient, the number of VMs actually
-             * created may be smaller than the declared value.
-             */
-            int vmNum = 20; // Number of VMs
-            /**
-             * The default uses relative paths inside the project; adjust them when running from
-             * another working directory.
-             */
+            int vmNum = 20;
+
             List<String> daxPaths =
                     ExampleCliSupport.multipleDax(args, ExampleCliSupport.DEFAULT_MULTIPLE_DAX_PATHS, 3);
 
-            /**
-             * Historical MINMIN scheduling decides at the scheduling layer, so the planner is
-             * disabled to keep it from overwriting that result.
-             */
             Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.SHARED;
 
-            /**
-             * Do not inject additional overhead.
-             */
             OverheadParameters op = new OverheadParameters(0, null, null, null, null, 0);
 
-            /**
-             * Do not perform any task clustering.
-             */
             ClusteringParameters.ClusteringMethod method = ClusteringParameters.ClusteringMethod.NONE;
             ClusteringParameters cp = new ClusteringParameters(0, 0, method, null);
 
-            /**
-             * Initialize the historical global parameters and file directories.
-             */
             Parameters.init(vmNum, daxPaths, null, null, op, cp, sch_method, pln_method, null, 0);
             ReplicaCatalog.init(file_system);
 
-            // Complete initialization before creating any CloudSim entity.
-            int num_user = 1; // Number of grid users
+            int num_user = 1;
             Calendar calendar = Calendar.getInstance();
-            boolean trace_flag = false; // Whether event tracing is recorded
+            boolean trace_flag = false;
 
-            // Initialize CloudSim.
             CloudSim.init(num_user, calendar, trace_flag);
 
             WorkflowDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
-            /**
-             * Create a workflow planner that contains one scheduler.
-             */
             WorkflowPlanner wfPlanner = new WorkflowPlanner("planner_0", 1);
-            /**
-             * Obtain the workflow execution engine associated with the planner.
-             */
+
             WorkflowEngine wfEngine = wfPlanner.getWorkflowEngine();
-            /**
-             * Create the VM list; a VM's userId corresponds to its scheduler ID.
-             */
+
             List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
 
-            /**
-             * Submit the VM list to the workflow execution engine.
-             */
             wfEngine.submitVmList(vmlist0, 0);
 
-            /**
-             * Bind the datacenter to the scheduler.
-             */
             wfEngine.bindSchedulerDatacenter(datacenter0.getId(), 0);
 
             CloudSim.startSimulation();
@@ -179,20 +124,18 @@ public class WorkflowSimMultipleWorkflowsExample1 {
 
     protected static WorkflowDatacenter createDatacenter(String name) {
 
-        // Build the datacenter: first create a list of one or more Hosts.
         List<Host> hostList = new ArrayList<>();
 
-        // Each Host consists of one or more PEs (CPU cores), so build the PE list first.
         for (int i = 1; i <= 20; i++) {
             List<Pe> peList1 = new ArrayList<>();
             int mips = 2000;
-            // Create and add the PEs; a multi-core Host needs the matching number of PEs.
-            peList1.add(new Pe(0, new PeProvisionerSimple(mips))); // PE identifier and MIPS rating.
+
+            peList1.add(new Pe(0, new PeProvisionerSimple(mips)));
             peList1.add(new Pe(1, new PeProvisionerSimple(mips)));
 
             int hostId = 0;
-            int ram = 2048; // Host memory (MB).
-            long storage = 1000000; // Host storage capacity.
+            int ram = 2048;
+            long storage = 1000000;
             int bw = 10000;
             hostList.add(new Host(
                     hostId,
@@ -200,30 +143,24 @@ public class WorkflowSimMultipleWorkflowsExample1 {
                     new BwProvisionerSimple(bw),
                     storage,
                     peList1,
-                    new VmSchedulerTimeShared(peList1))); // Host scheduler of this example.
+                    new VmSchedulerTimeShared(peList1)));
             hostId++;
         }
 
-        // Describe the datacenter architecture, operating system, Host list, time zone, and
-        // abstract costs.
-        String arch = "x86"; // System architecture.
-        String os = "Linux"; // Operating system.
+        String arch = "x86";
+        String os = "Linux";
         String vmm = "Xen";
-        double time_zone = 10.0; // Time zone of the resources.
-        double cost = 3.0; // Abstract computation cost.
-        double costPerMem = 0.05; // Abstract memory cost.
-        double costPerStorage = 0.1; // Abstract storage cost.
-        double costPerBw = 0.1; // Abstract bandwidth cost.
-        LinkedList<Storage> storageList = new LinkedList<>(); // This example models no SAN device.
+        double time_zone = 10.0;
+        double cost = 3.0;
+        double costPerMem = 0.05;
+        double costPerStorage = 0.1;
+        double costPerBw = 0.1;
+        LinkedList<Storage> storageList = new LinkedList<>();
         WorkflowDatacenter datacenter = null;
         DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
                 arch, os, vmm, hostList, time_zone, cost, costPerMem, costPerStorage, costPerBw);
-        // Finally create the shared storage object.
-        /**
-         * Maximum transfer rate inside the datacenter (MB/s). This historical value is not a
-         * basis for calibrating a real storage system.
-         */
-        int maxTransferRate = 15; // May be replaced explicitly under the research platform contract.
+
+        int maxTransferRate = 15;
         try {
             HarddriveStorage s1 = new HarddriveStorage(name, 1e12);
             s1.setMaxTransferRate(maxTransferRate);
@@ -236,11 +173,6 @@ public class WorkflowSimMultipleWorkflowsExample1 {
         return datacenter;
     }
 
-    /**
-     * Print the job result table.
-     *
-     * @param list job list to print
-     */
     protected static void printJobList(List<Job> list) {
         int size = list.size();
         Job job;

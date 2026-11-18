@@ -4,21 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Catalog of directly runnable legacy teaching CLIs.
- *
- * <p>This catalog is the single source of truth for the manual aggregator and the
- * process-level smoke test. It deliberately excludes the P7 reference tooling, the WfCommons
- * tutorial, and {@code ParameterSweep}: those entry points carry their own parameter and
- * evidence contracts and must not be mixed into the legacy example suite.</p>
- */
 public final class ExampleCatalog {
 
     private static final List<Descriptor> LEGACY_EXAMPLES = createLegacyExamples();
 
     private ExampleCatalog() {}
 
-    /** @return descriptors of all legacy teaching CLIs that run with default arguments. */
     public static List<Descriptor> legacyExamples() {
         return LEGACY_EXAMPLES;
     }
@@ -81,7 +72,6 @@ public final class ExampleCatalog {
         examples.add(new Descriptor(id, mainClass));
     }
 
-    /** Stable identifier and main class name of one executable legacy example. */
     public static final class Descriptor {
         private final String id;
         private final String mainClass;

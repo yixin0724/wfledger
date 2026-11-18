@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Slowest-first task-based budget distribution (SFTD) used by EBPSM. */
 public final class EbpsmBudgetDistributor {
 
     public Map<Integer, Double> distribute(List<EbpsmTask> tasks, List<EbpsmVmType> vmTypes, double budget) {

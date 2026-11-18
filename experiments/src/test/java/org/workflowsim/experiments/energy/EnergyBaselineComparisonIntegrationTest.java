@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Failsafe coverage of the energy comparison driver. */
 class EnergyBaselineComparisonIntegrationTest {
 
     @TempDir

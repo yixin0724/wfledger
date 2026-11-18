@@ -12,7 +12,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Failsafe coverage for summary fallback and escaping branches. */
 class ExperimentSummaryWriterIntegrationTest {
 
     @TempDir

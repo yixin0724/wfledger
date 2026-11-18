@@ -22,33 +22,6 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationTiming;
 import org.workflowsim.utils.TaskExecutionModel;
 
-/**
- * Computes a deliberately narrow-scope critical-path reference for the current
- * shared-storage execution model.
- *
- * <p>The reference is an optimistic lower bound, not an optimal schedule. It removes VM
- * capacity contention and non-zero workflow arrival constraints, and gives every task the
- * compatible VM with the shortest effective execution duration; with a task-by-VM cost
- * matrix, the compute work uses the same integer MI projection as the runtime rather than
- * the raw input length. The reference includes the model-generated stage-in Job and, under
- * the historical shared-storage rule, the integer MI delay of per-task serial input.</p>
- *
- * <p>It is available for LEGACY_WORKFLOWSIM_V1 and FIXED_ENDPOINT_NO_CONTENTION_V1: the
- * non-negative access delay and the extra bandwidth cap of the latter are optimistically
- * removed, so the retained historical storage delay does not overestimate its input delay.
- * The pre-execution transfer model lets inputs of different parent tasks overlap, so this
- * serial-input lower bound cannot be reused; those legitimate runs only mark this reference
- * as unavailable. The reference is not a per-workflow flow time, and it makes no
- * makespan-monotonicity promise across data movement models.</p>
- *
- * <p>This is an optional observation: when the compute work, input envelope, or duration of
- * any PE-compatible candidate cannot be represented, the whole reference reports
- * {@code UNAVAILABLE_UNREPRESENTABLE_EXECUTION_COST}, neither falling back to the raw cost
- * nor skipping the bad candidate and claiming a complete reference. This adds no
- * full-matrix preflight and changes no planner or actual-selected-coordinate execution
- * validation; it must not make an already completed valid execution fail merely because of
- * the reference computation of an unselected candidate.</p>
- */
 final class WorkflowModelReference {
 
     static final String CONTROLLED_SHARED_STORAGE_SCOPE =
@@ -59,10 +32,6 @@ final class WorkflowModelReference {
 
     private WorkflowModelReference() {}
 
-    /**
-     * Graph-structure validation stage of {@code calculate}: returns the parent-count map,
-     * or {@code null} when the structure is invalid.
-     */
     private static Map<Task, Integer> validatedRemainingParents(List<Task> tasks) {
         Map<Task, Integer> remainingParents = new HashMap<Task, Integer>();
         Set<Task> taskSet = new HashSet<Task>(tasks);
@@ -86,14 +55,6 @@ final class WorkflowModelReference {
         return remainingParents;
     }
 
-    /**
-     * Critical-path lower-bound traversal stage of {@code calculate} (BFS, ready queue plus
-     * child IDs enqueued in ascending order).
-     *
-     * <p>Return convention: a non-null unavailable means an upstream failure (the caller
-     * propagates it unchanged); otherwise processed/lowerBound are populated and the
-     * traversal completed.</p>
-     */
     private static TraversalResult traverseForLowerBound(
             List<Task> tasks,
             List<PlatformProfile.VmSpec> vms,
@@ -122,9 +83,7 @@ final class WorkflowModelReference {
                 duration = fastestCompatibleDuration(
                         task, vms, platform.getStorage().getMaxTransferRateMbPerSecond());
             } catch (IllegalArgumentException | ArithmeticException unrepresentableCost) {
-                // This catches only the optional per-task candidate-cost calculation, never
-                // actual dispatch/execution or planner validation. A bad alternative invalidates
-                // the whole reference; ignoring it could advertise an unjustified bound.
+
                 result.unavailable = Reference.unavailable(UNREPRESENTABLE_EXECUTION_COST_SCOPE);
                 return result;
             }
@@ -161,10 +120,6 @@ final class WorkflowModelReference {
         return result;
     }
 
-    /**
-     * Private carrier of the traversal stage: when unavailable is non-null, processed and
-     * lowerBound are meaningless.
-     */
     private static final class TraversalResult {
         private Reference unavailable;
         private int processed;
@@ -206,9 +161,7 @@ final class WorkflowModelReference {
         if (fastestMips <= 0.0) {
             return Reference.unavailable("UNAVAILABLE_NO_POSITIVE_VM_MIPS");
         }
-        // The root compute Job is released only one CloudSim kernel interval after the
-        // stage-in event completes, matching the actual WorkflowEngine/WorkflowScheduler
-        // behavior.
+
         double stageSeconds = SimulationTiming.earliestCloudletCompletionTime(
                         0.0, STAGE_IN_JOB_LENGTH_MI / fastestMips, config.getCloudSimMinEventIntervalSeconds())
                 + config.getCloudSimMinEventIntervalSeconds();
@@ -226,7 +179,7 @@ final class WorkflowModelReference {
     private static double fastestCompatibleDuration(
             Task task, List<PlatformProfile.VmSpec> vms, int transferRateMbPerSecond) {
         double best = Double.POSITIVE_INFINITY;
-        // Shared-storage input demand is independent of the candidate VM; scan the files once.
+
         double transferSeconds = transferSeconds(task, transferRateMbPerSecond);
         if (!Double.isFinite(transferSeconds) || transferSeconds < 0.0) {
             throw new IllegalArgumentException("Reference transfer seconds must be finite and non-negative");
@@ -237,7 +190,7 @@ final class WorkflowModelReference {
             }
             long computeMi = TaskExecutionModel.executionLengthMi(task, vm.getId(), vm.getMips());
             double transferWorkMi = vm.getMips() * transferSeconds;
-            // 2^63 is the first positive double outside long's range; casting it would saturate.
+
             if (!Double.isFinite(transferWorkMi) || transferWorkMi < 0.0 || transferWorkMi >= 0x1.0p63) {
                 throw new IllegalArgumentException(
                         "Reference transfer MI cannot be represented as a non-negative long");
@@ -245,8 +198,7 @@ final class WorkflowModelReference {
             long transferMi = (long) transferWorkMi;
             long envelopeMi = Math.addExact(computeMi, transferMi);
             TaskExecutionModel.requireRepresentableLength(envelopeMi, task.getNumberOfPes());
-            // CloudSim runs multi-PE tasks in parallel; use the single-PE length to match
-            // the runtime.
+
             double candidateSeconds = envelopeMi / vm.getMips();
             if (!Double.isFinite(candidateSeconds) || candidateSeconds <= 0.0) {
                 throw new IllegalArgumentException("Reference execution seconds must be finite and positive");
@@ -277,7 +229,7 @@ final class WorkflowModelReference {
         DataMovementModel.Kind movement = config.getDataMovementModel().getKind();
         if (movement != DataMovementModel.Kind.LEGACY_WORKFLOWSIM_V1
                 && movement != DataMovementModel.Kind.FIXED_ENDPOINT_NO_CONTENTION_V1) {
-            // Pre-execution parent inputs may overlap: their serial sum is not a lower bound.
+
             return false;
         }
         for (PlatformProfile.VmSpec vm : platform.getVms()) {

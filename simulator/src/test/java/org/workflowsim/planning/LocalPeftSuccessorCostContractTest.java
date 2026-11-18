@@ -16,7 +16,6 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 
-/** Independent arithmetic from PEFT Eq. (7): successor compute cost, exit zero. */
 class LocalPeftSuccessorCostContractTest {
     @Test
     void exitIsZeroAndTheTableContainsSuccessorRatherThanCurrentCompute() throws Exception {
@@ -29,10 +28,10 @@ class LocalPeftSuccessorCostContractTest {
         planner.run();
         assertEquals(0.0, planner.optimisticCostOf(tasks.get(1), machines.get(0)), 0.0);
         assertEquals(0.0, planner.optimisticCostOf(tasks.get(1), machines.get(1)), 0.0);
-        // root@VM3 -> min(1, 100+10)=1; root@VM8 -> min(1+10,100)=11.
+
         assertEquals(1.0, planner.optimisticCostOf(tasks.get(0), machines.get(0)), 0.0);
         assertEquals(11.0, planner.optimisticCostOf(tasks.get(0), machines.get(1)), 0.0);
-        // OEFT candidates are (10+1)=11 and (1+11)=12, so do not pick fastest-current VM8.
+
         assertEquals(3, tasks.get(0).getVmId());
         assertEquals(3, tasks.get(1).getVmId());
         assertEquals(121.1, planner.plannedFinishOf(tasks.get(1)), 1e-9);
@@ -48,8 +47,7 @@ class LocalPeftSuccessorCostContractTest {
         List<CondorVM> machines = vms(1.0, 1, 1.0, 1);
         LocalPeftPlanningAlgorithm planner = planner(tasks, machines);
         planner.run();
-        // exit=[0,0]; middle=[min(1,1100),min(101,1000)]=[1,101].
-        // The zero-communication root edge can pick middle@VM3: root=[2,2].
+
         assertEquals(2.0, planner.priorityOf(tasks.get(0)), 0.0);
         assertEquals(51.0, planner.priorityOf(tasks.get(1)), 0.0);
         assertTrue(planner.priorityOf(tasks.get(0)) < planner.priorityOf(tasks.get(1)));
@@ -68,7 +66,7 @@ class LocalPeftSuccessorCostContractTest {
         List<CondorVM> machines = vms(1.0, 1, 1.0, 1);
         LocalPeftPlanningAlgorithm planner = planner(tasks, machines);
         planner.run();
-        // Control edges cost zero: max(min(3,8), min(5,2))=3 on each processor.
+
         for (CondorVM machine : machines) {
             assertEquals(3.0, planner.optimisticCostOf(tasks.get(0), machine), 0.0);
             assertEquals(0.0, planner.optimisticCostOf(tasks.get(1), machine), 0.0);

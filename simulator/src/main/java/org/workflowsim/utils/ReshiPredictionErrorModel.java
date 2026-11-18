@@ -6,7 +6,6 @@ import org.apache.commons.math3.distribution.ExponentialDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 
-/** Reshi prediction-error distributions with the official sign-and-clamp convention. */
 public final class ReshiPredictionErrorModel {
 
     public enum DistributionFamily {
@@ -23,7 +22,6 @@ public final class ReshiPredictionErrorModel {
         this.family = family;
     }
 
-    /** Samples a non-negative runtime multiplier from the declared error fraction. */
     public double sampleFactor(double errorFraction, Random random) {
         if (!(errorFraction >= 0.0) || !Double.isFinite(errorFraction)) {
             throw new IllegalArgumentException("Reshi error fraction must be finite and non-negative");

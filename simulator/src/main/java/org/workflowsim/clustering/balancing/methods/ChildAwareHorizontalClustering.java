@@ -27,32 +27,12 @@ import java.util.Map;
 import org.workflowsim.clustering.AbstractArrayList;
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * Child-aware horizontal balancing method.
- *
- * <p>When two task sets in the same level share a mergeable parent set, this strategy
- * merges them and propagates the check state to the subsequent levels.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class ChildAwareHorizontalClustering extends BalancingMethod {
 
-    /**
-     * Creates the child-aware horizontal balancing method.
-     *
-     * @param levelMap task sets organized by level
-     * @param taskMap mapping from logical tasks to task sets
-     * @param clusterNum target number of clustered jobs per level
-     */
     public ChildAwareHorizontalClustering(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
-    /**
-     * Runs the child-aware merge starting from the level with the most task sets.
-     */
     @Override
     public void run() {
         Map<Integer, List<TaskSet>> map = getLevelMap();
@@ -68,11 +48,10 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
         for (AbstractArrayList list : abList) {
             if (!list.hasChecked) {
                 boolean hasClustered = CHBcheckLevel(list.getArrayList());
-                // Log.printLine("Depth:"+list.getDepth());
+
                 if (hasClustered) {
                     list.hasChecked = true;
-                    // Continue checking the subsequent levels to propagate the relation
-                    // changes introduced by this merge.
+
                     int depth = list.getDepth();
 
                     int i = depth + 1;
@@ -86,15 +65,10 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
                 }
             }
         }
-        // Restore the task-set traversal flags before the method returns.
+
         cleanTaskSetChecked();
     }
 
-    /**
-     * Sorts the level list by descending task-set size.
-     *
-     * @param list level list to sort
-     */
     private void sortMap(List<AbstractArrayList> list) {
         Collections.sort(list, new Comparator<AbstractArrayList>() {
             @Override
@@ -105,17 +79,10 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
         });
     }
 
-    /**
-     * Processes the task sets of one level and attempts to merge the candidates that
-     * share a parent set.
-     *
-     * @param taskList task sets to process
-     * @return whether any merge was performed
-     */
     private boolean CHBcheckLevel(List<TaskSet> taskList) {
         boolean hasClustered = false;
         for (TaskSet setA : taskList) {
-            setA.hasChecked = false; // ensure this level starts from a clean traversal state
+            setA.hasChecked = false;
         }
         for (int i = 0; i < taskList.size(); i++) {
             TaskSet setA = taskList.get(i);
@@ -126,8 +93,8 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
 
                         TaskSet kid = CHBhasOneParent(setA, setB);
                         if (kid != null) {
-                            if (true) { // the historical implementation imposed no additional runtime constraint
-                                setA.hasChecked = true; // mark as handled in this round
+                            if (true) {
+                                setA.hasChecked = true;
                                 setB.hasChecked = true;
                                 addTaskSet2TaskSet(setA, setB);
                                 hasClustered = true;
@@ -140,13 +107,6 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
         return hasClustered;
     }
 
-    /**
-     * Determines whether two task sets own the same unique child set.
-     *
-     * @param setA first set to compare
-     * @param setB second set to compare
-     * @return the shared unique child set; {@code null} when none exists
-     */
     private TaskSet CHBhasOnlyChild(TaskSet setA, TaskSet setB) {
 
         if (setA.getChildList().size() == 1 && setB.getChildList().size() == 1) {
@@ -159,13 +119,6 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
         return null;
     }
 
-    /**
-     * Determines whether two task sets own the same unique parent set.
-     *
-     * @param setA first set to compare
-     * @param setB second set to compare
-     * @return the shared unique parent set; {@code null} when none exists
-     */
     private TaskSet CHBhasOnlyParent(TaskSet setA, TaskSet setB) {
 
         if (setA.getParentList().size() == 1 && setB.getParentList().size() == 1) {
@@ -178,13 +131,6 @@ public class ChildAwareHorizontalClustering extends BalancingMethod {
         return null;
     }
 
-    /**
-     * Finds any common parent set of two task sets.
-     *
-     * @param setA first set to compare
-     * @param setB second set to compare
-     * @return the common parent set; {@code null} when none exists
-     */
     private TaskSet CHBhasOneParent(TaskSet setA, TaskSet setB) {
         for (TaskSet parentA : setA.getParentList()) {
             for (TaskSet parentB : setB.getParentList()) {

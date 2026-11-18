@@ -9,7 +9,6 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 import org.workflowsim.platform.PlatformProfile;
 
-/** Builds GreenHEFT inputs from current raw-MI tasks and declared VM power profiles. */
 public final class GreenHeftAdapter {
 
     private GreenHeftAdapter() {}

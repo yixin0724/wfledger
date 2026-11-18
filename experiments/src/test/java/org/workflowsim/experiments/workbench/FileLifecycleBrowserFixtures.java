@@ -25,7 +25,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Public V2 entry points and explicitly non-contextual, valid lifecycle display stress cases. */
 final class FileLifecycleBrowserFixtures {
     private static final int BUDGET = 2000, COPY_PREVIEW_LIMIT = 64, LABEL_PREVIEW_LIMIT = 256;
     private static final String SHARED = "COHERENT_FILE_DATAFLOW_V2";
@@ -40,7 +39,6 @@ final class FileLifecycleBrowserFixtures {
 
     private FileLifecycleBrowserFixtures() {}
 
-    /** Append 21 new report specifications; never change the existing V1/P0 fixture entries. */
     static void append(Path output, List<Map<String, Object>> reports, Path offManifest) throws Exception {
         Path root = output.toAbsolutePath().normalize();
         Map<String, Bundle> bundles = new LinkedHashMap<>();
@@ -70,7 +68,6 @@ final class FileLifecycleBrowserFixtures {
         pair(root, reports, offName, offExperiment, off);
         insufficientCapture(root, reports);
 
-        // This extra actual V1 bundle exists solely to exercise the mixed report, not to replace a P0 case.
         Path legacyExperiment = run(root, "file-lifecycle-mixed-v1-bundle", V1, false, true, BUDGET);
         Bundle legacy = new Bundle(manifest(legacyExperiment));
         Bundle full = bundles.get("file-lifecycle-shared-endpoint-full");
@@ -255,14 +252,13 @@ final class FileLifecycleBrowserFixtures {
             String name,
             FileLifecycleCodec.Decoded decoded) {
         Map<String, Object> row = cpu.row(name);
-        // The cached CPU manifest remains genuine. This standalone certificate makes no context claim.
+
         row.remove("networkEvidence");
         row.put("fileLifecycle", FileLifecycleReportView.fromDecoded(decoded, false));
         rows.add(row);
         expected.add(expect(decoded, false));
     }
 
-    /** Independent certificate-derived expectations: never read the display projection as an oracle. */
     private static Map<String, Object> expect(FileLifecycleCodec.Decoded decoded, boolean contextValidated) {
         if (decoded == null) {
             return state("OFF");
@@ -390,7 +386,7 @@ final class FileLifecycleBrowserFixtures {
         spec.put("candidates", candidates);
         spec.put("seeds", seeds);
         spec.put("statuses", statuses);
-        spec.put("fileLifecycle", lifecycle); // No V1 network expectations on the new reports.
+        spec.put("fileLifecycle", lifecycle);
         return spec;
     }
 
@@ -404,7 +400,6 @@ final class FileLifecycleBrowserFixtures {
         }
     }
 
-    /** Keep the exact validated manifest/view snapshot attached, rather than reconstructing CPU evidence. */
     private static final class Bundle {
         final Path path;
         final HtmlReports.ValidatedReport report;

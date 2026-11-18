@@ -6,14 +6,9 @@ import java.util.HashSet;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Recording-mode dispatch shared by configuration consumers; the V1 ledger decoder stays V1-only. */
 public final class NetworkEvidenceConfigCodec {
     private NetworkEvidenceConfigCodec() {}
-    /**
-     * Decode the enabled-only option. Absence means OFF at the caller; null/false/explicit OFF are invalid.
-     * @param value required ON object
-     * @return exact immutable versioned recording policy
-     */
+
     public static NetworkEvidenceConfig decodeConfig(JsonElement value) {
         if (value == null || !value.isJsonObject()) {
             throw new IllegalArgumentException("networkEvidence must be an enabled recording object");
@@ -47,11 +42,7 @@ public final class NetworkEvidenceConfigCodec {
             throw new IllegalArgumentException("maxTraceRecords must be a positive int32 number", invalid);
         }
     }
-    /**
-     * @param model physical movement model
-     * @param recording optional observation policy
-     * @throws IllegalArgumentException when the version/mode pair is not supported
-     */
+
     public static void requireCompatible(DataMovementModel model, NetworkEvidenceConfig recording) {
         if (model == null || recording == null) {
             throw new IllegalArgumentException("Data movement and recording policy are required");
@@ -81,7 +72,7 @@ public final class NetworkEvidenceConfigCodec {
                 throw new IllegalArgumentException("Unsupported recording policy");
         }
     }
-    /** @param recording immutable option @return required sidecar role, or null for OFF */
+
     public static String artifactRole(NetworkEvidenceConfig recording) {
         switch (recording.getMode()) {
             case OFF:

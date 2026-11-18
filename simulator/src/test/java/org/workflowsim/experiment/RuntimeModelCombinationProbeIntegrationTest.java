@@ -23,28 +23,10 @@ import org.workflowsim.utils.OverheadModelConfig;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * R9 runtime-path probe: minimal fixture for the overhead x failure x cost-model
- * combination switches on the standard {@link SimulationRunner}.
- *
- * <p>The random-model integration tests already pin the single-channel paths of failure
- * retry and queue overhead separately; this class closes three combination gaps:
- * (1) end-to-end behaviour of post-processing delay (consumption of
- * {@code OverheadParameters.getPostDelay} on the WorkflowScheduler job-return path);
- * (2) retry lineage and delay sampling remain bitwise replayable when the failure model
- * and queue overhead are stacked; (3) VM-level cost billing is not perturbed by
- * post-processing overhead when the two are stacked. All assertions rest on measured runs
- * under fixed seeds.</p>
- */
 class RuntimeModelCombinationProbeIntegrationTest {
 
     private static final long OVERHEAD_SEED = 77L;
-    /**
-     * Measured seed for the combined configuration: queue overhead shifts the execution
-     * window, so seed 20260902 from the random-model tests no longer triggers a failure
-     * once overhead is stacked; 20260904 was measured over a 51-seed scan to trigger
-     * 3 failures / 3 retries (makespan 5.600810343783252).
-     */
+
     private static final long FAILURE_SEED = 20260904L;
 
     @AfterEach
@@ -153,8 +135,7 @@ class RuntimeModelCombinationProbeIntegrationTest {
         SimulationReport withOverhead = runner.run(vmCostWithOverhead, platform);
 
         assertEquals(costOnly.getJobs().size(), withOverhead.getJobs().size());
-        // Post-processing overhead only postpones the return; it does not change the job's
-        // CPU occupation on the VM nor the billing rate.
+
         for (SimulationReport.JobOutcome job : withOverhead.getJobs()) {
             assertEquals(job.getCpuTime() * 5.0, job.getModeledProcessingCost(), 1.0e-12, "VM billing rate stays 5.0");
         }

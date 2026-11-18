@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable GreenHEFT task with compute, energy, and dependency inputs. */
 public final class GreenHeftTask {
     private final int taskId;
     private final Map<Integer, Double> computeSecondsByVm;

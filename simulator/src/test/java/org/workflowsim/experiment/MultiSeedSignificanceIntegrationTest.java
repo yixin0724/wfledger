@@ -23,27 +23,6 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * R1 acceptance: the paired significance test is usable end to end for real algorithm
- * pairs under a multi-seed failure model.
- *
- * <p>FCFS (baseline) and READY_BATCH_MCT (candidate) each run 10 times under the same
- * common-root-seed plan. The scenario deliberately picks a combination on which the two
- * algorithms must diverge:</p>
- * <ul>
- * <li><b>heterogeneous platform</b> (16 VMs, MIPS 800-2300): on a homogeneous platform the
- * completion times of all online schedulers coincide and degenerate into the same schedule,
- * so every paired difference is zero and the significance test is unavailable;</li>
- * <li><b>thousand-task scale</b> (Montage_1000): on a small fixture most online schedulers
- * converge as well;</li>
- * <li><b>failure model</b> (Weibull arrivals, retry budget 64): supplies randomness
- * variance across seeds.</li>
- * </ul>
- *
- * <p>The campaign summary's {@code ComparisonSummary.getPairedSignificance()} must report
- * a usable status, a finite p-value and a consistent significance verdict. This test proves
- * that algorithm comparison reports carrying p-values are genuinely delivered.</p>
- */
 class MultiSeedSignificanceIntegrationTest {
 
     private static final int REPLICATIONS = 10;
@@ -106,8 +85,7 @@ class MultiSeedSignificanceIntegrationTest {
         PairedWilcoxonSignificance significance = comparison.getPairedSignificance();
         assertNotNull(significance);
         assertEquals(REPLICATIONS, significance.getPairedSampleCount());
-        // On a heterogeneous platform at thousand-task scale the two schedules must diverge,
-        // so the paired differences cannot all be zero.
+
         assertTrue(
                 significance.getStatus().startsWith("AVAILABLE_"),
                 "the acceptance scenario must produce a usable paired test, actual status: "

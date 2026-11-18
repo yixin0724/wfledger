@@ -20,12 +20,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Synthetic and HEFT-origin regressions for the independently verified PEFT Eq. (7).
- * Expected OCT uses successor compute cost and exit zero; no CloudSim execution here.
- * The actual PEFT article Figure 1/Table 5/Table 6 is covered separately by
- * {@link LocalPeftPrimarySourcePaperTest}, not by the HEFT-origin fixture below.
- */
 class LocalPeftPlanningAlgorithmTest {
 
     private static final double EPSILON = 1.0e-9;
@@ -42,12 +36,11 @@ class LocalPeftPlanningAlgorithmTest {
         LocalPeftPlanningAlgorithm planner = planner(Arrays.asList(t1, t2, t3), fast, slow);
         planner.run();
 
-        // Exit=[0,0]; t2=min(1+0,2+0)=[1,1], because its outgoing edge is free.
         assertEquals(0.0, planner.optimisticCostOf(t3, fast), EPSILON);
         assertEquals(0.0, planner.optimisticCostOf(t3, slow), EPSILON);
         assertEquals(1.0, planner.optimisticCostOf(t2, fast), EPSILON);
         assertEquals(1.0, planner.optimisticCostOf(t2, slow), EPSILON);
-        // t1@fast=min(1+1,2+1+10)=2; t1@slow=min(1+1+10,2+1)=3.
+
         assertEquals(2.0, planner.optimisticCostOf(t1, fast), EPSILON);
         assertEquals(3.0, planner.optimisticCostOf(t1, slow), EPSILON);
         assertEquals(2.5, planner.priorityOf(t1), EPSILON);
@@ -66,7 +59,7 @@ class LocalPeftPlanningAlgorithmTest {
         CondorVM slow = vm(8, 1L, 1.0);
         LocalPeftPlanningAlgorithm planner = planner(Arrays.asList(t1, t2, t3), fast, slow);
         planner.run();
-        // Bootstrap=110/2 + .1=55.1; compute costs on the fast VM are2,1,1.
+
         double stageIn = 55.1;
         assertEquals(3, t1.getVmId());
         assertEquals(stageIn, t1.getStaticScheduleStartTime(), EPSILON);
@@ -93,8 +86,6 @@ class LocalPeftPlanningAlgorithmTest {
         planner.run();
         double stageIn = 55.1;
 
-        // Both middle tasks have OCT=[1,2], independent of their own compute length.
-        // Root OCT=max(min(2+1,4+2),min(.5+1,1+2))=3 on either VM.
         assertEquals(3.0, planner.priorityOf(t1), EPSILON);
         assertEquals(1.5, planner.priorityOf(t2a), EPSILON);
         assertEquals(1.5, planner.priorityOf(t2b), EPSILON);
@@ -102,7 +93,7 @@ class LocalPeftPlanningAlgorithmTest {
         assertEquals(3, t1.getVmId());
         assertEquals(3, t2a.getVmId());
         assertEquals(stageIn + 1.0, t2a.getStaticScheduleStartTime(), EPSILON);
-        // B: fast score=3.5+1=4.5, slow score=2+2=4 (relative to bootstrap).
+
         assertEquals(8, t2b.getVmId());
         assertEquals(stageIn + 1.0, t2b.getStaticScheduleStartTime(), EPSILON);
         assertEquals(3, t3.getVmId());
@@ -118,7 +109,7 @@ class LocalPeftPlanningAlgorithmTest {
         CondorVM only = vm(3, 1L, 1.0);
         LocalPeftPlanningAlgorithm planner = planner(Arrays.asList(t1, t2), only);
         planner.run();
-        // No interprocessor transfer: root OCT=successor5, exit OCT=0.
+
         assertEquals(5.0, planner.optimisticCostOf(t1, only), EPSILON);
         assertEquals(0.0, planner.optimisticCostOf(t2, only), EPSILON);
         assertEquals(3, t1.getVmId());
@@ -127,11 +118,6 @@ class LocalPeftPlanningAlgorithmTest {
         assertEquals(118.1, planner.plannedFinishOf(t2), EPSILON);
     }
 
-    /**
-     * Retains the older HEFT-origin input, not the PEFT article's Figure 1.
-     * All expectations below were independently recomputed with successor-cost Eq. (7).
-     * For example, OCT(n9,p0)=min(21,7+13,16+13)=20 and every exit cell is0.
-     */
     @Test
     void heftOriginFixtureMatchesIndependentlyComputedSuccessorOctAndIntervals() {
         double[][] cost = {
@@ -184,7 +170,7 @@ class LocalPeftPlanningAlgorithmTest {
         double[] expectedStarts = {0, 0, 24, 28, 16, 27, 39, 52, 62, 50, 78};
         double[] expectedFinishes = {0, 16, 43, 39, 24, 37, 52, 59, 67, 62, 85};
         CondorVM[] machines = {p1, p2, p3};
-        // Reuse the same planner to retain cache/reservation/replica reset coverage.
+
         for (int run = 0; run < 2; run++) {
             planner.run();
             for (int id = 1; id <= 10; id++) {
@@ -237,8 +223,7 @@ class LocalPeftPlanningAlgorithmTest {
         CondorVM slow = vm(8, 1L, 1.0);
         LocalPeftPlanningAlgorithm planner = planner(Arrays.asList(t1, t2, t3), fast, slow);
         planner.run();
-        // Correct Eq7: exit=[0,0]; middle=[20,30]; root=min(1+20,2+30)=[21,21].
-        // This replaces the old31<34.5 signature, which was specific to the incorrect recurrence.
+
         assertEquals(21.0, planner.priorityOf(t1), EPSILON);
         assertEquals(25.0, planner.priorityOf(t2), EPSILON);
         assertEquals(0.0, planner.priorityOf(t3), EPSILON);

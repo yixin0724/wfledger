@@ -34,7 +34,6 @@ import org.workflowsim.utils.SimulationConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-/** Storage V3 runs in the real Kernel and exports only through its dedicated verified contract. */
 class StorageDataflowKernelIntegrationTest {
     @TempDir
     Path directory;

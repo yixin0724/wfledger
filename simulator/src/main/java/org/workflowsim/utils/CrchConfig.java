@@ -1,6 +1,5 @@
 package org.workflowsim.utils;
 
-/** CRCH synchronized-checkpoint interval and per-checkpoint overhead. */
 public final class CrchConfig {
     private final double checkpointIntervalSeconds;
     private final double checkpointOverheadSeconds;

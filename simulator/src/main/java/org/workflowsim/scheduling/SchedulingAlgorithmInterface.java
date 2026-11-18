@@ -17,34 +17,17 @@ package org.workflowsim.scheduling;
 
 import java.util.List;
 
-/**
- * Minimal interface for a scheduling policy.
- *
- * <p>The caller supplies the current ready Job and VM lists at each scheduling event, and the
- * policy returns only the Jobs dispatched in that round; the interface itself defines neither
- * offline plans, future availability times, nor realistic queueing semantics.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public interface SchedulingAlgorithmInterface {
 
-    /** Set the current ready Job list. */
     public void setCloudletList(List list);
 
-    /** Set the current VM list. */
     public void setVmList(List list);
 
-    /** Return the current ready Job list. */
     public List getCloudletList();
 
-    /** Return the current VM list. */
     public List getVmList();
 
-    /** Execute one scheduling update. */
     public void run() throws Exception;
 
-    /** Return the Jobs dispatched in this round. */
     public List getScheduledList();
 }

@@ -19,7 +19,6 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/** Verifies that a multi-workflow submission does not accidentally share data through bare file names. */
 class WorkflowInputFileNamespaceTest {
 
     @TempDir

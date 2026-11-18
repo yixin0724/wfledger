@@ -38,7 +38,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-/** Real Kernel path, not just a stand-alone catalog/selector example. */
 class CoherentDataflowKernelIntegrationTest {
     @TempDir
     Path directory;

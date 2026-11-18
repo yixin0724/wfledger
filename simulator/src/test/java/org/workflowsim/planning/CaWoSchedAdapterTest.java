@@ -19,7 +19,6 @@ import org.workflowsim.planning.timed.TimedPlan;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 
-/** Verifies the actual SHARED HEFT to CaWoSched fixed-plan adaptation (R-PAPER-01). */
 class CaWoSchedAdapterTest {
 
     @Test

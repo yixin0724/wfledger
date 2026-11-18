@@ -10,7 +10,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** Degenerate-flow checks derived from the edge's declared nominal duration. */
 class NetworkHeftFlowStretcherTest {
 
     @Test
@@ -36,8 +35,6 @@ class NetworkHeftFlowStretcherTest {
 
         Map<String, Double> stretched = new NetworkHeftFlowStretcher().stretch(tasks, mapping, entries, 50.0);
 
-        // One uncontended flow must retain its declared 4-second duration. Deriving 400
-        // bytes from nominalSeconds*100 and then dividing by the supplied 50 B/s yields 8.
         assertEquals(4.0, stretched.get("1->2"), 1.0e-9);
     }
 }

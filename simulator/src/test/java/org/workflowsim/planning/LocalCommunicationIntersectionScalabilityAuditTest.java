@@ -27,12 +27,6 @@ import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Counts declaration reads, not elapsed time, in LOCAL PEFT's first lazy OCT fill.
- * File lists retain their order and multiplicity; counters never change returned values.
- * Expectations are literal two-level DAG arithmetic, not production rank/OCT helpers.
- * A fresh OCT fill may reread each edge after prepare: declarations remain mutable.
- */
 class LocalCommunicationIntersectionScalabilityAuditTest {
     @Test
     void positiveEdgeFilesAreScannedOncePerOctFillRatherThanOncePerVmPair() {
@@ -68,7 +62,7 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         }
         f.planner.setTaskList(Arrays.asList(sibling, f.child, f.parent));
         f.planner.prepare();
-        // Both edges carry 2 MB: upward = 2 + max(2 + 3, 2 + 5).
+
         assertExact(9.0, f.planner.upwardRankOf(f.parent), "branching upward rank");
         f.access.reset();
 
@@ -76,8 +70,7 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         for (CondorVM vm : f.machines) {
             assertExact(5.0, f.planner.optimisticCostOf(f.parent, vm), "branching OCT");
         }
-        // Two edges, each scanning the 32-file parent and one 16-file child.
-        // The old VM-pair loop visits 240 * (48 + 48) = 23,040 elements.
+
         assertScanBudget(f.access, 96L, 32L, 4L, "16 VMs, two positive edges");
     }
 
@@ -124,7 +117,7 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         f.child.setNumberOfPes(4);
         f.addEdgeFile("edge", 12_000_000.0);
         f.planner.prepare();
-        // Feasible cross pairs: (17,41),(17,89),(41,89),(89,41), costs 6,6,3,3.
+
         assertExact(4.5, f.planner.meanCommunicationSeconds(f.parent, f.child), "compatible pair mean");
         assertExact(9.5, f.planner.upwardRankOf(f.parent), "2 + 4.5 + 3");
         assertExact(5.0, f.planner.priorityOf(f.parent), "(9 + 3 + 3) / 3");
@@ -167,8 +160,6 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         f.child.addFile(f.file("external", 7.0, FileType.INPUT));
         f.planner.prepare();
 
-        // Byte intersection is 1.25 + 1.25 + 0.5. Do not deduplicate child inputs,
-        // multiply by output occurrences, or import isRealInputFile's stage-in exclusion.
         double expected = 3.0 / 1.0e6 / 2.0;
         assertExact(
                 expected,
@@ -204,7 +195,6 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         f.child.addFile(unitInput);
         f.planner.prepare();
 
-        // ((2^53 + 1) + 1) rounds to 2^53; ((1 + 1) + 2^53) is 2^53 + 2.
         double largeFirst = 0x1.0p53 / 1.0e6 / 2.0;
         double smallFirst = (0x1.0p53 + 2.0) / 1.0e6 / 2.0;
         assertNotEquals(Double.doubleToLongBits(largeFirst), Double.doubleToLongBits(smallFirst));
@@ -344,7 +334,7 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         assertExact(1.5, f.planner.priorityOf(f.parent), "initial OCT");
         f.child.getFileList().get(0).setSize(2_000_000.0);
         assertThrows(IllegalStateException.class, f.planner::prepare, "inconsistent sizes still fail");
-        // Do not invent a diagnostic contract for the failed intermediate preparation.
+
         f.parent.getFileList().get(0).setSize(9_000_000.0);
         f.child.getFileList().get(0).setSize(9_000_000.0);
         f.planner.prepare();
@@ -380,15 +370,14 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         f.planner.prepare();
         double communication = matches ? (fileCount * 125_000.0) / 1.0e6 / 1.0 : 0.0;
         assertExact(2.0 + (communication + 3.0), f.planner.upwardRankOf(f.parent), "prepared edge rank");
-        f.access.reset(); // Exclude the separate preparation/replica-assembly scans.
+        f.access.reset();
 
         assertExact(3.0, f.planner.priorityOf(f.parent), "same-VM successor is the exact minimum");
         for (CondorVM machine : f.machines) {
             assertExact(3.0, f.planner.optimisticCostOf(f.parent, machine), "parent OCT");
             assertExact(0.0, f.planner.optimisticCostOf(f.child, machine), "exit OCT");
         }
-        // Before optimization: V*(V-1)*2F element/type/name reads. For V=16,F=32
-        // this is 15,360 element reads, versus a bound of 64 for one fresh edge read.
+
         assertScanBudget(
                 f.access,
                 2L * fileCount,
@@ -500,10 +489,10 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
                     .cloudSimMinEventIntervalSeconds(0.1)
                     .build();
             planner = new LocalPeftPlanningAlgorithm(new PlanningContext(config, platform.build()));
-            planner.setTaskList(Arrays.asList(child, parent)); // Deliberately not topological.
+            planner.setTaskList(Arrays.asList(child, parent));
             List<CondorVM> reversed = new ArrayList<CondorVM>(machines);
             Collections.reverse(reversed);
-            planner.setVmList(reversed); // IDs, not caller list order, govern ties.
+            planner.setVmList(reversed);
         }
 
         FileItem file(String name, double bytes, FileType type) {
@@ -516,7 +505,6 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         }
     }
 
-    /** Mutable list adapter: observe the same element visits without replacing file semantics. */
     private static final class CountingFileList extends AbstractList<FileItem> {
         private final AccessCounter access;
         private final List<FileItem> values;

@@ -32,7 +32,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Public Workbench run and standalone report must use the separate validated V2 display schema. */
 class WorkbenchFileLifecycleReportIntegrationTest {
     @TempDir
     Path directory;

@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Session-scoped CRCH checkpoint state and retry recovery map. */
 public final class CrchRegistry {
     private static CrchConfig config;
     private static final Map<Integer, CrchRecovery> RECOVERIES = new HashMap<Integer, CrchRecovery>();

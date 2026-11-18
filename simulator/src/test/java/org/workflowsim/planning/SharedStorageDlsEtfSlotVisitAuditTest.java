@@ -24,10 +24,6 @@ import org.workflowsim.planning.SharedStorageDagPlanner.Strategy;
 import org.workflowsim.planning.SharedStorageDlsEtfSlotAuditSupport.CountingReservations;
 import org.workflowsim.planning.SharedStorageDlsEtfSlotAuditSupport.Kernel;
 
-/**
- * Bounded operation counts, never wall-clock thresholds. These are real prepared scheduling-kernel
- * counts; they do not claim to measure public run() preparation, rank work, or reservation sorting.
- */
 class SharedStorageDlsEtfSlotVisitAuditTest {
     @Test
     void dlsEqualWideRootsScanAtMostOncePerOccupancyGeneration() {
@@ -149,8 +145,7 @@ class SharedStorageDlsEtfSlotVisitAuditTest {
                 assertSelection(strategy, plan, step + 1, duration, next);
                 next += duration;
             }
-            // Exact query reuse cannot merge distinct duration keys. This deliberately claims no
-            // quadratic bound for all-distinct queries; only the duplicate allocation may hit.
+
             long candidateScans = count * (count + 1L) / 2L;
             long candidateVisits = count * (count - 1L) * (count + 1L) / 6L;
             assertTrue(kernel.scans() >= candidateScans);

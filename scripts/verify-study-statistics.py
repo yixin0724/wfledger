@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Recompute registered study matrices/statistics independently, including per-DAG effects."""
+
 from __future__ import annotations
 
 import argparse
@@ -16,14 +16,12 @@ from _study_audit import (Audit, CheckError, EXECUTION_SEMANTICS, MIPS_PATTERNS,
                           needed, number, percentile, protect_output, read_json, registered_plan,
                           run_key, validate_registered_plan, write_report)
 
-
 def exact_sign_test(wins, losses):
     n = wins + losses
     if not n:
         return None
     return min(Fraction(1), 2 * sum((Fraction(math.comb(n, k), 2 ** n)
                                    for k in range(min(wins, losses) + 1)), Fraction(0)))
-
 
 def holm(family):
     previous = Fraction(0)
@@ -32,25 +30,20 @@ def holm(family):
         row["holmExact"] = previous
         row["significantAfterHolm"] = previous < Fraction(1, 20)
 
-
 def stratum(row):
     return (needed(row, "population"), integer(needed(row, "vmCount"), "VM count", True),
             needed(row, "network"), row.get("heterogeneity", "HOMOGENEOUS"))
 
-
 def aggregate_key(row):
     return (needed(row, "workflowId"),) + stratum(row) + (needed(row, "planner"),)
 
-
 def comparison_key(row):
     return stratum(row) + (needed(row, "candidate"),)
-
 
 def require_exact_fields(actual, expected, audit, location):
     for key, value in expected.items():
         audit.ensure(key in actual and exact_equal(actual.get(key), value), "fixed-condition", location + "/" + key,
                      actual.get(key), value)
-
 
 def check_run_binding(index_path, plan, row, historical, protocol_sha, audit):
     path = contained_file(index_path.parent, needed(row, "manifest"))
@@ -116,7 +109,6 @@ def check_run_binding(index_path, plan, row, historical, protocol_sha, audit):
         audit.ensure(rk in row and mk in metrics and exact_equal(row.get(rk), metrics.get(mk)), "index-manifest-metric", location + ":" + rk,
                      row.get(rk), metrics.get(mk))
 
-
 def check_probability(saved, key, expected, audit, location):
     if key not in saved:
         audit.problem("missing-required-statistic", location + "/" + key)
@@ -126,7 +118,6 @@ def check_probability(saved, key, expected, audit, location):
     else:
         number(saved[key], key, nonnegative=True)
         audit.ensure(Fraction(saved[key]) == expected, "exact-probability", location + "/" + key, saved[key], expected)
-
 
 def inspect_index(path, audit, historical=False):
     path = Path(path).resolve()
@@ -263,7 +254,6 @@ def inspect_index(path, audit, historical=False):
         answer["issueCount"] = audit.issue_count - before_issues
     return answer, keyed
 
-
 def audit_sources(paths, audit, historical=False):
     results, run_maps = [], []
     for path in paths:
@@ -288,9 +278,8 @@ def audit_sources(paths, audit, historical=False):
         overlaps.append({"left": a["source"], "right": b["source"], "sharedRunCount": len(shared), "differences": differences})
     return results, overlaps
 
-
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description='Recompute registered study matrices/statistics independently, including per-DAG effects.')
     parser.add_argument("inputs", nargs="+", type=Path, help="one or more explicit network-study.json paths")
     parser.add_argument("--output", required=True, type=Path, help="new JSON report outside every source study")
     parser.add_argument("--historical", action="store_true", help="explicitly permit frozen old protocol IDs; do not relabel them current")
@@ -310,7 +299,6 @@ def main(argv=None):
     except (CheckError, OSError) as error:
         print("audit refused: " + str(error), file=sys.stderr)
         return 2
-
 
 if __name__ == "__main__":
     sys.exit(main())

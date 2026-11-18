@@ -36,36 +36,12 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Historical dynamic reclustering teaching example that allows selecting horizontal or
- * vertical clustering.
- *
- * <p>The class combines failure, overhead, and clustering settings through legacy
- * single-character parameters for compatibility exploration. It is not the standard
- * research experiment entry point, and parameter-sweep results cannot be interpreted
- * statistically without frozen seeds and artifacts.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Dec 31, 2013
- */
 public class FaultTolerantClusteringExample6 extends FaultTolerantClusteringExample1 {
 
     private static final String EXAMPLE_ID = "fault-clustering-options";
-    /** Low-frequency shared failure-clock scale under a fixed teaching seed; not a real failure rate. */
+
     private static final double DEFAULT_FAILURE_INTERVAL_SCALE = 75000.0;
 
-    /**
-     * Runs the historical fault-tolerant scenario with a selectable clustering method.
-     *
-     * <p>Supports {@code -c} (SR/DR/NOOP/DC/VR), {@code -d}, {@code -b},
-     * {@code -q}/{@code -s} (queue Gamma parameters), {@code -w} (queue prior strength),
-     * {@code -p} (failure scale), {@code -t} (failure prior strength), and {@code -r}
-     * (root seed). The {@code -b} value is divided by ten to obtain the runtime scale
-     * factor; all other values must be finite positive numbers.</p>
-     *
-     * @param args argument sequence of legacy single-character options and values
-     */
     public static void main(String[] args) {
         try {
             Map<String, String> options =
@@ -105,7 +81,7 @@ public class FaultTolerantClusteringExample6 extends FaultTolerantClusteringExam
             int maxLevel = 11;
 
             DistributionGenerator[][] failureGenerators = new DistributionGenerator[vmNum][maxLevel];
-            // Historical E6 uses one shared global failure clock; it is not a VM-depth-independent model.
+
             DistributionGenerator failureGenerator = new DistributionGenerator(
                     DistributionGenerator.DistributionFamily.WEIBULL,
                     failureScale,

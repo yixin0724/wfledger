@@ -14,7 +14,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Hand-derived tick semantics, not a numerical-convergence claim (B4, 2026-11-04). */
 class SimulationTickSensitivityTest {
 
     @TempDir

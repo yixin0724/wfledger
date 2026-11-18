@@ -23,7 +23,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** Prepared dependency-kernel counts, plus real parser lifecycle/order controls; not XML decoder timings. */
 class WorkflowDependencyParsingScalabilityTest {
     @TempDir
     Path directory;
@@ -55,7 +54,7 @@ class WorkflowDependencyParsingScalabilityTest {
             for (Element declaration : declarations) {
                 invoke(link, parser, declaration);
             }
-            // Repeated legal DAX declarations are deduplicated, not repeated in Task adjacency.
+
             for (Element declaration : declarations) {
                 invoke(link, parser, declaration);
             }
@@ -143,7 +142,7 @@ class WorkflowDependencyParsingScalabilityTest {
             parser.parse();
             assertEquals(Arrays.asList(2, 1), ids(parser.getTaskList().get(2).getParentList()));
             assertEquals(2, parser.getTaskList().get(2).getDepth());
-            // The same parser starts a new generation with task IDs reset to one.
+
             Files.write(
                     input,
                     (prefix + "<child ref=\"c\"><parent ref=\"a\"/></child></adag>").getBytes(StandardCharsets.UTF_8));

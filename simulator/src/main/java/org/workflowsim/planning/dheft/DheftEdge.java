@@ -1,6 +1,5 @@
 package org.workflowsim.planning.dheft;
 
-/** One DHEFT parent-child edge with real input bytes. */
 public final class DheftEdge {
     private final int childTaskId;
     private final double dataBytes;

@@ -102,38 +102,29 @@ class WfCommonsJsonParserValidationTest {
                         "[{\"id\":\"a\",\"runtimeInSeconds\":1},{\"id\":\"b\",\"runtimeInSeconds\":1}]")));
     }
 
-    /**
-     * R8 audit (architecture channel P1-4): duplicate ids with conflicting values must fail fast;
-     * last-wins is forbidden.
-     */
     @Test
     void rejectsConflictingDuplicateFileAndExecutionTaskDeclarations() throws Exception {
-        // Duplicate file id with conflicting sizes -> rejected (previously silent last-wins,
-        // byte count depended on declaration order).
+
         assertThrows(
                 WorkflowValidationException.class,
                 () -> parse(document(
                         "[{\"id\":\"a\",\"inputFiles\":[\"f\"]}]",
                         "[{\"id\":\"f\",\"sizeInBytes\":100},{\"id\":\"f\",\"sizeInBytes\":200}]",
                         "[{\"id\":\"a\",\"runtimeInSeconds\":1}]")));
-        // Duplicate execution task id with conflicting runtime -> rejected.
+
         assertThrows(
                 WorkflowValidationException.class,
                 () -> parse(document(
                         "[{\"id\":\"a\"}]",
                         "[]",
                         "[{\"id\":\"a\",\"runtimeInSeconds\":1},{\"id\":\"a\",\"runtimeInSeconds\":2}]")));
-        // Duplicate declarations with identical values stay compatible (legal deduplication, not rejected).
+
         parse(document(
                 "[{\"id\":\"a\",\"inputFiles\":[\"f\"]}]",
                 "[{\"id\":\"f\",\"sizeInBytes\":100},{\"id\":\"f\",\"sizeInBytes\":100}]",
                 "[{\"id\":\"a\",\"runtimeInSeconds\":1},{\"id\":\"a\",\"runtimeInSeconds\":1}]"));
     }
 
-    /**
-     * R8 audit (architecture channel P1-4): runtime x reference MIPS overflow must be rejected
-     * explicitly, never silently clamped.
-     */
     @Test
     void rejectsRuntimeThatOverflowsCloudletLength() throws Exception {
         assertThrows(

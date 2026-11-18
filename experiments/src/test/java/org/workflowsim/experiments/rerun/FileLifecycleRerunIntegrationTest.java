@@ -32,7 +32,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** V2 lifecycle content is scientific core, independent of artifact hash/provenance exemptions. */
 class FileLifecycleRerunIntegrationTest {
     @TempDir
     Path directory;
@@ -145,7 +144,7 @@ class FileLifecycleRerunIntegrationTest {
         changed.add("runtime", runtime);
         Path sidecar = directory.resolve("comparison-only.json");
         ExperimentArtifactWriter.writeJson(sidecar, changed);
-        // Deliberately bypass semantic reader only for the comparator's namespace/exact-number contract.
+
         RerunEvidence comparison = new RerunEvidence(
                 evidence.getRunDirectory(),
                 evidence.getManifestPath(),

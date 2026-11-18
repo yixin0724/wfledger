@@ -15,25 +15,6 @@
  */
 package org.workflowsim.scheduling;
 
-/**
- * Originally named MCTSchedulingAlgorithm.
- *
- * <p>Note: this implementation is not the classic MCT (Maheswaran et al. 1999). The actual
- * behavior is greedy fastest VM: for each task it picks the idle VM with the highest single-PE
- * speed getMips(), irrespective of task length. For ready-batch MCT see
- * {@link ReadyBatchMCTSchedulingAlgorithm}.</p>
- *
- * <p><strong>Compatibility boundary:</strong> retained solely for historical source
- * compatibility; the standard research entry point rejects this label, and its results must not
- * be interpreted as classic MCT.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- * @deprecated Behavior is inconsistent with classic MCT; renamed to
- *             {@link FastestVmSchedulingAlgorithm}. The ready-batch implementation is
- *             {@link ReadyBatchMCTSchedulingAlgorithm}.
- */
 @Deprecated
 public class MCTSchedulingAlgorithm extends FastestVmSchedulingAlgorithm {
 

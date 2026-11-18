@@ -6,13 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Immutable run-local observation of the existing grouped fluid model.
- * Only retained START bindings are exposed. COMPLETE means capture completeness,
- * not flow completion; TRUNCATED must never imply complete network statistics.
- * Aggregate input-reference observations, when supplied, do not imply per-file completion.
- * Derived metrics remain a separate operation on the frozen capture.
- */
 public final class NetworkRunEvidence {
     private final NetworkEvidenceConfig config;
     private final DataMovementModel.Kind modelKind;
@@ -38,12 +31,6 @@ public final class NetworkRunEvidence {
         this.inputDemand = inputDemand;
     }
 
-    /**
-     * Describe an enabled run that never created a fluid engine, without fabricating an advance.
-     * @param config enabled recording option
-     * @param modelKind existing supported fluid model
-     * @return empty COMPLETE capture at engine time zero, with engineCreated false
-     */
     public static NetworkRunEvidence empty(NetworkEvidenceConfig config, DataMovementModel.Kind modelKind) {
         requireEnabledContention(config, modelKind);
         return new NetworkRunEvidence(
@@ -56,17 +43,6 @@ public final class NetworkRunEvidence {
                 NetworkInputDemandSnapshot.empty());
     }
 
-    /**
-     * Join frozen trace and bounded candidate metadata in O(records + candidates).
-     * This method never accesses or advances a live engine.
-     * @param config enabled option and retention budget
-     * @param modelKind supported existing fluid model
-     * @param trace deeply immutable NF001 snapshot
-     * @param candidates at most budget early successful-admission bindings
-     * @return immutable retained-START bindings in trace order
-     * @throws IllegalArgumentException for invalid options or bounded metadata
-     * @throws IllegalStateException for a missing/mismatched START binding or surplus complete-capture metadata
-     */
     public static NetworkRunEvidence capture(
             NetworkEvidenceConfig config,
             DataMovementModel.Kind modelKind,
@@ -75,15 +51,6 @@ public final class NetworkRunEvidence {
         return capture(config, modelKind, trace, candidates, null);
     }
 
-    /**
-     * Freeze trace/bindings together with optional actual input-reference observations.
-     * @param config enabled recording option
-     * @param modelKind supported data model
-     * @param trace immutable engine snapshot
-     * @param candidates bounded admission bindings
-     * @param inputDemand immutable observations; null means unavailable, never inferred zero
-     * @return immutable joined capture
-     */
     public static NetworkRunEvidence capture(
             NetworkEvidenceConfig config,
             DataMovementModel.Kind modelKind,
@@ -121,11 +88,6 @@ public final class NetworkRunEvidence {
         return new NetworkRunEvidence(config, modelKind, trace, retained, true, inputDemand);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from capture; statements verbatim; order unchanged.
-     * Scope: validate only that candidate bindings lie within the bounded admission prefix and
-     * that admission ordinals are unique, then index them by ordinal.
-     */
     private static Map<Long, NetworkFlowBinding> indexBoundedBindings(List<NetworkFlowBinding> candidates, int budget) {
         Map<Long, NetworkFlowBinding> byOrdinal = new LinkedHashMap<Long, NetworkFlowBinding>();
         for (NetworkFlowBinding binding : candidates) {
@@ -150,27 +112,27 @@ public final class NetworkRunEvidence {
                     "Grouped network evidence requires an existing fluid contention model: " + kind);
         }
     }
-    /** @return immutable capture option */
+
     public NetworkEvidenceConfig getConfig() {
         return config;
     }
-    /** @return existing model kind */
+
     public DataMovementModel.Kind getModelKind() {
         return modelKind;
     }
-    /** @return immutable NF001 snapshot with original coverage */
+
     public TransferTraceSnapshot getTraceSnapshot() {
         return traceSnapshot;
     }
-    /** @return immutable retained START bindings */
+
     public List<NetworkFlowBinding> getBindings() {
         return bindings;
     }
-    /** @return whether a real run-local fluid engine was created */
+
     public boolean isEngineCreated() {
         return engineCreated;
     }
-    /** @return actual immutable grouped-input observations, or null if not supplied */
+
     public NetworkInputDemandSnapshot getInputDemand() {
         return inputDemand;
     }

@@ -20,22 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Independent read-side audit of online destination bindings and logged nominal scores.
- *
- * <p>The caller must also perform the ordinary lifecycle-to-manifest/main-event context joins.
- * This additional audit accepts only a matching, complete, quiescent V2/V3 capture. It does not
- * replay live byte balances, the fluid allocator, or counterfactual execution. In-flight input
- * estimates are checked against necessary nominal bounds, not certified as exact progress.
- * No runtime, assigner, production route selector, or CPU telemetry is consulted.</p>
- *
- * <p>Main events are supplied in actual stream order. At {@link #finish()} the already validated
- * lifecycle is traversed once, checking each action immediately before its input request. Only
- * current visibility, copies, active reservations and terminal retry anchors are reconstructed;
- * there is no per-request observation-state history.</p>
- */
 public final class DataflowAssignmentValidator {
-    /** Precisely the claim made by a successful audit, not a fluid-service certificate. */
+
     public static final String SCOPE = "BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1";
 
     private static final String MODE = "CONTROL_READY_ONLINE_ASSIGNMENT_V1";
@@ -73,22 +59,10 @@ public final class DataflowAssignmentValidator {
     private boolean closed;
     private Result result;
 
-    /**
-     * Create a V2 action audit; the decoded lifecycle must have no missing or active history.
-     * @param manifest enclosing manifest, including online compute requests and final outcomes
-     * @param life independently decoded V2 lifecycle
-     * @throws IllegalArgumentException if the context is absent, incomplete or inconsistent
-     */
     public DataflowAssignmentValidator(JsonObject manifest, FileLifecycleCodec.Decoded life) {
         this(manifest, new Checked(life));
     }
 
-    /**
-     * Create a V3 action audit, retaining its LOCAL/SHARED input-access distinction.
-     * @param manifest enclosing manifest, including online compute requests and final outcomes
-     * @param life independently decoded V3 storage lifecycle
-     * @throws IllegalArgumentException if the context is absent, incomplete or inconsistent
-     */
     public DataflowAssignmentValidator(JsonObject manifest, StorageLifecycleCodec.Decoded life) {
         this(manifest, new Checked(life));
     }
@@ -173,12 +147,6 @@ public final class DataflowAssignmentValidator {
         lifecycle = array(document.get("events"), "lifecycle events");
     }
 
-    /**
-     * Consume one full main event in stream order. Unrelated event kinds are not retained.
-     * @param main full main-event record, not just its attributes
-     * @throws IllegalArgumentException for malformed actions, identity, order or retry provenance
-     * @throws IllegalStateException after finish has been called
-     */
     public void acceptEvent(JsonObject main) {
         requireOpen();
         require(main != null, "Main event is required");
@@ -235,7 +203,6 @@ public final class DataflowAssignmentValidator {
         anchorComputeMainEvent(main, type, sequence, at, attempt);
     }
 
-    /** Compute main-event anchoring stage of acceptEvent() (READY/RETURNED/FAILED/RETRY, moved verbatim). */
     private void anchorComputeMainEvent(JsonObject main, String type, long sequence, double at, Attempt attempt) {
         Anchor anchor = new Anchor(sequence, at);
         if ("JOB_READY".equals(type)) {
@@ -249,11 +216,6 @@ public final class DataflowAssignmentValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from anchorComputeMainEvent; statements verbatim; order unchanged.
-     * Scope: JOB_READY branch -- same-clock preceding assignment, initial/retry parent check, and
-     * registration of the ready anchor.
-     */
     private void anchorReady(JsonObject main, Attempt attempt, double at, Anchor anchor) {
         Action action = assignments.get(attempt.id);
         require(
@@ -271,11 +233,6 @@ public final class DataflowAssignmentValidator {
         ready.put(attempt.id, anchor);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from anchorComputeMainEvent; statements verbatim; order unchanged.
-     * Scope: JOB_RETURNED branch -- binding/readiness precedence, uniqueness and terminal Job status
-     * check, and registration of the returned anchor.
-     */
     private void anchorReturned(JsonObject main, Attempt attempt, Anchor anchor) {
         require(
                 assignments.containsKey(attempt.id) && ready.containsKey(attempt.id),
@@ -288,11 +245,6 @@ public final class DataflowAssignmentValidator {
         returned.put(attempt.id, anchor);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from anchorComputeMainEvent; statements verbatim; order unchanged.
-     * Scope: JOB_FAILED branch -- terminal FAILED, uniqueness and strict return-precedence checks,
-     * and registration of the failed anchor.
-     */
     private void anchorFailed(Attempt attempt, long sequence, double at, Anchor anchor) {
         require(
                 attempt.status == Cloudlet.FAILED && !failed.containsKey(attempt.id),
@@ -304,11 +256,6 @@ public final class DataflowAssignmentValidator {
         failed.put(attempt.id, anchor);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from anchorComputeMainEvent; statements verbatim; order unchanged.
-     * Scope: RETRY_JOB_CREATED branch -- single already-FAILED parent chain on the same Task and VM,
-     * and registration of the Retry plus the budget upper bound.
-     */
     private void anchorRetry(JsonObject main, long sequence, double at, Attempt attempt) {
         int parentId =
                 integer(object(main.get("attributes"), "retry attributes").get("failedJobId"), "failedJobId");
@@ -333,12 +280,6 @@ public final class DataflowAssignmentValidator {
         require(retries.size() <= retryBudget, "Online retry history exceeds its budget");
     }
 
-    /**
-     * Validate action scores against lifecycle prefixes and freeze the complete audited records.
-     * Repeated successful calls return the same immutable result.
-     * @return immutable counts, scope and defensively accessible main assignment records
-     * @throws IllegalArgumentException if any final join, bound, reservation or score is invalid
-     */
     public Result finish() {
         if (result != null) {
             return result;
@@ -366,11 +307,6 @@ public final class DataflowAssignmentValidator {
         return result;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * Scope: single in-order replay of the validated lifecycle event stream
-     * (publish/request/copy/resolve/CPU start/terminal), populating prefix.
-     */
     private void replayLifecycle(Prefix prefix) {
         for (JsonElement item : lifecycle) {
             JsonObject event = object(item, "validated lifecycle event");
@@ -418,7 +354,6 @@ public final class DataflowAssignmentValidator {
         }
     }
 
-    /** Immutable result. The returned records are full validated main events, not wire summaries. */
     public static final class Result {
         private final JsonArray records;
         private final int initialCount, retryCount;
@@ -428,23 +363,23 @@ public final class DataflowAssignmentValidator {
             this.initialCount = initialCount;
             this.retryCount = retryCount;
         }
-        /** @return the bounded nominal audit scope */
+
         public String getScope() {
             return SCOPE;
         }
-        /** @return all compute-attempt assignments */
+
         public int getAssignmentCount() {
             return records.size();
         }
-        /** @return first bindings of distinct logical Tasks */
+
         public int getInitialBindingCount() {
             return initialCount;
         }
-        /** @return fixed-VM NOOP retry bindings */
+
         public int getRetryReuseCount() {
             return retryCount;
         }
-        /** @return a deep defensive copy of full validated assignment records */
+
         public JsonArray getAssignments() {
             return records.deepCopy();
         }
@@ -454,7 +389,7 @@ public final class DataflowAssignmentValidator {
         final Map<FileKey, Set<DataLocation>> visible = new HashMap<>();
         final Map<Long, Copy> copies = new HashMap<>();
         final Map<Target, Copy> targets = new HashMap<>();
-        // Iteration order is surviving request order, exactly the policy's reservation sum order.
+
         final Map<Integer, LiveJob> active = new LinkedHashMap<>();
         final Set<FileKey> pendingOutputs = new HashSet<>();
         final Set<Integer> requested = new HashSet<>();
@@ -489,7 +424,7 @@ public final class DataflowAssignmentValidator {
             require(
                     selected != null && bestVm == attempt.vm && action.selected == attempt.vm,
                     "Selected actual VM does not minimize validated logged score with numeric-ID ties");
-            // All candidate checks precede the actual request's visibility/admission operations.
+
             requested.add(id);
             active.put(id, new LiveJob(attempt, selected.compute));
             if (bound == null) {
@@ -500,11 +435,6 @@ public final class DataflowAssignmentValidator {
             }
         }
 
-        /**
-         * 2026-10-26 complexity extraction from request; statements verbatim; order unchanged.
-         * Scope: kind consistency of the initial binding (INITIAL) and the retry binding
-         * (RETRY_REUSE), plus the failed parent chain on the fixed VM.
-         */
         private void requireBindingConsistency(Attempt attempt, Action action, Integer bound, Retry retry, double now) {
             if (bound == null) {
                 require(!action.reuse && retry == null, "First logical binding must be INITIAL, not a retry");
@@ -521,11 +451,6 @@ public final class DataflowAssignmentValidator {
             }
         }
 
-        /**
-         * 2026-10-26 complexity extraction from request; statements verbatim; order unchanged.
-         * Scope: consistency of the assignment observation summary with the immediately
-         * pre-request state (storage mode/clock/active counts).
-         */
         private void requireObservationSnapshot(Action action, Attempt attempt, double now) {
             Summary summary = action.summary;
             require(
@@ -540,8 +465,7 @@ public final class DataflowAssignmentValidator {
                             && summary.scoped == tasks.get(attempt.task).inputs.size(),
                     "Observation differs from immediately pre-request state");
         }
-        /** Candidate evaluation loop of request() (moved verbatim; the binary64 order and the
-         * tie-break of the score formula are preserved). */
+
         private CandidateLoop evaluateCandidates(
                 Attempt attempt, Action action, List<Integer> expectedVms, double now) {
             Candidate selected = null;
@@ -591,7 +515,6 @@ public final class DataflowAssignmentValidator {
             return loop;
         }
 
-        /** Private moved-verbatim holder for the candidate-loop result of request(). */
         private final class CandidateLoop {
             private Candidate selected;
             private int bestVm;
@@ -627,7 +550,7 @@ public final class DataflowAssignmentValidator {
                             : ratio(file.bytes, fabric.rate(SOURCE, destination), "post-commit input read");
                     lower = read;
                     upper = addFinite(write, read);
-                    // The positive write can be absorbed by binary64 addition when read > 0.
+
                     result.positiveUnknown = true;
                     result.conditional = true;
                 } else if (!has(id, destination)) {
@@ -806,11 +729,6 @@ public final class DataflowAssignmentValidator {
                 "Compute requests and Task outcomes must exactly cover compute Jobs");
     }
 
-    /**
-     * 2026-10-26 complexity extraction from loadAttempts; statements verbatim; order unchanged.
-     * Scope: dataflowComputeRequests loop -- parse and validate the declaration of each request and
-     * register its unique Attempt (including same-Task length/PE consistency).
-     */
     private void loadComputeRequests(
             JsonObject manifest,
             Map<Integer, JsonObject> jobs,
@@ -845,11 +763,6 @@ public final class DataflowAssignmentValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from loadAttempts; statements verbatim; order unchanged.
-     * Scope: full metadata consistency require checks of one compute request against the Job/Task
-     * terminal records.
-     */
     private void requireComputeMetadata(JsonObject job, JsonObject outcome, int task, int vm, int status, long length) {
         require(
                 vms.containsKey(vm)
@@ -899,8 +812,7 @@ public final class DataflowAssignmentValidator {
             double converted = matrix.get(attempt.task).get(vm.id) * vm.mips;
             require(Double.isFinite(converted) && converted > 0, "Matrix conversion is not positive finite binary64");
             try {
-                // BigDecimal(double), not valueOf(double): round the exact binary64 product.
-                // Adding 0.5 in binary64 first is wrong near half-integers and at large magnitudes.
+
                 mi = new BigDecimal(converted).setScale(0, RoundingMode.HALF_UP).longValueExact();
             } catch (ArithmeticException invalid) {
                 throw bad("Matrix conversion exceeds exact integer MI");
@@ -1372,10 +1284,6 @@ public final class DataflowAssignmentValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from same; statements verbatim; order unchanged.
-     * Scope: object-level comparison -- check keySet equality, then recurse into same for every key.
-     */
     private static void sameObject(JsonElement a, JsonElement b, String message) {
         JsonObject x = a.getAsJsonObject(), y = b.getAsJsonObject();
         require(x.keySet().equals(y.keySet()), message);
@@ -1384,10 +1292,6 @@ public final class DataflowAssignmentValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from same; statements verbatim; order unchanged.
-     * Scope: array-level comparison -- check equal length, then recurse into same for every index.
-     */
     private static void sameArray(JsonElement a, JsonElement b, String message) {
         JsonArray x = a.getAsJsonArray(), y = b.getAsJsonArray();
         require(x.size() == y.size(), message);
@@ -1396,11 +1300,6 @@ public final class DataflowAssignmentValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from same; statements verbatim; order unchanged.
-     * Scope: scalar-level comparison -- compare numbers exactly as decimal, with a null/equals
-     * fallback check otherwise.
-     */
     private static void sameScalar(JsonElement a, JsonElement b, String message) {
         if (a != null
                 && b != null

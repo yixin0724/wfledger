@@ -22,14 +22,13 @@ import org.workflowsim.experiment.ExperimentArtifactValidator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/** Explicit browser inputs: actual public run/report paths plus clearly scoped typed-projection stress cases. */
 final class NetworkBrowserFixtures {
     private static final int BUDGET = 10000;
 
     private NetworkBrowserFixtures() {}
 
     static void append(Path output, List<Map<String, Object>> reports, Path offManifest) throws Exception {
-        // Existing fixture configurations are recording-OFF. Require the new panel's state there too.
+
         for (Map<String, Object> report : reports) {
             List<Map<String, Object>> expected = new ArrayList<Map<String, Object>>();
             for (Object state : (List<?>) report.get("statuses")) {
@@ -99,8 +98,7 @@ final class NetworkBrowserFixtures {
         failed.put("seed", 1L);
         failed.put("status", "FAILED");
         failed.put("error", "Deliberate no-validated-result browser control");
-        failed.put(
-                "networkEvidence", first.get("networkEvidence")); // stale data must still be ignored without a manifest
+        failed.put("networkEvidence", first.get("networkEvidence"));
         rows.add(failed);
         expected.add(state("NO_RESULT"));
         rows.add(row(offManifest, "off"));

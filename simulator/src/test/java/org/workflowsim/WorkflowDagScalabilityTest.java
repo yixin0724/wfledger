@@ -11,7 +11,6 @@ import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 
-/** Count the original linear reciprocal-list membership cost, not machine-dependent wall time. */
 class WorkflowDagScalabilityTest {
     @Test
     void fanOutReciprocalValidationAvoidsQuadraticListMembership() {

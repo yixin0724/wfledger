@@ -47,7 +47,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Grouped capture remains observational; later gates also validate its codec and artifact context. */
 class NetworkEvidenceCaptureIntegrationTest {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
     private static final int FULL_BUDGET = 2000;
@@ -504,9 +503,7 @@ class NetworkEvidenceCaptureIntegrationTest {
 
     @Test
     void offStillWritesTheSameThreeFileBundleAndOldMetricsDocumentShape() throws Exception {
-        // BAT-E2 (2026-10-27): the manifest key set gains an energyMetrics section (a platform
-        // without power output emits an all-zero section), so the legacy schema key-set assertion
-        // moves from 12 keys to 13 keys; the metrics v2 sidecar structure is unchanged.
+
         Path workflow = input("off-export.dax", GROUPED_DAX);
         for (boolean fatTree : Arrays.asList(false, true)) {
             SimulationReport off = run(workflow, fatTree, 2, 0);

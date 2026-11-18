@@ -1,12 +1,3 @@
-/*
- * WfCommons JSON parser validation example.
- *
- * Adapted from https://github.com/yixin0724/workflowsim-fat-tree
- * (examples/org/workflowsim/examples/wfcommons/
- * WfCommonsJsonParserValidationExample.java), which is GPL-3.0-only.
- * This adaptation defaults to datasets/wfformat/ and skips the
- * INDEX.json / *.manifest.json metadata files that live there.
- */
 package org.workflowsim.examples.wfcommons;
 
 import java.io.File;
@@ -20,15 +11,6 @@ import org.workflowsim.Task;
 import org.workflowsim.WfCommonsJsonParser;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Validates WfCommons JSON workflow instances without running a simulation.
- *
- * <p>Usage: {@code main [directory]}; the default directory is {@code datasets/wfformat}. The
- * program recursively finds {@code *.json} workflow instances (skipping the {@code INDEX.json}
- * and {@code *.manifest.json} metadata), parses each one, and checks the resulting task graph:
- * task length and depth are positive, parent-child dependencies are symmetric, and the task set
- * is non-empty.</p>
- */
 public final class WfCommonsJsonParserValidationExample {
 
     private WfCommonsJsonParserValidationExample() {}
@@ -49,8 +31,7 @@ public final class WfCommonsJsonParserValidationExample {
         WfCommonsJsonParser parser = new WfCommonsJsonParser();
 
         for (File jsonFile : jsonFiles) {
-            // ReplicaCatalog is historical static state shared across files; reinitialize it before
-            // each file so one file's replica registrations do not leak into the next instance.
+
             ReplicaCatalog.init(ReplicaCatalog.FileSystem.LOCAL);
             WfCommonsJsonParser.ParseResult result = parser.parse(jsonFile.getPath(), 0, 1);
             List<Task> tasks = result.getTasks();
@@ -89,7 +70,7 @@ public final class WfCommonsJsonParserValidationExample {
     private static void collectJsonFiles(File file, List<File> jsonFiles) {
         if (file.isFile()) {
             String name = file.getName().toLowerCase();
-            // Skip the dataset metadata under datasets/wfformat that also ends in .json.
+
             if (name.endsWith(".json") && !"index.json".equals(name) && !name.endsWith(".manifest.json")) {
                 jsonFiles.add(file);
             }

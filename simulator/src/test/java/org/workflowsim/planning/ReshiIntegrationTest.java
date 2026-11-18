@@ -18,7 +18,6 @@ import org.workflowsim.utils.ReshiRankTable;
 import org.workflowsim.utils.ReshiTaskHistory;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Standard SimulationRunner integration with explicit Reshi inputs. */
 class ReshiIntegrationTest {
 
     @TempDir

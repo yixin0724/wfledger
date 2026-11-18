@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** Elite-GA sanity: the best result cannot be worse than the HEFT seed. */
 class NacoGaHeftOptimizerTest {
 
     @Test

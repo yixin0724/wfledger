@@ -11,7 +11,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** Hand-derived IC-PCP path-cost and infeasibility checks. */
 class IcpcpPlannerTest {
 
     @Test
@@ -117,7 +116,6 @@ class IcpcpPlannerTest {
                         new IcpcpProblem(Collections.singletonList(only), 2.0, 10.0, Collections.singletonMap(0, 3.0)))
                 .schedule();
 
-        // Two seconds round up to one ten-second billing period at three cost units/second.
         assertEquals(30.0, schedule.getTotalCost(), 1.0e-9);
     }
 

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** One allocated task in the DVFS slack optimizer. */
 public final class DvfsSlackTask {
     private final int taskId;
     private final int vmId;

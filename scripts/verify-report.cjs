@@ -107,16 +107,14 @@ function fileLifecycleValues(view) {
     'file-lifecycle-residual': t.completionResidualBytes, 'file-lifecycle-observed': view.observedThrough };
 }
 async function checkEnergy(page, run) {
-  // BAT-E7: powered runs must keep the energy panel visible and show the exact
-  // manifest text at the summary leaves (tamper-evident display).
+
   const metrics = run.manifest && run.manifest.energyMetrics;
   if (!metrics || !(Number(metrics.totalEnergyJoules) > 0)) return;
   assert.equal(await page.locator('#energy-section').isVisible(), true, 'Energy evidence panel must remain visible');
   const exactTotal = String(metrics.totalEnergyJoules);
   assert.equal(await page.locator('#energy-total').textContent(), exactTotal, 'Exact energy text differs at energy-total');
 }
-// 2026-11-02 carbon panel: manifest carbonMetrics is the single source of truth. The intensity model yields grams; the budget
-// model yields excess watt-seconds. When both are missing (or contradict the platform declaration) the panel must say so explicitly and never show 0.
+
 function carbonModel(run) {
   const manifest = run.manifest;
   if (!manifest || !manifest.carbonMetrics) return 'NONE';
@@ -149,9 +147,7 @@ async function checkCarbon(page, run) {
   assert.equal(await page.locator('#carbon-excess').textContent(), shares.excess ? String(carbon.totalCarbonExcessWattSeconds) : absent, 'Exact carbon text differs at totalCarbonExcessWattSeconds');
   assert.equal(await page.locator('#carbon-vm-table tr').count(), Object.keys(carbon.perVmCarbonGrams || {}).length, 'Carbon per-VM rows differ from perVmCarbonGrams');
 }
-// 2026-11-02 DVFS panel: per-tier busy seconds are not in the manifest (the metrics-side ledger is transient), so the panel
-// re-derives them from job intervals. This check recomputes independently with a sweep line (the panel merges intervals); the two
-// methods must agree. The manifest's own vmMetrics.modeledBusyIntervalSeconds is the backstop -- a MISMATCH badge means the evidence chain is broken.
+
 function unionSeconds(intervals) {
   if (!intervals.length) return 0;
   const events = [];
@@ -412,7 +408,7 @@ async function checkReport(browser, specification, screenshot) {
     const hasFileLifecyclePanel = await page.locator('#file-lifecycle-section').count() === 1;
     const hasStorageLifecyclePanel = await page.locator('#storage-lifecycle-section').count() === 1;
     const hasAssignmentPanel = await page.locator('#dataflow-assignment-section').count() === 1;
-    // BAT-E7: energy panel visibility — powered manifests must surface it visible.
+
     const hasEnergyPanel = await page.locator('#energy-section').count() === 1
       && await page.locator('#energy-section').isVisible();
     if (specification.network) assert.equal(specification.network.length, runCount);
@@ -505,7 +501,7 @@ async function checkReport(browser, specification, screenshot) {
     assert.deepEqual(errors, []);
     assert.deepEqual(requests, [], 'Offline reports must remain offline through the final viewport change');
     assert.deepEqual(secondaryFiles, [], 'Offline reports must not fetch secondary files');
-    // BAT-E7: powered manifests must surface a visible energy panel (unpowered ones leave it hidden OFF).
+
     const anyPoweredRun = runs.some(r => r.manifest && r.manifest.energyMetrics
       && Number(r.manifest.energyMetrics.totalEnergyJoules) > 0);
     if (anyPoweredRun) {

@@ -38,45 +38,16 @@ import org.workflowsim.utils.PeriodicalDistributionGenerator;
 import org.workflowsim.utils.PeriodicalSignal;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Historical dynamic reclustering teaching example that uses a periodic failure signal.
- *
- * <p>The class combines a periodic signal, a failure distribution, and the reclustering path into
- * one legacy executable scenario. All parameters are abstract scenario assumptions; it is not a
- * standard research experiment entry point, and it must not be used to infer the periodic failure
- * behavior of a real platform.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Dec 31, 2013
- */
 public class FaultTolerantClusteringExample7 extends FaultTolerantClusteringExample1 {
 
     private static final String EXAMPLE_ID = "fault-clustering-periodic";
-    /**
-     * Compatibility fallback scale after the periodic cache is exhausted, together with the prior
-     * baseline of the legacy estimator; it does not represent a real failure rate.
-     */
+
     private static final double DEFAULT_FAILURE_INTERVAL_SCALE = 100000.0;
-    /** High-failure phase scale at a short interval under the fixed teaching seed. */
+
     private static final double DEFAULT_HIGH_FAILURE_INTERVAL_SCALE = 30000.0;
-    /** Low-failure phase scale at a long interval under the fixed teaching seed. */
+
     private static final double DEFAULT_LOW_FAILURE_INTERVAL_SCALE = 180000.0;
 
-    /**
-     * Run the fault-tolerant scenario with a periodic two-level failure interval.
-     *
-     * <p>Supports {@code -c} (SR/DR/NOOP/DC/VR), {@code -d}, {@code -b},
-     * {@code -q}/{@code -s} (queue Gamma parameters), {@code -w} (queue prior strength),
-     * {@code -p}/{@code -t} (legacy failure estimator parameters), {@code -e} (period),
-     * {@code -n} (high-failure phase portion), {@code -h}/{@code -l} (Weibull interval scales of
-     * the high/low failure phase), and {@code -r} (root seed). The high-failure phase scale must be
-     * smaller than the low-failure phase scale. The actual sampling of periodic arrivals is
-     * controlled by {@code -h}/{@code -l}; {@code -p}/{@code -t} are retained as legacy estimator
-     * priors and as compatibility fallback parameters after the cache is exhausted.</p>
-     *
-     * @param args legacy argument sequence of single-character options and values
-     */
     public static void main(String[] args) {
         try {
             Map<String, String> options = ExampleCliSupport.parseValueOptions(
@@ -130,14 +101,12 @@ public class FaultTolerantClusteringExample7 extends FaultTolerantClusteringExam
                     : ClusteringParameters.ClusteringMethod.HORIZONTAL;
             FailureParameters.FTCluteringAlgorithm strategy = strategyFor(clustering);
             int maxLevel = 11;
-            // To keep the semantics clear, upper is the long-interval low-failure phase and
-            // lower is the short-interval high-failure phase.
+
             PeriodicalSignal signal = new PeriodicalSignal(
                     period, lowFailureIntervalScale, highFailureIntervalScale, highFailurePortion, false);
 
             DistributionGenerator[][] failureGenerators = new DistributionGenerator[vmNum][maxLevel];
-            // Historical E7 uses one shared global failure clock; it is not a VM-depth independent
-            // failure model.
+
             DistributionGenerator failureGenerator = new PeriodicalDistributionGenerator(
                     DistributionGenerator.DistributionFamily.WEIBULL,
                     failureScale,

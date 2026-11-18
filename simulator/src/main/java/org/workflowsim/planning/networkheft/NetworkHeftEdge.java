@@ -1,6 +1,5 @@
 package org.workflowsim.planning.networkheft;
 
-/** One directed task dependency with data, nominal duration, and bottleneck identity. */
 public final class NetworkHeftEdge {
     private final int childTaskId;
     private final double dataBytes;

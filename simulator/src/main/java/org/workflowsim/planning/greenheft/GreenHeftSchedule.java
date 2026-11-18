@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable GreenHEFT schedule with makespan and summed task energy. */
 public final class GreenHeftSchedule {
     private final Map<Integer, Entry> entries;
     private final double makespanSeconds;

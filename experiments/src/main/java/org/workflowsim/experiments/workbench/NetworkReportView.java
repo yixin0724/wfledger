@@ -15,14 +15,12 @@ import org.workflowsim.data.NetworkTraceMetrics;
 import org.workflowsim.data.TransferTraceEvent;
 import org.workflowsim.data.TransferTraceValidator;
 
-/** Bounded display projection of already-validated immutable network data, never another evidence schema. */
 final class NetworkReportView {
     static final int FLOW_LIMIT = 64, RESOURCE_LIMIT = 64, EVENT_LIMIT = 128, LIST_LIMIT = 12, LABEL_LIMIT = 256;
     private long labelsClipped, nestedItemsOmitted;
 
     private NetworkReportView() {}
 
-    /** Null means OFF. The caller sets contextValidated only after complete artifact/context validation. */
     static Map<String, Object> fromDecoded(NetworkLedgerCodec.Decoded decoded, boolean contextValidated) {
         return decoded == null ? null : new NetworkReportView().project(decoded, contextValidated);
     }
@@ -81,7 +79,6 @@ final class NetworkReportView {
         return freeze(root);
     }
 
-    /** Transfer totals metrics section (verbatim relocation from project()). */
     private Map<String, Object> totalsSection(NetworkTraceMetrics metrics) {
         Map<String, Object> totals = map();
         totals.put("admittedPayloadBytes", number(metrics.getAdmittedPayloadBytes()));
@@ -94,7 +91,6 @@ final class NetworkReportView {
         return totals;
     }
 
-    /** Completion FCT metrics section (verbatim relocation). */
     private Map<String, Object> fctSection(NetworkTraceMetrics metrics) {
         Map<String, Object> fct = map();
         fct.put("completedSamples", number(metrics.getCompletedFctSampleCount()));
@@ -105,7 +101,6 @@ final class NetworkReportView {
         return fct;
     }
 
-    /** Locality metrics section (verbatim relocation). */
     private Map<String, Object> localitySection(NetworkRunMetrics run) {
         Map<String, Object> locality = map();
         locality.put("status", run.getLocalityStatus().name());
@@ -122,7 +117,6 @@ final class NetworkReportView {
         return locality;
     }
 
-    /** Origin flow row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> flowRows(NetworkTraceMetrics metrics, Map<Long, NetworkFlowBinding> bindings) {
         List<Map<String, Object>> flows = new ArrayList<Map<String, Object>>();
         for (int index = 0; index < Math.min(FLOW_LIMIT, metrics.getFlows().size()); index++) {
@@ -165,7 +159,6 @@ final class NetworkReportView {
         return flows;
     }
 
-    /** Resource row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> resourceRows(NetworkTraceMetrics metrics) {
         List<Map<String, Object>> resources = new ArrayList<Map<String, Object>>();
         for (int index = 0;
@@ -184,7 +177,6 @@ final class NetworkReportView {
         return resources;
     }
 
-    /** Event row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> eventRows(NetworkRunEvidence evidence, Map<Long, NetworkFlowBinding> bindings) {
         List<TransferTraceEvent> raw = evidence.getTraceSnapshot().getEvents();
         List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();

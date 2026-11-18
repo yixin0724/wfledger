@@ -18,22 +18,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/**
- * Read-only cross-validation of a P7 index and every evidence bundle it references.
- *
- * <p>v2 is the complete pre-migration baseline format; v3 additionally compares each
- * reference identity in the index field by field against the study provenance of every
- * manifest, preventing different P7 drivers, protocols, or dataset roots from being mixed
- * into one index. A development subset uses its own schema and is never validated as a
- * complete frozen baseline.</p>
- */
 public final class P7EvidenceIndexValidator {
 
     private static final String SCHEMA_V2 = "workflowsim-p7-baseline-index-v2";
     private static final String SCHEMA_V3 = P7BaselineExecutor.BASELINE_INDEX_SCHEMA;
     private static final String SELECTION_SCHEMA = P7BaselineExecutor.SELECTION_INDEX_SCHEMA;
-    // Protocol paths written by historical v2/v3 artifacts must stay readable; a document
-    // rename must not break them.
+
     private static final String HISTORICAL_PROTOCOL_REFERENCE = "P7_EXPERIMENT_PROTOCOL.md";
     private static final String HISTORICAL_PROTOCOL_ID =
             "docs/experiments/reference-baselines/" + HISTORICAL_PROTOCOL_REFERENCE;
@@ -42,16 +32,6 @@ public final class P7EvidenceIndexValidator {
 
     private P7EvidenceIndexValidator() {}
 
-    /**
-     * Validates a P7 index, every relative evidence path, and the key configuration and
-     * result consistency between the index and each manifest.
-     *
-     * @param indexPath P7 frozen baseline or development selection index file to validate
-     * @return validation result containing the index location and run count
-     * @throws IOException when the index, a referenced artifact, or their contents are
-     *         inconsistent
-     * @throws IllegalArgumentException when {@code indexPath} is null
-     */
     public static ValidationResult validate(Path indexPath) throws IOException {
         if (indexPath == null) {
             throw new IllegalArgumentException("P7 index path is required");
@@ -111,7 +91,6 @@ public final class P7EvidenceIndexValidator {
         return new ValidationResult(index, expectedRunCount);
     }
 
-    /** Command-line validation entry point; writes no files. */
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: P7EvidenceIndexValidator <p7-index.json>");
@@ -690,7 +669,6 @@ public final class P7EvidenceIndexValidator {
         REFERENCE_SELECTION
     }
 
-    /** Read-only validation result for programmatic callers. */
     public static final class ValidationResult {
         private final Path index;
         private final int runCount;

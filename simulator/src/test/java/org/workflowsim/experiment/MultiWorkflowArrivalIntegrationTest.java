@@ -13,34 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * End-to-end acceptance for R5 multi-workflow concurrency and dynamic arrival: staggered-submission
- * gating, per-workflow flow-time evidence, WORKFLOW_ARRIVED events, determinism, and behavioral
- * consistency between an all-zero arrival and the historical single-instant submission.
- *
- * <p>The fixture originates from the HEFT paper example ({@code /dax/heft-paper-example.dax},
- * 10 tasks, online FCFS track, 3 shared VMs with mips=1.0). Two identical inputs are merged into
- * one 20-task DAG through multi-input namespace isolation (workflow-0/workflow-1); arrival gating
- * is attributed by task-id range.</p>
- */
 class MultiWorkflowArrivalIntegrationTest {
 
-    /**
-     * Golden makespan for all-zero arrival (the default): two 10-task HEFT examples running
-     * concurrently on 3 shared VMs.
-     */
     private static final double SIMULTANEOUS_GOLDEN_MAKESPAN = 8118.1;
-    /**
-     * Golden makespan for staggered arrival [0, 50] (re-recorded on 2026-09-16 after the R8 audit
-     * P0-1 fix). Before the fix the single stage-in Job (ID=N) was mis-attributed to the last
-     * workflow and gated to 50 seconds, silently deferring the early workflow by 50 seconds; that
-     * golden value had been locked in as 8168.0 while polluted. After the fix stage-in is t=0
-     * platform preparation and each root Job is gated by its own attribution: with 3 VMs saturated
-     * throughout, a 50-second late arrival does not change the total makespan, so it is bit-identical
-     * to simultaneous submission.
-     */
+
     private static final double STAGGERED_GOLDEN_MAKESPAN = 8118.1;
-    /** Golden flow time of workflow 1 under staggered arrival (completion - submission instant 50). */
+
     private static final double STAGGERED_GOLDEN_FLOW_W1 = 8068.1;
 
     @Test
@@ -57,7 +35,7 @@ class MultiWorkflowArrivalIntegrationTest {
         assertEquals(20, outcomes.get(1).getLastTaskId());
         assertEquals(0.0, outcomes.get(0).getArrivalSecond(), 0.0);
         assertEquals(0.0, outcomes.get(1).getArrivalSecond(), 0.0);
-        // With all-zero arrival the flow time equals the latest successful finish instant.
+
         assertEquals(
                 outcomes.get(0).getLastSuccessFinishSecond(), outcomes.get(0).getFlowTimeSeconds(), 0.0);
         assertTrue(outcomes.get(0).getFlowTimeSeconds() > 0.0);
@@ -80,7 +58,7 @@ class MultiWorkflowArrivalIntegrationTest {
                 outcomes.get(1).getFlowTimeSeconds(),
                 0.0,
                 "flow time = latest finish - submission instant");
-        // Arrival gating: no task of workflow 1 may start before its submission instant.
+
         for (SimulationReport.TaskOutcome task : report.getTasks()) {
             if (task.getTaskId() >= 11 && task.getTaskId() <= 20) {
                 assertTrue(
@@ -88,16 +66,12 @@ class MultiWorkflowArrivalIntegrationTest {
                         "task " + task.getTaskId() + " started before its arrival instant: " + task.getStartTime());
             }
         }
-        // A late arrival never advances the schedule: the staggered makespan is not smaller than the
-        // one of simultaneous submission.
+
         SimulationReport simultaneous = run(Arrays.asList(0.0, 0.0));
         assertTrue(
                 report.getMakespan() >= simultaneous.getMakespan(),
                 "staggered arrival must not complete" + " earlier than simultaneous submission");
-        // R8 audit regression (P0-1): an early arrival must not be deferred -- gating is
-        // bidirectional. The latest successful finish instant of workflow 0 must be bit-identical to
-        // simultaneous submission (before the fix stage-in was held to 50 seconds and the early
-        // workflow was silently deferred; this assertion is the regression lock for that defect).
+
         assertEquals(
                 simultaneous.getWorkflowOutcomes().get(0).getLastSuccessFinishSecond(),
                 outcomes.get(0).getLastSuccessFinishSecond(),
@@ -114,8 +88,7 @@ class MultiWorkflowArrivalIntegrationTest {
                 first.getWorkflowOutcomes().get(1).getFlowTimeSeconds(),
                 second.getWorkflowOutcomes().get(1).getFlowTimeSeconds(),
                 0.0);
-        // WORKFLOW_ARRIVED evidence: exactly one event per workflow, with the submission instant matching
-        // the configuration.
+
         int arrived0 = 0;
         int arrived1 = 0;
         for (SimulationEvent event : first.getEvents()) {
@@ -165,7 +138,6 @@ class MultiWorkflowArrivalIntegrationTest {
         return new SimulationRunner().run(config, paperPlatform());
     }
 
-    /** Platform isomorphic to the HEFT paper reproduction: 3 VMs, mips=1.0. */
     private static PlatformProfile paperPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("multi-arrival-platform");
         for (int id = 0; id < 3; id++) {

@@ -15,7 +15,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** End-to-end timed-plan dispatch and wake-up validation (R-PAPER-01C). */
 class CaWoSchedTimedExecutionIntegrationTest {
 
     @TempDir

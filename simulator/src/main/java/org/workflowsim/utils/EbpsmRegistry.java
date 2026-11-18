@@ -1,6 +1,5 @@
 package org.workflowsim.utils;
 
-/** Session-scoped EBPSM input registry; Parameters.reset() clears it between runs. */
 public final class EbpsmRegistry {
     private static EbpsmConfig config;
 

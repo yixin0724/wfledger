@@ -9,7 +9,6 @@ import org.workflowsim.planning.timed.TimedActivity;
 import org.workflowsim.planning.timed.TimedPlan;
 import org.workflowsim.platform.PlatformProfile;
 
-/** Standard-runner CaWoSched planner: SHARED HEFT followed by explicit timed post-planning. */
 public final class CaWoSchedPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;

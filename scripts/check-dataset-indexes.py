@@ -1,37 +1,4 @@
 #!/usr/bin/env python3
-"""Check the dataset family indexes and the top-level integrity chain.
-
-Usage (from any working directory)::
-
-    python3 -B scripts/check-dataset-indexes.py
-    python3 -B scripts/check-dataset-indexes.py --root /some/repository
-
-The dataset tree ships three family indexes (``datasets/dax/INDEX.json``,
-``datasets/wfformat/INDEX.json``, ``datasets/wfinstances/INDEX.json``) and a
-top-level ``datasets/INDEX.json`` that records each family index's own sha256.
-Every index entry records the sha256 of the file it lists. The checker fails
-when:
-
-- a listed file is present but its recorded hash does not match (tampering or
-  unregistered regeneration),
-- a listed file is absent while the entry claims it is retained in a standard
-  checkout (a broken checkout),
-- a file is present under ``datasets/`` but no index lists it (corpus drift),
-- a Git-tracked file under ``datasets/`` is listed by no index and is not an
-  explicitly exempt document,
-- a family index hash recorded in the top-level index does not match the
-  family index on disk (a broken chain), or
-- a declared entry count disagrees with the actual number of entries.
-
-Absent files flagged ``retained_in_standard_checkout: false`` are legal: the
-large WfGen and WfInstances corpora are prepared separately and do not ship
-with the repository. Generation manifests listed by ``wfformat`` entries may
-be absent for the same reason; when present they must match their recorded
-hash. The upstream clone metadata directory ``datasets/wfinstances/
-.v1.5-git-metadata`` and the top-level ``README.md`` are outside the index
-scope: the first is local clone provenance, the second is documentation that
-changes freely. This script performs no writes and needs no dependencies.
-"""
 
 import argparse
 import hashlib
@@ -49,7 +16,6 @@ HEX_DIGITS = set("0123456789abcdef")
 INSTANCE_FILE_FIELDS = ("dax_xml", "wfformat_json", "file")
 MANIFEST_FIELD = "manifest"
 
-
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
@@ -57,9 +23,8 @@ def sha256_file(path: Path) -> str:
             digest.update(chunk)
     return digest.hexdigest()
 
-
 def valid_relative(value: object) -> bool:
-    """Return True for a non-empty relative POSIX-style path without traversal."""
+
     if not isinstance(value, str) or not value or "\\" in value:
         return False
     path = Path(value)
@@ -67,14 +32,12 @@ def valid_relative(value: object) -> bool:
         return False
     return True
 
-
 def valid_sha256(value: object) -> bool:
     return (isinstance(value, str) and len(value) == 64
             and all(char in HEX_DIGITS for char in value))
 
-
 def tracked_datasets_files(root: Path) -> Optional[List[str]]:
-    """Return the Git-tracked paths under datasets/, or None when unavailable."""
+
     try:
         result = subprocess.run(
             ["git", "-C", str(root), "ls-files", "-z", "--", "datasets"],
@@ -83,9 +46,8 @@ def tracked_datasets_files(root: Path) -> Optional[List[str]]:
         return None
     return [os.fsdecode(part) for part in result.stdout.split(b"\0") if part]
 
-
 def _entry_main_file(entry: object, subject: str, issues: List[str]) -> Optional[str]:
-    """Locate the single non-null instance file path of an entry."""
+
     if not isinstance(entry, dict):
         issues.append(subject + ": entry is not a JSON object")
         return None
@@ -100,11 +62,10 @@ def _entry_main_file(entry: object, subject: str, issues: List[str]) -> Optional
         return None
     return value
 
-
 def _check_entry_file(base: Path, rel: str, entry: dict,
                       subject: str, issues: List[str], counts: Dict[str, int],
                       hash_key: str) -> None:
-    """Apply the present/absent/hash/retained rules to one listed file."""
+
     path = base / rel
     if path.is_dir():
         issues.append(subject + ": listed path is a directory, not a file")
@@ -126,9 +87,8 @@ def _check_entry_file(base: Path, rel: str, entry: dict,
         issues.append(subject + ": recorded hash mismatch (recorded " + recorded
                       + ", actual " + sha256_file(path) + ")")
 
-
 def check_indexes(root: Path) -> Tuple[List[str], Dict[str, int]]:
-    """Validate the dataset index chain below ``root``; return issues and counts."""
+
     issues: List[str] = []
     counts = {"families": 0, "entries": 0, "present_verified": 0,
               "absent_not_retained": 0, "manifests_verified": 0,
@@ -259,9 +219,8 @@ def check_indexes(root: Path) -> Tuple[List[str], Dict[str, int]]:
     counts["issues"] = len(issues)
     return issues, counts
 
-
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__,
+    parser = argparse.ArgumentParser(description="Check the dataset family indexes and the top-level integrity chain.\n\nUsage (from any working directory)::\n\n    python3 -B scripts/check-dataset-indexes.py\n    python3 -B scripts/check-dataset-indexes.py --root /some/repository\n\nThe dataset tree ships three family indexes (``datasets/dax/INDEX.json``,\n``datasets/wfformat/INDEX.json``, ``datasets/wfinstances/INDEX.json``) and a\ntop-level ``datasets/INDEX.json`` that records each family index's own sha256.\nEvery index entry records the sha256 of the file it lists. The checker fails\nwhen:\n\n- a listed file is present but its recorded hash does not match (tampering or\n  unregistered regeneration),\n- a listed file is absent while the entry claims it is retained in a standard\n  checkout (a broken checkout),\n- a file is present under ``datasets/`` but no index lists it (corpus drift),\n- a Git-tracked file under ``datasets/`` is listed by no index and is not an\n  explicitly exempt document,\n- a family index hash recorded in the top-level index does not match the\n  family index on disk (a broken chain), or\n- a declared entry count disagrees with the actual number of entries.\n\nAbsent files flagged ``retained_in_standard_checkout: false`` are legal: the\nlarge WfGen and WfInstances corpora are prepared separately and do not ship\nwith the repository. Generation manifests listed by ``wfformat`` entries may\nbe absent for the same reason; when present they must match their recorded\nhash. The upstream clone metadata directory ``datasets/wfinstances/\n.v1.5-git-metadata`` and the top-level ``README.md`` are outside the index\nscope: the first is local clone provenance, the second is documentation that\nchanges freely. This script performs no writes and needs no dependencies.\n",
                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=Path,
                         default=Path(__file__).resolve().parent.parent,
@@ -286,7 +245,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     for issue in issues:
         print(issue)
     return 1 if issues else 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

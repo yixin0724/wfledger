@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""Fixed-oracle stdlib tests for the dataset index checker.
-
-Run: python3 -B scripts/test-check-dataset-indexes.py
-
-Every fixture lives in a temporary directory; no real repository file, Git
-repository, or network access is needed. The fixtures mirror the shapes of
-the real family indexes: ``dax`` entries point through ``dax_xml`` and carry
-no retention flag (the family ships in full), ``wfformat`` entries point
-through ``wfformat_json`` plus an optional generation ``manifest`` and carry
-an explicit ``retained_in_standard_checkout`` flag, and auxiliary entries
-point through ``file``.
-"""
 
 import contextlib
 import hashlib
@@ -24,20 +12,16 @@ import tempfile
 import unittest
 from unittest import mock
 
-
 sys.dont_write_bytecode = True
 SCRIPT = Path(__file__).resolve().with_name("check-dataset-indexes.py")
 SPEC = importlib.util.spec_from_file_location("check_dataset_indexes", SCRIPT)
 CHECKER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECKER)
 
-
 def digest(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
-
 class Tree:
-    """A minimal but structurally faithful datasets/ fixture."""
 
     def __init__(self, root):
         self.root = Path(root)
@@ -54,7 +38,7 @@ class Tree:
         return CHECKER.sha256_file(self.datasets / rel)
 
     def write_index(self, family, payload):
-        """Write a family index and re-chain the top-level index hashes."""
+
         self.write(family + "/INDEX.json", json.dumps(payload))
         self.write_top()
 
@@ -70,7 +54,6 @@ class Tree:
                 "n_instances": index["n_instances"],
             })
         self.write("INDEX.json", json.dumps({"families": families}))
-
 
 def build_consistent_tree(root):
     tree = Tree(root)
@@ -114,9 +97,7 @@ def build_consistent_tree(root):
     tree.write_top()
     return tree
 
-
 class CheckerTestCase(unittest.TestCase):
-    """Each test builds a fresh tree in its own temporary directory."""
 
     def setUp(self):
         self.temp = tempfile.mkdtemp(prefix="dataset-index-check-")
@@ -130,9 +111,7 @@ class CheckerTestCase(unittest.TestCase):
         path = self.tree.datasets / family / "INDEX.json"
         return json.loads(path.read_text(encoding="utf-8"))
 
-
 class ConsistentTreeTests(CheckerTestCase):
-    """The rules a maintained tree must satisfy."""
 
     def test_consistent_tree_passes(self):
         issues, counts = self.check()
@@ -143,7 +122,7 @@ class ConsistentTreeTests(CheckerTestCase):
         self.assertEqual(1, counts["absent_not_retained"])
         self.assertEqual(1, counts["manifests_verified"])
         self.assertEqual(4, counts["disk_files"])
-        self.assertLess(counts["tracked_files"], 0)  # no Git repository here
+        self.assertLess(counts["tracked_files"], 0)
 
     def test_absent_manifest_passes(self):
         (self.tree.datasets / "wfformat/montage/n100"
@@ -169,9 +148,7 @@ class ConsistentTreeTests(CheckerTestCase):
             self.assertEqual(0, CHECKER.main(["--root", str(self.tree.root)]))
         self.assertIn("0 issues", captured.getvalue())
 
-
 class TamperingTests(CheckerTestCase):
-    """Every way recorded integrity can disagree with the tree."""
 
     def test_tampered_file_hash_mismatch(self):
         self.tree.write("dax/cybershake/n30/CyberShake_30.dax", "<adag tampered/>")
@@ -231,8 +208,7 @@ class TamperingTests(CheckerTestCase):
         dax_index["instances"][0]["dax_xml"] = "../outside.dax"
         self.tree.write_index("dax", dax_index)
         issues, _ = self.check()
-        # Two honest findings: the entry itself is invalid, and the file it used
-        # to cover is now present on disk with no listing index entry.
+
         self.assertEqual(2, len(issues))
         self.assertIn("invalid instance file path", issues[0])
         self.assertIn("present on disk but listed by no dataset index", issues[1])
@@ -248,9 +224,7 @@ class TamperingTests(CheckerTestCase):
         self.assertEqual(1, len(issues))
         self.assertIn("listed path is a directory", issues[0])
 
-
 class DriftTests(CheckerTestCase):
-    """Files that appear on disk or in Git without an index entry."""
 
     def test_unindexed_present_file_is_an_issue(self):
         self.tree.write("dax/stray/orphan.dax", "<orphan/>")
@@ -278,9 +252,7 @@ class DriftTests(CheckerTestCase):
         self.assertEqual([], issues)
         self.assertLess(counts["tracked_files"], 0)
 
-
 class FatalInputTests(CheckerTestCase):
-    """Structurally broken trees fail fast with exit code 2."""
 
     def test_missing_top_index_is_fatal(self):
         (self.tree.datasets / "INDEX.json").unlink()
@@ -298,7 +270,6 @@ class FatalInputTests(CheckerTestCase):
         (self.tree.datasets / "wfformat/INDEX.json").unlink()
         with self.assertRaises(ValueError):
             self.check()
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

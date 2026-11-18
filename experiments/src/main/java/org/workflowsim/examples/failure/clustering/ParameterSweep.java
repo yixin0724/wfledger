@@ -11,17 +11,6 @@ package org.workflowsim.examples.failure.clustering;
 
 import org.workflowsim.examples.ExampleCliSupport;
 
-/**
- * Historical fault-tolerant clustering parameter sweep helper.
- *
- * <p>This class no longer starts 125,000 simulations implicitly when invoked without arguments.
- * A genuine research parameter sweep must be implemented as a campaign under
- * {@code experiments/studies/<study-id>} with a frozen configuration, a seed plan, comparison
- * groups, stopping conditions, and result artifacts; only the bounded smoke entry point and the
- * single-run method reused by legacy callers are kept here.</p>
- *
- * @author chenweiwei
- */
 public final class ParameterSweep {
 
     private static final String DEFAULT_DAX = ExampleCliSupport.DEFAULT_DAX_PATH;
@@ -30,11 +19,6 @@ public final class ParameterSweep {
 
     private ParameterSweep() {}
 
-    /**
-     * Run only the explicitly requested single-cell, single-replication smoke.
-     *
-     * @param args must be the single argument {@code --smoke}
-     */
     public static void main(String[] args) {
         if (args == null || args.length != 1 || !"--smoke".equals(args[0])) {
             throw new IllegalArgumentException("ParameterSweep is not a default experiment runner. "
@@ -49,13 +33,6 @@ public final class ParameterSweep {
         System.out.println(SMOKE_COMPLETION_PREFIX + " replications=1 makespan=" + makespan);
     }
 
-    /**
-     * Execute one historical parameter combination with a fixed default root seed.
-     *
-     * <p>The signature is kept for compatibility with existing teaching callers. When repeated runs
-     * are needed, use the overload that takes a root seed, so that every replication has a
-     * recordable and replayable random condition.</p>
-     */
     public static double execute(
             String failureScale,
             double queueScale,
@@ -73,18 +50,6 @@ public final class ParameterSweep {
                 ExampleCliSupport.LEGACY_DEMO_SEED);
     }
 
-    /**
-     * Execute one historical parameter combination with an explicitly given root seed.
-     *
-     * @param failureScale Weibull failure scale
-     * @param queueScale Gamma queue scale
-     * @param queuePriorWeight prior strength of the queue legacy estimator
-     * @param queueShape Gamma queue shape
-     * @param failurePriorWeight prior strength of the failure legacy estimator
-     * @param clustering SR, DR, NOOP, or DC
-     * @param rootSeed replayable root seed of this run
-     * @return model makespan; an exception is thrown on failure, no sentinel is used
-     */
     public static double execute(
             String failureScale,
             double queueScale,
@@ -114,13 +79,6 @@ public final class ParameterSweep {
         return FaultTolerantClusteringExample5.main2(args);
     }
 
-    /**
-     * Keep the historical "average of 100 runs" name but use 100 deterministic and distinct root seeds.
-     *
-     * <p>The seed sequence within one parameter cell is fixed; different parameter cells use common
-     * random numbers as soon as they are given the same {@code rootSeed}. This method produces no
-     * research evidence and contains neither confidence intervals nor a stopping rule.</p>
-     */
     public static double execute100(
             String failureScale,
             double queueScale,
@@ -139,7 +97,6 @@ public final class ParameterSweep {
                 ExampleCliSupport.LEGACY_DEMO_SEED);
     }
 
-    /** Execute the given number of deterministic replications and return the arithmetic mean makespan. */
     public static double executeReplications(
             String failureScale,
             double queueScale,

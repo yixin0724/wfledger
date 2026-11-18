@@ -27,7 +27,6 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
-/** Independent work-conservation regressions: expected values come from the input model. */
 class ExecutionModelRegressionTest {
     @TempDir
     Path directory;
@@ -47,7 +46,7 @@ class ExecutionModelRegressionTest {
             SimulationReport report = run(config, platform(1000.0, 1000.0));
             SimulationReport.JobOutcome second = jobForTask(report, 2);
             assertEquals(arrival, second.getStartTime(), 1e-9, "The other VM is idle");
-            // CloudSim quantizes remaining work to MI: allow one MI, not the 0.1s cadence.
+
             assertTrue(
                     second.getExecutionTime() >= 1.0 - 0.001 - 1e-9,
                     "Arrival " + arrival + " received CPU work from before submission: " + second.getExecutionTime());
@@ -166,8 +165,7 @@ class ExecutionModelRegressionTest {
         Path input = single("large-raw-work", 3_000_000.0, false);
         SimulationReport report =
                 run(SimulationConfig.builder(input.toString(), 1).build(), platform(1_000_000.0));
-        // 3,000,000 input seconds * 1,000 reference MIPS = 3,000,000,000 MI.
-        // At 1,000,000 MIPS that is 3,000 seconds; an int accumulator cannot hold the MI.
+
         assertEquals(3000.0, computeJobs(report).get(0).getExecutionTime(), 1e-9);
         assertEquals(3_000_000_000L, report.getTasks().get(0).getLengthMi());
     }

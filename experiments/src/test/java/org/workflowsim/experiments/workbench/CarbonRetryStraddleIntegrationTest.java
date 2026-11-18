@@ -28,24 +28,8 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * BAT-H2 (2026-10-28, test-engineer round-four close-out) -- union carbon accounting
- * across the risky-failure retry x carbon-budget window boundary.
- *
- * <p>R8 already proved that energy conservation closes under retries (union semantics --
- * failed attempts and retries are both inside the integral, and not a single second is
- * double-counted). This probe carries the same union discipline across the boundary on
- * the carbon side: a failing-retry run with green-window declarations, an independent
- * Python rebuild of the fleet timeline (including failed and retried job intervals) ->
- * per-window excess recomputation -> pairwise match against the published values. Any
- * double counting would immediately break either window sum == total or the per-leaf
- * recompute. The evidence stays in a stable directory for the shell-side Python full
- * audit.</p>
- */
 class CarbonRetryStraddleIntegrationTest {
 
-    /** Evidence in a stable directory (R8 discipline -- the inputs must coexist with the
-     * evidence; the JUnit temporary directory is not usable). */
     static final Path PROBE_DIR = Paths.get("target", "carbon-retry-straddle");
 
     @TempDir
@@ -97,8 +81,7 @@ class CarbonRetryStraddleIntegrationTest {
                     retried = candidate;
                 }
             } catch (RuntimeException budgetOrFailure) {
-                // Seed hunt -- skip seeds that exhaust the budget or fail; the final assertion turns
-                // an empty hunt into a hard failure.
+
             }
         }
         assertTrue(retried != null, "must find a run that really retried and succeeded (empty hunt = hard failure)");
@@ -134,7 +117,6 @@ class CarbonRetryStraddleIntegrationTest {
                 + "</adag>\n";
     }
 
-    /** Two green windows spanning the failure-retry domain. */
     private static PlatformProfile poweredBudgetPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("carbon-retry");
         int[] ids = {0, 1};
@@ -155,7 +137,7 @@ class CarbonRetryStraddleIntegrationTest {
                             null))
                     .pinVmToHost(ids[i], 800 + i);
         }
-        // Green windows sit below the idle sum -- this guarantees a non-trivial excess.
+
         builder.carbonWindow(0.0, 30.0, 100.0).carbonWindow(30.0, 120.0, 500.0);
         return builder.build();
     }

@@ -36,7 +36,6 @@ import org.workflowsim.utils.SimulationSession;
 
 import com.google.gson.Gson;
 
-/** NF002A runtime capture lifecycle without driving new CloudSim physics. */
 class NetworkEvidenceDatacenterTest {
     private boolean loggingWasDisabled;
 

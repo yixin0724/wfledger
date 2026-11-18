@@ -53,9 +53,6 @@ class DataMovementIntegrationTest {
         SimulationReport legacyReport = runner.run(explicitLegacy, platform);
         SimulationReport fixedReport = runner.run(fixed, platform);
 
-        // The 30 MB input takes 1.5 seconds in the legacy shared-storage model at 20 MB/s; the
-        // fixed-endpoint model is capped by the 10 MB/s access link and adds 0.5 seconds of latency,
-        // so the hand-derived baseline for the assertion is 3.5 seconds.
         assertEquals(legacyTransferSeconds(defaultReport), legacyTransferSeconds(legacyReport), 0.0);
         assertEquals(defaultReport.getMakespan(), legacyReport.getMakespan(), 0.0);
         assertEquals(1.5, legacyTransferSeconds(defaultReport), 1.0e-12);
@@ -141,8 +138,6 @@ class DataMovementIntegrationTest {
         Log.disable();
         SimulationReport report = new SimulationRunner().run(config, twoVmPlatform());
 
-        // When the child Job reads the parent task replica across VMs, endpoint bandwidth is still
-        // capped by the 10 MB/s access link: 0.5 + 30 / 10 = 3.5 seconds.
         SimulationEvent childTransfer = largestTransferEvent(report);
         assertEquals(
                 3.5, ((Number) childTransfer.getAttributes().get("modeledTransferSeconds")).doubleValue(), 1.0e-12);
@@ -195,9 +190,6 @@ class DataMovementIntegrationTest {
                 "The child intentionally returns to the failed attempt VM to expose replica pollution");
         assertNotEquals(successfulRetry.getVmId(), child.getVmId());
 
-        // The failed parent once executed on the child VM, but only the successful retry output is
-        // readable, so the child must fetch 30 MB across VMs: 0.5 + 30 / 10 = 3.5 seconds; with a
-        // polluted directory that value would be underestimated as zero.
         assertEquals(
                 3.5, ((Number) childTransfer.getAttributes().get("modeledTransferSeconds")).doubleValue(), 1.0e-12);
         assertTrue(report.getMetrics().isWorkflowCompletedSuccessfully());

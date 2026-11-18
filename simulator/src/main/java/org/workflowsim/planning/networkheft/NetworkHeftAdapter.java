@@ -12,7 +12,6 @@ import org.workflowsim.Task;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** Converts file-carrying tasks into Network-Aware HEFT flows and shared bottlenecks. */
 public final class NetworkHeftAdapter {
 
     private NetworkHeftAdapter() {}
@@ -52,8 +51,7 @@ public final class NetworkHeftAdapter {
                         bytes += input.getSize();
                     }
                 }
-                // WorkflowSim bandwidth is decimal MB/s. Convert file bytes to bits for
-                // the nominal estimate and use the corresponding byte-rate capacity below.
+
                 double bits = bytes * 8.0;
                 edges.put(
                         child.getCloudletId(),

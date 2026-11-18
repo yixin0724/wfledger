@@ -24,7 +24,6 @@ import org.workflowsim.network.FatTreeTopology;
 import org.workflowsim.network.NetworkTopologySpec;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** Same concrete source/route plan feeds both isolated estimation and actual fluid admission. */
 class ReplicaTransferSelectorTest {
     private static final DataLocation SOURCE = DataLocation.source("input-store"),
             VM7 = DataLocation.vm(7),
@@ -368,8 +367,7 @@ class ReplicaTransferSelectorTest {
         admit(shared, q, 2);
         assertTrue(shared.advance(10).getCompletedTransferIds().isEmpty());
         assertEquals(2, shared.advance(20).getCompletedTransferIds().size());
-        // Distinct logical files avoid the V2 same-file/destination coalescing case.
-        // Independent single-flow engines cancel sharing only: physical resources and nominal caps are identical.
+
         int id = 1;
         for (ReplicaTransferSelector.Decision decision : Arrays.asList(p, q)) {
             TransferContentionEngine isolated = engine(fabric);

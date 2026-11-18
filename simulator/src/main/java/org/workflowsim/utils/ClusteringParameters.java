@@ -15,25 +15,12 @@
  */
 package org.workflowsim.utils;
 
-/**
- * Parameters required by task clustering.
- *
- * <p>{@code clustersNum} and {@code clustersSize} are interpreted by the concrete
- * clustering strategy; usually only one of them is configured. {@code code} is used
- * only by research variants of balanced clustering to select a concrete strategy.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class ClusteringParameters {
 
-    /** Number of clustering jobs per level. */
     private final int clusters_num;
-    /** Number of tasks contained in each clustering job. */
+
     private final int clusters_size;
 
-    /** Supported clustering methods. */
     public enum ClusteringMethod {
         HORIZONTAL,
         VERTICAL,
@@ -41,39 +28,27 @@ public class ClusteringParameters {
         BLOCK,
         BALANCED
     }
-    /** Balanced clustering variant code. */
+
     private final String code;
-    /** Selected clustering method. */
+
     private final ClusteringMethod method;
 
-    /** @return balanced clustering variant code; usually {@code null} for other methods */
     public String getCode() {
         return code;
     }
 
-    /** @return number of clustering jobs per level */
     public int getClustersNum() {
         return clusters_num;
     }
 
-    /** @return number of tasks in each clustering job */
     public int getClustersSize() {
         return clusters_size;
     }
 
-    /** @return clustering method */
     public ClusteringMethod getClusteringMethod() {
         return method;
     }
 
-    /**
-     * Create clustering parameters.
-     *
-     * @param cNum number of clustering jobs per level
-     * @param cSize number of tasks in each clustering job
-     * @param method clustering method
-     * @param code balanced clustering variant code
-     */
     public ClusteringParameters(int cNum, int cSize, ClusteringMethod method, String code) {
         this.clusters_num = cNum;
         this.clusters_size = cSize;

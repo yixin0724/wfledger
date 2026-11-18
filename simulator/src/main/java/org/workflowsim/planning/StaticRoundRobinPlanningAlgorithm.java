@@ -5,13 +5,6 @@ import java.util.List;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
-/**
- * Deterministic VM-ID round-robin baseline for independent tasks.
- *
- * <p>In Task-ID order, scans cyclically from the successor position of the last successfully
- * mapped VM for the first PE-compatible VM; it estimates neither execution time, nor waiting
- * time, nor DAG dependencies.</p>
- */
 public final class StaticRoundRobinPlanningAlgorithm extends StaticIndependentPlanningSupport {
 
     @Override

@@ -15,55 +15,19 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-/** Writes the complete, self-describing evidence artifact set for one simulation run. */
 public final class ExperimentArtifactWriter {
 
-    /*
-     * v3 provenance must distinguish "no study declared" from "field not written out", so null is
-     * preserved.
-     */
     private static final Gson GSON =
             new GsonBuilder().serializeNulls().setPrettyPrinting().create();
     private static final Gson JSONL_GSON = new Gson();
 
     private ExperimentArtifactWriter() {}
 
-    /**
-     * Writes {@code <runId>.manifest.json}, {@code <runId>.metrics.json} and
-     * {@code <runId>.events.jsonl}; when recording is ON, also writes the separate network-ledger
-     * JSON.
-     *
-     * <p>An existing file of the same name is replaced atomically only after the matching new file
-     * has been written completely.</p>
-     *
-     * @param report immutable report of the completed simulation
-     * @param outputDirectory output directory holding the established artifact trio and the
-     *        optional network ledger
-     * @param runId file-name-safe run identifier
-     * @return absolute paths of the written artifacts; the network ledger path is null when OFF
-     * @throws IOException when the directory or an artifact cannot be written
-     * @throws IllegalArgumentException when the report, output directory or run identifier is
-     *         invalid
-     */
     public static ExperimentArtifacts write(SimulationReport report, Path outputDirectory, String runId)
             throws IOException {
         return write(report, outputDirectory, runId, null);
     }
 
-    /**
-     * Writes the complete evidence artifact set and records the optional reference or study
-     * identity in the manifest.
-     *
-     * @param report immutable report of the completed simulation
-     * @param outputDirectory output directory holding the established artifact trio and the
-     *        optional network ledger
-     * @param runId file-name-safe run identifier
-     * @param evidenceContext optional reference or study research identity
-     * @return absolute paths of the written artifacts; the network ledger path is null when OFF
-     * @throws IOException when the directory or an artifact cannot be written
-     * @throws IllegalArgumentException when the report, output directory or run identifier is
-     *         invalid
-     */
     public static ExperimentArtifacts write(
             SimulationReport report, Path outputDirectory, String runId, ExperimentEvidenceContext evidenceContext)
             throws IOException {
@@ -133,11 +97,6 @@ public final class ExperimentArtifactWriter {
         return new ExperimentArtifacts(manifest, metrics, events, networkLedger, fileLifecycle, storageLifecycle);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from write; statements verbatim; order unchanged.
-     * Scope: export preflight only (non-null arguments, valid runId, online binding requiring
-     * complete lifecycle capture, sourceStorage matching the model).
-     */
     private static void requireExportableReport(SimulationReport report, Path outputDirectory, String runId)
             throws IOException {
         if (report == null || outputDirectory == null) {
@@ -156,13 +115,6 @@ public final class ExperimentArtifactWriter {
         }
     }
 
-    /**
-     * Sidecar context-validation chain extracted from
-     * {@link #write(SimulationReport, Path, String, ExperimentEvidenceContext)}
-     * (2026-10-23; statement order verbatim): the group ledger cross-check, the encoded V2/V3
-     * lifecycle round-trip validation, or — for coherent runtime without a sidecar mode —
-     * the plan-only context validation of the manifest snapshot.
-     */
     private static void validateSidecarContexts(
             SimulationReport report,
             boolean group,
@@ -188,18 +140,6 @@ public final class ExperimentArtifactWriter {
         }
     }
 
-    /**
-     * Atomically writes a caller-assembled research index or summary as formatted JSON.
-     *
-     * <p>Reference and study modules can use this method to write their own index; it does not
-     * replace the complete single-run evidence artifact write performed by
-     * {@link #write(SimulationReport, Path, String)}.</p>
-     *
-     * @param target JSON file to write
-     * @param value value that Gson can serialize
-     * @throws IOException when the file cannot be written or replaced
-     * @throws IllegalArgumentException when the output path is null
-     */
     public static void writeJson(Path target, Object value) throws IOException {
         if (target == null) {
             throw new IllegalArgumentException("JSON output path is required");
@@ -254,10 +194,7 @@ public final class ExperimentArtifactWriter {
 
     private static Map<String, Object> metricsDocument(SimulationReport report) {
         Map<String, Object> values = new LinkedHashMap<String, Object>();
-        // v2: the waiting-time and slowdown fields were renamed (meanJobWaitingTimeSeconds ->
-        // meanJobVmQueueWaitingTimeSeconds, meanJobSlowdown -> meanJobVmLevelSlowdown) and
-        // meanComputeTotalWaitingTimeSeconds / meanComputeTrueSlowdown were added; this is a
-        // breaking contract change, so the schema version is bumped.
+
         values.put("schema", "workflowsim-simulation-metrics-v2");
         values.put("metrics", report.getMetrics());
         return values;
@@ -278,7 +215,6 @@ public final class ExperimentArtifactWriter {
         }
     }
 
-    /** Established artifact paths and the optional network ledger path produced by {@link #write}. */
     public static final class ExperimentArtifacts {
         private final Path manifest;
         private final Path metrics;
@@ -312,15 +248,15 @@ public final class ExperimentArtifactWriter {
         public Path getEvents() {
             return events;
         }
-        /** @return network sidecar path, or null when recording was OFF */
+
         public Path getNetworkLedger() {
             return networkLedger;
         }
-        /** @return V2 file lifecycle sidecar, null for OFF/V1 */
+
         public Path getFileLifecycle() {
             return fileLifecycle;
         }
-        /** @return storage V3 sidecar, null for OFF/V1/V2 */
+
         public Path getStorageLifecycle() {
             return storageLifecycle;
         }

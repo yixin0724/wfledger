@@ -16,7 +16,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Executes compatible paper algorithms in controlled scenes without mixing physical models. */
 public final class CrossPaperComparison {
 
     private CrossPaperComparison() {}
@@ -161,7 +160,6 @@ public final class CrossPaperComparison {
             return plannerCost;
         }
 
-        /** Attaches a cost computed directly by the paper planner, not by runtime accounting. */
         public RunResult withPlannerCost(double value) {
             if (!(value >= 0.0) || !Double.isFinite(value)) {
                 throw new IllegalArgumentException("Planner cost must be finite and non-negative");

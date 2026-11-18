@@ -22,7 +22,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
-/** Fixture construction only: expected decisions and times live in the tests, not here. */
 final class PlanningRegressionFixtures {
 
     static final int[] VM_IDS = {3, 8};

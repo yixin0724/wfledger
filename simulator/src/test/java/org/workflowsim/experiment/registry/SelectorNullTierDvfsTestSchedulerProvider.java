@@ -8,13 +8,6 @@ import org.workflowsim.scheduling.BaseSchedulingAlgorithm;
 import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
 import org.workflowsim.scheduling.FrequencyTierSelector;
 
-/**
- * BAT-D6 (2026-10-29) test-domain breakage face one: the selector returns {@code null} --
- * the assignment at dispatch time must be "exactly one declared tier", and an empty
- * assignment is rejected explicitly as an evidence-chain break (fail-fast); a silent
- * fallback to the default tier is not allowed. This provider never produces valid
- * evidence and is consumed only by the rejection tests.
- */
 public final class SelectorNullTierDvfsTestSchedulerProvider implements SchedulingAlgorithmProvider {
 
     public static final String LABEL = "tier-selector-null";

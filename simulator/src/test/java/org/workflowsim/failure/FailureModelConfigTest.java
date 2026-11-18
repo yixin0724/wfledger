@@ -33,7 +33,6 @@ class FailureModelConfigTest {
                 .failureModel(model)
                 .build();
 
-        // With the same run seed, every new session should yield the same first failure-arrival sample.
         double first;
         try (SimulationSession ignored = SimulationSession.open(config)) {
             assertEquals(3, FailureParameters.getMaxTotalRetryJobs());

@@ -28,7 +28,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** End-to-end fractional-byte evidence and hold-time checks, without a production-helper oracle. */
 class FractionalTransferEvidenceTest {
     private static final double INPUT_BYTES = 0.5;
     private static final double MIN_HOLD_SECONDS = 0.1;
@@ -107,8 +106,7 @@ class FractionalTransferEvidenceTest {
     @MethodSource("preExecutionTracks")
     void everyPositivePreExecutionRootTransferReceivesTheMinimumHold(InputFormat format, Track track) throws Exception {
         Trace trace = run(format, track, INPUT_BYTES);
-        // The fixture declares 0.5 bytes and a 1 MB/s destination endpoint. This hand calculation
-        // is independent of estimateTransferSecondsForFiles and all production byte-sum helpers.
+
         assertEquals(0.5 / 1_000_000.0, number(trace.stageIn, "modeledTransferSeconds"), 1.0e-15);
         assertEquals(trace.ready.getSimulationTime(), trace.stageIn.getSimulationTime(), TIME_EPSILON);
         assertAll(

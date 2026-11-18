@@ -15,11 +15,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Full-branch test of the research identity contract of {@link ExperimentEvidenceContext}:
- * required fields and whitespace trimming, dataset root absolute/existence validation, the
- * effect of protocol file availability on the sha256 fingerprint, and the asMap output shape.
- */
 class ExperimentEvidenceContextTest {
 
     @TempDir
@@ -47,7 +42,7 @@ class ExperimentEvidenceContextTest {
 
     @Test
     void buildRejectsPartiallyConfiguredContext() {
-        // Missing artifact.
+
         IllegalStateException noArtifact =
                 assertThrows(IllegalStateException.class, () -> ExperimentEvidenceContext.builder("study-x")
                         .driver(ExperimentEvidenceContextTest.class, "src")
@@ -55,7 +50,7 @@ class ExperimentEvidenceContextTest {
                         .datasetRoot(datasetRoot)
                         .build());
         assertTrue(noArtifact.getMessage().contains("required"), noArtifact.getMessage());
-        // Missing datasetRoot.
+
         assertThrows(IllegalStateException.class, () -> ExperimentEvidenceContext.builder("study-x")
                 .artifact("g", "a", "1.0")
                 .driver(ExperimentEvidenceContextTest.class, "src")
@@ -89,7 +84,7 @@ class ExperimentEvidenceContextTest {
 
     @Test
     void protocolFingerprintReflectsFileAvailability() throws IOException {
-        // Protocol file missing -> available=false, sha256=null.
+
         Map<String, Object> missing = fullBuilder().build().asMap();
         @SuppressWarnings("unchecked")
         Map<String, Object> missingProtocol = (Map<String, Object>) missing.get("protocol");
@@ -97,14 +92,12 @@ class ExperimentEvidenceContextTest {
         assertEquals(Boolean.FALSE, missingProtocol.get("available"));
         assertNull(missingProtocol.get("sha256"));
 
-        // A directory path is not a regular file -> also treated as unavailable.
         Map<String, Object> directory =
                 fullBuilder().protocol("protocol-1", datasetRoot).build().asMap();
         @SuppressWarnings("unchecked")
         Map<String, Object> directoryProtocol = (Map<String, Object>) directory.get("protocol");
         assertEquals(Boolean.FALSE, directoryProtocol.get("available"));
 
-        // Real protocol file -> available=true, sha256 is 64 hexadecimal digits.
         Path protocolFile = datasetRoot.resolve("PROTOCOL.md");
         Files.write(protocolFile, "# protocol".getBytes(StandardCharsets.UTF_8));
         Map<String, Object> present =

@@ -20,7 +20,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Fractional flow contracts are checked against hand-calculated bytes/rate durations. */
 class FractionalTransferContentionEngineTest {
     @Test
     void independentTinyFlowsKeepTheirOwnCompletionTimes() {

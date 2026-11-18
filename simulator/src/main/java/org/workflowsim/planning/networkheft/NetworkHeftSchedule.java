@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable Network-Aware HEFT schedule with task timing and VM mapping. */
 public final class NetworkHeftSchedule {
     private final Map<Integer, Entry> entries;
     private final Map<Integer, Integer> mapping;

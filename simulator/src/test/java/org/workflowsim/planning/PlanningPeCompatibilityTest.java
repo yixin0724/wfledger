@@ -22,7 +22,6 @@ import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.SimulationRandom;
 
-/** Direct-API PE feasibility: a faster but incompatible VM is never a valid mapping. */
 class PlanningPeCompatibilityTest {
 
     @AfterEach
@@ -68,7 +67,7 @@ class PlanningPeCompatibilityTest {
                     localPlanner(algorithm, Arrays.asList(root, child), vms(2.0, 1, 1.0, 2));
             planner.run();
             assertEquals(8, child.getVmId(), algorithm.name());
-            // Only VM8 can execute child: its compute mean is 3/1=3 seconds, not (1.5+3)/2.
+
             assertEquals(3.0, planner.meanComputeSeconds(child), EPSILON, algorithm.name());
             assertTrue(Double.isFinite(planner.upwardRankOf(root)), algorithm.name());
             assertTrue(Double.isFinite(planner.upwardRankOf(child)), algorithm.name());
@@ -82,7 +81,7 @@ class PlanningPeCompatibilityTest {
                 assertTrue(Double.isFinite(peft.priorityOf(root)));
             }
             if (planner instanceof LocalCpopPlanningAlgorithm) {
-                // The entire critical chain must fit its pinned processor, including its 2PE child.
+
                 assertEquals(8, root.getVmId());
             }
         }
@@ -102,7 +101,7 @@ class PlanningPeCompatibilityTest {
         for (Task task : tasks) {
             assertEquals(8, task.getVmId(), "the only feasible VM is8 for task " + task.getCloudletId());
         }
-        // VM8 sequential load=140; price=.001; .8*.14+.2*140=28.112.
+
         assertEquals(28.112, planner.getLastBestFitness(), EPSILON);
         assertEquals(100, planner.getLastIterationCount());
     }

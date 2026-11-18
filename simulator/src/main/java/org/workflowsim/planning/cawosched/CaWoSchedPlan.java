@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable timed plan and independently integrated brown-power cost for one CaWoSched run. */
 public final class CaWoSchedPlan {
 
     private final Map<Integer, TaskPlan> taskPlans;
@@ -56,7 +55,6 @@ public final class CaWoSchedPlan {
         return carbonExcessWattSeconds;
     }
 
-    /** One task's fixed VM, power values, and timed execution window. */
     public static final class TaskPlan {
         private final int taskId;
         private final int vmId;

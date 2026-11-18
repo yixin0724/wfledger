@@ -13,7 +13,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Small user configurations and two-task inputs shared by the workbench tests. */
 final class WorkbenchTestSupport {
     private static final Gson JSON =
             new GsonBuilder().serializeNulls().setPrettyPrinting().create();

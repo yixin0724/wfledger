@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 
 import org.workflowsim.exception.SimulationExecutionException;
 
-/** Runs the same baseline family at 1000 and exactly 5000 logical tasks. */
 public final class MakespanScaleComparison {
 
     private static final String[] DATASETS = {

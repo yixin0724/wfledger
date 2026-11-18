@@ -15,25 +15,6 @@
  */
 package org.workflowsim.scheduling;
 
-/**
- * Originally named MaxMinSchedulingAlgorithm.
- *
- * <p>Note: this implementation is not the classic Max-Min (Braun et al. 2001). The actual
- * behavior is an LJF (Longest Job First) - fastest-idle variant: first select the longest task,
- * then select the fastest idle VM. For ready-batch Max-Min see
- * {@link ReadyBatchMaxMinSchedulingAlgorithm}.</p>
- *
- * <p><strong>Compatibility boundary:</strong> retained solely for historical source
- * compatibility; the standard research entry point rejects this label, and results of this
- * class must not be claimed as classic Max-Min.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- * @deprecated Behavior is inconsistent with classic Max-Min; renamed to
- *             {@link LjfFastestIdleSchedulingAlgorithm}. The ready-batch implementation is
- *             {@link ReadyBatchMaxMinSchedulingAlgorithm}.
- */
 @Deprecated
 public class MaxMinSchedulingAlgorithm extends LjfFastestIdleSchedulingAlgorithm {
 

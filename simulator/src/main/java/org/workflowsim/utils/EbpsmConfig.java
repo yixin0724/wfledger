@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** Explicit EBPSM task budgets, VM caches, container images, and storage rates. */
 public final class EbpsmConfig {
     private final Map<Integer, Double> taskBudgets;
     private final Map<Integer, Set<String>> cachedInputsByVm;

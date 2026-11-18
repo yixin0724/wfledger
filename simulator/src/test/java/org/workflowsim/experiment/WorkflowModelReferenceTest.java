@@ -30,10 +30,7 @@ class WorkflowModelReferenceTest {
 
         assertTrue(reference.isAvailable());
         assertEquals(WorkflowModelReference.CONTROLLED_SHARED_STORAGE_SCOPE, reference.getScope());
-        // max(110 MI / 2000 MIPS, 0.1 s minimum event interval + 0.01 s completion guard)
-        // plus one 0.1 s Workflow Engine root-task release interval,
-        // plus 1000 MI / 2000 MIPS,
-        // plus (2000 MI + 2000 MI of data stage-in) / 2000 MIPS.
+
         assertEquals(2.71, reference.getCriticalPathLowerBoundSeconds(), 1.0e-12);
         assertEquals(2, reference.getSourceTaskCount());
     }
@@ -64,8 +61,7 @@ class WorkflowModelReferenceTest {
                 Arrays.asList(fastParent, slowParent, join), controlledConfig(), oneFastVmPlatform());
 
         assertTrue(reference.isAvailable());
-        // The root task is released at max(110/2000, 0.1+0.01)+0.1=0.21; the 3000 MI parent
-        // finishes at 1.71, and the join task still needs 2000/2000=1.0 s.
+
         assertEquals(2.71, reference.getCriticalPathLowerBoundSeconds(), 1.0e-12);
         assertEquals(3, reference.getSourceTaskCount());
     }

@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Fixed-oracle stdlib tests; all document/CLI fixtures live in owned temp dirs.
-
-Run: python3 -B scripts/test-check-docs.py
-No real repository documentation, Git repository, network, or dependencies are
-needed. Even the default-discovery CLI test uses a temporary fake Git command.
-"""
 
 import contextlib
 import importlib.util
@@ -19,13 +13,11 @@ import tempfile
 import unittest
 from unittest import mock
 
-
 sys.dont_write_bytecode = True
 SCRIPT = Path(__file__).resolve().with_name("check-docs.py")
 SPEC = importlib.util.spec_from_file_location("check_docs", SCRIPT)
 CHECKER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECKER)
-
 
 class DocumentTests(unittest.TestCase):
     def setUp(self):
@@ -515,7 +507,6 @@ class DocumentTests(unittest.TestCase):
                     self.assertEqual(0, CHECKER.main([]))
         discover.assert_called_once_with(SCRIPT.parent.parent)
         check.assert_called_once_with(SCRIPT.parent.parent, [])
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

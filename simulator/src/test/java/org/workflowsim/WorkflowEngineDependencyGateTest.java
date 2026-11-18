@@ -16,7 +16,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** Dependency-gate unit oracle: a failed parent is not a successful dependency. */
 class WorkflowEngineDependencyGateTest {
 
     @Test

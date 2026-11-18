@@ -19,59 +19,25 @@ package org.workflowsim.clustering;
 
 import java.util.ArrayList;
 
-/**
- * Container for a task list used by the clustering process, together with its level
- * information.
- *
- * <p>Unlike a plain {@link ArrayList}, this type additionally stores the DAG depth shared
- * by the tasks of the batch, which level-based clustering algorithms use for grouping.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class AbstractArrayList {
 
-    /**
-     * Task list of the current level.
-     */
     private final ArrayList taskList;
-    /**
-     * DAG depth of the current level.
-     */
+
     private final int depth;
 
-    /**
-     * Creates a container for a task list and its DAG depth.
-     *
-     * @param taskList the task list
-     * @param depth the DAG depth at which these tasks reside
-     */
     public AbstractArrayList(ArrayList taskList, int depth) {
         this.taskList = taskList;
         this.hasChecked = false;
         this.depth = depth;
     }
 
-    /**
-     * Returns the task list.
-     *
-     * @return the task list
-     */
     public ArrayList getArrayList() {
         return this.taskList;
     }
 
-    /**
-     * Returns the DAG depth at which these tasks reside.
-     *
-     * @return the DAG depth
-     */
     public int getDepth() {
         return this.depth;
     }
-    /**
-     * Already-checked flag used by the clustering traversal.
-     */
+
     public boolean hasChecked;
 }

@@ -5,13 +5,6 @@ import java.util.List;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
-/**
- * Opportunistic Load Balancing (OLB) baseline for independent tasks.
- *
- * <p>Selects, in Task-ID order, the compatible VM with the earliest tentative availability time;
- * ties on availability go to the smaller VM ID, and the Task execution time is then added to that
- * VM. It applies only to dependency-free task sets.</p>
- */
 public final class StaticOlbPlanningAlgorithm extends StaticIndependentPlanningSupport {
 
     @Override

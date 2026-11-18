@@ -6,19 +6,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** JSON value comparison without Gson's lossy conversion of parsed integers to double. */
 public final class ExactJsonValues {
     private ExactJsonValues() {}
 
-    /**
-     * Compare exact numeric values, unordered object members, and ordered array elements.
-     * Equivalent decimal notation (1000, 1000.0, 1e3) is equal; no numeric epsilon is used.
-     * Strings, booleans, nulls, and absent members remain distinct JSON values.
-     *
-     * @param first first JSON value, or null for an absent member
-     * @param second second JSON value, or null for an absent member
-     * @return whether both values are exactly equivalent under this contract
-     */
     public static boolean equal(JsonElement first, JsonElement second) {
         if (first == null || second == null) {
             return first == second;
@@ -42,11 +32,6 @@ public final class ExactJsonValues {
         return first.equals(second);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from equal; statements verbatim; order unchanged.
-     * Scope: compares two JSON objects only (identical member key sets and recursively exact
-     * equality per member).
-     */
     private static boolean equalObjectMembers(JsonElement first, JsonElement second) {
         JsonObject a = first.getAsJsonObject();
         JsonObject b = second.getAsJsonObject();
@@ -61,11 +46,6 @@ public final class ExactJsonValues {
         return true;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from equal; statements verbatim; order unchanged.
-     * Scope: compares two JSON arrays only (identical length and recursively exact equality by
-     * index).
-     */
     private static boolean equalArrayElements(JsonElement first, JsonElement second) {
         JsonArray a = first.getAsJsonArray();
         JsonArray b = second.getAsJsonArray();

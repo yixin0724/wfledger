@@ -205,12 +205,6 @@ jobs:
             output/storage-lifecycle-ci/
             output/dataflow-assignment-ci/
 
-      # The five small WfFormat/WfInstances inputs referenced by the quality gates are
-      # committed (see the .gitignore allowlist). A standard checkout runs the related tests;
-      # a missing required input fails instead of being skipped silently.
-      # The remaining large corpora do not ship with the repository and serve only extended
-      # experiments run after the corpus has been prepared explicitly.
-
   mutation-gate:
     name: Mutation gate (registered zero-survival battery)
     runs-on: ubuntu-latest
@@ -231,11 +225,6 @@ jobs:
         with:
           python-version: '3.12'
 
-      # AUD-F02 (2026-11-03): the registered-mutant gate previously ran only locally via
-      # `make mutation-gate`; CI executes the full battery on every push and pull request so a
-      # test battery that stops killing a registered canary fails the build. The clean
-      # checkout satisfies the clean-tree precondition and the dedicated runner satisfies the
-      # exclusive-run rule.
       - name: Run the registered-mutant zero-survival gate (simulator)
         run: PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/mutation-gate.py --output output/mutation-gate/mutation-gate-ci.json
 

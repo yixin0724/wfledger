@@ -21,20 +21,8 @@ import java.util.List;
 
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * Relative dispersion of task-set runtime within one level.
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class HorizontalRuntimeVariance implements BalancingMetric {
 
-    /**
-     * Computes the dispersion of task-set runtime relative to the mean.
-     *
-     * @param list task sets to inspect
-     * @return relative runtime dispersion; zero when fewer than two task sets are supplied
-     */
     @Override
     public double getMetric(List<TaskSet> list) {
         if (list == null || list.size() <= 1) {

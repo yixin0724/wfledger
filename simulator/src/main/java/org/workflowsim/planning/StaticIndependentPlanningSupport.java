@@ -9,14 +9,6 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 import org.workflowsim.utils.TaskExecutionModel;
 
-/**
- * Deterministic mechanical logic shared by the offline independent-task baselines.
- *
- * <p>These planners only produce VM mappings. WorkflowSim's {@code STATIC} dispatcher carries the
- * mappings into the simulation lifecycle, but does not turn them into DAG algorithms or replay a
- * real queue. Tasks and VMs are ordered by ascending ID, and equivalent candidates are broken by
- * the smaller ID.</p>
- */
 abstract class StaticIndependentPlanningSupport extends BasePlanningAlgorithm {
 
     protected final List<Task> independentTasks(String algorithmName) {
@@ -70,8 +62,7 @@ abstract class StaticIndependentPlanningSupport extends BasePlanningAlgorithm {
     }
 
     protected final double executionTime(Task task, CondorVM vm) {
-        // Shares the matrix-based seconds-to-integer-MI conversion with the runtime; without a matrix,
-        // the original single-PE length is kept.
+
         return isCompatible(task, vm)
                 ? TaskExecutionModel.executionSeconds(task, vm.getId(), vm.getMips())
                 : Double.POSITIVE_INFINITY;
@@ -98,10 +89,6 @@ abstract class StaticIndependentPlanningSupport extends BasePlanningAlgorithm {
         return selected;
     }
 
-    /**
-     * Selects the compatible VM minimizing {@code availability[vm] + effectiveComputeSeconds(task, vm)}.
-     * Equal finish times go to the smaller VM ID.
-     */
     protected final Choice earliestCompletion(
             Task task, List<CondorVM> vms, double[] availability, String algorithmName) {
         CondorVM selected = null;

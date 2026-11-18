@@ -15,7 +15,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** A prepared cost generation must not reuse another generation's OCT diagnostics. */
 class PlanningDiagnosticLifecycleTest {
     @Test
     void reprepareAfterSourceWorkChangeRebuildsSuccessorCosts() {
@@ -43,7 +42,7 @@ class PlanningDiagnosticLifecycleTest {
         CondorVM oldVm = vm();
         LocalPeftPlanningAlgorithm planner = planner(root, child, oldVm);
         planner.prepare();
-        // priorityOf is the lazy computation entry; optimisticCostOf only inspects an existing table.
+
         assertEquals(1.0, planner.priorityOf(root), 0.0);
         assertEquals(1.0, planner.optimisticCostOf(root, oldVm), 0.0);
         CondorVM replacement = vm();

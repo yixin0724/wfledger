@@ -16,31 +16,16 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.OverheadModelConfig;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Writes a report as a manifest only when the caller explicitly names the output path. */
 public final class ExperimentManifestWriter {
 
-    /** Previous-generation evidence manifest schema, kept so read-only verifiers read historical artifacts. */
     static final String SCHEMA_V3 = "workflowsim-experiment-manifest-v3";
-    /** Current evidence manifest schema: complete arrivals, cost matrix, and topology declarations. */
+
     static final String SCHEMA_V4 = "workflowsim-experiment-manifest-v4";
 
-    /**
-     * Declared revision-stream contract written into a v4 events summary once the stream is
-     * non-empty (AUD-F23, 2026-11-04 post-completion review).
-     *
-     * <p>The F-006/F-007 markers make the makespan and job-start families event-recomputable.
-     * Before this declaration the validator could not tell "a writer that does not emit the
-     * markers" from "a stream whose markers were removed", so both escalated to the declared
-     * manifest authority. A writer that states the contract here lets an auditor require the
-     * markers instead of excusing their absence; manifests written before the declaration keep
-     * the historical manifest-authority boundary, which is why the key is optional and why its
-     * absence is not an error.</p>
-     */
     public static final String EVENTS_REVISION_CONTRACT = "F-006/F-007";
 
     private ExperimentManifestWriter() {}
 
-    /** Standalone manifests must not silently drop requested network evidence. */
     static void requireNetworkLedgerReference(SimulationReport report, List<Map<String, Object>> artifacts) {
         if (report.getConfig().getDataflowAssignmentConfig().isEnabled()
                 && (!report.getConfig().getNetworkEvidenceConfig().isEnabled()
@@ -81,7 +66,6 @@ public final class ExperimentManifestWriter {
         }
     }
 
-    /** Minimal no-I/O context for the same preflight checks used by artifact readers. */
     static Map<String, Object> networkContextSnapshot(SimulationReport report) {
         Map<String, Object> root = new LinkedHashMap<String, Object>();
         root.put("configuration", configuration(report));
@@ -94,7 +78,6 @@ public final class ExperimentManifestWriter {
         return root;
     }
 
-    /** No-I/O V2 context; uses the same frozen report rather than rereading a manifest path. */
     static Map<String, Object> fileLifecycleContextSnapshot(SimulationReport report) {
         Map<String, Object> root = new LinkedHashMap<String, Object>();
         root.put("configuration", configuration(report));
@@ -108,37 +91,10 @@ public final class ExperimentManifestWriter {
         return root;
     }
 
-    /**
-     * Writes one report as a standalone JSON manifest.
-     *
-     * <p>This overload produces no metrics/events sidecar; use
-     * {@link ExperimentArtifactWriter#write(SimulationReport, Path, String)} when a fully
-     * verifiable evidence bundle is required.</p>
-     *
-     * @param report immutable report of a completed simulation
-     * @param outputFile manifest output file
-     * @throws IOException when the manifest cannot be written
-     * @throws IllegalArgumentException when the report or the output path is null
-     * @throws UnsupportedOperationException if ON network evidence is exported without a complete bundle reference
-     */
     public static void writeJson(SimulationReport report, Path outputFile) throws IOException {
         writeJson(report, outputFile, (ExperimentEvidenceContext) null);
     }
 
-    /**
-     * Writes one report together with optional reference/study identity as a standalone JSON manifest.
-     *
-     * <p>Without {@code evidenceContext} the manifest stays in v4 format, but the {@code study} field
-     * in provenance is {@code null}. That suits an ordinary simulation run; it must not be mistaken
-     * for formal research evidence of a declared protocol.</p>
-     *
-     * @param report immutable report of a completed simulation
-     * @param outputFile manifest output file
-     * @param evidenceContext optional reference or study research identity
-     * @throws IOException when the manifest cannot be written
-     * @throws IllegalArgumentException when the report or the output path is null
-     * @throws UnsupportedOperationException if ON network evidence is exported without a complete bundle reference
-     */
     public static void writeJson(SimulationReport report, Path outputFile, ExperimentEvidenceContext evidenceContext)
             throws IOException {
         if (report == null || outputFile == null) {
@@ -186,8 +142,7 @@ public final class ExperimentManifestWriter {
         }
         manifest.put("result", result(report));
         manifest.put("metrics", report.getMetrics());
-        // BAT-E2 (2026-10-27): energyMetrics section -- 4 summary fields + per-VM map;
-        // independently recomputable from the manifest's own vmMetrics busySeconds + platform power fields.
+
         Map<String, Object> energy = new LinkedHashMap<String, Object>();
         EnergyAccounting ea = report.getEnergyAccounting();
         energy.put("totalEnergyJoules", Double.valueOf(ea.getTotalEnergyJoules()));
@@ -196,10 +151,7 @@ public final class ExperimentManifestWriter {
         energy.put("energyMakespanProductJouleSeconds", Double.valueOf(ea.getEnergyMakespanProductJouleSeconds()));
         energy.put("vmEnergyJoules", ea.getVmEnergyJoules());
         manifest.put("energyMetrics", energy);
-        // BAT-C2 (2026-10-28): conditional carbonMetrics export -- the whole section is absent
-        // when neither carbon model is declared (a legal omission is not all-zero; it stays
-        // distinct from the always-present energy section and is already declared in the
-        // contract document).
+
         CarbonAccounting ca = report.getCarbonAccounting();
         if (ca != null) {
             Map<String, Object> carbon = new LinkedHashMap<String, Object>();
@@ -218,35 +170,10 @@ public final class ExperimentManifestWriter {
         return manifest;
     }
 
-    /**
-     * Produce a fresh wire-format configuration snapshot without I/O or simulation.
-     * The returned transport map may be edited; the immutable input configuration is not modified.
-     *
-     * @param config explicit simulation configuration
-     * @return the same configuration representation used in new manifests
-     */
-    /**
-     * BAT-R9 (2026-10-27, ninth review round) manifest convention: configuration base plus a
-     * resolved-input-path override -- the same source as inputs[].path, so the
-     * ordered-input-paths invariant holds by construction for any way the run is fed; in all
-     * legacy evidence the two arrays were already both absolute, hence zero semantic drift.
-     */
     private static Map<String, Object> configuration(SimulationReport report) {
         SimulationConfig config = report.getConfig();
         Map<String, Object> values = configuration(config);
-        // BAT-V4.2 (2026-10-29 adversarial test-engineer round / DVFS fifth round, red->green):
-        // the configuration section of a v1 tierless run must not carry the frequencyPolicy
-        // key. Since D4 that key is emitted unconditionally (including the inert tierless
-        // plus DEFAULT value) -- every v1 evidence bundle frozen before D4 (all bundles of the
-        // power-v1 / carbon-v1 / standard-v1 baselines) gains a spurious core difference when
-        // rerun through EvidenceCoreDiffer: /configuration/frequencyPolicy &lt;missing&gt; vs
-        // "DEFAULT", and the whole historical batch degrades from IDENTICAL_CORE to DIVERGED
-        // (verified in this round against the three frozen baselines). The emission rule
-        // follows the tierMips/frequencyTiers/carbonWindows culture of "declared -> present,
-        // default -> key absent": write only when the policy is behaviorally active (the
-        // configuration declares non-DEFAULT, or the platform declares frequency tiers -- on a
-        // tiered platform the policy is part of rerun semantics, and the DEFAULT cells of the
-        // D5 three-dimensional baseline are still recorded explicitly).
+
         if (!values.containsKey("frequencyPolicy") && anyFrequencyTiers(report.getPlatform())) {
             values.put("frequencyPolicy", config.getFrequencyPolicy().name());
         }
@@ -258,11 +185,6 @@ public final class ExperimentManifestWriter {
         return values;
     }
 
-    /**
-     * BAT-V4.2: configuration section emission predicate.
-     *
-     * @return whether the platform profile has any VM that declares a frequency tier table
-     */
     private static boolean anyFrequencyTiers(PlatformProfile platform) {
         if (platform == null || platform.getVms() == null) {
             return false;
@@ -279,17 +201,10 @@ public final class ExperimentManifestWriter {
         if (config == null) {
             throw new IllegalArgumentException("Configuration is required");
         }
-        // Snapshot convention = legacy as-fed (this public surface serves configuration
-        // comparison and does not enter the ordered item of the evidence chain).
+
         return configuration(config);
     }
 
-    /**
-     * Produce a fresh wire-format platform snapshot without creating CloudSim entities.
-     *
-     * @param profile validated platform description
-     * @return the same platform representation used in new manifests
-     */
     public static Map<String, Object> platformSnapshot(PlatformProfile profile) {
         if (profile == null) {
             throw new IllegalArgumentException("Platform is required");
@@ -317,27 +232,13 @@ public final class ExperimentManifestWriter {
         values.put("workflowArrivalSemantics", "PREDECLARED_AT_TIME_ZERO;SECONDS_FROM_SIMULATION_ZERO");
         values.put("taskCostMatrix", taskCostMatrix(config));
         values.put("schedulingAlgorithm", config.getSchedulingAlgorithm().name());
-        // BAT-3 (2026-10-26): the registered algorithm-track label is recorded at the same
-        // level; evidence identity is not attributed to the INVALID enum, and rerun comparison
-        // keeps comparing exact fields under the identical contract key.
+
         values.put(
                 "registeredSchedulingAlgorithm",
                 config.getRegisteredSchedulingAlgorithmProvider() == null
                         ? null
                         : config.getRegisteredSchedulingAlgorithmProvider().label());
-        // BAT-D5 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.2/D5
-        // reproduction surface): the configuration-level frequency tier policy enters the
-        // manifest configuration section (following the registeredSchedulingAlgorithm
-        // pattern) -- the policy is part of rerun semantics. BAT-V4.2 (2026-10-29 adversarial
-        // round correction): the emission rule is tightened to "write only when behaviorally
-        // active" -- non-DEFAULT is always written (on any platform: it is a non-default
-        // declaration of run semantics); DEFAULT is written only on a tiered platform
-        // (patched in the configuration(report) view). v1 tierless + default policy = key
-        // absent -- the bit-for-bit shape of pre-D4 historical evidence (the same
-        // "declared -> present" culture as tierMips/frequencyTiers/carbonWindows; the
-        // manifest->platform rebuild of tier tables and policy remains the forward contract
-        // documented in D5, and a tiered manifest rerun fails on the recorded red difference
-        // rather than silently).
+
         if (config.getFrequencyPolicy() != SimulationConfig.FrequencyPolicy.DEFAULT) {
             values.put("frequencyPolicy", config.getFrequencyPolicy().name());
         }
@@ -353,10 +254,7 @@ public final class ExperimentManifestWriter {
         values.put("runtimeScale", config.getRuntimeScale());
         values.put("runtimeReferenceMips", config.getRuntimeReferenceMips());
         values.put("cloudSimMinEventIntervalSeconds", config.getCloudSimMinEventIntervalSeconds());
-        // AUD-F07 follow-up (2026-11-04, post-completion review): the retention cap is run
-        // configuration (builder/workbench outlet), so a run that raised it must round-trip;
-        // a default-cap run keeps the key absent -- the same "declared -> present" culture as
-        // frequencyPolicy above, preserving the bit-for-bit shape of pre-outlet evidence.
+
         if (config.getEventRecorderCap() != SimulationConfig.DEFAULT_EVENT_RECORDER_CAP) {
             values.put("eventRecorderCap", config.getEventRecorderCap());
         }
@@ -568,31 +466,10 @@ public final class ExperimentManifestWriter {
             value.put("imageSizeMb", vm.getImageSizeMb());
             value.put("vmm", vm.getVmm());
             value.put("schedulerMode", vm.getSchedulerMode().name());
-            // BAT-E4 (2026-10-27): per-VM power fields enter platform serialization. The Python
-            // auditor (verify-study-evidence.py) uses platform.vms[].idlePowerWatts/maxPowerWatts
-            // to decide the powered/unpowered branch and recompute the energy conservation
-            // law; before this the E2 export lacked these two keys, so a powered run silently
-            // appeared power-less to the auditor and the energy recompute was skipped entirely
-            // (red->green anchor =
-            // EnergyConservationLawTest.manifestPlatformSerializesPerVmPowerFields).
+
             value.put("idlePowerWatts", vm.getIdlePowerWatts());
             value.put("maxPowerWatts", vm.getMaxPowerWatts());
-            // BAT-D2 follow-up closure (2026-10-29, a prerequisite of D3): the per-VM frequency
-            // tier table is serialized only when non-empty (an empty table == v1 single-tier
-            // platform == undeclared, so the platform section of a legacy manifest stays
-            // byte-identical); key order is fixed as mips/idlePowerWatts/maxPowerWatts, and
-            // the Python auditor recomputes the extended conservation law with the same table
-            // E_vm = P_idle(default tier) * T_sim
-            //        + sum over tiers[(P_max(tier) - P_idle(default tier)) * busy(tier)]
-            // (DVFS_DIMENSION_DESIGN.md section 2.3/2.4). Previously the platform section of
-            // a tiered run lacked this key, so a tiered run silently appeared as a power-less
-            // platform to the auditor and the per-tier energy recompute was skipped entirely
-            // (the evidence-surface gap flagged when D2 was committed). On a v1 platform the
-            // flat power path and the frequency-tier path are mutually exclusive (the single
-            // source of truth of VmSpec construction validation), so the flat power fields of
-            // a tiered VM are constantly 0.0 and do not conflict with this section. The red
-            // anchor moved up into this batch:
-            // FrequencyTierAssignmentTest.manifestPlatformSerializesPerVmFrequencyTiers.
+
             if (vm.hasFrequencyTiers()) {
                 List<Map<String, Object>> frequencyTiers = new ArrayList<Map<String, Object>>();
                 for (PlatformProfile.FrequencyTier tier : vm.getFrequencyTiers()) {
@@ -604,12 +481,7 @@ public final class ExperimentManifestWriter {
                 }
                 value.put("frequencyTiers", frequencyTiers);
             }
-            // BAT-C2 (2026-10-28): the intensity key is serialized only when declared (a missing
-            // key and null both equal "undeclared", so the platform section of a legacy
-            // manifest stays byte-identical); the auditor recomputes grams = E/3.6e6 * I with
-            // that key. The red anchor is the same: without the key a run that declares
-            // intensity silently appears carbon-free to the auditor and the recompute is
-            // skipped.
+
             if (vm.getCarbonIntensityGramsPerKWh() != null) {
                 value.put("carbonIntensityGramsPerKWh", vm.getCarbonIntensityGramsPerKWh());
             }
@@ -625,10 +497,7 @@ public final class ExperimentManifestWriter {
         storage.put("maxTransferRateMbPerSecond", profile.getStorage().getMaxTransferRateMbPerSecond());
         values.put("storage", storage);
         values.put("costs", costs(profile.getCosts()));
-        // BAT-C2 (2026-10-28): budget model windows are serialized only when non-empty (an
-        // empty list == undeclared); key order is fixed as start/end/green, and the Python
-        // auditor rebuilds the fleet excess integral from the same list and checks ordering
-        // and non-overlap.
+
         if (!profile.getCarbonWindows().isEmpty()) {
             List<Map<String, Object>> carbonWindows = new ArrayList<Map<String, Object>>();
             for (PlatformProfile.CarbonWindow window : profile.getCarbonWindows()) {
@@ -734,21 +603,6 @@ public final class ExperimentManifestWriter {
         return values;
     }
 
-    /**
-     * BAT-D2 (2026-10-29): serialization view of the JobOutcome result list.
-     *
-     * <p>The v1 path (no Job carries a frequency tier) returns the object list as-is and the
-     * manifest stays byte-identical; as soon as any Job carries a non-null {@code tierMips}
-     * (since D2 the platform declares the frequency tier table), the view switches to a Gson
-     * tree: the base fields are generated by reflection (field names/order/values from the same
-     * source as the v1 path) and the "tierMips" key is <b>appended only when non-null</b> --
-     * null or a missing key is the legal v1 legacy default (evidence contract), and the tier
-     * identity of the task-by-D2 ledger is recovered by matching the MIPS value against the
-     * platform frequencyTiers.</p>
-     *
-     * @param report immutable report of a completed simulation
-     * @return the JobOutcome list of the v1 lazy path, or a per-Job JSON tree view list
-     */
     private static Object jobOutcomeSerializationView(SimulationReport report) {
         boolean anyTierAssignment = false;
         for (SimulationReport.JobOutcome job : report.getJobs()) {
@@ -760,8 +614,7 @@ public final class ExperimentManifestWriter {
         if (!anyTierAssignment) {
             return report.getJobs();
         }
-        // Reflective default Gson (does not serialize null) -- the transient tierMips is
-        // appended explicitly by this view.
+
         com.google.gson.Gson reflection = new com.google.gson.Gson();
         List<Object> view = new ArrayList<Object>();
         for (SimulationReport.JobOutcome job : report.getJobs()) {
@@ -783,8 +636,7 @@ public final class ExperimentManifestWriter {
             values.put(
                     "lastSequence",
                     report.getEvents().get(report.getEvents().size() - 1).getSequence());
-            // AUD-F23 (2026-11-04 post-completion review): declare the marker contract so the
-            // validators can require the F-006/F-007 markers on a stream this writer produced.
+
             values.put("revisionContract", EVENTS_REVISION_CONTRACT);
         }
         return values;

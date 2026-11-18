@@ -17,7 +17,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationSession;
 
-/** Full-lifecycle SHARED HEFT to generic TimedPlan optimization integration (R-PAPER-01B). */
 class CaWoSchedTimedPlanIntegrationTest {
 
     @Test

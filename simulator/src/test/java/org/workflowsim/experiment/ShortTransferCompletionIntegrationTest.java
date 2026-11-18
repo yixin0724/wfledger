@@ -18,7 +18,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Short flows finish between CloudSim checks; every completion must still release its Job. */
 class ShortTransferCompletionIntegrationTest {
     @AfterEach
     void restoreLog() {

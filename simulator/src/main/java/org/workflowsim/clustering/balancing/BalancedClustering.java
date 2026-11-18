@@ -38,38 +38,14 @@ import org.workflowsim.clustering.balancing.metrics.ImpactFactorVariance;
 import org.workflowsim.clustering.balancing.metrics.PipelineRuntimeVariance;
 import org.workflowsim.utils.Parameters;
 
-/**
- * Shared implementation of balanced clustering: balances job length, impact factor or
- * graph distance under different heuristics while preserving task dependencies.
- *
- * <p>{@code ClusteringParameters.code} selects the concrete balancing method. This
- * implementation describes an abstract clustering strategy and does not represent real
- * resource load balancing or a platform utilization forecast.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class BalancedClustering extends BasicClustering {
 
-    /**
-     * Expected number of clustered jobs generated per level.
-     */
     private final int clusterNum;
-    /**
-     * Mapping from a logical task to the task set that owns it.
-     */
+
     private final Map<Task, TaskSet> mTask2TaskSet;
-    /**
-     * Cache from a task set to its computed depth.
-     */
+
     private final Map<TaskSet, Integer> mTaskSet2Depth;
 
-    /**
-     * Creates a balanced clusterer.
-     *
-     * @param clusterNum number of clustered jobs per level ({@code clusters.num})
-     */
     public BalancedClustering(int clusterNum) {
         super();
         this.clusterNum = clusterNum;
@@ -77,10 +53,6 @@ public class BalancedClustering extends BasicClustering {
         mTaskSet2Depth = new HashMap<>();
     }
 
-    /**
-     * Clears the traversal flag of every task set.
-     *
-     */
     public void cleanTaskSetChecked() {
         Collection<TaskSet> sets = mTask2TaskSet.values();
         for (TaskSet set : sets) {
@@ -88,16 +60,8 @@ public class BalancedClustering extends BasicClustering {
         }
     }
 
-    /**
-     * Recursively distributes the impact factor toward the parent sets.
-     *
-     * @param set starting task set
-     * @param impact impact factor to add
-     */
     private void addImpact(TaskSet set, double impact) {
-        /*
-         * Propagate the impact factor from the current set to its parent sets.
-         */
+
         set.setImpactFafctor(set.getImpactFactor() + impact);
         int size = set.getParentList().size();
         if (size > 0) {
@@ -108,9 +72,6 @@ public class BalancedClustering extends BasicClustering {
         }
     }
 
-    /**
-     * Computes and prints the balance metrics of the current task sets.
-     */
     public void printMetrics() {
         Map<Integer, List<TaskSet>> map = getCurrentTaskSetAtLevels();
         for (TaskSet set : mTask2TaskSet.values()) {
@@ -127,29 +88,20 @@ public class BalancedClustering extends BasicClustering {
         List<TaskSet> exits = map.get(maxDepth);
         double avg = 1.0 / exits.size();
         for (TaskSet set : exits) {
-            // The legacy branch could assign the impact factor directly; the current path
-            // propagates it recursively.
+
             addImpact(set, avg);
         }
 
         for (Entry<Integer, List<TaskSet>> entry : map.entrySet()) {
             int depth = entry.getKey();
             List<TaskSet> list = entry.getValue();
-            /**
-             * Same-level runtime variance.
-             */
+
             double hrv = new HorizontalRuntimeVariance().getMetric(list);
-            /**
-             * Impact factor variance.
-             */
+
             double ifv = new ImpactFactorVariance().getMetric(list);
-            /**
-             * Pipeline runtime variance.
-             */
+
             double prv = new PipelineRuntimeVariance().getMetric(list);
-            /**
-             * Graph distance variance.
-             */
+
             double dv = new DistanceVariance().getMetric(list);
             Log.printLine("HRV " + depth + " " + list.size()
                     + " " + hrv + "\nIFV " + depth + " "
@@ -158,14 +110,8 @@ public class BalancedClustering extends BasicClustering {
         }
     }
 
-    /**
-     * Returns the current task sets grouped by computed depth.
-     *
-     * @return task set list per level
-     */
     public Map<Integer, List<TaskSet>> getCurrentTaskSetAtLevels() {
-        // hasChecked is restored after the computation so no state leaks into the next
-        // balancing step.
+
         Map<Integer, List<TaskSet>> map = new HashMap<>();
         Collection<TaskSet> sets = mTask2TaskSet.values();
         for (TaskSet set : sets) {
@@ -180,17 +126,11 @@ public class BalancedClustering extends BasicClustering {
             }
         }
         mTaskSet2Depth.clear();
-        // The traversal flag must be restored for later algorithms to reuse.
+
         cleanTaskSetChecked();
         return map;
     }
 
-    /**
-     * Recursively computes the DAG depth of a task set and caches the result.
-     *
-     * @param set task set
-     * @return DAG depth
-     */
     private int getDepth(TaskSet set) {
         if (mTaskSet2Depth.containsKey(set)) {
             return mTaskSet2Depth.get(set);
@@ -208,13 +148,6 @@ public class BalancedClustering extends BasicClustering {
         }
     }
 
-    /**
-     * Tests whether one task is an ancestor of another.
-     *
-     * @param ancestor candidate ancestor task
-     * @param set candidate descendant task
-     * @return whether the ancestor relation holds
-     */
     private boolean check(Task ancestor, Task set) {
         if (ancestor == null || set == null) {
             return false;
@@ -226,20 +159,14 @@ public class BalancedClustering extends BasicClustering {
             if (check(ancestor, parent)) {
                 return true;
             } else {
-                // parent.hasChecked = true;
+
             }
         }
         return false;
     }
-    /**
-     * Edges removed temporarily, restored once clustering completes.
-     */
+
     private final Map<Task, Task> mRecover = new HashMap<>();
 
-    /**
-     * Temporarily removes the child edges that would form a cross-level ancestor relation,
-     * recording them for restoration.
-     */
     private void remove() {
 
         for (Task set : this.getTaskList()) {
@@ -248,19 +175,18 @@ public class BalancedClustering extends BasicClustering {
                     Task children = (Task) set.getChildList().get(i);
                     for (int j = i + 1; j < set.getChildList().size(); j++) {
                         Task another = (Task) set.getChildList().get(j);
-                        // Check only two sibling candidates at different depths so that
-                        // recursion is not wasted.
+
                         if (children.getDepth() > another.getDepth()) {
                             if (check(another, children)) {
-                                // Remove the edge for now and restore it once clustering completes.
+
                                 set.getChildList().remove(children);
                                 children.getParentList().remove(set);
                                 i--;
                                 mRecover.put(set, children);
-                                // cleanTaskSetChecked();
+
                                 break;
                             } else {
-                                // cleanTaskSetChecked();
+
                             }
                         }
                         if (another.getDepth() > children.getDepth()) {
@@ -269,10 +195,10 @@ public class BalancedClustering extends BasicClustering {
                                 another.getParentList().remove(set);
                                 i--;
                                 mRecover.put(set, another);
-                                // cleanTaskSetChecked();
+
                                 break;
                             } else {
-                                // cleanTaskSetChecked();
+
                             }
                         }
                     }
@@ -281,9 +207,6 @@ public class BalancedClustering extends BasicClustering {
         }
     }
 
-    /**
-     * Restores the dependency edges removed earlier.
-     */
     private void recover() {
         for (Entry<Task, Task> entry : mRecover.entrySet()) {
             Task set = entry.getKey();
@@ -361,7 +284,7 @@ public class BalancedClustering extends BasicClustering {
                 addTasks2Job(set.getTaskList());
             }
         }
-        // Clear this round's traversal flags so no state leaks into later clustering steps.
+
         cleanTaskSetChecked();
 
         updateDependencies();
@@ -370,9 +293,6 @@ public class BalancedClustering extends BasicClustering {
         recover();
     }
 
-    /**
-     * Prints clustering diagnostics for the task sets.
-     */
     private void printOut() {
         Collection<TaskSet> sets = mTask2TaskSet.values();
         for (TaskSet set : sets) {
@@ -386,13 +306,10 @@ public class BalancedClustering extends BasicClustering {
                 }
             }
         }
-        // Restore the traversal flag before the method exits.
+
         cleanTaskSetChecked();
     }
 
-    /**
-     * Rebuilds the task-set parent/child relations from the logical task dependencies.
-     */
     private void updateTaskSetDependencies() {
 
         Collection<TaskSet> sets = mTask2TaskSet.values();
@@ -417,7 +334,7 @@ public class BalancedClustering extends BasicClustering {
                 }
             }
         }
-        // Restore the traversal flag before the method exits.
+
         cleanTaskSetChecked();
     }
 }

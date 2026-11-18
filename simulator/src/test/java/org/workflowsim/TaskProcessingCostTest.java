@@ -16,7 +16,6 @@ class TaskProcessingCostTest {
         task.addFile(file("input", 500_000.0, FileType.INPUT));
         task.addFile(file("output", 250_000.0, FileType.OUTPUT));
 
-        // 0.75 decimal MB multiplied by 4.0; the former integer-per-file implementation returned 0.
         assertEquals(3.0, task.getProcessingCost(), 1.0e-12);
     }
 

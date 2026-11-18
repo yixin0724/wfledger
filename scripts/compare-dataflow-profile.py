@@ -1,22 +1,4 @@
 #!/usr/bin/env python3
-"""Compare DataflowStateProfile JSONL without a performance acceptance threshold.
-
-Public APIs (no writes):
-    compare_profiles(directory) -> detached, JSON-serializable summary
-    compare_records(before_records, after_records) -> the same summary
-Both raise ComparisonError on invalid or non-comparable input.
-
-Input files are before-SCENARIO-CAPTURE.jsonl / after-SCENARIO-CAPTURE.jsonl.
-Aggregate before.jsonl / after.jsonl and single-token shard names such as
-before-shard1.jsonl are also accepted; case identity always comes from records.
-A SCENARIO-CAPTURE filename must agree exactly with every record it contains.
-Other files, including .log files and replica-only probes, are ignored.
-
-Integer identities never pass through floating point. Integer medians remain
-integers; half-integer medians must be exactly representable as finite floats.
-Ratios are finite floating-point descriptions, not scientific identity checks.
-Requires only the Python 3.8+ standard library.
-"""
 
 import argparse
 from collections.abc import Mapping
@@ -29,7 +11,6 @@ from pathlib import Path
 import re
 import sys
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
-
 
 SCHEMA = "workflowsim-dataflow-profile-comparison-v1"
 SCENARIOS = ("FILELESS", "FILES_V2", "STORE_V3", "ONLINE_V3", "WIDE_V2")
@@ -68,14 +49,11 @@ NOTES = (
 Number = Union[int, float]
 CaseKey = Tuple[str, str, int]
 
-
 class ComparisonError(ValueError):
-    """An input or output validation failure; no comparison can be certified."""
-
+    pass
 
 def _case_name(key: CaseKey) -> str:
     return "{}/{}/tasks={}".format(*key)
-
 
 def _validate_record(record: Any, source: str) -> Dict[str, Any]:
     if not isinstance(record, Mapping):
@@ -109,9 +87,8 @@ def _validate_record(record: Any, source: str) -> Dict[str, Any]:
     if record["admittedCopies"] != expected:
         raise ComparisonError("{}: admittedCopies {} != expected {} for {}/tasks={}".format(
             source, record["admittedCopies"], expected, record["scenario"], record["tasks"]))
-    # All validated values are immutable scalars. Do not retain the caller's mapping.
-    return {field: record[field] for field in REQUIRED_FIELDS}
 
+    return {field: record[field] for field in REQUIRED_FIELDS}
 
 def _index_records(records: Iterable[Mapping], side: str) -> Dict[CaseKey, Dict[int, Dict[str, Any]]]:
     if isinstance(records, (str, bytes, Mapping)):
@@ -120,7 +97,7 @@ def _index_records(records: Iterable[Mapping], side: str) -> Dict[CaseKey, Dict[
         iterator = iter(records)
     except TypeError as exc:
         raise ComparisonError("{} must be an iterable of records".format(side)) from exc
-    result = {}  # type: Dict[CaseKey, Dict[int, Dict[str, Any]]]
+    result = {}
     for index, raw in enumerate(iterator, 1):
         row = _validate_record(raw, "{} record {}".format(side, index))
         key = (row["scenario"], row["capture"], row["tasks"])
@@ -131,7 +108,6 @@ def _index_records(records: Iterable[Mapping], side: str) -> Dict[CaseKey, Dict[
     if not result:
         raise ComparisonError("{} has no profile records".format(side))
     return result
-
 
 def _median(values: List[int]) -> Number:
     ordered = sorted(values)
@@ -150,10 +126,8 @@ def _median(values: List[int]) -> Number:
         raise ComparisonError("half-integer median is not exactly representable as a finite JSON number")
     return value
 
-
 def _stats(values: List[int]) -> Dict[str, Number]:
     return {"median": _median(values), "min": min(values), "max": max(values)}
-
 
 def _finite_ratio(before: Number, after: Number) -> float:
     exact = Fraction(before) / Fraction(after)
@@ -165,7 +139,6 @@ def _finite_ratio(before: Number, after: Number) -> float:
         raise ComparisonError("ratio cannot be represented as a finite, non-underflowed JSON number")
     return value
 
-
 def _side_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     result = {field: _stats([row[field] for row in rows]) for field in (
         "elapsedNanos", "heapBeforeBytes", "heapPoolPeakSumBytes")}
@@ -174,16 +147,8 @@ def _side_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         _stats([row["threadAllocatedBytes"] for row in rows]))
     return result
 
-
 def compare_records(before_records: Iterable[Mapping], after_records: Iterable[Mapping]) -> Dict[str, Any]:
-    """Validate records and return a detached summary; never write or mutate input.
 
-    Cases are (scenario, capture, tasks), sorted lexicographically in the result.
-    Each case needs matching, contiguous, zero-based trials, as emitted by the
-    fixture. JVM version, max heap and allocation availability must be uniform
-    across both complete inputs. A semantic triple may vary between cases but
-    must be identical across every before/after trial of any one case.
-    """
     before = _index_records(before_records, "before")
     after = _index_records(after_records, "after")
     if set(before) != set(after):
@@ -260,7 +225,6 @@ def compare_records(before_records: Iterable[Mapping], after_records: Iterable[M
         "cases": cases, "notes": list(NOTES),
     }
 
-
 def _unique_object(pairs: List[Tuple[str, Any]]) -> Dict[str, Any]:
     result = {}
     for key, value in pairs:
@@ -269,17 +233,14 @@ def _unique_object(pairs: List[Tuple[str, Any]]) -> Dict[str, Any]:
         result[key] = value
     return result
 
-
 def _reject_constant(token: str) -> Any:
     raise ComparisonError("nonfinite JSON constant {!r}".format(token))
-
 
 def _parse_float(token: str) -> float:
     value = float(token)
     if not math.isfinite(value):
         raise ComparisonError("nonfinite JSON number {!r}".format(token))
     return value
-
 
 def _filename_case(label: Optional[str], name: str) -> Optional[Tuple[str, str]]:
     if label is None or "-" not in label:
@@ -289,17 +250,12 @@ def _filename_case(label: Optional[str], name: str) -> Optional[Tuple[str, str]]
         raise ComparisonError("{}: expected a SCENARIO-CAPTURE filename with allowed case-sensitive names".format(name))
     return parts[0], parts[1]
 
-
 def compare_profiles(profile_directory: Union[str, Path]) -> Dict[str, Any]:
-    """Read a directory of completed JSONL profiles and compare their records.
 
-    This does not wait for a running producer or repair/guess missing cases.
-    Only call it after all profile producers have finished successfully.
-    """
     directory = Path(profile_directory)
     if not directory.is_dir():
         raise ComparisonError("profile directory does not exist or is not a directory: {}".format(directory))
-    records = {"before": [], "after": []}  # type: Dict[str, List[Dict[str, Any]]]
+    records = {"before": [], "after": []}
     for path in sorted(directory.iterdir(), key=lambda item: item.name):
         match = re.fullmatch(r"(before|after)(?:-(.+))?\.jsonl", path.name)
         if match is None or re.search(r"(?:^|[-_])replica(?:[-_]|$)", path.stem, re.IGNORECASE):
@@ -331,16 +287,14 @@ def compare_profiles(profile_directory: Union[str, Path]) -> Dict[str, Any]:
             raise ComparisonError("{}: empty profile file".format(path.name))
     return compare_records(records["before"], records["after"])
 
-
 def _scaled(value: Number, divisor: int) -> str:
-    # Six decimal places, rounded half-up without converting large integers to float.
+
     exact = Fraction(value) / divisor
     scaled = (2 * exact.numerator * 1000000 + exact.denominator) // (2 * exact.denominator)
     return "{}.{:06d}".format(scaled // 1000000, scaled % 1000000)
 
-
 def render_markdown(summary: Mapping) -> str:
-    """Render an already validated comparison summary as a readable report."""
+
     lines = [
         "# Dataflow controller profile comparison", "",
         "Status: **{}** — exact validation only; no performance threshold.".format(summary["status"]),
@@ -369,7 +323,6 @@ def render_markdown(summary: Mapping) -> str:
                   "`finite` denotes an ordinary finite ratio.", ""])
     return "\n".join(lines)
 
-
 def _check_output_paths(paths: List[Path]) -> None:
     resolved = [path.resolve() for path in paths]
     if len(set(resolved)) != len(resolved):
@@ -380,9 +333,8 @@ def _check_output_paths(paths: List[Path]) -> None:
         if not path.parent.is_dir():
             raise ComparisonError("output parent directory does not exist: {}".format(path.parent))
 
-
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description='Compare DataflowStateProfile JSONL without a performance acceptance threshold.\n\nPublic APIs (no writes):\n    compare_profiles(directory) -> detached, JSON-serializable summary\n    compare_records(before_records, after_records) -> the same summary\nBoth raise ComparisonError on invalid or non-comparable input.\n\nInput files are before-SCENARIO-CAPTURE.jsonl / after-SCENARIO-CAPTURE.jsonl.\nAggregate before.jsonl / after.jsonl and single-token shard names such as\nbefore-shard1.jsonl are also accepted; case identity always comes from records.\nA SCENARIO-CAPTURE filename must agree exactly with every record it contains.\nOther files, including .log files and replica-only probes, are ignored.\n\nInteger identities never pass through floating point. Integer medians remain\nintegers; half-integer medians must be exactly representable as finite floats.\nRatios are finite floating-point descriptions, not scientific identity checks.\nRequires only the Python 3.8+ standard library.\n', formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("profile_directory", type=Path)
     parser.add_argument("output_json", type=Path, help="new JSON output; must not exist")
     parser.add_argument("output_markdown", type=Path, nargs="?", help="optional new Markdown output; must not exist")
@@ -394,8 +346,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         payloads = [json.dumps(summary, indent=2, sort_keys=True, allow_nan=False) + "\n"]
         if args.output_markdown is not None:
             payloads.append(render_markdown(summary))
-        # Finish all validation and rendering before creating any output. Exclusive
-        # opens also prevent clobbering a file created after the preflight check.
+
         _check_output_paths(paths)
         with ExitStack() as stack:
             handles = [stack.enter_context(path.open("x", encoding="utf-8", newline="\n")) for path in paths]
@@ -408,7 +359,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         summary["caseCount"], summary["sampleCounts"]["before"], summary["sampleCounts"]["after"],
         ", ".join(str(path) for path in paths)))
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

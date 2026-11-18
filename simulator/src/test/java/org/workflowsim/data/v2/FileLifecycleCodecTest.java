@@ -29,7 +29,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/** Runtime captures are positive fixtures; literal paths, prefixes and tampering are independent oracles. */
 class FileLifecycleCodecTest {
     private static final String LITERAL = "{"
             + "\"schema\":\"workflowsim-file-lifecycle-v2\",\"modelKind\":\"COHERENT_FILE_DATAFLOW_V2\","
@@ -285,7 +284,7 @@ class FileLifecycleCodecTest {
         JsonObject wrong = root.deepCopy(),
                 admission = payload(wrong, "COPY_ADMITTED", 2),
                 replica = admission.getAsJsonObject("sourceReplica");
-        // VM:42 is visible and ties the rate, but numeric VM 7 precedes VM 42 (and both precede SOURCE).
+
         replica.add("location", vm(42));
         replica.addProperty("visibleAt", 2);
         replica.addProperty("copyOrdinal", 2);
@@ -639,7 +638,7 @@ class FileLifecycleCodecTest {
     @Test
     void unsupportedNumericDomainsAndAtomicRequestAggregatesAreRejected() {
         JsonObject wrong = settledLiteral(1e16, 1e16 + 2, 1e16 + 2, 0);
-        bad(wrong); // release + isolatedSeconds cannot advance
+        bad(wrong);
         for (double rate : new double[] {0, Double.MIN_VALUE, Double.POSITIVE_INFINITY}) {
             wrong = literal();
             wrong.getAsJsonObject("fabric")
@@ -651,7 +650,7 @@ class FileLifecycleCodecTest {
         }
         wrong = literal();
         setBytesAndRate(wrong, Double.MIN_VALUE, 100);
-        bad(wrong); // positive duration underflows
+        bad(wrong);
         wrong = literal();
         setBytesAndRate(wrong, Double.MAX_VALUE, Double.MIN_NORMAL);
         bad(wrong);

@@ -20,14 +20,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Configuration-matrix integration test: verifies that a range of configuration
- * combinations can run.
- *
- * <p>This test ensures that common configuration combinations (scheduling algorithm x data
- * movement model x file system x failure model, and others) execute successfully, avoiding
- * hidden problems caused by configuration interaction.</p>
- */
 class ConfigurationMatrixIntegrationTest {
 
     @AfterEach
@@ -72,7 +64,7 @@ class ConfigurationMatrixIntegrationTest {
 
     @Test
     void staticPlannersWorkWithSharedAndLocalFileSystem() throws Exception {
-        // Independent-task planners require a dependency-free DAX.
+
         String independentWorkflow =
                 getClass().getResource("/dax/independent-tasks.dax").getPath();
         List<Parameters.PlanningAlgorithm> independentPlanners = new ArrayList<>();
@@ -102,7 +94,6 @@ class ConfigurationMatrixIntegrationTest {
             }
         }
 
-        // SHARED_STORAGE_HEFT supports DAGs and only the SHARED file system.
         String dagWorkflow =
                 getClass().getResource("/dax/reproducibility-workflow.dax").getPath();
         SimulationConfig heftConfig = SimulationConfig.builder(dagWorkflow, 2)
@@ -145,15 +136,14 @@ class ConfigurationMatrixIntegrationTest {
         try {
             report = runner.run(config, platform);
         } catch (org.workflowsim.failure.RetryLimitExceededException e) {
-            // The failure model may exhaust the retry budget; this is expected semantics.
+
             assertTrue(e.getMessage().contains("maxTotalRetryJobs"));
             return;
         }
 
-        // If the run completes, some failures and retries should be recorded (not necessarily triggered).
         assertTrue(report.getMetrics().getRetryJobCreatedCount() >= 0, "Should track retry count");
         assertTrue(report.getMetrics().getFailedComputeJobOutcomeCount() >= 0, "Should track failures");
-        // The run should either complete or hit the retry limit.
+
         assertTrue(report.getMetrics().getLogicalTaskCompletionStatus().equals("COMPLETED_SUCCESSFULLY")
                 || report.getMetrics().getLogicalTasksNotYetSuccessfullyCompletedCount() > 0);
     }
@@ -181,7 +171,6 @@ class ConfigurationMatrixIntegrationTest {
             makespans.add(report.getMetrics().getMakespanSeconds());
         }
 
-        // A larger runtime scale should yield a longer makespan.
         assertTrue(makespans.get(0) < makespans.get(1), "scale=0.5 should have shorter makespan than scale=1.0");
         assertTrue(makespans.get(1) < makespans.get(2), "scale=1.0 should have shorter makespan than scale=2.0");
     }
@@ -194,7 +183,6 @@ class ConfigurationMatrixIntegrationTest {
         Log.disable();
         SimulationRunner runner = new SimulationRunner();
 
-        // Loose deadline case.
         SimulationConfig configLoose = SimulationConfig.builder(workflow, 3)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
                 .deadline(10000L)
@@ -211,7 +199,6 @@ class ConfigurationMatrixIntegrationTest {
                 0.001,
                 "Loose deadline should have zero tardiness");
 
-        // Tight deadline case.
         SimulationConfig configTight = SimulationConfig.builder(workflow, 3)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
                 .deadline(1L)
@@ -222,7 +209,7 @@ class ConfigurationMatrixIntegrationTest {
         assertTrue(
                 reportTight.getMetrics().getDeadlineTardinessSeconds() > 0,
                 "Tight deadline should have positive tardiness");
-        // Slack is negative when the deadline is missed, so it must not be asserted as 0.
+
         assertTrue(reportTight.getMetrics().getDeadlineSlackSeconds() < 0, "Tight deadline should have negative slack");
     }
 
@@ -245,7 +232,7 @@ class ConfigurationMatrixIntegrationTest {
         assertTrue(
                 report.getMetrics().getLogicalTaskCompletionStatus().equals("COMPLETED_SUCCESSFULLY"),
                 "DATA scheduler should complete successfully");
-        // The DATA algorithm should reduce data transfer.
+
         assertTrue(report.getMetrics().getTotalModeledDataTransferSeconds() >= 0);
     }
 }

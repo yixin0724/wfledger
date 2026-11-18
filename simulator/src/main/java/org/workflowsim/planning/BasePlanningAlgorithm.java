@@ -22,64 +22,43 @@ import org.cloudbus.cloudsim.Datacenter;
 import org.cloudbus.cloudsim.Vm;
 import org.workflowsim.Task;
 
-/**
- * Planner base class that holds the Task, VM and datacenter collections to be mapped.
- *
- * <p>Concrete planning policies should extend this class; this class produces neither a
- * mapping nor an execution order. The output semantics of a planner are defined by the
- * concrete implementation: it may be only a Task-to-VM mapping, or the complete preserved
- * plan of a controlled static DAG.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Jun 17, 2013
- */
 public abstract class BasePlanningAlgorithm implements PlanningAlgorithmInterface {
 
-    /** Task list to be planned. */
     private List<Task> tasktList;
-    /** VM list available during planning. */
+
     private List<? extends Vm> vmList;
 
-    /** Visible datacenter list. */
     private List<? extends Datacenter> datacenterList;
-    /** Create the planner base class. */
+
     public BasePlanningAlgorithm() {}
 
-    /** Set the Task list to be planned. */
     @Override
     public void setTaskList(List list) {
         this.tasktList = list;
     }
 
-    /** Set the VM list; the list is copied internally to stabilize the candidate set. */
     @Override
     public void setVmList(List list) {
         this.vmList = new ArrayList(list);
     }
 
-    /** Return the Task list to be planned. */
     @Override
     public List<Task> getTaskList() {
         return this.tasktList;
     }
 
-    /** Return the VM list. */
     @Override
     public List getVmList() {
         return this.vmList;
     }
 
-    /** Return the datacenter list. */
     public List getDatacenterList() {
         return this.datacenterList;
     }
 
-    /** Set the datacenter list. */
     public void setDatacenterList(List list) {
         this.datacenterList = list;
     }
 
-    /** Execute one offline planning pass. */
     public abstract void run() throws Exception;
 }

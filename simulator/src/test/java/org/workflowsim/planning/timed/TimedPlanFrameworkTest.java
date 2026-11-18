@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.planning.cawosched.CaWoSchedVariant;
 import org.workflowsim.platform.PlatformProfile;
 
-/** Contract checks for the generic timed-plan API (R-PAPER-01B). */
 class TimedPlanFrameworkTest {
 
     @Test

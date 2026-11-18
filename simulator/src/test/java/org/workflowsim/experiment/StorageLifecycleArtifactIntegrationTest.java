@@ -36,7 +36,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Repaired hashes cannot make a valid foreign or incomplete storage lifecycle belong to this run. */
 class StorageLifecycleArtifactIntegrationTest {
     @TempDir
     Path directory;

@@ -8,24 +8,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-/**
- * D2 stage 6: rerun divergence comparison report (contract section "report format").
- *
- * <p>The machine-readable form is {@code rerun-report.json} (schema
- * {@code workflowsim-rerun-report-v1}); the human-readable form is
- * {@code rerun-report.md}. Fields correspond one-to-one with the contract:
- * {@code verdict}, {@code inputResolution}, {@code coreDivergences},
- * {@code volatileFieldsNoted}, {@code codeIdentityNote}, and the
- * {@code sourceTreeSha256} of both sides; the failure path additionally carries
- * {@code failureReason} and {@code failureDetails} (for example, the candidate
- * path list of INPUT_UNRESOLVED); truncated network evidence also carries a
- * conditional coverage note.</p>
- *
- * <p>This class only carries and serializes data; it does not decide the verdict.</p>
- */
 public final class RerunReport {
 
-    /** Report schema identifier. */
     public static final String SCHEMA_V1 = "workflowsim-rerun-report-v1";
 
     private static final Gson JSON =
@@ -46,7 +30,7 @@ public final class RerunReport {
     private final String rerunSourceTreeSha256;
     private final String originalAlgorithmContract;
     private final String rerunAlgorithmContract;
-    /** Added to JSON only when relevant; serializeNulls must not change old OFF report shape. */
+
     private final transient String networkEvidenceCoverageNote;
 
     RerunReport(Builder builder) {
@@ -83,12 +67,10 @@ public final class RerunReport {
         return outputDirectory;
     }
 
-    /** Failure reason (null for a successful verdict). */
     public String getFailureReason() {
         return failureReason;
     }
 
-    /** Additional failure details (such as the candidate path list); empty list for a successful verdict. */
     public List<String> getFailureDetails() {
         return failureDetails;
     }
@@ -105,7 +87,6 @@ public final class RerunReport {
         return volatileFieldsNoted;
     }
 
-    /** Code identity note; null when either side's hash is unknown. */
     public String getCodeIdentityNote() {
         return codeIdentityNote;
     }
@@ -126,12 +107,10 @@ public final class RerunReport {
         return rerunAlgorithmContract;
     }
 
-    /** @return conditional warning for truncated network evidence, or null */
     public String getNetworkEvidenceCoverageNote() {
         return networkEvidenceCoverageNote;
     }
 
-    /** Machine-readable JSON; legacy fields keep null and the coverage note is added only when truncated. */
     public String toJson() {
         if (networkEvidenceCoverageNote == null) {
             return JSON.toJson(this);
@@ -143,7 +122,6 @@ public final class RerunReport {
         return JSON.toJson(document);
     }
 
-    /** Human-readable markdown summary. */
     public String toMarkdown() {
         StringBuilder md = new StringBuilder();
         md.append("# Rerun Divergence Report\n\n");
@@ -241,7 +219,6 @@ public final class RerunReport {
         md.append("\n");
     }
 
-    /** Parse a report from JSON text (consumed by tests and downstream tools). */
     public static JsonObject parseJson(String json) {
         return com.google.gson.JsonParser.parseString(json).getAsJsonObject();
     }
@@ -250,7 +227,6 @@ public final class RerunReport {
         return list == null ? Collections.<T>emptyList() : Collections.unmodifiableList(new ArrayList<T>(list));
     }
 
-    /** Resolved path and hash verification result of one input. */
     public static final class InputResolution {
 
         private final String recordedPath;
@@ -278,7 +254,6 @@ public final class RerunReport {
             return resolvedPath;
         }
 
-        /** Hit tier: 1 = study inputs/, 2 = recorded absolute path, 3 = workingDirectory rebasing. */
         public int getTier() {
             return tier;
         }
@@ -291,13 +266,11 @@ public final class RerunReport {
             return sizeBytes;
         }
 
-        /** Whether sha256 and sizeBytes match the manifest record. */
         public boolean isVerified() {
             return verified;
         }
     }
 
-    /** One divergence entry: JSON pointer plus both values (over-long values already truncated in the differ). */
     public static final class DivergenceEntry {
 
         private final String pointer;
@@ -323,7 +296,6 @@ public final class RerunReport {
         }
     }
 
-    /** Report builder. */
     static final class Builder {
 
         private RerunVerdict verdict;
@@ -417,14 +389,13 @@ public final class RerunReport {
         }
     }
 
-    /** Converts resolver results into report entries for the executor. */
     static List<InputResolution> inputResolutionsOf(RerunInputs inputs) {
         List<InputResolution> entries = new ArrayList<InputResolution>();
         if (inputs == null) {
             return entries;
         }
         for (RerunInputs.ResolvedInput input : inputs.getResolved()) {
-            // A resolver return means sha256/sizeBytes were verified (a mismatch throws).
+
             entries.add(new InputResolution(
                     input.getRecordedPath(),
                     input.getResolvedPath().toString(),

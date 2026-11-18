@@ -29,24 +29,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * F-006 / F-007 events v1 contract tests (adjudication approved 2026-10-23).
- *
- * <p>Contract claims under test:</p>
- * <ol>
- *   <li>The event stream of a naturally completed run terminates with exactly one
- *       {@code SIMULATION_TERMINATED} event whose time equals the run's makespan and whose
- *       {@code simulationEndSeconds} attribute equals {@code SimulationMetrics#getSimulationEndSeconds()},
- *       even when a positive post-delay tail follows the last {@code JOB_RETURNED}.</li>
- *   <li>Every Job execution instance records exactly one {@code JOB_EXECUTION_STARTED} event,
- *       ordered between {@code JOB_DISPATCHED} and the instance's first
- *       {@code TASK_EXECUTION_MODELED}, carrying the envelope start, the effective/requested
- *       data-stage seconds, and the modeled post-stage start (envelope + effective).</li>
- * </ol>
- *
- * <p>These assertions are the Java half of the closed recompute boundary: the makespan family
- * and the decision-to-start family become derivable from the event stream alone.</p>
- */
 class EventTerminalAndJobStartContractTest {
 
     private boolean logWasDisabled;
@@ -193,7 +175,6 @@ class EventTerminalAndJobStartContractTest {
         return new SimulationRunner().run(config, builder.build());
     }
 
-    /** Two-layer four-task DAG with inter-layer files and a positive post-delay tail. */
     private Path scenarioDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");

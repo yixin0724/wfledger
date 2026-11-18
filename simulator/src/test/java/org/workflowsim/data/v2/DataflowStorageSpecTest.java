@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** Physical storage values do not depend on a platform, route or running simulator. */
 class DataflowStorageSpecTest {
     @Test
     void exposesHostAndDistinctDecimalMegabyteRatesAndCapacities() {

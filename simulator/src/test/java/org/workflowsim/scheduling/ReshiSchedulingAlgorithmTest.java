@@ -19,7 +19,6 @@ import org.workflowsim.utils.ReshiRankTable;
 import org.workflowsim.utils.ReshiTaskHistory;
 import org.workflowsim.utils.SimulationRandom;
 
-/** Reshi-C/M priority and ranked VM allocation checks. */
 class ReshiSchedulingAlgorithmTest {
 
     @Test
@@ -62,7 +61,7 @@ class ReshiSchedulingAlgorithmTest {
         job.setNumberOfPes(2);
         job.getTaskList().get(0).setNumberOfPes(2);
         scheduler.setCloudletList(Arrays.asList(job));
-        // vm1 has the best rank but only one PE. Among compatible VMs, vm2 outranks vm0.
+
         scheduler.setVmList(Arrays.asList(vm(0, 2), vm(1, 1), vm(2, 2)));
 
         scheduler.run();

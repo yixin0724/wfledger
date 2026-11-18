@@ -8,9 +8,6 @@ import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.VmAllocationPolicySimple;
 
-/**
- * Enforces the preflight placement result of {@link PlatformProfile} when CloudSim creates a VM.
- */
 final class DeterministicVmAllocationPolicy extends VmAllocationPolicySimple {
 
     private final Map<Integer, Integer> hostByVmId;

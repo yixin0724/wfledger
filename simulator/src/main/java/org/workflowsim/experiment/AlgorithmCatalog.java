@@ -10,30 +10,10 @@ import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Machine-readable semantic contract of the selectable algorithms.
- *
- * <p>The catalog records the decision scope and the regression verification status of the
- * current implementation; it does not constitute a claim of real-platform calibration or of
- * general algorithmic superiority.</p>
- */
 public final class AlgorithmCatalog {
 
     private AlgorithmCatalog() {}
 
-    /**
-     * Tests whether a scheduler label has a maintained execution contract in the standard
-     * {@link SimulationRunner} entry point.
-     *
-     * <p>This predicate is deliberately independent of the catalog's ability to describe
-     * historical labels. Centralizing the classification here avoids a silent divergence
-     * between the runner and the manifest contract when a new enum value is added.</p>
-     *
-     * @param algorithm scheduler algorithm label to test
-     * @return {@code true} when the label can produce research evidence through the standard
-     *         runner
-     * @throws IllegalArgumentException when {@code algorithm} is {@code null}
-     */
     public static boolean isSupportedBySimulationRunner(SchedulingAlgorithm algorithm) {
         if (algorithm == null) {
             throw new IllegalArgumentException("Scheduling algorithm is required");
@@ -65,17 +45,6 @@ public final class AlgorithmCatalog {
         }
     }
 
-    /**
-     * Tests whether a planner label has a maintained execution contract in the standard
-     * {@link SimulationRunner} entry point.
-     *
-     * <p>An online scheduling configuration deliberately has no planning phase, so
-     * {@code INVALID} is a supported state here.</p>
-     *
-     * @param algorithm planner algorithm label to test
-     * @return {@code true} when the label can be used through the standard runner
-     * @throws IllegalArgumentException when {@code algorithm} is {@code null}
-     */
     public static boolean isSupportedBySimulationRunner(PlanningAlgorithm algorithm) {
         if (algorithm == null) {
             throw new IllegalArgumentException("Planning algorithm is required");
@@ -96,10 +65,6 @@ public final class AlgorithmCatalog {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from isSupportedBySimulationRunner(PlanningAlgorithm); statements verbatim;
-     * order unchanged. Scope: research-catalog planner labels (shared-storage, PSO, LOCAL families).
-     */
     private static boolean isSupportedResearchPlanningContract(PlanningAlgorithm algorithm) {
         switch (algorithm) {
             case SHARED_STORAGE_HEFT:
@@ -126,40 +91,14 @@ public final class AlgorithmCatalog {
         }
     }
 
-    /**
-     * Cost-comparison caliber of a (planning, scheduling) label pair (AUD-F09).
-     *
-     * <p>The two calibers answer the same "which VM runs this task next" question with two
-     * different cost quantities, so a comparison that places both calibers side by side in
-     * one comparison group compares two different cost semantics under the same-named
-     * algorithms. The catalog classifies the caliber; it changes neither caliber's own
-     * comparison semantics.</p>
-     */
     public enum CostComparisonCaliber {
-
-        /** Mapping decisions compare the bare {@code length/MIPS} ECT of ready tasks. */
         ONLINE_READY_BATCH,
 
-        /** Mapping decisions compare TaskExecutionModel matrix seconds. */
         STATIC_PLANNING,
 
-        /** Mapping decisions make no mapping-cost comparison at all. */
         NONE
     }
 
-    /**
-     * Classifies which cost quantity a (planning, scheduling) label pair uses for its
-     * mapping decisions (AUD-F09).
-     *
-     * <p>A planner-decided cell compares TaskExecutionModel matrix seconds regardless of
-     * its scheduling label, an online ready-batch cell compares the bare {@code length/MIPS}
-     * ECT, and every other maintained combination makes no mapping-cost comparison.</p>
-     *
-     * @param planning planner label of the cell
-     * @param scheduling scheduler label of the cell
-     * @return the cost-comparison caliber the cell's mapping decisions use
-     * @throws IllegalArgumentException when either label is {@code null}
-     */
     public static CostComparisonCaliber costComparisonCaliber(
             PlanningAlgorithm planning, SchedulingAlgorithm scheduling) {
         if (planning == null) {
@@ -168,9 +107,7 @@ public final class AlgorithmCatalog {
         if (scheduling == null) {
             throw new IllegalArgumentException("Scheduling algorithm is required");
         }
-        // A planner-decided cell compares TaskExecutionModel matrix seconds; through the
-        // legacy Parameters carrier such a cell can still declare a non-STATIC scheduling
-        // label, so the caliber must follow the planning label, not the scheduling label.
+
         if (planning != PlanningAlgorithm.INVALID) {
             return CostComparisonCaliber.STATIC_PLANNING;
         }
@@ -185,13 +122,6 @@ public final class AlgorithmCatalog {
         }
     }
 
-    /**
-     * Returns the scheduler and planner contract written into every run manifest.
-     *
-     * @param config immutable configuration of this run
-     * @return machine-readable algorithm contract organized in a fixed field order
-     * @throws IllegalArgumentException when {@code config} is {@code null}
-     */
     public static Map<String, Object> forConfiguration(SimulationConfig config) {
         if (config == null) {
             throw new IllegalArgumentException("Simulation configuration is required");
@@ -336,9 +266,6 @@ public final class AlgorithmCatalog {
         return values;
     }
 
-    /** Catalog switch branch (READY_BATCH_MCT).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void readyBatchMctScheduler(Map<String, Object> values) {
         values.put("decisionLayer", "ONLINE_READY_JOB");
         values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
@@ -353,9 +280,6 @@ public final class AlgorithmCatalog {
                                 + "minimizing length/MIPS is equivalent to choosing maximum MIPS."));
     }
 
-    /** Catalog switch branch (DATA).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void dataScheduler(Map<String, Object> values) {
         values.put("decisionLayer", "ONLINE_READY_JOB");
         values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
@@ -372,9 +296,6 @@ public final class AlgorithmCatalog {
                         "No calibrated network, replica, or bandwidth-contention model is implied."));
     }
 
-    /** Catalog switch branch (RL_POLICY).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void rlPolicyScheduler(Map<String, Object> values) {
         values.put("decisionLayer", "ONLINE_READY_JOB");
         values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
@@ -612,10 +533,6 @@ public final class AlgorithmCatalog {
                 limitations("Compute-only SHARED adaptation; no communication-enhanced runtime or ILP claim"));
     }
 
-    /**
-     * 2026-10-26 complexity extraction from planner(); statements verbatim; order unchanged.
-     * Scope: STATIC_* independent-task planner branches and the shared INVALID/default contract.
-     */
     private static void independentOrNonePlannerContract(PlanningAlgorithm algorithm, Map<String, Object> values) {
         switch (algorithm) {
             case STATIC_OLB:
@@ -652,9 +569,6 @@ public final class AlgorithmCatalog {
         }
     }
 
-    /** Catalog switch branch (RANDOM).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void randomPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING");
         values.put("inputDomain", "VALID_DAG");
@@ -666,9 +580,6 @@ public final class AlgorithmCatalog {
                 limitations("Runtime dependencies remain engine-enforced; this is not an offline timing schedule."));
     }
 
-    /** Catalog switch branch (SHARED_STORAGE_HEFT).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void sharedStorageHeftPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING_AND_PER_VM_ORDER");
         values.put("inputDomain", "VALID_DAG_SHARED_STORAGE_NO_CLUSTERING");
@@ -689,9 +600,6 @@ public final class AlgorithmCatalog {
                                 + "storage or network system."));
     }
 
-    /** Catalog switch branch (SHARED_STORAGE_CPOP).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void sharedStorageCpopPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING_AND_PER_VM_ORDER");
         values.put("inputDomain", "VALID_DAG_SHARED_STORAGE_NO_CLUSTERING");
@@ -712,9 +620,6 @@ public final class AlgorithmCatalog {
                                 + "storage or network system."));
     }
 
-    /** Catalog switch branch (SHARED_STORAGE_DLS).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void sharedStorageDlsPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING_AND_PER_VM_ORDER");
         values.put("inputDomain", "VALID_DAG_SHARED_STORAGE_NO_CLUSTERING");
@@ -737,9 +642,6 @@ public final class AlgorithmCatalog {
                         "It is not calibrated to a real storage or network system."));
     }
 
-    /** Catalog switch branch (SHARED_STORAGE_ETF).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void sharedStorageEtfPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING_AND_PER_VM_ORDER");
         values.put("inputDomain", "VALID_DAG_SHARED_STORAGE_NO_CLUSTERING");
@@ -762,9 +664,6 @@ public final class AlgorithmCatalog {
                         "It is not calibrated to a real storage or network system."));
     }
 
-    /** Catalog switch branch (SHARED_STORAGE_PEFT).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void sharedStoragePeftPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING_AND_PER_VM_ORDER");
         values.put("inputDomain", "VALID_DAG_SHARED_STORAGE_NO_CLUSTERING");
@@ -790,9 +689,6 @@ public final class AlgorithmCatalog {
                         "It is not calibrated to a real storage or network system."));
     }
 
-    /** Catalog switch branch (PSO).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void psoPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING");
         values.put("inputDomain", "VALID_DAG");
@@ -823,9 +719,6 @@ public final class AlgorithmCatalog {
                         "Random stream comes from the campaign root seed, not the reference's hardcoded seed 42."));
     }
 
-    /** Catalog switch branch (LOCAL_HEFT).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void localHeftPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING_AND_PER_VM_ORDER");
         values.put("inputDomain", "VALID_DAG_LOCAL_FILE_SYSTEM_NO_CLUSTERING");
@@ -866,9 +759,6 @@ public final class AlgorithmCatalog {
                                 + "from their planned completion under the runtime completion-event rule."));
     }
 
-    /** Catalog switch branch (LOCAL_CPOP).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void localCpopPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING_AND_PER_VM_ORDER");
         values.put("inputDomain", "VALID_DAG_LOCAL_FILE_SYSTEM_NO_CLUSTERING");
@@ -909,9 +799,6 @@ public final class AlgorithmCatalog {
                                 + "completion ordering remain explicit model boundaries."));
     }
 
-    /** Catalog switch branch (LOCAL_PEFT).
-     * Verbatim relocation: put order fixes the JSON key order and must not change.
-     */
     private static void localPeftPlanner(Map<String, Object> values) {
         values.put("decisionLayer", "STATIC_DAG_VM_MAPPING_AND_PER_VM_ORDER");
         values.put("inputDomain", "VALID_DAG_LOCAL_FILE_SYSTEM_NO_CLUSTERING");

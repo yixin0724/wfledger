@@ -93,12 +93,12 @@ class NetworkStudyIntegrationTest {
         String markdown = new String(Files.readAllBytes(output.resolve("results.md")), StandardCharsets.UTF_8);
         assertTrue(markdown.contains("Sensitivity Response-Surface Study"));
         assertTrue(markdown.contains("Heterogeneity"));
-        // Forging the heterogeneity tier is caught by the validator (condition and run must agree)
+
         JsonObject changed = JsonParser.parseString(document).getAsJsonObject();
         changed.getAsJsonArray("runs").get(0).getAsJsonObject().addProperty("heterogeneity", "HET_EXTREME");
         Files.write(index, changed.toString().getBytes(StandardCharsets.UTF_8));
         assertThrows(java.io.IOException.class, () -> NetworkStudyValidator.validate(index));
-        // Forging the VM MIPS of a heterogeneous platform is caught by the validator
+
         Files.write(index, document.getBytes(StandardCharsets.UTF_8));
         JsonObject original = JsonParser.parseString(document).getAsJsonObject();
         int hetRun = -1;

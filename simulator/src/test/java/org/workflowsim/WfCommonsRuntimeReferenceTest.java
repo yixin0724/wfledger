@@ -17,7 +17,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Simulator-module killer for the Montage real-derived runtime conversion (B05, 2026-11-04). */
 class WfCommonsRuntimeReferenceTest {
 
     @Test

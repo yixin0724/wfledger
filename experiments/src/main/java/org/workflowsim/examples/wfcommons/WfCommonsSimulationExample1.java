@@ -1,10 +1,3 @@
-/*
- * End-to-end simulation example for WfCommons JSON.
- *
- * Runs the standard WorkflowSim flow (parse -> cluster -> plan -> schedule -> execute) on one
- * WfCommons WfFormat JSON workflow instance, showing that a JSON dataset can serve as a first-class
- * input.
- */
 package org.workflowsim.examples.wfcommons;
 
 import java.nio.file.Files;
@@ -20,14 +13,6 @@ import org.workflowsim.platform.PlatformProfiles;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Runs the end-to-end standard simulation on a WfCommons JSON workflow instance.
- *
- * <p>Usage: {@code main [jsonPath]}; the default input is
- * {@code datasets/wfformat/montage/n100/montage-100-000.json}. The example uses the explicitly
- * named ready-batch Min-Min policy and enables neither clustering nor planning, so that JSON input
- * enters the same standard WorkflowSim flow as DAX.</p>
- */
 public final class WfCommonsSimulationExample1 {
 
     private WfCommonsSimulationExample1() {}
@@ -53,7 +38,6 @@ public final class WfCommonsSimulationExample1 {
         printReport(report);
     }
 
-    /** Prints a compact reproducibility summary of the completed run. */
     protected static void printReport(SimulationReport report) {
         Log.printLine();
         Log.printLine("========== OUTPUT ==========");

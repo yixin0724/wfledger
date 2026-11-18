@@ -15,14 +15,6 @@ import java.util.Random;
 import org.apache.commons.math3.stat.inference.WilcoxonSignedRankTest;
 import org.junit.jupiter.api.Test;
 
-/**
- * Semantic tests for {@link PairedWilcoxonSignificance}.
- *
- * <p>Coverage: the availability state machine (too few samples / all-zero differences /
- * a single non-zero difference / the exact and approximate computation paths), the
- * directional correctness of the significance verdict, agreement with a direct
- * commons-math3 invocation, and input validation.</p>
- */
 class PairedWilcoxonSignificanceTest {
 
     @Test
@@ -67,8 +59,7 @@ class PairedWilcoxonSignificanceTest {
 
     @Test
     void consistentShiftIsSignificantWithExactDistribution() {
-        // The candidate is consistently 20 seconds faster: every difference is negative, so
-        // p must be very small under the exact distribution.
+
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 20; index++) {
@@ -87,8 +78,7 @@ class PairedWilcoxonSignificanceTest {
 
     @Test
     void alternatingSignSmallDifferencesAreNotSignificant() {
-        // Differences alternate between +/-1 with nearly balanced signs: the null hypothesis
-        // must not be rejected.
+
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 12; index++) {
@@ -100,17 +90,13 @@ class PairedWilcoxonSignificanceTest {
         assertEquals("AVAILABLE_WILCOXON_SIGNED_RANK_EXACT", result.getStatus());
         assertFalse(result.isSignificantAtDefaultAlpha());
         assertTrue(result.getPValue().doubleValue() > 0.05);
-        // R8 audit regression (P1): the library's exact two-sided p has no upper cap, so the
-        // wrapper must clamp it to [0,1].
+
         assertTrue(result.getPValue().doubleValue() <= 1.0, "p-value must not exceed 1");
     }
 
     @Test
     void zeroDifferencesAreExcludedFromTheRankStatistic() {
-        // The first 6 pairs have zero difference and the last 12 are consistently 20
-        // seconds faster: the p-value must match a direct library call on the non-zero
-        // subsample exactly (R8 audit fix P1: previously the whole array was passed,
-        // so zero differences occupied the lowest ranks).
+
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 6; index++) {
@@ -138,10 +124,7 @@ class PairedWilcoxonSignificanceTest {
 
     @Test
     void moreThanThirtyPairsWithZeroDifferencesDoNotCrash() {
-        // R8 audit regression (P1): 31 pairs with only 20 non-zero differences. Before the
-        // fix the library threw NumberIsTooLargeException for the full N>30 and broke the
-        // campaign aggregation; after the fix the exact path is selected by the non-zero
-        // count (20 <= 25 < 30), so a result is produced safely.
+
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 11; index++) {
@@ -163,10 +146,7 @@ class PairedWilcoxonSignificanceTest {
 
     @Test
     void allPositiveExactPValueIsLockedToTwoOverTwoToTheN() {
-        // All 20 paired differences are positive: W reaches the full total rank sum, the
-        // only subset with rank sum >= W is the full set, so the exact p = 2/2^20. The
-        // numeric lock guards against formula regression (R8 audit, test-strength
-        // reinforcement).
+
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         for (int index = 0; index < 20; index++) {
@@ -181,7 +161,7 @@ class PairedWilcoxonSignificanceTest {
 
     @Test
     void largeSamplesUseTheNormalApproximation() {
-        // 40 effective non-zero differences > 25, so the normal-approximation path is taken.
+
         List<Double> baseline = new ArrayList<Double>();
         List<Double> candidate = new ArrayList<Double>();
         Random random = new Random(42L);

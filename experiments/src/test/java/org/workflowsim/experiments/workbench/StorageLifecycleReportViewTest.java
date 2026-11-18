@@ -35,7 +35,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Real runtime -> independently verified V3 captures; no fabricated report context or service ledger. */
 class StorageLifecycleReportViewTest {
     private static final int BUDGET = 10000;
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
@@ -1040,7 +1039,7 @@ class StorageLifecycleReportViewTest {
     @Test
     void independentHugeFilesProduceExactInputAndOutputTotalsBeyondDoubleMaximum() {
         for (boolean outputs : new boolean[] {false, true}) {
-            // Legal ordinary store rates avoid MAX/1e6*1e6 overflow in the fixture's MB/s conversion.
+
             Task a = task(1, outputs ? out("a", 1e308) : in("a", 1e308));
             Task b = task(2, outputs ? out("b", 1e308) : in("b", 1e308));
             CoherentDataflowRuntime r =

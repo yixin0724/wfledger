@@ -1,6 +1,5 @@
 package org.workflowsim.planning.naco;
 
-/** One immutable task-to-VM gene in a NACO permutation chromosome. */
 public final class NacoGene {
     private final int taskId;
     private final int vmId;

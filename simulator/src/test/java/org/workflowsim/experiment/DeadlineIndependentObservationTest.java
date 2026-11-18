@@ -31,7 +31,6 @@ import org.workflowsim.utils.OverheadModelConfig;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Independent deadline arithmetic and observer-only trajectory properties. */
 class DeadlineIndependentObservationTest {
     private static final double EPS = 1.0e-9;
 
@@ -52,8 +51,6 @@ class DeadlineIndependentObservationTest {
                 .build();
         SimulationReport baseline = run(config);
 
-        // Stage-in is ready before t=10. One second of compute ends at t=11,
-        // not at one second on an arrival-relative deadline clock.
         assertEquals(11.0, baseline.getSimulationEndSeconds(), EPS);
         assertEquals(1.0, baseline.getWorkflowOutcomes().get(0).getFlowTimeSeconds(), EPS);
         assertDeadline(baseline.getMetrics(), "NOT_REQUESTED", false, 0.0, 0.0);
@@ -132,7 +129,7 @@ class DeadlineIndependentObservationTest {
     @Test
     void successfulRetryCompletesSourceTasksButTerminalTailStillDeterminesDeadline() throws Exception {
         Task first = new Task(1, 2000L);
-        first.setCloudletStatus(Cloudlet.FAILED); // The original source attempt need not become successful.
+        first.setCloudletStatus(Cloudlet.FAILED);
         Task second = new Task(2, 1000L);
         first.addChild(second);
         second.addParent(first);
@@ -196,7 +193,6 @@ class DeadlineIndependentObservationTest {
                 attempts,
                 Collections.<SimulationEvent>emptyList());
 
-        // Stage-in plus one compute success is two successful Jobs, but only one of two source Tasks.
         assertEquals(2, incomplete.getSuccessfulJobOutcomeCount());
         assertEquals(2, incomplete.getLogicalTaskCount());
         assertEquals(1, incomplete.getSuccessfullyCompletedLogicalTaskCount());
@@ -230,32 +226,31 @@ class DeadlineIndependentObservationTest {
     @Test
     void lowDeadlineComparisonKeepsTheExactDoubleBoundaryWithoutAnEpsilon() {
         assertDeadline(completedAt(4.0, 4L), "MET", true, 0.0, 0.0);
-        // The successor of 4 is 4 + 2^-50; even this representable lateness is not MET.
+
         assertDeadline(completedAt(Math.nextUp(4.0), 4L), "MISSED_LATE", false, -0x1.0p-50, 0x1.0p-50);
     }
 
     @Test
     void longDeadlineRoundingUpCannotTurnOneSecondLateIntoMet() {
-        // T is exactly 2^53 + 4. The long D is exactly T - 1, not rounded to T.
+
         assertDeadline(completedAt(9_007_199_254_740_996.0, 9_007_199_254_740_995L), "MISSED_LATE", false, -1.0, 1.0);
     }
 
     @Test
     void longDeadlineRoundingDownCannotEraseOneSecondOfPositiveSlack() {
-        // Both integers are explicit: T=2^53 and D=2^53+1.
+
         assertDeadline(completedAt(9_007_199_254_740_992.0, 9_007_199_254_740_993L), "MET", true, 1.0, 0.0);
     }
 
     @Test
     void largestLongDeadlineIsOneSecondEarlierThanTheExactDoubleTwoToThe63() {
-        // 0x1.0p63 is exactly 9223372036854775808, not the shortest decimal 9.223372036854776E18.
-        // In particular, the exact difference is 1, not 0 or 193 seconds.
+
         assertDeadline(completedAt(0x1.0p63, Long.MAX_VALUE), "MISSED_LATE", false, -1.0, 1.0);
     }
 
     @Test
     void largestLongDeadlineRetainsItsLowBitsWhenTheRunIsEarly() {
-        // The preceding binary64 value is 2^63 - 1024. (2^63 - 1) - T = 1023.
+
         assertDeadline(completedAt(Math.nextDown(0x1.0p63), Long.MAX_VALUE), "MET", true, 1023.0, 0.0);
     }
 
@@ -276,7 +271,7 @@ class DeadlineIndependentObservationTest {
     }
 
     private static SimulationMetrics completedAt(double end, long deadline) {
-        // A finite, late-arriving compute attempt. No large-clock simulation or event-cadence assumption.
+
         double duration = end >= 4096.0 ? 4096.0 : 1.0;
         double start = end - duration;
         long lengthMi = (long) (duration * 1000.0);
@@ -372,7 +367,6 @@ class DeadlineIndependentObservationTest {
                 .build();
     }
 
-    /** Keep execution evidence; exclude only the two documented local wall-clock measurements. */
     private static List<Object> trajectory(SimulationReport report) {
         List<Object> rows = new ArrayList<Object>();
         rows.add(Arrays.asList(

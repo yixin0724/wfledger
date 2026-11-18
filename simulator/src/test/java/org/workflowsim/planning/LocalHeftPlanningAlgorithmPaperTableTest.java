@@ -21,42 +21,17 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * C04: the paper worked-example anchor and allocation invariants for LOCAL_HEFT (review
- * engineering Phase 1 literature golden-table audit).
- *
- * <p>Data source: the ten-task, three-processor worked example of Topcuoglu, Hariri &amp;
- * Wu (IEEE TPDS 2002), i.e. its cost matrix and edge weights -- the same source as the
- * paper table of {@code LocalCpopPlanningAlgorithmTest}; the expected rank values are an
- * independent hand derivation from the matrix and the edge weights (HEFT upward rank:
- * w_bar + max(c_bar + rank_u(child))), and the test does not restate the recurrence
- * algorithm itself.</p>
- *
- * <p>Allocation assertions are layered (the iron rule: contracts and conservation laws,
- * not an implementation mirror): (1) the paper-table rank is anchored exactly per task;
- * (2) the VM choice and finish time of the first task (the entry task with the highest
- * rank) are trivially hand-derived (EST=0, three-VM costs 14/16/9 -> minimal EFT=vm2@9);
- * (3) the planning intervals of all tasks satisfy two conservation laws -- <b>reserved
- * intervals on the same VM never overlap</b>, and <b>a cross-VM dependency starts no
- * earlier than parent finish plus edge communication</b> (a same-VM dependency starts no
- * earlier than parent finish).</p>
- */
 class LocalHeftPlanningAlgorithmPaperTableTest {
 
     private static final double EPSILON = 1.0e-9;
-    /**
-     * The root stage-in Job (110 MI) comes to 110 seconds on a 1 MIPS VM plus the 0.1
-     * minimum event interval.
-     */
+
     private static final double BOOTSTRAP = 110.1;
 
-    /** Paper cost matrix: costs[task][vm] in seconds (cost projection x 1 MIPS VM). */
     private static final double[][] COSTS = {
         {14, 16, 9}, {13, 19, 18}, {11, 13, 19}, {13, 8, 17}, {12, 13, 10},
         {13, 16, 9}, {7, 15, 11}, {5, 11, 14}, {18, 12, 20}, {21, 7, 16}
     };
 
-    /** Paper edge weights: {parent (1-based), child (1-based), average communication seconds}. */
     private static final int[][] EDGES = {
         {1, 2, 18}, {1, 3, 12}, {1, 4, 9}, {1, 5, 11}, {1, 6, 14},
         {2, 8, 19}, {2, 9, 16}, {3, 7, 23}, {4, 8, 27}, {4, 9, 23},
@@ -69,8 +44,6 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
 
         fixture.planner.run();
 
-        // Independent hand derivation of the HEFT upward rank (shares the paper table with
-        // the CPOP test; the formula is derived independently).
         double[] upward = {108, 77, 80, 80, 69, 190.0 / 3.0, 128.0 / 3.0, 107.0 / 3.0, 133.0 / 3.0, 44.0 / 3.0};
         for (int i = 0; i < fixture.tasks.length; i++) {
             assertEquals(
@@ -88,8 +61,6 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
 
         fixture.planner.run();
 
-        // Entry task EST=0; three-VM costs 14/16/9 -> the minimal EFT is on vm2, finish=9
-        // (trivial hand derivation).
         assertEquals(2, entry.getVmId(), "the entry task must choose vm2, the minimal-EFT VM (cost 9 s)");
         assertEquals(BOOTSTRAP, entry.getStaticScheduleStartTime(), EPSILON, "start is the root stage-in finish");
         assertEquals(BOOTSTRAP + 9.0, fixture.planner.plannedFinishOf(entry), EPSILON, "vm2 planned finish is 9 s");
@@ -101,8 +72,6 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
 
         fixture.planner.run();
 
-        // (1) Same-VM intervals never overlap (sorted by start: an earlier interval must not
-        // finish after the following one starts).
         Map<Integer, List<double[]>> perVm = new LinkedHashMap<Integer, List<double[]>>();
         for (Task task : fixture.tasks) {
             double start = task.getStaticScheduleStartTime();
@@ -126,8 +95,7 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
                                 + Arrays.toString(intervals.get(i)));
             }
         }
-        // (2) Dependency readiness: start(t) >= finish(p) + (edge communication seconds when
-        // crossing VMs).
+
         for (int[] edge : EDGES) {
             Task parent = fixture.tasks[edge[0] - 1];
             Task child = fixture.tasks[edge[1] - 1];
@@ -142,8 +110,6 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
             }
         }
     }
-
-    // ---- fixtures ----
 
     private static final class Fixture {
         final LocalHeftPlanningAlgorithm planner;
@@ -168,8 +134,7 @@ class LocalHeftPlanningAlgorithmPaperTableTest {
         for (int[] edge : EDGES) {
             connect(tasks[edge[0] - 1], tasks[edge[1] - 1], edge[2]);
         }
-        // Deliberately registered in reverse order: the HEFT scheduling order must be
-        // recovered by the rank recurrence and be independent of the input order.
+
         List<Task> reversed = new ArrayList<Task>(Arrays.asList(tasks));
         Collections.reverse(reversed);
         return new Fixture(planner(reversed, 2, 0, 1), tasks);

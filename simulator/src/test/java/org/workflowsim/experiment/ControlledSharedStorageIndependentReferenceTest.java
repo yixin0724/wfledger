@@ -27,7 +27,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
-/** Hand-derived references, never expected values obtained from production timing/cost helpers. */
 class ControlledSharedStorageIndependentReferenceTest {
     private static final double EPS = 1.0e-9;
     private static final String CONTROLLED_SCOPE = "SHARED_STORAGE_NO_CLUSTERING_NO_FAILURE_NO_OVERHEAD_SPACE_SHARED";
@@ -42,9 +41,7 @@ class ControlledSharedStorageIndependentReferenceTest {
 
     @Test
     void legacySharedSingleTaskMatchesUpstreamIntermediateArithmetic() throws Exception {
-        // WorkflowSim-1.0 d3ea21a: 150 MB / 15 MB/s = 10 s, converted at 1000 MIPS to
-        // 10000 MI; the 2 s task contributes another 2000 MI. The 110 MI stage-in plus
-        // release cadence adds 0.21 s around the resulting 12 s execution envelope.
+
         Path input = dax(
                 "upstream-shared",
                 "<job id=\"a\" runtime=\"2\">" + "<uses name=\"external\" link=\"input\" size=\"150000000\"/></job>");
@@ -84,8 +81,6 @@ class ControlledSharedStorageIndependentReferenceTest {
         SimulationReport report =
                 run(SimulationConfig.builder(input.toString(), 1).build(), oneVmPlatform());
 
-        // Bootstrap max(110/1000, .1 + .01) + .1 = .21.
-        // A takes 1s; B takes 2s + (8MB + 2MB)/20MBps = 2.5s.
         assertReference(report, 3.71);
         assertEquals(2, report.getMetrics().getLogicalTaskCount());
     }
@@ -98,7 +93,7 @@ class ControlledSharedStorageIndependentReferenceTest {
         assertEquals(1.0, computeJob(report).getExecutionTime(), EPS);
         assertEquals(100_000L, report.getTasks().get(0).getLengthMi());
         assertEquals(1000L, report.getTasks().get(0).getEffectiveExecutionLengthMi());
-        // Source work is deliberately 100s; the authoritative matrix executes 1s.
+
         assertReference(report, 1.21);
     }
 
@@ -118,7 +113,7 @@ class ControlledSharedStorageIndependentReferenceTest {
         Task task = new Task(1, 100_000L);
         task.setNumberOfPes(2);
         Map<Integer, Double> costs = new LinkedHashMap<Integer, Double>();
-        costs.put(7, 0.25); // Fast CPU, but only one PE: not a candidate for this task.
+        costs.put(7, 0.25);
         costs.put(42, 4.0);
         costs.put(99, 1.00048828125);
         task.setVmExecutionCostSeconds(costs);
@@ -143,9 +138,6 @@ class ControlledSharedStorageIndependentReferenceTest {
         WorkflowModelReference.Reference reference =
                 WorkflowModelReference.calculate(Collections.singletonList(task), config, platform);
 
-        // 1.00048828125 * 1024 is exactly 1024.5 MI in binary: round to 1025.
-        // The slower compatible VM wins: 1025/1024 = 1.0009765625s, not 4s.
-        // The 1-PE bootstrap may still use the fastest VM: .11 + .1 = .21s.
         assertTrue(reference.isAvailable());
         assertEquals(1.2109765625, reference.getCriticalPathLowerBoundSeconds(), EPS);
         assertEquals(1, reference.getSourceTaskCount());
@@ -157,7 +149,7 @@ class ControlledSharedStorageIndependentReferenceTest {
         Task twoPeParent = new Task(10, 2000L);
         twoPeParent.setNumberOfPes(2);
         Task otherParent = new Task(30, 1000L);
-        Task join = new Task(20, 2000L); // IDs deliberately do not form a topological ordering.
+        Task join = new Task(20, 2000L);
         connect(twoPeParent, join);
         connect(otherParent, join);
         twoPeParent.addFile(file("left", 3_000_000.0, Parameters.FileType.OUTPUT));
@@ -176,8 +168,6 @@ class ControlledSharedStorageIndependentReferenceTest {
                 SimulationConfig.builder("unused.dax", 2).build(),
                 platform);
 
-        // Bootstrap .21; parents take 2000/1000=2 and 1000/2000=.5 seconds.
-        // Join takes 2000/2000 + 5MB/20MBps = 1.25s. No PE multiplier in duration.
         assertTrue(reference.isAvailable());
         assertEquals(3.46, reference.getCriticalPathLowerBoundSeconds(), EPS);
         assertEquals(3, reference.getSourceTaskCount());
@@ -194,8 +184,6 @@ class ControlledSharedStorageIndependentReferenceTest {
                 SimulationConfig.builder("unused.dax", 1).build(),
                 oneVmPlatform());
 
-        // (12500 + 12500)B / 20MBps = .00125s -> 1.25 added MI -> 1 MI.
-        // Truncating each input separately would incorrectly add zero MI.
         assertTrue(reference.isAvailable());
         assertEquals(1.211, reference.getCriticalPathLowerBoundSeconds(), EPS);
     }
@@ -219,9 +207,6 @@ class ControlledSharedStorageIndependentReferenceTest {
                 .build();
         SimulationReport report = run(config, oneVmPlatform());
 
-        // Bootstrap .21; A/B finish at 1.21 and 2.21 on the single VM.
-        // Their 10s parent-input transfers overlap: the last arrival is 12.21,
-        // then the join computes for 1s. The legacy serial-input bound is 22.21.
         assertTrue(report.isWorkflowCompletedSuccessfully());
         assertEquals(
                 13.21,
@@ -241,30 +226,27 @@ class ControlledSharedStorageIndependentReferenceTest {
                 .build();
         SimulationReport report = run(config, oneVmPlatform());
 
-        // Fixed endpoint: bottleneck min(20,10)=10MBps, latency .25s, compute 1s.
         assertEquals(3.25, computeJob(report).getExecutionTime(), EPS);
         assertSafeAvailability(report);
     }
 
     @Test
     void unselectedZeroMiAlternativeMakesOnlyTheOptionalReferenceUnavailable() {
-        // CP002 regression guard: .0001s * 1000 MIPS = .1 MI, which rounds to zero.
+
         assertUnavailableForUnrepresentableAlternative(0.0001);
     }
 
     @Test
     void unselectedOverflowingAlternativesMakeOnlyTheOptionalReferenceUnavailable() {
-        // 10^10s * 1000 MIPS = 10^13 MI: MI fits long, but 10^19 instructions do not.
+
         assertUnavailableForUnrepresentableAlternative(10_000_000_000.0);
-        // Also cover the separate conversion overflow before the instruction-range check.
+
         assertUnavailableForUnrepresentableAlternative(Double.MAX_VALUE);
     }
 
     @Test
     void unselectedTransferEnvelopeMustBeRepresentableBeforePublishingAReference() {
-        // 40MB / 20MBps = 2s of input; selected VM 1 has a valid (2000 + 2000) MI envelope.
-        // Alternatives exercise instruction-budget overflow, checked-long addition overflow,
-        // an out-of-long-range transfer cast, and a non-finite MIPS * transfer-seconds product.
+
         for (double alternativeMips : new double[] {10_000_000_000_000.0, Math.nextDown(0x1.0p62), 1.0e20, 1.0e308}) {
             Task task = new Task(1, 2000L);
             task.setVmId(1);
@@ -290,8 +272,7 @@ class ControlledSharedStorageIndependentReferenceTest {
     void selectedUnrepresentableMatrixCoordinatesStillFailDuringActualExecution() throws Exception {
         Path input = dax("selected-invalid-matrix", "<job id=\"a\" runtime=\"1\"/>");
         for (double seconds : new double[] {0.0001, 10_000_000_000.0, Double.MAX_VALUE}) {
-            // With one VM, RANDOM must select this coordinate. Optional-reference degradation
-            // must not catch or turn the actual execution failure into a successful report.
+
             SimulationConfig config = matrixConfig(input, seconds);
             IllegalStateException failure =
                     assertThrows(IllegalStateException.class, () -> run(config, oneVmPlatform()));
@@ -310,7 +291,7 @@ class ControlledSharedStorageIndependentReferenceTest {
 
     private static void assertUnavailableForUnrepresentableAlternative(double alternativeSeconds) {
         Task task = new Task(1, 1000L);
-        task.setVmId(1); // Snapshot of a task assigned to the valid 1-second coordinate.
+        task.setVmId(1);
         Map<Integer, Double> costs = new LinkedHashMap<Integer, Double>();
         costs.put(0, alternativeSeconds);
         costs.put(1, 1.0);
@@ -390,7 +371,7 @@ class ControlledSharedStorageIndependentReferenceTest {
     }
 
     private static SimulationConfig matrixConfig(Path input, double seconds) {
-        // RANDOM + SHARED + matrix is legal; the forbidden SHARED_STORAGE_* + matrix is not used.
+
         return SimulationConfig.builder(input.toString(), 1)
                 .planningAlgorithm(Parameters.PlanningAlgorithm.RANDOM)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)

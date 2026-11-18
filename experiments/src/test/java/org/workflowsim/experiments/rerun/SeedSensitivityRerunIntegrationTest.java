@@ -31,25 +31,6 @@ import org.workflowsim.utils.SimulationConfig;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Review round (2026-11-02): the rerun contract under a randomness-sensitive workload.
- *
- * <p>An earlier rerun fuzz test observed that "tampering with rootSeed still yields
- * IDENTICAL_CORE", which was briefly suspected to be a defect; measurement showed that the
- * workload was <b>insensitive to randomness</b>: the rerun faithfully reproduced the tampered
- * record conditions, so both sides carried the same seed. This test pins that property down
- * with a workload of stochastic failure retries:</p>
- *
- * <ol>
- *   <li>same seed rerun -> IDENTICAL_CORE (the record conditions are reproducible);</li>
- *   <li>tampered rootSeed -> DIVERGED (the seed is a scientific condition, and a workload
- *       sensitive to it must diverge).</li>
- * </ol>
- *
- * <p>Expected-value provenance: the core comparison domain of RERUN_DIFF_CONTRACT.md
- * (configuration is inside the domain; only algorithmContract and workflowPaths are
- * whitelisted).</p>
- */
 class SeedSensitivityRerunIntegrationTest {
 
     @TempDir
@@ -84,10 +65,7 @@ class SeedSensitivityRerunIntegrationTest {
                 RerunVerdict.DIVERGED,
                 changedSeed.getVerdict(),
                 "a stochastic workload must diverge when the recorded seed changes: " + changedSeed.toJson());
-        // Divergence lands on the result face, not the configuration face: the rebuild starts
-        // from the (tampered) record conditions, so both sides carry the same configuration,
-        // but a different seed changes the course of stochastic failures and retries, so the
-        // result face must go red.
+
         assertFalse(
                 changedSeed.getCoreDivergences().isEmpty(),
                 "a changed seed must produce core divergences in the result face: " + pointers(changedSeed));
@@ -98,10 +76,6 @@ class SeedSensitivityRerunIntegrationTest {
                 "the divergence must land on recomputed results: " + pointers(changedSeed));
     }
 
-    /**
-     * Stochastic failure-retry workload: FAILURE_JOB plus a Weibull distribution; the seed
-     * decides which jobs fail and when they retry.
-     */
     private Path writeStochasticRun(Path study, long seed) throws Exception {
         Path workflow = study.resolve("inputs/seed.dax");
         Files.createDirectories(workflow.getParent());

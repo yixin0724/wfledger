@@ -26,36 +26,17 @@ import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 import org.workflowsim.utils.SimulationRandom;
 
-/**
- * Random horizontal clustering method.
- *
- * <p>After a controlled random permutation, this method distributes the task sets of the same
- * level across the target cluster jobs in round-robin order.</p>
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class HorizontalRandomClustering extends BalancingMethod {
 
-    /**
-     * Create a random horizontal clustering method.
-     *
-     * @param levelMap task sets organized by level
-     * @param taskMap mapping from logical task to task set
-     * @param clusterNum number of target cluster jobs per level
-     */
     public HorizontalRandomClustering(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
-    /**
-     * Permute the candidate set of each level, then assign tasks by the round-robin rule.
-     */
     @Override
     public void run() {
         Map<Integer, List<TaskSet>> map = getLevelMap();
         for (List<TaskSet> taskList : map.values()) {
-            // Break the input order with a random stream derived from the session seed.
+
             Collections.shuffle(taskList, SimulationRandom.newJavaRandom("clustering.balancing.random"));
             Collections.shuffle(taskList, SimulationRandom.newJavaRandom("clustering.balancing.random"));
 
@@ -66,21 +47,21 @@ public class HorizontalRandomClustering extends BalancingMethod {
                 }
                 int index = 0;
                 for (TaskSet set : taskList) {
-                    // Select the next target task set in round-robin order.
+
                     TaskSet job = (TaskSet) jobList.get(index);
                     index++;
                     if (index == getClusterNum()) {
                         index = 0;
                     }
                     job.addTask(set.getTaskList());
-                    // Update the owning task set mapping of each logical task.
+
                     for (Task task : set.getTaskList()) {
-                        getTaskMap().put(task, job); // dependencies are rebuilt centrally by the caller
+                        getTaskMap().put(task, job);
                     }
                 }
                 taskList.clear();
             } else {
-                // No merging is needed when the candidate count does not exceed the target count.
+
             }
         }
     }

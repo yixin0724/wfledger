@@ -21,17 +21,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * BAT-G series (2026-10-28, test-engineer second round): deep probe of boundary
- * semantics -- a window endpoint exactly tangent to a busy interval, truncation beyond
- * the horizon, the analytic expectation of a fully idle fleet, and Java/Python parity on
- * a 64-VM large fleet.
- *
- * <p>Source of expected values: the per-window integral formula of the budget model
- * (design document §1.2) + the grams-proportion identity g_i/g_j = E_i/E_j under one
- * intensity (multiplying by the same coefficient leaves the proportion unchanged -- this
- * probes whether energy is mixed across the per-VM ledger).</p>
- */
 class CarbonBoundaryAuditTest {
 
     @TempDir
@@ -53,18 +42,12 @@ class CarbonBoundaryAuditTest {
 
     @Test
     void allIdleFleetUnderBudgetHasAnalyticExcess() throws Exception {
-        // Single-task DAG with no successors: TOTAL 1 compute Job (a negligible share) --
-        // the fleet runs at P ~ idleSum almost the whole time.
-        // Hand-derivation axis: if the window green power < idleSum, excess =
-        // (idleSum-green) x window length; if green power >= idleSum, zero.
+
         SimulationReport report = run(2, null, null, new double[][] {{0.0, 1000.0, 100.0}});
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertNotNull(carbon, "budget must account");
         double idleSum = 2 * 250.0;
-        // The busy segment contributes a dynamic term but always lies inside the window:
-        // the expected lower bound is >= (idleSum+delta x busy-green) x coverage --
-        // simplified here to comparing the exact integral: replay the formula directly
-        // (an independent recomputation on the Java side for comparison).
+
         double expected = integrateAnalytic(report, lastProfile, 0.0, 1000.0, 100.0);
         assertEquals(
                 expected,
@@ -76,9 +59,7 @@ class CarbonBoundaryAuditTest {
 
     @Test
     void excessClampsAtHorizonNotBeyond() throws Exception {
-        // The window horizon [0,10s) is far shorter than the makespan (two ~30s tasks +
-        // bootstrap ~ 60s+): the excess must never keep accumulating after 10s -- the
-        // total integral must be <= (peak-green) x 10.
+
         SimulationReport report = run(2, null, null, new double[][] {{0.0, 10.0, 100.0}});
         CarbonAccounting carbon = report.getCarbonAccounting();
         double peakFleet = 2 * 250.0 + 2 * 150.0;
@@ -90,8 +71,7 @@ class CarbonBoundaryAuditTest {
 
     @Test
     void perVmCarbonProportionsMatchEnergyProportionsExactly() throws Exception {
-        // 3-VM heterogeneous MIPS (different busy shares running concurrently): under one
-        // intensity g_i/g_j must == E_i/E_j (bitwise near-equality).
+
         SimulationReport report = run(3, 380.0, null, null);
         CarbonAccounting carbon = report.getCarbonAccounting();
         double g0 = carbon.getPerVmCarbonGrams().get(0);
@@ -110,14 +90,9 @@ class CarbonBoundaryAuditTest {
                 "total = E_total/3.6e6 x I");
     }
 
-    // ---- helpers ----
-
     private static double integrateAnalytic(
             SimulationReport report, PlatformProfile profile, double ws, double we, double green) {
-        // Independent replay of the same formula as CarbonAccounting (rather than trusting
-        // the getters): the fleet-segment power is re-derived from the job intervals.
-        // Horizon clamp: a window may be declared longer than the simulation -- excess
-        // exists only within the simulation clock (no fleet means no power/carbon).
+
         double horizon = Math.min(we, report.getMakespan());
         we = horizon;
         java.util.TreeMap<Double, Integer> ends = new java.util.TreeMap<Double, Integer>();

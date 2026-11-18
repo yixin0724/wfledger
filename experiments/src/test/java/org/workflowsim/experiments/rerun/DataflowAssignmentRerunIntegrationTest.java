@@ -156,7 +156,7 @@ class DataflowAssignmentRerunIntegrationTest {
                 .getAsJsonObject("dataflowAssignment")
                 .addProperty("policy", "different");
         root.getAsJsonArray("dataflowComputeRequests").get(0).getAsJsonObject().addProperty("lengthMi", 999999);
-        // Comparator-only bypass: semantically invalid data must still be classified as core, not identity.
+
         RerunEvidence after = new RerunEvidence(
                 before.getRunDirectory(),
                 before.getManifestPath(),

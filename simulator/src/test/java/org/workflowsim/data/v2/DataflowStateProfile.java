@@ -19,16 +19,11 @@ import org.workflowsim.utils.Parameters;
 
 import com.google.gson.Gson;
 
-/**
- * Reproducible controller-only profile, not a scheduling study or a wall-clock test threshold.
- * Run this same class against frozen baseline and candidate simulator JARs with the same JVM.
- * Plan construction and post-run semantic hashing are outside the measured transition interval.
- */
 public final class DataflowStateProfile {
     private static final Gson JSON = new Gson();
 
     private DataflowStateProfile() {}
-    /** @param args scenario, comma-separated sizes, capture mode OFF/TRUNCATED/FULL, repetitions */
+
     public static void main(String[] args) throws Exception {
         if (args.length != 4) {
             throw new IllegalArgumentException(

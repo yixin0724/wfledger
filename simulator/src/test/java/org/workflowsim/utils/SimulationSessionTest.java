@@ -26,8 +26,7 @@ class SimulationSessionTest {
 
     @Test
     void isolatesSequentialConfigurationsAndClearsGlobalStateOnClose() {
-        // The first session installs a single-input configuration; closing it must revoke
-        // every leftover static state, which must not leak into the next run.
+
         SimulationConfig first = SimulationConfig.builder("first.dax", 2)
                 .schedulingAlgorithm(SchedulingAlgorithm.READY_BATCH_MINMIN)
                 .randomSeed(17L)
@@ -54,8 +53,6 @@ class SimulationSessionTest {
         assertThrows(IllegalStateException.class, () -> FailureMonitor.analyze(0, 0));
         assertThrows(IllegalStateException.class, FailureParameters::getFailureGenerators);
 
-        // The second session switches to a multi-input configuration to verify that it does
-        // not inherit the single-input path of the first session.
         SimulationConfig second = SimulationConfig.builder(Arrays.asList("second.dax", "third.json"), 3)
                 .planningAlgorithm(PlanningAlgorithm.RANDOM)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC)

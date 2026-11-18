@@ -6,7 +6,6 @@ import java.util.TreeMap;
 
 import org.workflowsim.platform.PlatformProfile;
 
-/** Independently integrates brown-power excess over all activity and window boundaries. */
 public final class CarbonExcessEvaluator implements PlanObjectiveEvaluator {
 
     private static final double EPSILON = 1.0e-9;

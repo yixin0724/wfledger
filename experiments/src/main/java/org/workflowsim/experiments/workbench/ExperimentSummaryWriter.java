@@ -12,7 +12,6 @@ import java.util.Map;
 
 import org.workflowsim.experiment.ExperimentArtifactWriter;
 
-/** Writes the same completed run rows as machine-readable JSON and CSV summaries. */
 public final class ExperimentSummaryWriter {
 
     private static final String[] COLUMNS = {

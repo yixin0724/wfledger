@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable NACO task with compute, storage, and communication inputs. */
 public final class NacoTask {
     private final int taskId;
     private final double inputBits;

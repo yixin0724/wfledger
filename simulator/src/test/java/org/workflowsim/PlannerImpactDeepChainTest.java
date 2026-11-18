@@ -14,23 +14,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * C03: scale-safety boundary of impact-factor deep-chain propagation (review engineering Phase 1,
- * mechanical reliability).
- *
- * <p>Contract source (conservation law, not copied from implementation output):
- * {@code WorkflowPlanner.processImpactFactors} sends the impact factor back from the exit task and
- * splits it evenly along the parent edges. On a <b>pure chain</b> (single exit, every task with
- * exactly one parent): the exit obtains 1/1=1.0 and every return step passes on
- * impact/size=1.0, so <b>every task's impact must be exactly 1.0</b> (binary-exact equality, no
- * rounding path).</p>
- *
- * <p>Scale contract: the parser layer declares no DAG depth limit, and both the scan test
- * (WorkflowDagScalabilityTest) and the V2 plan (DataflowFilePlan already switched to an iterative
- * traversal) show that deep DAGs are supported scope. Therefore, on a chain 50 000 deep, the impact
- * computation must <b>complete without throwing StackOverflowError</b> -- the current implementation
- * is recursive (addImpact), and this test states the empirical conclusion on that boundary.</p>
- */
 class PlannerImpactDeepChainTest {
 
     private boolean logWasDisabled;
@@ -48,7 +31,6 @@ class PlannerImpactDeepChainTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    /** Build a pure-chain task list of the given depth (ids 1..depth; length and files take the minimal defaults). */
     private static List<Task> chain(int depth) {
         List<Task> tasks = new ArrayList<Task>(depth);
         Task previous = null;
@@ -70,8 +52,7 @@ class PlannerImpactDeepChainTest {
         try {
             method.invoke(planner, tasks);
         } catch (InvocationTargetException invocation) {
-            // Preserve the original control-flow evidence (StackOverflowError and the like) instead of
-            // swallowing it into a reflection wrapper.
+
             Throwable cause = invocation.getCause();
             if (cause instanceof RuntimeException) {
                 throw (RuntimeException) cause;
@@ -102,9 +83,7 @@ class PlannerImpactDeepChainTest {
         final int depth = 50_000;
         WorkflowPlanner planner = new WorkflowPlanner("impact-deep", 1);
         List<Task> tasks = chain(depth);
-        // The failure mode of the recursive implementation is a directly rethrown
-        // StackOverflowError (JUnit red = F-004 evidence); after the iterative fix this case
-        // turns green and leaves the exact invariants below unaffected.
+
         runImpactPropagation(planner, tasks);
         for (int i = 0; i < depth; i += (i < 4 || i >= depth - 4) ? 1 : 997) {
             assertEquals(
@@ -115,14 +94,6 @@ class PlannerImpactDeepChainTest {
         }
     }
 
-    /**
-     * Bit-order-preserving differential check: on random small DAGs, the artifact (an explicit frame
-     * stack iteration) and a "literal reference implementation of the documented recursive semantics"
-     * must agree <b>bit by bit</b>. The reference implementation follows the class Javadoc (even split
-     * at the exits, recursion along the parent edges in declaration order) and is independent of the
-     * artifact's explicit frame stack; it locks the floating-point accumulation order against drift
-     * introduced by the F-004 iterative rewrite.
-     */
     @Test
     void randomDagImpactsMatchDocumentedRecursiveSemanticsBitwise() throws Exception {
         java.util.Random random = new java.util.Random(20261019L);
@@ -145,10 +116,6 @@ class PlannerImpactDeepChainTest {
         }
     }
 
-    /**
-     * Parent-table spec of a layered random DAG: node i draws its parent set from smaller indices
-     * (which guarantees acyclicity), with at most 3 parents per node.
-     */
     private static java.util.List<int[]> randomParentSpec(java.util.Random random, int size) {
         java.util.List<int[]> spec = new ArrayList<int[]>(size);
         for (int i = 0; i < size; i++) {
@@ -167,7 +134,6 @@ class PlannerImpactDeepChainTest {
         return spec;
     }
 
-    /** Build a fresh task graph from the parent-table spec (the two graphs share no objects). */
     private static List<Task> materialise(java.util.List<int[]> parentSpec) {
         List<Task> tasks = new ArrayList<Task>(parentSpec.size());
         for (int i = 0; i < parentSpec.size(); i++) {
@@ -183,7 +149,6 @@ class PlannerImpactDeepChainTest {
         return tasks;
     }
 
-    /** Literal reference implementation of the contract Javadoc (test-local only, recursion in declaration order). */
     private static void runReferenceImpactPropagation(List<Task> tasks) {
         List<Task> exits = new ArrayList<Task>();
         for (Task task : tasks) {

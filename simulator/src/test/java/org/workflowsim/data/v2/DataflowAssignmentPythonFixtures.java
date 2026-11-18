@@ -27,12 +27,11 @@ import org.workflowsim.utils.TaskCostMatrix;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/** Fresh actual Kernel bundles for the independent online-action Python audit. */
 public final class DataflowAssignmentPythonFixtures {
     private static final int BUDGET = 20000;
 
     private DataflowAssignmentPythonFixtures() {}
-    /** @param args fresh output root */
+
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: DataflowAssignmentPythonFixtures <fresh-root>");

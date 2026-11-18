@@ -19,7 +19,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** NF005 opt-in values and strict JSON decoding, without running a simulator. */
 class DataflowAssignmentConfigTest {
     private static final String MODE = "CONTROL_READY_ONLINE_ASSIGNMENT_V1";
     private static final String POLICY = "NOMINAL_INPUT_EARLIEST_RESERVATION_V1";

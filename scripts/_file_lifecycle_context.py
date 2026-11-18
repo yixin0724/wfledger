@@ -1,11 +1,5 @@
-"""Independent manifest-v4 joins for V2 file-lifecycle evidence; stdlib only.
 
-No Java, simulator, allocator, V1 grouping formulas, external workflow inputs,
-or production replay is used. The lifecycle verifier supplies validated facts;
-this module joins them to the declared core plan, platform, final attempts and
-main events. It checks internal consistency, not authentication or fluid service.
-OFF validates the core/artifact context but cannot certify a lifecycle.
-"""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -28,28 +22,22 @@ MAIN_TYPES = {"JOB_READY", "DATA_STAGE_IN_MODELED", "SCHEDULING_DECISION", "JOB_
 METRIC_FIELDS = {"makespanSeconds", "meanJobVmQueueWaitingTimeSeconds", "meanJobVmLevelSlowdown",
                  "meanJobResponseTimeSeconds", "meanComputeTotalWaitingTimeSeconds", "meanComputeTrueSlowdown"}
 
-
 def _obj(value):
     need(type(value) is dict, "expected context JSON object")
     return value
 
-
 def _field(obj, name):
     return required(_obj(obj), name)
-
 
 def _id(value):
     return whole(value, 0, INT_MAX)
 
-
 def _time(value):
     return f64(value, nonnegative=True)
-
 
 def _bool(value):
     need(type(value) is bool, "expected context JSON boolean")
     return value
-
 
 def _rows(value, key):
     result = {}
@@ -59,15 +47,13 @@ def _rows(value, key):
         result[ident] = row
     return result
 
-
 def _ids(value):
     result = [_id(item) for item in array(value)]
     need(len(set(result)) == len(result), "duplicate context identity")
     return result
 
-
 def _same(a, b, subject):
-    """Exact JSON numeric equality, without bool/int or float-rounding aliases."""
+
     numeric = (int, float, Decimal)
     if type(a) in numeric and type(b) in numeric:
         need(num(a) == num(b), subject)
@@ -82,13 +68,11 @@ def _same(a, b, subject):
     else:
         need(type(a) is type(b) and a == b, subject)
 
-
 def _text_is(obj, key, expected):
     need(word(_field(obj, key)) == expected, "unsupported/mismatched " + key)
 
-
 def _core(root, *, models=(SHARED, ISOLATED), filesystems=("LOCAL",)):
-    """Private shared graph/scope contract; public V2 callers use fixed defaults."""
+
     _text_is(root, "schema", MANIFEST)
     config, result = _obj(_field(root, "configuration")), _obj(_field(root, "result"))
     model = word(_field(_field(config, "dataMovementModel"), "kind"))
@@ -143,7 +127,7 @@ def _core(root, *, models=(SHARED, ISOLATED), filesystems=("LOCAL",)):
              _id(_field(outcome, "firstTaskId")) == first and _id(_field(outcome, "lastTaskId")) == last,
              "invalid workflow Task ranges")
         scoped = sorted(by_scope.get(index, ()))
-        # Do not allocate a range from an untrusted taskCount.
+
         need(len(scoped) == count and all(tid == first + n for n, tid in enumerate(scoped)),
              "workflow ranges/scopes differ from core plan")
         covered.update(scoped)
@@ -159,7 +143,6 @@ def _core(root, *, models=(SHARED, ISOLATED), filesystems=("LOCAL",)):
         first = last + 1
     need(covered == set(plan.tasks), "workflow scopes do not cover core plan")
     return config, result, model, plan, arrivals
-
 
 def _platform(root, fabric=None, *, source_routing="BYPASS_TOPOLOGY_DESTINATION_ENDPOINT_ONLY",
               complete_host_map=False):
@@ -237,10 +220,8 @@ def _platform(root, fabric=None, *, source_routing="BYPASS_TOPOLOGY_DESTINATION_
                  "lifecycle route is not using actual VM host assignment")
     return vms
 
-
 def _time_tolerance(value):
     return min(8.0 * math.ulp(value), value * 1e-12)
-
 
 def _jobs(result, plan, vms, end):
     all_jobs = _rows(_field(result, "jobs"), "jobId")
@@ -271,7 +252,6 @@ def _jobs(result, plan, vms, end):
         job["task_finish"] = finish
     return jobs
 
-
 def _main_sequence(root, events, end):
     summary = _obj(_field(root, "events"))
     _text_is(summary, "schema", "workflowsim-simulation-events-v1")
@@ -291,9 +271,8 @@ def _main_sequence(root, events, end):
              "assignment action requires explicit configuration.dataflowAssignment")
         previous = time
 
-
 def _v2_stage_quantities(attrs, fact, plan, copies, model):
-    # Recompute reference quantities, not V1 groups or served byte area.
+
     count, size, seconds, created, joined = 0, 0.0, 0.0, 0, 0
     for item in fact["inputs"]:
         count += item["referenceCount"]
@@ -309,7 +288,6 @@ def _v2_stage_quantities(attrs, fact, plan, copies, model):
          _time(_field(attrs, "modeledTransferSeconds")) == seconds and
          _id(_field(attrs, "newFileCopies")) == created and _id(_field(attrs, "joinedFileCopies")) == joined and
          "contentionTransferGroupCount" not in attrs, "V2 main input quantities differ from lifecycle references")
-
 
 def _main_context(root, events, jobs, facts, plan, arrivals, model, *, stage_at_ready=False,
                   stage_check=_v2_stage_quantities):
@@ -386,13 +364,8 @@ def _main_context(root, events, jobs, facts, plan, arrivals, model, *, stage_at_
     need(initial == set(plan.tasks), "initial attempts do not cover every logical Task")
     need(retried == {ident for ident, job in jobs.items() if job["status"] == FAILED}, "unrecovered failed attempt")
 
-
 def _verify_context(manifest, document, main_events, *, check_assignment=True):
-    """Verify one already strict-decoded V2 manifest/lifecycle/main-event triple.
 
-    Artifact bytes/hash/metrics joins are performed by inspect_path, not this
-    in-memory convenience function. Inputs and returned facts are not mutated.
-    """
     config, result, model, plan, arrivals = _core(manifest)
     option = _obj(_field(config, "networkEvidence"))
     keys(option, ("mode", "maxTraceRecords"), "V2 recording")
@@ -428,11 +401,9 @@ def _verify_context(manifest, document, main_events, *, check_assignment=True):
         report.update(_verify_validated(manifest, document, events, report))
     return report
 
-
 def verify_context(manifest, document, main_events):
-    """Validate the V2 run context and, only on explicit opt-in, its actions."""
-    return _verify_context(manifest, document, main_events)
 
+    return _verify_context(manifest, document, main_events)
 
 def _references(path, manifest, enabled, *, lifecycle_role="file-lifecycle"):
     refs, names = {}, set()
@@ -463,9 +434,8 @@ def _references(path, manifest, enabled, *, lifecycle_role="file-lifecycle"):
     need(set(refs) == expected, "recording/known artifact roles disagree (no mixed lifecycle/network roles permitted)")
     return refs
 
-
 def _sidecars(path, root, enabled, *, lifecycle_role="file-lifecycle"):
-    """One byte snapshot per contained artifact, shared only by closed V2/V3 callers."""
+
     refs = _references(path, root, enabled, lifecycle_role=lifecycle_role)
     metrics = _obj(decode_json(refs["metrics"]))
     keys(metrics, ("schema", "metrics"), "metrics sidecar")
@@ -478,9 +448,8 @@ def _sidecars(path, root, enabled, *, lifecycle_role="file-lifecycle"):
     need(all(line.strip() for line in lines), "blank main JSONL event")
     return refs, [decode_json(line) for line in lines]
 
-
 def inspect_path(path, manifest=None):
-    """Read/hash/decode a full V2 bundle once; optionally reuse a parsed manifest."""
+
     path = Path(path).absolute()
     root = read_document(path) if manifest is None else manifest
     config, result, model, plan, _ = _core(root)
@@ -494,8 +463,7 @@ def inspect_path(path, manifest=None):
     if enabled:
         report = verify_context(root, decode_json(refs["file-lifecycle"]), events)
     else:
-        # OFF is not a claim of zero copies/waiting/service. There are no
-        # lifecycle facts with which to verify these quantities or visibility.
+
         end = _time(_field(result, "simulationEndSeconds"))
         vms = _platform(root)
         _jobs(result, plan, vms, end)

@@ -29,7 +29,6 @@ import org.workflowsim.experiment.SimulationRunner;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.SimulationRandom;
 
-/** ALG-01: independent arithmetic oracles, deliberately opposed to raw-MI ordering. */
 class PlanningCostMatrixRegressionTest {
 
     @TempDir
@@ -43,7 +42,7 @@ class PlanningCostMatrixRegressionTest {
 
     @Test
     void timeAwareIndependentPlannersUseTheMatrixInsteadOfRawLength() {
-        // Raw MI=100 prefers VM3 (2 MIPS); matrix [100,1] seconds prefers VM8.
+
         assertAll(
                 "matrix-aware independent mappings",
                 () -> assertMatrixChoice(new StaticMetPlanningAlgorithm()),
@@ -62,7 +61,6 @@ class PlanningCostMatrixRegressionTest {
         planner.setVmList(vms(1.0, 1, 1.0, 1));
         planner.run();
 
-        // First ID tie -> VM3, next task -> idle VM8; availability is then [100,1].
         assertEquals(3, tasks.get(0).getVmId());
         assertEquals(8, tasks.get(1).getVmId());
         assertEquals(8, tasks.get(2).getVmId(), "100 > 1: the third task must use VM8");
@@ -82,8 +80,7 @@ class PlanningCostMatrixRegressionTest {
     void psoFitnessUsesTheMatrixForItsDeclaredCostAndLoadObjective() {
         List<Task> tasks = Collections.singletonList(projectedTask(1, 100L, 100.0, 1.0));
         List<CondorVM> machines = vms(2.0, 1, 1.0, 1);
-        // VM3: .8 * (100 seconds * .002 price) + .2 * 100 seconds = 20.16.
-        // VM8: .8 * (1 second * .001 price) + .2 * 1 second = .2008.
+
         assertEquals(20.16, PsoFitnessFunction.evaluate(new int[] {0}, tasks, machines, 0.8), EPSILON);
         assertEquals(0.2008, PsoFitnessFunction.evaluate(new int[] {1}, tasks, machines, 0.8), EPSILON);
     }
@@ -108,7 +105,7 @@ class PlanningCostMatrixRegressionTest {
         planner.setTaskList(Collections.singletonList(task));
         planner.setVmList(vms(2.0, 1, 3.0, 1));
         planner.run();
-        // round(1.01*2)/2 = 1; round(1.02*3)/3 = 1, so ID3 wins the tie.
+
         assertEquals(3, task.getVmId());
         assertEquals(100L, task.getCloudletLength());
     }
@@ -116,7 +113,7 @@ class PlanningCostMatrixRegressionTest {
     @Test
     void psoFitnessUsesRoundedEffectiveSecondsNotUnquantizedMatrixSeconds() {
         List<Task> tasks = Collections.singletonList(projectedTask(1, 100L, 1.24, 2.0));
-        // VM3: round(1.24*2)=2 MI -> 1 second; .8*.002 + .2*1 = .2016.
+
         assertEquals(0.2016, PsoFitnessFunction.evaluate(new int[] {0}, tasks, vms(2.0, 1, 1.0, 1), 0.8), EPSILON);
     }
 
@@ -140,7 +137,7 @@ class PlanningCostMatrixRegressionTest {
         planner.setVmList(vms(2.0, 2, 1.0, 2));
         planner.run();
         assertEquals(3, task.getVmId());
-        // 2PE execute in parallel: 100/2=50 seconds, not totalLength/mips=100.
+
         assertEquals(
                 10.08,
                 PsoFitnessFunction.evaluate(new int[] {0}, Collections.singletonList(task), vms(2.0, 2, 1.0, 2), 0.8),

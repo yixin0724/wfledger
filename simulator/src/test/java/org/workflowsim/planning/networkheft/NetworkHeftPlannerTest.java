@@ -10,7 +10,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** Paper Figure 4/6/8 Network-Aware HEFT oracle: nominal 25, stretched 32. */
 class NetworkHeftPlannerTest {
 
     @Test
@@ -37,9 +36,6 @@ class NetworkHeftPlannerTest {
 
         NetworkHeftSchedule schedule = new NetworkHeftPlanner().schedule(problem, 1);
 
-        // Ranks are 105.5, 55, and 50.5, so selection order is 1,2,3. Task 2 reserves
-        // VM1 [1,11]. Insertion-based HEFT places task 3 in VM1's legal [0,1] gap;
-        // append-only VM availability instead delays it to [11,12] and returns 12.
         assertEquals(1, schedule.getVmId(3));
         assertEquals(0.0, schedule.getTaskPlan(3).getStartSeconds(), 1.0e-9);
         assertEquals(1.0, schedule.getTaskPlan(3).getFinishSeconds(), 1.0e-9);

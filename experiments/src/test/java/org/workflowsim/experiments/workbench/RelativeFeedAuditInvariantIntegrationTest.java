@@ -24,24 +24,8 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * BAT-R9 (ninth-round review, 2026-10-27) -- auditable invariant for relative-path feeds
- * (red-to-green anchor).
- *
- * <p>Paper-level defect found by the R8 probe: {@code SimulationConfig} accepted a
- * relative path as perfectly legal, yet the manifest recorded "as fed" in
- * {@code configuration.workflowPaths} and "resolved absolute" in {@code inputs[].path};
- * the two differ, so the independent auditor's ordered-input-paths clause kills the run --
- * a legal run produced un-auditable evidence. The fix normalizes on the write side
- * (overwrite with the resolved path from inputs) and never weakens the auditor.</p>
- *
- * <p>The assertion shape is literally equivalent to the Python clause:
- * configuration.workflowPaths and inputs[].path must form identical lists. The evidence is
- * also left in a stable directory for the shell-side full Python audit.</p>
- */
 class RelativeFeedAuditInvariantIntegrationTest {
 
-    /** Stable probe directory (still present after the test, for the shell-side Python audit). */
     static final Path PROBE_DIR = Paths.get("target", "relative-feed-probe");
 
     @TempDir
@@ -63,21 +47,16 @@ class RelativeFeedAuditInvariantIntegrationTest {
     @Test
     void relativeWorkflowFeedWritesAnAuditableManifest() throws Exception {
         Files.createDirectories(PROBE_DIR);
-        // Input durability (R8 lesson): same directory as the evidence; the path is fed to
-        // SimulationConfig in a form "relative to the CWD" -- exactly the usage this
-        // invariant protects. Note that the CWD is the module root (experiments/), so a
-        // relative path must start from that anchor.
+
         Path absoluteInput = PROBE_DIR.resolve("relative-feed.dax");
         Files.write(absoluteInput, dax().getBytes(StandardCharsets.UTF_8));
         String relativeFeed = tempDir.relativize(tempDir).toString().isEmpty()
                 ? "target/relative-feed-probe/relative-feed.dax"
                 : "target/relative-feed-probe/relative-feed.dax";
-        // Use the explicit relative form; CWD is the module root, so first confirm the anchor holds:
+
         Path cwdCheck = Paths.get(relativeFeed);
         if (!Files.isRegularFile(cwdCheck)) {
-            // Fallback: under a different runner CWD, re-anchor with the same content via
-            // the absolute path (recording that the as-is relative form failed and skipping --
-            // this corrects the test's own CWD assumption and does not mask product behavior).
+
             org.junit.jupiter.api.Assumptions.assumeTrue(false, "CWD anchor mismatch");
         }
         SimulationConfig config = SimulationConfig.builder(relativeFeed, 2)

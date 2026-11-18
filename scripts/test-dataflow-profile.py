@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Synthetic, fixed-oracle tests for compare-dataflow-profile.py (stdlib only).
-
-Run: python3 -B scripts/test-dataflow-profile.py
-All profile data and CLI outputs live in test-owned TemporaryDirectory trees.
-No benchmark directory is read, and no wall-clock performance threshold is used.
-"""
 
 import copy
 import hashlib
@@ -19,8 +13,6 @@ import sys
 import tempfile
 import unittest
 
-
-# Loading the sibling module must not create a repository __pycache__ directory.
 sys.dont_write_bytecode = True
 SCRIPT = Path(__file__).resolve().with_name("compare-dataflow-profile.py")
 SPEC = importlib.util.spec_from_file_location("dataflow_profile_comparison", str(SCRIPT))
@@ -31,7 +23,6 @@ SCENARIOS = ("FILELESS", "FILES_V2", "STORE_V3", "ONLINE_V3", "WIDE_V2")
 CAPTURES = ("OFF", "TRUNCATED", "FULL")
 FACTORS = {"FILELESS": 0, "FILES_V2": 1, "STORE_V3": 2, "ONLINE_V3": 2, "WIDE_V2": 0}
 HASH_FIELDS = ("stateSha256", "captureSha256", "actionsSha256")
-
 
 def record(scenario="FILELESS", capture="OFF", tasks=7, trial=0, **overrides):
     result = {
@@ -47,17 +38,14 @@ def record(scenario="FILELESS", capture="OFF", tasks=7, trial=0, **overrides):
     result.update(overrides)
     return result
 
-
 def series(elapsed, allocated=None, **case):
     if allocated is None:
         allocated = [1000] * len(elapsed)
     return [record(trial=index, elapsedNanos=value, threadAllocatedBytes=allocated[index], **case)
             for index, value in enumerate(elapsed)]
 
-
 def write_rows(path, rows):
     path.write_text("".join(json.dumps(row, allow_nan=False) + "\n" for row in rows), encoding="utf-8")
-
 
 class ProfileComparisonTests(unittest.TestCase):
     def setUp(self):
@@ -228,7 +216,7 @@ class ProfileComparisonTests(unittest.TestCase):
                 self.assertEqual(case["allocationReductionRatio"], ratio)
                 self.assertEqual(case["allocationReductionLabel"], label)
                 json.dumps(summary, allow_nan=False)
-        # Denominator handling is based on medians, not just one zero sample.
+
         case = comparison.compare_records(series([10, 20], [100, 100]),
                                           series([10, 20], [0, 1]))["cases"][0]
         self.assertEqual(case["allocationReductionRatio"], 200.0)
@@ -504,7 +492,6 @@ class ProfileComparisonTests(unittest.TestCase):
                 if mode == "broken-symlink":
                     self.assertTrue(output_json.is_symlink())
                     self.assertFalse((directory / "absent-target").exists())
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

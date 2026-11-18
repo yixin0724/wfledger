@@ -33,20 +33,6 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationConfig.FrequencyPolicy;
 
-/**
- * BAT-D2 (2026-10-29) -- red->green integration test for per-job frequency-tier
- * assignment + the evidence chain + the per-tier conservation ledger.
- *
- * <p>Legal sources for the expectations (three sources): (1) the extended conservation law
- * {@code E_vm = P_idle(default)*T_sim + sum over tiers[(P_max(tier)-P_idle(default))*busy(tier)]}
- * (docs/advanced/DVFS_DIMENSION_DESIGN.md section 2.3); (2) the EDP estimator of the D2
- * task contract
- * {@code EDP_t = (P_max(t)*T_t + P_idle(default)*(makespan_est-T_t)) * T_t} (section 2.2),
- * with numbers hand-derived in the test comments; (3) degenerate identities
- * (tierless/single-tier = the v1 law, already anchored by BAT-D1). Copying implementation
- * output as an expected value is forbidden -- every conservation assertion recomputes
- * from the ledger (per-tier busy seconds in metrics + the platform power table) by the law.</p>
- */
 class FrequencyTierAssignmentTest {
 
     @TempDir
@@ -66,21 +52,6 @@ class FrequencyTierAssignmentTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    // ------------------------------------------------------------------
-    // 1. DEFAULT: first-tier assignment + per-tier ledger partition + both accountings
-    //    agree when every job runs at the default tier
-    // ------------------------------------------------------------------
-
-    /**
-     * SHARED_STORAGE_HEFT two-task chain DAG (10s/30s @1000 reference throughput ->
-     * 10000/30000 MI), a 2-VM fleet, and a 3-tier platform (2000/1000/500 descending from
-     * the 1000 base frequency). Assertions: every compute JobOutcome carries a non-null
-     * tierMips; the per-tier busy seconds sum to that VM's busy union; the fleet total
-     * equals the sum over VMs; the hand-computed per-tier conservation law equals the
-     * reported energy; when every job runs at the default tier, the per-tier accounting
-     * equals the D1 "whole-run default tier" accounting (the distinguishable identity
-     * branch).
-     */
     @Test
     void defaultPolicyAssignsFirstTierWithPerTierLedgerPartition() throws Exception {
         PlatformProfile platform = threeTierPlatform();
@@ -96,7 +67,6 @@ class FrequencyTierAssignmentTest {
             }
         }
 
-        // Ledger partition identity: per-VM per-tier busy seconds sum == that VM's busy-union seconds.
         double fleetSumsFromLedger = 0.0;
         for (Map.Entry<Integer, SimulationMetrics.VmMetrics> entry :
                 report.getMetrics().getVmMetrics().entrySet()) {
@@ -125,15 +95,13 @@ class FrequencyTierAssignmentTest {
                 1e-9,
                 "fleet per-tier aggregate must equal the per-VM ledger sums");
 
-        // Conservation law (section 2.3) hand-recomputed from the ledger vs the reported energy.
         ManualEnergy hand = handConservation(report, platform);
         assertEquals(
                 hand.perTierTotal,
                 report.getEnergyAccounting().getTotalEnergyJoules(),
                 1e-6,
                 "per-tier conservation law hand recompute");
-        // All-default-tier run: the per-tier accounting equals the D1 all-at-default
-        // accounting (a provable identity branch).
+
         assertEquals(
                 hand.allAtDefaultTotal,
                 hand.perTierTotal,
@@ -145,19 +113,6 @@ class FrequencyTierAssignmentTest {
                 "tiered platform must be" + " powered (BAT-D2 fixes the D1 dead gate that zeroed tiered platforms)");
     }
 
-    // ------------------------------------------------------------------
-    // 2. MIN_POWER: last-tier assignment + clearly longer runtime + per-tier accounting
-    //    distinguishable from the all-at-default accounting
-    // ------------------------------------------------------------------
-
-    /**
-     * Same 3-tier platform: MIN_POWER runs everything at the last tier (500) -> wall clock
-     * per MI doubles (exec = work/500, by the tier law: 10000 MI -> 20s, 30000 MI -> 60s),
-     * and the makespan is clearly larger than the DEFAULT run (x4 vs x0.5 speed); whenever
-     * any job runs at a non-default tier, per-tier conservation and the D1 all-at-default
-     * accounting necessarily differ -- the difference comes from two independent hand
-     * formulas, not from endorsing implementation values.
-     */
     @Test
     void minPowerRunsAtLowestTierTakesNoticeablyLongerAndSplitsConservation() throws Exception {
         PlatformProfile platform = threeTierPlatform();
@@ -168,7 +123,7 @@ class FrequencyTierAssignmentTest {
         for (SimulationReport.JobOutcome job : min.getJobs()) {
             if (isCompute(job)) {
                 assertEquals(500.0, job.getTierMips().doubleValue(), 0.0, "MIN_POWER = LAST tier");
-                // Tier law: exec = work/500 (the precision budget of the 0.1s minimum CloudSim event interval).
+
                 double expectedExec = job.getTaskIds().contains(Integer.valueOf(1)) ? 20.0 : 60.0;
                 assertEquals(
                         expectedExec,
@@ -182,10 +137,6 @@ class FrequencyTierAssignmentTest {
                 "MIN_POWER (0.5x speed) must have a clearly larger makespan than DEFAULT (2x speed): min="
                         + min.getMakespan() + " default=" + def.getMakespan());
 
-        // Ledger key surface: unassigned non-compute attempts (bookkeeping envelopes) are
-        // attributed to the platform default tier -- the only legal keys are the last tier
-        // (compute work) and the first tier (bookkeeping); any other key is a broken
-        // evidence chain.
         for (Map<Double, Double> tiers :
                 min.getMetrics().getPerTierBusySecondsByVm().values()) {
             for (double keyMips : tiers.keySet()) {
@@ -195,8 +146,7 @@ class FrequencyTierAssignmentTest {
                                 + tiers);
             }
         }
-        // Ledger value surface: per-VM last-tier busy seconds == the sum of compute-job
-        // execution seconds on that VM (bookkeeping seconds land in the default tier).
+
         Map<Integer, Double> computeBusyPerVm = new java.util.LinkedHashMap<Integer, Double>();
         for (SimulationReport.JobOutcome job : min.getJobs()) {
             if (isCompute(job)) {
@@ -227,29 +177,6 @@ class FrequencyTierAssignmentTest {
         assertNotEquals(0.0, min.getEnergyAccounting().getTotalEnergyJoules(), "tiered platform must be powered");
     }
 
-    // ------------------------------------------------------------------
-    // 3. EDP_HEURISTIC: hand-derived middle-tier choice on a power-asymmetric tier table
-    //    (three mechanism identities distinguished)
-    // ------------------------------------------------------------------
-
-    /**
-     * Power-asymmetric tier table (2000@max4000W / 1000@280W / 500@260W, default tier idle
-     * 250W). EDP hand derivation (conservation-consistent local formula
-     * EDP_t=(P_max(t)*T_t + P_idle(default)*(makespan_est-T_t))*T_t):
-     *
-     * <p>t1 (10000 MI, dispatch clock~0): A(2000):T=5, E=4000*5+250*0=20000->EDP 100000;
-     * B(1000):T=10, E=280*10+250*0=2800->EDP 28000; C(500):T=20, E=260*20+250*0=5200
-     * ->EDP 104000 => B.</p>
-     *
-     * <p>t2 (30000 MI, dispatched after t1 completes, clock~10): A:T=15,
-     * E=4000*15+250*10=62500->EDP 937500; B:T=30, E=280*30+250*10=10900->EDP 327000;
-     * C:T=60, E=260*60+250*10=18100->EDP 1086000 => B.</p>
-     *
-     * <p>Both jobs take the middle tier 1000 -- EDP, DEFAULT (first tier 2000) and
-     * MIN_POWER (last tier 500) make three different choices on the same platform, so the
-     * mechanism identities are distinguishable; full completion of the run is a
-     * prerequisite.</p>
-     */
     @Test
     void edpHeuristicPicksHandComputedMiddleTierOnPowerAsymmetricTable() throws Exception {
         PlatformProfile platform = edpAsymmetricTierPlatform();
@@ -269,22 +196,12 @@ class FrequencyTierAssignmentTest {
                 assertEquals(1000.0, job.getTierMips().doubleValue(), 0.0, "hand-computed EDP winner");
             }
         }
-        // Mechanism-identity tripod (same platform, different policies -> different tiers):
+
         assertEquals(2000.0, firstComputeTier(run(platform, FrequencyPolicy.DEFAULT)), 0.0, "DEFAULT picks first");
         assertEquals(500.0, firstComputeTier(run(platform, FrequencyPolicy.MIN_POWER)), 0.0, "MIN_POWER picks last");
         assertEquals(1000.0, firstComputeTier(edp), 0.0, "EDP_HEURISTIC picks the hand-computed middle");
     }
 
-    /**
-     * Conservation-law counterexample for the local EDP estimate. Let A be the 2000 tier and B the
-     * 1000 tier, so T_B=2T_A=2T. With P_A=4000, P_B=875 and default idle I=250, subtracting A's EDP
-     * from B's gives 250*T^2+250*clock*T&gt;0 when idle is charged over the whole makespan estimate
-     * (the old double count), but -500*T^2+250*clock*T=250*T*(clock-2T) when idle is charged only
-     * outside the local busy interval. The second expression is negative at dispatch clock &lt; 2T:
-     * t1 has T=5 and clock~0.21, and t2 has T=15 and clock~5.21 after A (or ~10.21 after B). Thus B
-     * must win for both jobs. At clock zero, the first-job hand values are:
-     * old A=106250, old B=112500, conserved A=100000, conserved B=87500.
-     */
     @Test
     void edpHeuristicUsesIdleOnlyOutsideLocalExecution() throws Exception {
         PlatformProfile platform = tierPlatform(new double[][] {{2000.0, 250.0, 4000.0}, {1000.0, 0.0, 875.0}});
@@ -302,12 +219,6 @@ class FrequencyTierAssignmentTest {
         }
     }
 
-    /**
-     * Nameplate peak is independent of the selected tier: each of the two VMs declares 400 W at its
-     * default tier but 900 W at its other tier, so fleet peak is 2*max(400,900)=1800 W. Using only
-     * the default tier would report 800 W, which is not even an upper bound on this MIN_POWER run's
-     * 900 W-per-VM active draw.
-     */
     @Test
     void tieredPeakPowerUsesMaximumAcrossDeclaredTiers() throws Exception {
         PlatformProfile platform = tierPlatform(new double[][] {{2000.0, 250.0, 400.0}, {1000.0, 220.0, 900.0}});
@@ -321,14 +232,6 @@ class FrequencyTierAssignmentTest {
                 "two VMs times the hand-derived maximum declared tier power of 900 W");
     }
 
-    // ------------------------------------------------------------------
-    // 4. Degeneration: unset policy = DEFAULT; single-tier platform = v1 energy
-    // ------------------------------------------------------------------
-
-    /**
-     * A configuration that never calls frequencyPolicy must track an explicit DEFAULT bit
-     * for bit (absent means DEFAULT).
-     */
     @Test
     void unsetPolicyBehavesExactlyLikeExplicitDefault() throws Exception {
         PlatformProfile platform = threeTierPlatform();
@@ -346,13 +249,6 @@ class FrequencyTierAssignmentTest {
                 "same accountings");
     }
 
-    /**
-     * Each VM declares a single tier (= writing v1 power into the frequency tier table,
-     * the BAT-D1 single-tier degeneration law): the run sequence matches the v1 flat-power
-     * platform bit for bit (scale factor 1.0) and the energy is identical; the only
-     * difference is on the evidence surface (tierMips=1000 recorded vs the key missing in
-     * v1).
-     */
     @Test
     void singleTierPerVmPlatformDegeneratesToV1Energy() throws Exception {
         SimulationReport tiered = run(singleTierPlatform(), null);
@@ -377,24 +273,13 @@ class FrequencyTierAssignmentTest {
                 assertNull(job.getTierMips(), "v1 plain platform carries no tier evidence");
             }
         }
-        // The ledger partition still holds (everything falls into the single tier).
+
         for (Map<Double, Double> tiers :
                 tiered.getMetrics().getPerTierBusySecondsByVm().values()) {
             assertEquals(1, tiers.size(), "single tier platform ledger");
         }
     }
 
-    // ------------------------------------------------------------------
-    // 5. Evidence surface: tierMips appears in the manifest jobs section only when non-null
-    // ------------------------------------------------------------------
-
-    /**
-     * tierMips contract in the result manifest: non-null -> the key appears with the
-     * assigned value; null (non-compute attempt) -> the key is absent; a v1 platform run
-     * -> the jobs serialization surface is unchanged (identity fast path) and contains no
-     * "tierMips" key at all (the outer Gson serializeNulls does not therefore produce a
-     * null key).
-     */
     @Test
     void manifestCarriesTierMipsOnlyWhenAssigned() throws Exception {
         SimulationReport tiered = run(threeTierPlatform(), FrequencyPolicy.MIN_POWER);
@@ -429,24 +314,6 @@ class FrequencyTierAssignmentTest {
                 "v1 manifests must never carry a tierMips key (null = absent = v1 legacy)");
     }
 
-    // ------------------------------------------------------------------
-    // 5b. Evidence surface: frequencyTiers in the manifest platform section (a D3
-    //     prerequisite, consumed by the Python auditor)
-    // ------------------------------------------------------------------
-
-    /**
-     * BAT-D2 follow-up close-out (2026-10-29): the platform section serializes the per-VM
-     * frequency tier table. tiered run -> {@code platform.vms[].frequencyTiers} is a list
-     * of {@code {mips,idlePowerWatts,maxPowerWatts}} triples in table order (declared
-     * descending) and equals the declared table value by value (three sources for the
-     * expectation: the tier table schema of contract DVFS_DIMENSION_DESIGN.md section 2.5
-     * x the platform table declared by the test, not a transcription of implementation
-     * output); v1 flat-power run -> no "frequencyTiers" key anywhere (the legacy platform
-     * section is bit-for-bit unchanged, the same key-absence contract as the carbonWindows
-     * "serialized only when non-empty" rule). A tiered VM's flat
-     * idlePowerWatts/maxPowerWatts are always 0.0 (one source of truth), anchored in the
-     * same test -- the auditor uses this to tell the two powered sources apart.
-     */
     @Test
     void manifestPlatformSerializesPerVmFrequencyTiers() throws Exception {
         SimulationReport tiered = run(threeTierPlatform(), FrequencyPolicy.MIN_POWER);
@@ -479,8 +346,7 @@ class FrequencyTierAssignmentTest {
                         0.0,
                         "tier maxPowerWatts");
             }
-            // One source of truth: a tiered VM's flat power fields must be 0 in the platform
-            // section (VmSpec guarantees the two sources are mutually exclusive).
+
             assertEquals(
                     0.0,
                     ((Number) vm.get("idlePowerWatts")).doubleValue(),
@@ -506,12 +372,6 @@ class FrequencyTierAssignmentTest {
                 "v1 plain-power manifests must NOT carry a frequencyTiers key (empty table = undeclared = v1 legacy)");
     }
 
-    // ------------------------------------------------------------------
-    // 6. Prerequisite rejection: a non-DEFAULT policy must not silently go inert on an
-    //    all-tierless platform
-    // ------------------------------------------------------------------
-
-    /** MIN_POWER + all-flat-power platform -> explicit rejection citing the frequencyTiers clause (no silent v1). */
     @Test
     void nonDefaultPolicyOnPlainPlatformFailsFast() throws Exception {
         SimulationConfigurationException rejection = assertThrows(
@@ -523,19 +383,10 @@ class FrequencyTierAssignmentTest {
                 "rejection must cite the frequencyTiers clause: " + rejection.getMessage());
     }
 
-    // ------------------------------------------------------------------
-    // fixtures
-    // ------------------------------------------------------------------
-
-    /** 2-VM/2-Host platform, each VM at base frequency 1000 with 3 tiers (2000/1000/500). */
     private static PlatformProfile threeTierPlatform() {
         return tierPlatform(new double[][] {{2000.0, 250.0, 400.0}, {1000.0, 220.0, 280.0}, {500.0, 210.0, 260.0}});
     }
 
-    /**
-     * EDP power-asymmetric tier table (the first tier draws 4000W at full load -- tier
-     * selection has a real tradeoff).
-     */
     private static PlatformProfile edpAsymmetricTierPlatform() {
         return tierPlatform(new double[][] {{2000.0, 250.0, 4000.0}, {1000.0, 220.0, 280.0}, {500.0, 210.0, 260.0}});
     }
@@ -553,12 +404,10 @@ class FrequencyTierAssignmentTest {
         return builder.build();
     }
 
-    /** Single-tier VM (1000/250/400) -- the run-level counterpart of the D1 single-tier degeneration law. */
     private static PlatformProfile singleTierPlatform() {
         return tierPlatform(new double[][] {{1000.0, 250.0, 400.0}});
     }
 
-    /** v1 flat-power platform (250/400) -- the same power pair as the single-tier platform. */
     private static PlatformProfile plainPoweredPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("dvfs-plain-test");
         builder.addHost(new PlatformProfile.HostSpec(0, 2, 2000.0, 2048, 10_000L, 1_000_000L));
@@ -601,10 +450,6 @@ class FrequencyTierAssignmentTest {
                 null);
     }
 
-    /**
-     * Serial chain DAG: t1 (10s) -> t2 (30s). runtime seconds x reference throughput 1000
-     * -> 10000/30000 MI of declared work per PE.
-     */
     private Path chainDax() throws Exception {
         if (workflowDax == null) {
             StringBuilder dax = new StringBuilder();
@@ -620,7 +465,6 @@ class FrequencyTierAssignmentTest {
         return workflowDax;
     }
 
-    /** Real run: SimulationRunner + SimulationConfig + a platform that declares frequency tiers. */
     private SimulationReport run(PlatformProfile platform, FrequencyPolicy policy) throws Exception {
         SimulationConfig.Builder builder = SimulationConfig.builder(chainDax().toString(), 2)
                 .planningAlgorithm(PlanningAlgorithm.SHARED_STORAGE_HEFT)
@@ -657,10 +501,6 @@ class FrequencyTierAssignmentTest {
         return tiers;
     }
 
-    /**
-     * Hand-recomputed result pair of the section 2.3 extended conservation law: per-tier
-     * accounting vs the D1 whole-run all-at-default accounting.
-     */
     private static final class ManualEnergy {
         final double perTierTotal;
         final double allAtDefaultTotal;
@@ -671,12 +511,6 @@ class FrequencyTierAssignmentTest {
         }
     }
 
-    /**
-     * Hand-derive the energy from the ledger (per-tier busy seconds in metrics + the
-     * VmMetrics busy union + the platform power table) with two independent formulas:
-     * perTier = idle(default)*T + sum over tiers (P_max(tier)-idle(default))*busy(tier);
-     * allAtDefault = idle(default)*T + (P_max(default)-idle(default))*busy(total).
-     */
     private static ManualEnergy handConservation(SimulationReport report, PlatformProfile platform) {
         double makespan = report.getMakespan();
         Map<Integer, Map<Double, Double>> ledger = report.getMetrics().getPerTierBusySecondsByVm();

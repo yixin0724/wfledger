@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable evaluated NACO schedule and its DNC makespan fitness. */
 public final class NacoSchedule {
     private final Map<Integer, Entry> entries;
     private final double makespanSeconds;

@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Immutable in-memory result formed after every declared cell has executed. */
 public final class ExperimentCampaignResult {
 
     private final ExperimentPlan plan;
@@ -59,7 +58,6 @@ public final class ExperimentCampaignResult {
         }
     }
 
-    /** Immutable single-run report carrying its source cell and replication identity. */
     public static final class Run {
         private final ExperimentPlan.Cell cell;
         private final int replicationIndex;

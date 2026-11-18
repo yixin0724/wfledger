@@ -7,7 +7,6 @@ import org.workflowsim.planning.timed.PostPlanningOptimizer;
 import org.workflowsim.planning.timed.TimedActivity;
 import org.workflowsim.planning.timed.TimedPlan;
 
-/** Adapts the generic post-planning API to the CaWoSched fixed-plan optimizer. */
 public final class CaWoSchedOptimizer implements PostPlanningOptimizer {
 
     private final CaWoSchedVariant variant;

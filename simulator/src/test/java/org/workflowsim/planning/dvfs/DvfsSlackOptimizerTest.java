@@ -12,7 +12,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.platform.PlatformProfile;
 
-/** Hand-derived DVFS slack and energy checks. */
 class DvfsSlackOptimizerTest {
 
     @Test

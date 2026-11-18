@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Self-test for analyze-energy-portrait.py — statistical primitives on hand-computed
-fixtures plus derivation invariants on the retained powered benchmark (BAT-E6, 2026-10-27).
 
-Every statistical primitive is checked against hand arithmetic; the published numbers
-(run count, conservation, pair census, the one Holm-significant finding) are locked on
-the real evidence so any future drift breaks loudly.
-"""
 import json
 import math
 import sys
@@ -17,13 +11,11 @@ import importlib.util
 
 HERE = Path(__file__).resolve().parent
 
-
 def load_portrait_module():
     spec = importlib.util.spec_from_file_location('analyze_energy_portrait', HERE / 'analyze-energy-portrait.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
 
 _ap = load_portrait_module()
 comparisons = _ap.comparisons
@@ -34,19 +26,17 @@ holm = _ap.holm
 monotonicity = _ap.monotonicity
 sign_test = _ap.sign_test
 
-
 class StatisticalPrimitivesTest(unittest.TestCase):
     def test_sign_test_exact_two_sided(self):
-        # n=10, k=0: 2 × C(10,0)/2^10 = 2/1024
+
         self.assertAlmostEqual(sign_test(10, 0), 2.0 / 1024.0)
         sign_test_kw = 2.0 * sum(math.comb(10, i) for i in range(0, 2)) / 1024.0
-        self.assertAlmostEqual(sign_test(1, 9), sign_test_kw)  # symmetric k=1
-        self.assertEqual(sign_test(0, 0), 1.0)  # no non-tied pairs
-        self.assertEqual(sign_test(5, 5), 1.0)  # median extreme capped at 1
+        self.assertAlmostEqual(sign_test(1, 9), sign_test_kw)
+        self.assertEqual(sign_test(0, 0), 1.0)
+        self.assertEqual(sign_test(5, 5), 1.0)
 
     def test_holm_hand_example(self):
-        # p = [0.01, 0.04, 0.03], m = 3:
-        # rank1 0.01×3 = 0.03; rank2 0.03×2 = 0.06; rank3 0.04×1 = 0.04 → running max 0.03/0.06/0.06
+
         adjusted = holm([0.01, 0.04, 0.03])
         self.assertAlmostEqual(adjusted[0], 0.03)
         self.assertAlmostEqual(adjusted[1], 0.06)
@@ -60,9 +50,7 @@ class StatisticalPrimitivesTest(unittest.TestCase):
         with self.assertRaises(Exception):
             family_of("SOMETHING_ELSE")
 
-
 class DerivationInvariantsTest(unittest.TestCase):
-    """Hand-built synthetic corpus locks the derivations piece by piece."""
 
     ROW_TEMPLATE = {
         "runId": "synthetic", "input": "X", "vmCount": 2,
@@ -80,10 +68,10 @@ class DerivationInvariantsTest(unittest.TestCase):
         self.assertEqual(conservation(rows), 1)
         row2 = dict(row)
         row2["busy"] = 50.001
-        row2["energy"] = row["energy"]  # stale energy vs drifted busy -> must be caught
+        row2["energy"] = row["energy"]
         rows2 = [row2]
         with self.assertRaises(Exception):
-            conservation(rows2)  # closed form no longer holds
+            conservation(rows2)
 
     def test_monotonicity_departure_is_attributed(self):
         def mk(policy, makespan, busy, idle, delta, edp_scale):
@@ -92,19 +80,19 @@ class DerivationInvariantsTest(unittest.TestCase):
                     "makespan": makespan, "busy": busy, "energy": energy,
                     "edp": energy * edp_scale, "idleSum": idle, "deltaVm": delta,
                     "status": "COMPLETED_SUCCESSFULLY"}
-        # Fixed-busy pair: energy co-directional with makespan.
+
         rows = [mk("FCFS", 100.0, 50.0, 500.0, 150.0, 1.0), mk("READY_BATCH_MCT", 120.0, 50.0, 500.0, 150.0, 1.0)]
         table = conditions(rows)
         result = monotonicity(table)
         self.assertEqual(result["pairs"], 1)
         self.assertEqual(result["coDirectional"], 1)
-        # Busy-drift departure: larger makespan but much smaller busy → energy falls.
+
         rows = [mk("FCFS", 100.0, 60.0, 500.0, 150.0, 1.0), mk("READY_BATCH_MAXMIN", 101.0, 40.0, 500.0, 150.0, 1.0)]
         table = conditions(rows)
         result = monotonicity(table)
         self.assertEqual(result["opposite"], 1)
         dep = result["departures"][0]
-        self.assertGreater(dep["dominanceRatio"], 1.0)  # busy term dominates idle-dT term
+        self.assertGreater(dep["dominanceRatio"], 1.0)
 
     def test_comparison_tallies_and_holm_family(self):
         def mk(policy, input_id, edp):
@@ -121,19 +109,17 @@ class DerivationInvariantsTest(unittest.TestCase):
         entries = result["ONLINE"]
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        # MINMIN better (lower EDP) on 1 condition, worse on 3: wins=1, losses=3.
+
         self.assertEqual((entry["wins"], entry["losses"], entry["ties"]), (1, 3, 0))
         self.assertAlmostEqual(entry["pValue"], sign_test(1, 3))
-        # Only regrets Holm m=1: adjusted == raw
+
         self.assertAlmostEqual(entry["holmAdjustedP"], entry["pValue"])
 
-
 class MedianBranchTest(unittest.TestCase):
-    """BAT-R5: median statistics odd/even branches (previous rounds never locked them)."""
 
     def test_median_odd_and_even_lengths(self):
         ap = load_portrait_module()
-        # Odd length: the exact middle element of the sorted EDP list.
+
         rows = []
         for i, edp in enumerate((9.0, 1.0, 5.0)):
             rows.append({"runId": "s%d" % i, "input": "X", "vmCount": 2, "policy": "FCFS",
@@ -143,20 +129,18 @@ class MedianBranchTest(unittest.TestCase):
         got = ap.layer_rankings(rows)["ONLINE"][0]
         self.assertEqual(got["conditions"], 3)
         self.assertEqual(got["medianEdp"], 5.0)
-        # Even length: the exact mean of the middle two elements.
+
         rows.append({"runId": "s3", "input": "X", "vmCount": 2, "policy": "FCFS",
                      "kind": "K", "makespan": 1.0, "busy": 1.0, "energy": 1.0,
                      "edp": 7.0, "idleSum": 1.0, "deltaVm": 1.0,
                      "status": "COMPLETED_SUCCESSFULLY"})
         got = ap.layer_rankings(rows)["ONLINE"][0]
         self.assertEqual(got["conditions"], 4)
-        self.assertEqual(got["medianEdp"], 6.0)  # mean(5.0, 7.0)
-        # Rank/mean consistency while we are here.
+        self.assertEqual(got["medianEdp"], 6.0)
+
         self.assertAlmostEqual(got["meanEdp"], (9.0 + 1.0 + 5.0 + 7.0) / 4)
 
-
 class RetainedBenchmarkInvariantTest(unittest.TestCase):
-    """The published portrait numbers lock on the retained powered benchmark."""
 
     def test_real_portrait_derives_the_published_numbers(self):
         root = HERE.parent / "output" / "benchmark-standard-power-v1"
@@ -173,20 +157,18 @@ class RetainedBenchmarkInvariantTest(unittest.TestCase):
         self.assertEqual((mono["pairs"], mono["coDirectional"], mono["opposite"]), (207, 201, 6))
         for departure in mono["departures"]:
             self.assertGreater(departure["dominanceRatio"], 0.999)
-        # The one Holm-significant finding in the corpus: PEFT worse than family
-        # reference HEFT on SHARED EDP (holm-adjusted p = 0.015625).
+
         shared = {item["policy"]: item for item in portrait["edpComparisons"]["SHARED"]}
         self.assertIn("SHARED_STORAGE_PEFT", shared)
         peft = shared["SHARED_STORAGE_PEFT"]
         self.assertAlmostEqual(peft["holmAdjustedP"], 0.015625, places=9)
         self.assertTrue(peft["significantAtHolm05"])
-        self.assertEqual(peft["losses"], 9)  # worse than HEFT on 9 of 10 conditions
-        # No other family has a Holm-significant label at this corpus size.
+        self.assertEqual(peft["losses"], 9)
+
         for fam, items in portrait["edpComparisons"].items():
             for item in items:
                 if fam != "SHARED" or item["policy"] != "SHARED_STORAGE_PEFT":
                     self.assertFalse(item["significantAtHolm05"])
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

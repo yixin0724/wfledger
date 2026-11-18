@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.workflowsim.experiment.HolmStepDownCorrection;
 
-/** Seed repeats are collapsed within each DAG before comparisons; populations are never pooled. */
 public final class NetworkStudySummary {
     private NetworkStudySummary() {}
 
@@ -29,9 +28,8 @@ public final class NetworkStudySummary {
         return result;
     }
 
-    /** Arrival-domain parameter-axis detection (moved verbatim from summarize()). */
     private static boolean detectHeterogeneityAxis(List<Map<String, Object>> runs) {
-        // Heterogeneity enters the stratification only when runs carry it; frozen protocols stay byte-identical.
+
         boolean heterogeneityAxis = false;
         for (Map<String, Object> run : runs) {
             if (run.get("heterogeneity") != null) {
@@ -42,7 +40,6 @@ public final class NetworkStudySummary {
         return heterogeneityAxis;
     }
 
-    /** Completed-run grouping and failure counting (moved verbatim). */
     private static GroupedRuns groupCompletedRuns(List<Map<String, Object>> runs, boolean heterogeneityAxis) {
         Map<String, List<Map<String, Object>>> groups = new LinkedHashMap<String, List<Map<String, Object>>>();
         int failures = 0;
@@ -61,7 +58,6 @@ public final class NetworkStudySummary {
         return new GroupedRuns(groups, failures);
     }
 
-    /** Per-group aggregate metrics (moved verbatim). */
     private static List<Map<String, Object>> aggregateGroups(
             Map<String, List<Map<String, Object>>> groups, boolean heterogeneityAxis) {
         List<Map<String, Object>> aggregates = new ArrayList<Map<String, Object>>();
@@ -96,7 +92,6 @@ public final class NetworkStudySummary {
         return aggregates;
     }
 
-    /** Baseline comparison and Holm multiple correction (moved verbatim). */
     private static List<Map<String, Object>> buildComparisons(
             List<Map<String, Object>> aggregates, boolean heterogeneityAxis, int failures) {
         List<Map<String, Object>> comparisons = new ArrayList<Map<String, Object>>();
@@ -129,11 +124,6 @@ public final class NetworkStudySummary {
         return comparisons;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from buildComparisons; statements verbatim; order unchanged.
-     * Scope: compute only the effect/win/tie/loss records of a single candidate planner against
-     * the LOCAL_HEFT baseline within this stratum, and append them to family.
-     */
     private static void compareCandidateAgainstBaseline(
             List<Map<String, Object>> stratum,
             String candidate,
@@ -185,7 +175,6 @@ public final class NetworkStudySummary {
         family.add(comparison);
     }
 
-    /** Private moved-verbatim structure for the summarize() grouping stage. */
     private static final class GroupedRuns {
         final Map<String, List<Map<String, Object>>> groups;
         final int failures;
@@ -211,11 +200,7 @@ public final class NetworkStudySummary {
     }
 
     static void applyHolm(List<Map<String, Object>> family) {
-        // (AUD-F06, 2026-11-03) The step-down arithmetic lives in the shared
-        // HolmStepDownCorrection so the network study and the generic campaign
-        // cannot drift. The record protocol is unchanged: keys are inserted in
-        // the same order, untested records keep their null/false defaults, and
-        // the serialized output stays byte-identical.
+
         List<Double> rawPValues = new ArrayList<Double>();
         for (Map<String, Object> record : family) {
             record.put("holmAdjustedPValue", null);

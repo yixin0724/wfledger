@@ -31,7 +31,6 @@ import org.workflowsim.experiment.SimulationRunner;
 import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 
-/** ALG-02/03: file-availability times are independent of planning selection order. */
 class LocalDataAvailabilityPlanningTest {
 
     @TempDir
@@ -107,8 +106,6 @@ class LocalDataAvailabilityPlanningTest {
         planner.allocate(twoFileConsumer, machines.get(1), 110.1);
         planner.allocate(oneFileConsumer, machines.get(1), 110.1);
 
-        // R finishes at111.1. A needs (10+20)MB ->141.1; B independently needs only10MB ->121.1.
-        // Fixing future replicas must not prohibit this valid gap insertion or charge A's30s to B.
         assertEquals(141.1, twoFileConsumer.getStaticScheduleStartTime(), EPSILON);
         assertEquals(143.1, planner.plannedFinishOf(twoFileConsumer).doubleValue(), EPSILON);
         assertEquals(121.1, oneFileConsumer.getStaticScheduleStartTime(), EPSILON);
@@ -134,10 +131,6 @@ class LocalDataAvailabilityPlanningTest {
         planner.allocate(gate, machines.get(0), 110.1);
         planner.allocate(laterConsumer, machines.get(1), 110.1);
 
-        // VM8 has a [130.1,200.1] reservation. First consumer's input arrives at120.1,
-        // but its20s compute cannot fit before130.1, so compute starts at200.1.
-        // Later consumer becomes ready at125.1 and uses the already arrived input,
-        // fitting [125.1,126.1] rather than waiting another10s or for first compute.
         assertEquals(130.1, blocker.getStaticScheduleStartTime(), EPSILON);
         assertEquals(200.1, firstConsumer.getStaticScheduleStartTime(), EPSILON);
         assertEquals(220.1, planner.plannedFinishOf(firstConsumer).doubleValue(), EPSILON);
@@ -154,7 +147,7 @@ class LocalDataAvailabilityPlanningTest {
         AbstractLocalCommPlanningAlgorithm planner =
                 localPlanner(PlanningAlgorithm.LOCAL_HEFT, Collections.singletonList(root), machines);
         planner.run();
-        // 0.01s transfer is held for the configured 0.1s minimum, then2s computation.
+
         assertEquals(110.2, root.getStaticScheduleStartTime(), EPSILON);
         assertEquals(112.2, planner.plannedFinishOf(root).doubleValue(), EPSILON);
 
@@ -203,7 +196,7 @@ class LocalDataAvailabilityPlanningTest {
         List<CondorVM> machines = vms(1.0, 1, 1.0, 1);
         AbstractLocalCommPlanningAlgorithm planner = localPlanner(algorithm, tasks, machines);
         planner.run();
-        // R=1s after110.1; f needs10s to VM8. A(2s) is selected first, then B(1s).
+
         int[] expectedVms = {3, 3, 8, 8};
         double[] expectedStarts = {110.1, 111.1, 121.1, 123.1};
         double[] expectedFinishes = {111.1, 116.1, 123.1, 124.1};
@@ -232,7 +225,7 @@ class LocalDataAvailabilityPlanningTest {
         List<CondorVM> machines = vms(1.0, 1, 1.0, 1);
         AbstractLocalCommPlanningAlgorithm planner = localPlanner(algorithm, tasks, machines);
         planner.run();
-        // Stage-in registers a datacenter location, not f@VM3:110.1+10s transfer+2s compute.
+
         int[] expectedVms = {3};
         double[] expectedStarts = {120.1};
         double[] expectedFinishes = {122.1};
@@ -253,7 +246,7 @@ class LocalDataAvailabilityPlanningTest {
         List<CondorVM> machines = vms(1.0, 1, 1.0, 1);
         AbstractLocalCommPlanningAlgorithm planner = localPlanner(algorithm, tasks, machines);
         planner.run();
-        // Parent finishes112.1; external input starts then, not at simulated zero or bootstrap.
+
         int[] expectedVms = {3, 3};
         double[] expectedStarts = {110.1, 122.1};
         double[] expectedFinishes = {112.1, 125.1};

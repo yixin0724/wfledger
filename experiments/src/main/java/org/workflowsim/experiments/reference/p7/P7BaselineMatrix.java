@@ -18,20 +18,12 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Frozen P7 deterministic baseline matrix for abstract scheduler comparison.
- *
- * <p>The catalog deliberately excludes failures, overhead, clustering, local storage, and
- * planning algorithms. The initial DAX sample is limited to the parsable Epigenomics input; it is
- * not a cross-workflow-family result set, a real-platform replay, or a calibrated cost or network
- * experiment.</p>
- */
 public final class P7BaselineMatrix {
 
     public static final long ROOT_SEED = 20260901L;
     public static final double RUNTIME_REFERENCE_MIPS = 1000.0;
     public static final double RUNTIME_SCALE = 1.0;
-    /** Frozen CloudSim kernel tick; changing it changes the task start times in the model. */
+
     public static final double CLOUDSIM_MIN_EVENT_INTERVAL_SECONDS = 0.1;
 
     public static final int SMALL_VM_COUNT = 10;
@@ -65,24 +57,10 @@ public final class P7BaselineMatrix {
 
     private P7BaselineMatrix() {}
 
-    /**
-     * Return the scheduling algorithms that the P7 baseline protocol allows.
-     *
-     * @return immutable list of maintained scheduling algorithms
-     */
     public static List<Parameters.SchedulingAlgorithm> schedulingAlgorithms() {
         return SCHEDULING_ALGORITHMS;
     }
 
-    /**
-     * Return the set of scenario/scheduler cells that a frozen P7 baseline must cover.
-     *
-     * <p>This set does not depend on local dataset paths; it lets the index validator decide
-     * whether an artifact really is a complete P7 baseline rather than a developmental selection
-     * run that executed only part of the combinations.</p>
-     *
-     * @return immutable set of {@code scenarioId + NUL + schedulingAlgorithm} cell keys
-     */
     static Set<String> baselineCellKeys() {
         return BASELINE_CELL_KEYS;
     }
@@ -100,12 +78,6 @@ public final class P7BaselineMatrix {
         return Collections.unmodifiableSet(result);
     }
 
-    /**
-     * Determine whether a scenario identifier belongs to the frozen P7 matrix.
-     *
-     * @param scenarioId scenario identifier to check
-     * @return {@code true} if and only if the identifier belongs to the frozen matrix
-     */
     static boolean isBaselineScenarioId(String scenarioId) {
         if (scenarioId == null) {
             return false;
@@ -119,12 +91,6 @@ public final class P7BaselineMatrix {
         return false;
     }
 
-    /**
-     * Determine whether a scheduler name belongs to the frozen P7 matrix.
-     *
-     * @param algorithmName enum name to check
-     * @return {@code true} if and only if the scheduler is allowed by the P7 protocol
-     */
     static boolean isBaselineAlgorithmName(String algorithmName) {
         if (algorithmName == null) {
             return false;
@@ -137,22 +103,10 @@ public final class P7BaselineMatrix {
         return false;
     }
 
-    /** Combine a scenario and a scheduler into an internal cell key that cannot collide with normal names. */
     static String cellKey(String scenarioId, String algorithmName) {
         return scenarioId + "\u0000" + algorithmName;
     }
 
-    /**
-     * Return the frozen definition by stable scenario identifier without accessing the local
-     * dataset.
-     *
-     * <p>The read-only index validator uses this method to cross-check the digest fields recorded
-     * in an entry against the workload, platform variant, and input-hash contract of the protocol
-     * catalog.</p>
-     *
-     * @param scenarioId P7 scenario identifier
-     * @return corresponding frozen scenario; {@code null} for an unknown identifier
-     */
     static Scenario scenarioById(String scenarioId) {
         if (scenarioId == null) {
             return null;
@@ -168,17 +122,6 @@ public final class P7BaselineMatrix {
         return null;
     }
 
-    /**
-     * Build the platform-variant scenarios for the frozen workloads under an explicit dataset
-     * root.
-     *
-     * <p>The dataset root must be an absolute directory. The existence and the hash values of the
-     * input files are the responsibility of actual execution and report verification.</p>
-     *
-     * @param datasetRoot explicit, absolute {@code datasets} directory
-     * @return immutable scenario list formed by every frozen workload and platform variant
-     * @throws IllegalArgumentException when the dataset root is invalid
-     */
     public static List<Scenario> scenarios(Path datasetRoot) {
         ReferenceDatasetRoot.require(datasetRoot);
         List<Scenario> scenarios = new ArrayList<>();
@@ -189,18 +132,6 @@ public final class P7BaselineMatrix {
         return Collections.unmodifiableList(scenarios);
     }
 
-    /**
-     * Create the frozen, failure-free, and overhead-free abstract simulation configuration for a
-     * P7 scenario.
-     *
-     * @param scenario declared workload and platform variant
-     * @param schedulingAlgorithm maintained scheduling algorithm allowed by P7
-     * @param datasetRoot explicit, absolute dataset root used to resolve the scenario workflow
-     *        relative path
-     * @return configuration with the fixed seed, runtime conversion parameters, and CloudSim tick
-     * @throws IllegalArgumentException when an argument is null or the algorithm is outside the
-     *         P7 baseline
-     */
     public static SimulationConfig baselineConfig(
             Scenario scenario, Parameters.SchedulingAlgorithm schedulingAlgorithm, Path datasetRoot) {
         if (scenario == null || schedulingAlgorithm == null || datasetRoot == null) {
@@ -226,14 +157,6 @@ public final class P7BaselineMatrix {
                 .build();
     }
 
-    /**
-     * Build the frozen abstract platform corresponding to the given scenario.
-     *
-     * @param scenario scenario that determines the VM count and the homogeneous or heterogeneous
-     *        MIPS allocation
-     * @return space-shared VM platform that has passed the capacity preflight
-     * @throws IllegalArgumentException when the scenario is {@code null}
-     */
     public static PlatformProfile baselinePlatform(Scenario scenario) {
         if (scenario == null) {
             throw new IllegalArgumentException("Scenario is required");
@@ -250,13 +173,11 @@ public final class P7BaselineMatrix {
         return builder.build();
     }
 
-    /** Frozen homogeneous and heterogeneous platform variants in P7. */
     public enum PlatformVariant {
         H0_HOMOGENEOUS,
         H1_HETEROGENEOUS
     }
 
-    /** Immutable scenario formed by one frozen workload and its platform variant. */
     public static final class Scenario {
 
         private final Workload workload;
@@ -295,13 +216,6 @@ public final class P7BaselineMatrix {
             return platformVariant;
         }
 
-        /**
-         * Resolve the scenario relative workflow path to a normalized absolute path.
-         *
-         * @param datasetRoot explicit, absolute {@code datasets} directory
-         * @return normalized absolute path of the scenario workflow
-         * @throws IllegalArgumentException when the dataset root or the input file is invalid
-         */
         public Path resolveWorkflow(Path datasetRoot) {
             return ReferenceDatasetRoot.resolveFile(datasetRoot, workload.relativeWorkflowPath);
         }

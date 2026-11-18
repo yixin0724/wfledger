@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/** NF002B3 strict wire/immutable reconstruction tests, before any artifact export wiring. */
 class NetworkLedgerCodecTest {
     private static final DataMovementModel.Kind KIND =
             DataMovementModel.Kind.PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1;

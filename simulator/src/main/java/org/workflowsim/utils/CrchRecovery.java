@@ -1,6 +1,5 @@
 package org.workflowsim.utils;
 
-/** Recovery result created from the latest completed synchronized checkpoint. */
 public final class CrchRecovery {
     private final long remainingWorkMi;
     private final long checkpointCount;

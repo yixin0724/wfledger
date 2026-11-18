@@ -1,13 +1,5 @@
 package org.workflowsim.failure;
 
-/**
- * Signals that a configuration-guarded simulation exceeded the total number of retry Jobs it
- * may create.
- *
- * <p>This is not a completed experiment result. Callers must record the exception and the
- * configuration instead of treating partial execution results as a failure-recovery metric.
- * Legacy static APIs that do not set this budget keep the historical unbounded behavior.</p>
- */
 public final class RetryLimitExceededException extends IllegalStateException {
 
     private final int failedJobId;

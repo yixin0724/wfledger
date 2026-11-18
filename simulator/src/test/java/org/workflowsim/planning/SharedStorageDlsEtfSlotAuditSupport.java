@@ -19,7 +19,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Test-only access to the existing private slot helper and real scheduling kernels. */
 final class SharedStorageDlsEtfSlotAuditSupport {
     static final double BOOTSTRAP = 0.11 + 0.1;
     static final int STORAGE_MB_PER_SECOND = 8;
@@ -117,7 +116,6 @@ final class SharedStorageDlsEtfSlotAuditSupport {
                 .doubleValue();
     }
 
-    /** Frozen c62c6b8 slot semantics, including zero-width and sub-ULP boundaries. */
     static double originalSlot(double[][] sortedIntervals, double ready, double duration) {
         double start = ready;
         for (double[] interval : sortedIntervals) {
@@ -137,7 +135,6 @@ final class SharedStorageDlsEtfSlotAuditSupport {
         return value == null ? null : Long.valueOf(bits(value.doubleValue()));
     }
 
-    /** Complete plan projection, not just makespan or VM assignments. */
     static List<Object> snapshot(SharedStorageDagPlanTrace trace) {
         List<Object> values = new ArrayList<Object>();
         values.add(trace.getStrategy());
@@ -179,10 +176,6 @@ final class SharedStorageDlsEtfSlotAuditSupport {
         return field.get(target);
     }
 
-    /**
-     * Counts actual iterator passes/next calls in the unchanged slot helper. ArrayList.sort uses
-     * its array, not this iterator: sorting is deliberately NOT claimed as measured slot work.
-     */
     static final class CountingReservations extends ArrayList<Object> {
         private static final long serialVersionUID = 1L;
         long scans;
@@ -220,11 +213,6 @@ final class SharedStorageDlsEtfSlotAuditSupport {
         }
     }
 
-    /**
-     * Real scheduleDls/scheduleEtf execution after bounded reflective preparation, NOT a public
-     * run() count and NOT a replay of an emulated number of helper calls. Kernel fixtures supply
-     * tasks in forward topological/ID order; public-run tests separately cover normal preparation.
-     */
     static final class Kernel {
         final SharedStorageDagPlanner.Strategy strategy;
         final List<Task> tasks;

@@ -20,12 +20,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Phase 2 acceptance: the three-tier input resolution order is correct; a hit is verified
- * against sha256+sizeBytes at once; a mismatch terminates (never a silent downgrade or
- * substitution); when every tier misses, {@code INPUT_UNRESOLVED} is reported together with
- * every attempted candidate path.
- */
 class RerunInputResolverTest {
 
     private static Path fixtureRun;
@@ -63,8 +57,7 @@ class RerunInputResolverTest {
     @Test
     void prefersStudyInputsDirectory() throws Exception {
         Path run = studyLayoutRun();
-        // The recorded path points at a nonexistent location; a file of the same name sits
-        // under <study>/inputs/.
+
         Path studyInput = run.getParent().getParent().resolve("inputs").resolve("reproducibility-workflow.dax");
         Files.createDirectories(studyInput.getParent());
         Files.copy(Paths.get(inputPath(readManifest(run))), studyInput);
@@ -78,9 +71,7 @@ class RerunInputResolverTest {
     @Test
     void rebasesAgainstRecordedWorkingDirectory() throws Exception {
         Path run = copyFixtureTo("rebase");
-        // Fabricate the original machine root: recorded path = fakeRoot/datasets/fixture.dax
-        // while fakeRoot does not exist; stage a file of the same content under the rebasing
-        // root, and rewrite workingDirectory to fakeRoot.
+
         Path rebasingRoot = Files.createDirectories(tempDir.resolve("rebase-root"));
         Path relocated = rebasingRoot.resolve("datasets/fixture.dax");
         Files.createDirectories(relocated.getParent());
@@ -117,9 +108,7 @@ class RerunInputResolverTest {
 
     @Test
     void tierOneHashMismatchDoesNotFallThroughToTierTwo() throws Exception {
-        // A file of the same name sits under <study>/inputs/ (tier 1) with different content,
-        // while the recorded absolute path itself is intact. Contract: a tier 1 hit is verified
-        // immediately, a mismatch terminates, and a silent switch to tier 2 is not allowed.
+
         Path run = studyLayoutRun();
         Path studyInput = run.getParent().getParent().resolve("inputs").resolve("reproducibility-workflow.dax");
         Files.createDirectories(studyInput.getParent());
@@ -154,9 +143,7 @@ class RerunInputResolverTest {
 
     @Test
     void missingWorkingDirectorySkipsTierThree() throws Exception {
-        // Drive the resolver directly (bypassing the reader): the v4 validator enforces that
-        // workingDirectory is present, so this case exercises the resolver's own defensive
-        // behavior on the missing field.
+
         JsonObject manifest = minimalManifest("/no/such/file.dax", null);
         Path run = Files.createDirectories(tempDir.resolve("defensive"));
         RerunFailureException failure =
@@ -177,15 +164,12 @@ class RerunInputResolverTest {
         assertTrue(failure.getMessage().contains("sha256"));
     }
 
-    // ---- helpers ----
-
     private Path copyFixtureTo(String name) throws Exception {
         Path run = Files.createDirectories(tempDir.resolve(name));
         RerunTestSupport.copyEvidenceFiles(fixtureRun, run);
         return run;
     }
 
-    /** Build a {@code <study>/runs/<run>} layout and copy the evidence into it. */
     private Path studyLayoutRun() throws Exception {
         Path study = Files.createDirectories(tempDir.resolve("study-" + System.nanoTime()));
         Path run = Files.createDirectories(study.resolve("runs/fixture-run"));
@@ -212,10 +196,6 @@ class RerunInputResolverTest {
         Files.write(run.resolve("result.manifest.json"), gson.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Rewrite the three paths in lockstep -- inputs/workflowPaths/workflowOutcomes (required by
-     * v4 cross-validation).
-     */
     private void rewriteInputPath(Path run, String newPath) throws Exception {
         JsonObject manifest = readManifest(run);
         rewriteInputPathIn(manifest, newPath);

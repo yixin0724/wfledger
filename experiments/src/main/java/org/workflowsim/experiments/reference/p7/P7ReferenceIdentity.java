@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 
 import org.workflowsim.experiment.ExperimentEvidenceContext;
 
-/** Stable study identity used when the frozen P7 reference baseline writes v3 artifacts. */
 final class P7ReferenceIdentity {
 
     static final String STUDY_ID = "p7-baseline";
@@ -21,18 +20,6 @@ final class P7ReferenceIdentity {
 
     private P7ReferenceIdentity() {}
 
-    /**
-     * Creates the immutable evidence context for the current P7 driver, protocol, and explicit
-     * dataset root.
-     *
-     * <p>The protocol file is located by reverse lookup from the driver's code source instead of
-     * relying on the JVM current working directory. A packaged standalone JAR without a colocated
-     * source repository honestly records the protocol file as unavailable rather than fabricating
-     * a content hash.</p>
-     *
-     * @param datasetRoot absolute dataset root used by P7
-     * @return evidence context reusable for every run of the same P7 campaign
-     */
     static ExperimentEvidenceContext context(Path datasetRoot) {
         Path normalizedRoot = ReferenceDatasetRoot.require(datasetRoot);
         return ExperimentEvidenceContext.builder(STUDY_ID)

@@ -19,7 +19,6 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Real FAILURE_VM integration of the CRCH retry/recovery path. */
 class CrchIntegrationTest {
 
     @TempDir

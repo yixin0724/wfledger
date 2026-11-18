@@ -34,11 +34,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/**
- * D2 stage 6 acceptance at fixture level: {@link RerunDiffExecutor} end to end -- one
- * hand-built small sample per verdict (the contract's test requirement), both report formats
- * written to disk, and the exit code in one-to-one correspondence with the verdict.
- */
 class RerunDiffExecutorTest {
 
     private static Path fixtureRun;
@@ -52,9 +47,6 @@ class RerunDiffExecutorTest {
         fixtureRun = Files.createTempDirectory("rerun-diff-fixture");
         RerunTestSupport.generateEvidence(fixtureRun);
 
-        // Failure-model fixture: WEIBULL(5000,1.0) plus a budget of 16 completes normally; after
-        // tampering with scale -> 0.1, the rerun necessarily exhausts the budget (used by the
-        // "execution-stage failure" mapping case).
         failureFixtureRun = Files.createTempDirectory("rerun-diff-failure-fixture");
         FailureModelConfig failure = FailureModelConfig.builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP)
@@ -97,8 +89,6 @@ class RerunDiffExecutorTest {
         assertEquals(0, json.get("exitCode").getAsInt());
         assertEquals(0, json.getAsJsonArray("coreDivergences").size());
 
-        // inputResolution: the fixture dax takes the recorded-absolute-path tier (tier 2), and the
-        // sha256 check passes.
         JsonArray inputs = json.getAsJsonArray("inputResolution");
         assertEquals(1, inputs.size());
         JsonObject entry = inputs.get(0).getAsJsonObject();
@@ -108,8 +98,6 @@ class RerunDiffExecutorTest {
                 entry.get("recordedPath").getAsString(),
                 entry.get("resolvedPath").getAsString());
 
-        // Code identity: rerunning on the same source tree yields identical, non-empty hashes on
-        // both sides.
         String originalHash = json.get("originalSourceTreeSha256").getAsString();
         String rerunHash = json.get("rerunSourceTreeSha256").getAsString();
         assertFalse(originalHash.isEmpty());
@@ -152,15 +140,6 @@ class RerunDiffExecutorTest {
                 .anyMatch(change -> "/configuration/workflowPaths/0".equals(change.getPointer())));
     }
 
-    /**
-     * AUD-F05 (2026-11-03): a metrics value that contradicts the bundle's own result records is
-     * invalid evidence on its face. The consistent makespan tampering that previously survived
-     * the cross-file checks and was only caught by the rerun diff (DIVERGED, pointer
-     * /metrics/makespanSeconds) is now refused at validation, before any rerun. The refusal
-     * still names the exact recomputed field; the rerun keeps its role as the ultimate check
-     * for a fully consistent forgery and for condition tampering that legitimately changes the
-     * rerun's computed metrics.
-     */
     @Test
     void tamperedManifestMakespanIsRefusedAsInvalidEvidence() throws Exception {
         Path run = copyFixtureTo("tampered");
@@ -242,8 +221,7 @@ class RerunDiffExecutorTest {
         assertEquals(4, report.getExitCode());
         assertTrue(report.getFailureReason().contains("NOT_AN_ALGORITHM"));
         assertFalse(Files.exists(tempDir.resolve("bad-enum-out/rerun")));
-        // The failure path still retains the original-side identity information, but code identity
-        // cannot be compared.
+
         assertNotNull(report.getOriginalSourceTreeSha256());
         assertNull(report.getRerunSourceTreeSha256());
         assertNull(report.getCodeIdentityNote());
@@ -290,8 +268,7 @@ class RerunDiffExecutorTest {
         Path run = Files.createDirectories(tempDir.resolve("sim-failure"));
         RerunTestSupport.copyEvidenceFiles(failureFixtureRun, run);
         JsonObject manifest = readManifest(run);
-        // WEIBULL scale 5000.0 -> 0.1: reconstruction still passes, but the rerun necessarily
-        // exhausts the retry budget.
+
         rewriteDistributionScale(manifest.getAsJsonObject("configuration").getAsJsonObject("failureModel"), 0.1);
         writeManifest(run, manifest);
 
@@ -302,21 +279,12 @@ class RerunDiffExecutorTest {
         assertFalse(Files.exists(tempDir.resolve("sim-failure-out/rerun")));
     }
 
-    // ---- helpers ----
-
     private Path copyFixtureTo(String name) throws Exception {
         Path run = Files.createDirectories(tempDir.resolve(name));
         RerunTestSupport.copyEvidenceFiles(fixtureRun, run);
         return run;
     }
 
-    /**
-     * Consistent makespan tampering: rewrites the inline manifest metrics, the metrics sidecar
-     * and the artifacts hash/size in step, so the cross-file hash/size/equality checks still
-     * pass. Since the AUD-F05 (2026-11-03) independent recompute, this tampering no longer
-     * reaches the diff comparison stage either: a metrics value that contradicts the bundle's
-     * own result records is refused as EVIDENCE_INVALID at validation.
-     */
     private static void tamperMakespanConsistently(Path run, double newMakespan) throws Exception {
         JsonObject manifest = readManifest(run);
         manifest.getAsJsonObject("metrics").addProperty("makespanSeconds", newMakespan);
@@ -378,10 +346,6 @@ class RerunDiffExecutorTest {
         Files.write(run.resolve("result.manifest.json"), gson.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Rewrites the path in inputs/workflowPaths/workflowOutcomes in step
-     * (v4 cross-validation requirement).
-     */
     private static void rewriteInputPath(Path run, String newPath) throws Exception {
         JsonObject manifest = readManifest(run);
         manifest.getAsJsonArray("inputs").get(0).getAsJsonObject().addProperty("path", newPath);

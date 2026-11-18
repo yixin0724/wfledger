@@ -21,19 +21,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * C1 (2026-11-02): behavior contract of the carbon-aware deferral engine.
- *
- * <p>The engine postpones a ready batch to the next window whose green power is strictly higher (at
- * most once per job). This test uses <b>hand-derived scenarios</b> to anchor three things: deferral
- * really happens (job start times land inside the clean window), the budget carbon excess really
- * drops (against the carbon-agnostic FCFS), and behavior does not drift when no window is
- * declared.</p>
- *
- * <p>Source of expected values: the budget model definition in
- * {@code CARBON_DIMENSION_DESIGN.md} Section 2.3 (excess = integral of max(0, P_fleet(t) -
- * green(t)) dt) plus the windows and power levels this test declares explicitly.</p>
- */
 class CarbonWindowDeferSchedulingIntegrationTest {
 
     @TempDir
@@ -87,12 +74,6 @@ class CarbonWindowDeferSchedulingIntegrationTest {
                         + baselineExcess + ")");
     }
 
-    /**
-     * Review round (2026-11-02): the deferral engine on a windowless platform must <b>explicitly
-     * reject</b> and must not silently degrade into ordinary online scheduling -- a carbon-aware label
-     * with not a single job deferred is the same family of BAT-D2 "silently ineffective policy"
-     * problems (believing the study is about time shifting while it actually runs FCFS).
-     */
     @Test
     void windowlessPlatformsAreRejectedInsteadOfSilentlyDegrading() throws Exception {
         org.workflowsim.exception.SimulationConfigurationException rejected =
@@ -107,27 +88,16 @@ class CarbonWindowDeferSchedulingIntegrationTest {
         assertNull(plain.getCarbonAccounting(), "plain FCFS without windows stays legal and accounting-free");
     }
 
-    /**
-     * Adversarial side 1 (starvation prevention): after each of the two jobs is deferred <b>once</b>
-     * they must both complete and must not be postponed a second time -- if the "at most once per job"
-     * gate failed, the engine would keep looking for a "cleaner" window inside [100,400) and defer
-     * repeatedly (or spin when no window is left), pushing completion past the 100 + work upper bound.
-     */
     @Test
     void eachJobIsDeferredAtMostOnceSoTheWorkflowCannotStarve() throws Exception {
         SimulationReport deferred = run(SchedulingAlgorithm.CARBON_WINDOW_DEFER, true);
-        double upperBound = 100.0 + 60.0; // deferred to 100; two jobs run 30+20 s serially; 10 s bookkeeping margin
+        double upperBound = 100.0 + 60.0;
         assertTrue(
                 deferred.getMakespan() <= upperBound,
                 "one deferral per Job bounds the makespan near the clean-window start + work: "
                         + deferred.getMakespan());
     }
 
-    /**
-     * Adversarial side 2 (do not move what should not move): when the current window already has the
-     * highest green power, the engine must <b>not</b> defer -- otherwise it stretches an already clean
-     * run, which is bad behavior with no benefit.
-     */
     @Test
     void alreadyCleanWindowsAreNotDeferred() throws Exception {
         SimulationReport baseline = run(SchedulingAlgorithm.FCFS, true, 400.0);
@@ -138,12 +108,6 @@ class CarbonWindowDeferSchedulingIntegrationTest {
                 "the first window is already the cleanest: nothing to gain, so no deferral");
     }
 
-    /**
-     * Residual pollution (the H-1/H-2 class, a trap this repository calls out by name): in one JVM,
-     * first run a deferral run <b>with windows</b>, then run one <b>without windows</b> -- the window
-     * table must not survive across the session boundary. If it did, the second run would
-     * inexplicably stall to 100 seconds (its platform declares no window at all).
-     */
     @Test
     void carbonWindowsDoNotLeakIntoTheNextRun() throws Exception {
         SimulationReport withWindows = run(SchedulingAlgorithm.CARBON_WINDOW_DEFER, true);
@@ -161,12 +125,6 @@ class CarbonWindowDeferSchedulingIntegrationTest {
                         + " observed first start " + firstStart);
     }
 
-    /**
-     * Honest boundary (C1): deferral only removes the <b>dynamic</b> share; it cannot remove the
-     * <b>idle floor</b>. When two VMs idle at 200 W together, above the 120 W green power of the dirty
-     * window, the dirty-window excess equals the idle excess 80 W x 100 s = 8000 W-s even if every job
-     * is deferred -- the engine cannot make the declared static power of the platform disappear.
-     */
     @Test
     void deferralCannotGoBelowTheIdleFloorOfADirtyWindow() throws Exception {
         SimulationReport deferred = runTwoVms(SchedulingAlgorithm.CARBON_WINDOW_DEFER);
@@ -183,10 +141,6 @@ class CarbonWindowDeferSchedulingIntegrationTest {
                 "deferral must still remove the dynamic share that FCFS burns in the dirty window");
     }
 
-    /**
-     * Two-VM fixture: 200 W total idle power > 120 W green power of the first window (creates the idle
-     * floor).
-     */
     private SimulationReport runTwoVms(SchedulingAlgorithm algorithm) throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "floor-" + algorithm + ".dax");
         Files.write(
@@ -226,11 +180,6 @@ class CarbonWindowDeferSchedulingIntegrationTest {
         return new SimulationRunner().run(config, builder.build());
     }
 
-    /**
-     * Reproducibility (review round): running the same input twice must give bit-identical job start
-     * times, finish times, and excess -- the deferral engine state (deferred set, wake-up instants)
-     * must not survive across runs or depend on floating-point iteration order.
-     */
     @Test
     void repeatedRunsProduceIdenticalDeferralDecisions() throws Exception {
         SimulationReport first = run(SchedulingAlgorithm.CARBON_WINDOW_DEFER, true);
@@ -257,17 +206,6 @@ class CarbonWindowDeferSchedulingIntegrationTest {
         }
     }
 
-    /**
-     * Mutation hardening (review round): only on the three-window ladder does the "at most once per
-     * job" gate become discriminating, and what it constrains is a <b>single job</b>, not the whole
-     * workflow -- successor jobs are new jobs and may each legally hop again.
-     *
-     * <p>Observed fact (confirmed by instrumentation): the first job becomes ready at 0.1 s and is
-     * deferred to 100 s; after it completes at 130 s, the two newly ready successors legally hop from
-     * the second window (300 W) to the third (500 W, 200 s). This test therefore asserts that "the
-     * first job hops exactly once" (start=100) and gives the whole chain a termination upper
-     * bound.</p>
-     */
     @Test
     void theOneDeferralBoundAppliesPerJobNotPerWorkflow() throws Exception {
         SimulationReport report = runLadder();
@@ -285,7 +223,6 @@ class CarbonWindowDeferSchedulingIntegrationTest {
                         + " chain would land past 300 s; observed " + report.getMakespan());
     }
 
-    /** Three-window ladder fixture: 100 W (dirty) -> 300 W -> 500 W on a single VM. */
     private SimulationReport runLadder() throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "ladder.dax");
         Files.write(
@@ -323,17 +260,10 @@ class CarbonWindowDeferSchedulingIntegrationTest {
         return new SimulationRunner().run(config, builder.build());
     }
 
-    /**
-     * Run fixture: single VM (idle 100 / max 300), windows [0,100)=120W dirty and [100,400)=400W clean.
-     */
     private SimulationReport run(SchedulingAlgorithm algorithm, boolean declareWindows) throws Exception {
         return run(algorithm, declareWindows, 120.0);
     }
 
-    /**
-     * Adjustable green power of the first window: at 400W the first window is already the cleanest (the
-     * engine must not defer).
-     */
     private SimulationReport run(SchedulingAlgorithm algorithm, boolean declareWindows, double firstGreen)
             throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "defer-" + algorithm + ".dax");

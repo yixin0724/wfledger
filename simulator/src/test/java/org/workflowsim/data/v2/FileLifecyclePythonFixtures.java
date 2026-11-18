@@ -30,7 +30,6 @@ import org.workflowsim.utils.SimulationConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/** Fresh actual V2 bundles and explicit generic complete-prefix cases for independent Python gates. */
 public final class FileLifecyclePythonFixtures {
     private static final int BUDGET = 20000;
     private static final String FLOW =
@@ -42,7 +41,7 @@ public final class FileLifecyclePythonFixtures {
                     + "ref=\"p\"/></child></adag>";
 
     private FileLifecyclePythonFixtures() {}
-    /** @param args fresh output root */
+
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: FileLifecyclePythonFixtures <fresh-root>");

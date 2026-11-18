@@ -26,7 +26,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Public V3 browser fixtures plus valid standalone captures explicitly not bound to the CPU snapshot. */
 final class StorageLifecycleBrowserFixtures {
     private static final int BUDGET = 2000, COPY_PREVIEW_LIMIT = 64, LABEL_PREVIEW_LIMIT = 256;
     private static final String SHARED = "COHERENT_STORAGE_DATAFLOW_V3";
@@ -46,7 +45,6 @@ final class StorageLifecycleBrowserFixtures {
 
     private StorageLifecycleBrowserFixtures() {}
 
-    /** Append exactly 23 new report specifications without altering the preceding V1/V2/P0 entries. */
     static void append(Path output, List<Map<String, Object>> reports, Path offManifest) throws Exception {
         Path root = output.toAbsolutePath().normalize();
         int initialCount = reports.size();
@@ -95,7 +93,6 @@ final class StorageLifecycleBrowserFixtures {
         pair(root, reports, offName, offExperiment, off);
         insufficientCapture(root, reports);
 
-        // Extra actual bundles exist only for cross-version switching, not as additional report specs.
         Bundle file = new Bundle(
                 manifest(run(root, "storage-lifecycle-mixed-v2-bundle", false, V2, false, FULL_WORKFLOW, BUDGET)));
         Bundle network = new Bundle(
@@ -131,7 +128,7 @@ final class StorageLifecycleBrowserFixtures {
         simulation.addProperty("dataMovementModel", model);
         boolean storage = SHARED.equals(model) || ISOLATED.equals(model);
         if (storage) {
-            // Workbench creates hosts 0..vmCount-1. Declare all four source fields explicitly.
+
             JsonObject source = new JsonObject();
             source.addProperty("attachmentHostId", 0);
             source.addProperty("readBandwidthMbPerSecond", 1);
@@ -276,8 +273,7 @@ final class StorageLifecycleBrowserFixtures {
         typed(rows, expected, cpu, "typed-v3-minimum-duration", decode(tiny));
 
         for (boolean outputs : new boolean[] {false, true}) {
-            // Separate files/Jobs keep each runtime aggregate finite. Ordinary rates avoid an invalid
-            // Double.MAX_VALUE / 1e6 * 1e6 store conversion and still give sums beyond binary64.
+
             Task a = task(1, outputs ? out("huge-a", 1e308) : in("huge-a", 1e308));
             Task b = task(2, outputs ? out("huge-b", 1e308) : in("huge-b", 1e308));
             CoherentDataflowRuntime huge = runtime(true, true, plan(a, b), fabric(100, 100, 100, 100, 100, 100));
@@ -395,7 +391,7 @@ final class StorageLifecycleBrowserFixtures {
             String name,
             StorageLifecycleCodec.Decoded decoded) {
         Map<String, Object> row = cpu.row(name);
-        // Keep the genuine cached CPU manifest unchanged. Only this display payload is standalone.
+
         row.remove("networkEvidence");
         row.remove("fileLifecycle");
         row.put("storageLifecycle", StorageLifecycleReportView.fromDecoded(decoded, false));
@@ -403,7 +399,6 @@ final class StorageLifecycleBrowserFixtures {
         expected.add(expect(decoded, false));
     }
 
-    /** Independent decoded-certificate oracle: never inspect StorageLifecycleReportView output. */
     private static Map<String, Object> expect(StorageLifecycleCodec.Decoded decoded, boolean contextValidated) {
         if (decoded == null) {
             return state("OFF");
@@ -441,8 +436,6 @@ final class StorageLifecycleBrowserFixtures {
             JsonObject event = item.getAsJsonObject(), payload = event.getAsJsonObject("payload");
             switch (event.get("type").getAsString()) {
                 case "JOB_INPUT_REQUESTED":
-                    // Sum each actual request's declared demands once, independently of the view's
-                    // initial RESOLVED/WAITING classification. A later deferred resolution adds no demand.
                     for (JsonElement taskId : payload.getAsJsonArray("taskIds")) {
                         for (JsonElement input : tasks.get(taskId.getAsInt()).getAsJsonArray("inputs")) {
                             JsonObject demand = input.getAsJsonObject();
@@ -498,7 +491,6 @@ final class StorageLifecycleBrowserFixtures {
                     lastCpu = maximum(lastCpu, exact(event.get("observedTime")));
                     break;
                 case "OUTPUT_RESOLVED":
-                    // Only first zero-byte publication is a new commit. ALREADY_STORED and seeds are not.
                     if ("ZERO".equals(payload.get("resolution").getAsString())) {
                         lastCommit = maximum(lastCommit, exact(event.get("observedTime")));
                     }
@@ -654,9 +646,7 @@ final class StorageLifecycleBrowserFixtures {
         spec.put("candidates", candidates);
         spec.put("seeds", seeds);
         spec.put("statuses", statuses);
-        spec.put(
-                "storageLifecycle",
-                lifecycle); // No V1 network or V2 file-lifecycle expectations on these new report specs.
+        spec.put("storageLifecycle", lifecycle);
         return spec;
     }
 
@@ -679,7 +669,6 @@ final class StorageLifecycleBrowserFixtures {
         }
     }
 
-    /** Attach exactly one cached, actually validated manifest/view snapshot without reconstructing CPU evidence. */
     private static final class Bundle {
         final Path path;
         final HtmlReports.ValidatedReport report;

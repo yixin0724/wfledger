@@ -19,14 +19,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.workflowsim.examples.wfcommons.WfCommonsJsonParserValidationExample;
 import org.workflowsim.examples.wfcommons.WfCommonsSimulationExample1;
 
-/**
- * Process-level smoke test for the WfCommons JSON command-line entry points.
- *
- * <p>Covers one WfGen synthetic WfFormat input and one P7-frozen WfInstances real-execution-derived
- * input. The latter is verified only through the current abstract DAG conversion and the standard
- * WorkflowSim pipeline; it does not constitute a trace replay or a reproduction claim for an
- * observed makespan.</p>
- */
 class WfCommonsCliSmokeIntegrationTest {
 
     private static final InputCase WFFORMAT_INPUT =
@@ -107,7 +99,6 @@ class WfCommonsCliSmokeIntegrationTest {
         return workspaceRoot;
     }
 
-    /** A fixed JSON smoke input that must preserve its provenance boundary. */
     private static final class InputCase {
         private final String id;
         private final String relativePath;
@@ -122,10 +113,7 @@ class WfCommonsCliSmokeIntegrationTest {
             if (!result.startsWith(root)) {
                 throw new IllegalStateException("Invalid JSON smoke input path: " + result);
             }
-            // R9 resident corpus gate: both smoke inputs (montage-100-000.json, 145 KB;
-            // blast-chameleon-small-001.json, 103 KB) are checked in (see the .gitignore
-            // negation); this test must run in the standard build, and a missing file is a
-            // failure rather than a skip.
+
             if (!Files.isRegularFile(result)) {
                 throw new IllegalStateException("Resident JSON corpus must be present at " + result);
             }

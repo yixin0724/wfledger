@@ -33,7 +33,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/** Literal independent oracles plus real runtime/assigner captures; no Kernel or filesystem needed. */
 class DataflowAssignmentValidatorTest {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
     private static final String SCOPE = "BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1";
@@ -165,7 +164,7 @@ class DataflowAssignmentValidatorTest {
         assertEquals(2, f.validate().getAssignmentCount());
         Fixture wrong = f.copy();
         setInput(wrong, 20, 42, 0);
-        bad(wrong); // The final remote candidate is not a present cache.
+        bad(wrong);
     }
 
     @Test
@@ -184,7 +183,7 @@ class DataflowAssignmentValidatorTest {
     @Test
     void withinBoundsProgressDriftIsExplicitlyPermittedByTheAuditScope() {
         Fixture f = joined();
-        setInput(f, 20, 7, 8); // Runtime logged 5; 8 is not a replay of its real remaining balance.
+        setInput(f, 20, 7, 8);
         DataflowAssignmentValidator.Result result = f.validate();
         assertEquals(SCOPE, result.getScope());
         assertEquals(
@@ -678,7 +677,7 @@ class DataflowAssignmentValidatorTest {
         bad(f);
         f = literal(false);
         changeAttemptVm(f, 10, 42);
-        bad(f); // Both scores tie; every identity now agrees on the wrong winner.
+        bad(f);
     }
 
     @Test
@@ -1336,7 +1335,6 @@ class DataflowAssignmentValidatorTest {
         }
     }
 
-    /** Produces genuine action/lifecycle records while keeping unrelated root metadata deliberately small. */
     private static final class Run {
         final boolean storage, gate;
         final CoherentDataflowRuntime runtime;

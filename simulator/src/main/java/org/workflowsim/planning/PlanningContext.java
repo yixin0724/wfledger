@@ -5,15 +5,6 @@ import org.workflowsim.utils.ClusteringParameters.ClusteringMethod;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Planning context supplied only by {@code SimulationRunner}, consistent with the
- * controlled execution model.
- *
- * <p>Maintained shared-storage static DAG planners must read storage throughput and the
- * minimum event interval through this object, and must validate the file system,
- * clustering, failure, overhead, and VM scheduler modes before planning. It does not
- * infer network topology, link contention, or real-platform parameters.</p>
- */
 public final class PlanningContext {
 
     private final SimulationConfig config;
@@ -43,10 +34,6 @@ public final class PlanningContext {
         return platform;
     }
 
-    /**
-     * Validates the subset of the execution model actually estimated by the maintained
-     * static DAG planner.
-     */
     public void validateSharedStorageStaticDag() {
         if (config.getFileSystem() != ReplicaCatalog.FileSystem.SHARED) {
             throw new IllegalArgumentException(
@@ -70,22 +57,6 @@ public final class PlanningContext {
         }
     }
 
-    /**
-     * Validates the subset of the execution model actually estimated by the LOCAL
-     * file-system communication-aware static DAG planner.
-     *
-     * <p>The planning-side AST of LOCAL_HEFT/LOCAL_CPOP/LOCAL_PEFT (per-parent parallel
-     * transfer, transfer overlapping the VM busy interval) mirrors the runtime
-     * preExecutionTransferDelayV1 pre-execution transfer delay model bit for bit, so it
-     * requires the LOCAL file system, NONE clustering, no failure, and no modeled
-     * overhead. The data movement model may be preExecutionTransferDelayV1 (planning and
-     * execution bit-aligned), the link contention model
-     * preExecutionTransferDelayWithContentionV1 (the planning side still estimates against
-     * a contention-free AST, while at runtime concurrent transfers fairly share the VM
-     * endpoint bandwidth), or the Fat-tree topology contention model fatTreeContentionV1
-     * (at runtime fair sharing of path links and endpoints along deterministic routes,
-     * under the same divergence declaration).</p>
-     */
     public void validateLocalStaticDag() {
         if (config.getFileSystem() != ReplicaCatalog.FileSystem.LOCAL) {
             throw new IllegalArgumentException("LOCAL static DAG planning requires ReplicaCatalog.FileSystem.LOCAL");

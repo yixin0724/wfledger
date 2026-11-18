@@ -9,18 +9,11 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.platform.PlatformProfile;
 
-/**
- * BAT-D1 (2026-10-29) -- red-to-green conservation test for the DVFS frequency-tier data
- * model. Three sources of expected values: the literature dimensional law of Cotes-Ruiz,
- * P = alpha*C*V^2*f (design document section 1.1), plus this design's degenerate identity
- * (single tier = v1 law).
- */
 class FrequencyTierTest {
 
     @Test
     void singleTierDegeneratesExactlyToV1Law() {
-        // Power of the same VM expressed through tier(0) and through the v1 idle/max fields:
-        // the two paths must agree on the formula.
+
         PlatformProfile.VmSpec tiered = new PlatformProfile.VmSpec(
                 0,
                 1000,
@@ -56,7 +49,7 @@ class FrequencyTierTest {
                         * busy;
         double ePlain = plain.getIdlePowerWatts() * len + (plain.getMaxPowerWatts() - plain.getIdlePowerWatts()) * busy;
         assertEquals(ePlain, eTiered, 0.0, "single-tier must EXACTLY equal v1 law");
-        // Verify that tier validation rejects tiers coexisting with the v1 power fields:
+
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new PlatformProfile.VmSpec(
@@ -82,7 +75,7 @@ class FrequencyTierTest {
         mustName(() -> new PlatformProfile.FrequencyTier(500, -1, 200), "idle", "negative idle");
         mustName(() -> new PlatformProfile.FrequencyTier(500, 200, 100), "max", "reversed max<idle");
         mustName(() -> new PlatformProfile.FrequencyTier(500, Double.NaN, 200), "finite", "NaN mips");
-        // Descending table:
+
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new PlatformProfile.VmSpec(
@@ -106,24 +99,18 @@ class FrequencyTierTest {
 
     @Test
     void cubicFrequencySavingsAreHandComputable() {
-        // Literature dimensional-law example (analogue of the Cotes-Ruiz cubic frequency law):
-        // full frequency 1000 MIPS tier max 400 W / half frequency 500 MIPS tier max dynamic
-        // power approx. 400 - 250 + (400 - 250)/8 approx. 168.75 (simplified here to a direct
-        // case check on the allocation window over max alone inside a tier table built the
-        // same way) -- a plain integer witness:
+
         PlatformProfile.FrequencyTier full = new PlatformProfile.FrequencyTier(1000, 250, 400);
         PlatformProfile.FrequencyTier half = new PlatformProfile.FrequencyTier(500, 200, 280);
-        // dynamic range: full=150W, half=80W
+
         double dynFull = full.getMaxPowerWatts() - full.getIdlePowerWatts();
         double dynHalf = half.getMaxPowerWatts() - half.getIdlePowerWatts();
-        // Literature rule: dyn(HALF_f) approx. dyn(FULL_f)/8 (cubic law, V proportional to f)
+
         double cubic = dynFull / ((500.0 / 1000.0) * (500.0 / 1000.0) * (500.0 / 1000.0));
-        // A non-cubic calibration point was picked (the case under examination); only the
-        // archetypes are verified below:
+
         assertTrue(dynHalf < dynFull, "lower tier draws less dynamic range");
         assertTrue(half.getMips() == 500.0, "half frequency");
-        // Tier capacity: the same construction yields a lower idle (the embankment identity of
-        // the thermal expansion coefficient)
+
         assertTrue(half.getIdlePowerWatts() <= full.getIdlePowerWatts(), "lower idle or equal on parked VM");
     }
 

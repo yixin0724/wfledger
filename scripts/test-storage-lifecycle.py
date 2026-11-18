@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Handcrafted V3 storage lifecycle oracles; stdlib only, no production/JVM data.
 
-Run: python3 -B scripts/test-storage-lifecycle.py
-Routes, event order, clocks, and provenance below are independent literal
-oracles. The helpers only assemble JSON, never call a verifier to create events.
-"""
 import copy
 from decimal import Decimal
 import hashlib
@@ -24,29 +19,23 @@ INT_MAX, LONG_MAX = 2147483647, 9223372036854775807
 READ, WRITE, NIC = "STORE:source:READ", "STORE:source:WRITE", "STORE:source:NIC"
 LOCAL, STORE = "LOCAL_VISIBLE_REPLICA_V3", "COMMITTED_STORE_THEN_VM_READ_CACHE_V3"
 
-
 def fid(name="data", scope=0):
     return dict(workflowInputIndex=scope, name=name)
-
 
 def loc(vm=None):
     return dict(kind="SOURCE" if vm is None else "VM", vmId=vm,
                 sourceId="source" if vm is None else None)
 
-
 def file(name, size, producer=None, scope=0):
     return dict(fileId=fid(name, scope), bytes=size, producerTaskId=producer)
-
 
 def task(ident, parents=(), inputs=(), outputs=(), scope=0):
     return dict(taskId=ident, workflowInputIndex=scope, parents=list(parents),
                 inputs=[dict(fileId=fid(name, scope), referenceCount=count) for name, count in inputs],
                 outputs=[fid(name, scope) for name in outputs])
 
-
 def resource(key, rate):
     return dict(key=key, capacityBytesPerSecond=rate)
-
 
 def fabric(vms=((1, 40, 10), (2, 20, 20), (3, 50, 10)), store_host=10,
            read_mb=.00002, write_mb=.00001, nic_mb=.00005):
@@ -57,9 +46,8 @@ def fabric(vms=((1, 40, 10), (2, 20, 20), (3, 50, 10)), store_host=10,
                 sourceStorage=dict(attachmentHostId=store_host, readBandwidthMbPerSecond=read_mb,
                                    writeBandwidthMbPerSecond=write_mb, networkBandwidthMbPerSecond=nic_mb))
 
-
 def fat_fabric(k=2, cores=1, placements=((10, 0, 0), (20, 1, 0)), store_host=10, link_rate=5):
-    """Declare full link inventory only. No helper computes an expected copy route."""
+
     result = fabric(store_host=store_host)
     result["topology"] = dict(kind="FAT_TREE", k=k, coreSwitchCount=cores,
                               linkBandwidthBytesPerSecond=link_rate,
@@ -72,36 +60,28 @@ def fat_fabric(k=2, cores=1, placements=((10, 0, 0), (20, 1, 0)), store_host=10,
         result["resources"].extend((resource(f"LINK:{a}->{b}", link_rate), resource(f"LINK:{b}->{a}", link_rate)))
     return result
 
-
 CROSS = ["LINK:ACC:10->EDGE:0:0", "LINK:EDGE:0:0->AGG:0:0", "LINK:AGG:0:0->CORE:0",
          "LINK:CORE:0->AGG:1:0", "LINK:AGG:1:0->EDGE:1:0", "LINK:EDGE:1:0->ACC:20"]
 REVERSE = ["LINK:ACC:20->EDGE:1:0", "LINK:EDGE:1:0->AGG:1:0", "LINK:AGG:1:0->CORE:0",
            "LINK:CORE:0->AGG:0:0", "LINK:AGG:0:0->EDGE:0:0", "LINK:EDGE:0:0->ACC:10"]
 
-
 def e(kind, now, **payload):
     return dict(sequence=0, observedTime=now, type=kind, payload=payload)
-
 
 def request(job, tid, vm, now):
     return e("JOB_INPUT_REQUESTED", now, jobId=job, taskIds=[tid], destinationVmId=vm)
 
-
 def ready(job, now):
     return e("JOB_DATA_READY", now, jobId=job)
-
 
 def cpu(job, vm, now):
     return e("JOB_CPU_STARTED", now, jobId=job, vmId=vm)
 
-
 def finish(job, tid, vm, now, success=True):
     return e("TASK_FINISHED", now, jobId=job, taskId=tid, vmId=vm, success=success)
 
-
 def seed(name, scope=0):
     return e("EXTERNAL_SEEDED", 0, fileId=fid(name, scope), location=loc())
-
 
 def replica(name, vm, visible, acquisition, producer=None, attempt=None,
             origin_vm=None, origin_at=0, copied=None, ordinal=None, scope=0):
@@ -109,39 +89,32 @@ def replica(name, vm, visible, acquisition, producer=None, attempt=None,
                 origin=dict(producerTaskId=producer, jobAttemptId=attempt, location=loc(origin_vm), observedAt=origin_at),
                 copiedFrom=copied, copyOrdinal=ordinal)
 
-
 def admit(ordinal, name, source, vm, purpose, owner, size, path, rate, seconds, now, scope=0):
     return e("COPY_ADMITTED", now, copyOrdinal=ordinal, fileId=fid(name, scope), bytes=size,
              sourceReplica=source, destination=loc(vm), purpose=purpose, ownerJobId=owner,
              resources=list(path), standaloneRate=rate, isolatedSeconds=seconds)
 
-
 def resolve(job, name, resolution, vm, now, ordinal=None, count=1, scope=0):
     return e("INPUT_RESOLVED", now, jobId=job, fileId=fid(name, scope), referenceCount=count,
              resolution=resolution, copyOrdinal=ordinal, source=loc(vm))
 
-
 def wait(job, name, now, count=1, scope=0):
     return e("INPUT_WAITING_FOR_STORE", now, jobId=job, fileId=fid(name, scope), referenceCount=count)
-
 
 def output(job, tid, name, resolution, vm, now, ordinal=None, scope=0):
     return e("OUTPUT_RESOLVED", now, jobId=job, taskId=tid, fileId=fid(name, scope),
              resolution=resolution, copyOrdinal=ordinal, source=loc(vm))
 
-
 def settle(ordinal, effective, observed, residual=0):
     return e("COPY_SETTLED", observed, copyOrdinal=ordinal, effectiveTime=effective, remainingAfterService=residual)
 
-
 def seal(doc, through=None):
-    """Fix bookkeeping after edits: semantic deletions cannot hide behind old counters."""
+
     for index, event in enumerate(doc["events"], 1):
         event["sequence"] = index
     doc["capture"]["retainedRecords"] = len(doc["events"])
     doc["capture"]["observedThrough"] = (doc["events"][-1]["observedTime"] if doc["events"] else 0) if through is None else through
     return doc
-
 
 def document(tasks=(), files=(), events=(), physical=None, store_inputs=False, isolated=False):
     return seal(dict(schema="workflowsim-storage-lifecycle-v3",
@@ -157,7 +130,6 @@ def document(tasks=(), files=(), events=(), physical=None, store_inputs=False, i
         capture=dict(status="COMPLETE", observedThrough=0, retainedRecords=0, droppedRecords=0),
         filePlan=dict(contractVersion="SCOPED_RESOLVED_WRITE_ONCE_FILES_V2", tasks=list(tasks), files=list(files)),
         fabric=fabric() if physical is None else physical, events=list(events)))
-
 
 def roundtrip(store_inputs=False, isolated=False, topology=False):
     original = replica("data", 1, 1, "TASK_OUTPUT", 0, 10, 1, 1)
@@ -180,13 +152,11 @@ def roundtrip(store_inputs=False, isolated=False, topology=False):
     return document([task(0, outputs=["data"]), task(1, parents=[0], inputs=[("data", 3)])],
                     [file("data", 20, 0)], events, fat_fabric() if topology else None, store_inputs, isolated)
 
-
 def same_vm_gate():
     doc = roundtrip(store_inputs=True)
     doc["events"] = doc["events"][:6] + [request(11, 1, 1, 2), wait(11, "data", 2, 3),
         settle(1, 3, 4), resolve(11, "data", "LOCAL", 1, 4, count=3), ready(11, 4), cpu(11, 1, 4), finish(11, 1, 1, 5)]
     return seal(doc)
-
 
 def zero_and_sink():
     original = replica("unused", 1, 1, "TASK_OUTPUT", 0, 10, 1, 1)
@@ -194,7 +164,6 @@ def zero_and_sink():
         [request(10, 0, 1, 0), ready(10, 0), cpu(10, 1, 0), finish(10, 0, 1, 1),
          admit(1, "unused", original, None, "OUTPUT", 10, 20, ["VM:1", NIC, WRITE], 10, 2, 1),
          output(10, 0, "unused", "NEW_COPY", 1, 1, 1), output(10, 0, "zero", "ZERO", 1, 1), settle(1, 3, 4)])
-
 
 def cohorts():
     a = replica("a", 1, 1, "TASK_OUTPUT", 0, 10, 1, 1)
@@ -218,7 +187,6 @@ def cohorts():
          settle(4, 5, 6), ready(11, 6), cpu(13, 1, 6), cpu(12, 2, 6), cpu(11, 2, 6),
          finish(13, 3, 1, 7), finish(12, 2, 2, 7), finish(11, 1, 2, 7)], store_inputs=True)
 
-
 def failed_retry():
     external = replica("external", None, 0, "EXTERNAL_SEED")
     out = replica("out", 1, 5, "TASK_OUTPUT", 0, 11, 1, 5)
@@ -236,7 +204,6 @@ def failed_retry():
          resolve(12, "out", "NEW_COPY", None, 8, 3), settle(3, 9, 10), ready(12, 10), cpu(12, 2, 10), finish(12, 1, 2, 11)],
         store_inputs=True)
 
-
 def cached_peer():
     original = replica("x", None, 0, "EXTERNAL_SEED")
     cache = replica("x", 2, 12, "COPY_SETTLEMENT", copied=loc(), ordinal=1)
@@ -246,7 +213,6 @@ def cached_peer():
          request(11, 1, 3, 14), admit(2, "x", cache, 3, "INPUT", 11, 100, ["VM:2", "VM:3"], 50, 2, 14),
          resolve(11, "x", "NEW_COPY", 2, 14, 2, 3), settle(2, 16, 17), ready(11, 17), cpu(11, 3, 17), finish(11, 1, 3, 18)],
         fabric(((1, 40, 10), (2, 100, 20), (3, 50, 30)), read_mb=.00001, nic_mb=.0001))
-
 
 def output_joins():
     original = replica("x", 10, 1, "TASK_OUTPUT", 0, 10, 10, 1)
@@ -261,10 +227,9 @@ def output_joins():
          finish(30, 1, 99, 6), request(21, 0, 2, 7), ready(21, 7), cpu(21, 2, 7), finish(21, 0, 2, 8),
          output(21, 0, "x", "ALREADY_STORED", 2, 8)], fabric(((2, 10, 20), (10, 10, 10), (99, 20, 30))))
 
-
 def deferred_magnitudes():
-    """a waits, b/c resolve first: request byte order differs from isolated-sum order."""
-    huge = 9007199254740992  # 2**53: huge+1+1 rounds differently from 1+1+huge.
+
+    huge = 9007199254740992
     original = replica('a', 1, 0, 'TASK_OUTPUT', 0, 10, 1, 0)
     stored = replica('a', None, huge, 'COPY_SETTLEMENT', 0, 10, 1, 0, loc(1), 1)
     return document([task(0, outputs=['a']), task(1, [0], [('a', 1), ('b', 1), ('c', 1)])],
@@ -281,12 +246,10 @@ def deferred_magnitudes():
         fabric(((1, 1, 10), (2, 1, 20)), read_mb=.000001, write_mb=.000001, nic_mb=.000001),
         store_inputs=True, isolated=True)
 
-
 def prefix(doc, length, through=None):
     result = copy.deepcopy(doc)
     result["events"] = result["events"][:length]
     return seal(result, through)
-
 
 def changed(doc, path, value):
     result = copy.deepcopy(doc)
@@ -296,10 +259,8 @@ def changed(doc, path, value):
     item[path[-1]] = value
     return result
 
-
 def audit(doc):
     return verify_document(decode_json(json.dumps(doc, ensure_ascii=True, allow_nan=False)))
-
 
 class StorageLifecycleOracles(unittest.TestCase):
     def bad(self, doc):
@@ -390,7 +351,7 @@ class StorageLifecycleOracles(unittest.TestCase):
                          ("newFileCopies", "joinedFileCopies", "isolatedInputSeconds", "dataReadyAt")))
         self.assertEqual(4, jobs[13]["dataReadyAt"])
         self.assertEqual((2, 2), (report["inputCopyCount"], report["outputCopyCount"]))
-        # All waiters must resume before another settlement, even in one outer observation.
+
         interrupted = copy.deepcopy(doc)
         interrupted["events"][16], interrupted["events"][21] = interrupted["events"][21], interrupted["events"][16]
         self.bad(seal(interrupted))
@@ -434,7 +395,7 @@ class StorageLifecycleOracles(unittest.TestCase):
             self.bad(changed(doc, ("events", 9, "payload", "sourceReplica", key), value))
         shared = copy.deepcopy(doc)
         shared["policies"].update(selection=STORE, inputAccess=STORE)
-        self.bad(shared)  # Cache at a different VM must not bypass the committed store.
+        self.bad(shared)
         shared["events"] = shared["events"][:9] + [
             admit(2, "x", replica("x", None, 0, "EXTERNAL_SEED"), 3, "INPUT", 11, 100, [READ, NIC, "VM:3"], 10, 10, 14),
             resolve(11, "x", "NEW_COPY", None, 14, 2, 3)]
@@ -446,7 +407,7 @@ class StorageLifecycleOracles(unittest.TestCase):
         resolutions = report["facts"]["outputResolutions"]
         self.assertEqual(["NEW_COPY", "JOIN_EXISTING", "ALREADY_STORED"], [r["resolution"] for r in resolutions])
         self.assertEqual([loc(10), loc(2), loc(2)], [r["source"] for r in resolutions])
-        self.assertEqual(loc(2), report["facts"]["copies"][1]["sourceReplica"]["location"])  # numeric tie order
+        self.assertEqual(loc(2), report["facts"]["copies"][1]["sourceReplica"]["location"])
         source = next(r for r in report["facts"]["replicas"] if r["location"] == loc())
         vm2 = next(r for r in report["facts"]["replicas"] if r["location"] == loc(2))
         self.assertEqual((10, 1), (source["origin"]["jobAttemptId"], source["origin"]["observedAt"]))
@@ -477,7 +438,7 @@ class StorageLifecycleOracles(unittest.TestCase):
                 self.bad(changed(doc, ("events", 8, "payload", "resources"), ["VM:1", WRITE, NIC]))
 
     def test_fat_paths_bidirectional_read_write_and_same_host(self):
-        # Store on host10 and producer VM2 on host20: uploads are the literal reverse path.
+
         original = replica("out", 2, 1, "TASK_OUTPUT", 0, 10, 2, 1)
         doc = document([task(0, outputs=["out"])], [file("out", 20, 0)],
             [request(10, 0, 2, 0), ready(10, 0), cpu(10, 2, 0), finish(10, 0, 2, 1),
@@ -520,13 +481,13 @@ class StorageLifecycleOracles(unittest.TestCase):
         self.assertEqual(1, audit(prefix(doc, 13))["readyNotStartedJobCount"])
         self.assertEqual(1, audit(prefix(doc, 14))["runningJobCount"])
         self.assertTrue(audit(document())["lifecycleQuiescent"])
-        self.assertTrue(audit(document([task(99)]))["lifecycleQuiescent"])  # no claim of enclosing-run completeness
+        self.assertTrue(audit(document([task(99)]))["lifecycleQuiescent"])
         for length in (1, 4, 5, 7, 9, 10, 12):
             self.bad(prefix(doc, length))
 
     def test_every_initial_reference_requires_one_decision(self):
         doc = cohorts()
-        self.bad(prefix(doc, 10))  # request decided a but omitted b
+        self.bad(prefix(doc, 10))
         for index in (9, 10, 12, 14):
             altered = copy.deepcopy(doc)
             del altered["events"][index]
@@ -543,8 +504,7 @@ class StorageLifecycleOracles(unittest.TestCase):
     def test_recounted_rehashed_semantic_deletions_are_rejected(self):
         doc = roundtrip(store_inputs=True)
         before = hashlib.sha256(json.dumps(doc).encode()).hexdigest()
-        # A whole completed-run suffix is not authenticated here; an omitted
-        # final Task outcome is a valid running prefix. Internal causal deletions are not.
+
         for index in range(len(doc["events"]) - 1):
             broken = copy.deepcopy(doc)
             del broken["events"][index]
@@ -569,7 +529,7 @@ class StorageLifecycleOracles(unittest.TestCase):
         for index, key, value in mutations:
             with self.subTest(index=index, key=key, value=value):
                 self.bad(changed(base, ("events", index, "payload", key), value))
-        self.bad(changed(cohorts(), ("events", 18, "payload", "copyOrdinal"), 1))  # SOURCE vs VM ticket
+        self.bad(changed(cohorts(), ("events", 18, "payload", "copyOrdinal"), 1))
         self.bad(changed(cohorts(), ("events", 18, "payload", "resolution"), "NEW_COPY"))
 
     def test_strict_roots_policy_pairing_and_payload_keys(self):
@@ -664,7 +624,7 @@ class StorageLifecycleOracles(unittest.TestCase):
         path = ('fabric', 'sourceStorage', 'readBandwidthMbPerSecond')
         for value in (0, -1, True, '0.1', None, float('nan'), float('inf'), Decimal('1e-999'), 1e303, math.ulp(0.0)):
             self.bad(changed(base, path, value))
-        # A positive subnormal MB/s token can convert to supported normal B/s.
+
         mb = sys.float_info.min * 2 / 1e6
         valid = changed(base, path, mb)
         valid['fabric']['resources'][3]['capacityBytesPerSecond'] = mb * 1e6
@@ -698,7 +658,7 @@ class StorageLifecycleOracles(unittest.TestCase):
         impossible = copy.deepcopy(doc)
         for event in impossible['events'][1:]:
             event['observedTime'] = 1
-        self.bad(seal(impossible))  # tiny positive duration cannot advance clock 1
+        self.bad(seal(impossible))
 
     def test_physical_inventory_exact_closure_and_host_maps(self):
         doc = roundtrip(topology=True)
@@ -723,7 +683,7 @@ class StorageLifecycleOracles(unittest.TestCase):
         no_topo = document()
         self.bad(changed(no_topo, ('fabric', 'vmHostAssignments'), []))
         self.bad(changed(no_topo, ('fabric', 'vmHostAssignments', 0, 'hostId'), -1))
-        # Without topology, membership is deliberately left for platform context.
+
         no_topo['fabric']['sourceStorage']['attachmentHostId'] = INT_MAX
         no_topo['fabric']['vmHostAssignments'][0]['hostId'] = INT_MAX - 1
         self.assertFalse(audit(no_topo)['contextualRunChecked'])
@@ -783,7 +743,7 @@ class StorageLifecycleOracles(unittest.TestCase):
         before = audit(prefix(doc, 14))['facts']['jobs'][1]
         self.assertEqual((9007199254740992, 2, 1),
             (before['requiredReferenceBytes'], before['isolatedInputSeconds'], len(before['sourceWaits'])))
-        # Reordering declaration arrays cannot change request accumulation order.
+
         doc['filePlan']['tasks'][1]['inputs'].reverse()
         self.assertEqual(job, audit(doc)['facts']['jobs'][1])
         duplicate_resolution = copy.deepcopy(doc)
@@ -803,7 +763,7 @@ class StorageLifecycleOracles(unittest.TestCase):
         self.assertEqual(3, jobs[11]['dataReadyAt'])
         self.assertTrue(report['lifecycleQuiescent'])
         self.assertEqual(1, report['outputCopyCount'])
-        # Readiness is an atomic notification before this attempt's output join.
+
         swapped = copy.deepcopy(doc)
         swapped['events'][13:15] = reversed(swapped['events'][13:15])
         self.bad(seal(swapped))
@@ -961,7 +921,6 @@ class StorageLifecycleOracles(unittest.TestCase):
                      '{"x":NaN}', '{"x":Infinity}', '{"x":1e99999}'):
             with mock.patch.object(Path, 'read_text', return_value=text), self.assertRaises(Invalid):
                 inspect_path('invalid.json')
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

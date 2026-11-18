@@ -14,26 +14,6 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
-/**
- * Reproduction regression of the CPOP paper example (Critical-Path-on-a-Processor, from
- * the same Topcuoglu, Hariri &amp; Wu, IEEE TPDS 2002 paper as HEFT) on the controlled
- * LOCAL execution model, using the same verified paper example data as
- * {@link LocalHeftPaperReproductionTest}.
- *
- * <p><b>Controlled-model result hand-derived with the classical CPOP rank formula
- * (bootstrap offset 110.1)</b></p>
- * <ul>
- *   <li>Critical path = {n1, n2, n9, n10}, average path length 108; the downward rank
- *       accumulates predecessor computation cost and incoming-edge communication cost
- *       from the entry, and r_u + r_d equals 108 for every critical-path node;</li>
- *   <li>Critical-path processor p_CP = vm1 (total critical-path computation seconds:
- *       vm0=66, vm1=54, vm2=63), and all four critical-path tasks bind to that VM;</li>
- *   <li>The makespan after removing the complete bootstrap offset is 86 (absolute
- *       196.1), consistent with the paper makespan 86; the per-task mapping, intervals
- *       and transfer volumes are pinned separately by the insertion-based EFT rule of
- *       this fixture.</li>
- * </ul>
- */
 class LocalCpopPaperReproductionTest {
 
     private static final double[][] PAPER_COST_SECONDS = {
@@ -42,21 +22,16 @@ class LocalCpopPaperReproductionTest {
     };
     private static final double BOOTSTRAP_OFFSET = 110.1;
 
-    /** Per-task VM mapping derived independently under the classical CPOP rank,
-     * critical-path binding and insertion-based EFT. */
     private static final int[] CONTROLLED_VM_BY_TASK = {-1, 1, 1, 0, 2, 1, 2, 0, 2, 1, 1};
-    /** Runtime start instants of the controlled model (absolute seconds), indexed by
-     * task ID. */
+
     private static final double[] CONTROLLED_STARTS = {
         0.0, BOOTSTRAP_OFFSET, 126.1, 138.1, 135.1, 145.1, 152.1, 149.1, 164.1, 175.1, 189.1
     };
-    /** Runtime finish instants of the controlled model (absolute seconds), indexed by
-     * task ID. */
+
     private static final double[] CONTROLLED_FINISHES = {
         0.0, 126.1, 145.1, 149.1, 152.1, 158.1, 161.1, 156.1, 178.1, 187.1, 196.1
     };
-    /** Actually modeled transfer seconds per task (zero when the replica is already on
-     * the target VM; cross-VM = edge weight). */
+
     private static final double[] CONTROLLED_TRANSFER_SECONDS = {
         0.0, 0.0, 0.0, 12.0, 9.0, 0.0, 14.0, 0.0, 19.0, 23.0, 28.0
     };
@@ -79,7 +54,7 @@ class LocalCpopPaperReproductionTest {
             assertEquals(CONTROLLED_FINISHES[taskId], job.getFinishTime(), 1.0e-9, "runtime finish of task " + taskId);
         }
         assertEquals(10, computeCount);
-        // Critical-path processor binding: all four critical-path tasks share p_CP = vm1.
+
         for (int taskId : new int[] {1, 2, 9, 10}) {
             assertEquals(1, computeJobForTask(report, taskId).getVmId(), "critical-path task " + taskId + " on vm1");
         }
@@ -136,7 +111,6 @@ class LocalCpopPaperReproductionTest {
         return new SimulationRunner().run(config, paperPlatform());
     }
 
-    /** Reproduction platform: 3 VMs, mips=1.0, bandwidth 1 MB/s, SPACE_SHARED. */
     private static PlatformProfile paperPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("cpop-paper-platform");
         for (int id = 0; id < 3; id++) {

@@ -10,16 +10,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/**
- * Serial, run-local authoritative state for write-once V2 replicas and active copy identities.
- * Publications occur at explicit settlement observations, never predicted Task finish times
- * or optional trace records. This component neither advances a network solver nor enables
- * a SimulationConfig model. Input waiters/routing and CPU dispatch are separate consumers.
- */
 public final class DataReplicaState {
-    /** Per-file observed settlement policy, separate from effective fluid completion time. */
+
     public static final String VISIBILITY_POLICY = "PER_FILE_SETTLEMENT_OBSERVATION_V2";
-    /** How a particular location first acquired this logical file. */
+
     public enum Acquisition {
         EXTERNAL_SEED,
         TASK_OUTPUT,
@@ -28,7 +22,6 @@ public final class DataReplicaState {
         ZERO_BYTE_OUTPUT
     }
 
-    /** Immutable root origin; copies retain it rather than claiming to be the producing attempt. */
     public static final class Origin {
         private final Integer producerTaskId;
         private final Long jobAttemptId;
@@ -41,29 +34,28 @@ public final class DataReplicaState {
             this.location = location;
             this.observedAt = observedAt;
         }
-        /** @return true for an external source seed */
+
         public boolean isExternal() {
             return producerTaskId == null;
         }
-        /** @return logical producer, or null for external data */
+
         public Integer getProducerTaskId() {
             return producerTaskId;
         }
-        /** @return successful producing Job attempt, or null for external data */
+
         public Long getJobAttemptId() {
             return jobAttemptId;
         }
-        /** @return original publication location */
+
         public DataLocation getLocation() {
             return location;
         }
-        /** @return original publication observation, not a predicted finish */
+
         public double getObservedAt() {
             return observedAt;
         }
     }
 
-    /** First-visible immutable copy at a location; write-once re-publication does not replace it. */
     public static final class Replica {
         private final DataflowFilePlan.FileDefinition file;
         private final DataLocation location, copiedFrom;
@@ -88,37 +80,36 @@ public final class DataReplicaState {
             this.copiedFrom = copiedFrom;
             copyOrdinal = ordinal;
         }
-        /** @return scoped immutable logical object */
+
         public DataflowFilePlan.FileDefinition getFile() {
             return file;
         }
-        /** @return this copy's location */
+
         public DataLocation getLocation() {
             return location;
         }
-        /** @return actual publication/settlement observation */
+
         public double getVisibleAt() {
             return visibleAt;
         }
-        /** @return immediate acquisition type */
+
         public Acquisition getAcquisition() {
             return acquisition;
         }
-        /** @return external or successful Task origin, inherited through copies */
+
         public Origin getOrigin() {
             return origin;
         }
-        /** @return immediate copy source, null for seeds/Task outputs */
+
         public DataLocation getCopiedFrom() {
             return copiedFrom;
         }
-        /** @return settled positive-copy ordinal, null for non-network publication */
+
         public Long getCopyOrdinal() {
             return copyOrdinal;
         }
     }
 
-    /** A publication can observe an already-present copy without overwriting its first visibility. */
     public static final class Publication {
         private final Replica replica;
         private final boolean fresh;
@@ -127,17 +118,16 @@ public final class DataReplicaState {
             this.replica = replica;
             this.fresh = fresh;
         }
-        /** @return first-visible copy at this location */
+
         public Replica getReplica() {
             return replica;
         }
-        /** @return whether a new location copy was created */
+
         public boolean isNewReplica() {
             return fresh;
         }
     }
 
-    /** Opaque run-owned identity, independent of Job IDs, reference multiplicity or optional tracing. */
     public static final class CopyTicket {
         private final Object owner;
         private final long ordinal;
@@ -152,29 +142,28 @@ public final class DataReplicaState {
             this.destination = destination;
             releaseTime = release;
         }
-        /** @return unique copy identity within this state */
+
         public long getOrdinal() {
             return ordinal;
         }
-        /** @return immutable selected source copy */
+
         public Replica getSourceReplica() {
             return source;
         }
-        /** @return fixed target */
+
         public DataLocation getDestination() {
             return destination;
         }
-        /** @return scoped object and unique positive payload */
+
         public DataflowFilePlan.FileDefinition getFile() {
             return source.file;
         }
-        /** @return admission observation; never backdated */
+
         public double getReleaseTime() {
             return releaseTime;
         }
     }
 
-    /** Deeply frozen visible-state and active-copy view. No mutable state or observer callback escapes. */
     public static final class Snapshot {
         private final DataflowFilePlan plan;
         private final Set<DataLocation> known;
@@ -191,39 +180,29 @@ public final class DataReplicaState {
             replicas = state.replicas;
             active = immutableList(state.active.values());
         }
-        /** @return observed-state watermark */
+
         public double getObservedThrough() {
             return observedThrough;
         }
-        /** @return typed known locations in stable order */
+
         public List<DataLocation> getLocations() {
             return locations;
         }
-        /** @return immutable active tickets in ordinal order */
+
         public List<CopyTicket> getActiveCopies() {
             return active;
         }
-        /**
-         * @param file known logical identity
-         * @return immutable file definition even when no copy is yet visible
-         */
+
         public DataflowFilePlan.FileDefinition getFile(DataflowFilePlan.FileId file) {
             return plan.getFile(file);
         }
-        /**
-         * @param file known file identity
-         * @return currently visible replicas, in stable location order
-         */
+
         public List<Replica> getReplicas(DataflowFilePlan.FileId file) {
             plan.getFile(file);
             Map<DataLocation, Replica> copies = replicas.get(file);
             return copies == null ? Collections.<Replica>emptyList() : immutableList(copies.values());
         }
-        /**
-         * @param file known file identity
-         * @param location registered location
-         * @return visible replica or null, never an in-flight promise
-         */
+
         public Replica getReplica(DataflowFilePlan.FileId file, DataLocation location) {
             plan.getFile(file);
             requireKnown(known, location);
@@ -236,7 +215,7 @@ public final class DataReplicaState {
     private final Set<DataLocation> locations;
     private final List<DataLocation> locationList;
     private final Object ticketOwner;
-    // Immutable roots and location rows can be retained by snapshots and speculative branches.
+
     private PersistentHistoryMap<DataflowFilePlan.FileId, Map<DataLocation, Replica>> replicas =
             PersistentHistoryMap.empty();
     private final Map<Long, CopyTicket> active = new TreeMap<>();
@@ -246,10 +225,6 @@ public final class DataReplicaState {
     private long nextOrdinal = 1;
     private double observedThrough;
 
-    /**
-     * @param plan frozen logical file plan
-     * @param knownLocations distinct immutable typed locations; no capacity is implied
-     */
     public DataReplicaState(DataflowFilePlan plan, Collection<DataLocation> knownLocations) {
         if (plan == null || knownLocations == null) {
             throw bad("File plan and known locations are required");
@@ -279,61 +254,47 @@ public final class DataReplicaState {
         active.putAll(previous.active);
         byTarget.putAll(previous.byTarget);
     }
-    /** Internal same-run speculative state; no copy is published until the runtime commits it. */
+
     DataReplicaState fork() {
         return new DataReplicaState(this);
     }
-    /** @return last accepted observation */
+
     public double getObservedThrough() {
         return observedThrough;
     }
-    /** @return accepted positive-copy count, not input-reference count */
+
     public long getAdmittedCopyCount() {
         return nextOrdinal - 1;
     }
-    /** @return unique observed logical Task/Job-attempt pairs */
+
     public long getCompletedTaskAttemptCount() {
         return completions.size();
     }
-    /** @return currently active positive-copy count */
+
     public int getActiveCopyCount() {
         return active.size();
     }
-    /** @return immutable observation snapshot */
+
     public Snapshot snapshot() {
         return new Snapshot(this);
     }
-    /** @param now finite monotonic observation time; this operation performs no network service */
+
     public void advanceTo(double now) {
         observedThrough = time(now);
     }
-    /**
-     * @param file known file identity
-     * @param location registered location
-     * @return visible copy or null
-     */
+
     public Replica getReplica(DataflowFilePlan.FileId file, DataLocation location) {
         plan.getFile(file);
         requireKnown(locations, location);
         return visible(file, location);
     }
-    /**
-     * @param file known file identity
-     * @param destination registered target
-     * @return existing active identity that a coordinator can join, or null
-     */
+
     public CopyTicket getInFlight(DataflowFilePlan.FileId file, DataLocation destination) {
         plan.getFile(file);
         requireKnown(locations, destination);
         return byTarget.get(new Target(file, destination));
     }
 
-    /**
-     * @param file externally supplied logical object
-     * @param source registered SOURCE location
-     * @param now actual availability observation
-     * @return new or already-present publication
-     */
     public Publication seedExternal(DataflowFilePlan.FileId file, DataLocation source, double now) {
         DataflowFilePlan.FileDefinition definition = plan.getFile(file);
         requireKnown(locations, source);
@@ -348,19 +309,6 @@ public final class DataReplicaState {
         return result;
     }
 
-    /**
-     * Record a terminal Task outcome using its completed Job's actual placement. A failed Task
-     * publishes no outputs even if siblings in the same Job succeeded. Invalid/conflicting calls
-     * leave all state and clocks unchanged. A Job attempt has one actual VM and one observed
-     * completion time, while constituent Task success flags may differ. Repeating an identical
-     * outcome is idempotent subject to the same non-backdated observation-time rule.
-     * @param taskId logical Task ID
-     * @param jobAttemptId nonnegative Job attempt identity (separate from logical Task ID)
-     * @param actualVm actual registered VM location, not a planner hint
-     * @param succeeded terminal success of this Task, not aggregate Job success
-     * @param now datacenter completion observation, not a predicted Task finish
-     * @return first-observation output publications; empty for failure or identical repeated outcome
-     */
     public List<Publication> recordTaskCompletion(
             int taskId, long jobAttemptId, DataLocation actualVm, boolean succeeded, double now) {
         List<DataflowFilePlan.FileId> outputIds = plan.getOutputFiles(taskId);
@@ -401,15 +349,6 @@ public final class DataReplicaState {
         return Collections.unmodifiableList(published);
     }
 
-    /**
-     * Admit one positive copy from a currently visible source. A coordinator must query and join
-     * an existing in-flight ticket before selecting/admitting another route for the same target.
-     * @param file known positive-byte object
-     * @param source registered visible holder
-     * @param destination fixed registered destination without an existing visible copy
-     * @param now admission observation
-     * @return immutable run-owned copy identity with its frozen source
-     */
     public CopyTicket admitCopy(
             DataflowFilePlan.FileId file, DataLocation source, DataLocation destination, double now) {
         DataflowFilePlan.FileDefinition definition = plan.getFile(file);
@@ -441,13 +380,6 @@ public final class DataReplicaState {
         return ticket;
     }
 
-    /**
-     * Settle a positive copy at its actual outer observation. This method does not assert an
-     * internal fluid finish time or validate transferred service; the driver supplies completion.
-     * @param ticket active identity owned by this run
-     * @param now finite observation strictly later than positive-copy admission
-     * @return new or already-present destination replica, retaining earliest visibility
-     */
     public Publication settleCopy(CopyTicket ticket, double now) {
         if (ticket == null || ticket.owner != ticketOwner) {
             throw bad("Copy ticket belongs to another run or is null");
@@ -474,14 +406,6 @@ public final class DataReplicaState {
         return result;
     }
 
-    /**
-     * Resolve a zero-byte reference using a real visible source, without consuming a copy ID.
-     * @param file known zero-byte object
-     * @param source registered visible holder
-     * @param destination registered target
-     * @param now current observation; immediate zero-byte visibility is allowed
-     * @return new or already-present destination replica
-     */
     public Publication resolveZeroReference(
             DataflowFilePlan.FileId file, DataLocation source, DataLocation destination, double now) {
         DataflowFilePlan.FileDefinition definition = plan.getFile(file);
@@ -498,8 +422,6 @@ public final class DataReplicaState {
         return result;
     }
 
-    /** @param file produced zero-byte object @param source visible producing VM @param destination registered store
-     * @param now observation @return zero-output metadata publication */
     public Publication commitZeroOutput(
             DataflowFilePlan.FileId file, DataLocation source, DataLocation destination, double now) {
         DataflowFilePlan.FileDefinition definition = plan.getFile(file);
@@ -538,7 +460,7 @@ public final class DataReplicaState {
         if (existing != null) {
             return new Publication(existing, false);
         }
-        // Copy only the changed file's ordered row; published rows are never mutated again.
+
         Map<DataLocation, Replica> copies = previous == null ? new TreeMap<>() : new TreeMap<>(previous);
         copies.put(proposal.location, proposal);
         replicas = replicas.with(proposal.file.getId(), Collections.unmodifiableMap(copies));

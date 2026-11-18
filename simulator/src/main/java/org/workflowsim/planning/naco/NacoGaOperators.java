@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-/** GPX, mutation, and topological helpers for the NACO hybrid GA. */
 final class NacoGaOperators {
 
     private NacoGaOperators() {}

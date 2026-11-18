@@ -21,18 +21,7 @@ import java.util.List;
 
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * Common interface for all balanced-clustering diagnostic metrics.
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public interface BalancingMetric {
-    /**
-     * Computes the metric value over a set of task sets.
-     *
-     * @param list task sets to evaluate
-     * @return metric value
-     */
+
     public double getMetric(List<TaskSet> list);
 }

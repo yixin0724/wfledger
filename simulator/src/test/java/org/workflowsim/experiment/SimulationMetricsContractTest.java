@@ -19,49 +19,16 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-/**
- * Structural guard tests for the SimulationMetrics three-surface contract (AUD-F14).
- *
- * <p>SimulationMetrics is a deliberately monolithic class ("move-only, no-restructure"
- * maintenance mode): one new metric must stay in sync across the accumulator logic, the
- * field/assembly surface, and the accessor surface, and a missed accessor or field does not
- * fail compilation. These tests lock the structural symmetry so the miss turns red:</p>
- *
- * <ul>
- *   <li>every Gson-serialized field (the artifact output surface) must have a same-named
- *       public no-arg accessor, and every accessor must map back to a serialized field or be
- *       listed as an explicit compatibility alias;</li>
- *   <li>the Gson output key surface must equal the non-transient field surface exactly;</li>
- *   <li>the validator's required-metrics list must stay inside the real serialization
- *       surface.</li>
- * </ul>
- *
- * <p>Accumulator-logic misses (a metric computed wrongly or not computed at all) cannot be
- * caught structurally; they stay covered by the behavioral tests in SimulationMetricsTest
- * and the recomputation checks of AUD-F05.</p>
- */
 class SimulationMetricsContractTest {
 
-    /**
-     * Accessors without a same-named field: deliberate compatibility aliases over an existing
-     * serialized field, kept for callers using the historical names. Each entry documents the
-     * field it actually reads.
-     */
     private static final Set<String> ALIASED_ACCESSORS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
-            // getSimulationEndSeconds() -> makespanSeconds (same simulated-seconds value)
             "simulationEndSeconds",
-            // getCompletedJobAttemptCount() -> jobOutcomeCount
             "completedJobAttemptCount",
-            // getCompletedComputeAttemptCount() -> computeJobOutcomeCount
             "completedComputeAttemptCount",
-            // isWorkflowCompletedSuccessfully() -> allLogicalTasksCompletedSuccessfully
             "workflowCompletedSuccessfully",
-            // getModeledRequiredInputDemandFileCount() -> modeledDataTransferFileCount
             "modeledRequiredInputDemandFileCount",
-            // getTotalModeledRequiredInputDemandBytes() -> totalModeledRequiredInputBytes
             "totalModeledRequiredInputDemandBytes")));
 
-    /** Fields intentionally present in the serialized output without a same-named accessor. */
     private static final Set<String> FIELDS_WITHOUT_ACCESSOR = Collections.unmodifiableSet(new HashSet<String>());
 
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
@@ -71,9 +38,6 @@ class SimulationMetricsContractTest {
         Set<String> fields = serializedFieldNames();
         Set<String> accessors = accessorNames();
 
-        // Transient-backed accessors are legitimate asymmetry: the field is deliberately
-        // excluded from the artifact surface, and its accessor serves Java-side callers.
-        // Computed dynamically so a newly added transient field needs no list edit.
         Set<String> transientBackedAccessors = new TreeSet<String>();
         for (Field field : SimulationMetrics.class.getDeclaredFields()) {
             if (Modifier.isTransient(field.getModifiers())) {
@@ -132,7 +96,6 @@ class SimulationMetricsContractTest {
         }
     }
 
-    /** @return names of non-static non-transient instance fields (the serialized surface) */
     private static Set<String> serializedFieldNames() {
         Set<String> names = new TreeSet<String>();
         for (Field field : SimulationMetrics.class.getDeclaredFields()) {
@@ -144,7 +107,6 @@ class SimulationMetricsContractTest {
         return names;
     }
 
-    /** @return property names implied by public no-arg get/is accessors declared on the class */
     private static Set<String> accessorNames() {
         Set<String> names = new TreeSet<String>();
         for (Method method : SimulationMetrics.class.getDeclaredMethods()) {
@@ -162,7 +124,6 @@ class SimulationMetricsContractTest {
         return names;
     }
 
-    /** @return the property name of a {@code getX}/{@code isX} accessor */
     private static String propertyOf(String methodName, int prefixLength) {
         char first = Character.toLowerCase(methodName.charAt(prefixLength));
         return first + methodName.substring(prefixLength + 1);

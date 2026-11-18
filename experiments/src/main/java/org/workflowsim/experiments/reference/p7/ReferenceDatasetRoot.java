@@ -5,19 +5,10 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/** Explicit dataset-root contract shared by the P7/reference run entry points. */
 final class ReferenceDatasetRoot {
 
     private ReferenceDatasetRoot() {}
 
-    /**
-     * Validate and normalize an explicit, absolute dataset directory.
-     *
-     * @param datasetRoot the {@code datasets} directory supplied by the caller
-     * @return the normalized absolute directory
-     * @throws IllegalArgumentException if the directory is null, relative, missing, or not a
-     *         directory
-     */
     static Path require(Path datasetRoot) {
         if (datasetRoot == null) {
             throw new IllegalArgumentException("Dataset root is required");
@@ -32,15 +23,6 @@ final class ReferenceDatasetRoot {
         return normalized;
     }
 
-    /**
-     * Resolve one declared relative input file inside a validated dataset root.
-     *
-     * @param datasetRoot explicit, absolute dataset root
-     * @param relativePath relative file name declared by the frozen scenario
-     * @return validated normalized absolute regular file
-     * @throws IllegalArgumentException if the path escapes the dataset root, is invalid, or does
-     *         not exist
-     */
     static Path resolveFile(Path datasetRoot, String relativePath) {
         Path normalizedRoot = require(datasetRoot);
         if (relativePath == null || relativePath.trim().isEmpty()) {

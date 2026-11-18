@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
-/** Optional retained-history compatibility, separate from the mandatory fresh-bundle rerun tests. */
 class HistoricalEvidenceCompatibilityIntegrationTest {
     @Test
     void retainedClassicEvidenceRemainsReadableWithoutRetaggingItsModel() throws Exception {
@@ -28,7 +27,7 @@ class HistoricalEvidenceCompatibilityIntegrationTest {
 
     private static void assertHistoricalBundle(boolean synthetic) throws Exception {
         Path run = historicalRun(synthetic);
-        // Keep the assumption inside each test so an ordinary checkout reports explicit skips.
+
         assumeTrue(run != null, "Optional retained R10 evidence is not present in this checkout");
         RerunEvidence evidence = RerunEvidenceReader.read(run);
         assertEquals(
@@ -53,7 +52,7 @@ class HistoricalEvidenceCompatibilityIntegrationTest {
         if (!Files.isDirectory(runs)) {
             return null;
         }
-        // Do not search ancestors: a clean-checkout copy must not borrow its parent's evidence.
+
         List<Path> directories;
         try (Stream<Path> stream = Files.list(runs)) {
             directories = stream.filter(Files::isDirectory).sorted().collect(Collectors.toList());

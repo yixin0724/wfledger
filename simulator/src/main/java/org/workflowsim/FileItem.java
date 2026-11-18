@@ -19,16 +19,6 @@ import java.util.List;
 
 import org.workflowsim.utils.Parameters.FileType;
 
-/**
- * Workflow file descriptor for WorkflowSim.
- *
- * <p>CloudSim already provides {@code File}, but workflow data dependencies also need to
- * store the file size as a {@code double} and distinguish input, output, and intermediate
- * file semantics, so a dedicated {@code FileItem} is used. The file-size unit is fixed by
- * the input format; both the WfCommons and DAX paths pass bytes.</p>
- *
- * @author weiweich
- */
 public class FileItem {
 
     private String name;
@@ -66,22 +56,10 @@ public class FileItem {
         return this.type;
     }
 
-    /**
-     * Determines whether an input file requires stage-in from outside the job.
-     *
-     * <p>Workflows follow the convention that a file is written once and may be read many
-     * times. If a same-named output file exists within the same job, the input is produced
-     * by a task in that job and must not be counted as stage-in again. This check mainly
-     * serves file-transfer estimation after horizontal clustering.</p>
-     *
-     * @param list all files associated with the current job
-     * @return {@code true} when this object is a real external input that has no same-named
-     *         in-job output file
-     */
     public boolean isRealInputFile(List<FileItem> list) {
         if (this.getType() == FileType.INPUT) {
             for (FileItem another : list) {
-                // A same-named output means the data is produced within this job, so no extra stage-in is needed.
+
                 if (another.getName().equals(this.getName()) && another.getType() == FileType.OUTPUT) {
                     return false;
                 }

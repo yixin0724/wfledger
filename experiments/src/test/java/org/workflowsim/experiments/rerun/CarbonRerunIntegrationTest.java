@@ -22,14 +22,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * BAT-C5.1 (2026-10-28, second round) -- rerun red->green anchor with carbon evidence
- * (an R7-type gap: the rebuilder used to drop the carbon fields, so a rerun showed a
- * missing-section divergence in /carbonMetrics). The red case DIVERGED before the fix;
- * after the forwarding fix it must be IDENTICAL_CORE and replay the carbon metrics
- * bit-exactly. The assertion on the unchanged side of the energy-conservation evidence
- * serves as the regression control.
- */
 class CarbonRerunIntegrationTest {
 
     @TempDir

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Immutable compute-only task in a fixed CaWoSched mapping and per-VM order. */
 public final class CaWoSchedTask {
 
     private final int taskId;

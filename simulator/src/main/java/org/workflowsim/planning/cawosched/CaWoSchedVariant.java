@@ -2,7 +2,6 @@ package org.workflowsim.planning.cawosched;
 
 import org.workflowsim.planning.timed.PostPlanningOptimizer;
 
-/** The sixteen declared CaWoSched score/weight/refinement/local-search combinations. */
 public enum CaWoSchedVariant {
     SLACK(CaWoSchedPlanner.Score.SLACK, false, false, false),
     SLACK_R(CaWoSchedPlanner.Score.SLACK, false, true, false),

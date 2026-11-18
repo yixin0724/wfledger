@@ -16,11 +16,6 @@ import org.workflowsim.Job;
 import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.exception.SimulationConfigurationException;
 
-/**
- * Unit contract of the R4 RL track: observation snapshot structure, greedy baseline policy
- * behavior, and registry lifecycle. All assertions rest on hand-built synthetic state (real
- * Job/CondorVM instances, no simulation run required).
- */
 class RlPolicyContractTest {
 
     @AfterEach
@@ -30,8 +25,7 @@ class RlPolicyContractTest {
 
     @Test
     void observationPreservesJobOrderAndSortsVmsById() {
-        // VMs arrive in shuffled ID order; the observation must sort them by ascending ID;
-        // Jobs keep arrival order.
+
         List<CondorVM> vms = Arrays.asList(vm(2, 1.0, true), vm(0, 2.0, false), vm(1, 4.0, true));
         List<Job> jobs = Arrays.asList(job(7, 100L), job(3, 50L));
         RlObservation observation = RlObservation.of(jobs, vms);
@@ -48,8 +42,7 @@ class RlPolicyContractTest {
 
     @Test
     void greedyPolicyPicksEarliestFinishIdleCompatibleVm() {
-        // One Job (100 MI, 1 PE): VM0 mips=2 (ECT 50), VM1 mips=4 (ECT 25),
-        // VM2 mips=1 (ECT 100) -> VM1 must be chosen (observation index 1).
+
         RlObservation observation = RlObservation.of(
                 Arrays.asList(job(1, 100L)), Arrays.asList(vm(0, 2.0, true), vm(1, 4.0, true), vm(2, 1.0, true)));
         int[] actions = new EarliestFinishGreedyPolicy().selectVms(observation);
@@ -59,8 +52,7 @@ class RlPolicyContractTest {
 
     @Test
     void greedyPolicySkipsBusyAndIncompatibleVms() {
-        // VM0 is busy (fastest), VM1 is idle but has too few PEs, VM2 is idle and
-        // compatible -> only VM2 is eligible.
+
         Job job = job(1, 100L);
         job.setNumberOfPes(2);
         CondorVM busyFast = vm(0, 4.0, false);
@@ -73,8 +65,7 @@ class RlPolicyContractTest {
 
     @Test
     void greedyPolicyReservesAtMostOneJobPerVmPerBatch() {
-        // Two Jobs and a single idle VM: the first Job occupies it, the second Job
-        // gets no assignment.
+
         RlObservation observation = RlObservation.of(
                 Arrays.asList(job(1, 50L), job(2, 80L)), Arrays.asList(vm(0, 1.0, true), vm(1, 1.0, false)));
         int[] actions = new EarliestFinishGreedyPolicy().selectVms(observation);
@@ -84,8 +75,7 @@ class RlPolicyContractTest {
 
     @Test
     void greedyPolicyTiesChooseLowerVmId() {
-        // Two idle VMs of equal speed: an ECT tie selects the lower VM ID
-        // (observation index 0).
+
         RlObservation observation =
                 RlObservation.of(Arrays.asList(job(1, 100L)), Arrays.asList(vm(0, 2.0, true), vm(1, 2.0, true)));
         int[] actions = new EarliestFinishGreedyPolicy().selectVms(observation);
@@ -94,12 +84,11 @@ class RlPolicyContractTest {
 
     @Test
     void registryLifecycleCarriesPolicyAndTrace() {
-        // Before registration, current() fails explicitly and points at RlEnvironment.
+
         SimulationConfigurationException missing =
                 assertThrows(SimulationConfigurationException.class, RlPolicyRegistry::current);
         assertTrue(missing.getMessage().contains("RlEnvironment"), missing.getMessage());
-        // After registration, current returns the same instance; decisions and steps
-        // are counted independently; reset clears both.
+
         RlPolicy policy = observation -> new int[observation.getReadyJobs().size()];
         RlPolicyRegistry.init(policy);
         assertEquals(policy, RlPolicyRegistry.current());
@@ -118,7 +107,7 @@ class RlPolicyContractTest {
         assertThrows(SimulationConfigurationException.class, RlPolicyRegistry::current);
         assertEquals(0, RlPolicyRegistry.stepCount());
         assertTrue(RlPolicyRegistry.decisions().isEmpty());
-        // init(null) is rejected.
+
         assertThrows(SimulationConfigurationException.class, () -> RlPolicyRegistry.init(null));
     }
 

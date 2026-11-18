@@ -10,7 +10,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** Hand-derived GreenHEFT energy-first mapping oracle. */
 class GreenHeftPlannerTest {
 
     @Test

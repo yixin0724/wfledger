@@ -12,7 +12,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Strict checks of the complete v4 configuration snapshot; v2/v3 remain readable. */
 final class ManifestV4Validator {
     private ManifestV4Validator() {}
 
@@ -53,10 +52,6 @@ final class ManifestV4Validator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validate(); statements verbatim; order unchanged.
-     * Scope: input/arrival/path/outcome coverage checks and per-input alignment with arrival semantics.
-     */
     private static void verifyCoveredInputs(JsonObject root, JsonObject config) throws IOException {
         JsonArray inputs = array(root, "inputs");
         JsonArray paths = array(config, "workflowPaths");
@@ -77,10 +72,6 @@ final class ManifestV4Validator {
         equalText(config, "workflowArrivalSemantics", "PREDECLARED_AT_TIME_ZERO;SECONDS_FROM_SIMULATION_ZERO");
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validate(); statements verbatim; order unchanged.
-     * Scope: configuration/platform host and VM identifier/count consistency.
-     */
     private static void verifyPlatformResourceCounts(
             JsonObject config,
             JsonObject platform,
@@ -134,10 +125,6 @@ final class ManifestV4Validator {
         verifyGraphProfileCounts(root, nodes, edges);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateGraph(); statements verbatim; order unchanged.
-     * Scope: workflowGraph node intake with duplicate taskId and depth field checks.
-     */
     private static Map<Integer, JsonObject> readGraphNodes(JsonArray graph) throws IOException {
         Map<Integer, JsonObject> nodes = new LinkedHashMap<Integer, JsonObject>();
         for (JsonElement item : graph) {
@@ -154,10 +141,6 @@ final class ManifestV4Validator {
         return nodes;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateGraph(); statements verbatim; order unchanged.
-     * Scope: workflowProfile task/edge count agreement with the parsed graph.
-     */
     private static void verifyGraphProfileCounts(JsonObject root, Map<Integer, JsonObject> nodes, int edges)
             throws IOException {
         JsonObject profile = object(root, "workflowProfile");
@@ -316,13 +299,9 @@ final class ManifestV4Validator {
         verifyTopologyCapacity(k, cores, hostIds, placements);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateTopology(); statements verbatim; order unchanged.
-     * Scope: arithmetic k-parity/capacity and hostEdgePlacements load checks without topology allocation.
-     */
     private static void verifyTopologyCapacity(
             int k, Integer cores, Set<Integer> hostIds, Map<Integer, Integer> placements) throws IOException {
-        // Check capacities arithmetically: validation must not allocate an untrusted topology.
+
         if (k < 2 || k % 2 != 0) {
             throw new IOException("networkTopology.k must be even and >= 2");
         }
@@ -339,10 +318,6 @@ final class ManifestV4Validator {
         }
     }
 
-    /**
-     * Per-input reconciliation stage of validate(): arrival/path/result three-way agreement
-     * (verbatim move; statements unchanged).
-     */
     private static void validateWorkflowInputAlignment(
             int i,
             JsonElement arrivalElement,
@@ -386,10 +361,6 @@ final class ManifestV4Validator {
         }
     }
 
-    /**
-     * Host-to-edge placement parsing stage of validateTopology()
-     * (verbatim move; statements unchanged).
-     */
     private static Map<Integer, Integer> parseHostEdgePlacements(JsonElement placement) throws IOException {
         if (placement.isJsonNull()) {
             return null;
@@ -413,10 +384,6 @@ final class ManifestV4Validator {
         return placements;
     }
 
-    /**
-     * Placement coverage and edge load check stage of validateTopology()
-     * (verbatim move; statements unchanged).
-     */
     private static void verifyHostEdgePlacements(
             Map<Integer, Integer> placements, Set<Integer> hostIds, int k, long edgeCount) throws IOException {
         if (!placements.keySet().equals(hostIds)) {

@@ -11,21 +11,10 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Job;
 import org.workflowsim.WorkflowSimTags;
 
-/**
- * Regression test (PLAT-1): the legacy "fastest VM" algorithm must select a VM by the
- * per-PE speed getMips(), not by total MIPS (mips x PE count).
- *
- * <p>Background: a Job always occupies 1 PE, so its actual execution rate depends only on
- * the per-PE MIPS. The historical implementation compared getCurrentRequestedTotalMips()
- * and systematically picked the wrong VM under heterogeneous multi-PE configurations:
- * for example 2PE@500MIPS (total 1000) beat 1PE@800MIPS (total 800), although the Job
- * actually ran at only 500 MIPS on the former. This test pins the behavior of that fix.</p>
- */
 class FastestVmMipsSelectionTest {
 
-    /** 2 PE @ 500 MIPS/PE: total MIPS=1000, but a single PE provides only 500. */
     private static final int MANY_PE_SLOW_VM_ID = 1;
-    /** 1 PE @ 800 MIPS/PE: total MIPS=800, but the per-PE speed is higher. */
+
     private static final int FAST_SINGLE_PE_VM_ID = 2;
 
     @Test

@@ -29,7 +29,6 @@ import org.workflowsim.reclustering.ReclusteringEngine;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** Parser/clustering/retry boundary controls only; NF003 runtime wiring is deliberately not enabled. */
 class DataflowFilePlanIntegrationTest {
     @TempDir
     Path directory;

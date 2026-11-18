@@ -13,7 +13,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationSession;
 
-/** Real LOCAL SimulationSession integration for the NACO hybrid GA/HEFT planner. */
 class NacoGaHeftIntegrationTest {
 
     @Test

@@ -22,10 +22,6 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Verifies that the standard runner enforces failure-matrix coverage validation before
- * dispatch and supports configuration keyed by real VM IDs.
- */
 class SimulationRunnerFailureCoverageIntegrationTest {
 
     @AfterEach
@@ -109,8 +105,7 @@ class SimulationRunnerFailureCoverageIntegrationTest {
     }
 
     private static DistributionSpec spec() {
-        // The extremely low abstract failure intensity only exercises generator selection;
-        // the test does not depend on retry outcomes.
+
         return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 1.0e9, 1.0);
     }
 

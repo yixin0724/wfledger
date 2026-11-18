@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""Reject CJK characters in the tracked text files of this repository.
-
-The repository maintains professional technical English, including javadoc,
-comments, generated reports, and retained study archives. A single pass over
-`git ls-files` catches a stray Chinese sentence before it reaches main.
-
-Two exceptions, both structural rather than stylistic:
-
-* `*.dax` fixtures are frozen bytes. Their SHA-256 is part of a recorded input
-  identity (`NetworkStudyPlan` registers the HEFT paper-example hash), and the
-  same file also ships as a test resource, so translating a comment inside one
-  would silently invalidate the evidence that cites it and break the pair.
-* Binary files are skipped; the checker only reads UTF-8 text.
-
-Usage:
-
-    python3 -B scripts/check-language.py            # check the whole tree
-    python3 -B scripts/check-language.py --json     # machine-readable report
-
-Exit status is 0 when clean and 1 when a violation is found.
-"""
 
 import argparse
 import json
@@ -39,6 +18,10 @@ EXEMPT_PATTERNS = (
     re.compile(r'\.dax$'),
 )
 
+EXEMPTION_REASON = (
+    'DAX fixtures are frozen bytes; their SHA-256 is part of the recorded '
+    'NetworkStudyPlan input identity.'
+)
 
 def is_text(name):
     base = name.rsplit('/', 1)[-1]
@@ -46,15 +29,12 @@ def is_text(name):
         return True
     return name.endswith(TEXT_SUFFIXES)
 
-
 def is_exempt(name):
     return any(pattern.search(name) for pattern in EXEMPT_PATTERNS)
-
 
 def tracked_files():
     listing = subprocess.run(['git', 'ls-files', '-z'], stdout=subprocess.PIPE, check=True).stdout
     return [item.decode('utf-8') for item in listing.split(b'\0') if item]
-
 
 def find_violations(files, root=''):
     violations = []
@@ -75,7 +55,6 @@ def find_violations(files, root=''):
                     'text': line.strip()[:160],
                 })
     return violations
-
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Reject CJK characters in tracked text files.')
@@ -99,7 +78,6 @@ def main(argv):
     else:
         print('Checked %d tracked text files: no CJK characters.' % len(files))
     return 1 if violations else 0
-
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

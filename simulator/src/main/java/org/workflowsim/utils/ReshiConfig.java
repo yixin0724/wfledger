@@ -1,6 +1,5 @@
 package org.workflowsim.utils;
 
-/** Explicit Reshi rank table and historical task-runtime inputs for one experiment. */
 public final class ReshiConfig {
 
     private final ReshiRankTable rankTable;

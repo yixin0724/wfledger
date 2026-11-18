@@ -1,4 +1,4 @@
-"""Shared stdlib-only primitives for independent study audits (no Java imports)."""
+
 from __future__ import annotations
 
 import collections
@@ -38,10 +38,8 @@ RUN_METRICS = {
     "meanVmUtilization": "meanVmModeledIntervalUtilization",
 }
 
-
 class CheckError(ValueError):
-    """An invalid or unsupported input, never an implicit skipped check."""
-
+    pass
 
 def _pairs(pairs):
     result = {}
@@ -51,10 +49,8 @@ def _pairs(pairs):
         result[key] = value
     return result
 
-
 def _constant(value):
     raise CheckError("non-standard JSON numeric constant: " + value)
-
 
 def decode_json(raw):
     try:
@@ -62,10 +58,8 @@ def decode_json(raw):
     except (ValueError, UnicodeError) as error:
         raise CheckError(str(error)) from error
 
-
 def read_json(path):
     return decode_json(Path(path).read_bytes())
-
 
 def digest(path):
     h = hashlib.sha256()
@@ -76,12 +70,10 @@ def digest(path):
             size += len(chunk)
     return h.hexdigest(), size
 
-
 def needed(obj, key):
     if not isinstance(obj, dict) or key not in obj:
         raise CheckError("missing required field: " + key)
     return obj[key]
-
 
 def number(value, field="number", nonnegative=False, positive=False):
     if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
@@ -94,7 +86,6 @@ def number(value, field="number", nonnegative=False, positive=False):
         raise CheckError(field + " is outside its nonnegative/positive domain")
     return result
 
-
 def integer(value, field="integer", nonnegative=False):
     number(value, field, nonnegative=nonnegative)
     exact = Decimal(str(value))
@@ -102,17 +93,12 @@ def integer(value, field="integer", nonnegative=False):
         raise CheckError(field + " must be an exact integer")
     return int(exact)
 
-
 def java_round(value):
-    """Math.round's nearest-integer/ties-toward-positive-infinity on the input binary64.
 
-    Do not use floor(value + .5): that addition itself can round a just-below-half value up.
-    """
     value = number(value, "Java round input")
     ratio = Fraction.from_float(value)
     result = (2 * ratio.numerator + ratio.denominator) // (2 * ratio.denominator)
     return max(-(1 << 63), min(LONG_MAX, result))
-
 
 def ordered_sum(values):
     result = 0.0
@@ -120,10 +106,8 @@ def ordered_sum(values):
         result += float(value)
     return result
 
-
 def mean(values):
     return math.fsum(values) / len(values) if values else 0.0
-
 
 def median(values):
     values = sorted(values)
@@ -132,10 +116,8 @@ def median(values):
     middle = len(values) // 2
     return values[middle] if len(values) % 2 else (values[middle - 1] + values[middle]) / 2.0
 
-
 def percentile(values, q):
     return sorted(values)[max(1, math.ceil(q * len(values))) - 1] if values else 0.0
-
 
 def union_length(intervals):
     if not intervals:
@@ -151,7 +133,6 @@ def union_length(intervals):
             finish = max(finish, b)
     return total + max(0.0, finish - start)
 
-
 def exact_equal(a, b):
     if isinstance(a, bool) or isinstance(b, bool):
         return type(a) is type(b) and a == b
@@ -163,7 +144,6 @@ def exact_equal(a, b):
     if isinstance(a, numeric) and isinstance(b, numeric):
         return Decimal(str(a)) == Decimal(str(b))
     return type(a) is type(b) and a == b
-
 
 def safe_json(value):
     if isinstance(value, Path):
@@ -179,7 +159,6 @@ def safe_json(value):
     if isinstance(value, (list, tuple, set)):
         return [safe_json(v) for v in value]
     return value
-
 
 class Audit:
     def __init__(self, rel_tol=1e-10, abs_tol=1e-8, max_issues=200):
@@ -233,7 +212,6 @@ class Audit:
                 "issueCount": self.issue_count, "issueCounts": dict(self.counts), "issues": self.issues,
                 "omittedIssueDetails": max(0, self.issue_count - len(self.issues)), "notes": self.notes}
 
-
 def contained_file(root, relative):
     if not isinstance(relative, str) or not relative or Path(relative).is_absolute():
         raise CheckError("evidence references must be relative paths")
@@ -247,13 +225,11 @@ def contained_file(root, relative):
         raise CheckError("missing evidence file: " + str(result))
     return result
 
-
 def study_root(path):
     path = Path(path).resolve()
     if path.name.endswith(".manifest.json") and path.parent.parent.name == "runs":
         return path.parent.parent.parent
     return path.parent
-
 
 def protect_output(output, sources):
     raw_output = Path(output)
@@ -271,17 +247,15 @@ def protect_output(output, sources):
         raise CheckError("output must be outside each source study/bundle: " + str(root))
     return output
 
-
 def write_report(path, report):
     path.parent.mkdir(parents=True, exist_ok=True)
-    # Exclusive creation is intentional: checks must never replace an earlier report.
+
     with path.open("x", encoding="utf-8") as stream:
         json.dump(safe_json(report), stream, ensure_ascii=False, indent=2, allow_nan=False)
         stream.write("\n")
 
-
 def layered_xml(width):
-    """Independent spelling of the frozen four-layer workload specification, not Java execution."""
+
     parts = ['<adag version="2.1">\n']
     def file(name, direction):
         return '<uses file="{}" link="{}" size="32000000"/>'.format(name, direction)
@@ -301,7 +275,6 @@ def layered_xml(width):
                 layer * width + column, (layer - 1) * width + column,
                 (layer - 1) * width + (column + width - 1) % width))
     return ''.join(parts) + '</adag>\n'
-
 
 def registered_plan(protocol, mode):
     if protocol not in PROTOCOLS or mode not in ("full", "smoke"):
@@ -345,7 +318,6 @@ def registered_plan(protocol, mode):
         plan["executionSemantics"] = EXECUTION_SEMANTICS
     return variant, historical, plan, cells
 
-
 def validate_registered_plan(plan, audit, allow_historical=False):
     variant, historical, expected, cells = registered_plan(needed(plan, "protocol"), needed(plan, "mode"))
     audit.ensure(not historical or allow_historical, "historical-mode-required", "plan/protocol", plan["protocol"])
@@ -362,12 +334,10 @@ def validate_registered_plan(plan, audit, allow_historical=False):
     audit.ensure(exact_equal(plan, expected), "canonical-plan-parameters", "plan")
     return variant, historical, cells
 
-
 def run_key(row):
     return (needed(row, "workflowId"), integer(needed(row, "vmCount"), "vmCount", True),
             needed(row, "network"), row.get("heterogeneity", "HOMOGENEOUS"), needed(row, "planner"),
             integer(needed(row, "seed"), "seed"))
-
 
 def resolve_input(manifest, manifest_path, entry, input_roots):
     recorded = Path(needed(entry, "path"))
@@ -397,13 +367,8 @@ def resolve_input(manifest, manifest_path, entry, input_roots):
             return candidate, [str(p) for p in seen]
     raise CheckError("input could not be located (no substitution): " + ', '.join(map(str, candidates)))
 
-
 def parse_workflow(path, first_id, namespace, config):
-    """Reparse the supported raw formats, including first-input-wins DAX compatibility.
 
-    Task IDs follow input/specification order. Input aliases are deduplicated as Job file objects;
-    output occurrences remain separate in DAX, as distinct FileItem objects do.
-    """
     raw = Path(path).read_bytes()
     records, dependencies, declared_version = [], [], None
     warnings = []

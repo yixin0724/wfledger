@@ -28,7 +28,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Genuine, context-validated online-assignment bundles through the shared public report seam. */
 final class DataflowAssignmentBrowserFixtures {
     private static final int BUDGET = 20000, ACTION_LIMIT = 64, CANDIDATE_LIMIT = 12;
     private static final int SPEC_COUNT = 34, STRESS_ROW_COUNT = 3;
@@ -63,7 +62,6 @@ final class DataflowAssignmentBrowserFixtures {
 
     private DataflowAssignmentBrowserFixtures() {}
 
-    /** Append 34 new specifications; leave every preceding fixture and its evidence untouched. */
     static void append(Path output, List<Map<String, Object>> reports, Path offManifest) throws Exception {
         Path root = output.toAbsolutePath().normalize();
         int initialCount = reports.size();
@@ -197,7 +195,7 @@ final class DataflowAssignmentBrowserFixtures {
         config.addProperty("name", "Online assignment browser fixture · " + name);
         JsonObject algorithm;
         if (online) {
-            // Endpoint cases also exercise the public omitted-scheduler default; FAT cases spell it out.
+
             algorithm = WorkbenchTestSupport.algorithm("online", fat ? "STATIC" : null, "INVALID");
             JsonObject assignment = new JsonObject();
             assignment.addProperty("mode", MODE);
@@ -256,7 +254,6 @@ final class DataflowAssignmentBrowserFixtures {
                 Collections.singletonList(expected)));
     }
 
-    /** Failure configuration is a Java Runner capability, not a fabricated public Workbench option. */
     private static void retry(Path output, List<Map<String, Object>> reports) throws Exception {
         String name = "dataflow-assignment-noop-retry";
         Path input = output.resolve(name + ".dax"), configPath = output.resolve(name + "-base.json");
@@ -284,8 +281,7 @@ final class DataflowAssignmentBrowserFixtures {
         boolean logging = Log.isDisabled();
         Log.disable();
         try {
-            // The existing kernel retry corpus uses this bounded, deterministic seed domain.
-            // Save only an actual successful run with a real retry, never an invented retry event.
+
             for (long seed = 1; seed <= 32; seed++) {
                 SimulationReport candidate = new SimulationRunner()
                         .run(
@@ -330,7 +326,6 @@ final class DataflowAssignmentBrowserFixtures {
         pair(output, reports, name, normal, bundle);
     }
 
-    /** All three rows retain their own real CPU, graph, file plan, lifecycle and checked actions. */
     private static void typedStress(Path output, List<Map<String, Object>> reports) throws Exception {
         List<Map<String, Object>> rows = new ArrayList<>(), expected = new ArrayList<>();
         Bundle fractional = onlineBundle(manifest(
@@ -563,7 +558,6 @@ final class DataflowAssignmentBrowserFixtures {
         expected.add(expect(bundle.assignments));
     }
 
-    /** Independent oracle over full checked main records; never read the bounded display projection. */
     private static Map<String, Object> expect(JsonArray assignments) {
         if (assignments == null) {
             return state("HIDDEN");
@@ -636,7 +630,7 @@ final class DataflowAssignmentBrowserFixtures {
     private static JsonObject selected(JsonObject main) {
         JsonObject attrs = main.getAsJsonObject("attributes");
         BigDecimal selectedVm = exact(attrs.get("selectedVmId"));
-        // Search the complete raw domain, including the winner beyond the first twelve candidates.
+
         for (JsonElement item : attrs.getAsJsonArray("candidates")) {
             JsonObject candidate = item.getAsJsonObject();
             if (exact(candidate.get("vmId")).compareTo(selectedVm) == 0) {
@@ -754,7 +748,7 @@ final class DataflowAssignmentBrowserFixtures {
         spec.put("candidates", candidates);
         spec.put("seeds", seeds);
         spec.put("statuses", statuses);
-        spec.put("dataflowAssignment", assignment); // Physical panes are inspected from the untouched actual rows.
+        spec.put("dataflowAssignment", assignment);
         return spec;
     }
 
@@ -777,7 +771,6 @@ final class DataflowAssignmentBrowserFixtures {
         }
     }
 
-    /** One validation result supplies both the raw oracle and every coexisting display view. */
     private static final class Bundle {
         final Path path;
         final HtmlReports.ValidatedReport report;

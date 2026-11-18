@@ -11,7 +11,6 @@ import org.workflowsim.experiment.SimulationRunner;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Independent runtime-metric recomputation shared by all algorithm-scene audits. */
 public final class AlgorithmMetricAudit {
 
     private AlgorithmMetricAudit() {}

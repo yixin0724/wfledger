@@ -6,33 +6,6 @@ import org.cloudbus.cloudsim.Cloudlet;
 import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
-/**
- * Max-Min scheduler for the WorkflowSim online ready-batch lifecycle.
- *
- * <p>It considers only currently ready Jobs and idle compatible VMs; it is not a static
- * Max-Min mapper that maintains future VM availability times for an independent-task
- * batch.</p>
- *
- * <p>Algorithm definition:</p>
- * <ol>
- *   <li>For each unscheduled task, compute its earliest completion time on every machine
- *       (ECT)</li>
- *   <li>Take the minimum ECT of each task</li>
- *   <li>Among the minimum ECTs of all tasks, select the global maximum (large tasks are
- *       scheduled first)</li>
- *   <li>Assign that task to the corresponding machine</li>
- *   <li>Repeat until all tasks are assigned or no idle VM remains in this update</li>
- * </ol>
- *
- * <p>The only difference from Min-Min is step 3: Max-Min takes the maximum, Min-Min the
- * minimum. An equal task minimum ECT selects the smaller VM ID; an equal global maximum ECT
- * selects the smaller Job ID. Max-Min tends to schedule large tasks first, so that small
- * tasks can fill resources that become idle later.</p>
- *
- * <p>Reference: Braun, T.D., et al. "A Comparison of Eleven Static Heuristics for
- * Mapping a Class of Independent Tasks onto Heterogeneous Distributed Computing
- * Systems." JPDC 2001.</p>
- */
 public class ReadyBatchMaxMinSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     @Override
@@ -44,7 +17,7 @@ public class ReadyBatchMaxMinSchedulingAlgorithm extends BaseSchedulingAlgorithm
         int scheduledCount = 0;
 
         while (scheduledCount < taskCount) {
-            double globalMaxEct = -1.0; // Max-Min takes the maximum
+            double globalMaxEct = -1.0;
             int globalMaxTaskIdx = -1;
             int globalMaxVmIdx = -1;
 
@@ -68,7 +41,6 @@ public class ReadyBatchMaxMinSchedulingAlgorithm extends BaseSchedulingAlgorithm
                     }
                 }
 
-                // Max-Min: take the maximum among the per-task minimum ECTs
                 if (bestVmForTask != -1
                         && (minEctForTask > globalMaxEct
                                 || (Double.compare(minEctForTask, globalMaxEct) == 0

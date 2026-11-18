@@ -23,29 +23,8 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.platform.PlatformProfiles;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 
-/**
- * C01+C02: session state matrix and dormant-global fence (review engineering Phase 1, mechanical
- * reliability).
- *
- * <p>Contract (conservation law): after two serial full {@link SimulationRunner} runs in the same
- * JVM, the state formed by every mutable static field must be <b>exactly identical to the state at
- * the end of the first cycle</b> -- any cross-run accumulation or residue is a silent contamination
- * source for the campaign research executor (the mechanical detector for the H-1/H-2 class of
- * traps).</p>
- *
- * <p>Fence (F-002/F-003): the model scope declared by the standard runner does not touch
- * {@code CloudSim.NetworkTopology} (the Fat-tree implementation is an independent in-house one) or
- * {@code Consts.MILLION}, {@code Parameters.SOURCE} -- these fields must keep their <b>initial
- * values</b> before and after both runs.</p>
- *
- * <p>The audit class list and the field universe come from the mechanical scan output of the 2026-10
- * review engineering (the list is frozen below as {@code AUDIT_CLASSES}; that temporary workspace has
- * been removed entirely, snapshot at git 6db21f1); snapshot values use a deterministic deep
- * representation (sorted maps, identity fallback) and serve equality comparison only.</p>
- */
 class SessionResetMatrixTest {
 
-    /** Every class in the audit scope that declares a mutable static field. */
     private static final List<String> AUDIT_CLASSES = Arrays.asList(
             "org.workflowsim.utils.Parameters",
             "org.cloudbus.cloudsim.core.CloudSim",
@@ -60,7 +39,6 @@ class SessionResetMatrixTest {
             "org.workflowsim.utils.SimulationSession",
             "org.cloudbus.cloudsim.Consts");
 
-    /** Class.field pairs that must keep their initial values (never touched). */
     private static final List<String> VIRGIN_FENCE = Arrays.asList(
             "org.cloudbus.cloudsim.NetworkTopology.*",
             "org.cloudbus.cloudsim.Consts.MILLION",
@@ -90,15 +68,12 @@ class SessionResetMatrixTest {
                     "the second round (MCT) run must complete successfully, otherwise the state audit"
                             + " is meaningless");
 
-            // Leak detection: after two full lifecycles the state must match the end of the first
-            // cycle field by field.
             List<String> unstable = diff("afterFirst", afterFirst, "afterSecond", afterSecond);
             assertTrue(
                     unstable.isEmpty(),
                     "mutable static state drifted after two consecutive standard runs (cross-run leak):\n"
                             + String.join("\n", unstable));
 
-            // Fence detection: dormant fields must never have been touched (still at the original baseline).
             List<String> fenceBroken = diffViolations(virgin, afterSecond);
             assertTrue(
                     fenceBroken.isEmpty(),
@@ -123,7 +98,6 @@ class SessionResetMatrixTest {
         return new SimulationRunner().run(config, platform);
     }
 
-    /** Pure-chain 4-task DAX (runtime 100 s each, no files) -- the minimal legal standard input. */
     private Path minimalChainDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -142,9 +116,6 @@ class SessionResetMatrixTest {
         return path;
     }
 
-    // ---- state snapshot and comparison ----
-
-    /** Class.field -> deterministic deep representation. */
     private static Map<String, String> snapshot() throws Exception {
         Map<String, String> state = new TreeMap<String, String>();
         for (String className : AUDIT_CLASSES) {
@@ -153,8 +124,7 @@ class SessionResetMatrixTest {
                 if (!Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {
                     continue;
                 }
-                // Exclude synthetic fields woven in by JaCoCo and similar tools: instrumentation
-                // probes are not declared product state.
+
                 if (field.isSynthetic() || field.getName().startsWith("$")) {
                     continue;
                 }
@@ -166,10 +136,6 @@ class SessionResetMatrixTest {
         return state;
     }
 
-    /**
-     * Deterministic representation: null and primitive values are spelled out; collections keep their
-     * order; map keys are sorted; object identity is the fallback; depth is capped.
-     */
     private static String canonical(Object value, int depth) {
         if (value == null) {
             return "null";
@@ -233,7 +199,6 @@ class SessionResetMatrixTest {
         return value.getClass().getName() + "@" + System.identityHashCode(value);
     }
 
-    /** Report the differing entries of every snapshot key. */
     private static List<String> diff(
             String leftLabel, Map<String, String> left, String rightLabel, Map<String, String> right) {
         List<String> diffs = new ArrayList<String>();
@@ -247,10 +212,6 @@ class SessionResetMatrixTest {
         return diffs;
     }
 
-    /**
-     * Fence check: the named fields must equal the virgin baseline (a rule matches either a
-     * Class.* prefix or an exact field).
-     */
     private static List<String> diffViolations(Map<String, String> virgin, Map<String, String> current) {
         List<String> violations = new ArrayList<String>();
         for (String rule : VIRGIN_FENCE) {

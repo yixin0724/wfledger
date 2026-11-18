@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** DNC schedule evaluation and HEFT initialization for the NACO hybrid planner. */
 public final class NacoDncEvaluator {
 
     public NacoSchedule evaluate(List<NacoGene> chromosome, NacoDncProblem problem) {
@@ -55,11 +54,9 @@ public final class NacoDncEvaluator {
         return new NacoSchedule(scheduled, makespan);
     }
 
-    /** Builds the HEFT seed schedule used as the elite member of the initial population. */
     public NacoSchedule heft(NacoDncProblem problem) {
         Map<Integer, Double> ranks = new LinkedHashMap<Integer, Double>();
-        // R-PAPER-03 audit: task IDs are parser-assigned labels, not a topological
-        // order. Compute upward ranks only after every child has been evaluated.
+
         List<NacoTask> ordered = reverseTopological(problem);
         for (NacoTask task : ordered) {
             double bestChild = 0.0;

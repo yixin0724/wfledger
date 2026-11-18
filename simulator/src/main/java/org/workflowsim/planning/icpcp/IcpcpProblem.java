@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable IC-PCP deadline and VM cost problem. */
 public final class IcpcpProblem {
     private final List<IcpcpTask> tasks;
     private final Map<Integer, IcpcpTask> tasksById;
@@ -82,7 +81,6 @@ public final class IcpcpProblem {
         return billingPeriodSeconds;
     }
 
-    /** Absolute model instant at which root Jobs may start, including SHARED bootstrap. */
     public double getWorkflowStartSeconds() {
         return workflowStartSeconds;
     }

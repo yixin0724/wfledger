@@ -3,20 +3,8 @@ package org.workflowsim.experiment;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Execute the declared campaigns sequentially through the standard runner. */
 public final class ExperimentCampaignExecutor {
 
-    /**
-     * Run every repetition in cell declaration order and seed-plan order.
-     *
-     * <p>WorkflowSim retains the CloudSim static state and the standard runner does not
-     * promise in-JVM concurrency, so sequential execution is deliberate here.</p>
-     *
-     * @param plan immutable experiment plan already validated against the construction constraints
-     * @return immutable results covering every executed cell/repetition
-     * @throws Exception when any standard simulation run fails
-     * @throws IllegalArgumentException when {@code plan} is null
-     */
     public ExperimentCampaignResult execute(ExperimentPlan plan) throws Exception {
         if (plan == null) {
             throw new IllegalArgumentException("Experiment plan is required");

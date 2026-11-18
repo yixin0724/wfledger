@@ -31,7 +31,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Typed validated capture -> bounded display only. Extreme labels do not pretend to be run-context artifacts. */
 class NetworkReportViewTest {
     @TempDir
     Path directory;

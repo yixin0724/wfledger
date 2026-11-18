@@ -14,16 +14,11 @@ import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.TaskExecutionModel;
 
-/**
- * Run-owned control-ready destination binding. The myopic score uses nominal remaining input
- * paths and estimated CPU reservations, not a contention-exact completion forecast. Binding and
- * reservations commit only after the real input request succeeds. No candidate admits traffic.
- */
 public final class DataflowVmAssigner {
     public static final String AUDIT_SCOPE = "BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1";
     public static final String INPUT_ESTIMATE = "MAX_FILE_NOMINAL_REMAINING_CONDITIONAL_STORE_V1";
     public static final String CPU_ESTIMATE = "ACTIVE_COMPUTE_RESERVATION_FROM_OBSERVED_START_V1";
-    /** Frozen actual-created VM identity and compute capability, never a mutable VM handle. */
+
     public static final class VmOption {
         private final int id, pes;
         private final double mips;
@@ -49,7 +44,7 @@ public final class DataflowVmAssigner {
             return mips;
         }
     }
-    /** Immutable committed action and compact reproducible decision input summaries. */
+
     public static final class Decision {
         private final long sequence;
         private final int taskId, jobId, vmId;
@@ -129,10 +124,6 @@ public final class DataflowVmAssigner {
         }
     }
 
-    /**
-     * A binding decision together with the coherent runtime preparation it triggered; produced
-     * when control-ready assignment is evaluated and consumed by STATIC dispatch and attestation.
-     */
     public static final class Prepared {
         private final Decision decision;
         private final CoherentDataflowRuntime.Preparation preparation;
@@ -186,16 +177,11 @@ public final class DataflowVmAssigner {
         }
         vms = Collections.unmodifiableMap(copied);
     }
-    /** @return immutable logical-Task bindings; retry attempt IDs do not create new bindings */
+
     public Map<Integer, Integer> getBindings() {
         return Collections.unmodifiableMap(new LinkedHashMap<>(bindings));
     }
-    /**
-     * Explicit closure event: settle at now, passively observe, score, then prepare actual inputs.
-     * @param job singleton compute attempt, initially unbound or a correctly inherited retry
-     * @param now current control-ready observation
-     * @return committed action and runtime preparation; not a CPU dispatch permission
-     */
+
     public Prepared prepare(Job job, double now) {
         if (job == null
                 || job.getClassType() != Parameters.ClassType.COMPUTE.value
@@ -234,7 +220,7 @@ public final class DataflowVmAssigner {
         Decision decision = new Decision(next, taskId, jobId, chosen.id, bound != null, now, scores, observation);
         CoherentDataflowRuntime.Preparation prepared =
                 runtime.requestJob(jobId, Collections.singletonList(taskId), chosen.id, now);
-        // No potentially failing numerical work remains after the runtime transaction succeeds.
+
         for (Iterator<Map.Entry<Integer, Reservation>> it =
                         reservations.entrySet().iterator();
                 it.hasNext(); ) {
@@ -252,10 +238,6 @@ public final class DataflowVmAssigner {
         return new Prepared(decision, prepared);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from prepare(); statements verbatim; order unchanged.
-     * Scope: attempt-job identity freshness and initial/NOOP-retry binding inheritance checks.
-     */
     private void verifyAttemptIdentityAndBinding(Job job, Task task, int jobId, Integer bound) {
         if (jobId < 0 || reservations.containsKey(jobId)) {
             throw new IllegalArgumentException("Attempt identity is invalid or already reserved");
@@ -269,10 +251,6 @@ public final class DataflowVmAssigner {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from prepare(); statements verbatim; order unchanged.
-     * Scope: every active compute attempt must own a policy CPU reservation at binding time.
-     */
     private void verifyActiveComputeReservations(DataflowObservation observation) {
         for (int active : observation.getActiveJobs().keySet()) {
             if (!reservations.containsKey(active)) {
@@ -282,10 +260,6 @@ public final class DataflowVmAssigner {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from prepare(); statements verbatim; order unchanged.
-     * Scope: assignment candidates must cover exactly the actual fabric VM set.
-     */
     private void verifyFabricCoversActualVms(DataflowObservation observation) {
         java.util.Set<Integer> actualIds = new java.util.TreeSet<>();
         for (DataLocation location : observation.getFabric().getLocations()) {
@@ -300,7 +274,7 @@ public final class DataflowVmAssigner {
             observation.getFabric().requireLocation(DataLocation.vm(vm.id));
         }
     }
-    /** Candidate scoring stage of prepare() (moved verbatim; finish-time formula and ID tie-break unchanged). */
+
     private CandidateAssessment evaluateVmCandidates(
             Task task,
             Job job,
@@ -354,7 +328,6 @@ public final class DataflowVmAssigner {
         return assessment;
     }
 
-    /** Private moved-verbatim structure for the prepare() candidate assessment results. */
     private static final class CandidateAssessment {
         private List<Map<String, Object>> scores;
         private VmOption chosen;
@@ -435,10 +408,6 @@ public final class DataflowVmAssigner {
         return estimate;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from estimateInputs(); statements verbatim; order unchanged.
-     * Scope: source-candidate visibility and standalone-rate selection with lower-location tie-break.
-     */
     private static double fastestSourceTransferRate(
             DataflowObservation observation,
             DataflowFilePlan.InputDemand demand,

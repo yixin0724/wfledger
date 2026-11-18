@@ -43,32 +43,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * D6 (2026-10-29): the registered <b>EDP_GREEDY</b> DVFS-aware demonstrator — the
- * closing acceptance test of the DVFS dimension's registry face
- * (docs/advanced/DVFS_DIMENSION_DESIGN.md §2.6 and batch plan D6).
- *
- * <p>Three acceptance surfaces, mirroring the C5-lite carbon demonstrator:</p>
- * <ol>
- *   <li><b>Registry acceptance</b>: SPI discovery + the full declaration implication
- *       chain ({@code dvfsAware + frequencyTiersRequired + powerModelRequired}) is
- *       enforced fail-fast — unpowered and tierless platforms are rejected with the
- *       clause cited, powered+tiered surfaces validate.</li>
- *   <li><b>Evidence chain</b>: a real standard-runner run on a 3-tier powered fleet
- *       (top three tiers of the frozen benchmark P-state table + carbon intensity
- *       380 g/kWh — the tri-dimensional DVFS+energy+carbon fleet): every compute
- *       Job carries its per-VM tier assignment, the manifest exports the tier table +
- *       energyMetrics + carbonMetrics, the session frequencyPolicy stays DEFAULT
- *       (the per-Job decisions are the ALGORITHM's through the scheduling-time API),
- *       and the repository's independent Python auditor re-verifies the per-tier
- *       energy conservation law and the ridden grams with zero issues.</li>
- *   <li><b>The first DVFS-aware scheduling comparison</b>: same DAG and platform,
- *       built-in FCFS (all jobs at the default tier) vs EDP_GREEDY (length-based
- *       per-Job tier split): the tier MIX is altered — the first DVFS-aware
- *       scheduling result — and the EDP ledger is reported honestly regardless of
- *       direction.</li>
- * </ol>
- */
 class EdpGreedyRegistryIntegrationTest {
 
     @TempDir
@@ -87,17 +61,11 @@ class EdpGreedyRegistryIntegrationTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    // ------------------------------------------------------------------
-    // 1. registry acceptance — the full implication chain, fail-fast
-    // ------------------------------------------------------------------
-
     @Test
     void registryAcceptanceChainRejectsUnpoweredAndTierlessPlatforms() {
         SchedulingAlgorithmProvider provider = AlgorithmRegistry.find(EdpGreedySchedulerProvider.LABEL);
         assertSame(EdpGreedySchedulerProvider.class, provider.getClass(), "SPI discovery of EDP_GREEDY");
 
-        // the full implication chain is part of the declaration: required ⇒ aware,
-        // powerModelRequired ⇒ energyAware (the gates the registry actually enforces).
         assertTrue(provider.declaration().isDvfsAware(), "dvfsAware declaration");
         assertTrue(provider.declaration().isFrequencyTiersRequired(), "frequencyTiersRequired declaration");
         assertTrue(provider.declaration().isPowerModelRequired(), "powerModelRequired declaration — full chain");
@@ -108,7 +76,6 @@ class EdpGreedyRegistryIntegrationTest {
                 "frequencyTiersRequired ⇒ dvfsAware lattice (BAT-D4)");
         assertTrue(provider.declaration().isEnergyAware(), "powerModelRequired ⇒ energyAware lattice (BAT-E3)");
 
-        // fail-fast face 1: unpowered platform.
         IllegalArgumentException unpowered = assertThrows(
                 IllegalArgumentException.class,
                 () -> AlgorithmRegistry.validate(
@@ -126,7 +93,6 @@ class EdpGreedyRegistryIntegrationTest {
                 unpowered.getMessage().contains("powerModelRequired"),
                 "rejection must cite the power clause: " + unpowered.getMessage());
 
-        // fail-fast face 2: powered but tierless platform — no tiers, no assignment.
         IllegalArgumentException tierless = assertThrows(
                 IllegalArgumentException.class,
                 () -> AlgorithmRegistry.validate(
@@ -144,7 +110,6 @@ class EdpGreedyRegistryIntegrationTest {
                 tierless.getMessage().contains("frequencyTiersRequired"),
                 "rejection must cite the frequency-tiers clause: " + tierless.getMessage());
 
-        // green face: powered + tiered platform validates.
         AlgorithmRegistry.validate(
                 EdpGreedySchedulerProvider.LABEL,
                 new AlgorithmRegistry.ValidationInput(
@@ -156,10 +121,6 @@ class EdpGreedyRegistryIntegrationTest {
                         true,
                         true));
     }
-
-    // ------------------------------------------------------------------
-    // 2. evidence chain — real run on the 3-tier powered fleet
-    // ------------------------------------------------------------------
 
     @Test
     void edpGreedyRunCarriesPerJobTierEvidenceAndAuditsClean() throws Exception {
@@ -173,9 +134,6 @@ class EdpGreedyRegistryIntegrationTest {
                 .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                 .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
                 .randomSeed(20261029L)
-                // The session policy stays DEFAULT: per-Job tier decisions belong to the algorithm
-                // through the scheduling-time API (FrequencyTierSelector) -- any 500-tier Job is
-                // the algorithm's decision, not a session-level policy selection.
                 .frequencyPolicy(SimulationConfig.FrequencyPolicy.DEFAULT)
                 .registeredSchedulingAlgorithm(provider)
                 .build();
@@ -185,8 +143,6 @@ class EdpGreedyRegistryIntegrationTest {
                 report.getMetrics().getLogicalTaskCompletionStatus(),
                 "the DVFS-aware arm must complete the workflow");
 
-        // Every compute job carries a tier from the declared table; the length split is
-        // exactly the D6 rule bag (40/30/95/35 s ⇒ 40000/30000/95000/35000 MI).
         Map<Integer, Double> declaredWorkByTaskPosition = new LinkedHashMap<Integer, Double>();
         double[] runtimeSeconds = {40, 30, 95, 35};
         for (int i = 0; i < runtimeSeconds.length; i++) {
@@ -223,8 +179,6 @@ class EdpGreedyRegistryIntegrationTest {
         assertTrue(report.getCarbonAccounting() != null, "declared intensity produces carbon accounting");
         assertTrue(report.getCarbonAccounting().getTotalCarbonGrams() > 0.0, "single-joule fleet carries grams");
 
-        // Evidence bundle: manifest exports the tier table, per-Job tierMips, energy and
-        // carbon sections, and the inert session policy alongside the registered label.
         ExperimentArtifactWriter.ExperimentArtifacts artifacts =
                 ExperimentArtifactWriter.write(report, tempDir.resolve("edp-greedy-evidence"), "result");
         ExperimentArtifactValidator.validate(artifacts.getManifest());
@@ -277,14 +231,8 @@ class EdpGreedyRegistryIntegrationTest {
                         > 0.0,
                 "carbonMetrics rides the per-tier joules at intensity 380");
 
-        // The independent Python auditor recomputes the per-tier conservation law and the
-        // ridden grams from the manifest alone — zero issues is the acceptance (D6).
         assumePythonAuditorPasses(artifacts.getManifest());
     }
-
-    // ------------------------------------------------------------------
-    // 3. the first DVFS-aware scheduling comparison (honest ledger)
-    // ------------------------------------------------------------------
 
     @Test
     void fcfsVsEdpGreedyAltersTierMixOnTheSameDagAndPlatform() throws Exception {
@@ -301,10 +249,6 @@ class EdpGreedyRegistryIntegrationTest {
                 greedy.getMetrics().getLogicalTaskCompletionStatus(),
                 "EDP_GREEDY arm completes");
 
-        // The expected demonstrator result: same placement order (FCFS inherited), so the
-        // only delta vs the DEFAULT-policy FCFS arm is the TIER MIX — the first
-        // DVFS-aware scheduling result. Both directions of the EDP ledger are legal and
-        // the numbers are printed for the honest ledger.
         List<Double> fcfsTiers = computeTierMultiset(fcfs);
         List<Double> greedyTiers = computeTierMultiset(greedy);
         assertEquals(4, fcfsTiers.size(), "the bag's four compute jobs (FCFS arm)");
@@ -328,34 +272,19 @@ class EdpGreedyRegistryIntegrationTest {
         System.out.println("[D6-compare] EDP_GREEDY: makespan=" + greedy.getMakespan() + "s energy=" + greedyEnergy
                 + "J edp=" + greedyEdp + " tierMix=3x2000+1x500");
 
-        // Hand-derivable floors, not direction guesses: the stretched (95 000 MI) job
-        // takes at least 95000/500 = 190 simulated seconds, and the DEFAULT arm's medians
-        // of the same jobs run no slower than one job of 95000/2000 s. The demonstrator
-        // is NOT an optimizer — the EDP direction stays whichever the ledger shows.
         assertTrue(greedy.getMakespan() >= fcfs.getMakespan(), "stretching the critical tail cannot finish earlier");
         assertTrue(
                 greedyEnergy >= 2 * 250.0 * greedy.getMakespan(),
                 "fleet energy never falls below the default-tier idle floor (2×250 W × makespan)");
     }
 
-    // ------------------------------------------------------------------
-    // the Python auditor — assumed available; zero issues required
-    // ------------------------------------------------------------------
-
-    /**
-     * Runs scripts/verify-study-evidence.py over the freshly written evidence bundle and
-     * requires a PASS with zero issues. Skipped (visibly, via assumption) when this
-     * checkout cannot run the auditor — the auditor lives outside the Maven module.
-     */
     private void assumePythonAuditorPasses(Path manifest) throws Exception {
         Path script = findRepositoryScript();
         Assumptions.assumeTrue(script != null, "python auditor script not found from this module");
         Assumptions.assumeTrue(
                 new ProcessBuilder("python3", "--version").start().waitFor(30, TimeUnit.SECONDS),
                 "python3 runtime unavailable");
-        // the auditor refuses existing output files (never-overwrite contract) and any
-        // path inside a source bundle — the temporary evidence directory's parent
-        // (outside every bundle) satisfies both faces.
+
         Path reportOut = tempDir.resolve("edp-greedy-audit-report.json");
         Files.deleteIfExists(reportOut);
         ProcessBuilder builder = new ProcessBuilder(
@@ -390,7 +319,6 @@ class EdpGreedyRegistryIntegrationTest {
         }
     }
 
-    /** Locates scripts/verify-study-evidence.py walking up from the module directory. */
     private static Path findRepositoryScript() {
         Path current = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
         for (int depth = 0; depth < 5 && current != null; depth++) {
@@ -403,14 +331,6 @@ class EdpGreedyRegistryIntegrationTest {
         return null;
     }
 
-    // ------------------------------------------------------------------
-    // fixtures
-    // ------------------------------------------------------------------
-
-    /**
-     * Dependency-free bag (40/30/95/35 s -- the same family as the E5/carbon demonstrator):
-     * four compute Jobs are ready simultaneously.
-     */
     private Path bagDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<adag count=\"4\">\n");
@@ -430,13 +350,6 @@ class EdpGreedyRegistryIntegrationTest {
         return path;
     }
 
-    /**
-     * The D6 demonstrator fleet: the top three tiers of the frozen DVFS benchmark
-     * P-state table ({@link BenchmarkExecutor#benchmarkDvfsTiers()} — turbo 2000 /
-     * nominal 1000 / half 500) on two uniform 1000-MIPS SPACE_SHARED VMs, carrying
-     * the benchmark's uniform carbon intensity 380 g/kWh — the tri-dimensional
-     * DVFS+energy+carbon surface.
-     */
     private static PlatformProfile threeTierCarbonFleet() {
         List<PlatformProfile.FrequencyTier> fleetTiers =
                 BenchmarkExecutor.benchmarkDvfsTiers().subList(0, 3);

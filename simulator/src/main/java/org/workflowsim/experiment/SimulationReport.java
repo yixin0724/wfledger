@@ -25,7 +25,6 @@ import org.workflowsim.planning.SharedStorageDagPlanTrace;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Immutable evidence record of one completed WorkflowSim run. */
 public final class SimulationReport {
 
     private final SimulationConfig config;
@@ -103,8 +102,7 @@ public final class SimulationReport {
                 makespan, this.jobs, this.vmSummaries, this.events, this.tasks, sourceTasks, config, platform);
         this.energyAccounting = EnergyAccounting.fromFrozenMetrics(
                 makespan, this.metrics.getVmMetrics(), this.metrics.getPerTierBusySecondsByVm(), platform);
-        // BAT-C1 (2026-10-28): the two carbon models are mutually exclusive; undeclared -> null
-        // (a legal default, not all zeros).
+
         if (platform.getVms() != null && anyCarbonIntensity(platform)) {
             if (platform.getCarbonWindows() != null
                     && !platform.getCarbonWindows().isEmpty()) {
@@ -121,15 +119,6 @@ public final class SimulationReport {
         this.workflowOutcomes = computeWorkflowOutcomes();
     }
 
-    /**
-     * R5 dynamic arrival: compute the arrival, completion, and flow-time evidence of every
-     * workflow by input index.
-     *
-     * <p>Task identifiers are allocated contiguously across inputs, so the task interval of an
-     * input is derived from the taskCount of its input report; flow time is the latest
-     * completion instant over all successful tasks of that workflow minus its configured
-     * submission instant. Flow time is {@code NaN} when there is no successful task.</p>
-     */
     private List<WorkflowOutcome> computeWorkflowOutcomes() {
         List<Double> arrivals = config.getWorkflowArrivalSeconds();
         List<WorkflowOutcome> outcomes = new ArrayList<>();
@@ -285,8 +274,6 @@ public final class SimulationReport {
                 computeRequests);
     }
 
-    /** Job result aggregation stage of capture(): deduplication, success/failure counting, VM summary
-     * accumulation (verbatim move of the former in-method code). */
     private static OutcomeCounts accumulateJobOutcomes(
             List<Job> completedJobs,
             List<JobOutcome> jobs,
@@ -316,8 +303,6 @@ public final class SimulationReport {
         return counts;
     }
 
-    /** Online compute request assembly stage of capture() (deterministic TreeMap order, verbatim move of
-     * the former in-method code). */
     private static List<DataflowComputeRequest> buildComputeRequests(SimulationConfig config, List<Job> completedJobs) {
         if (!config.getDataflowAssignmentConfig().isEnabled()) {
             return null;
@@ -338,8 +323,6 @@ public final class SimulationReport {
         return new ArrayList<>(ordered.values());
     }
 
-    /** Private mutable accumulation structure for the capture() counts (verbatim move of the former
-     * in-method code). */
     private static final class OutcomeCounts {
         private int successes;
         private int failures;
@@ -352,65 +335,35 @@ public final class SimulationReport {
     public PlatformProfile getPlatform() {
         return platform;
     }
-    /**
-     * Return the CloudSim simulation end clock kept for compatibility with the historical API.
-     *
-     * <p>The value may include the workflow-engine post-delay after the last Job returns.
-     * Research code that needs the completion instant of the successful Job envelope of the
-     * last logical Task must use {@link #getLogicalTaskCompletionSeconds()}.</p>
-     *
-     * @return simulation end time in simulated seconds
-     */
+
     public double getMakespan() {
         return makespan;
     }
-    /**
-     * Return the CloudSim simulation end time of this run.
-     *
-     * @return the same simulated-seconds value as the historical {@link #getMakespan()}
-     */
+
     public double getSimulationEndSeconds() {
         return makespan;
     }
-    /**
-     * Return the latest Job envelope end time at which every parsed logical Task was first
-     * completed by a successful Job.
-     *
-     * @return completion in seconds when every logical Task succeeded; otherwise {@code null}
-     */
+
     public Double getLogicalTaskCompletionSeconds() {
         return metrics.getLogicalTaskCompletionSeconds();
     }
-    /** @return machine-readable status telling whether the logical Task completion time is available */
+
     public String getLogicalTaskCompletionStatus() {
         return metrics.getLogicalTaskCompletionStatus();
     }
-    /**
-     * Return the lifecycle tail between the successful completion of the last logical Task and
-     * the CloudSim simulation end.
-     *
-     * @return non-negative simulated seconds when the workflow is complete; otherwise {@code null}
-     */
+
     public Double getTerminalLifecycleTailSeconds() {
         return metrics.getTerminalLifecycleTailSeconds();
     }
-    /** @return whether this run completed every logical Task successfully */
+
     public boolean isWorkflowCompletedSuccessfully() {
         return metrics.isWorkflowCompletedSuccessfully();
     }
-    /**
-     * Return the fingerprints of the input files actually consumed by this run.
-     *
-     * @return immutable list of input fingerprints in configuration order
-     */
+
     public List<InputArtifact> getInputs() {
         return inputs;
     }
-    /**
-     * Return the validation report that the parser produced for each configured input.
-     *
-     * @return immutable list of input reports in configuration order
-     */
+
     public List<WorkflowInputReport> getInputReports() {
         return inputReports;
     }
@@ -423,12 +376,6 @@ public final class SimulationReport {
         return tasks;
     }
 
-    /**
-     * R5 dynamic arrival: return the arrival and flow-time evidence of every workflow by input
-     * index.
-     *
-     * @return per-workflow results in the same order as {@link #getInputReports()}
-     */
     public List<WorkflowOutcome> getWorkflowOutcomes() {
         return workflowOutcomes;
     }
@@ -436,11 +383,7 @@ public final class SimulationReport {
     public Map<Integer, VmSummary> getVmSummaries() {
         return vmSummaries;
     }
-    /**
-     * Actual CloudSim VM to Host placement, already compared against the platform precheck result.
-     *
-     * @return immutable complete VM-Host actual placement mapping
-     */
+
     public Map<Integer, Integer> getActualVmHostAssignments() {
         return actualVmHostAssignments;
     }
@@ -460,31 +403,19 @@ public final class SimulationReport {
     public List<SimulationEvent> getEvents() {
         return events;
     }
-    /**
-     * Return the workflow structure summary computed from the task snapshot parsed by this run.
-     *
-     * @return immutable workflow profile
-     */
+
     public WorkflowProfile getWorkflowProfile() {
         return workflowProfile;
     }
-    /**
-     * Return the model-layer metrics derived from the run evidence.
-     *
-     * @return immutable set of simulation metrics
-     */
+
     public SimulationMetrics getMetrics() {
         return metrics;
     }
 
-    /** BAT-E1 (2026-10-27): @return the energy accounting of each run; all zeros when there is no power
-     * model. */
     public EnergyAccounting getEnergyAccounting() {
         return energyAccounting;
     }
 
-    /** BAT-C1: @return the carbon accounting (either the intensity or the budget model); null when
-     * undeclared. */
     public CarbonAccounting getCarbonAccounting() {
         return carbonAccounting;
     }
@@ -498,51 +429,34 @@ public final class SimulationReport {
         return false;
     }
 
-    /**
-     * Optional immutable grouped-fluid capture, frozen before session cleanup.
-     * COMPLETE zero-flow capture differs from OFF and TRUNCATED. This accessor
-     * performs no I/O or metric derivation; use NetworkRunMetrics and the artifact writer separately.
-     * @return captured network evidence, or null when OFF
-     */
     public NetworkRunEvidence getNetworkEvidence() {
         return networkEvidence;
     }
-    /** @return independent V2 lifecycle capture, null for OFF/V1 */
+
     public org.workflowsim.data.v2.FileLifecycleEvidence getFileLifecycleEvidence() {
         return fileLifecycleEvidence;
     }
-    /** @return independent storage-version capture, null for OFF/V1/V2 */
+
     public org.workflowsim.data.v2.StorageLifecycleEvidence getStorageLifecycleEvidence() {
         return storageLifecycleEvidence;
     }
-    /** @return defensive V2 resolved-plan snapshot, null for old models */
+
     public com.google.gson.JsonObject getDataflowPlan() {
         return dataflowPlan == null ? null : dataflowPlan.deepCopy();
     }
-    /**
-     * Return the trace record of the shared-storage static DAG plan.
-     *
-     * <p>The value may be {@code null} when the corresponding planning path was not taken; the
-     * caller must first decide from the configuration and the algorithm contract whether it
-     * applies.</p>
-     *
-     * @return planning trace record, or {@code null}
-     */
+
     public SharedStorageDagPlanTrace getSharedStorageDagPlanTrace() {
         return sharedStorageDagPlanTrace;
     }
 
-    /** @return raw logical task dependency snapshot sorted by task ID, without stage-in or retry
-     * nodes */
     public List<TaskNode> getWorkflowGraph() {
         return workflowGraph;
     }
 
-    /** @return actual online compute request metadata, null for preplanned/default runs */
     public List<DataflowComputeRequest> getDataflowComputeRequests() {
         return dataflowComputeRequests;
     }
-    /** Immutable per-attempt compute declarations; not a forecast of CPU completion. */
+
     public static final class DataflowComputeRequest {
         private final int jobId, taskId, taskPes, jobPes;
         private final long lengthMi;
@@ -576,7 +490,6 @@ public final class SimulationReport {
         }
     }
 
-    /** Original task node used for reporting and cross-review. */
     public static final class TaskNode {
         private final int taskId;
         private final String type;
@@ -623,7 +536,6 @@ public final class SimulationReport {
         }
     }
 
-    /** Immutable content fingerprint of a consumed workflow file. */
     public static final class InputArtifact {
 
         private final String path;
@@ -657,7 +569,6 @@ public final class SimulationReport {
         }
     }
 
-    /** Immutable execution result of one WorkflowSim Job. */
     public static final class JobOutcome {
 
         private final int jobId;
@@ -677,21 +588,7 @@ public final class SimulationReport {
         private final double modeledProcessingCost;
         private final int taskCount;
         private final List<Integer> taskIds;
-        /**
-         * BAT-D2 (2026-10-29): MIPS of the DVFS frequency tier assigned at dispatch time.
-         *
-         * <p>{@code null} = v1 no-tier mode (the legal default in compatibility runs and in the
-         * result manifest); non-null = the tier identity under whose speed this Job executes over
-         * the [startTime, finishTime) interval (the tier can be recovered by matching the MIPS
-         * value against the platform frequencyTiers -- tiers are unique by MIPS).
-         * The field is declared last: the serialization key order stays bit-for-bit stable for
-         * existing manifests, and new keys are only appended.
-         * <b>transient:</b> the outer manifest Gson configures {@code serializeNulls()}, so a
-         * non-transient null tier would add a {@code "tierMips":null} key to every v1 legacy Job
-         * -- the evidence surface requires null to mean a missing key (v1 legacy), and
-         * {@code ExperimentManifestWriter} appends that key explicitly only when the value is
-         * non-null.</p>
-         */
+
         private final transient Double tierMips;
 
         JobOutcome(
@@ -775,8 +672,7 @@ public final class SimulationReport {
             this.submissionTime = submissionTime;
             this.startTime = startTime;
             this.finishTime = finishTime;
-            // Boundary guard: timestamps of failed or exceptional jobs may be incomplete, so negative
-            // values are clamped to 0
+
             this.waitingTime = Math.max(0.0, startTime - submissionTime);
             this.executionTime = Math.max(0.0, finishTime - startTime);
             this.responseTime = Math.max(0.0, finishTime - submissionTime);
@@ -787,8 +683,7 @@ public final class SimulationReport {
             this.modeledProcessingCost = modeledCpuEnvelopeCost + modeledDeclaredFileBandwidthCost;
             this.taskCount = taskCount;
             this.taskIds = Collections.unmodifiableList(new ArrayList<>(taskIds));
-            // BAT-D2: a non-positive tier is not a legal default -- the evidence chain rejects it
-            // instead of silently setting null (no tier means null).
+
             if (tierMips != null
                     && !(tierMips.doubleValue() > 0.0 && tierMips.isInfinite() == false && tierMips.isNaN() == false)) {
                 throw new IllegalArgumentException("Invalid tier mips on Job " + jobId + ": " + tierMips);
@@ -845,13 +740,7 @@ public final class SimulationReport {
         public double getFinishTime() {
             return finishTime;
         }
-        /**
-         * Return the VM queue waiting time (arrival at the VM to start of execution, that is
-         * startTime - submissionTime).
-         * <p><strong>Note:</strong> every scheduling algorithm in WorkflowSim dispatches jobs only
-         * to idle VMs, so this value is almost always 0. For the real scheduling wait (ready to
-         * start) see {@code SimulationMetrics#getMeanComputeTotalWaitingTimeSeconds()}.</p>
-         */
+
         public double getWaitingTime() {
             return waitingTime;
         }
@@ -863,47 +752,23 @@ public final class SimulationReport {
         public double getResponseTime() {
             return responseTime;
         }
-        /**
-         * Job envelope execution time as reported by CloudSim. With stage-in enabled the value may
-         * include the integer MI representation of the corresponding delay; it is not a purely
-         * measured CPU time observation.
-         *
-         * @return Job envelope execution time in simulated seconds
-         */
+
         public double getCpuTime() {
             return cpuTime;
         }
-        /**
-         * CPU abstract cost component of the Job envelope.
-         *
-         * @return CPU envelope cost, possibly including CloudSim stage-in MI injection
-         */
+
         public double getModeledCpuEnvelopeCost() {
             return modeledCpuEnvelopeCost;
         }
-        /**
-         * Bandwidth abstract cost component, continuously priced per decimal MB over all declared
-         * file bytes of the Job.
-         *
-         * @return declared-file bandwidth cost approximation
-         */
+
         public double getModeledDeclaredFileBandwidthCost() {
             return modeledDeclaredFileBandwidthCost;
         }
-        /**
-         * Continuous byte equivalent that enters the declared-file bandwidth cost.
-         *
-         * @return sum of all declared file sizes in the Job file table
-         */
+
         public double getModeledDeclaredFileBytes() {
             return modeledDeclaredFileBytes;
         }
-        /**
-         * CloudSim processing cost of the same Job envelope. The value is neither a replay of a
-         * provider tariff nor a separately priced network transfer cost.
-         *
-         * @return modeled processing cost of the Job
-         */
+
         public double getModeledProcessingCost() {
             return modeledProcessingCost;
         }
@@ -916,25 +781,11 @@ public final class SimulationReport {
             return taskIds;
         }
 
-        /**
-         * BAT-D2 (2026-10-29): return the MIPS of the DVFS frequency tier assigned at dispatch time.
-         *
-         * @return MIPS of the assigned tier; {@code null} = v1 no-tier mode (the legal default in
-         *         the result manifest, serialized as a missing key rather than an explicit null)
-         */
         public Double getTierMips() {
             return tierMips;
         }
     }
 
-    /**
-     * Immutable task-level observation. A task may appear in several retry Jobs; any successful
-     * Job that contains it makes the task count as successfully completed. Failed Jobs keep their
-     * task-level state so that failure and reclustering records remain observable.
-     * Logical Task timing is the model-derived computation window recorded at submission. It is
-     * marked exact only when that window of a single-task Job equals the CloudSim Job envelope
-     * after completion; modeled stage-in keeps the two ranges distinct.
-     */
     public static final class TaskOutcome {
 
         private final int taskId;
@@ -1057,11 +908,11 @@ public final class SimulationReport {
         public int getDepth() {
             return depth;
         }
-        /** @return original declared per-PE work in MI */
+
         public long getLengthMi() {
             return lengthMi;
         }
-        /** @return current attempt's effective per-PE compute MI, excluding stage-in */
+
         public long getEffectiveExecutionLengthMi() {
             return effectiveExecutionLengthMi;
         }
@@ -1073,18 +924,12 @@ public final class SimulationReport {
         public double getFinishTime() {
             return finishTime;
         }
-        /**
-         * {@code true} only when the single-task computation window equals the CloudSim Job envelope.
-         *
-         * @return whether this task has exact Job timing
-         */
+
         public boolean hasExactJobTiming() {
             return exactJobTiming;
         }
     }
 
-    /** R5 dynamic arrival: arrival instant, task interval, and flow-time evidence of one workflow
-     * input. */
     public static final class WorkflowOutcome {
 
         private final int index;
@@ -1115,42 +960,39 @@ public final class SimulationReport {
             this.flowTimeSeconds = flowTimeSeconds;
         }
 
-        /** @return index of the input in this submission (0-based) */
         public int getIndex() {
             return index;
         }
-        /** @return input file path */
+
         public String getPath() {
             return path;
         }
-        /** @return configured submission instant (simulated seconds) */
+
         public double getArrivalSecond() {
             return arrivalSecond;
         }
-        /** @return first task identifier of this input */
+
         public int getFirstTaskId() {
             return firstTaskId;
         }
-        /** @return last task identifier of this input */
+
         public int getLastTaskId() {
             return lastTaskId;
         }
-        /** @return task count of this input */
+
         public int getTaskCount() {
             return taskCount;
         }
-        /** @return latest completion instant over all successful tasks; {@code NaN} when none succeeded */
+
         public double getLastSuccessFinishSecond() {
             return lastSuccessFinishSecond;
         }
-        /** @return flow time = latest successful completion instant - submission instant; {@code NaN}
-         * when no task succeeded */
+
         public double getFlowTimeSeconds() {
             return flowTimeSeconds;
         }
     }
 
-    /** Per-VM aggregate over completed Jobs; not a Host utilization model. */
     public static final class VmSummary {
 
         private final int vmId;

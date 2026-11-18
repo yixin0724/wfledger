@@ -5,7 +5,6 @@ import org.workflowsim.planning.naco.NacoDncProblem;
 import org.workflowsim.planning.naco.NacoGaHeftOptimizer;
 import org.workflowsim.planning.naco.NacoSchedule;
 
-/** NACO GA/HEFT + DNC planner for the controlled LOCAL static-DAG model. */
 public final class NacoGaHeftPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;

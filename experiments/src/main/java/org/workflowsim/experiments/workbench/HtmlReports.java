@@ -19,7 +19,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-/** Offline report rendering from validated evidence; no CDN, server or executable user HTML. */
 public final class HtmlReports {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
 
@@ -30,8 +29,7 @@ public final class HtmlReports {
         List<Map<String, Object>> displayRuns = new ArrayList<Map<String, Object>>();
         for (Map<String, Object> run : runs) {
             Map<String, Object> display = new LinkedHashMap<String, Object>(run);
-            // JSON.parse uses binary64 numbers. Only the display row is adapted; the retained
-            // experiment index and the validated manifest keep their exact original long values.
+
             try {
                 long seed = new java.math.BigDecimal(String.valueOf(run.get("seed"))).longValueExact();
                 display.put("seed", Long.toString(seed));
@@ -55,7 +53,7 @@ public final class HtmlReports {
             }
             template = new String(bytes.toByteArray(), StandardCharsets.UTF_8);
         }
-        // Gson HTML escaping encodes '<', '>', '&' and quotes; also protect JS separators.
+
         String data = JSON.toJson(payload).replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
         java.util.regex.Matcher marker =
                 java.util.regex.Pattern.compile("@@(TITLE|DATA)@@").matcher(template);
@@ -73,7 +71,6 @@ public final class HtmlReports {
         return ExperimentArtifactValidator.validate(path).getManifestSnapshot();
     }
 
-    /** Shared report seam: network projection is separate from the unchanged scientific manifest. */
     static ValidatedReport validatedReport(Path path) throws IOException {
         return validatedReport(ExperimentArtifactValidator.validate(path));
     }

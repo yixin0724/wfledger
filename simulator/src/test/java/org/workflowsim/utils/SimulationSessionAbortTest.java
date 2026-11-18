@@ -37,7 +37,6 @@ import org.workflowsim.failure.FailureParameters;
 import org.workflowsim.failure.RetryLimitExceededException;
 import org.workflowsim.platform.PlatformProfiles;
 
-/** Abort cleanup must be observable before a later init can conceal stale kernel state. */
 class SimulationSessionAbortTest {
     private static final long SEED = 20260902L;
     private static final String[] REFERENCE_FIELDS = {
@@ -69,8 +68,7 @@ class SimulationSessionAbortTest {
 
     @AfterEach
     void restoreLegacyGlobalsEvenWhenTheOldImplementationFailsAssertions() throws Exception {
-        // Reflection writes are confined to teardown: known-red pause/terminate controls
-        // must not poison or hang the next test, and cleanup must not run entity callbacks.
+
         try {
             SimulationSession active = (SimulationSession) staticField(SimulationSession.class, "activeSession");
             if (active != null) {
@@ -120,12 +118,12 @@ class SimulationSessionAbortTest {
         RetryLimitExceededException aborted =
                 assertThrows(RetryLimitExceededException.class, () -> new SimulationRunner()
                         .run(config, PlatformProfiles.homogeneousLocal("abort-budget", 1)));
-        // Same deterministic failure fixture already used by the stochastic-model regression.
+
         assertEquals(1, aborted.getCreatedRetryJobs());
         assertEquals(1, aborted.getRequestedRetryJobs());
         assertEquals(1, aborted.getMaxTotalRetryJobs());
         assertEquals(SEED, aborted.getRootSeed());
-        assertReleasedKernel(); // Must run before healthyRun(), which itself initializes CloudSim.
+        assertReleasedKernel();
         assertHealthyEquivalent(before, healthyRun());
     }
 
@@ -192,7 +190,7 @@ class SimulationSessionAbortTest {
                 () -> assertEquals(0, aborter.shutdowns),
                 () -> assertEquals(0, pending.processed),
                 () -> assertEquals(0, pending.shutdowns));
-        assertReleasedKernel(); // Old paused kernels fail here; never enter their paused loop again.
+        assertReleasedKernel();
         assertHealthyEquivalent(before, healthyRun());
     }
 
@@ -204,7 +202,7 @@ class SimulationSessionAbortTest {
         CloudSim.pauseSimulation();
         CloudSim.abruptallyTerminate();
         CloudSim.init(1, Calendar.getInstance(), false);
-        assertCleanControlFields(); // No startSimulation here: old paused state cannot hang the test.
+        assertCleanControlFields();
         assertTrue(CloudSim.getCloudInfoServiceEntityId() >= 0);
         assertTrue(CloudSim.getNumEntities() > 0);
     }
@@ -231,8 +229,9 @@ class SimulationSessionAbortTest {
         Map<String, Object> before = captureKernel();
         try (SimulationSession ignored = SimulationSession.open(
                 SimulationConfig.builder("not-parsed.dax", 1).build())) {
-            // No initializeCloudSim call: this session does not own the legacy kernel.
+            assertNotNull(ignored);
         }
+
         assertKernelUnchanged(before);
         assertNull(staticField(SimulationSession.class, "activeSession"));
     }

@@ -38,13 +38,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/**
- * Phase 3 acceptance: reverse reconstruction from a manifest to {@link SimulationConfig}
- * plus {@link PlatformProfile} is faithful field by field (round-tripped through v4
- * evidence produced by a real simulation); every validation failure maps to
- * {@code RECONSTRUCTION_REJECTED}, and the workflowPaths are always replaced by the located
- * paths whose hashes Phase 2 already verified.
- */
 class ManifestConfigRebuilderTest {
 
     private static Path fixtureRun;
@@ -58,14 +51,9 @@ class ManifestConfigRebuilderTest {
         RerunTestSupport.generateEvidence(fixtureRun);
     }
 
-    // ---- round-trip fidelity ----
-
     @Test
     void rebuildCarriesTheConfiguredEventRecorderCap() throws Exception {
-        // AUD-F07 follow-up (2026-11-04, post-completion review): a run that legitimately
-        // raised the retention cap must round-trip through the manifest so the rerun
-        // reproduces the recording conditions, while a default-cap run keeps the
-        // pre-outlet manifest shape (no key), so old evidence never spuriously diverges.
+
         RerunEvidence fixture = RerunEvidenceReader.read(fixtureRun);
         assertTrue(
                 !fixture.getManifest().getAsJsonObject("configuration").has("eventRecorderCap"),
@@ -109,9 +97,7 @@ class ManifestConfigRebuilderTest {
 
     @Test
     void rebuildForwardsPerVmPowerFields() throws Exception {
-        // BAT-E4.1 (2026-10-27): the power fields must survive the rebuild round-trip bit for
-        // bit -- the rebuilder previously called only the 9-argument VmSpec constructor and
-        // silently degraded 250/400 W to 0/0 (red->green anchor).
+
         Path run = Files.createDirectories(tempDir.resolve("powered-rebuild"));
         String dax = RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax");
         SimulationConfig config = SimulationConfig.builder(dax, 2)
@@ -150,9 +136,7 @@ class ManifestConfigRebuilderTest {
     void rebuildsRichStaticPlannerRunFaithfully() throws Exception {
         Path run = Files.createDirectories(tempDir.resolve("rich-static"));
         String dax = RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax");
-        // The fat-tree contention DMM and the overhead model are mutually exclusive (the
-        // isNoOverhead check); the overhead round-trip is covered separately by
-        // rebuildsOverheadModelRunFaithfully.
+
         SimulationConfig expected = SimulationConfig.builder(dax, 4)
                 .schedulingAlgorithm(SchedulingAlgorithm.STATIC)
                 .planningAlgorithm(PlanningAlgorithm.PSO)
@@ -202,9 +186,7 @@ class ManifestConfigRebuilderTest {
     void rebuildsFailureModelRunFaithfully() throws Exception {
         Path run = Files.createDirectories(tempDir.resolve("failure-replay"));
         String dax = RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax");
-        // Mild failure rate (WEIBULL(5000,1.0)): every dax task still completes within the
-        // retry budget; this case verifies only the round-trip fidelity of the failure-model
-        // configuration, not the retry dynamics.
+
         FailureModelConfig failure = FailureModelConfig.builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP)
                 .monitorMode(FailureParameters.FTCMonitor.MONITOR_NONE)
@@ -228,8 +210,6 @@ class ManifestConfigRebuilderTest {
         assertTrue(rebuilt.getConfig().getFailureModel().isEnabled());
         assertEquals(16, rebuilt.getConfig().getFailureModel().getMaxTotalRetryJobs());
     }
-
-    // ---- RECONSTRUCTION_REJECTED ----
 
     @Test
     void rejectsIncompatibleSchedulerPlannerCombination() throws Exception {
@@ -285,9 +265,7 @@ class ManifestConfigRebuilderTest {
 
     @Test
     void rejectsTaskCostMatrixWithNonStaticScheduling() throws Exception {
-        // ManifestV4Validator intercepts this combination before the rebuilder
-        // (EVIDENCE_INVALID); an in-memory manifest drives the rebuilder directly here to
-        // verify its own defense against the illegal combination.
+
         Path run = copyFixtureTo("bad-matrix");
         JsonObject manifest = readManifest(run);
         JsonObject configuration = manifest.getAsJsonObject("configuration");
@@ -327,13 +305,10 @@ class ManifestConfigRebuilderTest {
         assertEquals(Double.valueOf(14.0), costs.get(Integer.valueOf(4)).get(Integer.valueOf(0)));
     }
 
-    // ---- located path substitution ----
-
     @Test
     void usesResolvedInputPathsInsteadOfRecordedOnes() throws Exception {
         Path run = studyLayoutRun();
-        // The recorded path points at a nonexistent original-machine location; a file of the
-        // same name sits under <study>/inputs/ (tier 1).
+
         Path studyInput = run.getParent().getParent().resolve("inputs").resolve("reproducibility-workflow.dax");
         Files.createDirectories(studyInput.getParent());
         JsonObject manifest = readManifest(run);
@@ -350,8 +325,6 @@ class ManifestConfigRebuilderTest {
                 rebuilt.getConfig().getWorkflowPaths());
     }
 
-    // ---- helpers ----
-
     private static PlatformProfile fatTreePlatform(String name) {
         PlatformProfile.Builder builder = PlatformProfile.builder(name);
         for (int i = 0; i < 4; i++) {
@@ -367,7 +340,6 @@ class ManifestConfigRebuilderTest {
         return builder.build();
     }
 
-    /** Complete 6-task x 3-VM matrix for the fixture; cost = 10 + taskId + vmId. */
     private static JsonObject completeMatrix() {
         JsonObject matrix = new JsonObject();
         matrix.addProperty("unit", "EXECUTION_SECONDS");
@@ -397,7 +369,6 @@ class ManifestConfigRebuilderTest {
         return run;
     }
 
-    /** Build the {@code <study>/runs/<run>} layout and copy the evidence into it. */
     private Path studyLayoutRun() throws Exception {
         Path study = Files.createDirectories(tempDir.resolve("study-" + System.nanoTime()));
         Path run = Files.createDirectories(study.resolve("runs/fixture-run"));
@@ -424,7 +395,6 @@ class ManifestConfigRebuilderTest {
         Files.write(run.resolve("result.manifest.json"), gson.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /** Rewrite the path in inputs, workflowPaths and workflowOutcomes together (v4 cross-check). */
     private static void rewriteInputPathIn(JsonObject manifest, String newPath) {
         manifest.getAsJsonArray("inputs").get(0).getAsJsonObject().addProperty("path", newPath);
         JsonArray workflowPaths = manifest.getAsJsonObject("configuration").getAsJsonArray("workflowPaths");
@@ -435,8 +405,6 @@ class ManifestConfigRebuilderTest {
                 .getAsJsonObject()
                 .addProperty("path", newPath);
     }
-
-    // ---- field-level comparison ----
 
     private static void assertConfigEquals(SimulationConfig expected, SimulationConfig actual) {
         assertEquals(expected.getWorkflowPaths(), actual.getWorkflowPaths());

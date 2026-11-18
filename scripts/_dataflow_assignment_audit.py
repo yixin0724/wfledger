@@ -1,16 +1,5 @@
-"""Shared-core stdlib NF005B online-assignment action/context audit.
 
-Scope: BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1. Visibility, binding, PE,
-compute, observed-start reservations and logged score/argmin are checked. A
-lifecycle has no service-progress/rate-epoch witness: active-copy estimates are
-BOUNDED, not replayed as exact live balances or fluid counterfactuals. Within-
-bound logged progress may differ without invalidating this declared scope.
 
-verify_context(manifest, lifecycle_doc, main_events) returns detached facts.
-Existing V2/V3 contexts invoke the private action hook after their normal joins;
-their inspect_path retains hash/size/strict UTF-8/contained-reference/metrics
-checks. No production algorithm, JVM, subprocess or modified standalone grammar.
-"""
 from __future__ import annotations
 
 from fractions import Fraction
@@ -38,31 +27,25 @@ _OBSERVATION_FIELDS = ("contract", "status", "storageVersion", "storeBackedInput
 _CANDIDATE_FIELDS = ("vmId", "compatible", "inputSeconds", "cpuAvailableAt", "computeSeconds",
                      "scoreFinishSeconds", "conditionalStoreWait", "joinedInputCopies")
 
-
 def _obj(value):
     need(type(value) is dict, "expected assignment JSON object")
     return value
 
-
 def _id(value):
     return whole(value, 0, INT_MAX)
 
-
 def _positive_int(value):
     return whole(value, 1, INT_MAX)
-
 
 def _bool(value):
     need(type(value) is bool, "expected assignment JSON boolean")
     return value
 
-
 def _time(value):
     return f64(value, nonnegative=True)
 
-
 def _configuration(manifest):
-    """Closed opt-in hook; absence preserves RANDOM, not hidden action evidence."""
+
     config = _obj(required(_obj(manifest), "configuration"))
     if "dataflowAssignment" not in config:
         need("dataflowComputeRequests" not in manifest,
@@ -76,7 +59,7 @@ def _configuration(manifest):
     need(word(required(config, "planningAlgorithm")) == "INVALID" and
          word(required(config, "schedulingAlgorithm")) == "STATIC",
          "online assignment requires INVALID planning and STATIC scheduling")
-    # A runnable raw kernel with recording OFF is not a supported full artifact.
+
     need("networkEvidence" in config, "online assignment artifacts require matching complete lifecycle capture; OFF is unsupported")
     recording = keys(config["networkEvidence"], ("mode", "maxTraceRecords"), "online recording")
     expected = "FILE_STORAGE_LIFECYCLE_V3" if model in V3_MODELS else "FILE_LIFECYCLE_V2"
@@ -85,7 +68,6 @@ def _configuration(manifest):
     array(required(manifest, "dataflowComputeRequests"))
     return True
 
-
 def _indexed(rows, field):
     result = {}
     for row in array(rows):
@@ -93,7 +75,6 @@ def _indexed(rows, field):
         need(ident not in result, "duplicate assignment context " + field)
         result[ident] = row
     return result
-
 
 def _requests(manifest, jobs):
     attempts = _indexed(required(manifest["result"], "tasks"), "jobId")
@@ -114,7 +95,6 @@ def _requests(manifest, jobs):
         rows[jid] = dict(task=tid, taskPes=task_pes, jobPes=job_pes, lengthMi=length)
     need(set(rows) == set(jobs) == set(attempts), "compute request coverage must equal final compute attempts")
     return rows, attempts
-
 
 def _compute_platform(manifest, tasks):
     vms = _indexed(required(manifest["platform"], "vms"), "id")
@@ -137,21 +117,17 @@ def _compute_platform(manifest, tasks):
             coordinate = _id(row["taskId"]), _id(row["vmId"])
             need(coordinate not in matrix, "duplicate task-cost coordinate")
             matrix[coordinate] = f64(row["executionSeconds"], positive=True)
-        # The core format permits extra nonnegative Task/VM coordinates. Require
-        # all actual coordinates, without allocating a Cartesian grid or mutating
-        # the declaration to discard legal extra entries.
+
         need(all((tid, vm) in matrix for tid in tasks for vm in vms),
              "taskCostMatrix lacks complete Task/actual-VM coverage")
     return normalized, matrix
 
-
 def _round_positive_binary64(product):
-    """Exact positive-ties-up rounding of an already multiplied binary64."""
+
     need(math.isfinite(product) and product > 0, "unrepresentable task-cost binary64 product")
-    # float + .5 is wrong at 2**52 and can introduce an extra rounding.
+
     rounded = Fraction.from_float(product) + Fraction(1, 2)
     return rounded.numerator // rounded.denominator
-
 
 def _compute(request, vm_id, vm, matrix):
     effective = request["lengthMi"]
@@ -163,19 +139,13 @@ def _compute(request, vm_id, vm, matrix):
     need(math.isfinite(seconds) and seconds > 0, "unrepresentable positive compute time")
     return effective, seconds
 
-
 def _duration(size, rate):
     result = size / rate
     need(math.isfinite(result) and result > 0, "unrepresentable positive nominal input duration")
     return result
 
-
 class _Prefix:
-    """Minimal visible/active state from ALREADY validated lifecycle events.
 
-    No per-request snapshots or service simulation. Final CPU finish times are
-    never consulted for reservations; removal follows TASK_FINISHED observation.
-    """
     def __init__(self, plan, fabric, storage, store_inputs):
         self.plan, self.fabric = plan, fabric
         self.storage, self.store_inputs = storage, store_inputs
@@ -222,8 +192,7 @@ class _Prefix:
 
     def reservation(self, vm, now):
         remaining = 0.0
-        # Dict insertion order is lifecycle request order, not final Job ID or
-        # CPU-start order. Sum first, then add now, binary64 at every step.
+
         for job in self.jobs.values():
             if job["vm"] != vm:
                 continue
@@ -245,8 +214,7 @@ class _Prefix:
             post = 0.0 if target in holders else _duration(size, self.fabric.route(SOURCE, target)[1])
             upper = _duration(size, upload["rate"]) + post
             need(math.isfinite(upper) and upper > 0, "unrepresentable conditional store upper bound")
-            # Tiny positive upload may be absorbed by addition to positive
-            # postRead; only the zero-postRead lower bound is strictly open.
+
             return post, upper, post == 0, True, 0
         if target in holders:
             return 0.0, 0.0, False, False, 0
@@ -276,7 +244,6 @@ class _Prefix:
         return dict(lowerSeconds=lower, upperSeconds=upper, lowerExclusive=strict,
                     knownExact=lower == upper and not strict), conditional, joined
 
-
 def _observation(raw, state, model, now, task):
     keys(raw, _OBSERVATION_FIELDS, "assignment observation")
     need(word(raw["contract"]) == "OBSERVED_DATAFLOW_STATE_V1" and word(raw["status"]) == "BOUND",
@@ -286,10 +253,7 @@ def _observation(raw, state, model, now, task):
         need(_bool(raw[field]) == expected, "assignment observation " + field + " differs")
     for field in ("observedThrough", "serviceThrough"):
         need(_time(raw[field]) == now, "assignment observation watermark differs from request clock")
-    # Active jobs/copies and SOURCE obligations are global prefix counts. The
-    # scoped count instead covers this request's distinct canonical input IDs,
-    # including local and zero-byte inputs, never reference multiplicity or all
-    # declared files (which may include unrelated inputs and unused outputs).
+
     scoped_inputs = len(state.plan.tasks[task].inputs)
     for field, expected in (("activeCopyCount", len(state.copies)), ("activeJobCount", len(state.jobs)),
                             ("pendingOutputFileCount", len(state.outputs)), ("scopedFileCount", scoped_inputs)):
@@ -298,7 +262,6 @@ def _observation(raw, state, model, now, task):
                 storeBackedInputs=state.store_inputs, interFlowSharing=model in (V2_MODELS[0], V3_MODELS[0]),
                 observedThrough=now, serviceThrough=now, activeCopyCount=len(state.copies),
                 activeJobCount=len(state.jobs), pendingOutputFileCount=len(state.outputs), scopedFileCount=scoped_inputs)
-
 
 def _actions(main_events, jobs):
     actions, ready, retries = {}, {}, {}
@@ -331,14 +294,8 @@ def _actions(main_events, jobs):
              "assignment must precede JOB_READY at the same request clock")
     return actions, retries
 
-
 def _execution_metadata(main_events, attempts):
-    """Online-only join of recorded compute MI/scope to validated Task results.
 
-    The base context already joins identity, time and ordering. These additional
-    mandatory fields close the online execution declaration without tightening
-    old configuration-absence contexts or consulting actual future CPU finish.
-    """
     seen = set()
     for event in main_events:
         if event["type"] != "TASK_EXECUTION_MODELED" or _id(required(event, "classType")) != 2:
@@ -357,9 +314,8 @@ def _execution_metadata(main_events, attempts):
         seen.add(jid)
     need(seen == set(attempts), "online execution metadata does not cover compute attempts")
 
-
 def _verify_validated(manifest, document, main_events, report):
-    """Private normal-context hook; base lifecycle/context have already passed."""
+
     need(_configuration(manifest), "assignment audit requires explicit online configuration")
     need(report["completeCaptureCertified"] and report["lifecycleQuiescent"] and report["contextualRunChecked"],
          "assignment audit requires complete quiescent matching run lifecycle")
@@ -376,8 +332,7 @@ def _verify_validated(manifest, document, main_events, report):
     vms, matrix = _compute_platform(manifest, plan.tasks)
     actions, retries = _actions(main_events, jobs)
     if not storage:
-        # Old V2 absence stays unchanged. Modern online also checks explicit
-        # failure layouts/budgets and STATIC NOOP VM inheritance.
+
         from _storage_lifecycle_context import _failure_policy, _failure_history
         _failure_policy(manifest, config)
         final_jobs = {jid: dict(task=row["taskIds"][0], vm=row["vmId"], status=4 if row["success"] else 5)
@@ -465,14 +420,8 @@ def _verify_validated(manifest, document, main_events, report):
     return dict(dataflowAssignmentContextChecked=True, dataflowAssignmentScope=SCOPE,
                 liveProgressReplayed=False, validatedAssignmentCount=len(facts), assignmentFacts=facts)
 
-
 def verify_context(manifest, lifecycle_doc, main_events):
-    """Validate the full decoded online triple; return detached summary/facts.
 
-    Selection of existing base V2/V3 verification is explicit and closed. The
-    private switch only avoids calling this action hook twice; ordinary public
-    context entrypoints always invoke it when configuration opts in.
-    """
     need(_configuration(manifest), "assignment audit requires explicit online configuration")
     model = manifest["configuration"]["dataMovementModel"]["kind"]
     if model in V3_MODELS:

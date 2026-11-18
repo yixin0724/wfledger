@@ -20,45 +20,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Collects failure records and estimates the task failure rate that later re-clustering uses, at
- * the configured monitoring granularity.
- *
- * <p>Records belong to the current simulation session only; callers must initialize the monitor
- * before writing or analyzing records.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class FailureMonitor {
 
-    /**
-     * Failure records indexed by VM id.
-     */
     protected static Map<Integer, List<FailureRecord>> vm2record;
-    /**
-     * Failure records indexed by task depth (also called type in the historical code).
-     */
+
     protected static Map<Integer, List<FailureRecord>> type2record;
-    /** Failure records indexed by the composite key of VM id and task depth. */
+
     protected static Map<String, List<FailureRecord>> vmDepth2record;
-    /**
-     * Failure records indexed by Job id.
-     */
+
     protected static Map<Integer, FailureRecord> jobid2record;
-    /**
-     * All failure records of the current session.
-     */
+
     protected static List<FailureRecord> recordList;
-    /**
-     * Job index mapping, used by the legacy failure recovery path.
-     */
+
     public static Map index2job;
 
-    /**
-     * Initializes the failure record containers of the current simulation run.
-     */
     public static void init() {
         vm2record = new HashMap<>();
         type2record = new HashMap<>();
@@ -67,7 +42,6 @@ public class FailureMonitor {
         recordList = new ArrayList<>();
     }
 
-    /** Clears all monitoring records held by the finished simulation run. */
     public static void reset() {
         vm2record = null;
         type2record = null;
@@ -87,26 +61,11 @@ public class FailureMonitor {
         }
     }
 
-    /**
-     * Computes the suggested clustering factor from an observed failure rate.
-     *
-     * @param d delay overhead
-     * @param a observed task failure rate
-     * @param t task runtime
-     * @return suggested clustering factor
-     */
     protected static double getK(double d, double a, double t) {
         double k = (-d + Math.sqrt(d * d - 4 * d / Math.log(1 - a))) / (2 * t);
         return k;
     }
 
-    /**
-     * Returns the suggested clustering factor for the given failure record under the current
-     * monitoring mode.
-     *
-     * @param record failure record of the current recovery request
-     * @return suggested clustering factor
-     */
     public static int getClusteringFactor(FailureRecord record) {
 
         double d = record.delayLength;
@@ -115,9 +74,7 @@ public class FailureMonitor {
         double a = 0.0;
         switch (FailureParameters.getMonitorMode()) {
             case MONITOR_JOB:
-                /**
-                 * In this legacy implementation MONITOR_JOB is handled through the global records.
-                 */
+
             case MONITOR_ALL:
                 a = analyze(0, record.depth);
                 break;
@@ -127,8 +84,7 @@ public class FailureMonitor {
             case MONITOR_VM_JOB:
                 a = analyzeVmDepth(record.vmId, record.depth);
                 break;
-                // MONITOR_NONE analyzes no clustering factor and keeps a=0.0, so the all-task-count
-                // fallback applies (historical semantics of the legacy failure path).
+
             default:
                 break;
         }
@@ -139,19 +95,13 @@ public class FailureMonitor {
             double k = getK(d, a, t);
 
             if (k <= 1) {
-                k = 1; // The clustering factor is at least 1.
+                k = 1;
             }
 
             return (int) k;
         }
     }
 
-    /**
-     * Accepts a failure record posted by the scheduling agent and indexes it under the current
-     * monitoring mode.
-     *
-     * @param record failure record to be stored
-     */
     public static void postFailureRecord(FailureRecord record) {
         requireInitialized();
 
@@ -184,8 +134,7 @@ public class FailureMonitor {
                 break;
             case MONITOR_NONE:
                 break;
-                // MONITOR_ALL is the only mode that reaches default: it builds no grouped index and
-                // analyze() aggregates the whole recordList.
+
             default:
                 break;
         }
@@ -193,19 +142,9 @@ public class FailureMonitor {
         recordList.add(record);
     }
 
-    /**
-     * Computes the observed task failure rate from the current record set.
-     *
-     * @param workflowId unused in the current version; kept for compatibility with the old interface
-     * @param type VM id or task depth, depending on the monitoring mode
-     * @return task failure rate
-     */
     public static double analyze(int workflowId, int type) {
         requireInitialized();
 
-        /**
-         * MONITOR_ALL aggregates all Jobs of the whole workflow.
-         */
         int sumFailures = 0;
         int sumJobs = 0;
         switch (FailureParameters.getMonitorMode()) {
@@ -239,8 +178,7 @@ public class FailureMonitor {
                 break;
             case MONITOR_VM_JOB:
                 throw new IllegalStateException("MONITOR_VM_JOB requires analyzeVmDepth(vmId, depth)");
-                // MONITOR_NONE is the only mode that reaches default: it holds no monitoring records,
-                // so both counters stay 0 and the result is 0.
+
             default:
                 break;
         }
@@ -252,13 +190,6 @@ public class FailureMonitor {
         return alpha;
     }
 
-    /**
-     * Computes the observed failure rate for a VM id and a DAG depth.
-     *
-     * @param vmId VM id
-     * @param depth DAG depth
-     * @return failed-task share of the matching composite group; 0 when no record exists yet
-     */
     public static double analyzeVmDepth(int vmId, int depth) {
         requireInitialized();
         if (vmId < 0 || depth < 0) {

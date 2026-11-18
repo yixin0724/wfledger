@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
-/** Guards the clean-checkout versus extended-corpus test boundary (VV-NEW-01, 2026-11-04). */
 class MontageCorpusProfileContractTest {
 
     @Test

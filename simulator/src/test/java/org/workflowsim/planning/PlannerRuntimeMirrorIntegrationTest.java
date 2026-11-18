@@ -26,30 +26,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * C06: end-to-end contract for the LOCAL_HEFT planning -> execution mirror
- * (review engineering Phase 2, H-9 systematization).
- *
- * <p>Contract (the docs claim for the LOCAL family): the LOCAL planner's estimator
- * "bitwise mirrors" the runtime pre-execution transfer model. The existing tests pin the
- * planning formula (rank/insertion) and the execution side (local availability)
- * separately; this test joins the two sides at <b>the task windows of one single full
- * simulation</b>:</p>
- * <ol>
- *   <li>a full run of the standard SimulationRunner (LOCAL +
- *       PRE_EXECUTION_TRANSFER_DELAY_V1 + LOCAL_HEFT + STATIC, no overhead/failure);</li>
- *   <li>an independent reparse of the same DAX plus an independent
- *       LocalHeftPlanningAlgorithm replanning (fresh objects);</li>
- *   <li>per-task assertions: VM binding, planned start time and planned finish time
- *       <b>equal the runtime {@link SimulationReport.TaskOutcome} window with 0
- *       tolerance</b>.</li>
- * </ol>
- *
- * <p>Both sides use the same physical constant system (the same PlanningContext
- * construction path); any formula, timing or conversion drift on either side turns this
- * mirror assertion red -- the relative comparison does not depend on hand-derived
- * absolute values.</p>
- */
 class PlannerRuntimeMirrorIntegrationTest {
 
     private static final double ZERO_TOLERANCE = 0.0;
@@ -75,30 +51,16 @@ class PlannerRuntimeMirrorIntegrationTest {
         mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm.LOCAL_HEFT);
     }
 
-    /**
-     * Chain F extension (S-F1): 0-tolerance mirror for CPOP -- the critical-processor
-     * logic does not break the end-to-end identity.
-     */
     @Test
     void localCpopPlannedWindowsMirrorActualRuntimeWindowsExactly() throws Exception {
         mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm.LOCAL_CPOP);
     }
 
-    /**
-     * Chain F extension (S-F1): 0-tolerance mirror for PEFT -- the OCT scoring path does
-     * not break the end-to-end identity.
-     */
     @Test
     void localPeftPlannedWindowsMirrorActualRuntimeWindowsExactly() throws Exception {
         mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm.LOCAL_PEFT);
     }
 
-    /**
-     * Generic mirror driver: full SimulationRunner run vs. independent reparse plus
-     * replanning; asserts the VM binding, planned start and planned finish per task with
-     * 0-tolerance mirroring (LOCAL_HEFT / LOCAL_CPOP / LOCAL_PEFT, the
-     * AbstractLocalCommPlanningAlgorithm family).
-     */
     private void mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm algorithm) throws Exception {
         Path workflow = layeredDax();
         PlatformProfile platform = mirrorPlatform();
@@ -165,12 +127,6 @@ class PlannerRuntimeMirrorIntegrationTest {
         }
     }
 
-    // ---- Fixtures ----
-
-    /**
-     * 6-task 3-layer DAG with communication files on the edges (layer 1 -> layer 2 ->
-     * layer 3); bridge files use 4 MB/s bandwidth with unit conversion.
-     */
     private Path layeredDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -197,7 +153,7 @@ class PlannerRuntimeMirrorIntegrationTest {
                 dax.append("  </job>\n");
             }
         }
-        // Inter-layer dependencies: 1,2 -> 3,4 -> 5,6 (interleaved parent/child).
+
         dax.append("  <child ref=\"t3\"><parent ref=\"t1\"/></child>\n");
         dax.append("  <child ref=\"t4\"><parent ref=\"t1\"/></child>\n");
         dax.append("  <child ref=\"t4\"><parent ref=\"t2\"/></child>\n");

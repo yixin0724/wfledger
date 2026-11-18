@@ -14,7 +14,6 @@ import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.SimulationConstants;
 import org.workflowsim.utils.SimulationTiming;
 
-/** Converts WorkflowSim tasks into the IC-PCP deadline/cost model. */
 public final class IcpcpAdapter {
 
     private IcpcpAdapter() {}

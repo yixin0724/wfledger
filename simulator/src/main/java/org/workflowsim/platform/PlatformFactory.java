@@ -19,22 +19,10 @@ import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowDatacenter;
 
-/** Build CloudSim/WorkflowSim entities from a validated {@link PlatformProfile}. */
 public final class PlatformFactory {
 
     private PlatformFactory() {}
 
-    /**
-     * Convert an abstract platform description into one WorkflowSim datacenter.
-     *
-     * @param entityName CloudSim entity name, must not be empty
-     * @param profile platform description that already passed the capacity and VM-host
-     *        placement preflight
-     * @return datacenter using the deterministic VM placement policy
-     * @throws Exception when a CloudSim storage entity cannot be created
-     * @throws IllegalArgumentException when the name is empty or the platform description
-     *         is null
-     */
     public static WorkflowDatacenter createDatacenter(String entityName, PlatformProfile profile) throws Exception {
         requireEntityName(entityName);
         if (profile == null) {
@@ -79,15 +67,6 @@ public final class PlatformFactory {
                 0.0);
     }
 
-    /**
-     * Create the list of VMs owned by the specified WorkflowEngine user according to the
-     * platform description.
-     *
-     * @param profile validated platform description
-     * @param userId identifier of the user/scheduler in CloudSim that receives these VMs
-     * @return newly created VM list that corresponds one-to-one to the platform VM descriptions
-     * @throws IllegalArgumentException when the platform description is null
-     */
     public static List<CondorVM> createVms(PlatformProfile profile, int userId) {
         if (profile == null) {
             throw new IllegalArgumentException("Platform profile cannot be null");
@@ -123,8 +102,7 @@ public final class PlatformFactory {
                         spec.getVmm(),
                         createScheduler(spec));
             }
-            // BAT-D2 (2026-10-29): inject the frequency-tier table into the VM at assembly time
-            // (an empty table keeps the v1 mode).
+
             if (spec.hasFrequencyTiers()) {
                 vm.setFrequencyTiers(spec.getFrequencyTiers());
             }

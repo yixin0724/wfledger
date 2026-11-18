@@ -16,7 +16,6 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** Verify that failure-mode coverage is checked by actual depth and VM ID before task dispatch. */
 class FailureParametersCoverageTest {
 
     @AfterEach

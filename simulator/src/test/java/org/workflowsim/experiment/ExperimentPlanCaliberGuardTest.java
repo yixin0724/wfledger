@@ -13,16 +13,6 @@ import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Pins the cross-caliber fail-fast of the campaign construction layer (AUD-F09).
- *
- * <p>One comparison group must not place the online ready-batch cost caliber (bare
- * length/MIPS ECT) beside the static planning cost caliber (TaskExecutionModel matrix
- * seconds): a same-named algorithm carries two different cost semantics across the two
- * calibers, so a side-by-side comparison is rejected at plan construction. Neither
- * caliber's own comparison semantics change, and cells outside both cost calibers stay
- * unconstrained.</p>
- */
 class ExperimentPlanCaliberGuardTest {
 
     @Test
@@ -59,8 +49,7 @@ class ExperimentPlanCaliberGuardTest {
 
     @Test
     void buildKeepsNoCostCaliberCellsUnconstrained() {
-        // FCFS decides mappings by submission order and makes no cost comparison, so it
-        // shares a group with either cost caliber without being a caliber mix.
+
         assertDoesNotThrow(() -> plan(
                 cell("fcfs", true, PlanningAlgorithm.INVALID, SchedulingAlgorithm.FCFS),
                 cell("ready-batch-mct", false, PlanningAlgorithm.INVALID, SchedulingAlgorithm.READY_BATCH_MCT)));

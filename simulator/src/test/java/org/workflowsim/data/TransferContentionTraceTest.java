@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** NF001 contracts: independent fluid arithmetic, numeric boundaries, and opt-in isolation. */
 class TransferContentionTraceTest {
     private static final TransferTraceSnapshot.Status CAPTURE_COMPLETE = TransferTraceSnapshot.Status.COMPLETE;
 
@@ -41,7 +40,7 @@ class TransferContentionTraceTest {
         assertThrows(IllegalArgumentException.class, () -> new TransferContentionEngine(-1));
         assertThrows(IllegalArgumentException.class, () -> new TransferContentionEngine(Integer.MIN_VALUE));
         add(enabled, 1, 100, 10, 0);
-        // COMPLETE describes capture, not whether active flows have finished.
+
         assertEquals(1, enabled.activeTransferCount());
         assertSnapshot(enabled.getTraceSnapshot(), CAPTURE_COMPLETE, 1, 0, 0);
     }
@@ -59,7 +58,7 @@ class TransferContentionTraceTest {
         assertEquals(0, engine.getTraceSnapshot().getEvents().size());
         engine.setEndpointCapacity("A", 100);
         engine.setEndpointCapacity("A", 60);
-        engine.setEndpointCapacity("A", 60); // Successful same-value puts also count.
+        engine.setEndpointCapacity("A", 60);
         List<TransferTraceEvent> capacities = engine.getTraceSnapshot().getEvents();
         assertTypes(capacities, CAPACITY, CAPACITY, CAPACITY);
         for (int i = 0; i < capacities.size(); i++) {
@@ -100,7 +99,7 @@ class TransferContentionTraceTest {
         assertService(events.get(4), 2, 2, 0, 10, 10, 90, 900, 0, 10);
         assertCompletion(events.get(5), 1, 1, 10, 10, 0);
         assertCompletion(events.get(6), 2, 2, 10, 10, 0);
-        // 10*10 + 90*10 = 100*10: independent flow and capacity balances.
+
         assertBits(100, serviceArea(events, 1, 1));
         assertBits(900, serviceArea(events, 2, 2));
         assertBits(1000, serviceArea(events, 1, 1) + serviceArea(events, 2, 2));
@@ -156,7 +155,7 @@ class TransferContentionTraceTest {
         List<TransferTraceEvent> events = engine.getTraceSnapshot().getEvents();
         assertBits(10, serviceArea(events, 1, 1));
         assertBits(80, serviceArea(events, 2, 2));
-        // Duplicate A consumes capacity twice: 2*10 + 80 = 100.
+
         assertBits(100, 2 * serviceArea(events, 1, 1) + serviceArea(events, 2, 2));
         assertEquals(Arrays.asList("A", "UNREGISTERED", "A"), start.getStart().getOccupiedResources());
     }
@@ -210,7 +209,7 @@ class TransferContentionTraceTest {
         add(engine, 2, 180, 100, 0, "A");
         TransferContentionEngine.AdvanceResult result = add(engine, 3, 100, 100, 1.5, "A");
         assertEquals(Collections.singletonList(1L), result.getCompletedTransferIds());
-        // At 1.5 the older flow has 180 - 90*1 - 100*0.5 = 40 bytes left.
+
         assertBits(2.3, result.getNextCompletionTime());
         List<TransferTraceEvent> events = engine.getTraceSnapshot().getEvents();
         assertTypes(
@@ -383,7 +382,7 @@ class TransferContentionTraceTest {
     void forcedEarliestZeroDoesNotEraseTheOriginalSubtractResidual() {
         TransferContentionEngine engine = new TransferContentionEngine(16);
         add(engine, 1, 1, 49, 0);
-        // The rounded reciprocal makes 49*(1/49) one representable value below 1.
+
         double duration = 1.0 / 49.0;
         double residual = 1.0 - 49.0 * duration;
         assertTrue(residual > 0.0);
@@ -514,7 +513,7 @@ class TransferContentionTraceTest {
         input.values.clear();
         engine.advance(0.5);
         engine.advance(1);
-        add(engine, 2, 1, 1, 2); // The next event exceeds the four-event prefix.
+        add(engine, 2, 1, 1, 2);
         assertSnapshot(engine.getTraceSnapshot(), TRUNCATED, 4, 1, 2);
         assertSnapshot(past, CAPTURE_COMPLETE, 1, 0, 0);
         assertEquals(Arrays.asList("A", "B", "A"), resources);
@@ -639,10 +638,10 @@ class TransferContentionTraceTest {
     void enabledAndFullCaptureDoNotAddReadsOrCopiesOfTheCallerResourceList() {
         for (int budget : new int[] {0, 1, 32}) {
             TransferContentionEngine engine = new TransferContentionEngine(budget);
-            engine.setEndpointCapacity("A", 100); // The one-event budget is already full.
+            engine.setEndpointCapacity("A", 100);
             TransferListInput resources = new TransferListInput("A", "UNREGISTERED", "A");
             engine.addTransfer(1, 1000.0, resources, 10, 0);
-            // Existing behavior validates each key and makes one ArrayList input copy.
+
             assertEquals(3, resources.getCalls);
             assertEquals(1, resources.toArrayCalls);
             resources.values.clear();
@@ -972,7 +971,6 @@ class TransferContentionTraceTest {
         engine.advance(24);
     }
 
-    /** Detect extra access to the caller's list, not engine-owned defensive copies. */
     private static final class TransferListInput extends AbstractList<String> {
         private final List<String> values;
         private int getCalls;
@@ -1038,7 +1036,6 @@ class TransferContentionTraceTest {
         }
     }
 
-    /** Parity supplements the independent, bounded physical expectations above. */
     private static final class Parity {
         private final TransferContentionEngine[] engines = {
             new TransferContentionEngine(),

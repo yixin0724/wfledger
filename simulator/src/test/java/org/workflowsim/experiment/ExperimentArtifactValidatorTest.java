@@ -96,11 +96,6 @@ class ExperimentArtifactValidatorTest {
         assertTrue(exception.getMessage().contains("sequence mismatch"));
     }
 
-    /**
-     * Review round (2026-11-02): the event-sequence bound self-declared by the manifest must be
-     * bound to the event stream -- a tampered lastSequence must be rejected. Previously both sides
-     * only checked eventCount, and nobody verified the declared bound.
-     */
     @Test
     void rejectsADeclaredSequenceBoundThatDoesNotMatchTheStream(@TempDir Path output) throws Exception {
         Log.disable();
@@ -262,8 +257,6 @@ class ExperimentArtifactValidatorTest {
         ExperimentArtifactWriter.ExperimentArtifacts artifacts =
                 ExperimentArtifactWriter.write(report, output, "schema-v2-run");
 
-        // Variant 1: a v1 schema (the legacy field-name contract) must be rejected, not silently
-        // accepted.
         JsonObject sidecar = JsonParser.parseString(
                         new String(Files.readAllBytes(artifacts.getMetrics()), StandardCharsets.UTF_8))
                 .getAsJsonObject();
@@ -273,7 +266,6 @@ class ExperimentArtifactValidatorTest {
                 java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
         assertTrue(schemaException.getMessage().contains("Unsupported metrics schema"));
 
-        // Variant 2: a correct schema missing a required v2 field must be rejected.
         sidecar.addProperty("schema", "workflowsim-simulation-metrics-v2");
         sidecar.getAsJsonObject("metrics").remove("meanComputeTrueSlowdown");
         rewriteMetricsSidecar(artifacts, sidecar);
@@ -282,7 +274,6 @@ class ExperimentArtifactValidatorTest {
         assertTrue(fieldException.getMessage().contains("meanComputeTrueSlowdown"));
     }
 
-    /** Rewrite the metrics sidecar and sync the checksum and size of the matching manifest artifact. */
     private static void rewriteMetricsSidecar(
             ExperimentArtifactWriter.ExperimentArtifacts artifacts, JsonObject sidecar) throws Exception {
         Files.write(artifacts.getMetrics(), JSON.toJson(sidecar).getBytes(StandardCharsets.UTF_8));
@@ -299,11 +290,6 @@ class ExperimentArtifactValidatorTest {
         Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Rewrite the events JSONL sidecar and sync the checksum and size of the matching manifest
-     * artifact, so a tampered stream reaches the deeper validation stages instead of failing the
-     * reference check first.
-     */
     private static void rewriteEventsSidecar(
             ExperimentArtifactWriter.ExperimentArtifacts artifacts, java.util.List<String> lines) throws Exception {
         Files.write(artifacts.getEvents(), lines, StandardCharsets.UTF_8);
@@ -342,14 +328,6 @@ class ExperimentArtifactValidatorTest {
         assertTrue(exception.getMessage().contains("runtime"));
     }
 
-    /**
-     * AUD-F05 (2026-11-03): the validator must recompute the registered metric families from
-     * the result section instead of trusting two identical copies of the same wrong number --
-     * before this, tampering manifest.metrics and the sidecar identically passed validation, so
-     * a wrong value survived "mvn verify" (the audited gap). The expected value is the manifest
-     * result.simulationEndSeconds: the writer's makespan, the manifest end, and the terminal
-     * event clock are one and the same simulation clock.
-     */
     @Test
     void rejectsAMakespanThatContradictsTheResultSection(@TempDir Path output) throws Exception {
         Log.disable();
@@ -383,11 +361,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the recomputed field: " + exception.getMessage());
     }
 
-    /**
-     * AUD-F05 (2026-11-03): second recomputed family -- the queue-wait mean is the average of
-     * max(0, startTime - submissionTime) over the COMPUTE job outcomes of result.jobs, exactly
-     * the population and formula the metrics writer and the Python auditor use.
-     */
     @Test
     void rejectsAQueueWaitMeanThatContradictsTheJobOutcomes(@TempDir Path output) throws Exception {
         Log.disable();
@@ -425,11 +398,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the recomputed field: " + exception.getMessage());
     }
 
-    /**
-     * AUD-F05 (2026-11-03): the F-006 terminal clock identity -- on a revision stream the
-     * SIMULATION_TERMINATED event time must equal the manifest end exactly; a shifted terminal
-     * clock silently changes the makespan family that the stream claims to recompute.
-     */
     @Test
     void rejectsATerminalClockThatContradictsTheDeclaredEnd(@TempDir Path output) throws Exception {
         Log.disable();
@@ -463,11 +431,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the terminal clock identity: " + exception.getMessage());
     }
 
-    /**
-     * AUD-F05 (2026-11-03): the F-007 job-start derivation -- modeledJobStartSeconds must equal
-     * jobEnvelopeStartSeconds + effectiveDataStageSeconds exactly; a broken derivation corrupts
-     * the decision-to-start and waiting families that claim to be event-recomputable.
-     */
     @Test
     void rejectsAStartedEventWithABrokenDerivation(@TempDir Path output) throws Exception {
         Log.disable();
@@ -503,11 +466,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the job-start derivation: " + exception.getMessage());
     }
 
-    /**
-     * AUD-F05 (2026-11-03): the F-007 coverage rule -- on a revision stream every executed job
-     * instance must carry its JOB_EXECUTION_STARTED marker; re-pointing one marker at a phantom
-     * job id leaves an executed job uncovered.
-     */
     @Test
     void rejectsAnExecutedJobWithoutAStartedMarker(@TempDir Path output) throws Exception {
         Log.disable();
@@ -548,12 +506,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the job-start coverage: " + exception.getMessage());
     }
 
-    /**
-     * AUD-F05 (2026-11-03): the recompute follows the registered v4-only boundary -- legacy
-     * schema manifests keep the declared manifest authority, mirroring the Python auditor's
-     * "old schemas are not silently upgraded" gate. This is a compatibility pin: the new
-     * recompute must not silently change what an older manifest is allowed to declare.
-     */
     @Test
     void keepsDeclaredAuthorityForLegacyManifestSchemas(@TempDir Path output) throws Exception {
         Log.disable();
@@ -585,11 +537,6 @@ class ExperimentArtifactValidatorTest {
                 () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
     }
 
-    /**
-     * AUD-F23 (2026-11-04 post-completion review): a writer that declares the F-006/F-007
-     * revision contract lets the validator require the markers. Removing the terminal event
-     * from such a stream used to be excused as "legacy stream" and passed the whole bundle.
-     */
     @Test
     void rejectsADeclaredRevisionContractWithoutItsTerminalEvent(@TempDir Path output) throws Exception {
         ExperimentArtifactWriter.ExperimentArtifacts artifacts = writeBundle(output, "revision-terminal");
@@ -607,10 +554,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the missing marker: " + exception.getMessage());
     }
 
-    /**
-     * AUD-F23: the evasion that motivated the declaration -- strip every marker, keep a
-     * consistent manifest, and the old conditional checks had nothing to compare against.
-     */
     @Test
     void rejectsAStreamThatRemovesEveryMarkerUnderItsDeclaredContract(@TempDir Path output) throws Exception {
         ExperimentArtifactWriter.ExperimentArtifacts artifacts = writeBundle(output, "revision-markers");
@@ -628,7 +571,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the declared contract: " + exception.getMessage());
     }
 
-    /** AUD-F23: an unknown declared contract is refused instead of being read as the current one. */
     @Test
     void rejectsAnUnknownDeclaredRevisionContract(@TempDir Path output) throws Exception {
         ExperimentArtifactWriter.ExperimentArtifacts artifacts = writeBundle(output, "revision-unknown");
@@ -643,10 +585,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the unsupported contract: " + exception.getMessage());
     }
 
-    /**
-     * AUD-F23 compatibility pin: a manifest without the declaration is a retained pre-2026-11-04
-     * bundle and keeps the manifest-authority boundary -- a marker-less stream stays acceptable.
-     */
     @Test
     void keepsTheManifestAuthorityBoundaryForAStreamWithoutTheDeclaration(@TempDir Path output) throws Exception {
         ExperimentArtifactWriter.ExperimentArtifacts artifacts = writeBundle(output, "revision-legacy");
@@ -679,11 +617,6 @@ class ExperimentArtifactValidatorTest {
                 .getAsJsonObject();
     }
 
-    /**
-     * Rewrites the event stream through the filter, renumbers the surviving events so the
-     * sequence contract still holds, and re-signs the manifest (count, bounds, artifact digest)
-     * so the only remaining difference is the dropped marker itself.
-     */
     private static void rewriteEvents(
             ExperimentArtifactWriter.ExperimentArtifacts artifacts, JsonObject manifest, Predicate<JsonObject> drop)
             throws Exception {

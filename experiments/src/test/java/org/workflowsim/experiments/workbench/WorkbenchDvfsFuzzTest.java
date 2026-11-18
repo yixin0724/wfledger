@@ -24,31 +24,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/**
- * BAT-V1 (2026-10-29 adversarial test-engineer round, DVFS fifth round): malicious
- * fuzzing of the workbench JSON frequency-tier input surface -- declared-but-empty,
- * "non-array" shapes, string tiers, the unknown policy label (SPEED_RUNNER), and the NaN
- * constant of strict JSON; the v1 platform stays legal under every input. Quality of
- * rejection: the message must name the field (mirroring the discipline of the existing
- * BAT-D4 rejection surface).
- *
- * <p>Honest disclosure (measured semantics pinned by this class, not transcribed):
- * <ul>
- *   <li><b>empty array (declared-but-empty) -> rejected</b> (BAT-D4: "must be a non-empty
- *       array", which gives the shortest repair path: "delete the key, i.e. v1");</li>
- *   <li><b>single-element tier table -> legal</b> (the workbench face of the v1
- *       degenerate identity; MIN_POWER is usable);</li>
- *   <li><b>the NaN/Inf family dies at the strict syntax layer on the JSON face</b>
- *       (an RFC 8259 illegal constant, before any domain validation -- the same
- *       semantics as the Python auditor's _constant clause); there is no "field-level"
- *       receipt; the domain-level finite message ("must be finite") is reserved for the
- *       domain layer (large but finite out-of-domain values still get the domain-layer
- *       message).</li>
- * </ul>
- * (The positive/negative/inverted frequency-tier numeric domain and the table-order
- * message surface are already pinned by WorkbenchConfigTest.
- * platformFrequencyTiersRoundTripAndValidate; this class does not repeat them.)</p>
- */
 class WorkbenchDvfsFuzzTest {
 
     @TempDir
@@ -132,7 +107,7 @@ class WorkbenchDvfsFuzzTest {
     @Test
     void unknownPolicyLabelSPEED_RUNNERIsRejectedEvenOnTierlessPlatforms() throws Exception {
         Path workflow = workflow(directory, "flow.dax", false);
-        // Tiers present + unknown label -> rejected, citing frequencyPolicy and the legal label set.
+
         JsonObject tiered = configuration(workflow.toString(), 2);
         tiered.getAsJsonObject("platform").add("frequencyTiers", tiers(2000.0, 250.0, 400.0));
         tiered.getAsJsonObject("platform").addProperty("frequencyPolicy", "SPEED_RUNNER");
@@ -143,8 +118,7 @@ class WorkbenchDvfsFuzzTest {
                 tieredRejection.getMessage().contains("frequencyPolicy")
                         && tieredRejection.getMessage().contains("SPEED_RUNNER"),
                 "unknown policy must cite the field and the given label: " + tieredRejection.getMessage());
-        // No tiers + unknown label -> rejected the same way (no silent fallback to DEFAULT):
-        // field-level ordering (valueOf precedes the policy x table composite check).
+
         JsonObject tierless = configuration(workflow.toString(), 2);
         tierless.getAsJsonObject("platform").addProperty("frequencyPolicy", "SPEED_RUNNER");
         IllegalArgumentException tierlessRejection = assertThrows(
@@ -159,26 +133,20 @@ class WorkbenchDvfsFuzzTest {
     void rawNanTierValueDiesAtTheStrictJsonSyntaxLayer() throws Exception {
         Path workflow = workflow(directory, "flow.dax", false);
         JsonObject nanTier = configuration(workflow.toString(), 2);
-        // NaN cannot be constructed as a legal JSON constant (Gson JsonPrimitive likewise
-        // rejects the JSON serialization semantics of non-finite doubles) -- the raw document
-        // is hand-written so the illegal constant is fed straight into the strict reader.
+
         Path raw = directory.resolve("nan-raw.json");
         String template = json(directory.resolve("nan-template.json"), nanTier).toString();
         String mutated = template.replaceFirst(
                 "\"platform\"\\s*:\\s*\\{",
                 "\"platform\": {\"frequencyTiers\": [{\"mips\": NaN,\"idlePowerWatts\": 1,\"maxPowerWatts\": 2}],");
         Files.write(raw, mutated.getBytes(StandardCharsets.UTF_8));
-        // The strict reader maps a non-standard constant to IllegalArgumentException ("the
-        // configuration must be a strict JSON object", BAM-D4/Wso strict face) -- the
-        // syntax-layer kill happens before any domain validation (the same semantics as the
-        // Python auditor's _study_audit._constant clause); there is no field-level receipt
-        // and no silent fallback to DEFAULT.
+
         IllegalArgumentException syntax = assertThrows(
                 IllegalArgumentException.class, () -> WorkbenchConfig.read(raw), "NaN literal must not parse");
         assertTrue(
                 syntax.getMessage() != null && !syntax.getMessage().isEmpty(),
                 "syntax-layer rejection must carry a diagnostic: " + syntax.getMessage());
-        // Large but finite out-of-domain value (negative mips) -> domain-layer field message (no fallback).
+
         JsonObject negative = configuration(workflow.toString(), 2);
         negative.getAsJsonObject("platform").add("frequencyTiers", tiers(-5.0, 1.0, 2.0));
         IllegalArgumentException domain = assertThrows(

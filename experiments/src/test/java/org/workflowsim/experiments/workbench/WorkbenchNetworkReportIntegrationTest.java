@@ -38,7 +38,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** NF002D2: both real public report paths embed validated network display data, never fetch sidecars in a browser. */
 class WorkbenchNetworkReportIntegrationTest {
     @TempDir
     Path directory;

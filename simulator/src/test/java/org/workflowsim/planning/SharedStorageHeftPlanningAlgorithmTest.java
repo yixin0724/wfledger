@@ -41,8 +41,6 @@ class SharedStorageHeftPlanningAlgorithmTest {
 
         planner.run();
 
-        // The model-generated 110 MI stage-in Job executes first; the middle Task then
-        // comprises 1 second of CPU plus a 20 MB / 20 MB/s shared-storage input.
         assertEquals(0, root.getVmId());
         assertEquals(0.21, root.getStaticScheduleStartTime(), 1.0e-12);
         assertEquals(1.21, middle.getStaticScheduleStartTime(), 1.0e-12);
@@ -71,9 +69,7 @@ class SharedStorageHeftPlanningAlgorithmTest {
         SharedStorageDagPlanTrace trace = planner.getLastPlanTrace();
         assertEquals("HEFT", trace.getStrategy());
         assertEquals(0.21, trace.getStageInFinishSeconds(), 1.0e-12);
-        // CloudSim SpaceShared runs a multi-PE Cloudlet in parallel (wall-clock time =
-        // length/capacity, independent of the PE count); therefore the dual-PE child Task of
-        // 10,000 MI takes 10 seconds at 1000 MIPS, i.e. r_u(root) = 1 + 10.
+
         assertEquals(11.0, trace.getTaskPlan(1).getUpwardRankSeconds(), 1.0e-12);
         assertEquals(10.0, trace.getTaskPlan(2).getUpwardRankSeconds(), 1.0e-12);
         assertEquals(1.0, trace.getTaskPlan(3).getUpwardRankSeconds(), 1.0e-12);
@@ -82,8 +78,7 @@ class SharedStorageHeftPlanningAlgorithmTest {
         assertEquals(1, trace.getTaskPlan(2).getVmId());
         assertEquals(1, trace.getTaskPlan(3).getVmId());
         assertEquals(1.21, trace.getTaskPlan(2).getPlannedStartSeconds(), 1.0e-12);
-        // Task 3 has a lower rank than Task 2 and is considered later, yet it can fill the
-        // reservation gap on VM 1 that precedes Task 2's dependency-ready point.
+
         assertEquals(0.21, trace.getTaskPlan(3).getPlannedStartSeconds(), 1.0e-12);
         assertEquals(1.21, trace.getTaskPlan(3).getPlannedFinishSeconds(), 1.0e-12);
         assertNull(trace.getTaskPlan(1).getDlsDynamicLevelAtSelection());

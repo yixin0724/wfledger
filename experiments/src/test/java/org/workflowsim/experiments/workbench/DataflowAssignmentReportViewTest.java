@@ -41,7 +41,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Public runtime/codec/validator fixtures only; no reflection, files or fabricated Result objects. */
 class DataflowAssignmentReportViewTest {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
     private static final String SCOPE = "BINDING_NOMINAL_BOUNDS_AND_LOGGED_SCORE_V1";
@@ -310,8 +309,7 @@ class DataflowAssignmentReportViewTest {
         chosen.addProperty("cpuAvailableAt", new BigDecimal("6.0000000000000000000000002"));
         chosen.addProperty("computeSeconds", new BigDecimal("1.0000000000000000000000004"));
         chosen.addProperty("scoreFinishSeconds", new BigDecimal("14.0000000000000000000000003"));
-        // The real runtime logged five seconds remaining. Eight is within the independent nominal
-        // bounds, and the public validator accepts it without certifying exact service progress.
+
         JsonObject view = tree(fixture), action = action(view, 1), selected = action.getAsJsonObject("selected");
         assertSummary(view, 2, 2, 0, 0, 1);
         assertEquals(time.toPlainString(), action.get("time").getAsString());
@@ -507,7 +505,6 @@ class DataflowAssignmentReportViewTest {
         }
     }
 
-    /** Real action/lifecycle capture plus the minimal enclosing metadata consumed by the public audit. */
     private static final class Run {
         final boolean storage, gate;
         final CoherentDataflowRuntime runtime;

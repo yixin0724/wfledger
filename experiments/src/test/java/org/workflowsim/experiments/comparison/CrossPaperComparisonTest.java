@@ -24,7 +24,6 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** Real cross-paper comparison with separate SHARED and LOCAL physical models. */
 class CrossPaperComparisonTest {
 
     @TempDir

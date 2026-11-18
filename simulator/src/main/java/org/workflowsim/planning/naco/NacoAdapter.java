@@ -11,7 +11,6 @@ import org.workflowsim.Task;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** Converts maintained workflow tasks into NACO DNC inputs without changing source bytes. */
 public final class NacoAdapter {
 
     private NacoAdapter() {}
@@ -31,13 +30,11 @@ public final class NacoAdapter {
             Map<Integer, Double> compute = new LinkedHashMap<Integer, Double>();
             for (CondorVM vm : vms) {
                 if (task.getNumberOfPes() <= vm.getNumberOfPes()) {
-                    // Per-PE MI is not divided by task PEs again; PEs constrain
-                    // placement only in the maintained execution model.
+
                     compute.put(vm.getId(), task.getCloudletLength() / vm.getMips());
                 }
             }
-            // R-PAPER-03 audit: DNC rates are Mbit/s, whereas FileItem sizes are
-            // bytes. Convert bytes to Mbit once here; do not divide raw bits by MB/s.
+
             double inputBits = 0.0;
             double outputBits = 0.0;
             java.util.Set<String> parentProducedInputs = new java.util.HashSet<String>();

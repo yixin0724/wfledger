@@ -22,67 +22,22 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/**
- * Read-only validation of the cross-file integrity contract of an experiment manifest and
- * the metrics/events sidecars.
- *
- * <p>The validator keeps accepting v2 artifacts produced before the migration. Beyond the
- * same sidecar integrity constraints, v3 additionally requires provenance to distinguish
- * the core simulator identity clearly from the optional reference/study driver identity.</p>
- *
- * <p>V4 manifests additionally get the independent recompute registered for the Python
- * evidence auditor (AUD-F05, 2026-11-03): the F-006/F-007 event-contract checks and the two
- * result-derived metric families, so a wrong number that was consistently written into both
- * the manifest and the sidecar no longer survives validation. Legacy schemas keep the
- * declared manifest authority.</p>
- */
 public final class ExperimentArtifactValidator {
 
-    /** Read-only compatibility schema of the pre-migration evidence manifest. */
     public static final String MANIFEST_SCHEMA_V2 = "workflowsim-experiment-manifest-v2";
-    /** Current evidence manifest schema. */
+
     public static final String MANIFEST_SCHEMA_V3 = ExperimentManifestWriter.SCHEMA_V3;
-    /** Current schema of the full configuration snapshot. */
+
     public static final String MANIFEST_SCHEMA_V4 = ExperimentManifestWriter.SCHEMA_V4;
 
-    /**
-     * AUD-F23 (2026-11-04 post-completion review): revision-stream contract a v4 writer declares
-     * in the events summary once it emits the F-006/F-007 markers. A declared contract turns the
-     * two conditional marker checks into requirements, so removing the markers from a stream this
-     * writer produced is rejected instead of being excused as a legacy stream. Manifests without
-     * the declaration (every retained pre-2026-11-04 bundle) keep the manifest-authority boundary.
-     */
     public static final String EVENTS_REVISION_CONTRACT = ExperimentManifestWriter.EVENTS_REVISION_CONTRACT;
 
-    /**
-     * Relative tolerance of the v4 independent metric recompute (AUD-F05, 2026-11-03),
-     * mirroring the registered rel_tol default of the Python evidence auditor
-     * (scripts/verify-study-evidence.py) so both gates accept the same honest bundles and
-     * reject the same drift.
-     */
     private static final double METRIC_RELATIVE_TOLERANCE = 1e-10;
 
-    /**
-     * Absolute tolerance of the v4 independent metric recompute (AUD-F05, 2026-11-03),
-     * mirroring the registered abs_tol default of the Python evidence auditor.
-     */
     private static final double METRIC_ABSOLUTE_TOLERANCE = 1e-8;
 
     private ExperimentArtifactValidator() {}
 
-    /**
-     * Read-only validation of the schema, paths, hashes, sizes, and event sequence of the
-     * manifest and the metrics/events sidecars, plus the structured identity contract of
-     * the v3 provenance. V4 manifests additionally get the independent recompute of the two
-     * registered result-derived metric families and the F-006/F-007 event contract
-     * (AUD-F05, 2026-11-03).
-     *
-     * @param manifestPath path of the v2 or v3 manifest to validate
-     * @return validation result carrying the verified artifact paths and the event count
-     * @throws IOException when an artifact is missing, malformed, or inconsistent across
-     *         files
-     * @throws IllegalArgumentException when {@code manifestPath} is empty
-     */
     public static ValidationResult validate(Path manifestPath) throws IOException {
         JsonObject root = openManifest(manifestPath);
         String schema = requireString(root, "schema", "experiment manifest");
@@ -116,20 +71,12 @@ public final class ExperimentArtifactValidator {
             throw new IOException("Event count mismatch: manifest declares " + expectedEvents + " but JSONL contains "
                     + actualEvents);
         }
-        // 2026-11-02 review round: nobody had previously checked the event sequence
-        // bounds declared by the manifest (fixed in the same batch in the Python auditor).
-        // The bounds belong to the declared context and must be bound to the event stream;
-        // a missing key (empty stream) stays compatible.
+
         if (actualEvents > 0) {
             checkDeclaredSequenceBound(eventSummary, "firstSequence", eventStream[1]);
             checkDeclaredSequenceBound(eventSummary, "lastSequence", eventStream[2]);
         }
-        // AUD-F05 (2026-11-03): v4 manifests additionally get the independent recompute that
-        // mirrors the registered Python evidence auditor -- the F-006/F-007 event-contract
-        // checks and the two result-derived metric families. Before this, a wrong number
-        // that was consistently written into both the manifest and the sidecar survived
-        // validation. Legacy schemas keep the declared manifest authority ("old schemas
-        // are not silently upgraded", the same v4-only boundary as the Python auditor).
+
         if (MANIFEST_SCHEMA_V4.equals(schema)) {
             double end = requireFiniteNonNegativeNumber(
                     requireObject(root, "result", "experiment manifest"),
@@ -159,12 +106,6 @@ public final class ExperimentArtifactValidator {
                 fileContext);
     }
 
-    /**
-     * Manifest opening and schema gate extracted from
-     * {@link #validate(Path)} (2026-10-23; statement order verbatim including the coherent
-     * strict re-parse): null/regular-file checks, the supported-schema whitelist, the
-     * coherent-requires-v4 gate, top-level shape validation, and v3/v4 provenance gates.
-     */
     private static JsonObject openManifest(Path manifestPath) throws IOException {
         if (manifestPath == null) {
             throw new IllegalArgumentException("Manifest path is required");
@@ -199,11 +140,6 @@ public final class ExperimentArtifactValidator {
         return root;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from openManifest; statements verbatim; order unchanged.
-     * Scope: only validates that the coherent data plane, dataflowPlan, or sourceStorage
-     * features must carry the v4 schema.
-     */
     private static void requireV4ForCoherentFeatures(JsonObject root, String schema) throws IOException {
         if ((isCoherentManifest(root)
                         || root.has("dataflowPlan")
@@ -215,7 +151,6 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    /** Result assembly stage of validate() (moved verbatim). */
     private static ValidationResult buildValidationResult(
             Path manifest,
             Path metrics,
@@ -247,7 +182,6 @@ public final class ExperimentArtifactValidator {
                 fileContext == null ? null : fileContext.getDataflowAssignmentResult());
     }
 
-    /** Network recording configuration decoding stage of validate() (moved verbatim). */
     private static org.workflowsim.data.NetworkEvidenceConfig decodeRecordingConfig(JsonObject root)
             throws IOException {
         org.workflowsim.data.NetworkEvidenceConfig recording = org.workflowsim.data.NetworkEvidenceConfig.off();
@@ -262,10 +196,6 @@ public final class ExperimentArtifactValidator {
         return recording;
     }
 
-    /**
-     * Evidence-bundle assembly stage of validate(): role consistency check and decoding of
-     * the three sidecars (moved verbatim).
-     */
     private static EvidenceBundles decodeEvidenceBundles(
             JsonObject root,
             Map<String, Path> paths,
@@ -324,10 +254,6 @@ public final class ExperimentArtifactValidator {
         return bundles;
     }
 
-    /**
-     * Private relocated structure of the validate() evidence bundle (direct field reads,
-     * no forwarding behavior).
-     */
     private static final class EvidenceBundles {
         private org.workflowsim.data.NetworkLedgerCodec.Decoded decoded;
         private org.workflowsim.data.v2.FileLifecycleCodec.Decoded fileDecoded;
@@ -353,7 +279,6 @@ public final class ExperimentArtifactValidator {
         requireObject(root, "runtime", "experiment manifest");
     }
 
-    /** Command-line validation entry point; it writes no files. */
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: ExperimentArtifactValidator <manifest.json>");
@@ -457,10 +382,6 @@ public final class ExperimentArtifactValidator {
         return result;
     }
 
-    /**
-     * Metric fields required to be present by the v2 contract (including the v1-to-v2
-     * renames and the newly added fields).
-     */
     private static final String[] REQUIRED_METRIC_FIELDS = {
         "makespanSeconds",
         "meanJobVmQueueWaitingTimeSeconds",
@@ -569,8 +490,7 @@ public final class ExperimentArtifactValidator {
                 if (fileContext == null && "DATAFLOW_VM_ASSIGNED".equals(type)) {
                     throw new IOException("Online assignment events require their full lifecycle context");
                 }
-                // AUD-F05 (2026-11-03): single-pass collection for the F-006/F-007 contract
-                // checks; the contract decisions happen once the whole stream has been read.
+
                 contractAudit.acceptEvent(type, event);
                 if (networkContext != null) {
                     networkContext.acceptEvent(event);
@@ -585,10 +505,6 @@ public final class ExperimentArtifactValidator {
         return new long[] {count, firstSequence, lastSequence};
     }
 
-    /**
-     * A declared sequence bound, when present, must equal the event stream bound; an absent
-     * key (the historical shape of an empty stream) stays compatible.
-     */
     private static void checkDeclaredSequenceBound(JsonObject summary, String key, long actual) throws IOException {
         if (!summary.has(key) || summary.get(key).isJsonNull()) {
             return;
@@ -600,22 +516,6 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    /**
-     * AUD-F05 (2026-11-03): mirror of the F-006/F-007 revision-stream contract in
-     * scripts/verify-study-evidence.py. When the markers are present, the terminal event
-     * must close the declared end exactly and every executed job instance must carry a
-     * derivation-consistent JOB_EXECUTION_STARTED. The queue-wait metric itself is NOT
-     * recomputed from the event stream: stage-in jobs also emit the started marker (every
-     * job instance flows through submitJobToScheduler) and the marker carries no submission
-     * clock, so the registered recompute population is the result job outcome records --
-     * exactly what the Python auditor recomputes from.
-     *
-     * <p>AUD-F23 (2026-11-04 post-completion review): a stream whose events summary declares
-     * {@link #EVENTS_REVISION_CONTRACT} is required to carry the markers. Without the
-     * declaration the legacy manifest-authority boundary applies, which is what keeps the
-     * retained pre-2026-11-04 bundles readable; the declaration exists precisely so that a
-     * marker-less stream from a marker-emitting writer is rejected instead of excused.</p>
-     */
     private static void verifyEventContract(JsonObject eventSummary, EventContractAudit audit, double end)
             throws IOException {
         String declaredContract = declaredRevisionContract(eventSummary);
@@ -663,14 +563,6 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    /**
-     * AUD-F23 (2026-11-04 post-completion review): read the optional declared revision-stream
-     * contract from the events summary.
-     *
-     * @param eventSummary the manifest events summary
-     * @return the declared contract string, or {@code null} for the historical shape (no key)
-     * @throws IOException when the key is present but not a string
-     */
     private static String declaredRevisionContract(JsonObject eventSummary) throws IOException {
         if (!eventSummary.has("revisionContract")
                 || eventSummary.get("revisionContract").isJsonNull()) {
@@ -683,15 +575,6 @@ public final class ExperimentArtifactValidator {
         return declared.getAsString();
     }
 
-    /**
-     * AUD-F05 (2026-11-03): independent recompute of the two registered result-derived
-     * metric families, mirroring scripts/verify-study-evidence.py -- makespanSeconds is the
-     * manifest result end, and the queue-wait mean is the average of
-     * max(0, startTime - submissionTime) over the COMPUTE job outcome records, the same
-     * population and formula the metrics writer uses (SimulationReport.JobOutcome and
-     * SimulationMetrics). An empty compute population recomputes to zero, mirroring the
-     * registered mean of an empty family.
-     */
     private static void verifyMetricsRecompute(JsonObject root, JsonObject metrics, double end) throws IOException {
         JsonObject result = requireObject(root, "result", "experiment manifest");
         JsonArray jobs = requireArray(result, "jobs", "experiment manifest result");
@@ -728,11 +611,6 @@ public final class ExperimentArtifactValidator {
         verifyMetricClose(metrics, "meanJobVmQueueWaitingTimeSeconds", expectedQueueWait);
     }
 
-    /**
-     * AUD-F05 (2026-11-03): compares a recomputed metric against the declared value with
-     * the Python evidence auditor's registered tolerance (math.isclose defaults rel_tol
-     * 1e-10, abs_tol 1e-8), so the Java gate and the Python gate reject the same drift.
-     */
     private static void verifyMetricClose(JsonObject metrics, String field, double expected) throws IOException {
         JsonElement element = metrics.get(field);
         if (element == null
@@ -754,10 +632,6 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    /**
-     * AUD-F05 (2026-11-03): a required finite nonnegative JSON number, mirroring the number
-     * gate of the Python auditor's manifest reader.
-     */
     private static double requireFiniteNonNegativeNumber(JsonObject object, String key, String subject)
             throws IOException {
         if (!object.has(key)
@@ -892,13 +766,6 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    /**
-     * Single-pass collector for the F-006/F-007 event-contract checks (AUD-F05,
-     * 2026-11-03), mirroring the by-type index that scripts/verify-study-evidence.py builds
-     * over the event stream. The collector records; the contract decisions happen once the
-     * whole stream has been read (see {@link #verifyEventContract}). Derivation entries are
-     * kept in insertion order so a violation is reported deterministically.
-     */
     private static final class EventContractAudit {
         private int terminalCount;
         private double terminalClock;
@@ -934,7 +801,6 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    /** Read-only validation result for programmatic callers. */
     public static final class ValidationResult {
         private final Path manifest;
         private final Path metrics;
@@ -979,7 +845,6 @@ public final class ExperimentArtifactValidator {
             this.dataflowAssignment = dataflowAssignment;
         }
 
-        /** @return independently checked online action context, null when destination assignment is OFF */
         public org.workflowsim.data.v2.DataflowAssignmentValidator.Result getDataflowAssignment() {
             return dataflowAssignment;
         }
@@ -987,7 +852,7 @@ public final class ExperimentArtifactValidator {
         public Path getManifest() {
             return manifest;
         }
-        /** @return defensive copy of the manifest actually validated with this result; performs no further I/O */
+
         public JsonObject getManifestSnapshot() {
             return validatedManifest.deepCopy();
         }
@@ -1003,41 +868,41 @@ public final class ExperimentArtifactValidator {
         public int getEventCount() {
             return eventCount;
         }
-        /** @return validated network ledger path, or null for OFF */
+
         public Path getNetworkLedger() {
             return networkLedger;
         }
-        /** @return validated capture status, or null for OFF */
+
         public org.workflowsim.data.TransferTraceSnapshot.Status getNetworkCaptureStatus() {
             return networkCaptureStatus;
         }
-        /** @return immutable already-validated/recomputed ledger, or null for OFF; performs no further I/O */
+
         public org.workflowsim.data.NetworkLedgerCodec.Decoded getDecodedNetworkLedger() {
             return decodedNetworkLedger;
         }
-        /** @return V2 file lifecycle path, null for OFF/V1 */
+
         public Path getFileLifecycle() {
             return fileLifecycle;
         }
-        /** @return already validated immutable V2 certificate, null for OFF/V1 */
+
         public org.workflowsim.data.v2.FileLifecycleCodec.Decoded getDecodedFileLifecycle() {
             return decodedFileLifecycle;
         }
-        /** @return V2 capture status, null for OFF/V1 */
+
         public org.workflowsim.data.v2.FileLifecycleEvidence.Status getFileLifecycleCaptureStatus() {
             return decodedFileLifecycle == null
                     ? null
                     : decodedFileLifecycle.getEvidence().getStatus();
         }
-        /** @return V3 storage lifecycle path, null for OFF/V1/V2 */
+
         public Path getStorageLifecycle() {
             return storageLifecycle;
         }
-        /** @return independently verified V3 certificate, null for OFF/V1/V2 */
+
         public org.workflowsim.data.v2.StorageLifecycleCodec.Decoded getDecodedStorageLifecycle() {
             return decodedStorageLifecycle;
         }
-        /** @return V3 capture status, null for OFF/V1/V2 */
+
         public org.workflowsim.data.v2.FileLifecycleEvidence.Status getStorageLifecycleCaptureStatus() {
             return decodedStorageLifecycle == null
                     ? null

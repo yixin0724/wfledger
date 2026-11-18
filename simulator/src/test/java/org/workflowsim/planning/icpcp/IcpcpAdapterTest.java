@@ -16,7 +16,6 @@ import org.workflowsim.Task;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** WorkflowSim-unit, SHARED-timing, and PE-domain checks for the IC-PCP adapter. */
 class IcpcpAdapterTest {
 
     @Test
@@ -32,7 +31,6 @@ class IcpcpAdapterTest {
 
         IcpcpProblem problem = IcpcpAdapter.toProblem(Arrays.asList(parent, child), vms, platform(vms, 20), 100.0);
 
-        // One decimal MB at 100 MB/s is 0.01 s, independently of SHARED storage time.
         assertEquals(0.01, problem.getTask(1).getCommunicationSecondsByChild().get(2), 1.0e-12);
     }
 
@@ -71,9 +69,7 @@ class IcpcpAdapterTest {
 
         assertFalse(problem.getTask(1).getComputeSecondsByVm().containsKey(3));
         assertEquals(8, schedule.getTaskPlan(1).getVmId());
-        // The model-generated 110-MI stage-in Job runs on fallback VM3 at 2 MIPS:
-        // 55 seconds plus the 0.1-second root-release interval; the maintained per-PE
-        // work convention then executes the 100-MI task for 100 seconds at one MIPS.
+
         assertEquals(55.1, schedule.getTaskPlan(1).getStartSeconds(), 1.0e-9);
         assertEquals(155.1, schedule.getMakespanSeconds(), 1.0e-9);
     }
@@ -88,8 +84,6 @@ class IcpcpAdapterTest {
                         IcpcpAdapter.toProblem(Collections.singletonList(task), vms, platform(vms, 20), 3.0))
                 .schedule();
 
-        // Bootstrap is 110/1000 + 0.1 = 0.21. The 20 MB input at 20 MB/s adds
-        // floor(1000*1)=1000 MI once, so the envelope is (1000+1000)/1000=2 s.
         assertEquals(0.21, schedule.getTaskPlan(1).getStartSeconds(), 1.0e-9);
         assertEquals(2.21, schedule.getMakespanSeconds(), 1.0e-9);
     }

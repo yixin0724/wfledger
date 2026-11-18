@@ -12,25 +12,6 @@ import java.util.List;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Stage 2: input resolution (see the "input resolution rules" contract).
- *
- * <p>{@code inputs[].path} in the manifest is an absolute path from the original machine and
- * is unreliable across environments. Resolution follows a fixed three-tier order; as soon as
- * one tier hits (the file exists), sha256 and sizeBytes are verified immediately: a passing
- * check is accepted, a failing check terminates with {@code INPUT_HASH_MISMATCH} and never
- * degrades silently to the next candidate or substitutes another input. When no tier hits,
- * {@code INPUT_UNRESOLVED} is reported together with every candidate path that was tried.</p>
- *
- * <ol>
- *   <li>{@code inputs/<file name>} under the study output directory that owns the run
- *       directory ({@code <study>/runs/<run>} layout);</li>
- *   <li>the recorded absolute path as is;</li>
- *   <li>the recorded path made relative to
- *       {@code provenance.execution.workingDirectory} and then rebased onto the current
- *       rebasing root (the current working directory by default).</li>
- * </ol>
- */
 public final class RerunInputResolver {
 
     private static final String RUNS_DIRECTORY_NAME = "runs";
@@ -38,15 +19,6 @@ public final class RerunInputResolver {
 
     private RerunInputResolver() {}
 
-    /**
-     * Resolves every input recorded in the evidence package, using the current working
-     * directory as the rebasing root.
-     *
-     * @throws RerunFailureException {@code INPUT_UNRESOLVED} or {@code INPUT_HASH_MISMATCH}
-     *         (with the list of tried candidates); {@code EVIDENCE_INVALID} when an input
-     *         entry lacks a required field
-     * @throws IOException when a filesystem read fails
-     */
     public static RerunInputs resolve(RerunEvidence evidence) throws RerunFailureException, IOException {
         return resolve(
                 evidence.getManifest(),
@@ -54,7 +26,6 @@ public final class RerunInputResolver {
                 Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize());
     }
 
-    /** Explicit-rebasing-root variant, visible for tests. */
     static RerunInputs resolve(JsonObject manifest, Path runDirectory, Path rebasingRoot)
             throws RerunFailureException, IOException {
         List<RerunInputs.ResolvedInput> resolved = new ArrayList<RerunInputs.ResolvedInput>();
@@ -108,10 +79,6 @@ public final class RerunInputResolver {
                 RerunVerdict.INPUT_UNRESOLVED, "Input could not be located: " + recordedPath, tried);
     }
 
-    /**
-     * Builds the three-tier candidate list in contract order; an unavailable tier leaves null
-     * in its slot so that tier numbering stays stable.
-     */
     private static List<Path> candidatePaths(
             String recordedPath, String recordedWorkingDirectory, Path runDirectory, Path rebasingRoot) {
         List<Path> candidates = new ArrayList<Path>();

@@ -27,7 +27,6 @@
         </license>
     </licenses>
 
-    <!-- Build the simulator and the experiment modules by default. -->
     <modules>
         <module>simulator</module>
         <module>experiments</module>
@@ -41,16 +40,14 @@
         <workflowsim.javadoc.skip>true</workflowsim.javadoc.skip>
         <workflowsim.simulator.exec.skip>true</workflowsim.simulator.exec.skip>
         <workflowsim.experiments.exec.skip>false</workflowsim.experiments.exec.skip>
-        <!-- JaCoCo writes this during the lifecycle; the empty default keeps direct Surefire/Failsafe calls safe. -->
+
         <argLine></argLine>
-        <!-- VV-NEW-01: optional full-corpus suites never make a clean checkout depend on ignored files. -->
+
         <surefire.excludes>**/*IntegrationTest.java,**/*ExtendedCorpusTest.java</surefire.excludes>
-        <!-- R3 coverage-gate default thresholds (0 = no limit); each module overrides them in its own pom with ratcheted measured values. -->
+
         <workflowsim.jacoco.instruction.minimum>0.00</workflowsim.jacoco.instruction.minimum>
         <workflowsim.jacoco.branch.minimum>0.00</workflowsim.jacoco.branch.minimum>
-        <!-- AUD-F03 (2026-11-03): package-level floors on unit data and bundle-level floors on the
-             failsafe integration data (target/jacoco-it.exec) also default to 0 here; each module
-             overrides them with ratcheted measured values. -->
+
         <workflowsim.jacoco.package.instruction.minimum>0.00</workflowsim.jacoco.package.instruction.minimum>
         <workflowsim.jacoco.package.branch.minimum>0.00</workflowsim.jacoco.package.branch.minimum>
         <workflowsim.jacoco.it.instruction.minimum>0.00</workflowsim.jacoco.it.instruction.minimum>
@@ -59,7 +56,7 @@
 
     <build>
         <plugins>
-            <!-- The reactor aggregator has no runtime classpath; a directly invoked exec:java is therefore skipped. -->
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -89,10 +86,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Code-regularization Phase 4: the Spotless/Palantir format gate.
-                 The existing code was normalized in four format-only batches (H1-H4); this
-                 execution binds spotless:check into validate, so any format drift fails
-                 immediately and the two gates together form the quality line from mvn validate. -->
+
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
@@ -247,17 +241,7 @@
                             </configuration>
                         </execution>
                         <execution>
-                            <!-- R3 coverage gate: enforces BUNDLE-level instruction/branch
-                                 floors on unit-test coverage (target/jacoco.exec); the thresholds
-                                 come from per-module properties and ratchet upward only (measured
-                                 values rounded down to keep headroom).
-                                 AUD-F03 (2026-11-03): the PACKAGE-level rule additionally floors
-                                 every maintained package so a zero-coverage package can no
-                                 longer hide behind the bundle aggregate. The excluded names are
-                                 the documented frozen/legacy or driver-only zones measured below
-                                 the floor: upstream org.cloudbus.*, the frozen reclustering and
-                                 horizontal-impact method zones, trivial exception constructors,
-                                 and the example/benchmark driver packages of the workbench. -->
+
                             <id>check-unit-coverage</id>
                             <phase>verify</phase>
                             <goals>
@@ -307,10 +291,7 @@
                             </configuration>
                         </execution>
                         <execution>
-                            <!-- AUD-F03 (2026-11-03): enforces BUNDLE-level instruction/branch
-                                 floors on integration-test coverage (target/jacoco-it.exec) so
-                                 the failsafe battery stays inside the gate; the thresholds come
-                                 from per-module properties and ratchet upward only. -->
+
                             <id>check-integration-coverage</id>
                             <phase>verify</phase>
                             <goals>
@@ -398,11 +379,11 @@
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>3.6.0</version>
                     <configuration>
-                        <!-- The single maintenance point for the rule ledger and tier definitions; rules only grow (engineering red line 1). -->
+
                         <configLocation>${maven.multiModuleProjectDirectory}/config/checkstyle/checkstyle.xml</configLocation>
                         <propertyExpansion>config_loc=${maven.multiModuleProjectDirectory}/config/checkstyle</propertyExpansion>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                        <!-- Tier-gate core: only severity=error (Tier-A) is counted; warnings never fail the build. -->
+
                         <violationSeverity>error</violationSeverity>
                         <failOnViolation>true</failOnViolation>
                         <logViolationsToConsole>true</logViolationsToConsole>
@@ -447,7 +428,7 @@
         <profile>
             <id>extended-corpus</id>
             <properties>
-                <!-- Opt-in only: all 17 locally retained Montage inputs and their index must be prepared. -->
+
                 <surefire.excludes>**/*IntegrationTest.java</surefire.excludes>
             </properties>
         </profile>

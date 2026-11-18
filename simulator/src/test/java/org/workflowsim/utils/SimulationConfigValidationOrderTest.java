@@ -12,7 +12,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Required-model validation must not depend on whether an arrival offset is nonzero. */
 class SimulationConfigValidationOrderTest {
     private enum RequiredModel {
         OVERHEAD,

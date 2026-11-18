@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable static GreenHEFT problem. */
 public final class GreenHeftProblem {
     private final List<GreenHeftTask> tasks;
     private final Map<Integer, GreenHeftTask> tasksById;

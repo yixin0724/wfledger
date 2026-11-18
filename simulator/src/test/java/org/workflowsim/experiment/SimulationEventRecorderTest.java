@@ -9,16 +9,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Capacity and validation semantics of the per-run event recorder (AUD-F07): retention is
- * explicitly capped, reaching the cap fails fast with an actionable message, and the
- * pre-existing validation, disabled, and snapshot-isolation contracts stay intact.
- */
 public class SimulationEventRecorderTest {
 
     private static final SimulationEventType TYPE = SimulationEventType.SCHEDULING_CYCLE;
 
-    /** The default cap documents the benchmark-standard-v1 envelope with a 2x margin. */
     @Test
     public void defaultCapTwiceTheMeasuredBenchmarkEnvelope() {
         assertEquals(20000, SimulationEventRecorder.DEFAULT_MAX_EVENTS);
@@ -35,7 +29,7 @@ public class SimulationEventRecorderTest {
         assertTrue(message.contains("capacity cap"));
         assertTrue(message.contains("20000"));
         assertTrue(message.contains("disabled()"));
-        // The retained prefix is intact with contiguous original sequence numbers.
+
         List<SimulationEvent> retained = recorder.snapshot();
         assertEquals(SimulationEventRecorder.DEFAULT_MAX_EVENTS, retained.size());
         assertEquals(0L, retained.get(0).getSequence());
@@ -51,7 +45,7 @@ public class SimulationEventRecorderTest {
         recorder.record(TYPE, 2.0);
         recorder.record(TYPE, 3.0);
         assertThrows(IllegalStateException.class, () -> recorder.record(TYPE, 4.0));
-        // Repeated overflow attempts keep failing and never grow or rewrite the retained events.
+
         assertThrows(IllegalStateException.class, () -> recorder.record(TYPE, 5.0));
         List<SimulationEvent> retained = recorder.snapshot();
         assertEquals(3, retained.size());

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** External differential checks against SciPy, with a stdlib reference fallback (B12, 2026-11-04). */
 class PairedWilcoxonExternalReferenceTest {
 
     @Test

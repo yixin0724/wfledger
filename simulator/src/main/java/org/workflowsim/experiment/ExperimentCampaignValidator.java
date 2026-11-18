@@ -14,22 +14,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-/** Read-only integrity validator for a v1 experiment-campaign index. */
 public final class ExperimentCampaignValidator {
 
     static final String SCHEMA = "workflowsim-experiment-campaign-index-v1";
 
     private ExperimentCampaignValidator() {}
 
-    /**
-     * Validates a campaign index, its plan declaration, and every referenced evidence artifact.
-     *
-     * @param indexPath campaign index file to validate
-     * @return validation result containing the index location and the run count
-     * @throws IOException when the index, a relative path, an evidence artifact, or a cross-reference
-     *         between them is inconsistent
-     * @throws IllegalArgumentException when {@code indexPath} is null
-     */
     public static ValidationResult validate(Path indexPath) throws IOException {
         if (indexPath == null) {
             throw new IllegalArgumentException("Campaign index path is required");
@@ -61,14 +51,11 @@ public final class ExperimentCampaignValidator {
             }
             validateRun(root, element.getAsJsonObject(), uniqueRuns);
         }
-        // Q02 (2026-11-04): the index also carries a complete statistical summary. Rebuild
-        // it from the same validated manifests so a consistently edited summary cannot pass
-        // merely because every per-run primary record is intact.
+
         ExperimentCampaignSummaryVerifier.verify(index, document);
         return new ValidationResult(index, runCount);
     }
 
-    /** Command-line validation entry point; writes no files. */
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: ExperimentCampaignValidator <experiment-campaign-index.json>");
@@ -196,7 +183,6 @@ public final class ExperimentCampaignValidator {
         }
     }
 
-    /** Read-only validation result for programmatic callers. */
     public static final class ValidationResult {
         private final Path index;
         private final int runCount;

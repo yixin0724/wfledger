@@ -8,7 +8,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
-/** Stable explicit write-side shapes; read-side validation must not Gson-populate private fields. */
 final class FileLifecycleFormat {
     private FileLifecycleFormat() {}
 

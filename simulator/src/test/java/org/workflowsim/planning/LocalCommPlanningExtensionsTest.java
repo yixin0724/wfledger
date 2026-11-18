@@ -22,17 +22,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Contract test for the LOCAL track base-class extensions (PEFT infrastructure):
- * communication seconds per VM pair and optimistic (EFT + OCT) allocation; CloudSim is
- * not started.
- *
- * <p>Package-private methods are invoked through {@link LocalHeftPlanningAlgorithm} as the
- * carrier instance of {@code AbstractLocalCommPlanningAlgorithm}. The fixture convention
- * matches {@code LocalCpopPlanningAlgorithmTest}: VM mips=1.0,
- * {@code connect(parent, child, c)} creates a c * 10^6 byte file, so with bw=1 a cross-VM
- * transfer takes exactly c seconds.</p>
- */
 class LocalCommPlanningExtensionsTest {
 
     private static final double EPSILON = 1.0e-9;
@@ -69,7 +58,6 @@ class LocalCommPlanningExtensionsTest {
         LocalHeftPlanningAlgorithm planner = planner(Arrays.asList(entry, exit), slow, fast);
         planner.prepare();
 
-        // 8 * 10^6 bytes / (10^6 * min(2, 4)) = 4.0 seconds; the direction is symmetric.
         assertEquals(4.0, planner.communicationSeconds(entry, exit, slow, fast), EPSILON);
         assertEquals(4.0, planner.communicationSeconds(entry, exit, fast, slow), EPSILON);
         assertEquals(
@@ -90,7 +78,6 @@ class LocalCommPlanningExtensionsTest {
         planner.prepare();
         double stageIn = planner.stageInFinishTime();
 
-        // Control group: on an EFT tie, allocate picks the smaller VM ID (existing behavior unchanged).
         double entryFinish = planner.allocate(entry, null, stageIn);
         assertEquals(3, entry.getVmId());
         assertEquals(stageIn + 4.0, entryFinish, EPSILON);

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Immutable activity in a generic timed plan. */
 public final class TimedActivity {
 
     private final int activityId;

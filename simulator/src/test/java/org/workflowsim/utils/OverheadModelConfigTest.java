@@ -15,11 +15,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.DistributionGenerator.DistributionFamily;
 
-/**
- * Full-branch contract of {@link OverheadModelConfig}: builder numeric validation,
- * delay-map validation (null maps, depth keys, distributions, NORMAL rejection),
- * legacy-bridge copy semantics, generator rebuild, and immutability.
- */
 class OverheadModelConfigTest {
 
     @Test
@@ -45,7 +40,7 @@ class OverheadModelConfigTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> OverheadModelConfig.builder().bandwidth(-0.001).build());
-        // Boundary acceptance: a zero interval and zero bandwidth are legal.
+
         OverheadModelConfig zero = OverheadModelConfig.builder()
                 .workflowEngineDelayInterval(0)
                 .bandwidth(0.0)
@@ -132,7 +127,7 @@ class OverheadModelConfigTest {
         assertNotNull(depthZero);
         assertEquals(DistributionFamily.WEIBULL, depthZero.getFamily());
         assertNotNull(params.getQueueDelay().get(2));
-        // A map left unconfigured stays null (historical semantics: null = no such overhead).
+
         assertNull(params.getWEDDelay());
     }
 
@@ -142,10 +137,10 @@ class OverheadModelConfigTest {
         mutableInput.put(0, weibull(3.0));
         OverheadModelConfig config =
                 OverheadModelConfig.builder().postDelays(mutableInput).build();
-        // Mutating the input map after construction does not affect the built configuration.
+
         mutableInput.put(5, weibull(99.0));
         assertEquals(1, config.getPostDelays().size());
-        // The returned map is unmodifiable.
+
         assertThrows(UnsupportedOperationException.class, () -> config.getPostDelays()
                 .put(1, weibull(1.0)));
     }

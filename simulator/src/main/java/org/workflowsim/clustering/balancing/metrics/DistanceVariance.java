@@ -22,21 +22,8 @@ import java.util.List;
 
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * Dispersion metric for the successor graph distances between same-level TaskSets.
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class DistanceVariance implements BalancingMetric {
 
-    /**
-     * Computes the dispersion of the pairwise successor graph distances of the TaskSets.
-     *
-     * @param list TaskSets to inspect
-     * @return graph-distance dispersion; zero when fewer than two TaskSets are present
-     */
     @Override
     public double getMetric(List<TaskSet> list) {
         if (list == null || list.size() <= 1) {
@@ -66,15 +53,6 @@ public class DistanceVariance implements BalancingMetric {
         return Math.sqrt(sum / list.size());
     }
 
-    /**
-     * Computes the graph distance from two same-level TaskSets to their common successor.
-     * Horizontal clustering assumes both TaskSets lie on the same DAG level, so it does not
-     * apply to arbitrary cross-level Task pairs.
-     *
-     * @param taskA first same-level TaskSet
-     * @param taskB second same-level TaskSet
-     * @return successor graph distance in even form
-     */
     private int calDistance(TaskSet taskA, TaskSet taskB) {
         if (taskA == null || taskB == null || taskA == taskB) {
             return 0;

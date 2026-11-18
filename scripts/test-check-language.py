@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""Fixed-oracle stdlib tests for the repository language checker.
-
-Run: python3 -B scripts/test-check-language.py
-
-Every fixture lives in a temporary directory; no real repository file, Git
-repository, or network access is needed.
-"""
 
 import contextlib
 import importlib.util
@@ -16,26 +9,17 @@ import tempfile
 import unittest
 from unittest import mock
 
-
 sys.dont_write_bytecode = True
 SCRIPT = Path(__file__).resolve().with_name("check-language.py")
 SPEC = importlib.util.spec_from_file_location("check_language", SCRIPT)
 CHECKER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECKER)
 
-
 def cjk(*codepoints):
-    """Build a CJK string from code points.
 
-    The fixtures must contain real CJK characters, but this file is itself
-    tracked by the checker it exercises, so it cannot hold them literally:
-    source stays ASCII while the runtime values are genuine.
-    """
     return "".join(chr(code) for code in codepoints)
 
-
 class DetectionTests(unittest.TestCase):
-    """The character classes the policy forbids and the ones it allows."""
 
     def test_simplified_chinese_is_rejected(self):
         self.assertTrue(CHECKER.CJK.search(cjk(0x8BC1, 0x636E, 0x94FE)))
@@ -49,14 +33,11 @@ class DetectionTests(unittest.TestCase):
         self.assertTrue(CHECKER.CJK.search("done" + cjk(0x3002)))
 
     def test_other_scripts_are_allowed(self):
-        # The policy is "no Chinese", not "ASCII only": retained study tables keep
-        # mathematical notation, and the checker must not fire on it.
+
         for allowed in ("Ubersicht", "Быстрый старт", "Größe", "α → β", "x ≤ 3, 5 ± 2, 10−3"):
             self.assertIsNone(CHECKER.CJK.search(allowed), allowed)
 
-
 class ScopeTests(unittest.TestCase):
-    """Which tracked paths are read, and which are structurally exempt."""
 
     def test_text_suffixes(self):
         for name in ("AGENTS.md", "A.java", "scripts/x.py", "Makefile", "LICENSE",
@@ -68,12 +49,10 @@ class ScopeTests(unittest.TestCase):
             self.assertFalse(CHECKER.is_text(name), name)
 
     def test_dax_fixture_is_exempt_everywhere(self):
-        # The same fixture ships twice (dataset root and test resources) and both
-        # copies are hashed identities, so the exemption cannot be path-specific.
+
         self.assertTrue(CHECKER.is_exempt("datasets/dax/heft/heft-paper-example.dax"))
         self.assertTrue(CHECKER.is_exempt("simulator/src/test/resources/dax/heft/heft-paper-example.dax"))
-        # Every .dax file is a data fixture, so the exemption follows the format,
-        # not the directory: a new fixture anywhere is exempt by construction.
+
         self.assertTrue(CHECKER.is_exempt("docs/localization.dax"))
         self.assertFalse(CHECKER.is_exempt("docs/localization.md"))
 
@@ -82,9 +61,7 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("SHA-256", text)
         self.assertIn("NetworkStudyPlan", text)
 
-
 class RepositoryScanTests(unittest.TestCase):
-    """find_violations over an owned temporary tree."""
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="check-language-test-")
@@ -131,9 +108,7 @@ class RepositoryScanTests(unittest.TestCase):
     def test_missing_file_is_skipped_not_crashed(self):
         self.assertEqual([], CHECKER.find_violations(["docs/absent.md"], str(self.root)))
 
-
 class CliTests(unittest.TestCase):
-    """Exit status is the contract the build relies on."""
 
     def run_cli(self, *arguments):
         status = []
@@ -179,7 +154,6 @@ class CliTests(unittest.TestCase):
             report = json.loads(captured.getvalue())
             self.assertEqual(1, len(report["violations"]))
             self.assertEqual("a.md", report["violations"][0]["file"])
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

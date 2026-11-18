@@ -15,7 +15,6 @@ import org.workflowsim.Task;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** WorkflowSim-unit and PE-domain checks for the DHEFT adapter. */
 class DheftAdapterTest {
 
     @Test

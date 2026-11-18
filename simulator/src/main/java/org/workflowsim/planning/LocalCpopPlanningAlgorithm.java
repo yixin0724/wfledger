@@ -10,41 +10,10 @@ import java.util.Map;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
-/**
- * Communication-aware CPOP static DAG planner aligned with the WorkflowSim controlled
- * LOCAL file-system execution model.
- *
- * <p><b>Algorithm</b> (Critical-Path-on-a-Processor, published alongside HEFT by
- * Topcuoglu, Hariri &amp; Wu, IEEE TPDS 2002):</p>
- * <ol>
- *   <li>priority = upward rank + downward rank: {@code r_u(t) = w_bar_t +
- *       max_child(c_bar + r_u)}, {@code r_d(t) = max_parent(r_d(parent) + w_bar_parent +
- *       c_bar_parent,t)} (entry is 0);</li>
- *   <li>critical path: start from the highest-priority entry task and follow edges that
- *       preserve the critical-path length and satisfy the upward-rank recurrence until
- *       an exit; among several equal-length paths take the smaller task ID;</li>
- *   <li>critical-path processor {@code p_CP} = the VM that minimizes the sum of compute
- *       seconds of the critical-path tasks (ties take the smaller VM ID);</li>
- *   <li>ready-queue scheduling: each step takes the ready task with the largest priority
- *       (ties take the smaller task ID); critical-path tasks bind to {@code p_CP} (still
- *       using the insertion-based earliest-start search), while every other task takes
- *       the minimum insertion-based EFT over all VMs (ties take the smaller VM ID).</li>
- * </ol>
- *
- * <p><b>Communication modeling and execution semantics</b> are shared with
- * {@link LocalHeftPlanningAlgorithm} through {@link AbstractLocalCommPlanningAlgorithm}:
- * a transfer is a pre-execution delay that may overlap the VM busy period; replicas are
- * registered at input-hold completion and at output compute completion, and their
- * visibility is filtered when the dependency becomes ready. The critical processor must
- * be compatible with the whole path; other assignments only consider each task's
- * compatible VMs. The estimate does not replay the full runtime event stream; the
- * applicability preconditions and boundary statements match LOCAL_HEFT.</p>
- */
 public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningAlgorithm {
 
     private static final double RANK_TOLERANCE = 1.0e-9;
 
-    /** Task -> downward rank. */
     private final Map<Task, Double> downwardRanks = new HashMap<Task, Double>();
 
     private List<Integer> criticalPathTaskIds = Collections.emptyList();
@@ -73,8 +42,6 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         criticalPathTaskIds = Collections.unmodifiableList(pathIds);
         criticalProcessorVmId = Integer.valueOf(cpVm.getId());
 
-        // Ready-queue scheduling: among unscheduled tasks whose parents are all scheduled,
-        // the one with the largest priority goes first.
         double stageInFinish = stageInFinishTime();
         List<Task> pending = new ArrayList<Task>(tasks);
         int scheduled = 0;
@@ -113,28 +80,22 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         return true;
     }
 
-    /** Already computed downward rank; package-private read-only diagnostic, never triggers a computation. */
     double downwardRankOf(Task task) {
         return downwardRanks.get(task).doubleValue();
     }
 
-    /** Already computed CPOP priority; package-private read-only diagnostic. */
     double priorityOf(Task task) {
         return upwardRankOf(task) + downwardRankOf(task);
     }
 
-    /** Immutable task-ID snapshot of the most recently selected critical path. */
     List<Integer> getCriticalPathTaskIds() {
         return criticalPathTaskIds;
     }
 
-    /** Most recently selected critical processor; null while none has been selected yet. */
     Integer getCriticalProcessorVmId() {
         return criticalProcessorVmId;
     }
 
-    /** Downward rank: max over predecessors of downward rank + compute cost + in-edge
-     *         communication cost; entry is 0. */
     private double downwardRank(Task task) {
         Double cached = downwardRanks.get(task);
         if (cached != null) {
@@ -153,8 +114,6 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         return rank;
     }
 
-    /** Start from the highest-priority entry task and follow real edges on the longest
-     *         path; ties take the smaller task ID. */
     private LinkedHashSet<Task> walkCriticalPath(List<Task> tasks) {
         Task entry = highestPriorityEntry(tasks);
         double criticalPathLength = priorityOf(entry);
@@ -164,9 +123,7 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         while (!current.getChildList().isEmpty()) {
             Task next = null;
             for (Task child : current.getChildList()) {
-                // The two nodes may lie on different equal-length critical paths; equal priority
-                // alone does not prove the edge joining them is also on a critical path, so
-                // the upward-rank recurrence must hold as well.
+
                 double via =
                         meanComputeSeconds(current) + meanCommunicationSeconds(current, child) + upwardRankOf(child);
                 if (!sameRank(priorityOf(child), criticalPathLength) || !sameRank(upwardRankOf(current), via)) {
@@ -194,11 +151,6 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         return Math.abs(first - second) <= RANK_TOLERANCE * scale;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from walkCriticalPath; statements verbatim; order unchanged.
-     * Scope: select only the highest-priority task among all entry tasks (ties take the smaller
-     * task ID); throw when there is no entry task.
-     */
     private Task highestPriorityEntry(List<Task> tasks) {
         Task entry = null;
         for (Task task : tasks) {
@@ -219,8 +171,6 @@ public final class LocalCpopPlanningAlgorithm extends AbstractLocalCommPlanningA
         return entry;
     }
 
-    /** Critical-path processor: the VM minimizing the sum of critical-path task compute
-     *         seconds; ties take the smaller VM ID. */
     private CondorVM criticalPathVm(LinkedHashSet<Task> criticalPath) {
         CondorVM best = null;
         double bestTotal = Double.POSITIVE_INFINITY;

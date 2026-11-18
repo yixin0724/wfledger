@@ -9,11 +9,6 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * R5 dynamic-arrival configuration-layer contract: default all-zero submission (historical
- * behavior unchanged), validation and copy semantics of explicit arrival instants, and the
- * explicit mutual exclusion between arrival gating and clustering.
- */
 class MultiWorkflowArrivalConfigTest {
 
     private static final String PATH_A = "/tmp/workflow-a.dax";
@@ -90,8 +85,7 @@ class MultiWorkflowArrivalConfigTest {
 
     @Test
     void nonZeroArrivalRequiresClusteringNone() {
-        // Job IDs produced by clustering no longer carry the original task index, so the arrival
-        // gate cannot attribute them -- reject explicitly.
+
         IllegalArgumentException failure = assertThrows(
                 IllegalArgumentException.class, () -> SimulationConfig.builder(Arrays.asList(PATH_A, PATH_B), 2)
                         .workflowArrivalSeconds(Arrays.asList(0.0, 10.0))
@@ -99,8 +93,7 @@ class MultiWorkflowArrivalConfigTest {
                                 new ClusteringParameters(2, 0, ClusteringParameters.ClusteringMethod.HORIZONTAL, null))
                         .build());
         assertTrue(failure.getMessage().contains("clustering"), failure.getMessage());
-        // All-zero arrivals plus clustering remain allowed (equivalent to the historical
-        // single-instant submission path).
+
         SimulationConfig zeroArrivalWithClustering = SimulationConfig.builder(Arrays.asList(PATH_A, PATH_B), 2)
                 .clusteringParameters(
                         new ClusteringParameters(2, 0, ClusteringParameters.ClusteringMethod.HORIZONTAL, null))

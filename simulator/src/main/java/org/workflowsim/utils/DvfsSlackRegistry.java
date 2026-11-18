@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Session-scoped DVFS tier map produced by the planning layer. */
 public final class DvfsSlackRegistry {
     private static Map<Integer, Double> tierByTask = Collections.emptyMap();
 

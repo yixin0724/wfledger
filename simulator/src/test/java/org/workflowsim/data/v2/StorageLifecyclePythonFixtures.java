@@ -30,7 +30,6 @@ import org.workflowsim.utils.SimulationConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/** Fresh storage V3 Kernel bundles and explicit standalone prefixes for independent Python validation. */
 public final class StorageLifecyclePythonFixtures {
     private static final int BUDGET = 20000;
     private static final String FLOW =
@@ -42,7 +41,7 @@ public final class StorageLifecyclePythonFixtures {
                     + "size=\"0\"/></job><child ref=\"c\"><parent ref=\"p\"/></child></adag>";
 
     private StorageLifecyclePythonFixtures() {}
-    /** @param args fresh output root */
+
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException("Usage: StorageLifecyclePythonFixtures <fresh-root>");

@@ -1,53 +1,4 @@
 #!/usr/bin/env python3
-"""Check local Markdown links without dependencies, network access, or writes.
-
-Usage (from any working directory)::
-
-    python3 -B /path/to/repository/scripts/check-docs.py
-    python3 -B scripts/check-docs.py --root /tmp/docs --document README.md --json
-
-Default discovery uses only ``git ls-files --cached --others --exclude-standard
--z -- '*.md' '*.MD'`` at the script's repository root. --document is repeatable,
-is relative to --root, and bypasses Git. Missing/deleted, non-regular, and
-non-Markdown source files are skipped. Sources beneath .git, vendor,
-node_modules, target, output, or worktree directories (at any depth), including
-symlinks into those directories and nested Git checkouts, are never read.
-
-Supported subset: inline links/images with balanced or escaped parentheses,
-angle-bracket destinations, optional single/double-quoted or parenthesized
-titles, and full/collapsed/shortcut references. Reference definitions must fit
-on one line; unsupported multiline definitions get a diagnostic. Reference
-labels are whitespace-normalized and case-insensitive; the first definition
-wins. Only used, valid definitions have their destinations checked. Explicit
-undefined references and malformed attempted links are errors, not silently
-ignored. Bare bracketed prose, fenced/standalone indented code, inline code,
-and HTML comments are not links. This is a small scanner, not a full CommonMark
-AST: HTML href/src, wiki-links, and Markdown extension syntax are not checked.
-
-Markdown fragments use ATX/single-line setext headings with GitHub-style
-Unicode lowercase, rendered inline text, punctuation removal (preserving '-'
-and '_'), spaces as hyphens, and collision-aware duplicate suffixes. Explicit
-HTML id attributes and <a name> anchors are also supported, including in local
-.html/.htm targets. Other UTF-8 text files support #Lnn and #Lnn-Lmm only;
-line bounds are never accepted for binary files. Empty fragments mean the top
-of the target. Other unsupported fragments produce a diagnostic. Generated
-link targets still need to exist, but their contents are never opened: a
-fragment requiring that inspection produces an explicit diagnostic.
-
-URL splitting precedes strict UTF-8 percent-decoding, so %23 in a filename is
-not a fragment separator. Queries do not affect local filesystem lookup.
-http:, https:, and mailto: links are skipped, never network-validated. Other
-schemes, host-absolute paths, backslash paths, and escapes outside --root
-(including symlinks) are rejected. Root-relative website URLs are deliberately
-not treated as repository-relative paths; use a relative path instead.
-
-Public API: check_documents(root, document_paths) returns (issues, counts).
-Issues are sorted Issue(source, line, target, reason) named tuples; source is
-root-relative and line is 1-based. Counts are documents (attempted reads),
-skipped_documents (unique excluded/missing/non-Markdown sources), links,
-local_links (including malformed attempts), external_links, and issues.
-Duplicate source arguments are checked once. No style rules are enforced.
-"""
 
 import argparse
 import html
@@ -62,7 +13,6 @@ import sys
 import unicodedata
 from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, Union
 from urllib.parse import unquote
-
 
 EXCLUDED_DIRECTORIES = frozenset({
     ".git", "vendor", "node_modules", "target", "output",
@@ -86,13 +36,11 @@ _AI_WORDING = re.compile(
     re.IGNORECASE,
 )
 
-
 class Issue(NamedTuple):
     source: str
     line: int
     target: str
     reason: str
-
 
 class _Link(NamedTuple):
     start: int
@@ -102,17 +50,14 @@ class _Link(NamedTuple):
     target: str
     error: str = ""
 
-
 def _blank(text: str) -> str:
     return "".join("\n" if char == "\n" else " " for char in text)
-
 
 def _escaped(text: str, position: int) -> bool:
     before = position - 1
     while before >= 0 and text[before] == "\\":
         before -= 1
     return (position - before - 1) % 2 == 1
-
 
 def _code_span(text: str, start: int) -> Optional[Tuple[int, str]]:
     opening = re.match(r"`+", text[start:])
@@ -124,7 +69,6 @@ def _code_span(text: str, start: int) -> Optional[Tuple[int, str]]:
             stop = start + width + closing.start()
             return stop + width, text[start + width:stop].replace("\n", " ")
     return None
-
 
 def _fenced_block_end(text: str, start: int) -> Optional[int]:
     end = text.find("\n", start)
@@ -140,9 +84,8 @@ def _fenced_block_end(text: str, start: int) -> Optional[int]:
             break
     return end
 
-
 def _mask_literals(text: str, mask_code: bool = False, mask_fences: bool = False) -> str:
-    """Preserve offsets; recognize fences before comment/raw-code contents."""
+
     result = list(text)
     position = 0
     while position < len(text):
@@ -180,14 +123,12 @@ def _mask_literals(text: str, mask_code: bool = False, mask_fences: bool = False
         position += 1
     return "".join(result)
 
-
 def _container_text(line: str) -> str:
     line = re.sub(r"^ {0,3}(?:>[ \t]?)+", "", line)
     return re.sub(r"^ {0,3}(?:[-+*]|[0-9]+[.)])[ \t]+", "", line)
 
-
 def _visible_markdown(text: str) -> str:
-    """Mask code blocks; keep the exact source offsets and newlines."""
+
     result = []
     previous_blank = True
     indented = False
@@ -203,17 +144,14 @@ def _visible_markdown(text: str) -> str:
         previous_blank = not line.strip()
     return "".join(result)
 
-
 def _unescape(text: str) -> str:
     return html.unescape(_ESCAPES.sub(r"\1", text))
-
 
 def _reference_key(label: str) -> str:
     return " ".join(_unescape(label).split()).casefold()
 
-
 def _inline_destination(text: str, opening: int) -> Tuple[str, int, str]:
-    """Read '(destination optional-title)', with bounded error recovery."""
+
     blank_line = re.search(r"\n[ \t]*\n", text[opening:])
     limit = len(text) if not blank_line else opening + blank_line.start()
     recovery = text.find("\n", opening, limit)
@@ -292,9 +230,8 @@ def _inline_destination(text: str, opening: int) -> Tuple[str, int, str]:
         return fail("missing closing ')'")
     return fail("unexpected text after destination; encode spaces or use <...>")
 
-
 def _references(text: str) -> Tuple[Dict[str, str], str, List[Tuple[int, str, str]]]:
-    definitions = {}  # type: Dict[str, str]
+    definitions = {}
     errors = []
     lines = []
     code_mask = _mask_literals(text, mask_code=True).splitlines(keepends=True)
@@ -315,7 +252,6 @@ def _references(text: str) -> Tuple[Dict[str, str], str, List[Tuple[int, str, st
                 definitions.setdefault(_reference_key(label), destination)
         lines.append(_blank(line))
     return definitions, "".join(lines), errors
-
 
 def _closing_bracket(text: str, opening: int) -> Optional[int]:
     depth = 1
@@ -338,7 +274,6 @@ def _closing_bracket(text: str, opening: int) -> Optional[int]:
                 return position
         position += 1
     return None
-
 
 def _link_at(text: str, opening: int, definitions: Dict[str, str]) -> Optional[_Link]:
     closing = _closing_bracket(text, opening)
@@ -363,7 +298,6 @@ def _link_at(text: str, opening: int, definitions: Dict[str, str]) -> Optional[_
         return _Link(opening, after, opening + 1, closing, definitions[key])
     return None
 
-
 def _links(text: str, definitions: Dict[str, str], offset: int = 0) -> Iterable[_Link]:
     position = 0
     while position < len(text):
@@ -383,13 +317,12 @@ def _links(text: str, definitions: Dict[str, str], offset: int = 0) -> Iterable[
             link = _link_at(text, position, definitions)
             if link:
                 yield link._replace(start=link.start + offset, end=link.end + offset)
-                # This also finds the image in a linked badge: [![alt](img)](url).
+
                 yield from _links(text[link.label_start:link.label_end], definitions,
                                   offset + link.label_start)
                 position = link.end
                 continue
         position += 1
-
 
 def _heading_text(text: str, definitions: Dict[str, str]) -> str:
     protected = []
@@ -434,7 +367,7 @@ def _heading_text(text: str, definitions: Dict[str, str]) -> str:
         return "".join(result)
 
     rendered = render(text)
-    # Unlike a blanket punctuation strip, this preserves snake_case and code enums.
+
     emphasis = re.compile(r"(?<![\w\\])(_{1,3})(?=\S)(.+?)(?<=\S)\1(?!\w)", re.S)
     while True:
         updated = emphasis.sub(r"\2", rendered)
@@ -446,7 +379,6 @@ def _heading_text(text: str, definitions: Dict[str, str]) -> str:
         rendered = rendered.replace("\x00" + str(index) + "\x00", value)
     return rendered
 
-
 def _slug(text: str) -> str:
     result = []
     for char in text.lower():
@@ -456,11 +388,10 @@ def _slug(text: str) -> str:
             result.append(char)
     return "".join(result)
 
-
 class _HTMLAnchors(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.anchors = set()  # type: Set[str]
+        self.anchors = set()
 
     def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
         for key, value in attrs:
@@ -469,19 +400,17 @@ class _HTMLAnchors(HTMLParser):
 
     handle_startendtag = handle_starttag
 
-
 def _html_anchors(text: str) -> Set[str]:
     parser = _HTMLAnchors()
     parser.feed(_mask_literals(text, mask_code=True))
     parser.close()
     return parser.anchors
 
-
 def _markdown_anchors(text: str) -> Set[str]:
     visible = _visible_markdown(text)
     definitions, visible, _ = _references(visible)
     anchors = _html_anchors(visible)
-    occurrences = {}  # type: Dict[str, int]
+    occurrences = {}
     previous = ""
     code_mask = _mask_literals(visible, mask_code=True).splitlines()
     for line, masked_line in zip(visible.splitlines(), code_mask):
@@ -506,7 +435,6 @@ def _markdown_anchors(text: str) -> Set[str]:
         previous = content
     return anchors
 
-
 def _within(path: Path, root: Path) -> bool:
     try:
         path.relative_to(root)
@@ -514,26 +442,22 @@ def _within(path: Path, root: Path) -> bool:
     except ValueError:
         return False
 
-
 def _excluded(path: Path, root: Path) -> bool:
-    # Collapse lexical '..' before testing ancestors; root/docs/.. is the root,
-    # not a nested checkout merely because root/.git exists.
+
     path = Path(os.path.abspath(path))
     relative = path.relative_to(root)
     if any(part in EXCLUDED_DIRECTORIES for part in relative.parts):
         return True
-    # Do not inspect nested checkouts/worktree copies, even under arbitrary names.
+
     return any((parent / ".git").exists() for parent in path.parents
                if parent != root and _within(parent, root))
-
 
 def _text_file(path: Path) -> str:
     data = path.read_bytes()
     if any(byte < 32 and byte not in (9, 10, 12, 13) for byte in data) or b"\x7f" in data:
         raise ValueError("target is binary, not a UTF-8 text file")
-    # Normalize the same newline forms as Python's text-mode reader, including BOM.
-    return data.decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n")
 
+    return data.decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n")
 
 def _decode_url_part(value: str) -> str:
     if re.search(r"%(?![0-9a-fA-F]{2})", value):
@@ -543,16 +467,15 @@ def _decode_url_part(value: str) -> str:
         raise ValueError("control character in local destination")
     return decoded
 
-
 def check_documents(root: Union[str, Path], document_paths: Iterable[Union[str, Path]]) -> Tuple[List[Issue], Dict[str, int]]:
-    """Check explicitly supplied sources; never discover files or invoke Git here."""
+
     root = Path(root).resolve()
-    issues = []  # type: List[Issue]
+    issues = []
     counts = dict(documents=0, skipped_documents=0, links=0, local_links=0,
                   external_links=0, issues=0)
-    sources = set()  # type: Set[Path]
-    texts = {}  # type: Dict[Path, str]
-    anchor_cache = {}  # type: Dict[Tuple[Path, bool], Set[str]]
+    sources = set()
+    texts = {}
+    anchor_cache = {}
 
     def read_text(path: Path) -> str:
         canonical = path.resolve()
@@ -667,9 +590,8 @@ def check_documents(root: Union[str, Path], document_paths: Iterable[Union[str, 
     counts["issues"] = len(issues)
     return issues, counts
 
-
 def discover_documents(root: Path) -> List[str]:
-    """Ask Git for names only; do not walk the tree or initialize a repository."""
+
     try:
         result = subprocess.run(GIT_ARGUMENTS, cwd=str(root), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=False)
@@ -680,9 +602,8 @@ def discover_documents(root: Path) -> List[str]:
         raise ValueError("git ls-files failed: " + message)
     return [os.fsdecode(name) for name in result.stdout.split(b"\0") if name]
 
-
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description="Check local Markdown links without dependencies, network access, or writes.\n\nUsage (from any working directory)::\n\n    python3 -B /path/to/repository/scripts/check-docs.py\n    python3 -B scripts/check-docs.py --root /tmp/docs --document README.md --json\n\nDefault discovery uses only ``git ls-files --cached --others --exclude-standard\n-z -- '*.md' '*.MD'`` at the script's repository root. --document is repeatable,\nis relative to --root, and bypasses Git. Missing/deleted, non-regular, and\nnon-Markdown source files are skipped. Sources beneath .git, vendor,\nnode_modules, target, output, or worktree directories (at any depth), including\nsymlinks into those directories and nested Git checkouts, are never read.\n\nSupported subset: inline links/images with balanced or escaped parentheses,\nangle-bracket destinations, optional single/double-quoted or parenthesized\ntitles, and full/collapsed/shortcut references. Reference definitions must fit\non one line; unsupported multiline definitions get a diagnostic. Reference\nlabels are whitespace-normalized and case-insensitive; the first definition\nwins. Only used, valid definitions have their destinations checked. Explicit\nundefined references and malformed attempted links are errors, not silently\nignored. Bare bracketed prose, fenced/standalone indented code, inline code,\nand HTML comments are not links. This is a small scanner, not a full CommonMark\nAST: HTML href/src, wiki-links, and Markdown extension syntax are not checked.\n\nMarkdown fragments use ATX/single-line setext headings with GitHub-style\nUnicode lowercase, rendered inline text, punctuation removal (preserving '-'\nand '_'), spaces as hyphens, and collision-aware duplicate suffixes. Explicit\nHTML id attributes and <a name> anchors are also supported, including in local\n.html/.htm targets. Other UTF-8 text files support #Lnn and #Lnn-Lmm only;\nline bounds are never accepted for binary files. Empty fragments mean the top\nof the target. Other unsupported fragments produce a diagnostic. Generated\nlink targets still need to exist, but their contents are never opened: a\nfragment requiring that inspection produces an explicit diagnostic.\n\nURL splitting precedes strict UTF-8 percent-decoding, so %23 in a filename is\nnot a fragment separator. Queries do not affect local filesystem lookup.\nhttp:, https:, and mailto: links are skipped, never network-validated. Other\nschemes, host-absolute paths, backslash paths, and escapes outside --root\n(including symlinks) are rejected. Root-relative website URLs are deliberately\nnot treated as repository-relative paths; use a relative path instead.\n\nPublic API: check_documents(root, document_paths) returns (issues, counts).\nIssues are sorted Issue(source, line, target, reason) named tuples; source is\nroot-relative and line is 1-based. Counts are documents (attempted reads),\nskipped_documents (unique excluded/missing/non-Markdown sources), links,\nlocal_links (including malformed attempts), external_links, and issues.\nDuplicate source arguments are checked once. No style rules are enforced.\n", formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent,
                         help="repository root (default: this script's parent repository)")
     parser.add_argument("--document", action="append", metavar="PATH",
@@ -712,7 +633,6 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("{}:{}: {}: {}".format(issue.source, issue.line,
                   json.dumps(issue.target, ensure_ascii=False), issue.reason))
     return 1 if issues else 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

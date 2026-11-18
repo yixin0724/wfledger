@@ -28,34 +28,6 @@ import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationRandom;
 
-/**
- * C14: family of conservation-law properties for the clustering engine (review engineering
- * Phase 2, targeting about 60 zero-coverage methods).
- *
- * <p>Source of the rules (conservation laws, not an implementation mirror):</p>
- * <ol>
- *   <li><b>Partition</b>: the member tasks of a clustered Job form exactly a partition of
- *       the original task set (nothing lost, nothing duplicated, nothing invented).</li>
- *   <li><b>Duration conservation</b>: under zero clustering overhead the sum of Job
- *       lengths == the sum of the original task lengths (MI).</li>
- *   <li><b>Dependency projection</b>: a parent-child edge between Jobs exists if and only
- *       if a corresponding cross-cluster task-level parent-child edge exists; no
- *       self-loops, no duplicate edges.</li>
- *   <li><b>The Job graph is acyclic</b> (the DAG projection is still a DAG).</li>
- *   <li><b>File-union conservation</b>: getTaskFiles carries each external input exactly
- *       once and the outputs of every task.</li>
- *   <li><b>HORIZONTAL semantics</b>: the members of every Job lie on the same depth level
- *       (horizontal clustering is organized by layer).</li>
- *   <li><b>VERTICAL semantics</b>: adjacent members of a multi-member Job are connected by
- *       a task-level parent-child edge (merged along DAG edges).</li>
- *   <li><b>BALANCED recovery correctness</b>: after the remove/recover mechanism runs, the
- *       task-level dependency graph is restored as it was.</li>
- * </ol>
- *
- * <p>The random DAG is generated layer by layer from a fixed seed (task count, parent
- * count and length are reproducible); every engine receives an isomorphic rebuilt copy,
- * because the clustering engine consumes and clears the task list passed in.</p>
- */
 class ClusteringConservationPropertyTest {
 
     private static final long DAG_SEED = 20261019L;
@@ -96,8 +68,6 @@ class ClusteringConservationPropertyTest {
         SimulationRandom.reset(STREAM_SEED);
     }
 
-    // ---- random layered DAG (an isomorphic copy is rebuilt from the same seed each time) ----
-
     private static final class Dag {
         final List<Task> tasks;
         final long totalLength;
@@ -115,8 +85,7 @@ class ClusteringConservationPropertyTest {
         List<Task> tasks = new ArrayList<Task>();
         List<FileItem> sharedInputs = new ArrayList<FileItem>();
         if (withFiles) {
-            // Production convention: an input with the same name is shared across tasks as one
-            // FileItem instance (replica catalog + contains-identity de-duplication).
+
             FileItem inputA = new FileItem("shared-input-a", 300_000.0);
             inputA.setType(FileType.INPUT);
             FileItem inputB = new FileItem("shared-input-b", 700_000.0);
@@ -165,8 +134,7 @@ class ClusteringConservationPropertyTest {
         if (withFiles) {
             List<FileItem> files = new ArrayList<FileItem>();
             for (FileItem input : sharedInputs) {
-                // Reuse the shared instance directly: consistent with the sharing semantics of
-                // WorkflowParser through ReplicaCatalog.
+
                 files.add(input);
                 task.addRequiredFile(input.getName());
             }
@@ -183,8 +151,6 @@ class ClusteringConservationPropertyTest {
     private static long edgeKey(Task parent, Task child) {
         return ((long) parent.getCloudletId() << 32) | (child.getCloudletId() & 0xffffffffL);
     }
-
-    // ---- engine driver: rebuild the isomorphic DAG from the same seed -> set -> run -> assert conservation laws ----
 
     private static List<Job> runEngine(BasicClustering engine, boolean withFiles) {
         Dag dag = layeredDag(withFiles);
@@ -298,8 +264,7 @@ class ClusteringConservationPropertyTest {
         engine.run();
 
         assertPartitionDependenciesFilesLength(engine.getJobList(), dag, engine.getTaskFiles());
-        // (8) remove/recover recovery correctness: the task-level dependency graph
-        // must be restored as it was.
+
         for (Task task : dag.tasks) {
             Set<Integer> parents = dependencySnapshot(dag.tasks).get(task.getCloudletId());
             Set<Integer> children = dependencySnapshotChildren(dag.tasks).get(task.getCloudletId());
@@ -314,20 +279,15 @@ class ClusteringConservationPropertyTest {
         }
     }
 
-    /**
-     * Complete conservation assertion for any engine: partition, dependency projection,
-     * acyclicity, files, length.
-     */
     private static void assertPartitionDependenciesFilesLength(List<Job> jobs, Dag dag, List<FileItem> taskFiles) {
         Map<Integer, Job> membership = taskMembership(jobs, dag);
-        // (2) Duration conservation (zero clustering overhead).
+
         long jobTotal = 0L;
         for (Job job : jobs) {
             jobTotal += job.getCloudletLength();
         }
         assertEquals(dag.totalLength, jobTotal, "the sum of Job lengths must be conserved after clustering");
 
-        // (3) Dependency projection + no self-loops/duplicate edges.
         Set<Long> expectedJobPairs = new HashSet<Long>();
         for (Task task : dag.tasks) {
             for (Object parentObject : task.getParentList()) {
@@ -356,11 +316,8 @@ class ClusteringConservationPropertyTest {
                 actualJobPairs,
                 "Job dependency edges must be the projection of cross-cluster task edges");
 
-        // (4) The Job graph is acyclic (iterative DFS).
         assertJobGraphAcyclic(jobs);
 
-        // (5) File conservation: every task input reference obtains one external
-        // registration, and every output appears at least once.
         Set<String> inputNames = new HashSet<String>();
         Set<String> outputNames = new HashSet<String>();
         for (FileItem file : taskFiles) {
@@ -383,8 +340,6 @@ class ClusteringConservationPropertyTest {
         }
         assertEquals(expectedInputs, inputNames, "getTaskFiles must carry exactly the external input set");
         assertTrue(outputNames.containsAll(expectedOutputs), "getTaskFiles must carry every output");
-        // Every output reference is registered at least once (it may repeat per reference;
-        // the floor is union semantics).
     }
 
     private static void assertPartitionAndLength(

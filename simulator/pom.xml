@@ -11,20 +11,13 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <!-- Keep the existing core Maven coordinates; the directory move must not change downstream dependency names. -->
     <artifactId>workflowsim</artifactId>
     <packaging>jar</packaging>
     <name>WorkflowSim Simulator</name>
     <description>Reusable WorkflowSim simulator core and the general research-run API.</description>
 
     <properties>
-        <!-- R3 coverage-gate ratchet: set slightly below the measured value
-             (clean verify of the 2026-11-03 baseline: instruction 72.00% / branch 61.48%).
-             It only rises, never falls. AUD-F03 (2026-11-03) adds package-level floors:
-             every maintained package must stay above 59% / 44% instruction / branch so no
-             package can hide behind the bundle aggregate; the frozen/legacy zones excluded
-             from that rule are listed in the parent POM. The integration floors below cover
-             target/jacoco-it.exec (measured 68.09% / 55.18%). -->
+
         <workflowsim.jacoco.instruction.minimum>0.71</workflowsim.jacoco.instruction.minimum>
         <workflowsim.jacoco.branch.minimum>0.60</workflowsim.jacoco.branch.minimum>
         <workflowsim.jacoco.package.instruction.minimum>0.59</workflowsim.jacoco.package.instruction.minimum>

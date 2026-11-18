@@ -10,7 +10,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Full real-DAX makespan comparison and completion/metric sanity checks. */
 class MakespanBaselineComparisonTest {
 
     @TempDir

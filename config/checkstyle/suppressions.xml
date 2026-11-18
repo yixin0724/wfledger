@@ -2,35 +2,14 @@
 <!DOCTYPE suppressions PUBLIC
     "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
-<!--
-  Exemption list: exemptions may only be tightened at the "directory/file dimension"
-  (red line: rules may only grow, never shrink -> exemptions may only shrink; widening
-  any exemption counts as loosening a rule and requires a stated rationale in the commit
-  message plus human review).
 
-  Red line 3: rules may be looser for test files: test code is exempt only from
-  "size/complexity/documentation" metrics; semantic guard classes (Tier-A: EqualsHashCode,
-  StringLiteralEquality, DefaultComesLast, etc.) are equally mandatory for tests: these
-  defects in test code corrode the evidence chain just as they do in main code.
-
-  2026-10-26 institutionalization of the exemption zones (approved by user adjudication):
-  the examples teaching zone and the clustering/reclustering historical fence zone are
-  exempted from style rules wholesale under a "zone policy": these zones never take part
-  in the Tier-B -> A promotion ladder (no expectation of reaching zero), so the warnings
-  they retain are an audit snapshot only. After the exemption, the warnings in the main
-  maintenance zone directly become the signal-to-noise ratio of "real work items".
-  Semantic guard rules (Tier-A) are not exempted for these two zones: semantic code
-  erosion in teaching examples misleads readers just the same.
--->
 <suppressions>
-    <!-- No threshold on test size and complexity (tests may have long setups / large parameter matrices) -->
+
     <suppress files="[\\/]src[\\/]test[\\/]java[\\/]" checks="MethodLengthCheck"/>
     <suppress files="[\\/]src[\\/]test[\\/]java[\\/]" checks="CyclomaticComplexityCheck"/>
 
-    <!-- Test classes need no type-level Javadoc (experiment scaffolding, not a public API surface) -->
     <suppress files="[\\/]src[\\/]test[\\/]java[\\/]" checks="MissingJavadocTypeCheck"/>
 
-    <!-- examples teaching zone (keeps the literature style, not a product surface) -->
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="LocalVariableNameCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="ParameterNameCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="MemberNameCheck"/>
@@ -39,7 +18,6 @@
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="CyclomaticComplexityCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]examples[\\/]" checks="MissingJavadocTypeCheck"/>
 
-    <!-- clustering / reclustering historical fence zone (root AGENTS.md: bugs may be fixed, the zone may not be extended) -->
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]clustering[\\/]" checks="LocalVariableNameCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]clustering[\\/]" checks="MemberNameCheck"/>
     <suppress files="[\\/]src[\\/]main[\\/]java[\\/].*[\\/]clustering[\\/]" checks="MethodNameCheck"/>

@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable DHEFT task with per-VM compute and dependency data. */
 public final class DheftTask {
     private final int taskId;
     private final Map<Integer, Double> computeSecondsByVm;

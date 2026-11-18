@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/** One task in the EBPSM budget-distribution preprocessor. */
 public final class EbpsmTask {
     private final int taskId;
     private final List<Integer> parentTaskIds;

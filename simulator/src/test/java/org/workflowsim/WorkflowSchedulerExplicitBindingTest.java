@@ -13,16 +13,6 @@ import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 
-/**
- * Pins the explicit policy binding surface of WorkflowScheduler (AUD-F21).
- *
- * <p>Every scheduling enum value must have an explicit case in the policy switch: an
- * unmapped value fails loudly instead of silently falling back to the static binding, so a
- * missed enum addition cannot masquerade as a plan-execution run. INVALID keeps its
- * historical role explicitly: it is the legacy no-decision shell that executes an already
- * produced binding, and runner-configured runs never reach it because they reject INVALID
- * first.</p>
- */
 class WorkflowSchedulerExplicitBindingTest {
 
     @BeforeEach

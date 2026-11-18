@@ -16,7 +16,6 @@ import org.junit.jupiter.api.io.TempDir;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Fixed ordering and escaping checks for experiment summary files. */
 class ExperimentSummaryWriterTest {
 
     @TempDir

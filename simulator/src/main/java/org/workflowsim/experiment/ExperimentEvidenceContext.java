@@ -5,15 +5,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Explicit research identity attached to a formal reference or study run.
- *
- * <p>The core simulator does not depend on any concrete experiment module; an experiment
- * caller hands its driver, protocol, and dataset root information to the generic artifact
- * writer through this type. A single run that does not provide this context can still
- * write a v3 manifest, but its {@code study} is {@code null} and must not be
- * misinterpreted as complete study evidence.</p>
- */
 public final class ExperimentEvidenceContext {
 
     private final String studyId;
@@ -38,12 +29,10 @@ public final class ExperimentEvidenceContext {
         this.datasetRoot = builder.datasetRoot;
     }
 
-    /** Creates a builder for the reference or study identity. */
     public static Builder builder(String studyId) {
         return new Builder(studyId);
     }
 
-    /** Returns the standalone, machine-readable identity object written to the manifest/index. */
     public Map<String, Object> asMap() {
         Map<String, Object> values = new LinkedHashMap<String, Object>();
         values.put("id", studyId);
@@ -65,7 +54,6 @@ public final class ExperimentEvidenceContext {
         return values;
     }
 
-    /** Validating builder that constructs an immutable research identity. */
     public static final class Builder {
         private final String studyId;
         private String groupId;
@@ -81,7 +69,6 @@ public final class ExperimentEvidenceContext {
             this.studyId = requireText(studyId, "Study ID");
         }
 
-        /** Declares the Maven artifact that owns the executing driver. */
         public Builder artifact(String groupId, String artifactId, String version) {
             this.groupId = requireText(groupId, "Study groupId");
             this.artifactId = requireText(artifactId, "Study artifactId");
@@ -89,7 +76,6 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        /** Declares the class that executes the current study entry point and its source subtree. */
         public Builder driver(Class<?> driverClass, String sourceSubpath) {
             if (driverClass == null) {
                 throw new IllegalArgumentException("Study driver class is required");
@@ -99,7 +85,6 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        /** Declares the human-readable protocol identifier and an optional local protocol file. */
         public Builder protocol(String protocolId, Path protocolFile) {
             this.protocolId = requireText(protocolId, "Protocol ID");
             this.protocolFile =
@@ -107,7 +92,6 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        /** Declares the absolute dataset root used by the study entry point to resolve inputs. */
         public Builder datasetRoot(Path datasetRoot) {
             if (datasetRoot == null) {
                 throw new IllegalArgumentException("Dataset root is required");
@@ -123,7 +107,6 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        /** Validates every study identity field and builds the context. */
         public ExperimentEvidenceContext build() {
             if (groupId == null
                     || artifactId == null

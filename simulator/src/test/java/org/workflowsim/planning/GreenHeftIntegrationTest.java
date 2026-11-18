@@ -12,7 +12,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationSession;
 
-/** GreenHEFT integration with declared platform power and a real session. */
 class GreenHeftIntegrationTest {
 
     @Test

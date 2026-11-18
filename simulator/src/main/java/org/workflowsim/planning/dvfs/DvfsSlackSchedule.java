@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable DVFS schedule with per-task tiers, timing, and energy. */
 public final class DvfsSlackSchedule {
     private final Map<Integer, Entry> entries;
     private final double makespanSeconds;

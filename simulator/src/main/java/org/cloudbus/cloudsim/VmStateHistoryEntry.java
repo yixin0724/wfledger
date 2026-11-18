@@ -8,34 +8,16 @@
 
 package org.cloudbus.cloudsim;
 
-/**
- * The Class VmMipsAllocationHistoryEntry.
- *
- * @author Anton Beloglazov
- * @since CloudSim Toolkit 2.1.2
- */
 public class VmStateHistoryEntry {
 
-    /** The time. */
     private double time;
 
-    /** The allocated mips. */
     private double allocatedMips;
 
-    /** The requested mips. */
     private double requestedMips;
 
-    /** The is in migration. */
     private boolean isInMigration;
 
-    /**
-     * Instantiates a new vm mips allocation history entry.
-     *
-     * @param time the time
-     * @param allocatedMips the allocated mips
-     * @param requestedMips the requested mips
-     * @param isInMigration the is in migration
-     */
     public VmStateHistoryEntry(double time, double allocatedMips, double requestedMips, boolean isInMigration) {
         setTime(time);
         setAllocatedMips(allocatedMips);
@@ -43,74 +25,34 @@ public class VmStateHistoryEntry {
         setInMigration(isInMigration);
     }
 
-    /**
-     * Sets the time.
-     *
-     * @param time the new time
-     */
     protected void setTime(double time) {
         this.time = time;
     }
 
-    /**
-     * Gets the time.
-     *
-     * @return the time
-     */
     public double getTime() {
         return time;
     }
 
-    /**
-     * Sets the allocated mips.
-     *
-     * @param allocatedMips the new allocated mips
-     */
     protected void setAllocatedMips(double allocatedMips) {
         this.allocatedMips = allocatedMips;
     }
 
-    /**
-     * Gets the allocated mips.
-     *
-     * @return the allocated mips
-     */
     public double getAllocatedMips() {
         return allocatedMips;
     }
 
-    /**
-     * Sets the requested mips.
-     *
-     * @param requestedMips the new requested mips
-     */
     protected void setRequestedMips(double requestedMips) {
         this.requestedMips = requestedMips;
     }
 
-    /**
-     * Gets the requested mips.
-     *
-     * @return the requested mips
-     */
     public double getRequestedMips() {
         return requestedMips;
     }
 
-    /**
-     * Sets the in migration.
-     *
-     * @param isInMigration the new in migration
-     */
     protected void setInMigration(boolean isInMigration) {
         this.isInMigration = isInMigration;
     }
 
-    /**
-     * Checks if is in migration.
-     *
-     * @return true, if is in migration
-     */
     public boolean isInMigration() {
         return isInMigration;
     }

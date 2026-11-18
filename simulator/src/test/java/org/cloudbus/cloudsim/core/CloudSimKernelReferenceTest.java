@@ -11,11 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/**
- * CloudSim 3.0.3 reference semantics from commit 46c46604a021c4cbb54a4dac812e91f89d6c495c.
- * Expected values are derived from FutureQueue.addEvent, SimEvent.compareTo, and CloudSim.send,
- * not from an implementation-generated golden.
- */
 class CloudSimKernelReferenceTest {
 
     @Test

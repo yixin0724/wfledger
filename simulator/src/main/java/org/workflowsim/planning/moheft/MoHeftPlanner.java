@@ -13,7 +13,6 @@ import org.workflowsim.planning.greenheft.GreenHeftProblem;
 import org.workflowsim.planning.greenheft.GreenHeftSchedule;
 import org.workflowsim.planning.greenheft.GreenHeftTask;
 
-/** MOHEFT beam search over task-to-VM candidates with a makespan-energy Pareto front. */
 public final class MoHeftPlanner {
 
     private final int beamWidth;

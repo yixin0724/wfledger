@@ -152,7 +152,7 @@ class StorageLifecycleRerunIntegrationTest {
         doc.add("runtime", runtime);
         Path changed = directory.resolve("comparison-only.json");
         ExperimentArtifactWriter.writeJson(changed, doc);
-        // Bypass semantic reader only to test the independent comparator namespace.
+
         RerunEvidence comparison = new RerunEvidence(
                 evidence.getRunDirectory(),
                 evidence.getManifestPath(),

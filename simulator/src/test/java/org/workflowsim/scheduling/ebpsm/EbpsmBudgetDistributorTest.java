@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** SFTD budget distribution and actual-cost budget-update checks. */
 class EbpsmBudgetDistributorTest {
 
     @Test

@@ -11,10 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.scheduling.MinMinSchedulingAlgorithm;
 import org.workflowsim.scheduling.RoundRobinSchedulingAlgorithm;
 
-/**
- * Reproducibility test: within a single JVM, the same configuration run twice must produce
- * bit-identical results. This is the baseline guarantee for reproducible experiments.
- */
 class ReproducibilityTest {
 
     private List<Cloudlet> buildCloudlets() {
@@ -42,7 +38,7 @@ class ReproducibilityTest {
 
     @Test
     void minMinSameInputSameOutput() {
-        // First run.
+
         MinMinSchedulingAlgorithm s1 = new MinMinSchedulingAlgorithm();
         List<Cloudlet> c1 = buildCloudlets();
         List<Vm> v1 = buildVms();
@@ -50,7 +46,6 @@ class ReproducibilityTest {
         s1.setVmList(v1);
         s1.run();
 
-        // Second run: fresh objects, same configuration.
         MinMinSchedulingAlgorithm s2 = new MinMinSchedulingAlgorithm();
         List<Cloudlet> c2 = buildCloudlets();
         List<Vm> v2 = buildVms();
@@ -58,7 +53,6 @@ class ReproducibilityTest {
         s2.setVmList(v2);
         s2.run();
 
-        // Both scheduling runs must agree.
         assertEquals(s1.getScheduledList().size(), s2.getScheduledList().size());
         for (int i = 0; i < s1.getScheduledList().size(); i++) {
             Cloudlet a = (Cloudlet) s1.getScheduledList().get(i);

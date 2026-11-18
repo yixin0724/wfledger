@@ -22,35 +22,6 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationConfig.FrequencyPolicy;
 
-/**
- * BAT-V4.2 (2026-10-29 test-engineer adversarial round, DVFS round 5): red -> green
- * on the emission shape of the frequencyPolicy key in the configuration section.
- *
- * <p>Attack background (empirical finding of this round): D4 made
- * {@code ExperimentManifestWriter} write {@code configuration.frequencyPolicy}
- * unconditionally -- including the DEFAULT (lazy) value of a v1 tierless platform.
- * Consequently <b>every v1 evidence bundle frozen before D4</b> (the power-v1 /
- * carbon-v1 / standard-v1 baselines, and all historical bundles) gains one core
- * divergence on rerun under EvidenceCoreDiffer,
- * {@code /configuration/frequencyPolicy <missing> vs "DEFAULT"} -> the whole body
- * of historical evidence degrades from IDENTICAL_CORE to DIVERGED. The contract
- * between the e-prior evidence and "v1 manifest bit-for-bit unchanged" (the same
- * discipline as the D3 platform section: "key omitted when empty") is broken by a
- * single emission line of D4. Red anchor: assert that the serialized surface of a
- * v1 run carries no {@code frequencyPolicy}.</p>
- *
- * <p>Emission rules after the fix (mirroring the
- * "declared -> present, absent -> key omitted" culture of
- * tierMips/frequencyTiers/carbonWindows):</p>
- * <ul>
- *   <li>v1 tierless platform (the policy can only be DEFAULT -- the runner's BAT-D2
- *       gate rejects anything else): key omitted;</li>
- *   <li>non-DEFAULT policy: always written (any platform);</li>
- *   <li>declared tier table (tiered platform): always written (required by rerun
- *       semantics; the DEFAULT cells of the D5 three-dimensional baseline keep an
- *       explicit label).</li>
- * </ul>
- */
 class FrequencyTierManifestEmissionTest {
 
     @TempDir
@@ -70,10 +41,6 @@ class FrequencyTierManifestEmissionTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    /**
-     * Red anchor (red before this round's fix): the full serialized surface of a v1
-     * tierless run carries no frequencyPolicy key.
-     */
     @Test
     void v1TierlessManifestOmitsTheFrequencyPolicyKeyEntirely() throws Exception {
         SimulationReport plain = run(plainPoweredPlatform(), null);
@@ -92,10 +59,6 @@ class FrequencyTierManifestEmissionTest {
                         + " into a fake core divergence): " + excerpt(serialized));
     }
 
-    /**
-     * A tiered run must write the frequency policy (part of the rerun semantics; same
-     * as the DEFAULT cells of the D5 baseline).
-     */
     @Test
     void tieredManifestRecordsTheFrequencyPolicy() throws Exception {
         SimulationReport tiered = run(twoTierPlatform(), FrequencyPolicy.DEFAULT);
@@ -118,10 +81,6 @@ class FrequencyTierManifestEmissionTest {
                 : serialized.substring(at, Math.min(at + 400, serialized.length()));
     }
 
-    // ------------------------------------------------------------------
-    // fixtures
-    // ------------------------------------------------------------------
-
     private SimulationReport run(PlatformProfile platform, FrequencyPolicy policy) throws Exception {
         SimulationConfig.Builder builder = SimulationConfig.builder(chainDax().toString(), 2)
                 .planningAlgorithm(PlanningAlgorithm.SHARED_STORAGE_HEFT)
@@ -135,7 +94,6 @@ class FrequencyTierManifestEmissionTest {
         return new SimulationRunner().run(builder.build(), platform);
     }
 
-    /** Two-tier platform (2000 default / 500 last tier). */
     private static PlatformProfile twoTierPlatform() {
         java.util.List<PlatformProfile.FrequencyTier> tiers = new ArrayList<PlatformProfile.FrequencyTier>();
         tiers.add(new PlatformProfile.FrequencyTier(2000.0, 250.0, 400.0));
@@ -148,7 +106,6 @@ class FrequencyTierManifestEmissionTest {
         return builder.build();
     }
 
-    /** v1 flat-power platform (250/400, tierless). */
     private static PlatformProfile plainPoweredPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("v4-emit-plain");
         builder.addHost(new PlatformProfile.HostSpec(0, 2, 2000.0, 2048, 10_000L, 1_000_000L));

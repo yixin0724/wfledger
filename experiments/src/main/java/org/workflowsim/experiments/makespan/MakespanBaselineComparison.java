@@ -22,7 +22,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/** Runs traditional makespan-oriented algorithms on real scientific DAX workflows. */
 public final class MakespanBaselineComparison {
 
     private static final String[] DATASETS = {

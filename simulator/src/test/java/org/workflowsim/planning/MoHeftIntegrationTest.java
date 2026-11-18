@@ -13,7 +13,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationSession;
 
-/** Real PlanningContext integration for MOHEFT Pareto execution. */
 class MoHeftIntegrationTest {
 
     @Test

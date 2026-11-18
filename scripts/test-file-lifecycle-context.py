@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Disposable hand-built V2 bundle tests; no Java, production replay or subprocess."""
+
 import contextlib
 import copy
 from decimal import Decimal
@@ -20,22 +20,17 @@ from _network_audit import CheckError, decode_json, inspect_path, verify_documen
 from _file_lifecycle_audit import verify_document as verify_lifecycle
 from _file_lifecycle_context import inspect_path as inspect_context, verify_context
 
-
 def load(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
-
 hand = load("hand_lifecycle_fixtures", HERE / "test-file-lifecycle.py")
 cli = load("network_cli_context_test", HERE / "verify-network-ledger.py")
 
-
 def model_document(factory=hand.publication):
-    """Adapt only units/Task numbering: parser Tasks are contiguous from one;
-    platform bandwidth is integer decimal MB/s. All lifecycle times are literal.
-    """
+
     doc = factory()
     ids = {row["taskId"]: index + 1 for index, row in enumerate(sorted(doc["filePlan"]["tasks"], key=lambda r: (r["workflowInputIndex"], r["taskId"])))}
     for row in doc["filePlan"]["tasks"]:
@@ -65,13 +60,11 @@ def model_document(factory=hand.publication):
             p["remainingAfterService"] *= 1000000
     return doc
 
-
 def key(row):
     return row["workflowInputIndex"], row["name"]
 
-
 class Bundle:
-    """Manifest/main oracle assembled from hand fixtures, never verifier facts."""
+
     def __init__(self, root, factory=hand.publication, enabled=True, isolated=False):
         self.root, self.enabled = Path(root), enabled
         self.path = self.root / "run.manifest.json"
@@ -228,7 +221,6 @@ class Bundle:
         (self.root / "run.events.jsonl").write_text("".join(json.dumps(row, allow_nan=False) + "\n" for row in self.events), encoding="utf-8")
         self.rehash()
 
-
 class ContextTests(unittest.TestCase):
     def bundle(self, factory=hand.publication, enabled=True, isolated=False):
         temp = tempfile.TemporaryDirectory(prefix="file-lifecycle-context-")
@@ -285,7 +277,7 @@ class ContextTests(unittest.TestCase):
         self.assertTrue(report["contextualRunChecked"])
         bundle.manifest["configuration"]["workflowArrivalSeconds"][1] = 6
         bundle.manifest["result"]["workflowOutcomes"][1]["arrivalSecond"] = 6
-        self.bad(bundle)  # Both documents agree on scope, but the request is too early.
+        self.bad(bundle)
 
     def test_off_validates_core_and_never_claims_zero_traffic(self):
         bundle = self.bundle(enabled=False)
@@ -323,7 +315,7 @@ class ContextTests(unittest.TestCase):
         bundle = self.bundle()
         bundle.manifest["configuration"]["workflowArrivalSeconds"][0] = 1
         bundle.manifest["result"]["workflowOutcomes"][0]["arrivalSecond"] = 1
-        self.bad(bundle)  # Internally consistent scope declaration, but request0 precedes arrival1.
+        self.bad(bundle)
 
     def test_core_plan_compares_exact_json_numbers_not_just_binary64(self):
         bundle = self.bundle()
@@ -334,7 +326,7 @@ class ContextTests(unittest.TestCase):
         self.bad(bundle, write=False)
         bundle = self.bundle()
         bundle.manifest["dataflowPlan"]["tasks"].reverse()
-        self.bad(bundle)  # Core/sidecar arrays must match, even though standalone normalizes keyed declarations.
+        self.bad(bundle)
 
     def test_roles_modes_budget_and_schema_downgrades_cannot_be_disabled(self):
         for change in (lambda b: b.manifest["artifacts"][-1].update(role="network-ledger"),
@@ -355,23 +347,23 @@ class ContextTests(unittest.TestCase):
             self.bad(bundle)
         bundle = self.bundle(enabled=False)
         bundle.manifest["configuration"]["dataMovementModel"]["kind"] = "LEGACY_WORKFLOWSIM_V1"
-        self.bad(bundle)  # dataflowPlan itself triggers rejection, not legacy OFF.
+        self.bad(bundle)
 
     def test_each_v2_dispatch_signal_prevents_silent_legacy_off(self):
-        # Each signal must dispatch independently, even when the others are hidden.
+
         bundle = self.bundle()
         bundle.manifest.pop("dataflowPlan")
         bundle.manifest["configuration"]["dataMovementModel"]["kind"] = "LEGACY_WORKFLOWSIM_V1"
         bundle.manifest["configuration"].pop("networkEvidence")
-        self.bad(bundle)  # file-lifecycle role alone
+        self.bad(bundle)
         bundle = self.bundle()
         bundle.manifest.pop("dataflowPlan")
         bundle.manifest["configuration"]["dataMovementModel"]["kind"] = "LEGACY_WORKFLOWSIM_V1"
         bundle.manifest["artifacts"].pop()
-        self.bad(bundle)  # FILE_LIFECYCLE_V2 mode alone
+        self.bad(bundle)
         bundle = self.bundle(enabled=False)
         bundle.manifest.pop("dataflowPlan")
-        self.bad(bundle)  # coherent kind alone
+        self.bad(bundle)
 
     def test_rehashed_source_path_truncation_and_active_prefix_fail(self):
         bundle = self.bundle()
@@ -443,7 +435,7 @@ class ContextTests(unittest.TestCase):
             bundle = self.bundle()
             mutate(bundle)
             self.bad(bundle)
-        # Modeled Task finish may precede a coarse actual terminal observation.
+
         bundle = self.bundle()
         bundle.manifest["result"]["tasks"][1].update(finishTime=15.5, exactJobTiming=False)
         bundle.main_event("TASK_EXECUTION_MODELED")["attributes"]["taskFinishTime"] = 15.5
@@ -485,7 +477,7 @@ class ContextTests(unittest.TestCase):
         bundle = self.bundle()
         bundle.main_event("SCHEDULING_DECISION")["simulationTime"] = 14
         bundle.main_event("JOB_DISPATCHED")["simulationTime"] = 14
-        self.bad(bundle)  # Still monotonic, but before lifecycle data-ready15.
+        self.bad(bundle)
         for kind in ("JOB_READY", "DATA_STAGE_IN_MODELED", "SCHEDULING_DECISION", "JOB_DISPATCHED", "TASK_EXECUTION_MODELED", "JOB_RETURNED"):
             bundle = self.bundle()
             bundle.events.remove(bundle.main_event(kind))
@@ -522,7 +514,7 @@ class ContextTests(unittest.TestCase):
         before = bundle.events.index(bundle.main_event("JOB_RETURNED", 10))
         bundle.events.insert(before, retry)
         bundle.resequence()
-        self.bad(bundle)  # Monotonic/rehashed, but retry precedes the failed terminal.
+        self.bad(bundle)
         bundle = self.bundle(hand.failure_retry)
         retry, ready = bundle.main_event("RETRY_JOB_CREATED", 11), bundle.main_event("JOB_READY", 11)
         a, b = bundle.events.index(retry), bundle.events.index(ready)
@@ -622,13 +614,12 @@ class ContextTests(unittest.TestCase):
             self.assertEqual(0, cli.main([str(bundle.path), "--json"]))
         self.assertTrue(json.loads(output.getvalue())["contextualRunChecked"])
         with self.assertRaises(CheckError):
-            verify_v1(bundle.ledger)  # V1 document contract did NOT become permissive.
+            verify_v1(bundle.ledger)
         off = self.bundle(enabled=False)
         with contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertEqual(0, cli.main([str(off.path)]))
         self.assertIn("FILE_LIFECYCLE_CHECK DISABLED", output.getvalue())
         self.assertNotIn("copies=", output.getvalue())
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

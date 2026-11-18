@@ -23,7 +23,6 @@ import org.workflowsim.utils.Parameters;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-/** Observable invariants for active/terminal splitting; deliberately no timing thresholds. */
 class RuntimeHistoryIsolationTest {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
     private static final DataLocation A = DataLocation.vm(7),

@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.workflowsim.platform.PlatformProfile;
 
-/** Iterative DVFS slack allocation: accept a lower tier only when total energy decreases. */
 public final class DvfsSlackOptimizer {
 
     public DvfsSlackSchedule optimize(
@@ -67,7 +66,7 @@ public final class DvfsSlackOptimizer {
             byId.put(task.getTaskId(), task);
         }
         List<DvfsSlackTask> ordered = new ArrayList<DvfsSlackTask>(tasks);
-        // Preserve the HEFT order supplied by the caller.
+
         Map<Integer, DvfsSlackSchedule.Entry> entries = new LinkedHashMap<Integer, DvfsSlackSchedule.Entry>();
         Map<Integer, Double> available = new HashMap<Integer, Double>();
         double makespan = 0.0;

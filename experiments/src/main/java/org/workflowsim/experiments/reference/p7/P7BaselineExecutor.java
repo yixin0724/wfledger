@@ -24,24 +24,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * P7 compatibility reference-matrix executor; routine new experiments use the Workbench.
- *
- * <p>Execute the frozen matrix (2 Epigenomics inputs x 2 platforms x 5 online schedulers = 20
- * simulations) and generate the standardized experiment evidence packages
- * (manifest/metrics/events) plus the index file. Parameter-free execution is supported (it uses
- * the {@code datasets} directory under the project root and the automatically created
- * {@code p7-output/run-<timestamp>} output directory).
- *
- * <p><b>Usage:</b>
- * <ul>
- * <li>No arguments: {@code main()} -- use the default paths (run from the IDE context menu)</li>
- * <li>Explicit paths: {@code main(<dataset-root>, <output-dir>)} -- custom paths</li>
- * </ul>
- *
- * @see P7BaselineMatrix baseline scenario and algorithm definitions
- * @see P7EvidenceIndexValidator validator for the generated index
- */
 public final class P7BaselineExecutor {
 
     static final String BASELINE_INDEX_FILE_NAME = "p7-baseline-index.json";
@@ -54,25 +36,9 @@ public final class P7BaselineExecutor {
 
     private P7BaselineExecutor() {}
 
-    /**
-     * Command-line entry point.
-     *
-     * <p>Usage: {@code P7BaselineExecutor <absolute-dataset-root> <absolute-empty-output-directory>}.
-     * The output directory must be empty; when execution finishes it holds the index and the
-     * verifiable evidence artifacts of every run.</p>
-     *
-     * <p>When run without arguments (for example, Run directly in an IDE), the {@code datasets}
-     * directory under the current working directory is used as the dataset root, and an empty
-     * timestamped output directory is created under {@code p7-output/}.</p>
-     *
-     * @param args absolute dataset root and absolute empty output directory; when omitted, the
-     *     defaults above apply
-     * @throws Exception when the arguments, the input contract, the simulation execution, or the
-     *     evidence writing and validation fails
-     */
     public static void main(String[] args) throws Exception {
         if (args == null || args.length == 0) {
-            // Direct IDE-run support: derive the dataset and output directories from the project root.
+
             Path projectRoot =
                     Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
             Path defaultDatasets = projectRoot.resolve("datasets");
@@ -101,20 +67,6 @@ public final class P7BaselineExecutor {
                 + outputDirectory.toAbsolutePath().normalize());
     }
 
-    /**
-     * Execute the complete, frozen P7 baseline matrix.
-     *
-     * <p>The method always executes the four scenarios and five scheduler combinations defined by
-     * the protocol and writes only {@value #BASELINE_INDEX_FILE_NAME}. The validator afterwards
-     * confirms that the index contains exactly the whole 4 x 5 matrix, which is what allows the
-     * artifact to be called a P7 baseline.</p>
-     *
-     * @param datasetRoot explicit, absolute {@code datasets} directory
-     * @param outputDirectory absolute output directory that must be empty or nonexistent
-     * @return immutable list of run records with relative artifact paths and key results
-     * @throws Exception when the directory conditions, the scenario inputs, the simulation, or
-     *     the artifact validation does not meet the requirements
-     */
     public static List<RunRecord> executeBaseline(Path datasetRoot, Path outputDirectory) throws Exception {
         Path normalizedDatasetRoot = ReferenceDatasetRoot.require(datasetRoot);
         return executeInternal(
@@ -127,24 +79,6 @@ public final class P7BaselineExecutor {
                 BASELINE_INDEX_KIND);
     }
 
-    /**
-     * Execute a given subset of P7 scenarios and scheduling algorithms to support development and
-     * smoke validation.
-     *
-     * <p>The method writes {@value #SELECTION_INDEX_FILE_NAME} and marks the result with
-     * {@value #SELECTION_INDEX_KIND}. Even when the selection happens to contain the current full
-     * matrix, callers must not treat that output as a frozen baseline; an official P7 baseline
-     * can only be produced through {@link #executeBaseline(Path, Path)} or the command-line entry
-     * point.</p>
-     *
-     * @param datasetRoot explicit, absolute {@code datasets} directory
-     * @param outputDirectory absolute output directory that must be empty or nonexistent
-     * @param scenarios frozen P7 scenarios to execute
-     * @param algorithms maintained scheduling algorithms to evaluate for each scenario
-     * @return immutable list of run records with relative artifact paths and key results
-     * @throws Exception when the directory conditions, the scenario inputs, the simulation, or
-     *     the artifact validation does not meet the requirements
-     */
     public static List<RunRecord> executeSelection(
             Path datasetRoot,
             Path outputDirectory,
@@ -161,13 +95,6 @@ public final class P7BaselineExecutor {
                 SELECTION_INDEX_KIND);
     }
 
-    /**
-     * Subset-execution entry point kept for legacy callers.
-     *
-     * @deprecated use {@link #executeBaseline(Path, Path)} to generate the complete frozen
-     *     baseline, or {@link #executeSelection(Path, Path, List, List)} to explicitly produce a
-     *     non-baseline selection run.
-     */
     @Deprecated
     public static List<RunRecord> execute(
             Path datasetRoot,
@@ -305,7 +232,6 @@ public final class P7BaselineExecutor {
         ExperimentArtifactWriter.writeJson(indexFile, index);
     }
 
-    /** Immutable machine-readable run summary that carries the relative manifest path. */
     public static final class RunRecord {
 
         private final String scenarioId;

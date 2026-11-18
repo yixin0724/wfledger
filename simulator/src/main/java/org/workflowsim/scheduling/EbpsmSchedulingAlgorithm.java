@@ -16,7 +16,6 @@ import org.workflowsim.utils.EbpsmConfig;
 import org.workflowsim.utils.EbpsmRegistry;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** EBPSM ready-task scheduling with input/container cache preference and task budgets. */
 public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     private final EbpsmConfig config;

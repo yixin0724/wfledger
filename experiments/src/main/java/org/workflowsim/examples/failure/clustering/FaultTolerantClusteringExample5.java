@@ -39,52 +39,17 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Dynamic reclustering fault-tolerant teaching example invoked by the legacy parameter sweep.
- *
- * <p>The class keeps the historical entry point that returns a makespan so that the original
- * parameter experiment code stays intelligible. It has no frozen experiment plan, seed, or evidence
- * artifact, so it cannot serve as a standard research experiment entry point or as a source of
- * statistical conclusions.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Dec 31, 2013
- */
 public class FaultTolerantClusteringExample5 extends FaultTolerantClusteringExample1 {
 
     private static final String EXAMPLE_ID = "fault-clustering-dynamic";
-    /**
-     * Scale of the low-frequency shared failure clock under the fixed teaching seed; it does not
-     * represent a real failure rate.
-     */
+
     private static final double DEFAULT_FAILURE_INTERVAL_SCALE = 150000.0;
 
-    /**
-     * Run the historical teaching scenario with dynamic reclustering.
-     *
-     * <p>Supported options are {@code -c} (SR/DR/NOOP/DC), {@code -d} (DAX path), {@code -b} (one
-     * tenth of the runtime scale), {@code -q}/{@code -s} (queue Gamma parameters), {@code -w} (queue
-     * prior strength), {@code -p} (failure scale), {@code -t} (failure prior strength), and
-     * {@code -r} (root seed). Every numeric value must be a finite positive number.</p>
-     *
-     * @param args legacy argument sequence of single-character options and values
-     */
     public static void main(String[] args) {
         double makespan = runInternal(args, true);
         Log.printLine("EXAMPLE_MAKESPAN id=" + EXAMPLE_ID + " value=" + makespan);
     }
 
-    /**
-     * Makespan entry point compatible with legacy parameter sweep code.
-     *
-     * <p>Errors are no longer disguised as {@code 0.0} but propagate to the caller as unchecked
-     * exceptions. Batch callers must establish their own seed plan, statistical protocol, and
-     * result artifacts.</p>
-     *
-     * @param args the same option sequence as {@link #main(String[])}
-     * @return makespan of this model run
-     */
     public static double main2(String[] args) {
         return runInternal(args, false);
     }
@@ -128,8 +93,7 @@ public class FaultTolerantClusteringExample5 extends FaultTolerantClusteringExam
             int maxLevel = 11;
 
             DistributionGenerator[][] failureGenerators = new DistributionGenerator[vmNum][maxLevel];
-            // Historical E5 uses one shared global failure clock; it is not a VM-depth independent
-            // failure model.
+
             DistributionGenerator failureGenerator = new DistributionGenerator(
                     DistributionGenerator.DistributionFamily.WEIBULL,
                     failureScale,
@@ -226,12 +190,6 @@ public class FaultTolerantClusteringExample5 extends FaultTolerantClusteringExam
         throw new IllegalArgumentException("Unsupported fault-tolerant clustering strategy: " + clustering);
     }
 
-    /**
-     * Print the Job summary and return the largest finish time in the list.
-     *
-     * @param list list of completed Jobs
-     * @return makespan of this model run
-     */
     protected static double printJobList2(List<Job> list) {
         int size = list.size();
         double makespan = 0;

@@ -20,7 +20,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Integration-level evidence chain and tamper guard for Q02 (2026-11-04). */
 class ExperimentCampaignSummaryVerificationIntegrationTest {
 
     @AfterEach

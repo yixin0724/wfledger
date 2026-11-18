@@ -12,7 +12,6 @@ import org.workflowsim.utils.ReshiConfig;
 import org.workflowsim.utils.ReshiRankTable;
 import org.workflowsim.utils.ReshiRegistry;
 
-/** Reshi-C/M resource recommendation and ready-queue prioritization. */
 public final class ReshiSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     private final ReshiStrategy strategy;
@@ -81,11 +80,7 @@ public final class ReshiSchedulingAlgorithm extends BaseSchedulingAlgorithm {
     }
 
     private double runtime(Job job) {
-        // R-PAPER-04 audit: Reshi-M is defined by the historical average, not by a
-        // prediction-dependent task/node estimate. Prediction noise belongs to the
-        // prediction-consuming baselines; applying it here would both change Reshi-M's
-        // semantics and sample afresh inside comparator calls. Keeping the declared
-        // average makes priority deterministic and prediction-error invariant.
+
         return configuration()
                 .getTaskHistory()
                 .averageRuntimeFor(job.getTaskList().get(0).getType());

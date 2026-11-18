@@ -15,7 +15,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** NF005: passive checked-service observations, with independent exact arithmetic oracles. */
 class TransferServiceSnapshotTest {
     @Test
     void uncheckedConstructorsRejectSnapshotsWithoutChangingTheirContracts() {
@@ -25,7 +24,7 @@ class TransferServiceSnapshotTest {
             assertTrue(rejection.getMessage().contains("coherentV2"));
             engine.setEndpointCapacity("R", 10);
             engine.addTransfer(7L, 100, Arrays.asList("R"), 10, 0);
-            // Even a fully declared legacy path does not certify the unchecked engine.
+
             assertThrows(IllegalStateException.class, engine::snapshotState);
             engine.addTransfer(Long.MAX_VALUE, 100, Arrays.asList("unbounded"), 10, 0);
             TransferTraceSnapshot trace = engine.getTraceSnapshot();
@@ -283,7 +282,7 @@ class TransferServiceSnapshotTest {
         TransferContentionEngine.AdvanceResult completion = engine.advance(12);
         assertBits(10, completion.getCompletionObservations().get(0).getEffectiveTime());
         TransferServiceSnapshot idle = engine.snapshotState();
-        assertBits(12, idle.getObservedThrough()); // The observed clock, not the effective completion.
+        assertBits(12, idle.getObservedThrough());
         assertTrue(idle.getTransfers().isEmpty());
         engine.setEndpointCapacity("R", 20);
         engine.setEndpointCapacity("NEW", 5);
@@ -312,7 +311,7 @@ class TransferServiceSnapshotTest {
         engine.addTransfer(1L, Double.MAX_VALUE, Arrays.asList("R"), 1, 0);
         TransferServiceSnapshot before = engine.snapshotState();
         TransferTraceSnapshot trace = engine.getTraceSnapshot();
-        // Sharing would halve the rate and overflow the remaining service duration.
+
         assertThrows(
                 IllegalArgumentException.class,
                 () -> engine.addTransfer(2L, Double.MAX_VALUE, Arrays.asList("R"), 1, 1));
@@ -332,7 +331,7 @@ class TransferServiceSnapshotTest {
         engine.addTransfer(2L, 5, Arrays.asList("R"), 2, start);
         TransferServiceSnapshot before = engine.snapshotState();
         TransferTraceSnapshot trace = engine.getTraceSnapshot();
-        // After settling flow 1, flow 2's half-second finish cannot advance this clock.
+
         assertThrows(IllegalArgumentException.class, () -> engine.advance(start + 4));
         assertSnapshotEquals(before, engine.snapshotState());
         assertTraceEquals(trace, engine.getTraceSnapshot());

@@ -27,24 +27,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Energy-dimension conservation-law tests (BAT-E1, 2026-10-27). Red-first: the
- * conservation law (Beloglazov et al. FGCS 2012 Eq.(2), binary SPACE_SHARED) states:
- *
- * <pre>
- * E_total = Σ_vm P_idle × makespanSeconds + (P_max − P_idle) × vmBusyIntervalSeconds
- * </pre>
- *
- * with T_active per VM already present in the frozen VmMetrics. These tests verify:
- * 1. The energy conservation invariant (zero tolerance)
- * 2. Backward compatibility: un-powered profiles yield zero energy
- * 3. VmSpec power-field validation (fail-fast)
- * 4. BAT-E2 manifest energy export: the written energyMetrics section survives full
- *    artifact validation and satisfies the same identities (EDP, peak power, idle floor)
- * 5. BAT-E4 platform power-field export: every manifest VM serializes idlePowerWatts/
- *    maxPowerWatts, because the independent Python auditor keys its powered/unpowered
- *    branch and conservation-law recompute off exactly those manifest fields
- */
 class EnergyConservationLawTest {
 
     private boolean logWasDisabled;
@@ -63,11 +45,6 @@ class EnergyConservationLawTest {
         Log.setDisabled(logWasDisabled);
     }
 
-    /**
-     * Full-suite conservation check: run a real four-task DAG with powered VMs,
-     * extract the report, and verify the energy identity to zero tolerance using
-     * the report's own busy-interval and makespan fields.
-     */
     @Test
     void energyConservationLawHoldsAtZeroTolerance() throws Exception {
         SimulationReport report = runScenario(100.0, 400.0);
@@ -75,11 +52,9 @@ class EnergyConservationLawTest {
         double makespan = report.getMakespan();
         PlatformProfile platform = poweredPlatform(100.0, 400.0);
 
-        // Extract per-VM busy intervals from the frozen metrics
         Map<Integer, SimulationMetrics.VmMetrics> vmMetrics = metrics.getVmMetrics();
         assertTrue(!vmMetrics.isEmpty(), "run must produce per-VM metrics");
 
-        // Compute the conservation-law expectation from first principles
         double expectedTotal = 0.0;
         for (Map.Entry<Integer, SimulationMetrics.VmMetrics> entry : vmMetrics.entrySet()) {
             PlatformProfile.VmSpec spec = platform.getVms().stream()
@@ -117,18 +92,6 @@ class EnergyConservationLawTest {
         assertEquals(0.0, ea.getPeakPowerWatts(), 0.0);
     }
 
-    /**
-     * BAT-E2 (2026-10-27): a powered run must export its energy dimension in the evidence
-     * manifest as an {@code energyMetrics} section that survives full
-     * {@link ExperimentArtifactValidator} validation. The section is independently
-     * recomputable from the manifest's own makespan and per-VM busy intervals, so this test
-     * re-derives the identities from the shipped JSON: peak power equals the fleet maximum
-     * (2 VMs × 400 W), EDP equals totalEnergyJoules × makespan at zero tolerance, per-VM
-     * energy never drops below the idle floor (P_idle × makespan), and total energy strictly
-     * exceeds the two-VM idle floor because the two-task chain (60 s → 40 s, dependent) banks
-     * strictly positive active energy. The DAG is a two-task dependency chain; the platform
-     * is the standard powered profile (100 W idle / 400 W max, 1000 MIPS per VM).
-     */
     @Test
     void manifestExportsEnergyMetricsAndSurvivesValidation() throws Exception {
         SimulationConfig config = SimulationConfig.builder(twoTaskDax().toString(), 2)
@@ -186,17 +149,6 @@ class EnergyConservationLawTest {
                         + totalEnergyJoules + ", floor=" + (makespan * 200.0));
     }
 
-    /**
-     * BAT-E4 (2026-10-27): the per-VM power fields must be serialized into the
-     * manifest's {@code platform.vms} array. The independent Python auditor
-     * (scripts/verify-study-evidence.py) reads {@code idlePowerWatts}/{@code maxPowerWatts}
-     * from exactly this section to decide whether a run is powered and to recompute the
-     * conservation law; a powered run whose platform section lacks them is silently
-     * indistinguishable from an unpowered one, making the energy audit vacuous (see
-     * docs/advanced/ENERGY_DIMENSION_DESIGN.md §2.1: the verifier recomputes the identity
-     * from the manifest's own data). Legal expectation source: the Python-auditor
-     * contract, not implementation output.
-     */
     @Test
     void manifestPlatformSerializesPerVmPowerFields() throws Exception {
         SimulationConfig config = SimulationConfig.builder(twoTaskDax().toString(), 2)
@@ -273,7 +225,7 @@ class EnergyConservationLawTest {
                         50.0,
                         Double.NaN),
                 "NaN max must be rejected");
-        // Valid: zero/zero is legal (no power model declared)
+
         PlatformProfile.VmSpec ok = new PlatformProfile.VmSpec(
                 0,
                 1000.0,
@@ -287,7 +239,7 @@ class EnergyConservationLawTest {
                 0.0,
                 0.0);
         assertEquals(0.0, ok.getIdlePowerWatts(), 0.0);
-        // Valid: positive idle and max, max >= idle
+
         PlatformProfile.VmSpec ok2 = new PlatformProfile.VmSpec(
                 0,
                 1000.0,
@@ -302,8 +254,6 @@ class EnergyConservationLawTest {
                 250.0);
         assertTrue(ok2.hasPowerModel());
     }
-
-    // --- fixtures ---
 
     private SimulationReport runScenario(double idlePower, double maxPower) throws Exception {
         Path workflow = dax();
@@ -377,11 +327,6 @@ class EnergyConservationLawTest {
         return path;
     }
 
-    /**
-     * Minimal dependency-chain DAG (t1 60 s → t2 40 s) for the BAT-E2 manifest-energy
-     * export test: two tasks are enough to produce strictly positive busy time, and the
-     * chain guarantees the second task cannot start before the first finishes.
-     */
     private Path twoTaskDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");

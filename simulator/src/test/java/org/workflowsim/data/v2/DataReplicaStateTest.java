@@ -21,7 +21,6 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** Authoritative visibility is driven by explicit observations, never an optional fluid trace. */
 class DataReplicaStateTest {
     private static final DataLocation SOURCE = DataLocation.source("input-store"),
             SECOND = DataLocation.source("second-store");
@@ -164,7 +163,7 @@ class DataReplicaStateTest {
         assertNotNull(state.getReplica(id("p"), VM99));
         assertNull(state.getReplica(id("q"), VM99));
         assertSame(slow, state.getInFlight(id("q"), VM99));
-        // Another consumer may use the arrived p replica while q remains pending.
+
         DataReplicaState.CopyTicket next = state.admitCopy(id("p"), VM99, VM42, 2);
         assertEquals(VM99, next.getSourceReplica().getLocation());
         state.settleCopy(slow, 5);

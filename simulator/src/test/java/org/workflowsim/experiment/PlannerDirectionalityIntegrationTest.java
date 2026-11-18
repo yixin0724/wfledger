@@ -15,34 +15,10 @@ import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationRandom;
 import org.workflowsim.utils.TaskCostMatrix;
 
-/**
- * Planner directionality contract (R8 audit, algorithm channel P2-1).
- *
- * <p>Every earlier planner test pinned only golden values or bitwise determinism, and no
- * test locked the direction of a reproduced algorithm relative to an information-free
- * baseline: if the HEFT/CPOP implementation were broken until it did worse than RANDOM,
- * the golden-value tests would fail, but the failure message could not point at the root
- * cause "the algorithm lost its heuristic advantage". This test locks that direction
- * directly on the HEFT paper-example fixture (exactly the same rig as
- * {@link LocalHeftPaperReproductionTest}):</p>
- * <ul>
- *   <li>LOCAL_HEFT makespan &lt;= RANDOM makespan (same seed);</li>
- *   <li>LOCAL_CPOP makespan &lt;= RANDOM makespan (same seed);</li>
- *   <li>the LOCAL_HEFT golden value 190.1 (paper 80 + guided offset 110.1) stays bitwise
- *   unchanged.</li>
- * </ul>
- *
- * <p>The directionality assertion is a weak order (&lt;=) rather than a strict one
- * (&lt;): RANDOM has a small probability of landing on the same mapping as the heuristic;
- * under a fixed seed the assertion is still a deterministic measured fact (the RANDOM
- * golden value is recorded in the failure message as well, for drift triage).</p>
- */
 class PlannerDirectionalityIntegrationTest {
 
-    /** LOCAL_HEFT paper-example golden makespan (V1 model, including the guided offset). */
     private static final double HEFT_GOLDEN_MAKESPAN = 190.1;
 
-    /** Paper cost matrix (same as LocalHeftPaperReproductionTest). */
     private static final double[][] PAPER_COST_SECONDS = {
         {14, 16, 9}, {13, 19, 18}, {11, 13, 19}, {13, 8, 17}, {12, 13, 10},
         {13, 16, 9}, {7, 15, 11}, {5, 11, 14}, {18, 12, 20}, {21, 7, 16}

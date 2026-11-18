@@ -2,17 +2,12 @@ package org.workflowsim.data.v2;
 
 import java.util.List;
 
-/**
- * Pure replica selection at one observed-state snapshot. It returns source, route and isolated
- * estimate together so callers never estimate one replica and charge a reconstructed producer
- * route. It does not admit/settle a copy, evaluate current network load or activate a run model.
- */
 public final class ReplicaTransferSelector {
-    /** Deterministic source rule; zero-byte candidates are tied because they need no service. */
+
     public static final String POLICY = "VISIBLE_LOCAL_OR_MAX_ISOLATED_RATE_STABLE_LOCATION_V2";
 
     private ReplicaTransferSelector() {}
-    /** Distinct demand resolutions; lack of a source is not free/local data. */
+
     public enum Outcome {
         WAITING_FOR_SOURCE,
         LOCAL_PRESENT,
@@ -20,7 +15,6 @@ public final class ReplicaTransferSelector {
         NETWORK_COPY
     }
 
-    /** Immutable decision consumed by both estimator and later admission, without re-routing. */
     public static final class Decision {
         private final DataflowFilePlan.FileDefinition file;
         private final DataLocation destination;
@@ -63,57 +57,44 @@ public final class ReplicaTransferSelector {
             isolatedCompletionTime = finish;
             this.policy = policy;
         }
-        /** @return exact selector policy version */
+
         public String getPolicy() {
             return policy;
         }
-        /** @return scoped immutable file metadata from the visibility snapshot */
+
         public DataflowFilePlan.FileDefinition getFile() {
             return file;
         }
-        /** @return fixed destination */
+
         public DataLocation getDestination() {
             return destination;
         }
-        /** @return observation at which this decision was made */
+
         public double getSelectedAt() {
             return selectedAt;
         }
-        /** @return waiting/local/zero/positive resolution */
+
         public Outcome getOutcome() {
             return outcome;
         }
-        /** @return selected immutable visible copy, null only when none exists */
+
         public DataReplicaState.Replica getSourceReplica() {
             return source;
         }
-        /** @return the actual charged path for NETWORK_COPY, otherwise null */
+
         public DataTransferFabric.Route getRoute() {
             return route;
         }
-        /** @return positive isolated transfer seconds, zero for local/zero, null for missing source */
+
         public Double getIsolatedSeconds() {
             return isolatedSeconds;
         }
-        /** @return isolated completion prediction, not contended completion or actual visibility */
+
         public Double getIsolatedCompletionTime() {
             return isolatedCompletionTime;
         }
     }
 
-    /**
-     * Select local visible data first, otherwise the largest isolated resource bottleneck;
-     * typed location order breaks ties. There is no live-load-based route adaptation. For a
-     * positive selected transfer, duration and its absolute isolated finish must be finite and
-     * strictly advance the binary64 clock; unsupported scales are rejected, not rounded to free
-     * traffic or compensated by selecting a slower source. Shared-service numeric validity and
-     * actual completion observations remain the driver's separate responsibility.
-     * @param snapshot immutable authoritative visible-state snapshot
-     * @param fabric immutable registered capacities and actual-placement routing view
-     * @param fileId known logical file
-     * @param destination known VM input destination
-     * @return immutable resolution binding its one source/path/rate decision
-     */
     public static Decision select(
             DataReplicaState.Snapshot snapshot,
             DataTransferFabric fabric,
@@ -158,11 +139,6 @@ public final class ReplicaTransferSelector {
         return positiveCopyDecision(file, destination, now, selected, selectedRoute);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from select; statements verbatim; order unchanged.
-     * Scope: verifies only that the visibility snapshot and the fabric are non-null and that the
-     * destination is a registered VM input location.
-     */
     private static void requireSelectableInputs(
             DataReplicaState.Snapshot snapshot, DataTransferFabric fabric, DataLocation destination) {
         if (snapshot == null || fabric == null) {
@@ -174,11 +150,6 @@ public final class ReplicaTransferSelector {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from select; statements verbatim; order unchanged.
-     * Scope: computes only the in-isolation duration and absolute finish of a positive-quantity
-     * transfer, checks their binary64 representability, and then assembles the NETWORK_COPY decision.
-     */
     private static Decision positiveCopyDecision(
             DataflowFilePlan.FileDefinition file,
             DataLocation destination,
@@ -193,14 +164,7 @@ public final class ReplicaTransferSelector {
         }
         return new Decision(file, destination, now, Outcome.NETWORK_COPY, selected, selectedRoute, seconds, finish);
     }
-    /**
-     * V3 shared-store read-through: store commit precedes even a target-local cache hit.
-     * @param snapshot observed replicas
-     * @param fabric bounded store fabric
-     * @param fileId logical input
-     * @param destination target VM
-     * @return deferred, local, zero or SOURCE read decision
-     */
+
     public static Decision selectStoreBacked(
             DataReplicaState.Snapshot snapshot,
             DataTransferFabric fabric,
@@ -226,8 +190,7 @@ public final class ReplicaTransferSelector {
         }
         return fixedSource(store, fabric, destination, now, policy);
     }
-    /** @param source actual successful output copy @param fabric bounded store fabric @param now observation
-     * @return fixed-source materialization decision */
+
     public static Decision materializeToStore(DataReplicaState.Replica source, DataTransferFabric fabric, double now) {
         if (source == null
                 || source.getFile().isExternal()

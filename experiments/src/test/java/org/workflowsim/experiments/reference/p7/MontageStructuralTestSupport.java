@@ -22,7 +22,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Shared independent JSON-to-model checks for the standard and extended Montage suites. */
 final class MontageStructuralTestSupport {
 
     private MontageStructuralTestSupport() {}

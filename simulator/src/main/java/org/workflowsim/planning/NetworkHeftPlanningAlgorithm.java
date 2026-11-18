@@ -5,7 +5,6 @@ import org.workflowsim.planning.networkheft.NetworkHeftAdapter;
 import org.workflowsim.planning.networkheft.NetworkHeftPlanner;
 import org.workflowsim.planning.networkheft.NetworkHeftSchedule;
 
-/** Network-Aware HEFT planner with shared-bottleneck flow stretching. */
 public final class NetworkHeftPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;

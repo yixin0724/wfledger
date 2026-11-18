@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable DHEFT DAG and per-VM bandwidth declarations in bytes per second. */
 public final class DheftProblem {
     private final List<DheftTask> tasks;
     private final Map<Integer, DheftTask> tasksById;

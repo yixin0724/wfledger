@@ -137,8 +137,6 @@ class SimulationRunnerIntegrationTest {
             vmByTaskId.put(outcome.getTaskId(), outcome.getVmId());
         }
 
-        // Task IDs follow DAX declaration order. MCT first maps the 3-second task to 1000 MIPS,
-        // then the 1-second task to 500 MIPS, and finally breaks the 4-second tie by VM ID.
         assertEquals(0, vmByTaskId.get(1).intValue());
         assertEquals(1, vmByTaskId.get(2).intValue());
         assertEquals(0, vmByTaskId.get(3).intValue());
@@ -542,7 +540,6 @@ class SimulationRunnerIntegrationTest {
         return result.toString();
     }
 
-    /** Deterministic replay deliberately excludes wall-clock decision elapsed time. */
     private static String logicalEventFingerprint(SimulationReport report) {
         StringBuilder result = new StringBuilder();
         for (SimulationEvent event : report.getEvents()) {

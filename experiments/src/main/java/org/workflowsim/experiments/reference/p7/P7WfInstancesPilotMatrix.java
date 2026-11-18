@@ -14,13 +14,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Small, fixed WfInstances 1.5 compatibility sample set used for P7 input certification.
- *
- * <p>This is the abstract DAG conversion path. It deliberately does not treat WfInstances
- * machine, core-count, memory, timestamp, or observed-makespan fields as platform replay
- * configuration.</p>
- */
 public final class P7WfInstancesPilotMatrix {
 
     public static final long ROOT_SEED = 20260902L;
@@ -60,25 +53,10 @@ public final class P7WfInstancesPilotMatrix {
 
     private P7WfInstancesPilotMatrix() {}
 
-    /**
-     * Returns the fixed WfInstances input certification scenarios.
-     *
-     * @return immutable scenario list
-     */
     public static List<Scenario> scenarios() {
         return SCENARIOS;
     }
 
-    /**
-     * Builds the abstract DAG conversion configuration for one WfInstances certification
-     * scenario.
-     *
-     * @param scenario fixed WfInstances input scenario to resolve
-     * @param datasetRoot explicit absolute dataset root used to resolve the relative input path
-     * @param algorithm scheduling algorithm supported by the standard runner
-     * @return fixed baseline configuration with no failure, no overhead, and shared storage
-     * @throws IllegalArgumentException when any required argument is {@code null}
-     */
     public static SimulationConfig baselineConfig(
             Scenario scenario, Path datasetRoot, Parameters.SchedulingAlgorithm algorithm) {
         if (scenario == null || datasetRoot == null || algorithm == null) {
@@ -98,16 +76,10 @@ public final class P7WfInstancesPilotMatrix {
                 .build();
     }
 
-    /**
-     * Returns the fixed homogeneous abstract platform used for input compatibility certification.
-     *
-     * @return platform with {@value #VM_COUNT} space-shared VMs
-     */
     public static PlatformProfile baselinePlatform() {
         return PlatformProfiles.homogeneousLocal("p7-wfinstances-h0", VM_COUNT);
     }
 
-    /** Immutable input contract of one selected WfInstances file. */
     public static final class Scenario {
         private final String id;
         private final String system;
@@ -155,13 +127,6 @@ public final class P7WfInstancesPilotMatrix {
             return expectedSha256;
         }
 
-        /**
-         * Resolves the scenario-relative path to a normalized absolute path.
-         *
-         * @param datasetRoot explicit absolute {@code datasets} directory
-         * @return normalized absolute path of this input file
-         * @throws IllegalArgumentException when the dataset root or the input file is invalid
-         */
         public Path resolve(Path datasetRoot) {
             return ReferenceDatasetRoot.resolveFile(datasetRoot, relativePath);
         }

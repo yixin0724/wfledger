@@ -20,26 +20,6 @@ import org.workflowsim.platform.PlatformProfiles;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * (AUD-F06, 2026-11-03) The generic campaign must apply the step-down Holm
- * correction within each comparison group's candidate family; before this fix only
- * the network study path corrected for multiplicity and the generic campaign
- * reported raw p values, contradicting the declared "Paired Wilcoxon + Holm"
- * discipline.
- *
- * <p>Fixture: one comparison group with one baseline and two candidates under a
- * common-root-seed plan on a heterogeneous platform. The second candidate runs the
- * baseline's own algorithm, so the bit-exact rerun contract guarantees identical
- * makespans per shared root seed: its paired differences are all zero and its
- * Wilcoxon p value is unavailable. Under the registered family convention that
- * untestable member still consumes correction budget, so the tested candidate's
- * adjusted p value must be min(1, 2 * p) with the declared family size 2, not
- * min(1, 1 * p).</p>
- *
- * <p>All expected relationships are contract arithmetic (Holm step-down on the
- * declared family), applied to the observed raw p value; the raw p value itself is
- * not asserted against a fixed number.</p>
- */
 class CampaignHolmFamilyIntegrationTest {
 
     private static final int REPLICATIONS = 3;
@@ -85,15 +65,12 @@ class CampaignHolmFamilyIntegrationTest {
         List<ExperimentCampaignSummary.ComparisonSummary> comparisons =
                 result.getSummary().getComparisons();
         assertEquals(2, comparisons.size());
-        // Family order follows plan declaration order of the non-baseline candidates.
+
         assertEquals("mct", comparisons.get(0).getCandidateCellId());
         assertEquals("fcfs-again", comparisons.get(1).getCandidateCellId());
         assertEquals(REPLICATIONS, comparisons.get(0).getMatchedRootSeedCount());
         assertEquals(REPLICATIONS, comparisons.get(1).getMatchedRootSeedCount());
 
-        // The MCT candidate must diverge from FCFS on the heterogeneous platform, so
-        // its paired test must be usable; otherwise the fixture no longer exercises
-        // the tested-member branch.
         ExperimentCampaignSummary.ComparisonSummary tested = comparisons.get(0);
         assertTrue(
                 tested.getPairedSignificance().getStatus().startsWith("AVAILABLE_"),
@@ -101,7 +78,7 @@ class CampaignHolmFamilyIntegrationTest {
                         + tested.getPairedSignificance().getStatus());
         assertNotNull(tested.getPairedSignificance().getPValue());
         double rawP = tested.getPairedSignificance().getPValue().doubleValue();
-        // Registered convention: multiplier base = declared family size (2), rank 0.
+
         assertEquals(
                 Math.min(1.0, 2.0 * rawP),
                 tested.getHolmAdjustedPValue().doubleValue(),
@@ -111,8 +88,6 @@ class CampaignHolmFamilyIntegrationTest {
                 Math.min(1.0, 2.0 * rawP) < PairedWilcoxonSignificance.DEFAULT_ALPHA,
                 tested.isSignificantAfterHolmAtDefaultAlpha());
 
-        // The self-identical candidate: all-zero paired differences, no p value, and
-        // therefore no adjusted value and no Holm rejection.
         ExperimentCampaignSummary.ComparisonSummary untestable = comparisons.get(1);
         assertEquals(
                 "UNAVAILABLE_ALL_PAIRED_DIFFERENCES_ARE_ZERO",

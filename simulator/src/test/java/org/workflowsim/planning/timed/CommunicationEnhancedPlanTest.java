@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.planning.cawosched.CaWoSchedVariant;
 import org.workflowsim.platform.PlatformProfile;
 
-/** Communication-enhanced DAG checks from the CaWoSched paper model (R-PAPER-01C). */
 class CommunicationEnhancedPlanTest {
 
     @Test

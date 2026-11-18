@@ -12,14 +12,8 @@ import java.util.TreeSet;
 
 import org.workflowsim.network.FatTreeTopology;
 
-/**
- * Pure immutable resource/placement view for V2 input selection. Capacities are modeled BYTES/s.
- * SOURCE access is explicitly unbounded and off-fabric in NF003; missing VM/link capacities
- * never mean unbounded. The optional FatTreeTopology must already be safely constructed by
- * its caller. This adapter does not allocate a topology from an untrusted size parameter.
- */
 public final class DataTransferFabric {
-    /** Immutable selected path, including the exact standalone bottleneck used for admission. */
+
     public static final class Route {
         private final DataLocation source, destination;
         private final List<String> resources;
@@ -59,23 +53,23 @@ public final class DataTransferFabric {
             requireCapacity(bottleneck);
             rate = bottleneck;
         }
-        /** @return actual replica source */
+
         public DataLocation getSource() {
             return source;
         }
-        /** @return fixed destination */
+
         public DataLocation getDestination() {
             return destination;
         }
-        /** @return immutable ordered resources, with multiplicity preserved */
+
         public List<String> getResources() {
             return resources;
         }
-        /** @return minimum resource capacity divided by its path multiplicity */
+
         public double getStandaloneRateBytesPerSecond() {
             return rate;
         }
-        /** @return explicit NF003 unbounded off-fabric SOURCE input abstraction */
+
         public boolean isUnboundedOffFabricSource() {
             return sourceBypass;
         }
@@ -122,12 +116,6 @@ public final class DataTransferFabric {
         sourceStorage = null;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from DataTransferFabric constructor; statements verbatim; order unchanged.
-     * Scope: validates and registers only the actual host mapping when a topology is present
-     * (covering every VM endpoint and placing each on an already placed host) and merges link
-     * capacities into the resource table.
-     */
     private static Map<Integer, Integer> resolveTopologyPlacement(
             FatTreeTopology topology,
             Map<Integer, Double> endpointBytes,
@@ -158,22 +146,11 @@ public final class DataTransferFabric {
         return placement;
     }
 
-    /**
-     * @param vmCapacityBytesPerSecond positive normal finite binary64 VM capacities
-     * @param unboundedSources explicit distinct SOURCE identifiers
-     * @return endpoint-only immutable fabric
-     */
     public static DataTransferFabric endpoints(
             Map<Integer, Double> vmCapacityBytesPerSecond, Collection<String> unboundedSources) {
         return new DataTransferFabric(vmCapacityBytesPerSecond, null, null, unboundedSources);
     }
-    /**
-     * @param vmCapacityBytesPerSecond positive normal finite binary64 VM capacities
-     * @param actualVmHosts complete actual VM-to-host map, not logical producer placements
-     * @param topology already constructed immutable Fat-tree routing/physical-link view
-     * @param unboundedSources explicit distinct off-fabric SOURCE identifiers
-     * @return immutable endpoint plus deterministic directed-link fabric
-     */
+
     public static DataTransferFabric fatTree(
             Map<Integer, Double> vmCapacityBytesPerSecond,
             Map<Integer, Integer> actualVmHosts,
@@ -219,13 +196,7 @@ public final class DataTransferFabric {
         capacities = Collections.unmodifiableMap(resources);
         sourceStorage = storage;
     }
-    /**
-     * @param vmCapacityBytesPerSecond normal finite VM capacities
-     * @param actualVmHosts complete actual VM host map
-     * @param topology optional already-validated topology
-     * @param storage explicit bounded store; endpoint-only host membership is checked by PlatformProfile
-     * @return bounded store read/write and shared-NIC fabric, distinct from old V2 factories
-     */
+
     public static DataTransferFabric withStorage(
             Map<Integer, Double> vmCapacityBytesPerSecond,
             Map<Integer, Integer> actualVmHosts,
@@ -238,34 +209,27 @@ public final class DataTransferFabric {
                 Collections.singletonList("source"));
         return new DataTransferFabric(base, actualVmHosts, storage);
     }
-    /** @return explicit bounded store, or null for original V2 semantics */
+
     public DataflowStorageSpec getSourceStorage() {
         return sourceStorage;
     }
-    /** @return immutable typed known locations */
+
     public Set<DataLocation> getLocations() {
         return locations;
     }
-    /** @return immutable normal finite capacities in bytes/s; SOURCE is explicitly absent */
+
     public Map<String, Double> getResourceCapacities() {
         return capacities;
     }
-    /** @return frozen actual VM host mapping, empty in endpoint-only mode */
+
     public Map<Integer, Integer> getActualVmHosts() {
         return hosts;
     }
-    /** @return immutable physical routing view, or null for endpoint-only mode */
+
     public FatTreeTopology getTopology() {
         return topology;
     }
 
-    /**
-     * Compute the path once from the actual selected source and actual VM placements.
-     * Local references have no positive route and are resolved by the selector instead.
-     * @param source known VM holder or explicitly unbounded SOURCE
-     * @param destination known different VM destination
-     * @return immutable path and standalone bottleneck, never an estimator-only source guess
-     */
     public Route route(DataLocation source, DataLocation destination) {
         requireLocation(source);
         requireLocation(destination);

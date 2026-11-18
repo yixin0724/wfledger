@@ -7,19 +7,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Immutable abstract infrastructure model used by WorkflowSim experiments.
- *
- * <p>A platform description only declares the resources being simulated; it cannot be
- * used to claim that a WfCommons execution trace ran on the same infrastructure.</p>
- */
 public final class PlatformProfile {
 
-    /** Execution resource sharing mode of Cloudlets inside a VM. */
     public enum CloudletSchedulerMode {
-        /** Each task exclusively owns the allocated processing resources until it completes. */
         SPACE_SHARED,
-        /** Multiple tasks share the processing resources in time slices. */
+
         TIME_SHARED
     }
 
@@ -51,17 +43,10 @@ public final class PlatformProfile {
                 : Collections.unmodifiableList(new ArrayList<>(builder.carbonWindows));
     }
 
-    /** BAT-C1: @return green power windows declared by the budget model (immutable); empty = model not declared */
     public List<CarbonWindow> getCarbonWindows() {
         return carbonWindows;
     }
 
-    /**
-     * Green power windows of the budget model (BAT-C1, 2026-10-28): available green power
-     * over the interval [startSeconds, endSeconds). Ordering and non-overlap are validated
-     * at build time; coverage completeness is validated by the accounting side against the
-     * simulation duration.
-     */
     public static final class CarbonWindow {
         private final double startSeconds;
         private final double endSeconds;
@@ -95,18 +80,6 @@ public final class PlatformProfile {
         }
     }
 
-    /**
-     * DVFS frequency tier (BAT-D1, 2026-10-29). A P-state triple: MIPS speed plus the idle
-     * and full-load power of that tier. The table order is strictly descending by MIPS
-     * (first tier = default tier). Derivation of the conservation law:
-     *
-     * <pre>
-     * E_vm = P_idle(default tier) * T_idle + SUM_tier [P_max(tier) * T_busy(tier)]
-     * </pre>
-     *
-     * <p>A single-tier list (or an empty one) degenerates semantically to the v1 linear law
-     * (equivalent to one tier). Empty list = v1 mode; non-empty list = DVFS mode.</p>
-     */
     public static final class FrequencyTier {
         private final double mips;
         private final double idlePowerWatts;
@@ -153,25 +126,10 @@ public final class PlatformProfile {
         return vms;
     }
 
-    /**
-     * Returns the explicitly pinned VM-to-Host mapping; VMs that are not pinned do not
-     * appear in this mapping.
-     *
-     * @return immutable explicit VM-Host pinning map
-     */
     public java.util.Map<Integer, Integer> getPinnedVmHostIds() {
         return pinnedVmHostIds;
     }
 
-    /**
-     * Returns the deterministic VM-to-Host placement computed by the preflight at platform
-     * construction time.
-     *
-     * <p>The standard runner compares it with the mapping actually created by CloudSim
-     * before publishing a report.</p>
-     *
-     * @return immutable complete VM-Host preflight placement map
-     */
     public java.util.Map<Integer, Integer> getVmHostAssignments() {
         return vmHostAssignments;
     }
@@ -180,7 +138,6 @@ public final class PlatformProfile {
         return storage;
     }
 
-    /** @return explicit bounded dataflow store, or null for original models */
     public org.workflowsim.data.v2.DataflowStorageSpec getSourceStorage() {
         return sourceStorage;
     }
@@ -189,29 +146,14 @@ public final class PlatformProfile {
         return costs;
     }
 
-    /**
-     * Returns the network topology declared by the platform; {@code null} when not declared.
-     *
-     * <p>The Fat-tree link-contention data movement model requires this declaration.</p>
-     *
-     * @return immutable network topology declaration, or null
-     */
     public org.workflowsim.network.NetworkTopologySpec getNetworkTopology() {
         return networkTopology;
     }
 
-    /**
-     * Creates an empty platform description builder.
-     *
-     * @param name platform name used in reports and evidence artifacts; must not be empty
-     * @return builder that can further add Host, VM, storage and cost configuration
-     * @throws IllegalArgumentException when the name is empty
-     */
     public static Builder builder(String name) {
         return new Builder(name);
     }
 
-    /** Builder that validates platform identity, resource capacity and deterministic placement constraints. */
     public static final class Builder {
 
         private final String name;
@@ -225,7 +167,6 @@ public final class PlatformProfile {
         private org.workflowsim.network.NetworkTopologySpec networkTopology;
         private org.workflowsim.data.v2.DataflowStorageSpec sourceStorage;
 
-        /** @param value explicit bounded source/storage resources @return this builder */
         public Builder sourceStorage(org.workflowsim.data.v2.DataflowStorageSpec value) {
             sourceStorage = requireNonNull(value, "Dataflow source storage");
             return this;
@@ -238,42 +179,16 @@ public final class PlatformProfile {
             this.name = name.trim();
         }
 
-        /**
-         * Adds a Host description.
-         *
-         * @param host platform Host description to add; must not be null
-         * @return this builder
-         * @throws IllegalArgumentException when {@code host} is null
-         */
         public Builder addHost(HostSpec host) {
             hosts.add(requireNonNull(host, "Host specification"));
             return this;
         }
 
-        /**
-         * Adds a VM description.
-         *
-         * @param vm platform VM description to add; must not be null
-         * @return this builder
-         * @throws IllegalArgumentException when {@code vm} is null
-         */
         public Builder addVm(VmSpec vm) {
             vms.add(requireNonNull(vm, "VM specification"));
             return this;
         }
 
-        /**
-         * Pins a declared VM to a declared Host.
-         *
-         * <p>VMs that are not pinned keep using the deterministic compatible placement rule
-         * applied by the standard runner.</p>
-         *
-         * @param vmId non-negative identifier of a declared VM
-         * @param hostId non-negative identifier of a declared Host
-         * @return this builder
-         * @throws IllegalArgumentException when an identifier is negative or the same VM is
-         *     pinned to different Hosts
-         */
         public Builder pinVmToHost(int vmId, int hostId) {
             if (vmId < 0 || hostId < 0) {
                 throw new IllegalArgumentException("Pinned VM and Host IDs must be non-negative");
@@ -285,43 +200,16 @@ public final class PlatformProfile {
             return this;
         }
 
-        /**
-         * Sets the abstract capacity and maximum transfer rate of the shared storage.
-         *
-         * @param value non-null storage description
-         * @return this builder
-         * @throws IllegalArgumentException when {@code value} is null
-         */
         public Builder storage(StorageSpec value) {
             this.storage = requireNonNull(value, "Storage specification");
             return this;
         }
 
-        /**
-         * Sets the datacenter-level abstract cost parameters.
-         *
-         * @param value non-null cost description
-         * @return this builder
-         * @throws IllegalArgumentException when {@code value} is null
-         */
         public Builder costs(CostSpec value) {
             this.costs = requireNonNull(value, "Cost specification");
             return this;
         }
 
-        /**
-         * Declares the network topology of the platform (v1 supports only the Al-Fares k-Pod
-         * Fat-tree; see {@link org.workflowsim.network.NetworkTopologySpec#fatTree}).
-         *
-         * <p>Used only by the Fat-tree link-contention data movement model; once declared it
-         * must be combined with that model (the standard runner rejects a configuration that
-         * declares a topology without using that model).</p>
-         *
-         * @param value non-null topology declaration
-         * @return this builder
-         * @throws IllegalArgumentException when {@code value} is null
-         */
-        /** BAT-C1: appends a green power window; must be time-ascending and non-overlapping (validated at build). */
         public Builder carbonWindow(double startSeconds, double endSeconds, double greenWatts) {
             CarbonWindow window = new CarbonWindow(startSeconds, endSeconds, greenWatts);
             if (!carbonWindows.isEmpty()) {
@@ -340,14 +228,6 @@ public final class PlatformProfile {
             return this;
         }
 
-        /**
-         * Validates the resource descriptions and computes the deterministic VM-Host
-         * preflight placement.
-         *
-         * @return immutable platform description
-         * @throws IllegalArgumentException when a Host/VM is missing, an identifier is
-         *     duplicated, resources are oversubscribed, or the pinned placement is infeasible
-         */
         public PlatformProfile build() {
             if (hosts.isEmpty() || vms.isEmpty()) {
                 throw new IllegalArgumentException("Platform profile requires at least one host and one VM");
@@ -429,12 +309,6 @@ public final class PlatformProfile {
             }
         }
 
-        /**
-         * Reproduces the candidate order of the standard {@code VmAllocationPolicySimple}:
-         * most remaining PEs first, then Host declaration order to break ties. A pinned
-         * binding replaces the default choice of the corresponding VM; the variable capacity
-         * check covers all resources CloudSim retains when creating a VM.
-         */
         private static java.util.Map<Integer, Integer> resolveVmHostAssignments(
                 List<HostSpec> hosts, List<VmSpec> vms, java.util.Map<Integer, Integer> pinned) {
             List<PlacementCapacity> capacities = new ArrayList<PlacementCapacity>();
@@ -480,10 +354,6 @@ public final class PlatformProfile {
             return selected;
         }
 
-        /**
-         * Rejects configurations whose aggregate resources are already oversubscribed,
-         * before the deterministic preflight runs the stricter per-Host checks.
-         */
         private static void validateAggregateCapacity(List<HostSpec> hosts, List<VmSpec> vms) {
             long hostPes = 0L;
             long hostRam = 0L;
@@ -555,7 +425,6 @@ public final class PlatformProfile {
         }
     }
 
-    /** Immutable resource specification of an abstract Host. */
     public static final class HostSpec {
 
         private final int id;
@@ -565,17 +434,6 @@ public final class PlatformProfile {
         private final long bandwidth;
         private final long storageMb;
 
-        /**
-         * Creates a Host resource specification.
-         *
-         * @param id non-negative Host identifier
-         * @param pes number of available processing elements; must be positive
-         * @param mipsPerPe compute capacity per processing element; must be positive and finite
-         * @param ramMb memory capacity in MB; must be positive
-         * @param bandwidth available bandwidth; must be positive
-         * @param storageMb local storage capacity in MB; must be positive
-         * @throws IllegalArgumentException when any resource parameter is invalid
-         */
         public HostSpec(int id, int pes, double mipsPerPe, int ramMb, long bandwidth, long storageMb) {
             if (id < 0 || pes <= 0 || !positiveFinite(mipsPerPe) || ramMb <= 0 || bandwidth <= 0L || storageMb <= 0L) {
                 throw new IllegalArgumentException("Invalid host specification for ID " + id);
@@ -613,7 +471,6 @@ public final class PlatformProfile {
         }
     }
 
-    /** Immutable resource, scheduler and optional pricing specification of an abstract VM. */
     public static final class VmSpec {
 
         private final int id;
@@ -630,19 +487,6 @@ public final class PlatformProfile {
         private final Double carbonIntensityGramsPerKWh;
         private final List<FrequencyTier> frequencyTiers;
 
-        /**
-         * Creates a VM specification without explicit VM-level pricing.
-         *
-         * @param id non-negative VM identifier
-         * @param mips compute capacity of the VM; must be positive and finite
-         * @param pes number of VM processing elements; must be positive
-         * @param ramMb memory capacity in MB; must be positive
-         * @param bandwidth VM bandwidth; must be positive
-         * @param imageSizeMb VM image size in MB; must be positive
-         * @param vmm VMM name; must not be empty
-         * @param schedulerMode Cloudlet scheduling mode inside the VM; must not be null
-         * @throws IllegalArgumentException when any resource parameter is invalid
-         */
         public VmSpec(
                 int id,
                 double mips,
@@ -655,7 +499,6 @@ public final class PlatformProfile {
             this(id, mips, pes, ramMb, bandwidth, imageSizeMb, vmm, schedulerMode, null, 0.0, 0.0, null, null);
         }
 
-        /** 12-parameter (carbon included) delegate from before BAT-D1: frequency tiers default to null. */
         public VmSpec(
                 int id,
                 double mips,
@@ -685,7 +528,6 @@ public final class PlatformProfile {
                     null);
         }
 
-        /** Convenience constructor: costs only, no power model. Delegates to master. */
         public VmSpec(
                 int id,
                 double mips,
@@ -699,7 +541,6 @@ public final class PlatformProfile {
             this(id, mips, pes, ramMb, bandwidth, imageSizeMb, vmm, schedulerMode, costs, 0.0, 0.0, null, null);
         }
 
-        /** 11-parameter (power included) delegate from before BAT-C1: carbon intensity defaults to null. */
         public VmSpec(
                 int id,
                 double mips,
@@ -728,31 +569,6 @@ public final class PlatformProfile {
                     null);
         }
 
-        /**
-         * Creates a VM specification with optional VM-level pricing.
-         *
-         * <p>When the standard runner uses {@code CostModel.VM}, every VM must provide
-         * pricing information.</p>
-         *
-         * @param id non-negative VM identifier
-         * @param mips compute capacity of the VM; must be positive and finite
-         * @param pes number of VM processing elements; must be positive
-         * @param ramMb memory capacity in MB; must be positive
-         * @param bandwidth VM bandwidth; must be positive
-         * @param imageSizeMb VM image size in MB; must be positive
-         * @param vmm VMM name; must not be empty
-         * @param schedulerMode Cloudlet scheduling mode inside the VM; must not be null
-         * @param costs optional VM-level cost specification; whether null is allowed is
-         *     decided by the selected cost model
-         * @throws IllegalArgumentException when any resource parameter is invalid
-         */
-        /**
-         * Creates a VmSpec with optional power fields for the energy dimension
-         * (BAT-E1, 2026-10-27). This is the master constructor; the two shorter
-         * forms delegate here with zero power defaults.
-         *
-         * @throws IllegalArgumentException when any resource or power parameter is invalid
-         */
         public VmSpec(
                 int id,
                 double mips,
@@ -767,7 +583,7 @@ public final class PlatformProfile {
                 double maxPowerWatts,
                 Double carbonIntensityGramsPerKWh,
                 List<FrequencyTier> frequencyTiers) {
-            // BAT-D1: non-empty frequency tier list excludes the v1 power fields (single source of truth).
+
             if (frequencyTiers != null && !frequencyTiers.isEmpty()) {
                 if (idlePowerWatts > 0.0 || maxPowerWatts > 0.0) {
                     throw new IllegalArgumentException(
@@ -823,37 +639,30 @@ public final class PlatformProfile {
                     : Collections.unmodifiableList(new ArrayList<>(frequencyTiers));
         }
 
-        /** @return idle power in watts; 0 when no power model is declared */
         public double getIdlePowerWatts() {
             return idlePowerWatts;
         }
 
-        /** @return max power in watts; 0 when no power model is declared */
         public double getMaxPowerWatts() {
             return maxPowerWatts;
         }
 
-        /** @return true when this VM carries a declared power model (any field > 0) */
         public boolean hasPowerModel() {
             return idlePowerWatts > 0.0 || maxPowerWatts > 0.0;
         }
 
-        /** BAT-C1: @return per-VM carbon intensity declared by the intensity model (gCO2/kWh); null = not declared */
         public Double getCarbonIntensityGramsPerKWh() {
             return carbonIntensityGramsPerKWh;
         }
 
-        /** BAT-D1: @return frequency tier table (immutable; empty = v1 single-tier mode) */
         public List<FrequencyTier> getFrequencyTiers() {
             return frequencyTiers;
         }
 
-        /** BAT-D1: @return whether this VM declares DVFS frequency tiers */
         public boolean hasFrequencyTiers() {
             return frequencyTiers != null && !frequencyTiers.isEmpty();
         }
 
-        /** BAT-D1: @return default tier (= first tier of the table; callers must check hasFrequencyTiers first) */
         public FrequencyTier defaultFrequencyTier() {
             return frequencyTiers.get(0);
         }
@@ -899,19 +708,11 @@ public final class PlatformProfile {
         }
     }
 
-    /** Immutable capacity and maximum transfer rate specification of the abstract shared storage. */
     public static final class StorageSpec {
 
         private final long capacityMb;
         private final int maxTransferRateMbPerSecond;
 
-        /**
-         * Creates a shared storage specification.
-         *
-         * @param capacityMb storage capacity in MB; must be positive
-         * @param maxTransferRateMbPerSecond maximum transfer rate in MB/s; must be positive
-         * @throws IllegalArgumentException when the capacity or the rate is not positive
-         */
         public StorageSpec(long capacityMb, int maxTransferRateMbPerSecond) {
             if (capacityMb <= 0L || maxTransferRateMbPerSecond <= 0) {
                 throw new IllegalArgumentException("Storage capacity and transfer rate must be positive");
@@ -929,7 +730,6 @@ public final class PlatformProfile {
         }
     }
 
-    /** Immutable abstract cost specification used by a datacenter or a VM. */
     public static final class CostSpec {
 
         private final double cpuPerSecond;
@@ -937,15 +737,6 @@ public final class PlatformProfile {
         private final double storage;
         private final double bandwidth;
 
-        /**
-         * Creates an abstract cost specification.
-         *
-         * @param cpuPerSecond cost per CPU second; must be a non-negative finite value
-         * @param memory memory cost; must be a non-negative finite value
-         * @param storage storage cost; must be a non-negative finite value
-         * @param bandwidth bandwidth cost; must be a non-negative finite value
-         * @throws IllegalArgumentException when any cost is not a non-negative finite value
-         */
         public CostSpec(double cpuPerSecond, double memory, double storage, double bandwidth) {
             if (!nonNegativeFinite(cpuPerSecond)
                     || !nonNegativeFinite(memory)

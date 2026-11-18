@@ -16,7 +16,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Full SimulationRunner integration of planner-selected DVFS tiers. */
 class DvfsSlackIntegrationTest {
 
     @TempDir

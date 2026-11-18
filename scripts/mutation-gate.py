@@ -1,32 +1,4 @@
 #!/usr/bin/env python3
-"""Registered-mutant gate: verifies the maintained test battery still kills
-every registered semantic mutation (mutation-survival = 0 gate).
-
-Statuses
-    KILLED        the registered killer tests (or the full module battery)
-                  fail while this mutant is applied
-    SURVIVED      mutant applied and the full simulator battery stayed green
-    ANCHOR_STALE  the registered anchor no longer occurs exactly once in the
-                  current tree (source drift; the ledger must be updated)
-    INFRA_FAILURE build/test infrastructure failed without test failures
-
-Exit codes
-    0  all registered mutants KILLED
-    1  at least one SURVIVED or INFRA_FAILURE
-    2  at least one ANCHOR_STALE (takes precedence: ledger maintenance first)
-
-Usage
-    python3 -B scripts/mutation-gate.py --output <new-report.json>
-    python3 -B scripts/mutation-gate.py --output <new-report.json> --dry-run
-    python3 -B scripts/mutation-gate.py --output <new-report.json> --ids M5,M9
-    python3 -B scripts/mutation-gate.py --module experiments --output <new-report.json>
-    python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
-
-Safety: mutation is applied in place to the working tree; every file is
-restored from an in-memory backup in a `finally` block and re-verified after
-restore. Full mode refuses to start on a dirty Git tree. Run it exclusively
-(no concurrent Maven builds in the same checkout).
-"""
 
 import argparse
 import json
@@ -209,23 +181,19 @@ REGISTRY = [
         id="M19",
         name="INVALID label binds the FCFS policy instead of the static no-decision shell",
         file="simulator/src/main/java/org/workflowsim/WorkflowScheduler.java",
-        old="""                // this case because the runner rejects INVALID first.
-                algorithm = new StaticSchedulingAlgorithm();""",
-        new="""                // this case because the runner rejects INVALID first.
-                algorithm = new FCFSSchedulingAlgorithm();""",
+        old="""            case INVALID:
+                algorithm = new StaticSchedulingAlgorithm();
+                break;""",
+        new="""            case INVALID:
+                algorithm = new FCFSSchedulingAlgorithm();
+                break;""",
         killers="WorkflowSchedulerExplicitBindingTest"),
     dict(
         id="M20",
         name="Runner ignores the configured event-recorder cap and constructs the default recorder",
         file="simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java",
-        old="""        // AUD-F07 follow-up (2026-11-04, post-completion review): the retention cap is run
-        // configuration (SimulationConfig builder / workbench simulation.eventRecorderCap), not
-        // a Java-only constructor argument -- the only enabled-recorder construction site.
-        SimulationEventRecorder events = new SimulationEventRecorder(config.getEventRecorderCap());""",
-        new="""        // AUD-F07 follow-up (2026-11-04, post-completion review): the retention cap is run
-        // configuration (SimulationConfig builder / workbench simulation.eventRecorderCap), not
-        // a Java-only constructor argument -- the only enabled-recorder construction site.
-        SimulationEventRecorder events = new SimulationEventRecorder();""",
+        old="""        SimulationEventRecorder events = new SimulationEventRecorder(config.getEventRecorderCap());""",
+        new="""        SimulationEventRecorder events = new SimulationEventRecorder();""",
         killers="SimulationRunnerEventRecorderCapIntegrationTest"),
     dict(
         id="M21",
@@ -563,20 +531,17 @@ EXPERIMENTS_REGISTRY = [
         module="experiments"),
 ]
 
-
 class AnchorError(ValueError):
-    """The registered anchor does not occur exactly once in the target file."""
-
+    pass
 
 def parse_test_stats(output):
-    """Return (runs, failures) from Surefire's summary line, else None."""
+
     match = TEST_STATS.search(output)
     if not match:
         return None
     runs = int(match.group(1))
     failures = int(match.group(2)) + int(match.group(3))
     return runs, failures
-
 
 def classify_stage(exit_code, failures):
     if exit_code != 0 and failures:
@@ -585,15 +550,13 @@ def classify_stage(exit_code, failures):
         return "INFRA_FAILURE"
     return "NOT_KILLED_BY_STAGE"
 
-
 def apply_mutation(text, old, new):
     if text.count(old) != 1:
         raise AnchorError("anchor occurs %d times (expected 1)" % text.count(old))
     return text.replace(old, new, 1)
 
-
 def collect_anchor_states(registry=None):
-    """Read-only liveness map: mutant id -> LIVE or ANCHOR_STALE."""
+
     states = {}
     for mutant in (registry or REGISTRY):
         path = ROOT / mutant["file"]
@@ -604,7 +567,6 @@ def collect_anchor_states(registry=None):
             continue
         states[mutant["id"]] = "LIVE" if text.count(mutant["old"]) == 1 else "ANCHOR_STALE"
     return states
-
 
 def summarize(results):
     killed = [r for r in results if r["status"] == "KILLED"]
@@ -618,14 +580,12 @@ def summarize(results):
         "infraFailureIds": [r["id"] for r in results if r["status"] == "INFRA_FAILURE"],
     }
 
-
 def report_exit_code(results):
     if any(r["status"] == "ANCHOR_STALE" for r in results):
         return 2
     if any(r["status"] in ("SURVIVED", "INFRA_FAILURE") for r in results):
         return 1
     return 0
-
 
 def write_report(path, data):
     path = pathlib.Path(path)
@@ -634,13 +594,11 @@ def write_report(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
-
 def run_maven(arguments):
     started = time.time()
     proc = subprocess.run(
         ["mvn"] + arguments, cwd=str(ROOT), capture_output=True, text=True)
     return proc.returncode, proc.stdout + proc.stderr, time.time() - started
-
 
 def git_tree_dirty():
     try:
@@ -648,14 +606,13 @@ def git_tree_dirty():
             ["git", "status", "--porcelain"], cwd=str(ROOT),
             capture_output=True, text=True)
         if proc.returncode != 0:
-            return None  # git unavailable: caller decides how to treat this
+            return None
         return bool(proc.stdout.strip())
     except OSError:
         return None
 
-
 def module_test_arguments(mutant, killers=None):
-    """Select the reactor module without ever using a stale installed simulator jar."""
+
     if mutant.get("module", "simulator") == "experiments":
         arguments = ["-pl", ":workflowsim-workbench", "-am", "test"]
     else:
@@ -664,9 +621,8 @@ def module_test_arguments(mutant, killers=None):
         arguments.extend(["-Dtest=%s" % killers, "-Dsurefire.failIfNoSpecifiedTests=false"])
     return arguments
 
-
 def execute_mutant(mutant):
-    """Apply one registered mutant in place, run the battery, restore, and report."""
+
     path = ROOT / mutant["file"]
     original = path.read_text(encoding="utf-8")
     if original.count(mutant["old"]) != 1:
@@ -704,10 +660,9 @@ def execute_mutant(mutant):
         if restored != original:
             raise RuntimeError("restore verification failed for %s" % mutant["file"])
 
-
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+        description='Registered-mutant gate: verifies the maintained test battery still kills\nevery registered semantic mutation (mutation-survival = 0 gate).\n\nStatuses\n    KILLED        the registered killer tests (or the full module battery)\n                  fail while this mutant is applied\n    SURVIVED      mutant applied and the full simulator battery stayed green\n    ANCHOR_STALE  the registered anchor no longer occurs exactly once in the\n                  current tree (source drift; the ledger must be updated)\n    INFRA_FAILURE build/test infrastructure failed without test failures\n\nExit codes\n    0  all registered mutants KILLED\n    1  at least one SURVIVED or INFRA_FAILURE\n    2  at least one ANCHOR_STALE (takes precedence: ledger maintenance first)\n\nUsage\n    python3 -B scripts/mutation-gate.py --output <new-report.json>\n    python3 -B scripts/mutation-gate.py --output <new-report.json> --dry-run\n    python3 -B scripts/mutation-gate.py --output <new-report.json> --ids M5,M9\n    python3 -B scripts/mutation-gate.py --module experiments --output <new-report.json>\n    python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>\n\nSafety: mutation is applied in place to the working tree; every file is\nrestored from an in-memory backup in a `finally` block and re-verified after\nrestore. Full mode refuses to start on a dirty Git tree. Run it exclusively\n(no concurrent Maven builds in the same checkout).\n', formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--output", required=True,
                         help="path for the new JSON report (must not exist)")
     parser.add_argument("--dry-run", action="store_true",
@@ -770,7 +725,6 @@ def main(argv=None):
             result["id"], result["status"], result["stage"], result.get("seconds", 0)))
     print("report: %s" % args.output)
     return report_exit_code(results)
-
 
 if __name__ == "__main__":
     sys.exit(main())

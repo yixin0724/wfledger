@@ -16,21 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.data.DataMovementModel;
 import org.workflowsim.utils.Parameters;
 
-/**
- * Campaign sampling values, repeated-run and structural-contract regression under the
- * current model.
- *
- * <p>The fixture uses DAX-normalized workload, no explicit cost matrix, seed 91 and the
- * declared 3/4 host platforms; it is not mixed with the simulator's paper cost-matrix
- * fixture. The value, ranking, monotonicity and identity assertions below apply only to
- * the inputs and parameters of each test; they do not entail invariants for all DAGs or
- * new rankings for the complete historical study.</p>
- *
- * <p>For the historical parameters and the provenance of the retained results see
- * {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}.
- * This test maintains the current regression values and does not overwrite the
- * historical numeric artifacts in that directory.</p>
- */
 class FatTreeCampaignGoldenIntegrationTest {
 
     private static final String V1 =
@@ -50,7 +35,6 @@ class FatTreeCampaignGoldenIntegrationTest {
     private static final String BASELINE = "baseline-k4-full";
     private static final String A4 = "A4-k4-full-link10x";
 
-    /** Golden makespan of the 12 paper-example combinations (seconds, campaign configuration). */
     @Test
     void paperExampleGoldenMakespansMatchCampaignConfiguration() throws Exception {
         Log.disable();
@@ -67,11 +51,8 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertMakespan(results, HEFT_EXAMPLE, PSO, V1, 6132.1);
         assertMakespan(results, HEFT_EXAMPLE, PSO, R2, 6254.1);
         assertMakespan(results, HEFT_EXAMPLE, PSO, R6, 7262.1);
-        // R10 reuses the R8 parameters 0.125/1.25 MB/s; the CPOP and contention columns
-        // are locked against the corrected actual execution.
     }
 
-    /** Contention flips the per-DAG winner of cybershake to PSO; the paper example keeps HEFT. */
     @Test
     void contentionFlipsCybershakeWinnersToPso() throws Exception {
         Log.disable();
@@ -80,9 +61,7 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertEquals(HEFT, winners.get(V1).get(CYBERSHAKE_N50));
         assertEquals(PSO, winners.get(R2).get(CYBERSHAKE_N50));
         assertEquals(PSO, winners.get(R6).get(CYBERSHAKE_N50));
-        // The R10-era core chose PSO here. Isolated old/new core controls show that
-        // time-aware LOCAL data planning changes HEFT's mapping/schedule and restores
-        // a V1-to-contention change of winner. Do not preserve a bug-dependent ranking.
+
         assertEquals(HEFT, winners.get(V1).get(CYBERSHAKE_N100));
         assertMakespan(results, CYBERSHAKE_N100, HEFT, V1, 1111837.479876);
         assertMakespan(results, CYBERSHAKE_N100, PSO, V1, 1112378.121047);
@@ -95,11 +74,7 @@ class FatTreeCampaignGoldenIntegrationTest {
                     winners.get(model).get(HEFT_EXAMPLE),
                     model + ": the paper example winner must always be LOCAL_HEFT");
         }
-        // Golden makespans (the direct numeric evidence of the flip, seconds). After
-        // re-calibration, R6 for N50 PSO recovers a small slowdown of the binding link
-        // (587921.6099 &lt; R2 587924.0247, a noise-level crossing already covered by the
-        // weak-monotonicity diagnostic); for N100 PSO, R6 equals R2 exactly (the link
-        // layer adds no further constraint on that mapping).
+
         assertMakespan(results, CYBERSHAKE_N50, PSO, R2, 587924.0247);
         assertMakespan(results, CYBERSHAKE_N50, PSO, R6, 587921.1503);
         assertMakespan(results, CYBERSHAKE_N50, HEFT, R2, 588010.008326);
@@ -108,7 +83,6 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertMakespan(results, CYBERSHAKE_N100, CPOP, V1, 1155577.5672);
     }
 
-    /** Weak monotonicity: strict on the paper example; crossings inside the subset must be noise-level. */
     @Test
     void weakMonotonicityStrictOnPaperExampleAndNoiseLevelElsewhere() throws Exception {
         Log.disable();
@@ -130,7 +104,6 @@ class FatTreeCampaignGoldenIntegrationTest {
         }
     }
 
-    /** Determinism: two runs of the same configuration yield bit-identical main-matrix records. */
     @Test
     void subsetRunsAreDeterministic() throws Exception {
         Log.disable();
@@ -139,15 +112,6 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertEquals(first.mainMatrix, second.mainMatrix, "the two runs must yield a bit-identical main matrix");
     }
 
-    /**
-     * 3-host sensitivity: the baseline is identical to main-matrix R6; the structural axes
-     * (A1/A2/A3/A5) are measured identical (on the 3-host platform every concurrent flow
-     * must share the endpoint host -- physical degeneracy, not a link-parameter effect);
-     * the bandwidth-ratio axis A4 (link 1.25 MB/s &gt; endpoint 1 MB/s, non-binding)
-     * converges exactly back to main-matrix R2 -- after re-calibration this axis restores
-     * the design semantics "converge to endpoint dominance when the link is far wider
-     * than the endpoint".
-     */
     @Test
     void sensitivityLocksDegenerateStructureAxesAndConvergingBandwidthAxis() throws Exception {
         Log.disable();
@@ -180,15 +144,6 @@ class FatTreeCampaignGoldenIntegrationTest {
         }
     }
 
-    /**
-     * 4-host structural block: the structural axes (A1/A2/A3/A5) are identical -- crossing
-     * flows never traverse the differing link concurrently; the bandwidth axis A4 (link
-     * 1.25 MB/s, non-binding) strictly lowers the makespan, which together with the
-     * simulator slow-link probe (FatTreeContentionIntegrationTest, 0.25 MB/s -> 588.1
-     * &gt; 284.1) proves that the link-contention model takes effect correctly on a
-     * binding link. After the R8 re-calibration this contract restores its original
-     * design shape.
-     */
     @Test
     void structuralBlockLocksFourHostDegeneracyAndBandwidthEffect() throws Exception {
         Log.disable();
@@ -217,10 +172,6 @@ class FatTreeCampaignGoldenIntegrationTest {
         assertEquals(5186.1, results.structuralMakespan(HEFT_EXAMPLE, CPOP, A4), 1.0e-6);
     }
 
-    /**
-     * The sensitivity and structural blocks run the paper example only (the other DAGs are
-     * covered by the full campaign); the main matrix runs the subset.
-     */
     private static FatTreeSchedulingCampaignExecutor.CampaignResults runSubset(
             boolean includeSensitivity, boolean includeStructural) throws Exception {
         Set<String> wanted = new HashSet<String>(Arrays.asList(HEFT_EXAMPLE, CYBERSHAKE_N50, CYBERSHAKE_N100));

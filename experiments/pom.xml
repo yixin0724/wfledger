@@ -17,13 +17,7 @@
     <description>Workbench unified experiment entry point, research drivers, reproduction tooling, frozen reference baselines, and teaching examples.</description>
 
     <properties>
-        <!-- R3 coverage-gate ratchet: set slightly below the measured value
-             (clean verify of the 2026-11-03 baseline: instruction 60.67% / branch 56.12%).
-             It only rises, never falls. AUD-F03 (2026-11-03) adds package-level floors: every
-             maintained experiments package must stay above 71% / 53% instruction / branch;
-             the example and benchmark driver packages excluded from that rule are listed in
-             the parent POM. The integration floors below cover target/jacoco-it.exec
-             (measured 51.32% / 45.76%). -->
+
         <workflowsim.jacoco.instruction.minimum>0.59</workflowsim.jacoco.instruction.minimum>
         <workflowsim.jacoco.branch.minimum>0.55</workflowsim.jacoco.branch.minimum>
         <workflowsim.jacoco.package.instruction.minimum>0.71</workflowsim.jacoco.package.instruction.minimum>

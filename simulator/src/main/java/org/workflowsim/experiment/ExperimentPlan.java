@@ -13,20 +13,6 @@ import java.util.regex.Pattern;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Immutable, executable declaration of a research experiment campaign.
- *
- * <p>Each comparison group must declare exactly one baseline. All candidate variants
- * within a group must share the same randomization interpretation, yet each cell still
- * stores its own explicit seed sequence so that the experiment protocol can be audited
- * independently.</p>
- *
- * <p>Each comparison group must also stay within one mapping-cost caliber: the online
- * ready-batch caliber (bare length/MIPS ECT) and the static planning caliber
- * (TaskExecutionModel matrix seconds) must not be placed side by side in one group,
- * because a same-named algorithm carries two different cost semantics across the two
- * calibers (AUD-F09).</p>
- */
 public final class ExperimentPlan {
 
     public static final String SCHEMA = "workflowsim-experiment-plan-v1";
@@ -40,14 +26,6 @@ public final class ExperimentPlan {
         this.cells = Collections.unmodifiableList(new ArrayList<Cell>(builder.cells));
     }
 
-    /**
-     * Creates an experiment plan builder.
-     *
-     * @param id stable identifier of the plan; must match the identifier format defined
-     *           by this class
-     * @return a builder that does not yet contain any cell
-     * @throws IllegalArgumentException when the identifier is invalid
-     */
     public static Builder builder(String id) {
         return new Builder(id);
     }
@@ -60,11 +38,6 @@ public final class ExperimentPlan {
         return cells;
     }
 
-    /**
-     * Returns the total number of repeated runs declared by all cells of the plan.
-     *
-     * @return the sum of the replication counts of every cell
-     */
     public int getRunCount() {
         int result = 0;
         for (Cell cell : cells) {
@@ -73,10 +46,6 @@ public final class ExperimentPlan {
         return result;
     }
 
-    /**
-     * Builder for an immutable ExperimentPlan: identified by a validated plan ID, appending cells
-     * (configuration + seed plan pairs) in registration order; see the enclosing class contract.
-     */
     public static final class Builder {
         private final String id;
         private final List<Cell> cells = new ArrayList<Cell>();
@@ -85,29 +54,11 @@ public final class ExperimentPlan {
             this.id = requireIdentifier(id, "Experiment plan ID");
         }
 
-        /**
-         * Appends one candidate, platform, and workflow combination to the plan.
-         *
-         * <p>Identifier, baseline, and randomization-design constraints across cells are
-         * validated together in {@link #build()}.</p>
-         *
-         * @param value non-null experiment cell to declare
-         * @return this builder, to support chained calls
-         * @throws IllegalArgumentException when the cell is {@code null}
-         */
         public Builder addCell(Cell value) {
             cells.add(requireNonNull(value, "Experiment cell"));
             return this;
         }
 
-        /**
-         * Validates and freezes the current declaration.
-         *
-         * @return an immutable plan satisfying the comparison-group, baseline, candidate
-         *         identifier, randomization-design, and cost-caliber constraints
-         * @throws IllegalArgumentException when no cell is declared, or when any
-         *         cross-cell constraint does not hold
-         */
         public ExperimentPlan build() {
             if (cells.isEmpty()) {
                 throw new IllegalArgumentException("Experiment plan requires at least one cell");
@@ -137,10 +88,7 @@ public final class ExperimentPlan {
                     throw new IllegalArgumentException(
                             "Comparison group " + cell.getComparisonGroup() + " has more than one baseline");
                 }
-                // AUD-F09: one comparison group must not place the two mapping-cost calibers
-                // side by side; a same-named algorithm carries two different cost semantics
-                // across them, so the mixed comparison is rejected at construction instead of
-                // being executed. Cells outside both calibers stay unconstrained.
+
                 AlgorithmCatalog.CostComparisonCaliber caliber = AlgorithmCatalog.costComparisonCaliber(
                         cell.getConfig().getPlanningAlgorithm(),
                         cell.getConfig().getSchedulingAlgorithm());
@@ -172,10 +120,6 @@ public final class ExperimentPlan {
         }
     }
 
-    /**
-     * Immutable experiment cell formed by a candidate algorithm, a platform, a workflow
-     * configuration, and its explicit seed sequence.
-     */
     public static final class Cell {
         private final String id;
         private final String comparisonGroup;
@@ -186,22 +130,6 @@ public final class ExperimentPlan {
         private final SeedPlan seedPlan;
         private final Map<String, String> tags;
 
-        /**
-         * Creates an experiment cell.
-         *
-         * @param id stable identifier of the cell
-         * @param comparisonGroup identifier of the comparison group this cell belongs to
-         * @param candidateId identifier of the candidate within the comparison group
-         * @param baseline whether this cell is the baseline of its comparison group
-         * @param config explicit configuration of this simulation
-         * @param platform platform description whose VM count matches the configuration
-         * @param seedPlan seed plan whose replication count and randomization design are
-         *                 both declared
-         * @param tags optional immutable experiment tags; passing {@code null} is
-         *             equivalent to empty tags
-         * @throws IllegalArgumentException when an identifier, a required object, the VM
-         *         count, or a tag violates its constraint
-         */
         public Cell(
                 String id,
                 String comparisonGroup,
@@ -273,7 +201,6 @@ public final class ExperimentPlan {
         return value;
     }
 
-    /** Human-readable caliber description used by the cross-caliber rejection (AUD-F09). */
     private static String describeCostCaliber(AlgorithmCatalog.CostComparisonCaliber caliber, Cell cell) {
         String quantity = caliber == AlgorithmCatalog.CostComparisonCaliber.ONLINE_READY_BATCH
                 ? "bare length/MIPS ECT"

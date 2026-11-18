@@ -16,16 +16,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Captures content-addressed provenance information without relying on Git or on the
- * current working directory of the JVM.
- *
- * <p>v3 records the core simulator identity separately from the optional study/reference
- * driver identity. The POM and the source tree of the module on the class path are derived
- * from the code source of the class rather than by guessing the project root upwards from
- * {@code user.dir}; therefore the same artifact does not obtain a wrong core identity when
- * it is started from the reactor root, a submodule directory, or an external directory.</p>
- */
 final class ExperimentProvenance {
 
     static final String SCHEMA_V3 = "workflowsim-provenance-v3";
@@ -92,16 +82,6 @@ final class ExperimentProvenance {
         return moduleRootForCodeSource(codeSourcePath(anchor));
     }
 
-    /**
-     * Derives the module root directory from a classes directory or a packaged JAR in a
-     * Maven build directory.
-     *
-     * <p>Unit tests usually load core classes from {@code target/classes}, whereas Failsafe
-     * or an actual packaged run may load them from {@code target/*.jar}. Both cases have a
-     * well-defined module boundary that does not depend on the working directory. For a JAR
-     * installed outside the repository, no source location is assumed and {@code null} is
-     * returned.</p>
-     */
     static Path moduleRootForCodeSource(Path location) {
         if (location == null || location.getFileName() == null) {
             return null;

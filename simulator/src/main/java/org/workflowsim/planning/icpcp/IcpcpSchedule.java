@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable IC-PCP schedule with path decomposition, cost, and minimum slack. */
 public final class IcpcpSchedule {
     private final Map<Integer, Entry> entries;
     private final List<List<Integer>> assignedPaths;

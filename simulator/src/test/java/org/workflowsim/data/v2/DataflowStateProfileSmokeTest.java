@@ -15,7 +15,6 @@ import org.junit.jupiter.api.io.TempDir;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** End-to-end profile/comparator smoke, with semantic fingerprints and no timing threshold (B5). */
 class DataflowStateProfileSmokeTest {
 
     @TempDir

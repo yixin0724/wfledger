@@ -28,28 +28,12 @@ import org.cloudbus.cloudsim.Log;
 import org.workflowsim.Task;
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * Horizontal balancing clustering method based on impact-factor proximity.
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class HorizontalImpactBalancing extends BalancingMethod {
 
-    /**
-     * Creates the impact-factor horizontal balancing method.
-     *
-     * @param levelMap task sets organized by level
-     * @param taskMap logical task to task set mapping
-     * @param clusterNum target number of clustered jobs per level
-     */
     public HorizontalImpactBalancing(Map levelMap, Map taskMap, int clusterNum) {
         super(levelMap, taskMap, clusterNum);
     }
 
-    /**
-     * Merges the task sets of every level that have close impact factors.
-     */
     @Override
     public void run() {
         Map<Integer, List<TaskSet>> map = getLevelMap();
@@ -58,11 +42,6 @@ public class HorizontalImpactBalancing extends BalancingMethod {
         }
     }
 
-    /**
-     * Processes the task sets of one level by impact factor and merges close candidates.
-     *
-     * @param taskList task sets of the same level to process
-     */
     public void process(List<TaskSet> taskList) {
 
         if (taskList.size() > getClusterNum()) {
@@ -76,54 +55,42 @@ public class HorizontalImpactBalancing extends BalancingMethod {
             }
             sortListDecreasing(taskList);
             for (TaskSet set : taskList) {
-                // The target selector prefers a set with the same impact factor that can still hold tasks.
+
                 TaskSet job = null;
                 try {
                     job = getCandidateTastSet(jobList, set, clusters_size);
                 } catch (Exception e) {
-                    // AUD-F19: report through the controlled CloudSim log channel; the control
-                    // flow (including the historical null continuation) is unchanged.
+
                     Log.printError("horizontal impact balancing: candidate task set selection failed", e);
                 }
                 addTaskSet2TaskSet(set, job);
                 job.addTask(set.getTaskList());
                 job.setImpactFafctor(set.getImpactFactor());
-                // Update the logical task to target set mapping.
+
                 for (Task task : set.getTaskList()) {
-                    getTaskMap().put(task, job); // dependency edges are rebuilt by the caller
+                    getTaskMap().put(task, job);
                 }
             }
             taskList.clear();
         }
     }
 
-    /**
-     * Sorts task sets by ascending job length.
-     *
-     * @param taskList task sets to sort
-     */
     private void sortListIncreasing(List taskList) {
         Collections.sort(taskList, new Comparator<TaskSet>() {
             @Override
             public int compare(TaskSet t1, TaskSet t2) {
-                // Ascending: shorter sets come first.
-                // F-005 fix (2026-10-19): Long.compare is exact over the whole domain, ruling out the
-                // (int)(long difference) equality collapse in the 2^32 wrap domain; regular ranges unchanged.
+
                 return Long.compare(t1.getJobRuntime(), t2.getJobRuntime());
             }
         });
     }
-    /**
-     * Sorts task sets by descending impact factor, then by job length.
-     *
-     * @param taskList task sets to sort
-     */
+
     private void sortListDecreasing(List taskList) {
 
         Collections.sort(taskList, new Comparator<TaskSet>() {
             @Override
             public int compare(TaskSet t1, TaskSet t2) {
-                // Sets with a higher impact factor are processed first.
+
                 if (Math.abs(t2.getImpactFactor() - t1.getImpactFactor()) > 1.0e-8) {
                     if (t1.getImpactFactor() > t2.getImpactFactor()) {
                         return 1;
@@ -178,7 +145,7 @@ public class HorizontalImpactBalancing extends BalancingMethod {
         }
 
         if (returnList.isEmpty()) {
-            returnList.clear(); // fall back to an empty target set or the next close impact factor
+            returnList.clear();
             for (TaskSet set : taskList) {
                 if (set.getTaskList().isEmpty()) {
                     returnList.add(set);
@@ -186,7 +153,7 @@ public class HorizontalImpactBalancing extends BalancingMethod {
                 }
             }
             map.remove(checkSet.getImpactFactor());
-            // With no empty set available, try the next impact factor candidate step by step.
+
             while (returnList.isEmpty()) {
 
                 List<Double> keys = new ArrayList(map.keySet());
@@ -215,22 +182,13 @@ public class HorizontalImpactBalancing extends BalancingMethod {
         return returnList;
     }
 
-    /**
-     * Selects the longest-running task set among the mergeable candidates.
-     *
-     * @param taskList task sets of the current level
-     * @param checkSet task set being extended
-     * @param clusters_size maximum number of tasks allowed in a single cluster
-     * @return the selected candidate set; the first list entry when no better candidate exists
-     */
     protected TaskSet getCandidateTastSet(List<TaskSet> taskList, TaskSet checkSet, int clusters_size) {
 
         List<TaskSet> potential = null;
         try {
             potential = getNextPotentialTaskSets(taskList, checkSet, clusters_size);
         } catch (Exception e) {
-            // AUD-F19: report through the controlled CloudSim log channel; the control flow
-            // (including the historical null continuation) is unchanged.
+
             Log.printError("horizontal impact balancing: potential task sets unavailable", e);
         }
         TaskSet task = null;

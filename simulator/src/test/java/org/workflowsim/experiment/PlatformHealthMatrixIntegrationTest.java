@@ -21,16 +21,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Whole-platform health matrix (cross-acceptance of the core configurations after the R1-R5 merge).
- *
- * <p>Unlike a single-point reproduction test, this test passes every end-to-end result through a
- * unified report-invariant verifier (completion, internal metric consistency, task interval
- * partition, flow-time definition, VM aggregate closure), so that old and new features remain usable
- * under one and the same accounting. Crosses covered: every online scheduler, every maintained
- * planner (including PSO end-to-end), the three data movement models, multi-workflow staggered
- * arrival x online scheduling, and the RL track x staggered arrival.</p>
- */
 class PlatformHealthMatrixIntegrationTest {
 
     @AfterEach
@@ -89,8 +79,7 @@ class PlatformHealthMatrixIntegrationTest {
     @Test
     void everyMaintainedDagPlannerIsHealthyOnItsModel() throws Exception {
         Log.disable();
-        // LOCAL family: LOCAL file system + pre-execution transfer delay model (planning AST and
-        // run-time bits aligned).
+
         for (PlanningAlgorithm planner : Arrays.asList(PlanningAlgorithm.LOCAL_HEFT, PlanningAlgorithm.LOCAL_CPOP)) {
             SimulationConfig config = SimulationConfig.builder(resourcePath("/dax/heft-paper-example.dax"), 3)
                     .planningAlgorithm(planner)
@@ -102,7 +91,7 @@ class PlatformHealthMatrixIntegrationTest {
             SimulationReport report = new SimulationRunner().run(config, paperPlatform());
             assertReportHealthy(report, "dag-local:" + planner);
         }
-        // RANDOM: legacy data movement model (SHARED default).
+
         {
             SimulationConfig config = SimulationConfig.builder(resourcePath("/dax/heft-paper-example.dax"), 3)
                     .planningAlgorithm(PlanningAlgorithm.RANDOM)
@@ -112,8 +101,7 @@ class PlatformHealthMatrixIntegrationTest {
             SimulationReport report = new SimulationRunner().run(config, paperPlatform());
             assertReportHealthy(report, "dag-legacy:RANDOM");
         }
-        // SHARED_STORAGE family: the model premise requires the legacy data movement model
-        // (planning and execution transfer estimates bit-aligned).
+
         for (PlanningAlgorithm planner : Arrays.asList(
                 PlanningAlgorithm.SHARED_STORAGE_HEFT,
                 PlanningAlgorithm.SHARED_STORAGE_CPOP,
@@ -198,11 +186,6 @@ class PlatformHealthMatrixIntegrationTest {
         assertEquals(-episode.getMakespan(), episode.getReward(), 0.0, "RL reward contract reward = -makespan");
     }
 
-    /**
-     * Unified report-invariant verifier: completion + internal metric consistency + task interval
-     * partition + flow-time definition + VM aggregate closure. Any breach means the platform behaves
-     * abnormally under the corresponding configuration combination.
-     */
     private static void assertReportHealthy(SimulationReport report, String label) {
         assertTrue(
                 report.getMakespan() > 0.0 && Double.isFinite(report.getMakespan()),
@@ -258,7 +241,6 @@ class PlatformHealthMatrixIntegrationTest {
                 label + ": one outcome per workflow input");
     }
 
-    /** Staggered-arrival gate: tasks of a late workflow must not start before its submission time. */
     private static void assertArrivalGated(SimulationReport report, double arrivalSecond, String label) {
         for (SimulationReport.WorkflowOutcome workflow : report.getWorkflowOutcomes()) {
             if (workflow.getArrivalSecond() < arrivalSecond) {
@@ -275,7 +257,6 @@ class PlatformHealthMatrixIntegrationTest {
         }
     }
 
-    /** Platform isomorphic to the HEFT paper reproduction: 3 VMs, mips=1.0. */
     private static PlatformProfile paperPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("health-paper-platform");
         for (int id = 0; id < 3; id++) {
@@ -286,7 +267,6 @@ class PlatformHealthMatrixIntegrationTest {
         return builder.build();
     }
 
-    /** Shared-storage platform: used by the SHARED_STORAGE_* family. */
     private static PlatformProfile sharedStoragePlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("health-shared-storage-platform");
         for (int id = 0; id < 2; id++) {

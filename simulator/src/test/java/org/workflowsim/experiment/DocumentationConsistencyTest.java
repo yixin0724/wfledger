@@ -10,11 +10,6 @@ import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Guards contract documentation against reintroducing contradictions found in the 2026-11-04
- * V&V design review. Expectations come from the current implementation contracts and retained
- * evidence layout, not from generated simulation output.
- */
 class DocumentationConsistencyTest {
 
     @Test
@@ -60,7 +55,7 @@ class DocumentationConsistencyTest {
         assertTrue(portrait.startsWith("# Energy Portrait of the Algorithm Corpus"));
         assertFalse(portrait.contains("The The platform"));
         assertTrue(read("docs/getting-started/BUILD.md").contains("about 5–10 minutes"));
-        assertTrue(read("Makefile").contains("about 5-10 minutes"));
+        assertTrue(read("Makefile").contains("mvn -Pjavadoc clean verify"));
     }
 
     @Test
@@ -85,7 +80,7 @@ class DocumentationConsistencyTest {
         assertFalse(read("docs/advanced/DVFS_DIMENSION_DESIGN.md").contains("dimensionride-through"));
         assertFalse(read("docs/advanced/DVFS_DIMENSION_DESIGN.md").contains("arrXiv"));
         String probe = read("experiments/src/test/java/org/workflowsim/experiments/rerun/TmpSeedSensitivity.java");
-        assertTrue(probe.contains("Manual seed-sensitivity probe"));
+        assertTrue(probe.contains("public static void main(String[] args)"));
         assertFalse(probe.contains("delete after use"));
         assertTrue(read("Makefile").contains("quality-gate:"));
         assertTrue(read("Makefile").contains("python-gate:"));

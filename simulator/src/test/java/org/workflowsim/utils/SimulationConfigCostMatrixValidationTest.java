@@ -10,16 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 
-/**
- * Regression test (R8 audit, algorithm channel P1-1): the combination of a task cost
- * matrix with a SHARED_STORAGE_* planner must be rejected at the configuration layer.
- *
- * <p>Background: on the planning side, SharedStorageDagPlanner derives execution time
- * only from the raw DAX length and does not consume the cost matrix, whereas the STATIC
- * dispatch path scales MI by the matrix at run time -- a silent divergence between the
- * two sides produces a wrong planning order with no error reported. Valid combinations
- * (LOCAL_HEFT/LOCAL_CPOP plus a matrix) remain available.</p>
- */
 class SimulationConfigCostMatrixValidationTest {
 
     private static final PlanningAlgorithm[] SHARED_STORAGE_PLANNERS = {

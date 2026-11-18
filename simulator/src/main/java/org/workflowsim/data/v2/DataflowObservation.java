@@ -10,27 +10,22 @@ import java.util.TreeSet;
 
 import org.workflowsim.data.TransferServiceSnapshot;
 
-/**
- * Passive, immutable view of one committed dataflow state. No getter advances time, publishes a
- * forecast, drains readiness, or depends on lifecycle recording. This is a policy observation,
- * not a counterfactual service replay or another evidence certificate.
- */
 public final class DataflowObservation {
     public static final String CONTRACT = "OBSERVED_DATAFLOW_STATE_V1";
-    /** Actual initialization state; unbound metadata is not an actual placement. */
+
     public enum Status {
         UNINITIALIZED,
         PLAN_ONLY,
         BOUND
     }
-    /** Requested attempts only; terminal attempts are not retained in the active-job view. */
+
     public enum JobPhase {
         WAITING_FOR_STORE,
         WAITING_FOR_INPUTS,
         READY_FOR_CPU,
         RUNNING
     }
-    /** A file declaration plus only replicas visible at the observation watermark. */
+
     public static final class FileView {
         private final DataflowFilePlan.FileDefinition file;
         private final List<DataReplicaState.Replica> replicas;
@@ -57,7 +52,7 @@ public final class DataflowObservation {
             return null;
         }
     }
-    /** Observed active-copy progress joined to its immutable actual source and route. */
+
     public static final class CopyView {
         private final long ordinal;
         private final int ownerJobId;
@@ -112,7 +107,7 @@ public final class DataflowObservation {
             return service;
         }
     }
-    /** Immutable active attempt state, separate from any heuristic CPU reservation. */
+
     public static final class JobView {
         private final int jobId, taskId, vmId;
         private final JobPhase phase;
@@ -238,7 +233,7 @@ public final class DataflowObservation {
     public boolean isStoreBackedInputs() {
         return storeBackedInputs;
     }
-    /** @return whether all declared files are included, rather than a requested input scope */
+
     public boolean isCompleteFileView() {
         return completeFileView;
     }
@@ -246,11 +241,11 @@ public final class DataflowObservation {
     public double getObservedThrough() {
         return observedThrough;
     }
-    /** @return actual service snapshot, null before binding */
+
     public TransferServiceSnapshot getService() {
         return service;
     }
-    /** @return immutable actual fabric, null before binding */
+
     public DataTransferFabric getFabric() {
         return fabric;
     }
@@ -258,7 +253,7 @@ public final class DataflowObservation {
     public Map<DataflowFilePlan.FileId, FileView> getFiles() {
         return files;
     }
-    /** @param id included logical identity @return immutable file view; missing scope is not an empty replica set */
+
     public FileView getFile(DataflowFilePlan.FileId id) {
         FileView result = files.get(id);
         if (result == null) {
@@ -278,8 +273,7 @@ public final class DataflowObservation {
     public Set<DataflowFilePlan.FileId> getPendingOutputFiles() {
         return pendingOutputs;
     }
-    /** @param file scoped file identity @param destination typed actual target @return active copy or null, not a
-     * visible replica */
+
     public CopyView getActiveCopy(DataflowFilePlan.FileId file, DataLocation destination) {
         for (CopyView copy : copies.values()) {
             if (copy.file.getId().equals(file) && copy.destination.equals(destination)) {

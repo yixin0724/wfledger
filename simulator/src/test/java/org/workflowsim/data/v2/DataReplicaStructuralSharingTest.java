@@ -27,7 +27,6 @@ import org.workflowsim.data.v2.DataflowFilePlan.FileDefinition;
 import org.workflowsim.data.v2.DataflowFilePlan.FileId;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** Semantic oracles for retained immutable roots, without timing or reflective state access. */
 class DataReplicaStructuralSharingTest {
     private static final DataLocation SOURCE = DataLocation.source("input-store");
     private static final DataLocation SECOND = DataLocation.source("second-store");
@@ -70,7 +69,7 @@ class DataReplicaStructuralSharingTest {
         assertEquals(1, retained.getObservedThrough(), 0);
         assertSameElements(Arrays.asList(source, second), retainedRow);
         assertRows(retained, EXTERNAL, source, second);
-        // These rows were not read before mutation: a snapshot must not lazily read its owner.
+
         assertRows(retained, P, output);
         assertRows(retained, ZERO_OUTPUT, zeroOutput);
         assertRows(retained, ZERO_INPUT, zero);
@@ -123,7 +122,7 @@ class DataReplicaStructuralSharingTest {
         Replica childQ = child.getReplica(Q, VM42);
         DataReplicaState nested = child.fork();
         Snapshot childBeforeLaterWrites = child.snapshot();
-        // The same Task/Job key may have different outcomes in independently forked histories.
+
         assertTrue(parent.recordTaskCompletion(2, 20, VM7, false, 2).isEmpty());
         sibling.recordTaskCompletion(2, 20, VM99, true, 3);
         Replica siblingQ = sibling.getReplica(Q, VM99);
@@ -366,7 +365,6 @@ class DataReplicaStructuralSharingTest {
         assertRows(state.snapshot(), ZERO_OUTPUT, zeroOutput);
         assertRows(state.snapshot(), Q);
 
-        // Constituent Tasks may differ in success; outputless Tasks still have write-once history.
         assertTrue(state.recordTaskCompletion(2, 20, VM7, false, 2).isEmpty());
         assertTrue(state.recordTaskCompletion(3, 20, VM7, true, 2).isEmpty());
         assertTrue(state.recordTaskCompletion(4, 20, VM7, false, 2).isEmpty());
@@ -376,7 +374,7 @@ class DataReplicaStructuralSharingTest {
         rejectsWithoutChange(
                 IllegalStateException.class, state, plan, () -> state.recordTaskCompletion(4, 20, VM7, true, 2));
         assertCounts(state, 2, 1, 4, active);
-        // Rejected calls using Job 30 must not leave behind even a Job-only observation.
+
         state.recordTaskCompletion(2, 30, VM42, true, 4);
         assertEquals(Long.valueOf(30), state.getReplica(Q, VM42).getOrigin().getJobAttemptId());
         assertEquals(4, state.getReplica(Q, VM42).getVisibleAt(), 0);
@@ -615,7 +613,7 @@ class DataReplicaStructuralSharingTest {
         DataReplicaState state = state(plan());
         state.recordTaskCompletion(1, 10, VM7, true, 1);
         Replica original = state.getReplica(ZERO_OUTPUT, VM7);
-        // V3 zero-output metadata may commit at the producing completion observation itself.
+
         Replica committed = state.commitZeroOutput(ZERO_OUTPUT, VM7, SOURCE, 1).getReplica();
         Snapshot beforeReference = state.snapshot();
         assertExisting(state.commitZeroOutput(ZERO_OUTPUT, VM7, SOURCE, 3), committed);
@@ -896,7 +894,6 @@ class DataReplicaStructuralSharingTest {
         before.assertUnchanged(state);
     }
 
-    /** Eager public-value copies prevent even an accidentally mutable Snapshot from hiding a change. */
     private static final class Checkpoint {
         private final Snapshot snapshot;
         private final double clock;

@@ -27,7 +27,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Binds validated network evidence to the run's configuration, platform, Job outcomes and main events. */
 final class NetworkLedgerContextValidator {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
     private final NetworkRunEvidence evidence;
@@ -40,10 +39,7 @@ final class NetworkLedgerContextValidator {
     private final Topology topology;
     private long references;
     private BigDecimal required = BigDecimal.ZERO, requiredError = BigDecimal.ZERO;
-    /**
-     * Link count inside the verifyTraceEvents loop: hoisted as-is from a local variable
-     * during the 2026-10-26 complexity extraction; a single instance is accounted once.
-     */
+
     private long linkCount;
 
     static void validateReport(SimulationReport report) throws IOException {
@@ -95,11 +91,6 @@ final class NetworkLedgerContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from NetworkLedgerContextValidator; statements verbatim; order unchanged.
-     * Scope: consistency check between the unique host ID set of the platform and the
-     * actual placements and bandwidth capacities recorded in result.
-     */
     private Set<Integer> verifyPlatformAssignments(JsonObject platform, JsonObject result) throws IOException {
         JsonObject assignments = obj(result, "actualVmHostAssignments");
         Set<Integer> hosts = new HashSet<Integer>();
@@ -128,11 +119,6 @@ final class NetworkLedgerContextValidator {
         return hosts;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from NetworkLedgerContextValidator; statements verbatim; order unchanged.
-     * Scope: ledger check of the identity, VM, and task table plus the start and end
-     * times of every Job in result.
-     */
     private void verifyJobOutcomes(JsonObject result) throws IOException {
         for (JsonElement item : arr(result, "jobs")) {
             JsonObject job = object(item, "Job");
@@ -186,11 +172,6 @@ final class NetworkLedgerContextValidator {
         verifyStageInEvent(event, jobId, time);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from acceptEvent; statements verbatim; order unchanged.
-     * Scope: model-convention and file-count check of a DATA_STAGE_IN_MODELED event,
-     * plus the aggregation of the referenced bytes.
-     */
     private void verifyStageInEvent(JsonObject event, int jobId, double time) throws IOException {
         JsonObject attributes = obj(event, "attributes");
         if (!model.equals(text(attributes, "dataMovementModel"))) {
@@ -257,11 +238,6 @@ final class NetworkLedgerContextValidator {
         verifyCompletedRunAggregates(completed, bindings, admitted, input, largestGroup, complete);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * Scope: check that, while the engine is in place, the capacity declarations cover
-     * every VM endpoint and neither over- nor under-count them.
-     */
     private void verifyCapacityDeclarations(Set<String> capacities, boolean started, long linkCount, boolean complete)
             throws IOException {
         if (evidence.isEngineCreated() && (complete || started)) {
@@ -277,11 +253,6 @@ final class NetworkLedgerContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * Scope: check that the ledger-group counts and admitted bytes of each StageView
-     * stay within the model convention.
-     */
     private void verifyStageAdmissionAggregates(
             Map<Integer, Integer> counts, Map<Integer, BigDecimal> payloads, boolean complete) throws IOException {
         for (Map.Entry<Integer, StageView> entry : stages.entrySet()) {
@@ -300,11 +271,6 @@ final class NetworkLedgerContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * Scope: three-part final check of the completed transfers, non-local references,
-     * and total admitted bytes of a complete trace.
-     */
     private void verifyCompletedRunAggregates(
             Set<Long> completed,
             Map<Long, NetworkFlowBinding> bindings,
@@ -330,11 +296,6 @@ final class NetworkLedgerContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * Scope: verification of the endpoints and routing resource paths of external and
-     * parent-group network bindings.
-     */
     private Map<Long, NetworkFlowBinding> collectAndVerifyBindings() throws IOException {
         Map<Long, NetworkFlowBinding> bindings = new HashMap<Long, NetworkFlowBinding>();
         Set<Integer> externalJobs = new HashSet<Integer>();
@@ -354,11 +315,6 @@ final class NetworkLedgerContextValidator {
         return bindings;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from collectAndVerifyBindings; statements verbatim; order unchanged.
-     * Scope: consistency check of the external-group/parent-group routing path of one
-     * network binding against its declared resource sequence.
-     */
     private void verifyBindingRoutingPath(NetworkFlowBinding b, JobView job, Set<Integer> externalJobs)
             throws IOException {
         List<String> path = new ArrayList<String>();
@@ -396,11 +352,6 @@ final class NetworkLedgerContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from finish; statements verbatim; order unchanged.
-     * Scope: aggregate accounting of the capacity initialization, admission start, and
-     * completion checks of the trace events.
-     */
     private TraceAggregates verifyTraceEvents(Map<Long, NetworkFlowBinding> bindings) throws IOException {
         TraceAggregates trace = new TraceAggregates();
         Set<String> capacities = new HashSet<String>();
@@ -450,11 +401,6 @@ final class NetworkLedgerContextValidator {
         return trace;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from verifyTraceEvents; statements verbatim; order unchanged.
-     * Scope: one CAPACITY trace event is initialized exactly once before admission,
-     * with consistent value and resource classification.
-     */
     private void verifyTraceCapacityEvent(TransferTraceEvent e, boolean started, Set<String> capacities)
             throws IOException {
         String key = e.getCapacity().getResourceKey();
@@ -479,11 +425,6 @@ final class NetworkLedgerContextValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from verifyTraceEvents; statements verbatim; order unchanged.
-     * Scope: one COMPLETE trace event is checked for its binding back-reference and its
-     * completion instant, then added to the completion set.
-     */
     private void verifyTraceCompletionEvent(
             TransferTraceEvent e, Map<Long, NetworkFlowBinding> bindings, Set<Long> completed) throws IOException {
         NetworkFlowBinding b = bindings.get(e.getAdmissionOrdinal());
@@ -496,10 +437,6 @@ final class NetworkLedgerContextValidator {
         completed.add(e.getAdmissionOrdinal());
     }
 
-    /**
-     * Private relocated structure of the finish() trace aggregates (direct field reads,
-     * no forwarding behavior).
-     */
     private static final class TraceAggregates {
         private Set<String> capacities;
         private Set<Long> completed;
@@ -547,7 +484,6 @@ final class NetworkLedgerContextValidator {
         }
     }
 
-    /** Arithmetic-only topology view: never allocate an untrusted k^3 link graph. */
     private static final class Topology {
         final int k, half, cores, available;
         final double capacity;
@@ -574,11 +510,6 @@ final class NetworkLedgerContextValidator {
             assignEdgePlacements(raw, hosts);
         }
 
-        /**
-         * 2026-10-26 complexity extraction from Topology; statements verbatim; order unchanged.
-         * Scope: completeness and bounds check of the default round-robin placement and
-         * the explicit placement of hostEdgePlacements.
-         */
         private void assignEdgePlacements(JsonObject raw, Set<Integer> hosts) throws IOException {
             JsonElement explicit = required(raw, "hostEdgePlacements");
             List<Integer> sorted = new ArrayList<Integer>(hosts);
@@ -662,28 +593,16 @@ final class NetworkLedgerContextValidator {
             return false;
         }
 
-        /**
-         * 2026-10-26 complexity extraction from directed; statements verbatim; order unchanged.
-         * Scope: verification of the host-edge coordinates for the ACC->EDGE link shape.
-         */
         private boolean isAccToEdge(String[] a, String[] b) throws IOException {
             int[] p = placement.get(canonicalInt(a[1]));
             return p != null && p[0] == canonicalInt(b[1]) && p[1] == canonicalInt(b[2]);
         }
 
-        /**
-         * 2026-10-26 complexity extraction from directed; statements verbatim; order unchanged.
-         * Scope: pod/half boundary check for the EDGE->AGG link shape.
-         */
         private boolean isEdgeToAgg(String[] a, String[] b) throws IOException {
             int p = canonicalInt(a[1]), e = canonicalInt(a[2]), q = canonicalInt(b[1]), g = canonicalInt(b[2]);
             return p < k && p == q && e < half && g < half;
         }
 
-        /**
-         * 2026-10-26 complexity extraction from directed; statements verbatim; order unchanged.
-         * Scope: pod/half/cores boundary check for the AGG->CORE link shape.
-         */
         private boolean isAggToCore(String[] a, String[] b) throws IOException {
             int p = canonicalInt(a[1]), g = canonicalInt(a[2]), c = canonicalInt(b[1]);
             return p < k && g < half && c < cores && g == c / half;

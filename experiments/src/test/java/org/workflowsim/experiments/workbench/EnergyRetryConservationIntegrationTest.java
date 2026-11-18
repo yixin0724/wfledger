@@ -27,22 +27,8 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * BAT-R8 probe (2026-10-27, review round 8): energy conservation × failure
- * model × retries — a powered run that actually retries a job must still
- * satisfy the conservation law on its OWN manifest busy intervals, and the
- * evidence bundle must survive validation.
- *
- * <p>Semantics at stake: a FAILED attempt genuinely consumed power, so its
- * busy interval legitimately counts — the law must hold with BOTH the failed
- * attempt and the retry included (union semantics), without double-counting
- * any single interval. If this passes with retryJobCreatedCount > 0, the
- * busy accounting is provably union-merged, not retry-blind and not
- * double-counted.</p>
- */
 class EnergyRetryConservationIntegrationTest {
 
-    /** Fixed diagnostic location so the shell-side Python audit can find the bundle. */
     static final Path PROBE_DIR = Paths.get("target", "energy-retry-probe");
 
     @TempDir
@@ -63,17 +49,10 @@ class EnergyRetryConservationIntegrationTest {
 
     @Test
     void poweredRunWithRealRetriesSatisfiesTheConservationLaw() throws Exception {
-        // Input durability (BAT-R8): the input must live in a stable directory alongside the
-        // evidence -- a JUnit temp directory would make the input path recorded in the manifest
-        // vanish once the test ends, so the Python auditor could not re-resolve the original
-        // input; the first link of the evidence chain (the input) must not be volatile.
+
         Files.createDirectories(PROBE_DIR);
         Path input = PROBE_DIR.resolve("retry-bag.dax").toAbsolutePath().normalize();
-        // Note (BAT-R8 finding): with a relative path, configuration.workflowPaths records the
-        // form "as fed" while inputs[].path records "resolved absolute" -- the auditor's
-        // ordered-input-paths clause requires the two to match item by item, so evidence-chain
-        // discipline requires an absolute-path input (a product-level normalization proposal is
-        // filed; see the commit message).
+
         Files.write(input, bagDax().getBytes(StandardCharsets.UTF_8));
         FailureModelConfig failure = new FailureModelConfig.Builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_NOOP)
@@ -86,7 +65,7 @@ class EnergyRetryConservationIntegrationTest {
                 .build();
         PlatformProfile platform = poweredPlatform();
         SimulationReport retried = null;
-        // The existing kernel retry corpus uses this bounded deterministic seed domain.
+
         for (long seed = 1; seed <= 256 && retried == null; seed++) {
             SimulationConfig config = SimulationConfig.builder(input.toString(), 2)
                     .planningAlgorithm(PlanningAlgorithm.INVALID)
@@ -103,15 +82,12 @@ class EnergyRetryConservationIntegrationTest {
                     retried = candidate;
                 }
             } catch (RuntimeException retryBudgetOrFailure) {
-                // The seed hunt looks for a run that retried and succeeded; a seed that exhausts the
-                // retry budget or fails is legitimately skipped (the assertion at the end makes an
-                // empty hunt a hard failure, so a skip does not swallow the error).
+
             }
         }
         assertTrue(retried != null, "the bounded seed domain must produce a successful true retry");
         assertTrue(retried.getMetrics().getRetryJobCreatedCount() > 0, "the probe is only meaningful with retries");
 
-        // Conservative law on the report's own fields (hand recompute, not getter echo).
         double idleSum = 0.0;
         double delta = 0.0;
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
@@ -126,7 +102,6 @@ class EnergyRetryConservationIntegrationTest {
                 "union busy must satisfy the law with failed attempt(s) + retry included: expected=" + expected
                         + " actual=" + actual);
 
-        // Valid evidence bundle; keep it at the fixed probe path for the shell-side audit.
         ExperimentArtifactWriter.ExperimentArtifacts artifacts =
                 ExperimentArtifactWriter.write(retried, PROBE_DIR, "result");
         ExperimentArtifactValidator.validate(artifacts.getManifest());

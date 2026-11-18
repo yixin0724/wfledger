@@ -1,6 +1,5 @@
 package org.workflowsim.utils;
 
-/** Session-scoped Reshi input registry; Parameters.reset() clears it between runs. */
 public final class ReshiRegistry {
 
     private static ReshiConfig config;

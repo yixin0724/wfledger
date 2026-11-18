@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable IC-PCP task with compute, communication, and dependency inputs. */
 public final class IcpcpTask {
     private final int taskId;
     private final Map<Integer, Double> computeSecondsByVm;

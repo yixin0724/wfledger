@@ -49,7 +49,7 @@ class ReclusteringEngineTest {
         source.setType("analysis");
         source.setStaticScheduleStartTime(2.5);
         source.setCloudletStatus(Cloudlet.FAILED);
-        // The file list container must be copied, but a FileItem itself stays shared workflow-model metadata.
+
         FileItem file = new FileItem("input", 1024.0);
         file.setType(FileType.INPUT);
         source.addFile(file);
@@ -163,7 +163,7 @@ class ReclusteringEngineTest {
                 FailureParameters.FTCFailure.FAILURE_NONE,
                 null);
         FailureMonitor.init();
-        // With zero delay overhead and an observed failure, the legacy DC formula yields the smallest legal factor, 1.
+
         FailureMonitor.postFailureRecord(new FailureRecord(1.0, 1, 1, 3, 0, 0, 7));
         Job failed = computeJob(
                 40, task(1, 100L, Cloudlet.FAILED), task(2, 200L, Cloudlet.FAILED), task(3, 300L, Cloudlet.FAILED));

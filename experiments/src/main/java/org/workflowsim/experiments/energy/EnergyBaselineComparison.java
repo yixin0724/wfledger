@@ -22,7 +22,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/** Compares energy-aware planners and tier-selection policies on real scientific workflows. */
 public final class EnergyBaselineComparison {
 
     private static final String[] DATASETS = {

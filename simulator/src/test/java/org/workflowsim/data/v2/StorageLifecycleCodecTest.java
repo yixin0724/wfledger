@@ -29,7 +29,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/** Real captures exercise the writer; literal paths and adversarial documents are independent oracles. */
 class StorageLifecycleCodecTest {
     private static final String LITERAL = "{"
             + "\"schema\":\"workflowsim-storage-lifecycle-v3\",\"modelKind\":\"COHERENT_STORAGE_DATAFLOW_V3\","
@@ -794,7 +793,7 @@ class StorageLifecycleCodecTest {
         CoherentDataflowRuntime r =
                 runtime(false, false, 100, plan(), fabric(false, 40, 100, 100, 100, 12.5, 3.25, 7.75));
         assertDoesNotThrow(() -> StorageLifecycleCodec.encode(r.captureStorageEvidence()));
-        // MB/s itself may be subnormal, provided the specified conversion is normal.
+
         double mb = Math.nextUp(Double.MIN_NORMAL / 1e6), bytes = mb * 1e6;
         DataTransferFabric tiny = DataTransferFabric.withStorage(
                 capacities(bytes, bytes, bytes), hosts(), null, DataflowStorageSpec.of(40, mb, mb, mb));

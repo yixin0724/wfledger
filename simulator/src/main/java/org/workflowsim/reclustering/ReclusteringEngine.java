@@ -35,31 +35,8 @@ import org.workflowsim.utils.CrchRegistry;
 import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 
-/**
- * Legacy reclustering engine that creates one or more retry Jobs after a Job fails.
- *
- * <p>These retry policies continue the WorkflowSim compatibility behavior and depend on
- * {@link FailureParameters}, {@link FailureMonitor}, and the abstract models in the
- * overhead parameters. This is not the new standard experiment entry point, and it cannot
- * by itself prove the recovery effect in a real system.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- *
- */
 public class ReclusteringEngine {
 
-    /**
-     * Create a new retry Job from a failed Job.
-     *
-     * @param id new Job identifier
-     * @param job failed Job
-     * @param length computational length of the new Job
-     * @param taskList retry task list
-     * @param updateDep whether to write the retry Job into the original dependency relations
-     * @return the newly created retry Job
-     */
     private static Job createJob(int id, Job job, long length, List taskList, boolean updateDep) {
         if (job == null) {
             throw new IllegalArgumentException("Cannot recreate a null failed job");
@@ -70,8 +47,7 @@ public class ReclusteringEngine {
             throw new IllegalStateException(
                     "Failed Job " + job.getCloudletId() + " has no executable class type to preserve for retry");
         }
-        // Data preparation precedes dispatch: a static mapping must already exist on retry.
-        // Online schedulers may replace this hint when they make their next decision.
+
         newJob.setVmId(job.getVmId());
         newJob.setNumberOfPes(job.getNumberOfPes());
         try {
@@ -80,8 +56,6 @@ public class ReclusteringEngine {
             throw new IllegalStateException("Could not initialize retry Job " + id, exception);
         }
 
-        // DC/DR build retry Jobs incrementally, so the initial placeholder task list may be null;
-        // every genuinely executable retry Job must hold its own task copies.
         newJob.setTaskList(taskList == null ? new ArrayList<Task>() : copyTasks(taskList));
         populateRetryFileMetadata(newJob);
         newJob.setDepth(job.getDepth());
@@ -97,14 +71,6 @@ public class ReclusteringEngine {
         return newJob;
     }
 
-    /**
-     * Create the list of retry Jobs for a failed Job according to the current
-     * fault-tolerant clustering algorithm.
-     *
-     * @param job failed Job
-     * @param id identifier of the first retry Job
-     * @return list of newly created retry Jobs
-     */
     public static List<Job> process(Job job, int id) {
         if (job == null) {
             throw new IllegalArgumentException("Cannot process a null failed job");
@@ -120,36 +86,26 @@ public class ReclusteringEngine {
         switch (FailureParameters.getFTCluteringAlgorithm()) {
             case FTCLUSTERING_NOOP:
                 jobList.add(createJob(id, job, job.getEffectiveExecutionLengthMi(), job.getTaskList(), true));
-                // The retry Job is not yet submitted, so the submission state of the failed Job needs no handling.
+
                 break;
-                /**
-                 * Dynamic reclustering.
-                 */
+
             case FTCLUSTERING_DC:
                 jobList = DCReclustering(jobList, job, id, job.getTaskList());
                 break;
-                /**
-                 * Selective reclustering.
-                 */
+
             case FTCLUSTERING_SR:
                 jobList = SRReclustering(jobList, job, id);
 
                 break;
-                /**
-                 * Estimator-based dynamic reclustering.
-                 */
+
             case FTCLUSTERING_DR:
                 jobList = DRReclustering(jobList, job, id, job.getTaskList());
                 break;
-                /**
-                 * Block reclustering by DAG depth.
-                 */
+
             case FTCLUSTERING_BLOCK:
                 jobList = BlockReclustering(jobList, job, id);
                 break;
-                /**
-                 * Binary reclustering by DAG depth.
-                 */
+
             case FTCLUSTERING_VERTICAL:
                 jobList = VerticalReclustering(jobList, job, id);
                 break;
@@ -177,11 +133,6 @@ public class ReclusteringEngine {
         return jobList;
     }
 
-    /**
-     * A retry is a fresh execution attempt. Copy the task identity and modeling metadata,
-     * but never share mutable state or timing information with the failed attempt, so the
-     * retained failure evidence is not polluted.
-     */
     private static List<Task> copyTasks(List taskList) {
         if (taskList == null) {
             throw new IllegalArgumentException("Failed job has no task list to recreate");
@@ -199,7 +150,7 @@ public class ReclusteringEngine {
             if (source.hasVmExecutionCostSeconds()) {
                 copy.setVmExecutionCostSeconds(source.getVmExecutionCostSeconds());
             }
-            // Do not copy the old effective work/timestamps: resolve the new attempt afresh.
+
             copy.setDepth(source.getDepth());
             copy.setPriority(source.getPriority());
             copy.setImpact(source.getImpact());
@@ -218,14 +169,6 @@ public class ReclusteringEngine {
         return copies;
     }
 
-    /**
-     * Rebuild the Job-level file list and required-file union from the copied retry tasks.
-     *
-     * <p>A retry Job may contain only part of the tasks of the original clustering Job, so the
-     * full file list of the original Job cannot be copied verbatim. The reaggregated compute Job
-     * still enters the existing data-stage input model, which decides from the copy directory
-     * whether an actual transfer is required.</p>
-     */
     private static void populateRetryFileMetadata(Job retry) {
         for (Task task : retry.getTaskList()) {
             for (FileItem file : task.getFileList()) {
@@ -239,23 +182,6 @@ public class ReclusteringEngine {
         }
     }
 
-    /**
-     * Split candidate tasks stably into retry Jobs under a fixed upper bound.
-     *
-     * <p>DC and DR share this path, which guarantees that each candidate task enters exactly one
-     * output Job. A full cluster is closed before the current task is added, so tasks that sit
-     * exactly on a cluster boundary are not dropped as in the old implementation. When
-     * {@code failedOnly} is {@code true}, only tasks whose status is {@link Cloudlet#FAILED} are
-     * retained.</p>
-     *
-     * @param job failed source Job
-     * @param firstId identifier of the first new Job
-     * @param candidates candidate tasks in their original order
-     * @param clusterSize maximum number of tasks per retry Job, must be positive
-     * @param failedOnly whether to retry failed tasks only
-     * @return retry Jobs with consecutive identifiers, rebuilt file metadata, and connected
-     *         dependency edges
-     */
     static List<Job> partitionRetryTasks(
             Job job, int firstId, List<Task> candidates, int clusterSize, boolean failedOnly) {
         if (job == null || candidates == null) {
@@ -296,12 +222,6 @@ public class ReclusteringEngine {
         return retries;
     }
 
-    /**
-     * Partition the task list by task DAG depth.
-     *
-     * @param list task list to partition
-     * @return mapping from DAG depth to tasks
-     */
     private static Map<Integer, List<Task>> getDepthMap(List<Task> list) {
         Map<Integer, List<Task>> map = new HashMap<>();
 
@@ -318,14 +238,7 @@ public class ReclusteringEngine {
 
         return map;
     }
-    // Shared helper logic for dynamic reclustering and layer-wise recovery.
 
-    /**
-     * Return the minimum level in a depth map for the dynamic and layer-wise recovery policies.
-     *
-     * @param map mapping from DAG depth to tasks
-     * @return minimum key in the map; -1 for an empty map
-     */
     private static int getMin(Map<Integer, List<Task>> map) {
         if (map != null && !map.isEmpty()) {
             int min = Integer.MAX_VALUE;
@@ -339,12 +252,6 @@ public class ReclusteringEngine {
         return -1;
     }
 
-    /**
-     * Determine whether a task list contains a failed task.
-     *
-     * @param list task list to inspect
-     * @return {@code true} if a failed task is present
-     */
     private static boolean checkFailed(List<Task> list) {
         boolean all = false;
         for (Task task : list) {
@@ -356,20 +263,9 @@ public class ReclusteringEngine {
         return all;
     }
 
-    /**
-     * Recluster the tasks of a failed Job after bisecting them by DAG depth.
-     *
-     * @param jobList accumulated retry Job list
-     * @param job failed Job
-     * @param id identifier of the next allocatable Job
-     * @return updated retry Job list
-     */
     private static List<Job> VerticalReclustering(List<Job> jobList, Job job, int id) {
         Map<Integer, List<Task>> map = getDepthMap(job.getTaskList());
 
-        /**
-         * When there is only one DAG level, fall back to dynamic reclustering.
-         */
         if (map.size() == 1) {
 
             jobList = DCReclustering(jobList, job, id, job.getTaskList());
@@ -396,54 +292,35 @@ public class ReclusteringEngine {
         return jobList;
     }
 
-    /**
-     * Run dynamic reclustering separately for each DAG depth block that contains a failed task.
-     *
-     * @param jobList accumulated retry Job list
-     * @param job failed Job
-     * @param id identifier of the next allocatable Job
-     * @return updated retry Job list
-     */
     private static List BlockReclustering(List jobList, Job job, int id) {
         Map map = getDepthMap(job.getTaskList());
         if (map.size() == 1) {
             jobList = DRReclustering(jobList, job, id, job.getTaskList());
             return jobList;
         }
-        // Process each depth block separately.
+
         int min = getMin(map);
         for (int i = min; i < min + map.size(); i++) {
 
             List list = (List) map.get(i);
 
             if (checkFailed(list)) {
-                // A depth block that contains a failed task must be recovered independently.
+
                 List newList = DRReclustering(new ArrayList(), job, id, list);
-                id = newList.size() + id; // later retry Jobs continue with the identifiers not yet taken.
+                id = newList.size() + id;
                 jobList.addAll(newList);
             } else {
-                // This depth block has no failed task, so no retry Job is needed.
+
             }
         }
 
         return jobList;
     }
 
-    /**
-     * Run dynamic reclustering with the clustering factor suggested by the monitor.
-     *
-     * @param jobList accumulated retry Job list
-     * @param job failed Job
-     * @param id identifier of the next allocatable Job
-     * @param allTaskList candidate retry task list
-     * @return updated retry Job list
-     */
     private static List<Job> DCReclustering(List<Job> jobList, Job job, int id, List<Task> allTaskList) {
 
         Task firstTask = allTaskList.get(0);
-        // The FailureRecord length is the estimated single-task runtime, not the length of the
-        // whole Job. This historical formula combines task length, clustering overhead, and a
-        // depth-dependent divisor.
+
         OverheadParameters overhead = Parameters.getOverheadParams();
         double clusteringDelay = overhead == null ? 0.0 : overhead.getClustDelay(job);
         double taskLength =
@@ -453,21 +330,11 @@ public class ReclusteringEngine {
         record.delayLength = getCumulativeDelay(job.getDepth());
         int suggestedK = FailureMonitor.getClusteringFactor(record);
 
-        // A zero from the estimator means that no finite recommendation exists; fall back to
-        // one retry cluster that covers all candidate tasks.
         int clusterSize = suggestedK > 0 ? suggestedK : Math.max(1, allTaskList.size());
         jobList.addAll(partitionRetryTasks(job, id, allTaskList, clusterSize, false));
         return jobList;
     }
 
-    /**
-     * Create a single retry Job for the failed tasks only.
-     *
-     * @param jobList accumulated retry Job list
-     * @param job failed Job
-     * @param id identifier of the new retry Job
-     * @return updated retry Job list
-     */
     private static List<Job> SRReclustering(List<Job> jobList, Job job, int id) {
         List<Task> newTaskList = new ArrayList<>();
         long length = 0;
@@ -482,16 +349,6 @@ public class ReclusteringEngine {
         return jobList;
     }
 
-    /**
-     * Return the depth-dependent divisor used by the legacy dynamic reclustering formula.
-     *
-     * <p>These constants cover only a few depths of the historical implementation and have no
-     * experimental calibration basis; they are retained for compatibility with the old
-     * behavior, not as a general platform model.</p>
-     *
-     * @param depth DAG depth
-     * @return the corresponding historical divisor, or 1 for an unknown depth
-     */
     private static int getDividend(int depth) {
         int dividend = 1;
         switch (depth) {
@@ -511,11 +368,6 @@ public class ReclusteringEngine {
         return dividend;
     }
 
-    /**
-     * Sum the mean queue, workflow engine, and post-processing delays available for a DAG depth.
-     * @param depth DAG depth
-     * @return cumulative delay
-     */
     private static double getCumulativeDelay(int depth) {
         double delay = 0.0;
         OverheadParameters overhead = Parameters.getOverheadParams();
@@ -534,16 +386,6 @@ public class ReclusteringEngine {
         return delay;
     }
 
-    /**
-     * Return the first available overhead distribution prior for a depth, for the legacy
-     * dynamic reclustering estimator.
-     *
-     * <p>This selection order is a historical compatibility rule; it does not express a
-     * statistical merge of multiple overhead sources.</p>
-     *
-     * @param depth DAG depth
-     * @return selected prior; 0 when no corresponding overhead exists
-     */
     private static double getOverheadLikelihoodPrior(int depth) {
         double prior = 0.0;
         OverheadParameters overhead = Parameters.getOverheadParams();
@@ -561,30 +403,14 @@ public class ReclusteringEngine {
         return prior;
     }
 
-    /**
-     * Estimate the cluster size from the failure arrival time and overhead parameters, then
-     * retry the failed tasks only.
-     *
-     * @param jobList accumulated retry Job list
-     * @param job failed Job
-     * @param id identifier of the next allocatable Job
-     * @param allTaskList candidate retry task list
-     * @return updated retry Job list
-     */
     private static List DRReclustering(List<Job> jobList, Job job, int id, List<Task> allTaskList) {
         Task firstTask = allTaskList.get(0);
 
-        // The legacy DR path estimates the single-task runtime from the first task length only;
-        // cluster overhead is deliberately not added here.
-        double taskLength = (double) firstTask.getCloudletLength()
-                / 1000; // + Parameters.getOverheadParams().getClustDelay(job) / getDividend(job.getDepth());
-
-        // The historical implementation computed suggestedK through FailureMonitor; the direct
-        // estimation path is kept now.
+        double taskLength = (double) firstTask.getCloudletLength() / 1000;
 
         double phi_ts = getOverheadLikelihoodPrior(job.getDepth());
         double delay = getCumulativeDelay(job.getDepth());
-        int suggestedK; // the historical implementation could instead take the suggestion from FailureMonitor.
+        int suggestedK;
 
         double theta = FailureParameters.getGeneratorForFailureScope(job.getVmId(), job.getDepth())
                 .getMLEMean();
@@ -594,17 +420,14 @@ public class ReclusteringEngine {
         suggestedK = ClusteringSizeEstimator.estimateK(taskLength, delay, theta, phi_gamma, phi_ts);
 
         Log.printLine("t=" + taskLength + " d=" + delay + " theta=" + theta + " k=" + suggestedK);
-        // When the estimator has no finite suggestion, still retry the failed tasks only and
-        // place them in a single retry cluster.
+
         int clusterSize = suggestedK > 0 ? suggestedK : Math.max(1, allTaskList.size());
         jobList.addAll(partitionRetryTasks(job, id, allTaskList, clusterSize, true));
         return jobList;
     }
 
     private static void updateDependencies(Job job, List<Job> jobList) {
-        // Every retry Job references the same set of dependency edges; the whole child list must
-        // not be rewritten inside the loop, otherwise later retry Jobs overwrite the dependency
-        // relations established earlier.
+
         List<Task> parents = job.getParentList();
         List<Task> children = job.getChildList();
         for (Job rawJob : jobList) {

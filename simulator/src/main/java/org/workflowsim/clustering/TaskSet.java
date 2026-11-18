@@ -20,39 +20,18 @@ import java.util.List;
 
 import org.workflowsim.Task;
 
-/**
- * A group of logical tasks used internally by a clustering algorithm.
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class TaskSet {
 
-    /**
-     * Logical tasks in this set.
-     */
     private final List<Task> taskList;
-    /**
-     * Parent sets of this task set.
-     */
+
     private final List<TaskSet> parentList;
-    /**
-     * Child sets of this task set.
-     */
+
     private final List<TaskSet> childList;
-    /**
-     * Checked flag used during traversal.
-     */
+
     public boolean hasChecked;
-    /**
-     * Impact factor used by the clustering heuristic.
-     */
+
     private double impactFactor;
 
-    /**
-     * Creates an empty task set.
-     */
     public TaskSet() {
         this.taskList = new ArrayList<>();
         this.parentList = new ArrayList<>();
@@ -61,74 +40,34 @@ public class TaskSet {
         this.impactFactor = 0.0;
     }
 
-    /**
-     * Returns the impact factor.
-     *
-     * @return the impact factor
-     */
     public double getImpactFactor() {
         return this.impactFactor;
     }
 
-    /**
-     * Sets the impact factor.
-     *
-     * @param factor the impact factor
-     */
     public void setImpactFafctor(double factor) {
         this.impactFactor = factor;
     }
 
-    /**
-     * Returns the parent task sets.
-     *
-     * @return the parent task sets
-     */
     public List<TaskSet> getParentList() {
         return this.parentList;
     }
 
-    /**
-     * Returns the child task sets.
-     *
-     * @return the child task sets
-     */
     public List<TaskSet> getChildList() {
         return this.childList;
     }
 
-    /**
-     * Returns the logical tasks in this set.
-     *
-     * @return the list of logical tasks
-     */
     public List<Task> getTaskList() {
         return this.taskList;
     }
 
-    /**
-     * Adds one task to this set.
-     *
-     * @param task the task to add
-     */
     public void addTask(Task task) {
         this.taskList.add(task);
     }
 
-    /**
-     * Adds a batch of tasks to this set.
-     *
-     * @param list the tasks to add
-     */
     public void addTask(List<Task> list) {
         this.taskList.addAll(list);
     }
 
-    /**
-     * Returns the job length of this set, that is, the sum of all task lengths.
-     *
-     * @return the job length
-     */
     public long getJobRuntime() {
         long runtime = 0;
         for (Task task : taskList) {

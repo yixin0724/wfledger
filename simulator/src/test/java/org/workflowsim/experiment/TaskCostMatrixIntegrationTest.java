@@ -20,17 +20,6 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskCostMatrix;
 
-/**
- * End-to-end semantic test of the task x VM heterogeneous cost matrix (a paper-reproduction
- * support capability).
- *
- * <p>Covers three contracts: (1) matrix entries drive the runtime execution time exactly;
- * (2) the configuration layer rejects combinations that would degrade silently (non-STATIC
- * dispatch, non-NONE clustering); (3) a coverage gap fails fast before any dispatch. It
- * additionally verifies that in LOCAL mode inter-task communication (intermediate files
- * transferred across VMs) is modeled as {@code min(bw_src, bw_dst)} and is observable from
- * the evidence events.</p>
- */
 class TaskCostMatrixIntegrationTest {
 
     @AfterEach
@@ -67,7 +56,7 @@ class TaskCostMatrixIntegrationTest {
         Log.disable();
         SimulationRunner runner = new SimulationRunner();
         assertRuntimeMatchesMatrix(runner.run(config, platform), matrix);
-        // Determinism: rerunning the same configuration yields exactly the same execution times.
+
         assertRuntimeMatchesMatrix(runner.run(config, platform), matrix);
     }
 
@@ -97,8 +86,7 @@ class TaskCostMatrixIntegrationTest {
     void coverageGapFailsFastBeforeAnyDispatch() throws Exception {
         String workflow = resourcePath("/dax/independent-tasks.dax");
         PlatformProfile platform = PlatformProfiles.homogeneousLocal("cost-matrix-gap-platform", 3);
-        // The matrix covers only VM 0/1 while the platform has 3 VMs -- it must fail in the
-        // resolve/projection phase.
+
         TaskCostMatrix partial = TaskCostMatrix.builder()
                 .put(1, 0, 2.0)
                 .put(1, 1, 3.0)
@@ -142,8 +130,7 @@ class TaskCostMatrixIntegrationTest {
             }
         }
         assertEquals(2, taskVm.size());
-        // On the homogeneous platform every VM bandwidth is 1000 MB/s; a 30 MB cross-VM
-        // transfer is 0.03 s, while a same-VM transfer is 0.
+
         double expectedTransfer =
                 taskVm.get(Integer.valueOf(1)).equals(taskVm.get(Integer.valueOf(2))) ? 0.0 : 30.0 / 1000.0;
         SimulationEvent childTransfer = transferEventForTask(report, 2);
@@ -152,8 +139,7 @@ class TaskCostMatrixIntegrationTest {
                 ((Number) childTransfer.getAttributes().get("modeledTransferSeconds")).doubleValue(),
                 1.0e-12);
         assertEquals("LEGACY_WORKFLOWSIM_V1", childTransfer.getAttributes().get("dataMovementModel"));
-        // Child envelope execution time = 1.0 s of compute + the transfer time expressed as
-        // stage-in MI.
+
         SimulationReport.JobOutcome child = computeJobForTask(report, 2);
         assertEquals(1.0 + expectedTransfer, child.getExecutionTime(), 1.0e-9);
         assertEquals(2, report.getMetrics().getDataStageInModelObservationCount());

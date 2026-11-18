@@ -37,7 +37,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Full V2 bundle must prove that its independently valid lifecycle belongs to this Kernel run. */
 class FileLifecycleArtifactIntegrationTest {
     @TempDir
     Path directory;
@@ -350,11 +349,6 @@ class FileLifecycleArtifactIntegrationTest {
         assertTrue(validated.getDecodedFileLifecycle().isQuiescent());
     }
 
-    /**
-     * AUD-F15: a finished validator must never accept further events or a second finish.
-     * The 20+ mutable accumulators make silent instance reuse a cross-report contamination
-     * hazard, so the single-use contract is enforced, not just assumed.
-     */
     @Test
     void singleUseLifecycleIsEnforcedAfterFinish() throws Exception {
         SimulationReport report = run(input(), true, false, 1000, 1);
@@ -385,10 +379,6 @@ class FileLifecycleArtifactIntegrationTest {
                 "A finished validator must reject re-finishing (AUD-F15)");
     }
 
-    /**
-     * AUD-F15: the static entries stay independently reentrant -- each call constructs its own
-     * validator instance, so validating the same report twice must succeed twice.
-     */
     @Test
     void staticValidateReportEntriesStayIndependentlyReentrant() throws Exception {
         SimulationReport report = run(input(), true, false, 1000, 1);

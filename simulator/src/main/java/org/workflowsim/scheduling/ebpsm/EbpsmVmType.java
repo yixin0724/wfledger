@@ -1,6 +1,5 @@
 package org.workflowsim.scheduling.ebpsm;
 
-/** VM type used by the EBPSM budget distribution preprocessor. */
 public final class EbpsmVmType {
     private final int vmTypeId;
     private final double mips;

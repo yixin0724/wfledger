@@ -21,21 +21,8 @@ import java.util.List;
 
 import org.workflowsim.clustering.TaskSet;
 
-/**
- * Dispersion metric for pipeline runtimes, where each pipeline is a unique parent-child chain.
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class PipelineRuntimeVariance implements BalancingMetric {
 
-    /**
-     * Computes the relative dispersion of the pipeline runtimes the task sets belong to.
-     *
-     * @param list task sets to inspect
-     * @return relative pipeline runtime dispersion; zero when the list holds fewer than two
-     */
     @Override
     public double getMetric(List<TaskSet> list) {
         if (list == null || list.size() <= 1) {
@@ -46,7 +33,6 @@ public class PipelineRuntimeVariance implements BalancingMetric {
         for (int i = 0; i < list.size(); i++) {
             TaskSet set = (TaskSet) list.get(i);
             rv[i] = getPipelineSum(set);
-            // To diagnose individual pipeline lengths, temporarily print rv[i] here.
         }
         double sum = 0.0;
         for (int i = 0; i < list.size(); i++) {
@@ -63,12 +49,6 @@ public class PipelineRuntimeVariance implements BalancingMetric {
         return Math.sqrt(sum / list.size()) / mean;
     }
 
-    /**
-     * Accumulates the job lengths of the task sets along the unique parent-child chain.
-     *
-     * @param task task set that starts the pipeline
-     * @return sum of the job lengths on the unique dependency chain
-     */
     private double getPipelineSum(TaskSet task) {
         double sum = 0.0;
         if (task == null) {

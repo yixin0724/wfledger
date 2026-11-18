@@ -39,18 +39,15 @@
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="warning"/>
 
-    <!-- ===== Red line 2: CloudSim upstream source exits the quality gate as a whole ===== -->
     <module name="BeforeExecutionExclusionFileFilter">
         <property name="fileNamePattern" value="[\\/]org[\\/]cloudbus[\\/]"/>
     </module>
 
-    <!-- ===== Test leniency (red line 3): the exemption surface may only shrink, never grow ===== -->
     <module name="SuppressionFilter">
         <property name="file" value="${config_loc}/suppressions.xml"/>
         <property name="optional" value="false"/>
     </module>
 
-    <!-- ===== Tier-B: purely mechanical items (promoted to error after Phase 4 formatter normalization) ===== -->
     <module name="FileTabCharacter"/>
     <module name="RegexpSingleline">
         <property name="format" value="\s+$"/>
@@ -59,88 +56,62 @@
     <module name="LineLength">
         <property name="max" value="120"/>
         <property name="fileExtensions" value="java"/>
-        <!-- Tier-A promote (2026-10-22, phase 2 L1/L2/L3 batch): cleared in both the main
-             and the test tree (join identity splits + palantir 120-column compatibility);
-             a new over-long line means spelling/wording drift and is blocked -->
+
         <property name="severity" value="error"/>
     </module>
 
     <module name="TreeWalker">
-        <!-- ============ Tier-A (error, zero tolerance) ============ -->
-        <!-- Type/package name confusion breaks import and reflection conventions, and the current backlog is 0 -->
+
         <module name="TypeName">
             <property name="severity" value="error"/>
         </module>
         <module name="PackageName">
             <property name="severity" value="error"/>
         </module>
-        <!-- import correctness: a duplicate import = redundant code; an unused import = dead code (2026-10-21 backlog of 11 cleared, promoted to error) -->
+
         <module name="RedundantImport">
             <property name="severity" value="error"/>
         </module>
         <module name="UnusedImports">
             <property name="severity" value="error"/>
         </module>
-        <!-- An empty statement ";" is almost certainly a typo: a correctness single-vote veto -->
+
         <module name="EmptyStatement">
             <property name="severity" value="error"/>
         </module>
-        <!-- equals/hashCode contract: equivalent objects must hash alike; violating it breaks evidence deduplication/reconciliation semantics -->
+
         <module name="EqualsHashCode">
             <property name="severity" value="error"/>
         </module>
-        <!-- String == is reference comparison, always an evidence-comparison error class -->
+
         <module name="StringLiteralEquality">
             <property name="severity" value="error"/>
         </module>
-        <!-- A default that is not last swallows the branches that follow the case match: a control-flow error -->
+
         <module name="DefaultComesLast">
             <property name="severity" value="error"/>
         </module>
 
-        <!-- The no-match (default) branch of a switch must be explicit (2026-10-21 backlog
-             of 6 cleared after case-by-case manual audit, promoted to error; audit record:
-             one each in VerticalClustering, DistributionGenerator, FailureMonitor (three
-             occurrences), and examples; all made explicit along the same "no-match -> break"
-             path, with no control-flow change) -->
         <module name="MissingSwitchDefault">
             <property name="severity" value="error"/>
         </module>
 
-        <!-- ============ Tier-B (warning, backlog registered and cleared batch by batch) ============ -->
-        <!-- import hygiene: star imports/ordering (17/226 baseline findings).
-             groups/separated keep the baseline audit definition: four groups java, javax,
-             org, com, separated by blank lines. -->
         <module name="AvoidStarImport">
             <property name="severity" value="error"/>
         </module>
-        <!-- Tier-A promote (2026-10-22, phase 2 IO1 batch): 117 ordering/blank-line plus
-             17 star-import findings all cleared; the spotless importOrder step is frozen in
-             the same direction as palantir, so a new violation is blocked -->
+
         <module name="ImportOrder">
             <property name="groups" value="java,javax,org,com"/>
             <property name="ordered" value="true"/>
             <property name="separated" value="true"/>
-            <!-- option=top (2026-10-22, phase 2 IO1): the canonical of the spotless
-                 importOrder step puts static imports first (Google style), which conflicts
-                 with the default under; aligning on top makes the two tools consistent in
-                 one direction. A direction adjustment of the same strictness, kept as precedent. -->
+
             <property name="option" value="top"/>
             <property name="sortStaticImportsAlphabetically" value="true"/>
             <property name="severity" value="error"/>
         </module>
 
-        <!-- Mechanical whitespace items (baseline of about 26,000 findings; the bulk of the Phase 4 formatter work) -->
         <module name="WhitespaceAfter"/>
-        <!-- Tier-A promote (2026-10-23, three-pillar adjudication batch): 158 residual
-             findings classified as `private Foo() {}` utility-class constructor guard
-             statements (79 classes with exactly one pair); plus 4 in the empty-method
-             family. The Palantir canonical formatter always emits `{}` for every empty
-             body, the same family lineage as allowEmptyTypes; after adding
-             allowEmptyConstructors/allowEmptyMethods/allowEmptyLambdas the whole tree was
-             cleared and promoted. Whitespace around non-empty bodies is still zero
-             tolerance, so a new violation is blocked; adding to the empty-body family
-             requires updating this ledger. -->
+
         <module name="WhitespaceAround">
             <property name="severity" value="error"/>
             <property name="allowEmptyTypes" value="true"/>
@@ -151,29 +122,21 @@
         <module name="MethodParamPad"/>
         <module name="ParenPad"/>
         <module name="LeftCurly"/>
-        <!-- Tier-A promote (2026-10-22, phase 2 W1 batch): cleared repo-wide including the
-             test tree; the palantir default emits else on the same line, so a new
-             violation is blocked -->
+
         <module name="RightCurly">
             <property name="severity" value="error"/>
         </module>
-        <!-- Tier-A promote (2026-10-22, phase 2 NB1-NB4 batches): 1,718 findings (the main
-             and test trees of the three modules at the time; the third module
-             grouped-workflows was removed on 2026-11-02, so the baseline number is
-             historical only) fully braced and cleared, compatible with palantir output;
-             new unbraced control flow is blocked -->
+
         <module name="NeedBraces">
             <property name="severity" value="error"/>
         </module>
 
-        <!-- Naming (baseline of 174 findings; a rename batch, committed separately from format-only changes) -->
         <module name="MethodName"/>
         <module name="MemberName"/>
         <module name="ParameterName"/>
         <module name="LocalVariableName"/>
         <module name="ConstantName"/>
 
-        <!-- Structural metrics (giant methods/cyclomatic complexity; promoted to error-level quotas after the Phase 3a split) -->
         <module name="MethodLength">
             <property name="max" value="80"/>
         </module>
@@ -181,7 +144,6 @@
             <property name="max" value="15"/>
         </module>
 
-        <!-- Documentation (info): kept in sync with docs/advanced/CODE_STYLE.md -->
         <module name="MissingJavadocType">
             <property name="severity" value="info"/>
         </module>

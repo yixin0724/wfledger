@@ -23,7 +23,6 @@ import org.workflowsim.WorkflowParser;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/** Independent XML job-count and DAG checks for all 20 retained classic DAX inputs (B04, 2026-11-04). */
 class ClassicDaxStructuralTest {
 
     @BeforeEach

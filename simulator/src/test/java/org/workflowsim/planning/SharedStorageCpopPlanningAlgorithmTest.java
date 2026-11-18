@@ -36,20 +36,16 @@ class SharedStorageCpopPlanningAlgorithmTest {
 
         planner.run();
 
-        // root -> criticalMiddle -> tail is the CPOP critical path; VM 1 has the smallest total
-        // model duration over the whole path and is therefore selected as the critical processor.
         assertEquals(1, root.getVmId());
         assertEquals(1, criticalMiddle.getVmId());
         assertEquals(1, tail.getVmId());
-        // The stage-in is dispatched to the smallest VM ID; CPOP then starts the critical path on
-        // the selected critical processor.
+
         assertEquals(0.21, root.getStaticScheduleStartTime(), 1.0e-12);
         assertEquals(0.71, criticalMiddle.getStaticScheduleStartTime(), 1.0e-12);
         assertEquals(2.71, tail.getStaticScheduleStartTime(), 1.0e-12);
 
         SharedStorageDagPlanTrace trace = planner.getLastPlanTrace();
-        // The model durations averaged over 1000/2000 MIPS are 0.75, 3.0, 0.75 and 0.375 seconds
-        // in that order; the critical-chain priority is 4.5.
+
         assertEquals(4.5, trace.getTaskPlan(1).getUpwardRankSeconds(), 1.0e-12);
         assertEquals(0.75, trace.getTaskPlan(2).getCpopDownwardRankSeconds(), 1.0e-12);
         assertEquals(4.5, trace.getTaskPlan(3).getCpopPrioritySeconds(), 1.0e-12);

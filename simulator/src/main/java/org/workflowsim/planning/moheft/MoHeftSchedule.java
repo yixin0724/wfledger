@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** One immutable MOHEFT candidate schedule with makespan and total energy. */
 public final class MoHeftSchedule {
     private final Map<Integer, Entry> entries;
     private final double makespanSeconds;

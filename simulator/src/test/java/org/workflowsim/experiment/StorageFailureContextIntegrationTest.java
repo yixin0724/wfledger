@@ -35,7 +35,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Necessary final-run joins: observed retries must be possible under the declared failure/STATIC policy. */
 class StorageFailureContextIntegrationTest {
     @TempDir
     Path directory;
@@ -188,7 +187,7 @@ class StorageFailureContextIntegrationTest {
         p.addHost(new PlatformProfile.HostSpec(30, 2, 2000, 4096, 10000, 1000000));
         p.sourceStorage(DataflowStorageSpec.of(30, 1, .5, 2));
         PlatformProfile platform = p.build();
-        // Bounded deterministic fixture selection exercises at least two retries; this is not a study ranking search.
+
         for (long seed = 1; seed <= 64; seed++) {
             SimulationConfig c = SimulationConfig.builder(input.toString(), 2)
                     .planningAlgorithm(Parameters.PlanningAlgorithm.RANDOM)

@@ -19,37 +19,15 @@ package org.workflowsim.utils;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 
-/**
- * Distribution generator that switches its parameters within a period according to a
- * {@link PeriodicalSignal}.
- *
- * <p>It inherits the pre-sampling mechanism of {@link DistributionGenerator} and selects, at each
- * sample position, the distribution that corresponds to the upper or the lower bound chosen by the
- * periodical signal. This mechanism is a simplified abstraction of periodic overhead.</p>
- *
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 11, 2014
- * @author Weiwei Chen
- */
 public class PeriodicalDistributionGenerator extends DistributionGenerator {
 
-    /** Periodical signal that controls the switching of the distribution parameters. */
     protected PeriodicalSignal signal;
 
-    /**
-     * Create a periodical distribution generator without prior knowledge.
-     *
-     * @param dist distribution family
-     * @param scale scale parameter
-     * @param shape shape parameter
-     * @param signal periodical signal
-     */
     public PeriodicalDistributionGenerator(
             DistributionFamily dist, double scale, double shape, PeriodicalSignal signal) {
         super(dist, scale, shape);
         this.signal = requireSignal(signal);
-        // Initial samples must be drawn from the distribution selected by the periodical signal,
-        // not from the fixed-distribution sampling of the parent class.
+
         double currentTime = 0.0;
         samples = generatePeriodicalSamples(currentTime);
 
@@ -57,17 +35,6 @@ public class PeriodicalDistributionGenerator extends DistributionGenerator {
         cursor = 0;
     }
 
-    /**
-     * Create a periodical distribution generator with prior knowledge.
-     *
-     * @param dist distribution family
-     * @param scale scale parameter
-     * @param shape shape parameter
-     * @param a prior shape parameter
-     * @param b prior scale parameter
-     * @param c prior likelihood parameter
-     * @param signal periodical signal
-     */
     public PeriodicalDistributionGenerator(
             DistributionFamily dist,
             double scale,
@@ -84,22 +51,6 @@ public class PeriodicalDistributionGenerator extends DistributionGenerator {
         cursor = 0;
     }
 
-    /**
-     * Create a periodical distribution generator with prior knowledge and a stable random stream
-     * name.
-     *
-     * <p>An explicit random stream prevents historical examples from sharing the default stream
-     * identity because of construction order within the same model.</p>
-     *
-     * @param dist distribution family
-     * @param scale base scale parameter
-     * @param shape shape parameter
-     * @param a prior shape parameter
-     * @param b prior scale parameter
-     * @param c prior likelihood parameter
-     * @param signal periodical signal
-     * @param randomStream stable random component name
-     */
     public PeriodicalDistributionGenerator(
             DistributionFamily dist,
             double scale,
@@ -116,7 +67,7 @@ public class PeriodicalDistributionGenerator extends DistributionGenerator {
         updateCumulativeSamples();
         cursor = 0;
     }
-    /** Extend the pre-sampled sequence at the current cumulative simulation time. */
+
     @Override
     public void extendSamples() {
         double currentTime = cumulativeSamples[cumulativeSamples.length - 1];
@@ -125,12 +76,6 @@ public class PeriodicalDistributionGenerator extends DistributionGenerator {
         updateCumulativeSamples();
     }
 
-    /**
-     * Generate a batch of samples that switch according to the periodical signal.
-     *
-     * @param currentTime current cumulative simulation time
-     * @return new sample array
-     */
     private double[] generatePeriodicalSamples(double currentTime) {
         RealDistribution distributionUpper = getDistribution(signal.getUpperBound(), shape);
         RealDistribution distributionLower = getDistribution(signal.getLowerBound(), shape);

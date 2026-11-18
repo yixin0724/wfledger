@@ -14,14 +14,6 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters.FileType;
 
-/**
- * Immutable structural description of a parsed source workflow.
- *
- * <p>The profile is deliberately produced before clustering, scheduling, retry and execution.
- * External-input fields use a whole-graph definition: an INPUT file is external only when no source
- * task declares an OUTPUT file of the same name. It is therefore an input-workload description, not
- * an assertion about the legacy data stage-in implementation.</p>
- */
 public final class WorkflowProfile {
 
     private final int taskCount;
@@ -73,14 +65,6 @@ public final class WorkflowProfile {
         this.totalDistinctExternalInputBytes = totalDistinctExternalInputBytes;
     }
 
-    /**
-     * Builds the profile of a complete parsed task graph; an invalid graph or invalid file data is
-     * rejected outright so that misleading aggregates are never emitted.
-     *
-     * @param sourceTasks parsed source task graph; may be empty, but not {@code null}
-     * @return immutable profile describing tasks, edges, depth, width, run length and file references
-     * @throws IllegalArgumentException if the task graph, dependencies or file declarations are invalid
-     */
     public static WorkflowProfile fromTasks(List<Task> sourceTasks) {
         if (sourceTasks == null) {
             throw new IllegalArgumentException("Source tasks are required");
@@ -117,10 +101,6 @@ public final class WorkflowProfile {
                 files.totalDistinctExternalBytes);
     }
 
-    /**
-     * Deterministic ordering stage of {@link #fromTasks}: ascending cloudletId (tie-break red line:
-     * no iteration-order drift).
-     */
     private static List<Task> sortedByCloudletId(List<Task> sourceTasks) {
         List<Task> tasks = new ArrayList<Task>(sourceTasks);
         Collections.sort(tasks, new Comparator<Task>() {
@@ -132,7 +112,6 @@ public final class WorkflowProfile {
         return tasks;
     }
 
-    /** {@link #fromTasks} indexing stage: null or duplicate IDs are rejected outright. */
     private static Map<Integer, Task> indexById(List<Task> tasks) {
         Map<Integer, Task> tasksById = new HashMap<Integer, Task>();
         for (Task task : tasks) {
@@ -143,7 +122,6 @@ public final class WorkflowProfile {
         return tasksById;
     }
 
-    /** {@link #fromTasks} edge-counting stage: adjacency validity plus roots/leaves/edge count/total length. */
     private static EdgeStatistics validateAndCountEdges(List<Task> tasks, Set<Task> taskSet) {
         EdgeStatistics stats = new EdgeStatistics();
         for (Task task : tasks) {
@@ -181,10 +159,6 @@ public final class WorkflowProfile {
         return stats;
     }
 
-    /**
-     * {@link #fromTasks} depth stage: level traversal over the ID-ordered ready queue plus width and
-     * enqueue validation (cycle detection).
-     */
     private static DepthStatistics computeDepthStatistics(
             List<Task> tasks, Map<Task, Integer> remainingParents, Map<Task, Integer> depthByTask) {
         PriorityQueue<Task> ready = new PriorityQueue<Task>(tasks.size(), new Comparator<Task>() {
@@ -230,10 +204,6 @@ public final class WorkflowProfile {
         return stats;
     }
 
-    /**
-     * {@link #fromTasks} length stage: mean and coefficient of variation (the summation order matches
-     * the original implementation step by step).
-     */
     private static LengthStatistics computeLengthStatistics(List<Task> tasks, long totalLength) {
         double meanLength = (double) totalLength / tasks.size();
         double variance = 0.0;
@@ -248,10 +218,6 @@ public final class WorkflowProfile {
         return stats;
     }
 
-    /**
-     * Private transfer structure between the {@link #fromTasks} stages (fields are read directly; no
-     * forwarding behavior).
-     */
     private static final class EdgeStatistics {
         private final Map<Task, Integer> remainingParents = new HashMap<Task, Integer>();
         private final Map<Task, Integer> depthByTask = new HashMap<Task, Integer>();
@@ -340,14 +306,11 @@ public final class WorkflowProfile {
         if (previous == null) {
             filesByName.put(file.getName(), Double.valueOf(file.getSize()));
         } else if (Double.compare(previous.doubleValue(), file.getSize()) != 0) {
-            // Relaxed validation: use the size from the first declaration and log a warning.
-            // Identical to the logic in WorkflowParser: a real workflow may estimate the size of the
-            // same file differently.
+
             org.cloudbus.cloudsim.Log.printLine("WARNING: Workflow declares inconsistent " + kind
                     + " size for '" + file.getName() + "': "
                     + "first=" + previous.doubleValue() + ", current=" + file.getSize()
                     + " (using first declaration)");
-            // Keep using previous; do not throw
         }
     }
 

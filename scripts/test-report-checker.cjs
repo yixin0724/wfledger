@@ -6,15 +6,8 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { spawnSync } = require('node:child_process');
 
-// Verify the verifier using disposable copies only; original reports and evidence remain untouched.
 const input = process.argv[2];
 
-// BAT-R11 self-guard (2026-10-28): tamper injections must never call fetch()
-// inside the injected code. Headless Chromium rejects fetch('file://...') at the
-// Fetch API level, silently emitting no interceptable network event, so such a
-// case passes locally (headed Chrome emits events) while being vacuous on CI --
-// the exact defect class of aab17b8/8f57f05 (four sites, two rounds). This lock
-// re-introduction-proofs the class: it fails the suite at load time.
 {
   const own = fs.readFileSync(__filename, 'utf8');
   const injections = own.match(/inject\(content,\s*\n?\s*`[^`]+`/g) || [];
@@ -61,7 +54,7 @@ try {
     'addEventListener("resize",()=>{if(innerWidth<500)fetch("https://offline-check.invalid/resize").catch(()=>{});});'),
     /Offline reports must remain offline through the final viewport change/);
   assert.match(late.stderr, /offline-check\.invalid\/resize/);
-  // The positive checker aborts all HTTP requests before actual network access.
+
   const network = fixtures && (fixtures.reports.find(r => r.name === 'network-typed-stress')
     || fixtures.reports.find(r => r.network && r.network.some(n => n.state === 'COMPLETE')));
   if (network) {

@@ -19,7 +19,6 @@ import org.workflowsim.utils.EbpsmConfig;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Two-workflow EBPSM integration with staggered arrival and shared VM cache state. */
 class EbpsmIntegrationTest {
 
     @TempDir

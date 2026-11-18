@@ -15,26 +15,6 @@
  */
 package org.workflowsim.scheduling;
 
-/**
- * Originally named RoundRobinSchedulingAlgorithm.
- *
- * <p>Note: this implementation is not classic Round-Robin. The declared vmIndex is dead code;
- * the actual behavior is First-Fit-Idle (sort by vmId, then take the first idle VM from the
- * head). For ready-batch Round-Robin see
- * {@link ReadyBatchRoundRobinSchedulingAlgorithm}.</p>
- *
- * <p><strong>Compatibility boundary:</strong> retained solely for historical source
- * compatibility; the standard research entry point rejects this label, and results of this
- * class must not be claimed as classic Round-Robin.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date May 12, 2014
- * @deprecated vmIndex is dead code and the behavior is actually First-Fit-Idle; renamed to
- *             {@link FirstFitIdleSchedulingAlgorithm}.
- *             The ready-batch implementation is
- *             {@link ReadyBatchRoundRobinSchedulingAlgorithm}.
- */
 @Deprecated
 public class RoundRobinSchedulingAlgorithm extends FirstFitIdleSchedulingAlgorithm {
 

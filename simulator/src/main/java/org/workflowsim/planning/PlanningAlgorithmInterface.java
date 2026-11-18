@@ -17,31 +17,15 @@ package org.workflowsim.planning;
 
 import java.util.List;
 
-/**
- * Minimal interface for a static planning policy.
- *
- * <p>The interface specifies only the input Task/VM collections and the planning entry point;
- * it does not by itself promise a complete DAG execution order, network calibration results,
- * or a real-platform replay.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Jun 18, 2013
- */
 public interface PlanningAlgorithmInterface {
 
-    /** Set the Task list to be planned. */
     public void setTaskList(List list);
 
-    /** Set the VM list. */
     public void setVmList(List list);
 
-    /** Return the Task list to be planned. */
     public List getTaskList();
 
-    /** Return the VM list. */
     public List getVmList();
 
-    /** Execute one offline planning run. */
     public void run() throws Exception;
 }

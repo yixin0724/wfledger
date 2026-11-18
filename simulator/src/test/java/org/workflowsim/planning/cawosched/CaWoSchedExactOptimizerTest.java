@@ -14,7 +14,6 @@ import org.workflowsim.planning.timed.TimedActivityType;
 import org.workflowsim.planning.timed.TimedPlan;
 import org.workflowsim.platform.PlatformProfile;
 
-/** Exact single-processor DP versus independent integer-start enumeration (R-PAPER-01D). */
 class CaWoSchedExactOptimizerTest {
 
     @Test
@@ -51,8 +50,6 @@ class CaWoSchedExactOptimizerTest {
 
         CaWoSchedPlan exact = planner.planExactSingleProcessor();
 
-        // Paper E-schedule oracle: one block covers [0,2.7), leaving 0.7 s active in
-        // the dirty [2,4) window. A three-task refinement cap cannot represent start 1.9.
         assertEquals(0.7, exact.getCarbonExcessWattSeconds(), 1.0e-9);
         assertEquals(2.7, exact.getMakespanSeconds(), 1.0e-9);
         assertEquals(1.9, exact.getTaskPlan(5).getStartSeconds(), 1.0e-9);

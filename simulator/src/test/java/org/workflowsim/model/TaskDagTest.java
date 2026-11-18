@@ -7,10 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.Task;
 
-/**
- * Hand-derived micro-DAG structure tests: verify Task parent-child links and depth semantics.
- * These tests do not start the CloudSim engine; they verify model-layer behavior only.
- */
 class TaskDagTest {
 
     private Task taskA;
@@ -19,7 +15,7 @@ class TaskDagTest {
 
     @BeforeEach
     void setUp() {
-        // Three tasks: A (1000 MI), B (2000 MI), C (3000 MI)
+
         taskA = new Task(1, 1000);
         taskB = new Task(2, 2000);
         taskC = new Task(3, 3000);
@@ -33,7 +29,7 @@ class TaskDagTest {
 
     @Test
     void chainDependency() {
-        // A -> B -> C
+
         taskB.addParent(taskA);
         taskA.addChild(taskB);
         taskC.addParent(taskB);
@@ -50,7 +46,7 @@ class TaskDagTest {
 
     @Test
     void forkJoinDag() {
-        // A -> B, A -> C (fork); B -> D, C -> D (join)
+
         Task taskD = new Task(4, 4000);
 
         taskA.addChild(taskB);

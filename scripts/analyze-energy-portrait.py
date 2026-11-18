@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
-"""Energy portrait of the algorithm corpus — the analysis behind the benchmark power variant.
 
-Reads every run manifest of output/benchmark-standard-power-v1, derives the per-layer
-energy/EDP statistics under a frozen homogeneous 250 W/400 W power model, and emits a
-self-contained JSON document (the published analysis artifact). The companion self-test
-scripts/test-energy-portrait.py verifies every statistical primitive on hand-computed
-fixtures plus these derivations on the retained evidence.
-
-Analysis conventions (CAMPAIGNS discipline):
-- Same-layer comparisons only; each (input, tier) is one paired condition.
-- Paired two-sided exact sign test on non-tied conditions; ties disclosed.
-- Holm correction over the comparison family of each layer (m = 4 per layer).
-
-Usage: python3 -B scripts/analyze-energy-portrait.py <benchmark-power-root> <output.json>
-"""
 import argparse
 import json
 import math
@@ -27,10 +13,8 @@ FAMILY_REFERENCE = {
     "LOCAL": "LOCAL_HEFT",
 }
 
-
 class CheckError(ValueError):
     pass
-
 
 def family_of(policy):
     if policy.startswith("SHARED"):
@@ -40,7 +24,6 @@ def family_of(policy):
     if policy in ("FCFS", "READY_BATCH_MINMIN", "READY_BATCH_MAXMIN", "READY_BATCH_MCT", "READY_BATCH_ROUNDROBIN"):
         return "ONLINE"
     raise CheckError("unknown policy family: " + str(policy))
-
 
 def read_rows(root):
     rows = []
@@ -75,11 +58,9 @@ def read_rows(root):
         raise CheckError("no run manifests under " + str(root))
     return rows
 
-
 def close_enough(computed, stored, magnitude):
-    """Scale-aware conservation tolerance (64-bit float drift on 1e10-scale energies)."""
-    return abs(computed - stored) <= 1e-9 * max(1.0, abs(magnitude))
 
+    return abs(computed - stored) <= 1e-9 * max(1.0, abs(magnitude))
 
 def conservation(rows):
     exact = 0
@@ -91,9 +72,8 @@ def conservation(rows):
             raise CheckError("conservation violation in " + row["runId"])
     return exact
 
-
 def sign_test(wins, losses):
-    """Two-sided exact sign test p-value; ties excluded by the caller."""
+
     n = wins + losses
     if n == 0:
         return 1.0
@@ -101,9 +81,8 @@ def sign_test(wins, losses):
     p = sum(math.comb(n, i) for i in range(0, k + 1)) / (2.0 ** n)
     return min(1.0, 2.0 * p)
 
-
 def holm(pvalues):
-    """Holm step-down adjusted p-values, order-stable."""
+
     m = len(pvalues)
     order = sorted(range(m), key=lambda i: pvalues[i])
     running = 0.0
@@ -114,7 +93,6 @@ def holm(pvalues):
         adjusted[index] = min(1.0, running)
     return adjusted
 
-
 def conditions(rows):
     table = defaultdict(dict)
     for row in rows:
@@ -123,9 +101,8 @@ def conditions(rows):
         table[key][row["policy"]] = row
     return table
 
-
 def layer_rankings(rows):
-    """Per-family RMS EDP table (paired conditions, equal weights by family)."""
+
     fam_edp = defaultdict(lambda: defaultdict(list))
     for row in rows:
         fam = family_of(row["policy"])
@@ -134,7 +111,7 @@ def layer_rankings(rows):
     for fam, policies in fam_edp.items():
         entries = []
         for policy, edps in policies.items():
-            ordered = sorted(edps)  # BAT-R5: single sort; the branch was sorted twice inline
+            ordered = sorted(edps)
             middle = len(ordered) // 2
             entries.append({
                 "policy": policy,
@@ -148,9 +125,8 @@ def layer_rankings(rows):
         summary[fam] = entries
     return summary
 
-
 def comparisons(table):
-    """Within-layer paired sign tests vs the family reference + Holm per layer."""
+
     by_family = defaultdict(list)
     for key in sorted(table):
         d = table[key]
@@ -199,9 +175,8 @@ def comparisons(table):
         result[fam] = raw
     return result
 
-
 def monotonicity(table):
-    """Within-condition policy pairs: does energy co-move with makespan; explain departures."""
+
     pairs = co = opposite = 0
     departures = []
     for key in sorted(table):
@@ -231,9 +206,8 @@ def monotonicity(table):
                     })
     return {"pairs": pairs, "coDirectional": co, "opposite": opposite, "departures": departures}
 
-
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description='Energy portrait of the algorithm corpus — the analysis behind the benchmark power variant.\n\nReads every run manifest of output/benchmark-standard-power-v1, derives the per-layer\nenergy/EDP statistics under a frozen homogeneous 250 W/400 W power model, and emits a\nself-contained JSON document (the published analysis artifact). The companion self-test\nscripts/test-energy-portrait.py verifies every statistical primitive on hand-computed\nfixtures plus these derivations on the retained evidence.\n\nAnalysis conventions (CAMPAIGNS discipline):\n- Same-layer comparisons only; each (input, tier) is one paired condition.\n- Paired two-sided exact sign test on non-tied conditions; ties disclosed.\n- Holm correction over the comparison family of each layer (m = 4 per layer).\n\nUsage: python3 -B scripts/analyze-energy-portrait.py <benchmark-power-root> <output.json>\n')
     parser.add_argument("benchmarkRoot", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args(argv)
@@ -254,7 +228,6 @@ def main(argv=None):
     args.output.write_text(json.dumps(portrait, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     print("portrait:", portrait["runs"], "runs,", portrait["conservationExact"], "conservation-exact")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

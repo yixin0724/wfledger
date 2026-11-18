@@ -24,10 +24,6 @@ import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Runs the parse, event-loop, and result-collection chain three times with an identical configuration,
- * and verifies that the run snapshots are exactly the same.
- */
 class ReproducibilityIntegrationTest extends WorkflowSimBasicExample1 {
 
     @Test

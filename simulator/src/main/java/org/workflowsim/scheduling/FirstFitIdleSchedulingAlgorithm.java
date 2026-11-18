@@ -23,24 +23,6 @@ import org.cloudbus.cloudsim.Cloudlet;
 import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
-/**
- * First-Fit-Idle: sort by cloudletId and by vmId, then give each task the first idle VM.
- *
- * <p>It was originally named RoundRobinSchedulingAlgorithm, but the declared vmIndex is dead
- * code, so the actual behavior is not Round-Robin (continuous rotation). This implementation
- * is First-Fit-Idle.</p>
- *
- * <p>For ready-batch Round-Robin see {@link ReadyBatchRoundRobinSchedulingAlgorithm}.</p>
- *
- * <p><strong>Compatibility boundary:</strong> this class is retained for historical direct
- * API calls only; the standard {@code SimulationRunner} does not accept its historical label
- * as a research evidence entry point.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date May 12, 2014
- * @see ReadyBatchRoundRobinSchedulingAlgorithm
- */
 public class FirstFitIdleSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     @Override
@@ -69,7 +51,6 @@ public class FirstFitIdleSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         }
     }
 
-    /** Sorts by ascending VM ID. */
     public class VmListComparator implements Comparator<CondorVM> {
         @Override
         public int compare(CondorVM v1, CondorVM v2) {
@@ -77,7 +58,6 @@ public class FirstFitIdleSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         }
     }
 
-    /** Sorts by ascending Cloudlet ID. */
     public class CloudletListComparator implements Comparator<Cloudlet> {
         @Override
         public int compare(Cloudlet c1, Cloudlet c2) {

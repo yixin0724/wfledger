@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Immutable DNC problem: tasks, VM network speeds, and VM disk speeds. */
 public final class NacoDncProblem {
     private final Map<Integer, NacoTask> tasksById;
     private final List<NacoTask> tasks;

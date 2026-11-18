@@ -21,11 +21,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Fixed-size, planner-only depth probes. No CloudSim run, growing stress loop or timing winner.
- * The small-stack worker makes depth, rather than a machine's default stack size, the subject.
- * Its timeout is only a containment guard; correctness comes from the known chain suffix sums.
- */
 class PlanningDagDepthAuditTest {
     private static final int DEPTH = 4096;
     private static final int VM_ID = 7;
@@ -51,7 +46,7 @@ class PlanningDagDepthAuditTest {
         LocalHeftPlanningAlgorithm planner =
                 new LocalHeftPlanningAlgorithm(context(PlanningAlgorithm.LOCAL_HEFT, true));
         inputs(planner, path);
-        // prepare() isolates the common LOCAL upward-rank pass from reservation insertion.
+
         onBoundedStack("local-upward", () -> {
             planner.prepare();
             for (int index = 0; index < path.size(); index++) {
@@ -66,7 +61,7 @@ class PlanningDagDepthAuditTest {
         LocalCpopPlanningAlgorithm planner =
                 new LocalCpopPlanningAlgorithm(context(PlanningAlgorithm.LOCAL_CPOP, true));
         inputs(planner, path);
-        // Reverse IDs prewarm upward ranks from the exit, exposing the separate parent walk.
+
         onBoundedStack("local-downward", () -> {
             planner.run();
             assertLocalChain(planner, path);
@@ -89,11 +84,11 @@ class PlanningDagDepthAuditTest {
         inputs(planner, path);
         onBoundedStack("local-oct", () -> {
             planner.prepare();
-            // Calling the package diagnostic on the root isolates OCT from the upward pass.
+
             assertEquals(DEPTH - 1, planner.priorityOf(path.get(0)), 0.0);
             CondorVM vm = planner.vms().get(0);
             for (int index = 0; index < path.size(); index++) {
-                // PEFT counts successor work, never current work, and the exit is exactly zero.
+
                 assertEquals(DEPTH - index - 1, planner.optimisticCostOf(path.get(index), vm), 0.0);
             }
         });
@@ -105,7 +100,7 @@ class PlanningDagDepthAuditTest {
         SharedStorageHeftPlanningAlgorithm planner =
                 new SharedStorageHeftPlanningAlgorithm(context(PlanningAlgorithm.SHARED_STORAGE_HEFT, false));
         inputs(planner, path);
-        // Every shared DAG strategy enters this same upward-rank implementation.
+
         onBoundedStack("shared-upward", () -> {
             planner.run();
             assertSharedChain(planner.getLastPlanTrace(), path);
@@ -141,7 +136,7 @@ class PlanningDagDepthAuditTest {
         SharedStoragePeftPlanningAlgorithm planner =
                 new SharedStoragePeftPlanningAlgorithm(context(PlanningAlgorithm.SHARED_STORAGE_PEFT, false));
         inputs(planner, path);
-        // Upward ranks are already shallow; the first ready task still asks for the root OCT.
+
         onBoundedStack("shared-oct", () -> {
             planner.run();
             SharedStorageDagPlanTrace trace = planner.getLastPlanTrace();
@@ -237,7 +232,7 @@ class PlanningDagDepthAuditTest {
                 },
                 "planning-depth-audit-" + name,
                 256L * 1024L);
-        // Stack size is a JVM hint. Fixed input size is the bound even if a JVM ignores the hint.
+
         worker.setDaemon(true);
         worker.start();
         worker.join(30000L);

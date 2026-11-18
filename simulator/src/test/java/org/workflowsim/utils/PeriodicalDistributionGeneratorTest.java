@@ -8,10 +8,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Verifies that the periodical signal and the distribution generator retain the same model
- * semantics after the sample cache is extended.
- */
 class PeriodicalDistributionGeneratorTest {
 
     @BeforeEach

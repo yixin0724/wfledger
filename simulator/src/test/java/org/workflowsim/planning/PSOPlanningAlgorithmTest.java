@@ -12,17 +12,8 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 import org.workflowsim.utils.SimulationRandom;
 
-/**
- * PSO planner regression test (paper-reproduction round).
- *
- * <p>Every expected fitness value is hand-computed from the formulas of the reference
- * implementation (meysamhit/workflowsim-pso):
- * price = mips/1000; VM load = sum of sequential execution times;
- * fitness = 0.8*totalCost + 0.2*makespan.</p>
- */
 class PSOPlanningAlgorithmTest {
 
-    /** Expected tolerance. */
     private static final double EPS = 1e-9;
 
     @Test
@@ -30,13 +21,12 @@ class PSOPlanningAlgorithmTest {
         List<Task> tasks = Arrays.asList(new Task(1, 1000), new Task(2, 2000));
         List<CondorVM> vms = Arrays.asList(vm(0, 1000.0), vm(1, 2000.0));
 
-        // [0,0]: cost=1+2=3, makespan=3 -> 0.8*3+0.2*3
         assertEquals(3.0, PsoFitnessFunction.evaluate(new int[] {0, 0}, tasks, vms, 0.8), EPS);
-        // [1,1]: exec 0.5/1.0, cost=0.5*2+1.0*2=3, makespan=1.5
+
         assertEquals(0.8 * 3.0 + 0.2 * 1.5, PsoFitnessFunction.evaluate(new int[] {1, 1}, tasks, vms, 0.8), EPS);
-        // [0,1]: cost=1.0*1+1.0*2=3, makespan=1.0 (global optimum)
+
         assertEquals(0.8 * 3.0 + 0.2 * 1.0, PsoFitnessFunction.evaluate(new int[] {0, 1}, tasks, vms, 0.8), EPS);
-        // [1,0]: cost=0.5*2+2.0*1=3, makespan=2.0
+
         assertEquals(0.8 * 3.0 + 0.2 * 2.0, PsoFitnessFunction.evaluate(new int[] {1, 0}, tasks, vms, 0.8), EPS);
     }
 
@@ -53,7 +43,7 @@ class PSOPlanningAlgorithmTest {
 
         assertEquals(PSOPlanningAlgorithm.MAX_ITERATIONS, planner.getLastIterationCount());
         assertEquals(0.8 * 3.0 + 0.2 * 1.0, planner.getLastBestFitness(), EPS);
-        // Unique global optimum: task1 -> vm0, task2 -> vm1
+
         assertEquals(0, tasks.get(0).getVmId());
         assertEquals(1, tasks.get(1).getVmId());
         assertEquals(2, planner.getLastMapping().size());
@@ -98,7 +88,6 @@ class PSOPlanningAlgorithmTest {
         assertTrue(planner.getLastMapping().isEmpty());
     }
 
-    /** R8 audit (algorithm channel P2-3): non-positive/non-finite MIPS must fail fast at entry, never NPE. */
     @Test
     void nonPositiveVmMipsFailsFastAtEntry() {
         SimulationRandom.reset(5L);
@@ -111,13 +100,6 @@ class PSOPlanningAlgorithmTest {
         assertTrue(failure.getMessage().contains("VM #1"), failure.getMessage());
     }
 
-    /**
-     * R8 audit (algorithm channel P2-1): directionality contract -- on the same fixed landscape
-     * the global-optimum fitness that PSO converges to must be no worse than the fitness of the
-     * same-seed RANDOM planner mapping evaluated by the same formula. PSO takes the global
-     * optimum as its lower bound while RANDOM is the uninformed baseline: if this assertion
-     * fails, the PSO implementation is worse than random search (a directionality regression).
-     */
     @Test
     void psoFitnessIsNoWorseThanSameSeedRandomFitness() {
         List<CondorVM> vms = Arrays.asList(vm(0, 800.0), vm(1, 1200.0), vm(2, 1000.0));

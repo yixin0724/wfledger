@@ -22,16 +22,6 @@ import java.util.Random;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.Well19937c;
 
-/**
- * Manages the reproducible pseudo-random streams of a single WorkflowSim configuration.
- *
- * <p>Callers obtain a fresh generator under a stable component name. Generators of the
- * same component receive distinct but deterministic seeds; therefore increasing the
- * number of draws in one component does not perturb the random sequences of other
- * components. This isolation is the basis of reproducible experiments and of
- * common-random-numbers comparison, but it is not equivalent to a proof of statistical
- * validity.</p>
- */
 public final class SimulationRandom {
 
     private static final Map<String, Random> SEED_STREAMS = new HashMap<>();
@@ -39,33 +29,16 @@ public final class SimulationRandom {
 
     private SimulationRandom() {}
 
-    /**
-     * Starts a new deterministic random context for the next simulation run.
-     *
-     * @param seed root seed to record in the experiment configuration
-     */
     public static synchronized void reset(long seed) {
         rootSeed = seed;
         SEED_STREAMS.clear();
         DistributionGenerator.resetStreamAllocation();
     }
 
-    /**
-     * Creates a Java random number generator for the given model component.
-     *
-     * @param component stable component name, for example {@code planning.random}
-     * @return a newly created deterministic generator
-     */
     public static synchronized Random newJavaRandom(String component) {
         return new Random(nextSeed(component));
     }
 
-    /**
-     * Creates an Apache Commons Math random number generator for the given model component.
-     *
-     * @param component stable component name
-     * @return a newly created deterministic generator
-     */
     public static synchronized RandomGenerator newApacheRandom(String component) {
         return new Well19937c(nextSeed(component));
     }

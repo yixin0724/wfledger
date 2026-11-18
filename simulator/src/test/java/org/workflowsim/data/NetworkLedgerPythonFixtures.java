@@ -21,7 +21,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** Explicit producer for independent Python integration checks; never calls the Python checker. */
 public final class NetworkLedgerPythonFixtures {
     private static final int BUDGET = 10000;
 

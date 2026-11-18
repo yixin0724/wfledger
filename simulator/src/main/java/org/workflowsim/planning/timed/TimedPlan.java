@@ -11,7 +11,6 @@ import java.util.Set;
 
 import org.workflowsim.platform.PlatformProfile;
 
-/** Immutable timed activities, deadline, green windows, and optimizer decision order. */
 public final class TimedPlan {
 
     private static final double EPSILON = 1.0e-9;

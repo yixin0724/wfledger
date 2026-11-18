@@ -23,29 +23,12 @@ import org.workflowsim.WorkflowEngine;
 
 import com.google.gson.Gson;
 
-/**
- * Aggregate entry point that runs the historical teaching CLIs in {@link ExampleCatalog}
- * one process at a time.
- *
- * <p>Each example starts in its own JVM so that the static state of CloudSim, Parameters,
- * ReplicaCatalog, and the failure model cannot leak across examples. This tool only checks
- * that the default teaching scenarios complete; it cannot prove equivalence to the
- * algorithm papers, statistical significance, or the validity of a real platform model.</p>
- */
 public final class WorkflowSimAllExamplesTester {
 
     private static final long EXAMPLE_TIMEOUT_SECONDS = 90L;
 
     private WorkflowSimAllExamplesTester() {}
 
-    /**
-     * Runs every catalog example, or lists stable identifiers and main classes with
-     * {@code --list}.
-     *
-     * @param args an empty array, or the single argument {@code --list}
-     * @throws Exception when any child process cannot start, times out, or exits with a
-     *         non-zero status
-     */
     public static void main(String[] args) throws Exception {
         if (args != null && args.length == 1 && "--list".equals(args[0])) {
             listExamples();
@@ -86,15 +69,6 @@ public final class WorkflowSimAllExamplesTester {
         }
     }
 
-    /**
-     * Assembles the child-JVM classpath from the modules and dependencies already loaded in
-     * the running process.
-     *
-     * <p>{@code java.class.path} cannot be relied on directly because the Maven exec plugin
-     * may place project dependencies in a separate class loader. Anchoring on the classes
-     * actually loaded supports Maven, IDE, and packaged runtime paths alike.</p>
-     */
-    // Same-package process-level CLI tests reuse this Maven-exec-compatible classpath assembly.
     static String runtimeClasspath() {
         Set<String> entries = new LinkedHashSet<String>();
         addCodeSource(entries, WorkflowSimAllExamplesTester.class);

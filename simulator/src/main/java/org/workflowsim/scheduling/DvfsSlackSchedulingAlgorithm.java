@@ -6,7 +6,6 @@ import org.workflowsim.Job;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.DvfsSlackRegistry;
 
-/** STATIC dispatcher that consumes the planner's declared per-task DVFS tier. */
 public final class DvfsSlackSchedulingAlgorithm extends StaticSchedulingAlgorithm implements FrequencyTierSelector {
 
     @Override

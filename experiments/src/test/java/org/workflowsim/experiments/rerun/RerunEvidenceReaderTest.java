@@ -18,17 +18,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Stage 1 acceptance: v4 evidence reads successfully; v2/v3 schema, missing manifest,
- * corrupted sidecar, and ambiguous directory are all rejected with
- * {@code EVIDENCE_INVALID} and a readable reason.
- */
 class RerunEvidenceReaderTest {
 
-    /**
-     * v4 evidence directory written by one real small-scale simulation; every case copies
-     * it before tampering.
-     */
     private static Path fixtureRun;
 
     @TempDir
@@ -111,8 +102,7 @@ class RerunEvidenceReaderTest {
         Path run = copyFixture();
         Path events = run.resolve("result.events.jsonl");
         String content = new String(Files.readAllBytes(events), StandardCharsets.UTF_8);
-        // Change the file but not the manifest: the SHA-256 check on the artifacts record
-        // must fire first.
+
         String firstLine = content.split("\n", 2)[0];
         Files.write(events, (content + firstLine + "\n").getBytes(StandardCharsets.UTF_8));
         RerunFailureException failure = assertThrows(RerunFailureException.class, () -> RerunEvidenceReader.read(run));
@@ -126,9 +116,7 @@ class RerunEvidenceReaderTest {
         Path events = run.resolve("result.events.jsonl");
         Path manifest = run.resolve("result.manifest.json");
         String content = new String(Files.readAllBytes(events), StandardCharsets.UTF_8);
-        // Delete the last event (the sequence prefix stays contiguous), then raise the
-        // eventCount declared in the manifest by 1: after passing the hash layer and the
-        // sequence layer, the count-consistency check must fire.
+
         String[] lines = content.split("\n");
         StringBuilder truncated = new StringBuilder();
         for (int i = 0; i < lines.length - 1; i++) {
@@ -159,8 +147,7 @@ class RerunEvidenceReaderTest {
         Path events = run.resolve("result.events.jsonl");
         Path manifest = run.resolve("result.manifest.json");
         String content = new String(Files.readAllBytes(events), StandardCharsets.UTF_8);
-        // Append a duplicate event line and update the hash in step: the sequence-continuity
-        // check must reject before the count check.
+
         String firstLine = content.split("\n", 2)[0];
         byte[] tampered = (content + firstLine + "\n").getBytes(StandardCharsets.UTF_8);
         Files.write(events, tampered);
@@ -194,8 +181,7 @@ class RerunEvidenceReaderTest {
     @Test
     void prefersStandardManifestNameWhenOthersPresent() throws Exception {
         Path run = copyFixture();
-        // When the standard name is present it is used directly; the other manifest copies do
-        // not create ambiguity.
+
         Files.copy(run.resolve("result.manifest.json"), run.resolve("backup.manifest.json"));
         RerunEvidence evidence = RerunEvidenceReader.read(run);
         assertEquals(run.resolve("result.manifest.json"), evidence.getManifestPath());

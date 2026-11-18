@@ -1,37 +1,28 @@
-# WorkflowSim Makefile
-# Shortcuts for the common Maven build commands
+
 
 .PHONY: all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all python-gate quality-gate extended-corpus language help
 
-# default target
 all: build
 
-# compile the core and experiment modules
 build:
 	@echo "Compiling the core and experiment modules..."
 	mvn compile
 
-# run the unit/semantic tests of both modules
 test:
 	@echo "Running the unit/semantic tests of both modules..."
 	mvn test
 
-# run the complete test suite (core + experiments, about 2 minutes)
 verify:
 	@echo "Running the complete test suite (including the experiment module)..."
 	mvn verify
 
-# clean build plus joint acceptance, including the core API documentation
 audit:
 	mvn -Pjavadoc clean verify
 
-# remove the build output
 clean:
 	@echo "Removing the build output..."
 	mvn clean
 
-# remove the regenerable uncompressed study/workbench outputs, keeping all .tar.gz originals
-# (directory globs carry a trailing slash so the retained output/*.tar.gz archives never match)
 clean-output:
 	@echo "Removing uncompressed study/workbench outputs (all output/*.tar.gz originals are kept)..."
 	rm -rf output/workbench*/ output/sensitivity-r13/ output/sensitivity-r13-v2/ \
@@ -40,7 +31,6 @@ clean-output:
 		output/benchmark-standard-carbon-v1/ output/benchmark-standard-dvfs-v1/
 	@echo "Done. Retained evidence originals: output/*.tar.gz"
 
-# generate the test coverage report
 coverage:
 	@echo "Generating the test coverage report..."
 	mvn verify jacoco:report
@@ -49,12 +39,10 @@ coverage:
 	@echo "  core module:       simulator/target/site/jacoco/index.html"
 	@echo "  experiment module: experiments/target/site/jacoco/index.html"
 
-# install into the local Maven repository
 install:
 	@echo "Installing into the local Maven repository..."
 	mvn install
 
-# package the JARs, skipping the tests
 package:
 	@echo "Packaging (tests skipped)..."
 	mvn package -DskipTests
@@ -63,11 +51,8 @@ package:
 	@echo "  simulator/target/workflowsim-1.0.jar"
 	@echo "  experiments/target/workflowsim-workbench-1.0.jar"
 
-# clean and rebuild
 rebuild: clean build
 
-# registered zero-survival mutation gate (about 5-10 minutes; needs a clean working tree,
-# and the report is written to output/mutation-gate/)
 mutation-gate:
 	@echo "Running the simulator mutation gate (clean working tree required)..."
 	python3 -B scripts/mutation-gate.py --output output/mutation-gate/mutation-gate-$$(date +%Y-%m-%d).json
@@ -80,7 +65,6 @@ mutation-gate-all:
 	$(MAKE) mutation-gate
 	$(MAKE) mutation-gate-experiments
 
-# independent Python, documentation, language, and dataset checks
 python-gate:
 	@set -e; for test_file in scripts/test-*.py; do \
 		PYTHONDONTWRITEBYTECODE=1 python3 -B "$$test_file"; \
@@ -89,21 +73,17 @@ python-gate:
 	python3 -B scripts/check-dataset-indexes.py
 	$(MAKE) language
 
-# the same complete local acceptance surface as the two CI jobs, excluding real mutation
 quality-gate: audit python-gate
 
-# explicit opt-in full-corpus acceptance (all 17 Montage inputs must be prepared)
 extended-corpus:
 	python3 -B scripts/check-dataset-indexes.py
 	mvn -Pextended-corpus -pl :workflowsim-workbench -am -Dtest=MontageExtendedCorpusTest -Dsurefire.failIfNoSpecifiedTests=false test
 
-# reject CJK characters in every tracked text file
 language:
 	@echo "Checking that the tree is maintained in English..."
 	python3 -B scripts/test-check-language.py
 	python3 -B scripts/check-language.py
 
-# show the help text
 help:
 	@echo "WorkflowSim build commands:"
 	@echo ""

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Stretches overlapping flows on one bottleneck using fair capacity sharing. */
 public final class NetworkHeftFlowStretcher {
 
     public Map<String, Double> stretch(
@@ -80,8 +79,7 @@ public final class NetworkHeftFlowStretcher {
             this.parentTaskId = parentTaskId;
             this.edge = edge;
             this.start = start;
-            // A zero-byte direct-API edge still carries its declared nominal duration.
-            // Derive equivalent work from the supplied capacity, never a hidden 100 B/s rate.
+
             this.remaining = edge.getDataBytes() > 0.0 ? edge.getDataBytes() : nominalDuration * capacityBytesPerSecond;
         }
     }

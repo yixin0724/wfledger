@@ -27,17 +27,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * E5 (2026-10-27): the platform's first energy-aware scheduling comparison through the
- * algorithm registry — the closing demonstrator of the energy-dimension extension.
- *
- * <p>Design: the same powered platform and pure-bag DAG run twice — once with the built-in
- * FCFS label, once with the registered ENERGY_LPT_FIRST provider (longest-job-first). On a
- * pure bag with uniform VMs, LPT placement cannot increase makespan against assignment
- * order (Graham), and with the linear power model the total energy is strictly monotone in
- * makespan (E = Σ P_idle×T + (P_max−P_idle)×busy_total; busy_total is workload-fixed) —
- * so EDP(ENERGY_LPT_FIRST) ≤ EDP(FCFS) is a provable expectation, not a hope.</p>
- */
 class EnergyAwareSchedulingComparisonIntegrationTest {
 
     @TempDir
@@ -58,11 +47,10 @@ class EnergyAwareSchedulingComparisonIntegrationTest {
 
     @Test
     void energyAwareRegistryAlgorithmBeatsFcfsOnEdp() throws Exception {
-        // 1. The provider must be discovered through the standard SPI.
+
         SchedulingAlgorithmProvider provider = AlgorithmRegistry.find(EnergyLptFirstSchedulerProvider.LABEL);
         assertSame(EnergyLptFirstSchedulerProvider.class, provider.getClass(), "SPI discovery");
 
-        // 2. The energy contract is enforced fail-fast: unpowered platforms are rejected.
         assertThrows(
                 IllegalArgumentException.class,
                 () -> AlgorithmRegistry.validate(
@@ -76,7 +64,6 @@ class EnergyAwareSchedulingComparisonIntegrationTest {
                                 false)),
                 "powerModelRequired must reject an unpowered platform");
 
-        // 3. Both arms on the SAME powered platform and bag DAG.
         Path dax = bagDax();
         PlatformProfile platform = poweredPlatform();
         SimulationReport fcfs = run(dax, platform, null);
@@ -85,13 +72,10 @@ class EnergyAwareSchedulingComparisonIntegrationTest {
         assertTrue(fcfs.getMetrics().isAllLogicalTasksCompletedSuccessfully(), "FCFS arm completes");
         assertTrue(lpt.getMetrics().isAllLogicalTasksCompletedSuccessfully(), "LPT arm completes");
 
-        // 4. Evidence chain: the energy-aware arm exports a validated bundle.
         ExperimentArtifactWriter.ExperimentArtifacts artifacts =
                 ExperimentArtifactWriter.write(lpt, tempDir.resolve("energy-aware-evidence"), "result");
         ExperimentArtifactValidator.validate(artifacts.getManifest());
 
-        // 5. The provable comparison: LPT makespan ≤ FCFS makespan on a pure bag, hence
-        // EDP monotone, hence EDP(LPT) ≤ EDP(FCFS). Both are strict on this fixture.
         EnergyAccounting fcfsEnergy = fcfs.getEnergyAccounting();
         EnergyAccounting lptEnergy = lpt.getEnergyAccounting();
         double fcfsEdp = edp(fcfsEnergy);
@@ -127,13 +111,6 @@ class EnergyAwareSchedulingComparisonIntegrationTest {
         return new SimulationRunner().run(builder.build(), platform);
     }
 
-    /**
-     * Pure bag, deliberately submission-shuffled: (40, 30, 95, 35) with the dominant job
-     * in the middle. FCFS hands the two smallest to the two idle VMs, so the 95-length
-     * job lands on whichever VM frees first and stacks its remainder (makespan 125);
-     * LPT grabs the 95 first (makespan 105). A balanced bag would make the two policies
-     * coincide — this fixture is designed to expose the gap.
-     */
     private Path bagDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<adag count=\"4\">\n");
@@ -153,7 +130,6 @@ class EnergyAwareSchedulingComparisonIntegrationTest {
         return path;
     }
 
-    /** Two powered uniform VMs (250 W idle / 400 W max). */
     private PlatformProfile poweredPlatform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("e5-powered");
         int[] ids = {0, 1};

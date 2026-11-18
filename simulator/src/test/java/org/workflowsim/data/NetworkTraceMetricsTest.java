@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 
 import com.google.gson.GsonBuilder;
 
-/** NF002B2 analytic byte/time oracles; no metric expectations obtained from the allocator. */
 class NetworkTraceMetricsTest {
     private static final int BUDGET = 10000;
 

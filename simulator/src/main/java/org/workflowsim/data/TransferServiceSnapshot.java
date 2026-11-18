@@ -8,16 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Deeply immutable current-state observation of checked coherent V2 transfer service.
- *
- * <p>This contains committed active-flow balances and allocations, not a trace,
- * completion record, or prediction. Capture is not required. The engine retains
- * no snapshot history, and a caller-retained snapshot is unaffected by later
- * service, admissions, or capacity changes.</p>
- */
 public final class TransferServiceSnapshot {
-    /** One declared physical resource, including resources with no active users. */
+
     public static final class Resource {
         private final String key;
         private final double capacityBytesPerSecond;
@@ -38,39 +30,27 @@ public final class TransferServiceSnapshot {
             this.pathMultiplicityCount = pathMultiplicityCount;
         }
 
-        /** @return declared physical resource key */
         public String getKey() {
             return key;
         }
 
-        /** @return declared physical capacity in bytes per second */
         public double getCapacityBytesPerSecond() {
             return capacityBytesPerSecond;
         }
 
-        /**
-         * Exact sum of each assigned binary64 rate multiplied by its path multiplicity.
-         * No decimal rounding, double summation, or capacity clamp is applied. In
-         * isolated mode this can exceed both physical capacity and Double.MAX_VALUE.
-         *
-         * @return exact assigned resource load, not completed traffic or utilization
-         */
         public BigDecimal getAssignedRateBytesPerSecond() {
             return assignedRateBytesPerSecond;
         }
 
-        /** @return number of distinct active flows using this resource */
         public int getActiveFlowCount() {
             return activeFlowCount;
         }
 
-        /** @return sum of this resource's occurrence counts across all active paths */
         public long getPathMultiplicityCount() {
             return pathMultiplicityCount;
         }
     }
 
-    /** Immutable copied balance and current allocation of one active admission. */
     public static final class Flow {
         private final long transferId;
         private final double bytes;
@@ -80,7 +60,6 @@ public final class TransferServiceSnapshot {
         private final double admittedAt;
         private final List<String> resources;
 
-        // Trusted package construction from the checked engine's committed active state.
         Flow(
                 long transferId,
                 double bytes,
@@ -98,43 +77,35 @@ public final class TransferServiceSnapshot {
             this.resources = Collections.unmodifiableList(new ArrayList<String>(resources));
         }
 
-        /** @return caller identity, without conversion to a trace ordinal or floating point */
         public long getTransferId() {
             return transferId;
         }
 
-        /** @return original modeled byte demand */
         public double getBytes() {
             return bytes;
         }
 
-        /** @return committed remaining modeled bytes at the snapshot's observed-through time */
         public double getRemainingBytes() {
             return remainingBytes;
         }
 
-        /** @return current committed service allocation in bytes per second */
         public double getRateBytesPerSecond() {
             return rateBytesPerSecond;
         }
 
-        /** @return admission's nominal rate limit in bytes per second */
         public double getNominalRateBytesPerSecond() {
             return nominalRateBytesPerSecond;
         }
 
-        /** @return actual coherent-service admission time, independent of trace capture */
         public double getAdmittedAt() {
             return admittedAt;
         }
 
-        /** @return immutable ordered path, preserving every repeated resource key */
         public List<String> getResources() {
             return resources;
         }
     }
 
-    /** Construction-only accumulation; neither the snapshot nor the engine retains it. */
     private static final class ResourceTotals {
         private final double capacity;
         private BigDecimal assignedRate = BigDecimal.ZERO;
@@ -151,7 +122,6 @@ public final class TransferServiceSnapshot {
     private final Map<String, Resource> resources;
     private final Map<Long, Flow> transfers;
 
-    // Only the checked engine supplies these already-committed values; no state is revalidated or advanced.
     TransferServiceSnapshot(
             double observedThrough, boolean shared, Map<String, Double> capacities, Map<Long, Flow> transfers) {
         this.observedThrough = observedThrough;
@@ -192,25 +162,18 @@ public final class TransferServiceSnapshot {
         this.resources = Collections.unmodifiableMap(copiedResources);
     }
 
-    /**
-     * @return engine's committed last advance time, not CloudSim time, wall time,
-     *         or the effective completion time of a previously settled flow
-     */
     public double getObservedThrough() {
         return observedThrough;
     }
 
-    /** @return whether physical resources are shared between active flows */
     public boolean isShared() {
         return shared;
     }
 
-    /** @return immutable declared-resource map in natural String key order, including idle resources */
     public Map<String, Resource> getResources() {
         return resources;
     }
 
-    /** @return immutable current active-flow map in admission order, not an admission history */
     public Map<Long, Flow> getTransfers() {
         return transfers;
     }

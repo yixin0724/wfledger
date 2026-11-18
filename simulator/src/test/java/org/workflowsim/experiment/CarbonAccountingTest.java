@@ -22,11 +22,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Carbon-dimension C1 conservation/identity test (BAT-C1, 2026-10-28, red-to-green anchor).
- * Legal sources for the expected values: the dimensional conversion law and the budget excess
- * integral formula (docs/advanced/CARBON_DIMENSION_DESIGN.md §1).
- */
 class CarbonAccountingTest {
 
     @TempDir
@@ -77,11 +72,7 @@ class CarbonAccountingTest {
 
     @Test
     void budgetExcessIntegratesAndMatchesAHandCase() throws Exception {
-        // Two windows (green 300 W / green 100 W) cover [0, 120 s). Busy fleet P = 250 + 150 = 400 W.
-        // Window one exceeds by 100 x busy_in_window1; window two exceeds by 300 x busy_in_window2.
-        // The hand derivation is performed inside the assertions: because the exact busy intervals are
-        // unknown, first verify window sum == total and strict positivity, then cross-check the total
-        // integral against the known formula.
+
         SimulationReport report = run(true, null, new double[][] {{0.0, 60.0, 300.0}, {60.0, 120.0, 100.0}});
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertTrue(carbon != null, "declared windows must produce an accounting");
@@ -93,20 +84,19 @@ class CarbonAccountingTest {
         assertTrue(
                 carbon.getTotalCarbonExcessWattSeconds() > 0.0,
                 "green 300/100 below active 400 must yield positive excess");
-        // Hard-core verification of the declared dependence: each window excess (P - green) x overlap duration >= 0
-        // and structurally correct.
+
         assertEquals(
                 0, Double.compare(0.0, carbon.getTotalCarbonGrams()), "budget model leaves intensity family untouched");
     }
 
     @Test
     void unpoweredIntensityIsRejectedAndPlainStaysAbsent() {
-        // No carbon model declared -> null (a legal default, not all zeros).
+
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> {
             SimulationReport plain = run(true, null, null);
             assertNull(plain.getCarbonAccounting(), "no carbon declaration => absent accounting");
         });
-        // Unpowered platform + declared intensity -> constructor fail-fast.
+
         IllegalArgumentException rejection = assertThrows(
                 IllegalArgumentException.class,
                 () -> run(false, 380.0, null),
@@ -129,16 +119,7 @@ class CarbonAccountingTest {
 
     @Test
     void tieredPlatformIntensityRidesTheConservedPerTierEnergy() throws Exception {
-        // BAT-D4 (2026-10-29) tiered ride-through red-to-green anchor. A frequency-tier platform
-        // (flat power identically 0, BAT-D1 single source of truth) is a profile of declared power:
-        // intensity carbon multiplies the <b>per-tier conserved energy</b>
-        // (docs/advanced/DVFS_DIMENSION_DESIGN.md §1.5/§2.4). Previously this path was failed fast
-        // as a whole by the BAT-C1 flat-field gate (a tiered run could not produce real carbonMetrics
-        // -- the forward gap noted in the D3 design). Legal sources for the expected value: the §2.3
-        // per-tier conservation law x the dimensional conversion law, with inputs taken from the
-        // frequency-tier table + the per-tier ledger (the same source as the energy section) and the
-        // TreeMap ascending summation order mirroring EnergyAccounting (floating-point determinism
-        // discipline), without copying the carbon section's own output.
+
         java.nio.file.Path workflow = java.nio.file.Paths.get(tempDir.toFile().getAbsolutePath(), "dvfs.dax");
         Files.write(
                 workflow,
@@ -180,8 +161,7 @@ class CarbonAccountingTest {
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertTrue(carbon != null, "tiered platform + declared intensity must produce an accounting");
         assertEquals(1, carbon.getPerVmCarbonGrams().size(), "per-VM map completeness");
-        // §2.3 per-tier conservation law: E = P_idle(default tier) x T
-        // + sum over tiers of (P_max(tier) - P_idle(default tier)) x busy(tier)
+
         double defaultIdle = 250.0;
         double expectedEnergy = defaultIdle * report.getMakespan();
         java.util.Map<Double, Double> ledger =
@@ -208,27 +188,12 @@ class CarbonAccountingTest {
         assertTrue(carbon.getTotalCarbonGrams() > 0.0, "tiered powered run must have positive grams");
     }
 
-    /**
-     * A2 red-to-green anchor (2026-11-02): frequency-tier platform + carbon window = budget carbon.
-     * Previously {@code budgetModel} honoured only the flat power fields, so a tiered VM (flat fields
-     * identically 0, BAT-D1) failed fast outright, and the dimension crossing "5-tier P-state x green
-     * budget" could not produce real carbonMetrics; the Python auditor had long implemented that branch
-     * (the forward contract of DVFS_DIMENSION_DESIGN §2.3).
-     *
-     * <p>Legal source for the expected value: the contract law itself (a sentence-by-sentence mirror of
-     * the documented Python-side convention) -- per-instant fleet power = sum over stalled VMs of the
-     * default-tier idle + sum over active Jobs of (P_max(their tier) - P_idle(default tier)); this test
-     * independently recomputes by that law inside the assertions and does not copy implementation
-     * output.</p>
-     */
     @Test
     void tieredPlatformBudgetCarbonUsesThePerTierFleetPowerCurve() throws Exception {
         SimulationReport report = runTieredBudget();
         CarbonAccounting carbon = report.getCarbonAccounting();
         assertTrue(carbon != null, "tiered platform + declared windows must now produce an accounting");
 
-        // Independent recomputation of the contract law: endpoint folding by +/-dyn,
-        // in-segment fleet power = idle_sum + sum of the active dyn terms.
         PlatformProfile profile = lastProfile;
         double defaultIdle = 250.0;
         double idleSum = 0.0;
@@ -261,17 +226,10 @@ class CarbonAccountingTest {
                 Double.compare(expectedTotal, carbon.getTotalCarbonExcessWattSeconds()),
                 "tiered budget law: expected=" + expectedTotal + " actual=" + carbon.getTotalCarbonExcessWattSeconds());
         assertTrue(expectedTotal > 0.0, "the fixture must produce a positive excess (green below active power)");
-        // The budget family produces no grams (the two families are mutually exclusive):
-        // the gram fields stay 0, which distinguishes them from the intensity family.
+
         assertEquals(0, Double.compare(0.0, carbon.getTotalCarbonGrams()));
     }
 
-    /**
-     * A2 cross-language adversarial case (2026-11-02): a Job on a flat VM carrying tierMips is a broken
-     * evidence chain -- Java must reject it under the same law as the Python auditor, rather than
-     * silently compute a "plausible-looking" value from the flat power (that would let the same piece
-     * of evidence yield different verdicts on the two sides).
-     */
     @Test
     void flatVmJobCarryingTierIdentityIsRejectedLikeThePythonAuditor() {
         PlatformProfile.VmSpec flat = new PlatformProfile.VmSpec(
@@ -321,8 +279,6 @@ class CarbonAccountingTest {
                 "a low tier may draw less than the default-tier idle (118.75−250)");
     }
 
-    /** Contract-law recomputation: the window excess of the per-tier fleet power curve
-     * (an independent pass over the documented convention). */
     private static double expectedTieredExcess(SimulationReport report, PlatformProfile profile) {
         double defaultIdleOfTiered = 0.0;
         double idleSum = 0.0;
@@ -382,11 +338,6 @@ class CarbonAccountingTest {
         return total;
     }
 
-    /**
-     * A2 adversarial surface: a mixed fleet (one tiered VM + one flat VM) must follow the same fleet
-     * power curve under one budget window -- the tiered contribution takes the default-tier idle plus
-     * the per-tier dynamics, while the flat contribution keeps the v1 max-idle.
-     */
     @Test
     void mixedFleetBudgetCarbonMixesTieredAndFlatContributions() throws Exception {
         SimulationReport report = runMixedFleetBudget();
@@ -400,7 +351,6 @@ class CarbonAccountingTest {
         assertTrue(expected > 0.0, "the fixture must yield a positive excess");
     }
 
-    /** Mixed-fleet fixture: VM0 is tiered (default-tier idle 250), VM1 is flat (idle 120 / max 300). */
     private SimulationReport runMixedFleetBudget() throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "mixed.dax");
         Files.write(
@@ -458,8 +408,6 @@ class CarbonAccountingTest {
         return new SimulationRunner().run(config, lastProfile);
     }
 
-    /** Frequency-tier platform + single-window budget-carbon fixture: MIN_POWER pushes the Job to a
-     * low tier, so the power curve follows the tier. */
     private SimulationReport runTieredBudget() throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "tiered-budget.dax");
         Files.write(
@@ -502,8 +450,6 @@ class CarbonAccountingTest {
         return new SimulationRunner().run(config, lastProfile);
     }
 
-    /** BAT-D4: look up the tier power by exact MIPS identity (the frequency-tier table is unique in
-     * descending order; the same contract as VmSpec.tierByMips). */
     private static double tierMaxOf(PlatformProfile.VmSpec spec, double mips) {
         for (PlatformProfile.FrequencyTier tier : spec.getFrequencyTiers()) {
             if (Double.compare(tier.getMips(), mips) == 0) {
@@ -513,13 +459,6 @@ class CarbonAccountingTest {
         throw new IllegalStateException("tier mips " + mips + " matches no declared tier");
     }
 
-    /**
-     * CaWoSched report compatibility: the planner and report integrate the same full deadline
-     * horizon and heterogeneous flat dynamic powers. VM0 (idle 10, max 110) runs [0.21,2.21);
-     * VM1 (idle 20, max 220) runs [0.21,1.21). Dynamic excess is 100*2+200*1=400 W*s and idle
-     * excess is 30*10=300 W*s, so the full-deadline total is 700 W*s. The actual Job intervals
-     * are asserted before the hand arithmetic.
-     */
     @Test
     void caWoSchedBudgetUsesFullDeadlineAndHeterogeneousFlatPower() throws Exception {
         SimulationReport report = runCaWoSchedFlatBudget(PlanningAlgorithm.CAWOSCHED_SLACK);
@@ -531,7 +470,6 @@ class CarbonAccountingTest {
         assertEquals(150.0, carbon.getWindowExcessWattSeconds().get(1), 1.0e-9);
     }
 
-    /** The pressure label shares the same report semantics; the fixed ASAP fixture is identical. */
     @Test
     void caWoSchedPressureBudgetUsesTheSameFullDeadlineLaw() throws Exception {
         SimulationReport report = runCaWoSchedFlatBudget(PlanningAlgorithm.CAWOSCHED_PRESSURE);
@@ -540,7 +478,6 @@ class CarbonAccountingTest {
         assertEquals(700.0, report.getCarbonAccounting().getTotalCarbonExcessWattSeconds(), 1.0e-9);
     }
 
-    /** Non-CaWoSched keeps the historical first-VM delta and makespan horizon. */
     @Test
     void nonCaWoSchedBudgetPreservesFirstVmAndMakespanLaw() throws Exception {
         SimulationReport report = runCaWoSchedFlatBudget(PlanningAlgorithm.SHARED_STORAGE_HEFT);
@@ -619,8 +556,6 @@ class CarbonAccountingTest {
         lastProfile = builder.build();
         return new SimulationRunner().run(config, lastProfile);
     }
-
-    // ---- fixtures ----
 
     private SimulationReport run(boolean powered, Double intensity, double[][] windows) throws Exception {
         Path workflow = Paths.get(tempDir.toFile().getAbsolutePath(), "carbon.dax");

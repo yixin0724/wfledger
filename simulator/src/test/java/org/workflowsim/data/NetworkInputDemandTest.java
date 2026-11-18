@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import com.google.gson.Gson;
 
-/** Locality uses observed skip decisions, never demand-minus-serviced-byte inference. */
 class NetworkInputDemandTest {
     @Test
     void emptySnapshotIsACompleteZeroCounterWithoutInventingFileHits() {
@@ -92,7 +91,7 @@ class NetworkInputDemandTest {
                 () -> assertThrows(
                         IllegalArgumentException.class,
                         () -> NetworkInputDemandSnapshot.of(2, 1, BigDecimal.ONE, BigDecimal.valueOf(-1))));
-        NetworkInputDemandSnapshot.of(2, 1, BigDecimal.ZERO, BigDecimal.ZERO); // A reference may have zero bytes.
+        NetworkInputDemandSnapshot.of(2, 1, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 
     @Test

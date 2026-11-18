@@ -15,16 +15,10 @@ import org.workflowsim.planning.timed.TimedActivityType;
 import org.workflowsim.planning.timed.TimedPlan;
 import org.workflowsim.platform.PlatformProfile;
 
-/** Converts an existing SHARED plan into the compute-only fixed-mapping CaWoSched input. */
 public final class CaWoSchedAdapter {
 
     private CaWoSchedAdapter() {}
 
-    /**
-     * Uses the trace's VM mapping and per-VM order, raw compute length / VM MIPS, and the declared
-     * VM power values. Data stage-in, communication processors, and communication energy are not
-     * part of this adapter; those remain an explicitly excluded adaptation boundary.
-     */
     public static CaWoSchedPlanner fromSharedStoragePlan(
             List<Task> tasks,
             List<CondorVM> vms,
@@ -76,7 +70,6 @@ public final class CaWoSchedAdapter {
         return new CaWoSchedPlanner(converted, windows, deadlineSeconds, declaredIdle);
     }
 
-    /** Converts the SHARED HEFT trace directly into the generic TimedPlan representation. */
     public static TimedPlan toTimedPlan(
             List<Task> tasks,
             List<CondorVM> vms,

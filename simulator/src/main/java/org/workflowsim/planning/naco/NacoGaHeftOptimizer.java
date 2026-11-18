@@ -8,7 +8,6 @@ import java.util.Random;
 
 import org.workflowsim.utils.SimulationRandom;
 
-/** NACO hybrid GA/HEFT with elite seeding, GPX, mutation, and deterministic replacement. */
 public final class NacoGaHeftOptimizer {
 
     private final NacoDncProblem problem;

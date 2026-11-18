@@ -19,83 +19,31 @@ import org.workflowsim.failure.FailureParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * Shared input, randomness, and result-boundary contract for the historical teaching command-line
- * examples.
- *
- * <p>This class serves only the legacy API examples retained in {@code experiments}. It neither
- * changes the algorithm contract of {@code SimulationRunner} nor promotes these examples to
- * reproducible experiment campaigns.</p>
- */
 public final class ExampleCliSupport {
 
-    /** Default input that passed the strict DAX input contract and suits the historical
-     * single-workflow teaching example. */
     public static final String DEFAULT_DAX_PATH = "datasets/dax/epigenomics/n100/Epigenomics_100.dax";
 
-    /** Three strict input candidates used by the multi-workflow historical example. */
     public static final List<String> DEFAULT_MULTIPLE_DAX_PATHS = Collections.unmodifiableList(Arrays.asList(
             "datasets/dax/epigenomics/n24/Epigenomics_24.dax",
             "datasets/dax/epigenomics/n46/Epigenomics_46.dax",
             DEFAULT_DAX_PATH));
 
-    /** Fixed root seed for the historical teaching scenario; formal research experiments must
-     * still record their own seed plan explicitly. */
     public static final long LEGACY_DEMO_SEED = 20260901L;
 
-    /**
-     * Weibull inter-arrival scale used by the Epigenomics n100 historical fault-tolerance teaching
-     * scenario.
-     *
-     * <p>The value exists only so that the legacy example exhibits low-frequency failures and
-     * retries within a bounded time; it is not a parameter calibrated from real platform failure
-     * records.</p>
-     */
     public static final double LEGACY_DEMO_FAILURE_INTERVAL_SCALE = 7500.0;
 
-    /**
-     * Sparser teaching scale used by the legacy reclustering example that generates failure streams
-     * per DAG level.
-     *
-     * <p>Each level holds an independent random stream, so the scale of the single-stream example
-     * cannot be reused directly; the value only bounds the default teaching scenario and does not
-     * represent a real failure process.</p>
-     */
     public static final double LEGACY_CLUSTERING_DEMO_FAILURE_INTERVAL_SCALE = 50000.0;
 
-    /** Unified machine-readable success-boundary prefix. */
     public static final String COMPLETION_PREFIX = "EXAMPLE_COMPLETED";
 
     private static final ThreadLocal<String> ACTIVE_EXAMPLE_ID = new ThreadLocal<String>();
 
     private ExampleCliSupport() {}
 
-    /**
-     * Begin a historical teaching scenario: clear WorkflowSim static state possibly left over from
-     * the previous scenario and install the fixed seed.
-     *
-     * <p>The command-line smoke run still executes each example in a separate JVM; the cleanup here
-     * only gives manual same-JVM invocations an explicit boundary and cannot replace process
-     * isolation.</p>
-     *
-     * @param exampleId stable and non-empty example identifier from the catalog
-     */
     public static void begin(String exampleId) {
         begin(exampleId, LEGACY_DEMO_SEED);
     }
 
-    /**
-     * Begin a historical teaching scenario and install the root seed explicitly supplied by the
-     * caller.
-     *
-     * <p>The historical examples name the deprecated scheduling labels, so this entry point
-     * also declares the legacy alias set of {@code Parameters} (AUD-F10); the declaration is
-     * what lets the scheduler bind those labels to their historical policies again, and it is
-     * cleared by the same legacy state reset that ends the scenario.</p>
-     *
-     * @param exampleId stable and non-empty example identifier from the catalog
-     * @param rootSeed root seed to record and replay for this scenario
-     */
     public static void begin(String exampleId, long rootSeed) {
         if (exampleId == null || exampleId.trim().isEmpty()) {
             throw new IllegalArgumentException("Example id cannot be empty");
@@ -106,14 +54,6 @@ public final class ExampleCliSupport {
         ACTIVE_EXAMPLE_ID.set(exampleId);
     }
 
-    /**
-     * Parse the zero-or-one DAX argument of a single-workflow example, and verify that the input
-     * exists before any CloudSim entity is created.
-     *
-     * @param args command-line arguments
-     * @param defaultPath controlled default input used when no argument is supplied
-     * @return readable DAX file path, preserving the relative-path semantics supplied by the caller
-     */
     public static String singleDax(String[] args, String defaultPath) {
         int count = args == null ? 0 : args.length;
         if (count > 1) {
@@ -123,15 +63,6 @@ public final class ExampleCliSupport {
         return requireDax(path);
     }
 
-    /**
-     * Parse the inputs of a multi-workflow example: use the controlled default set when no argument
-     * is supplied; when supplied explicitly, exactly {@code expectedCount} DAX paths are required.
-     *
-     * @param args command-line arguments
-     * @param defaults input set used when no argument is supplied
-     * @param expectedCount required number of paths when they are supplied explicitly
-     * @return unmodifiable list of paths, each verified in turn
-     */
     public static List<String> multipleDax(String[] args, List<String> defaults, int expectedCount) {
         if (defaults == null || defaults.size() != expectedCount || expectedCount <= 0) {
             throw new IllegalArgumentException("Invalid default multi-workflow DAX contract");
@@ -148,7 +79,6 @@ public final class ExampleCliSupport {
         return Collections.unmodifiableList(validated);
     }
 
-    /** Verify that a DAX input file exists and is a regular file. */
     public static String requireDax(String path) {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("DAX input path cannot be empty");
@@ -160,18 +90,6 @@ public final class ExampleCliSupport {
         return path.trim();
     }
 
-    /**
-     * Strictly parse a legacy command line composed only of "single-character flag plus one value"
-     * pairs.
-     *
-     * <p>Duplicate flags, unknown flags, empty flags, missing values, and empty values all fail
-     * immediately. Numeric and domain constraints are checked further by the caller through the
-     * parsing helpers of this class.</p>
-     *
-     * @param args command-line arguments
-     * @param allowedOptions supported flags, for example {@code -d}
-     * @return unmodifiable option map stored in order of appearance
-     */
     public static Map<String, String> parseValueOptions(String[] args, String... allowedOptions) {
         Set<String> allowed = new LinkedHashSet<String>(Arrays.asList(allowedOptions));
         Map<String, String> values = new LinkedHashMap<String, String>();
@@ -198,7 +116,6 @@ public final class ExampleCliSupport {
         return Collections.unmodifiableMap(values);
     }
 
-    /** Return an optional argument value; return the caller-declared default when it is absent. */
     public static String optionOrDefault(Map<String, String> options, String option, String defaultValue) {
         if (options == null) {
             throw new IllegalArgumentException("Options cannot be null");
@@ -207,7 +124,6 @@ public final class ExampleCliSupport {
         return value == null ? defaultValue : value;
     }
 
-    /** Parse a finite floating-point argument strictly greater than zero. */
     public static double positiveFinite(String option, String value) {
         double result = finite(option, value);
         if (result <= 0.0) {
@@ -216,7 +132,6 @@ public final class ExampleCliSupport {
         return result;
     }
 
-    /** Parse a finite floating-point argument greater than or equal to zero. */
     public static double nonNegativeFinite(String option, String value) {
         double result = finite(option, value);
         if (result < 0.0) {
@@ -225,7 +140,6 @@ public final class ExampleCliSupport {
         return result;
     }
 
-    /** Parse an integer argument greater than or equal to zero. */
     public static int nonNegativeInt(String option, String value) {
         try {
             int result = Integer.parseInt(value);
@@ -238,7 +152,6 @@ public final class ExampleCliSupport {
         }
     }
 
-    /** Parse a signed 64-bit integer, for example an explicit experiment root seed. */
     public static long longValue(String option, String value) {
         try {
             return Long.parseLong(value);
@@ -247,13 +160,6 @@ public final class ExampleCliSupport {
         }
     }
 
-    /**
-     * Compute the product of a set of strictly positive finite factors, and fail on overflow.
-     *
-     * @param expression human-readable argument expression
-     * @param factors multipliers that have each already passed domain validation
-     * @return finite positive product
-     */
     public static double positiveFiniteProduct(String expression, double... factors) {
         if (factors == null || factors.length == 0) {
             throw new IllegalArgumentException("Product factors cannot be empty");
@@ -271,10 +177,6 @@ public final class ExampleCliSupport {
         return product;
     }
 
-    /**
-     * Verify that the option value consists only of allowed single-character codes and contains at
-     * least one character.
-     */
     public static String allowedCharacters(String option, String value, String allowedCharacters) {
         if (value == null || value.isEmpty()) {
             throw new IllegalArgumentException(option + " cannot be empty");
@@ -287,14 +189,6 @@ public final class ExampleCliSupport {
         return value;
     }
 
-    /**
-     * Verify that the option value belongs exactly to the given finite set.
-     *
-     * @param option command-line option name
-     * @param value value to verify
-     * @param allowedValues accepted exact values
-     * @return the original value, so that it can be assigned directly to a caller variable
-     */
     public static String allowedValue(String option, String value, String... allowedValues) {
         if (value == null || value.isEmpty()) {
             throw new IllegalArgumentException(option + " cannot be empty");
@@ -307,7 +201,6 @@ public final class ExampleCliSupport {
         throw new IllegalArgumentException(option + " has unsupported value: " + value);
     }
 
-    /** Parse a finite floating-point argument in the closed interval {@code [0, 1]}. */
     public static double unitInterval(String option, String value) {
         double result = nonNegativeFinite(option, value);
         if (result > 1.0) {
@@ -316,7 +209,6 @@ public final class ExampleCliSupport {
         return result;
     }
 
-    /** Parse a finite floating-point argument in the open interval {@code (0, 1)}. */
     public static double openUnitInterval(String option, String value) {
         double result = unitInterval(option, value);
         if (result == 0.0 || result == 1.0) {
@@ -325,12 +217,6 @@ public final class ExampleCliSupport {
         return result;
     }
 
-    /**
-     * Emit the stable completion boundary. In fault-tolerance teaching scenarios a failed Job may
-     * represent a recoverable intermediate attempt, so such failures are counted as they are.
-     *
-     * @param jobs Job list returned by this CloudSim event loop
-     */
     public static void reportCompletion(List<Job> jobs) {
         if (jobs == null || jobs.isEmpty()) {
             throw new IllegalStateException("Example produced no jobs");
@@ -354,20 +240,12 @@ public final class ExampleCliSupport {
                 + " failedJobs=" + failed);
     }
 
-    /**
-     * Convert a historical example error into an unchecked exception that makes the CLI and Maven
-     * fail correctly.
-     */
     public static IllegalStateException failure(String exampleId, Exception cause) {
         String message = cause == null ? "unknown error" : cause.getMessage();
         Log.printLine("The simulation has been terminated due to an unexpected error: " + message);
         return new IllegalStateException("Historical example failed: " + exampleId, cause);
     }
 
-    /**
-     * Clear the example identifier registered on this thread and the historical WorkflowSim static
-     * state.
-     */
     public static void end() {
         resetLegacyState();
         ACTIVE_EXAMPLE_ID.remove();

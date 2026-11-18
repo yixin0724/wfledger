@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-/** Hand-derived CRCH checkpoint progress and recovery checks. */
 class CrchRegistryTest {
 
     @AfterEach

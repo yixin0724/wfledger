@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** DHEFT ready-wave scheduler with pairwise minimum VM bandwidth in bytes per second. */
 public final class DheftPlanner {
 
     public DheftSchedule schedule(DheftProblem problem) {
@@ -19,8 +18,7 @@ public final class DheftPlanner {
         Map<Integer, Double> available = new HashMap<Integer, Double>();
         double makespan = 0.0;
         while (scheduled.size() < problem.getTasks().size()) {
-            // Official DHEFT schedules the complete current ready list before releasing any
-            // children unlocked by that list. A newly-ready task must not jump this wave.
+
             List<DheftTask> readyWave = new ArrayList<DheftTask>();
             for (DheftTask task : problem.getTasks()) {
                 if (!scheduled.contains(task.getTaskId()) && ready(task, scheduled)) {

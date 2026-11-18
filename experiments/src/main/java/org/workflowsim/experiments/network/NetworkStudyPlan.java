@@ -21,14 +21,13 @@ import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.TaskExecutionModel;
 
-/** Predeclared network-limited study: a small CI matrix and an explicit full research matrix. */
 public final class NetworkStudyPlan {
-    /** New executions retain the parameter matrix, not the historical execution model identity. */
+
     public static final String PROTOCOL = "network-limited-r10-v3";
 
     public static final String PEFT_COMPARISON_PROTOCOL = "peft-comparison-r12-v2";
     public static final String SENSITIVITY_PROTOCOL = "sensitivity-response-r13-v2";
-    /** Historical protocol identities are accepted only by read-only integrity validation. */
+
     public static final String HISTORICAL_PROTOCOL = "network-limited-r10-v2";
 
     public static final String HISTORICAL_PEFT_COMPARISON_PROTOCOL = "peft-comparison-r12-v1";
@@ -42,14 +41,13 @@ public final class NetworkStudyPlan {
             Collections.unmodifiableList(Arrays.asList("endpoint", "fat-tree-constrained", "fat-tree-wide"));
     public static final List<String> SENSITIVITY_NETWORKS = Collections.unmodifiableList(
             Arrays.asList("endpoint", "fat-tree-constrained", "fat-tree-mid", "fat-tree-wide", "fat-tree-fast"));
-    /** R13 heterogeneity axis: homogeneous baseline plus three deterministic mips-mixture patterns. */
+
     public static final String HOMOGENEOUS = "HOMOGENEOUS";
 
     public static final String HET_MILD = "HET_MILD";
     public static final String HET_STRONG = "HET_STRONG";
     public static final String HET_EXTREME = "HET_EXTREME";
 
-    /** Study variant selector: frozen r10, S5 PEFT comparison, or R13 sensitivity response surface. */
     public enum StudyVariant {
         R10,
         PEFT_COMPARISON,
@@ -83,7 +81,6 @@ public final class NetworkStudyPlan {
         this.excludedInputs = Collections.unmodifiableList(excludedInputs);
     }
 
-    /** Maps the optional executor argument to a study variant; null means the frozen r10 protocol. */
     public static StudyVariant variantArgument(String argument) {
         if (argument == null || "r10".equals(argument)) {
             return StudyVariant.R10;
@@ -155,11 +152,6 @@ public final class NetworkStudyPlan {
         return result;
     }
 
-    /**
-     * 2026-10-26 complexity extraction from create; statements verbatim; order unchanged.
-     * Scope: verifies only that the qualified inputs and exclusions match the registered study
-     * protocol item by item (id, sha256, qualification-exclusion fields), and throws on any mismatch.
-     */
     private static void verifyAgainstRegisteredProtocol(
             NetworkStudyPlan registered, List<WorkflowCase> values, List<Map<String, Object>> excluded) {
         if (values.size() != registered.workflows.size() || excluded.size() != registered.excludedInputs.size()) {
@@ -184,7 +176,6 @@ public final class NetworkStudyPlan {
         }
     }
 
-    /** The declared protocol revision; new executions never use a historical revision. */
     public String getProtocol() {
         return protocol;
     }
@@ -193,7 +184,6 @@ public final class NetworkStudyPlan {
         return variant;
     }
 
-    /** Whether the declaration certifies the retained historical model rather than new execution. */
     public boolean isHistoricalProtocol() {
         return HISTORICAL_PROTOCOL.equals(protocol)
                 || HISTORICAL_PEFT_COMPARISON_PROTOCOL.equals(protocol)
@@ -214,12 +204,6 @@ public final class NetworkStudyPlan {
         }
     }
 
-    /**
-     * Build the registered matrix without reading files, parsing workflows, or generating inputs.
-     * Paths here are logical placeholders; validators separately bind retained absolute paths.
-     * The workload fingerprints and the frozen layered generator are part of the protocol,
-     * not declarations supplied by the evidence being checked.
-     */
     static NetworkStudyPlan canonical(String mode, String protocol) {
         if (!"full".equals(mode) && !"smoke".equals(mode)) {
             throw new IllegalArgumentException("Study mode must be smoke or full");
@@ -310,17 +294,14 @@ public final class NetworkStudyPlan {
         }
     }
 
-    /** The planner set for this study variant. */
     public List<PlanningAlgorithm> getPlanners() {
         return variant == StudyVariant.R10 ? PLANNERS : PEFT_COMPARISON_PLANNERS;
     }
 
-    /** The network list for this study variant. */
     public List<String> getNetworks() {
         return variant == StudyVariant.SENSITIVITY_R13 ? SENSITIVITY_NETWORKS : NETWORKS;
     }
 
-    /** One declared platform/network cell; the matrix is workflows × conditions × planners × seeds. */
     public static final class Condition {
         public final int vmCount;
         public final String network;
@@ -333,7 +314,6 @@ public final class NetworkStudyPlan {
         }
     }
 
-    /** Declared study conditions in execution order. */
     public List<Condition> getConditions() {
         List<Condition> conditions = new ArrayList<Condition>();
         if (variant != StudyVariant.SENSITIVITY_R13) {
@@ -345,8 +325,7 @@ public final class NetworkStudyPlan {
             return Collections.unmodifiableList(conditions);
         }
         List<Integer> mainCounts = getVmCounts();
-        // smoke covers only two representative networks to keep CI cost constant; full covers all
-        // five bandwidth tiers
+
         List<String> mainNetworks = full ? SENSITIVITY_NETWORKS : Arrays.asList("endpoint", "fat-tree-constrained");
         for (Integer vmCount : mainCounts) {
             for (String network : mainNetworks) {
@@ -362,7 +341,6 @@ public final class NetworkStudyPlan {
         return Collections.unmodifiableList(conditions);
     }
 
-    /** Qualification is structural only: no algorithm performance is observed or selected. */
     static String qualificationFailure(Path input) {
         boolean disabled = org.cloudbus.cloudsim.Log.isDisabled();
         org.cloudbus.cloudsim.Log.disable();
@@ -495,7 +473,6 @@ public final class NetworkStudyPlan {
         throw new IllegalArgumentException("Unknown network: " + name);
     }
 
-    /** Declared fat-tree link bandwidth (MB/s) for a response-surface network name. */
     public static double fatTreeLinkMbPerSecond(String network) {
         if ("fat-tree-constrained".equals(network)) {
             return 0.125;
@@ -512,12 +489,10 @@ public final class NetworkStudyPlan {
         throw new IllegalArgumentException("Unknown fat-tree network: " + network);
     }
 
-    /** Fat-tree pod order grows with the platform so the size axis stays feasible; declared per condition. */
     public static int fatTreeK(int vmCount) {
         return vmCount <= 16 ? 4 : 8;
     }
 
-    /** Deterministic per-VM MIPS for a declared heterogeneity level, indexed in platform order. */
     public static double vmMips(int vmIndex, String heterogeneity) {
         if (HOMOGENEOUS.equals(heterogeneity)) {
             return 1000.0;
@@ -534,7 +509,6 @@ public final class NetworkStudyPlan {
         throw new IllegalArgumentException("Unknown heterogeneity level: " + heterogeneity);
     }
 
-    /** Shared fixed simulation declaration for execution and read-only protocol validation. */
     static SimulationConfig configuration(
             String input, int count, String network, PlanningAlgorithm planner, long seed) {
         return SimulationConfig.builder(input, count)
@@ -581,7 +555,6 @@ public final class NetworkStudyPlan {
         return builder.build();
     }
 
-    /** Four layers, two unique outgoing files per task, no filename ambiguity or global shared input. */
     static String layeredWorkflow(int width) {
         if (width < 2 || width > 256) {
             throw new IllegalArgumentException("Layer width must be 2..256");
@@ -628,10 +601,6 @@ public final class NetworkStudyPlan {
                 .append("\" size=\"32000000\"/>");
     }
 
-    /**
-     * Immutable qualified workflow identity in a registered study matrix: id, family, population
-     * (classic or synthetic corpus layer), resolved input path, and source/family metadata.
-     */
     public static final class WorkflowCase {
         public final String id;
         public final String family;
@@ -639,7 +608,6 @@ public final class NetworkStudyPlan {
         public final Path path;
         public final String sha256;
 
-        /** Metadata-only constructor for the registered, filesystem-independent declaration. */
         private WorkflowCase(String id, String family, String population, Path path, String sha256) {
             this.id = id;
             this.family = family;

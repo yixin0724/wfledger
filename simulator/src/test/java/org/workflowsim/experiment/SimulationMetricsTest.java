@@ -79,7 +79,6 @@ class SimulationMetricsTest {
         assertEquals(3.0 / 3.11, metrics.getComputeJobOutcomeThroughputPerSecond(), 1.0e-12);
         assertEquals(5.0 / 3.0, metrics.getMeanComputeJobRunTimeSeconds(), 1.0e-12);
 
-        // A logical Task counts as completed once any retry Job containing it succeeds.
         assertEquals(2, metrics.getLogicalTaskCount());
         assertEquals(2, metrics.getSuccessfullyCompletedLogicalTaskCount());
         assertEquals(0, metrics.getLogicalTasksNotYetSuccessfullyCompletedCount());
@@ -101,8 +100,6 @@ class SimulationMetricsTest {
         assertEquals(2.0, metrics.getFailedComputeAttemptModeledProcessingCost(), 1.0e-12);
         assertEquals(4.0, metrics.getRetryComputeAttemptModeledProcessingCost(), 1.0e-12);
 
-        // Job 11 contributes 0.01 seconds of ready-to-decision delay and zero decision-to-start delay.
-        // Job 12 is decided after it starts, so it must not count toward decision-to-start delay.
         assertEquals(2, metrics.getReadyToDecisionObservationCount());
         assertEquals(0.055, metrics.getMeanComputeReadyToDecisionDelaySeconds(), 1.0e-12);
         assertEquals(1, metrics.getDecisionToStartObservationCount());

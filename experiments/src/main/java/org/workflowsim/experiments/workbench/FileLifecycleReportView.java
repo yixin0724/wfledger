@@ -15,23 +15,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Bounded display of a validated V2 file-lifecycle certificate, not fluid-service accounting.
- * Only strings, structural booleans, nulls and deeply immutable maps/lists leave this class.
- */
 final class FileLifecycleReportView {
     static final int COPY_LIMIT = 64, RESOURCE_LIMIT = 64, EVENT_LIMIT = 128, LIST_LIMIT = 12, LABEL_LIMIT = 256;
     private long labelsClipped, nestedItemsOmitted;
 
     private FileLifecycleReportView() {}
 
-    /** Null means OFF; only the caller can attest to validation against an enclosing run. */
     static Map<String, Object> fromDecoded(FileLifecycleCodec.Decoded decoded, boolean contextValidated) {
         return decoded == null ? null : new FileLifecycleReportView().project(decoded, contextValidated);
     }
 
     private Map<String, Object> project(FileLifecycleCodec.Decoded decoded, boolean contextValidated) {
-        // One defensive, already-validated snapshot; never read files or invoke a codec here.
+
         JsonObject document = decoded.getDocument();
         JsonObject plan = document.getAsJsonObject("filePlan");
         JsonObject capture = document.getAsJsonObject("capture");
@@ -46,7 +41,7 @@ final class FileLifecycleReportView {
         LifecycleScan scan = scanLifecycleEvents(rawEvents, fileBytes);
         Map<String, Object> root = map();
         root.put("schema", "workflowsim-file-lifecycle-display-v2");
-        // TRUNCATED cannot be represented by a valid first-version Decoded certificate.
+
         root.put("captureStatus", "COMPLETE");
         root.put("contextValidated", contextValidated);
         root.put("certificateScope", document.get("certificateScope").getAsString());
@@ -80,7 +75,6 @@ final class FileLifecycleReportView {
         return freeze(root);
     }
 
-    /** File lifecycle event scan stage (verbatim relocation from project()). */
     private LifecycleScan scanLifecycleEvents(JsonArray rawEvents, Map<DataflowFilePlan.FileId, BigDecimal> fileBytes) {
         LifecycleScan scan = new LifecycleScan();
 
@@ -95,7 +89,7 @@ final class FileLifecycleReportView {
                 case "COPY_SETTLED":
                     long ordinal = payload.get("copyOrdinal").getAsLong();
                     scan.settlements.put(ordinal, event);
-                    // Settled payload is the declared object size, not rate * elapsed or size - residual.
+
                     scan.totals.settled = scan.totals.settled.add(exact(scan.admissions
                             .get(ordinal)
                             .getAsJsonObject("payload")
@@ -115,7 +109,7 @@ final class FileLifecycleReportView {
                         scan.totals.localReferences = scan.totals.localReferences.add(references);
                         scan.totals.localBytes = scan.totals.localBytes.add(bytes);
                     } else if ("JOIN_EXISTING".equals(resolution)) {
-                        // Count the joined reference multiplicity, not an inferred number of saved copies.
+
                         scan.totals.joinedReferences = scan.totals.joinedReferences.add(references);
                     }
                     break;
@@ -127,7 +121,6 @@ final class FileLifecycleReportView {
         return scan;
     }
 
-    /** Copy row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> copiesRows(FileLifecycleCodec.Decoded decoded, LifecycleScan scan) {
         List<Map<String, Object>> copies = new ArrayList<>();
         for (Map.Entry<Long, JsonObject> entry : scan.admissions.entrySet()) {
@@ -139,7 +132,6 @@ final class FileLifecycleReportView {
         return copies;
     }
 
-    /** Resource row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> resourceRows(JsonArray rawResources) {
         List<Map<String, Object>> resources = new ArrayList<>();
         for (int i = 0; i < Math.min(RESOURCE_LIMIT, rawResources.size()); i++) {
@@ -152,7 +144,6 @@ final class FileLifecycleReportView {
         return resources;
     }
 
-    /** Event row builder (capped, verbatim relocation). */
     private List<Map<String, Object>> eventRows(JsonArray rawEvents, LifecycleScan scan) {
         List<Map<String, Object>> events = new ArrayList<>();
         for (int i = 0; i < Math.min(EVENT_LIMIT, rawEvents.size()); i++) {
@@ -161,7 +152,6 @@ final class FileLifecycleReportView {
         return events;
     }
 
-    /** Private relocation holder for the event-scan aggregates of project(). */
     private static final class LifecycleScan {
         final Map<Long, JsonObject> admissions = new LinkedHashMap<>();
         final Map<Long, JsonObject> settlements = new HashMap<>();
@@ -183,7 +173,7 @@ final class FileLifecycleReportView {
         row.put("fileId", fileLabel(payload.getAsJsonObject("fileId")));
         row.put("source", location(source.getAsJsonObject("location")));
         row.put("destination", vm(payload.get("destinationVmId")));
-        // The selected holder may be a cache. Its root producer is a separate, immutable fact.
+
         row.put("producerTaskId", integer(origin.get("producerTaskId")));
         row.put("producerJobAttemptId", integer(origin.get("jobAttemptId")));
         row.put("originLocation", location(origin.getAsJsonObject("location")));
@@ -193,7 +183,7 @@ final class FileLifecycleReportView {
         row.put("isolatedSeconds", quantity(payload.get("isolatedSeconds")));
         row.put("effectiveCompletionTime", decimal(effectiveAt));
         row.put("observedCompletionTime", decimal(observedAt));
-        // Subtract exact binary64 values, never already-rounded double differences.
+
         row.put("effectiveFctSeconds", effectiveAt == null ? null : decimal(effectiveAt.subtract(admittedAt)));
         row.put("observedFctSeconds", observedAt == null ? null : decimal(observedAt.subtract(admittedAt)));
         row.put("notificationLagSeconds", observedAt == null ? null : decimal(observedAt.subtract(effectiveAt)));
@@ -220,7 +210,7 @@ final class FileLifecycleReportView {
         row.put("type", type);
         row.put("observedTime", quantity(event.get("observedTime")));
         row.put("jobId", integer(payload.get("jobId")));
-        // Other job-scoped records need not repeat their logical Task; do not invent a copy owner.
+
         row.put(
                 "taskId",
                 "JOB_INPUT_REQUESTED".equals(type)
@@ -235,7 +225,6 @@ final class FileLifecycleReportView {
         return freeze(row);
     }
 
-    /** Bound individual labels/lists, not the whole detail: its numeric text must remain exact. */
     private String detail(String type, JsonObject payload) {
         switch (type) {
             case "EXTERNAL_SEEDED":
@@ -282,7 +271,7 @@ final class FileLifecycleReportView {
     }
 
     private static DataflowFilePlan.FileId fileKey(JsonObject file) {
-        // Display clipping is never used as identity when joining file-plan bytes to references.
+
         return DataflowFilePlan.FileId.of(
                 file.get("workflowInputIndex").getAsInt(), file.get("name").getAsString());
     }
@@ -362,7 +351,7 @@ final class FileLifecycleReportView {
     }
 
     private static String decimal(BigDecimal value) {
-        // Plain decimal is deliberately unabridged even for subnormals and sums beyond binary64.
+
         return value == null ? null : value.stripTrailingZeros().toPlainString();
     }
 

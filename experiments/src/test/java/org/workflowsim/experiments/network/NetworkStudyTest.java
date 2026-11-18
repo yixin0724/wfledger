@@ -62,7 +62,7 @@ class NetworkStudyTest {
                 18,
                 NetworkStudyPlan.create("smoke", true, datasets(), output.resolve("peft-small"))
                         .getRunCount());
-        // The r10 protocol stays frozen: the default variant's constants and run count ignore S5
+
         NetworkStudyPlan r10 = NetworkStudyPlan.create("full", datasets(), output.resolve("r10"));
         assertEquals(NetworkStudyPlan.PROTOCOL, r10.getProtocol());
         assertEquals(504, r10.getRunCount());
@@ -78,7 +78,7 @@ class NetworkStudyTest {
         assertEquals(7, full.getWorkflows().size());
         assertEquals(Arrays.asList(4, 8, 16, 32), full.getVmCounts());
         assertEquals(5, full.getNetworks().size());
-        // Main block 4 VM counts x 5 networks + heterogeneous block 2 VM counts x 3 tiers = 26 conditions
+
         assertEquals(26, full.getConditions().size());
         assertEquals(546, full.getRunCount());
         assertEquals(3, full.getPlanners().size());
@@ -95,7 +95,7 @@ class NetworkStudyTest {
         assertEquals(5, smoke.getConditions().size());
         assertEquals(30, smoke.getRunCount());
         assertTrue(smoke.asMap().containsKey("conditions"));
-        // R13 does not affect the frozen r10/S5 matrices
+
         assertEquals(
                 504,
                 NetworkStudyPlan.create("full", datasets(), output.resolve("r10"))
@@ -219,8 +219,7 @@ class NetworkStudyTest {
         assertEquals(5.0, (Double) comparisons.get(0).get("medianImprovementPercent"), 1e-12);
         assertEquals(NetworkStudyPlan.HET_STRONG, comparisons.get(1).get("heterogeneity"));
         assertEquals(20.0, (Double) comparisons.get(1).get("medianImprovementPercent"), 1e-12);
-        // Rows without a heterogeneity field must not introduce the key: summaries of the
-        // frozen protocols stay byte-identical
+
         Map<String, Object> plain = NetworkStudySummary.summarize(Arrays.asList(
                 row("real", "CLASSIC_DAX", "LOCAL_HEFT", 100), row("real", "CLASSIC_DAX", "LOCAL_PEFT", 90)));
         List<Map<String, Object>> plainComparisons = (List<Map<String, Object>>) plain.get("comparisons");
@@ -285,8 +284,7 @@ class NetworkStudyTest {
         assertEquals("LOCAL_PEFT", comparisons.get(1).get("candidate"));
         assertEquals("LOCAL_HEFT", comparisons.get(1).get("baseline"));
         assertEquals(10.0, (Double) comparisons.get(1).get("medianImprovementPercent"), 1e-12);
-        // Single-DAG comparison signTest p=1.0; the Holm family size follows the
-        // candidate count and is 2 here
+
         assertEquals(1.0, (Double) comparisons.get(1).get("pValue"), 1e-12);
         assertEquals(1.0, (Double) comparisons.get(1).get("holmAdjustedPValue"), 1e-12);
     }

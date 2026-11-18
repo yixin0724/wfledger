@@ -27,10 +27,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Independently declared legal cells, not a matrix inferred from whichever configurations pass.
- * Scaling every byte demand and bandwidth by two preserves transfer times, not monetary totals.
- */
 class ConfigurationMetamorphicIntegrationTest {
     private static final int[] VM_IDS = {3, 8, 12};
     private static final double[] MIPS = {500, 1000, 1500};

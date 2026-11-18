@@ -20,15 +20,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Phase 5 acceptance: bit-for-bit comparison of core quantities. Comparing an evidence
- * chain against itself yields zero divergence; tampering with a core quantity (metrics
- * embedded in the manifest, configuration seed, event simulationTime, total event count,
- * result array length) must be detected exactly and reported with a JSON pointer;
- * whitelisted volatile quantities (provenance, runtime, artifacts hashes, absolute paths,
- * event wall-clock attributes) are exempt and merely noted, without disturbing the
- * verdict; identity information is extracted separately.
- */
 class EvidenceCoreDifferTest {
 
     private static Path fixtureRun;
@@ -59,7 +50,7 @@ class EvidenceCoreDifferTest {
     void detectsTamperedCoreManifestFieldsWithPointers() throws Exception {
         RerunEvidence clean = RerunEvidenceReader.read(fixtureRun);
         JsonObject manifest = readManifest(fixtureRun);
-        // Tamper with two core quantities: the makespan embedded in metrics and the configuration seed.
+
         manifest.getAsJsonObject("metrics").addProperty("makespanSeconds", 9999.5);
         manifest.getAsJsonObject("configuration").addProperty("rootSeed", 92L);
         RerunEvidence tampered = inMemoryManifest(fixtureRun, manifest);
@@ -73,7 +64,7 @@ class EvidenceCoreDifferTest {
                 2,
                 result.getCoreDivergences().size(),
                 result.getCoreDivergences().toString());
-        // A divergence records the values from both sides.
+
         Divergence seed = find(result.getCoreDivergences(), "/configuration/rootSeed");
         assertEquals("92", seed.getOriginalValue());
         assertEquals("91", seed.getRerunValue());
@@ -114,7 +105,6 @@ class EvidenceCoreDifferTest {
         List<String> lines = Files.readAllLines(fixtureRun.resolve("result.events.jsonl"), StandardCharsets.UTF_8);
         assertFalse(lines.isEmpty());
 
-        // Change only wall-clock attributes: zero divergence.
         List<String> clockOnly = new ArrayList<String>();
         for (String line : lines) {
             JsonObject event = JsonParser.parseString(line).getAsJsonObject();
@@ -132,7 +122,6 @@ class EvidenceCoreDifferTest {
         DiffResult exempted = EvidenceCoreDiffer.compare(clean, inMemoryEvents(fixtureRun, clockOnlyPath));
         assertTrue(exempted.isIdenticalCore(), exempted.getCoreDivergences().toString());
 
-        // Also change simulationTime: this must be detected.
         List<String> tampered = new ArrayList<String>();
         for (int i = 0; i < clockOnly.size(); i++) {
             JsonObject event = JsonParser.parseString(clockOnly.get(i)).getAsJsonObject();
@@ -231,8 +220,7 @@ class EvidenceCoreDifferTest {
             JsonObject second = readManifest(fixtureRun);
             first.getAsJsonObject("configuration").addProperty("rootSeed", pair[0]);
             second.getAsJsonObject("configuration").addProperty("rootSeed", pair[1]);
-            // Reparse both sides, as the public evidence reader does. Comparing two in-memory
-            // Long primitives alone would miss Gson's parsed-number double coercion.
+
             first = JsonParser.parseString(first.toString()).getAsJsonObject();
             second = JsonParser.parseString(second.toString()).getAsJsonObject();
 
@@ -340,18 +328,12 @@ class EvidenceCoreDifferTest {
         assertFalse(result.getOriginalAlgorithmContract().equals(result.getRerunAlgorithmContract()));
     }
 
-    // ---- helpers ----
-
     private static JsonObject readManifest(Path run) throws Exception {
         return JsonParser.parseString(
                         new String(Files.readAllBytes(run.resolve("result.manifest.json")), StandardCharsets.UTF_8))
                 .getAsJsonObject();
     }
 
-    /**
-     * Build evidence with an in-memory manifest that replaces the on-disk content,
-     * bypassing the reader's on-disk hash semantics.
-     */
     private static RerunEvidence inMemoryManifest(Path run, JsonObject manifest) throws Exception {
         int eventCount = Files.readAllLines(run.resolve("result.events.jsonl"), StandardCharsets.UTF_8)
                 .size();
@@ -364,7 +346,6 @@ class EvidenceCoreDifferTest {
                 manifest);
     }
 
-    /** Build evidence with a substituted events file. */
     private static RerunEvidence inMemoryEvents(Path run, Path eventsFile) throws Exception {
         JsonObject manifest = readManifest(run);
         int eventCount = Files.readAllLines(eventsFile, StandardCharsets.UTF_8).size();

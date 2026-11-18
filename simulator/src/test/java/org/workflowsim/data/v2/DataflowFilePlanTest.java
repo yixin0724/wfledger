@@ -19,7 +19,6 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters.FileType;
 
-/** Hand-declared V2 logical-file oracles; these do not enable a new runtime model. */
 class DataflowFilePlanTest {
     @Test
     void resolvesUniqueProducerAndPreservesReferenceMultiplicityWithoutDuplicateDemands() {
@@ -64,7 +63,7 @@ class DataflowFilePlanTest {
         assertEquals(Arrays.asList(2, 3), demands.get(0).getConsumerTaskIds());
         assertEquals(new BigDecimal("1.5"), demands.get(0).getReferenceBytes());
         assertEquals(.5, demands.get(0).getFile().getBytes(), 0);
-        // A later Job attempt asks from its logical Task subset again, without historical parent Jobs.
+
         assertEquals(2, plan.demandsFor(Collections.singletonList(2)).get(0).getReferenceCount());
         assertEquals(1, plan.demandsFor(Collections.singletonList(3)).get(0).getReferenceCount());
     }

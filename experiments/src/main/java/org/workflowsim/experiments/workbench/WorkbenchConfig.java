@@ -32,7 +32,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** Strict, deliberately bounded user-facing configuration; defaults are made explicit in v4 evidence. */
 public final class WorkbenchConfig {
     public static final String SCHEMA = "workflowsim-workbench-v1";
     private final String name;
@@ -62,9 +61,7 @@ public final class WorkbenchConfig {
         List<Double> arrivals = readArrivals(root, paths);
         JsonObject platformObject = object(root, "platform");
         PlatformProfile platform = platform(platformObject);
-        // BAT-D4 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md 2.5): the platform-level
-        // frequency-tier policy is resolved once, after the profile is built (rejecting a policy on a
-        // tierless platform needs the assembled frequency-tier profile facts).
+
         SimulationConfig.FrequencyPolicy frequencyPolicy = frequencyPolicy(platformObject, platform);
         SimulationModels models = readSimulationModels(root, platform);
         List<Long> seeds = readSeeds(root);
@@ -73,7 +70,6 @@ public final class WorkbenchConfig {
         return new WorkbenchConfig(name, root.deepCopy(), platform, candidates, seeds);
     }
 
-    /** Strict JSON document read, extracted verbatim from read(). */
     private static JsonObject readJsonDocument(Path path) throws IOException {
         JsonObject root;
         try (com.google.gson.stream.JsonReader reader =
@@ -89,7 +85,6 @@ public final class WorkbenchConfig {
         return root;
     }
 
-    /** Configuration field whitelist and schema validation, extracted verbatim. */
     private static void validateConfigurationFields(JsonObject root) {
         fields(
                 root,
@@ -124,7 +119,6 @@ public final class WorkbenchConfig {
         }
     }
 
-    /** workflowPaths read and existence validation, extracted verbatim. */
     private static List<String> readWorkflowPaths(Path path, JsonObject root) {
         JsonArray inputs = array(root, "workflowPaths");
         if (inputs.size() < 1 || inputs.size() > 32) {
@@ -147,7 +141,6 @@ public final class WorkbenchConfig {
         return paths;
     }
 
-    /** Arrival-time read and length-consistency validation, extracted verbatim. */
     private static List<Double> readArrivals(JsonObject root, List<String> paths) {
         List<Double> arrivals = new ArrayList<Double>();
         if (root.has("workflowArrivalSeconds")) {
@@ -165,7 +158,6 @@ public final class WorkbenchConfig {
         return arrivals;
     }
 
-    /** Simulation model-group read and combination validation, extracted verbatim. */
     private static SimulationModels readSimulationModels(JsonObject root, PlatformProfile platform) {
         JsonObject sim = root.has("simulation") ? object(root, "simulation") : new JsonObject();
         fields(
@@ -214,7 +206,6 @@ public final class WorkbenchConfig {
         }
     }
 
-    /** Random seed read and uniqueness validation, extracted verbatim. */
     private static List<Long> readSeeds(JsonObject root) {
         List<Long> seeds = new ArrayList<Long>();
         if (root.has("seeds")) {
@@ -230,7 +221,6 @@ public final class WorkbenchConfig {
         return seeds;
     }
 
-    /** Assemble the algorithm matrix, optionally expanding every algorithm once per workflow input. */
     private static List<Candidate> readCandidates(
             JsonObject root,
             List<String> paths,
@@ -380,7 +370,6 @@ public final class WorkbenchConfig {
         return deadlines;
     }
 
-    /** Private extraction structure for the scheduling-policy resolution in readCandidates. */
     private static final class ResolvedScheduler {
         final Parameters.SchedulingAlgorithm scheduler;
         final org.workflowsim.experiment.registry.SchedulingAlgorithmProvider registeredProvider;
@@ -393,18 +382,6 @@ public final class WorkbenchConfig {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from readCandidates; statements verbatim; order unchanged.
-     * Scope: resolve only the scheduling policy of a candidate algorithm track (default label, enum
-     * resolution, SPI external-registration fallback, and maintained-surface eligibility check).
-     */
-    /**
-     * C1 (2026-11-02 review round): the deferral engine needs {@code platform.carbonWindows}, and
-     * budget windows belong to the research-protocol declaration domain and are deliberately kept
-     * out of the v1 workbench surface (CARBON_DIMENSION_DESIGN 2.3). The workbench therefore
-     * rejects this label at <b>validation time</b> and names the alternative, instead of letting the
-     * user pass validate and then be rejected by the runtime halfway through a run.
-     */
     private static void rejectWorkbenchExcludedScheduler(Parameters.SchedulingAlgorithm scheduler) {
         if (scheduler == Parameters.SchedulingAlgorithm.CARBON_WINDOW_DEFER) {
             throw new IllegalArgumentException("Workbench does not accept SchedulingAlgorithm.CARBON_WINDOW_DEFER:"
@@ -429,7 +406,7 @@ public final class WorkbenchConfig {
         try {
             scheduler = Parameters.SchedulingAlgorithm.valueOf(schedulerText);
         } catch (IllegalArgumentException unknownEnumLabel) {
-            // BAT-3 (2026-10-26): externally registered algorithm-track label (ServiceLoader SPI).
+
             if (!assignment.isEnabled()
                     && planner == Parameters.PlanningAlgorithm.INVALID
                     && org.workflowsim.experiment.registry.AlgorithmRegistry.isRegistered(schedulerText)) {
@@ -450,11 +427,6 @@ public final class WorkbenchConfig {
         return new ResolvedScheduler(scheduler, registeredProvider);
     }
 
-    /**
-     * 2026-10-26 complexity extraction from readCandidates; statements verbatim; order unchanged.
-     * Scope: compute only the decision-layer membership, and verify that all candidates of one
-     * experiment belong to the same decision layer.
-     */
     private static String requireSameDecisionLayer(
             String track,
             org.workflowsim.data.v2.DataflowAssignmentConfig assignment,
@@ -470,7 +442,6 @@ public final class WorkbenchConfig {
         return candidateTrack;
     }
 
-    /** Private extraction structure for the simulation model group in read(). */
     private static final class SimulationModels {
         final JsonObject sim;
         final ReplicaCatalog.FileSystem fileSystem;
@@ -492,7 +463,6 @@ public final class WorkbenchConfig {
         }
     }
 
-    /** Parse input DAGs and validate model-specific prerequisites without running the simulation. */
     public void validateInputs() {
         for (Candidate candidate : candidates) {
             try (SimulationSession ignored = SimulationSession.open(candidate.config)) {
@@ -562,21 +532,9 @@ public final class WorkbenchConfig {
                 "storageTransferMbPerSecond",
                 "networkTopology",
                 "sourceStorage",
-                // BAT-E4.2 (2026-10-27): optional energy-dimension declaration (uniform power; the
-                // default 0 means no power model).
                 "idlePowerWatts",
                 "maxPowerWatts",
-                // BAT-C3 (2026-10-28): optional carbon-dimension declaration (uniform gCO2/kWh,
-                // intensity model). Budget-model carbonWindows <b>do not enter the v1 workbench
-                // surface</b>: windows belong to the research-protocol declaration domain (the
-                // E5-style comparison track of CARBON_DIMENSION_DESIGN.md 2.5), so a whitelist entry
-                // here is rejected outright.
                 "carbonIntensityGramsPerKWh",
-                // BAT-D4 (2026-10-29): optional DVFS frequency-tier dimension declaration
-                // (docs/advanced/DVFS_DIMENSION_DESIGN.md 2.5). frequencyTiers is a uniform P-state
-                // triple table (strictly descending, first tier = default tier, the same table for
-                // every VM); frequencyPolicy is the configuration-level assignment policy enum
-                // (DEFAULT/MIN_POWER/EDP_HEURISTIC; the default DEFAULT degenerates to v1).
                 "frequencyTiers",
                 "frequencyPolicy",
                 "vmProfiles");
@@ -585,9 +543,7 @@ public final class WorkbenchConfig {
             throw new IllegalArgumentException("vmMips requires 1..64 VMs");
         }
         int bandwidth = integer(value, "bandwidthMbPerSecond", 1000, 1, 1000000000);
-        // BAT-E4.2 (2026-10-27): optional uniform power (watts). Both keys default to 0, meaning no
-        // power model; declaring only one half (idle > max with max defaulting to 0) is rejected by
-        // an explicit check, so illegal values are never silent.
+
         double idlePowerWatts = optionalPlatformPower(value, "idlePowerWatts");
         double maxPowerWatts = optionalPlatformPower(value, "maxPowerWatts");
         if (idlePowerWatts > maxPowerWatts) {
@@ -595,17 +551,9 @@ public final class WorkbenchConfig {
                     "platform.idlePowerWatts (" + idlePowerWatts + ") exceeds maxPowerWatts (" + maxPowerWatts
                             + "); both default to 0 (no power model) when omitted");
         }
-        // BAT-D4 (2026-10-29): platform-level uniform frequency-tier table (absent key = no tiers = v1
-        // single-tier mode). Domain validation (mips > 0 and finite, idle >= 0, max >= idle) reuses
-        // the PlatformProfile.FrequencyTier constructor checks, and strict descending table order is
-        // rejected by the BAT-D1 check of the 13-argument VmSpec constructor; domain rules are not
-        // duplicated here.
+
         List<PlatformProfile.FrequencyTier> frequencyTiers = frequencyTiers(value, "platform");
-        // BAT-D4 mirrors the single-source-of-truth clause of PlatformProfile (BAT-D1): the
-        // frequency-tier table and the flat power fields are mutually exclusive -- the first-tier
-        // power pair <b>replaces</b> the flat pair (idempotent exclusion is backstopped by the VmSpec
-        // constructor check; the workbench rejects up front and cites both fields, giving the user
-        // the shortest repair path).
+
         if (frequencyTiers != null && (idlePowerWatts > 0.0 || maxPowerWatts > 0.0)) {
             throw new IllegalArgumentException(
                     "platform.frequencyTiers and platform.idlePowerWatts/maxPowerWatts are mutually exclusive:"
@@ -615,15 +563,7 @@ public final class WorkbenchConfig {
         double cpuCostPerSecond = decimal(value, "cpuCostPerSecond", 3, false);
         Map<Integer, VmProfile> vmProfiles =
                 vmProfiles(value, mips.size(), idlePowerWatts, maxPowerWatts, cpuCostPerSecond, frequencyTiers);
-        // BAT-C3 (2026-10-28): optional uniform carbon intensity (gCO2/kWh; nonnegative and
-        // finite, 0 is legal = an already-declared zero-carbon-intensity grid). Carbon multiplies the
-        // energy chain (the intensity model recomputes E), and without a power profile the intensity
-        // accounting becomes vacuous -- the report side fails fast on the same rule
-        // (SimulationReport -> CarbonAccounting), so the workbench rejects it up front and cites both
-        // fields, leaving no gap for "silent zero carbon" (guideline: explicit-failure discipline).
-        // BAT-D4: the tier table is itself a power declaration (mirroring the BAT-D2 power gate
-        // hasPowerModel() || hasFrequencyTiers() and the Python auditor's tiered-powered predicate);
-        // on a tiered platform the intensity accounting rides the per-tier conserved energy.
+
         Double carbonIntensityGramsPerKWh = value.has("carbonIntensityGramsPerKWh")
                         && !value.get("carbonIntensityGramsPerKWh").isJsonNull()
                 ? Double.valueOf(
@@ -784,16 +724,6 @@ public final class WorkbenchConfig {
         return false;
     }
 
-    /**
-     * BAT-D4 (2026-10-29): read the platform.frequencyTiers uniform frequency-tier table. An absent
-     * key or JSON null yields {@code null} (v1 platform = no tiers); when declared it must be a
-     * non-empty array, each entry must be an object, and the field whitelist is exactly
-     * {mips, idlePowerWatts, maxPowerWatts} (all required -- a missing key is rejected, leaving no
-     * gap for a "default tier"). The numeric domain is rejected by the
-     * {@link PlatformProfile.FrequencyTier} constructor checks (single source of domain validation).
-     *
-     * @return tier table in declaration order; {@code null} when it is not declared
-     */
     private static List<PlatformProfile.FrequencyTier> frequencyTiers(JsonObject value, String subject) {
         if (!value.has("frequencyTiers") || value.get("frequencyTiers").isJsonNull()) {
             return null;
@@ -819,17 +749,6 @@ public final class WorkbenchConfig {
         return tiers;
     }
 
-    /**
-     * BAT-D4 (2026-10-29, docs/advanced/DVFS_DIMENSION_DESIGN.md 2.2/2.5): resolve the
-     * platform.frequencyPolicy configuration-level frequency-tier assignment policy. An absent key
-     * defaults to DEFAULT (the v1 degeneration, consistent with the first tier declared by the
-     * platform); an unknown label is rejected explicitly with both the field name and the legal
-     * label set cited; a non-DEFAULT policy requires the platform to actually declare a
-     * frequency-tier table -- on a tierless platform the policy would be silently ignored, producing
-     * the misleading result of "believing DVFS is studied while v1 actually runs" (mirroring the
-     * BAT-D2 run-level gate of SimulationRunner.validateFrequencyDimension; the workbench rejects up
-     * front on the same rule).
-     */
     private static SimulationConfig.FrequencyPolicy frequencyPolicy(JsonObject value, PlatformProfile platform) {
         String policyText = text(value, "frequencyPolicy", "DEFAULT");
         SimulationConfig.FrequencyPolicy policy;
@@ -872,7 +791,6 @@ public final class WorkbenchConfig {
         return policy;
     }
 
-    /** BAT-D4: @return whether any VM in the platform profile declared a frequency-tier table. */
     private static boolean anyVmHasFrequencyTiers(PlatformProfile platform) {
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
             if (spec.hasFrequencyTiers()) {
@@ -882,7 +800,6 @@ public final class WorkbenchConfig {
         return false;
     }
 
-    /** sourceStorage sub-section assembly, extracted verbatim from platform(). */
     private static void applySourceStorage(JsonObject value, PlatformProfile.Builder result, JsonArray mips) {
         if (value.has("sourceStorage")) {
             JsonObject source = object(value, "sourceStorage");
@@ -907,7 +824,6 @@ public final class WorkbenchConfig {
         }
     }
 
-    /** networkTopology sub-section assembly, extracted verbatim from platform(). */
     private static void applyNetworkTopology(JsonObject value, PlatformProfile.Builder result, JsonArray mips) {
         if (value.has("networkTopology") && !value.get("networkTopology").isJsonNull()) {
             JsonObject topology = object(value, "networkTopology");
@@ -1009,11 +925,6 @@ public final class WorkbenchConfig {
         return candidates.size() * seeds.size();
     }
 
-    /**
-     * One experiment candidate as parsed from Workbench JSON. {@code id} is unique within the expanded matrix;
-     * {@code algorithmId} retains the declared algorithm identity; {@code workflowPath} is the single input in
-     * PER_WORKFLOW mode and {@code null} in COMBINED_WORKFLOWS mode; {@code config} is fully validated.
-     */
     public static final class Candidate {
         public final String id;
         public final String algorithmId;
@@ -1113,11 +1024,6 @@ public final class WorkbenchConfig {
         return number(value.get(key), key, positive);
     }
 
-    /**
-     * BAT-E4.2 (2026-10-27): optional read of a platform power field; absent means 0.0 (no power
-     * model), and non-numeric or negative values are rejected explicitly (power is a physical
-     * quantity, so silently accepting illegal values violates the explicit-failure discipline).
-     */
     private static double optionalPlatformPower(JsonObject value, String key) {
         if (!value.has(key) || value.get(key).isJsonNull()) {
             return 0.0;

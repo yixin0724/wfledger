@@ -18,15 +18,6 @@ import org.workflowsim.Task;
 import org.workflowsim.WorkflowDagValidator;
 import org.workflowsim.utils.SimulationTiming;
 
-/**
- * Shared computation and execution-model alignment for the maintained shared-storage static DAG
- * planners.
- *
- * <p>Every strategy derives a stable input order from the Task/VM IDs, first validates the DAG and
- * the controlled planning context, and then computes the plan from the execution duration on
- * compatible VMs, the effective stage-in duration, and the per-VM reservation set. The times here
- * are in-model estimates, not a production execution trace or a network-calibrated schedule.</p>
- */
 final class SharedStorageDagPlanner {
 
     enum Strategy {
@@ -44,10 +35,7 @@ final class SharedStorageDagPlanner {
     private final Strategy strategy;
     private final List<Task> sourceTasks;
     private final List rawVms;
-    /**
-     * Validated forward topological order; it changes only the static rank/OCT evaluation order,
-     * not the scheduling candidate order.
-     */
+
     private List<Task> topologicalTasks = Collections.emptyList();
 
     private final Map<Task, Map<CondorVM, Double>> executionTimes = new HashMap<Task, Map<CondorVM, Double>>();
@@ -65,10 +53,7 @@ final class SharedStorageDagPlanner {
     private final Map<Task, Double> starts = new HashMap<Task, Double>();
     private final Map<Task, Double> finishes = new HashMap<Task, Double>();
     private final Map<CondorVM, List<Reservation>> reservations = new HashMap<CondorVM, List<Reservation>>();
-    /**
-     * At most one most-recent query per VM identity; plan() creates a new planner each time, so no
-     * cache is kept across plans.
-     */
+
     private final Map<CondorVM, SlotQuery> lastSlotQueries = new IdentityHashMap<CondorVM, SlotQuery>();
 
     private SharedStorageDagPlanner(List<Task> sourceTasks, List rawVms, PlanningContext context, Strategy strategy) {
@@ -91,8 +76,7 @@ final class SharedStorageDagPlanner {
         List<Task> tasks = sortedTasks();
         List<CondorVM> vms = sortedVms();
         WorkflowDagValidator.validateAndAssignDepths(tasks);
-        // Every legal edge strictly increases depth; rank evaluation uses an independent copy and
-        // reorders neither tasks nor adjacency lists.
+
         List<Task> byDepth = new ArrayList<Task>(tasks);
         Collections.sort(byDepth, new Comparator<Task>() {
             @Override
@@ -110,9 +94,6 @@ final class SharedStorageDagPlanner {
             upwardRank(topologicalTasks.get(index));
         }
 
-        // The stage-in Job starts at time zero and its finish time follows the same minimum-event
-        // and safety-quantum rules as WorkflowDatacenter; after the workflow engine receives the
-        // completion event, one further kernel interval releases the root compute Job.
         double stageInFinish = SimulationTiming.earliestCloudletCompletionTime(
                         0.0,
                         STAGE_IN_JOB_LENGTH_MI / vms.get(0).getMips(),
@@ -172,13 +153,7 @@ final class SharedStorageDagPlanner {
     private void populateExecutionTimes(List<Task> tasks, List<CondorVM> vms) {
         for (Task task : tasks) {
             double transferSeconds = taskTransferSeconds(task);
-            // R8 audit fix (P2-4): CondorVM does not override hashCode, so the values() iteration
-            // order of a plain HashMap varies with the identity hash (random across JVM startups);
-            // averageExecutionTime summing over it yields ulp-level rank differences from the
-            // differing floating-point addition order, and near-tie comparisons can flip, breaking
-            // cross-process bit-level reproducibility.
-            // LinkedHashMap makes the iteration order equal the sortedVms() insertion order,
-            // which is deterministic.
+
             Map<CondorVM, Double> byVm = new LinkedHashMap<CondorVM, Double>();
             Map<CondorVM, Double> stageInByVm = new LinkedHashMap<CondorVM, Double>();
             for (CondorVM vm : vms) {
@@ -188,9 +163,7 @@ final class SharedStorageDagPlanner {
                     continue;
                 }
                 long transferMi = (long) (vm.getMips() * transferSeconds);
-                // CloudSim runs multi-PE tasks in parallel: the actual time is
-                // (length + transferMi/mips) / capacity, not the serial
-                // (totalLength + transferMi) / mips. Using the single-PE length matches runtime.
+
                 byVm.put(vm, (task.getCloudletLength() + transferMi) / vm.getMips());
                 stageInByVm.put(vm, transferMi / vm.getMips());
             }
@@ -241,14 +214,6 @@ final class SharedStorageDagPlanner {
         return new CpopSelection(criticalPath, criticalProcessor);
     }
 
-    /**
-     * DLS adaptation under the controlled model.
-     *
-     * <p>The dynamic level is the static b-level (this implementation's upward rank) of a
-     * dependency-ready Task-VM pair minus its earliest insertion start time. This shared-storage
-     * model has no interconnect topology or link reservation, so no communication term is added to
-     * that estimate.</p>
-     */
     private void scheduleDls(List<Task> tasks, List<CondorVM> vms, double stageInFinish) {
         Set<Task> scheduled = new HashSet<Task>();
         while (scheduled.size() < tasks.size()) {
@@ -287,13 +252,6 @@ final class SharedStorageDagPlanner {
         return selected;
     }
 
-    /**
-     * ETF adaptation under the controlled model.
-     *
-     * <p>ETF selects the dependency-ready Task-VM pair with the smallest earliest insertion start
-     * time; equal start times are broken first by the static b-level and then by the stable
-     * Task/VM ID.</p>
-     */
     private void scheduleEtf(List<Task> tasks, List<CondorVM> vms, double stageInFinish) {
         Set<Task> scheduled = new HashSet<Task>();
         while (scheduled.size() < tasks.size()) {
@@ -332,16 +290,8 @@ final class SharedStorageDagPlanner {
         return selected;
     }
 
-    /**
-     * PEFT adaptation under the controlled model.
-     *
-     * <p>OCT records the optimistic cost from a Task's successors to an exit Task. The maintained
-     * shared-storage model has no link model, so the communication term of the original algorithm
-     * is zero.</p>
-     */
     private void schedulePeft(List<Task> tasks, List<CondorVM> vms, double stageInFinish) {
-        // Successor OCTs are evaluated before the current task; the independent entry per
-        // compatible VM and the original averaging summation order are preserved.
+
         for (int index = topologicalTasks.size() - 1; index >= 0; index--) {
             Task task = topologicalTasks.get(index);
             for (CondorVM vm : vms) {
@@ -368,8 +318,7 @@ final class SharedStorageDagPlanner {
             if (scheduled.contains(task) || !scheduled.containsAll(task.getParentList())) {
                 continue;
             }
-            // Compute the rank even when only one Task is ready, so the trace keeps the complete
-            // audit evidence.
+
             double taskRank = peftRank(task, vms);
             if (selected == null
                     || taskRank > peftRank(selected, vms)
@@ -411,11 +360,6 @@ final class SharedStorageDagPlanner {
         peftSelectionScores.put(task, selectedScore);
     }
 
-    /**
-     * {@code OCT(task, vm) = max_child min_successorVm(duration(child, successorVm)
-     * + OCT(child, successorVm))}; the communication term omitted by this topology-free
-     * shared-storage model is zero.
-     */
     private double optimisticCost(Task task, CondorVM vm, List<CondorVM> vms) {
         Map<CondorVM, Double> byVm = peftOptimisticCosts.get(task);
         if (byVm == null) {
@@ -542,11 +486,6 @@ final class SharedStorageDagPlanner {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from identifyCriticalPath; statements verbatim; order unchanged.
-     * Scope: select only the entry task with the highest CPOP priority (ties take the smaller task
-     * ID); throw when no entry task exists.
-     */
     private Task highestPriorityEntryTask(List<Task> tasks) {
         Task current = null;
         double target = Double.NEGATIVE_INFINITY;
@@ -656,8 +595,7 @@ final class SharedStorageDagPlanner {
 
     private void reserve(Task task, CondorVM vm, double start, double finish) {
         if (strategy == Strategy.DLS || strategy == Strategy.ETF) {
-            // Any insertion starts a new occupancy generation, so query results from the VM's old
-            // calendar must not be reused.
+
             lastSlotQueries.remove(vm);
         }
         reservations.get(vm).add(new Reservation(start, finish));
@@ -687,14 +625,6 @@ final class SharedStorageDagPlanner {
         return readyTime;
     }
 
-    /**
-     * Only DLS/ETF reuse the most recent identical slot query on the same VM.
-     *
-     * <p>Each VM keeps at most one record, so the total space is O(V); reserve invalidates that
-     * VM's occupancy generation. A different query only overwrites the old record, and consecutive
-     * distinct ready/duration pairs do not promise fewer scan steps. A miss still runs the original
-     * loop: intervals are not merged and time comparisons are not approximated.</p>
-     */
     private double earliestStartForReadyPair(CondorVM vm, double readyTime, double duration) {
         long readyBits = Double.doubleToRawLongBits(readyTime);
         long durationBits = Double.doubleToRawLongBits(duration);
@@ -706,8 +636,7 @@ final class SharedStorageDagPlanner {
         if (cached == null) {
             lastSlotQueries.put(vm, new SlotQuery(readyBits, durationBits, start));
         } else {
-            // Reuse the record object to avoid allocating a cache key/record per pair for
-            // all-distinct queries.
+
             cached.readyBits = readyBits;
             cached.durationBits = durationBits;
             cached.start = start;

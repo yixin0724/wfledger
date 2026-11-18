@@ -32,7 +32,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
-/** Protocol-certification regressions use fresh small bundles, never retained research output. */
 class NetworkStudyValidatorTest {
     private static final Gson JSON =
             new GsonBuilder().serializeNulls().setPrettyPrinting().create();
@@ -281,14 +280,13 @@ class NetworkStudyValidatorTest {
             write(path, manifest);
         }
         writeStudyAndRebindProtocol(root, index);
-        // This is a small compatibility fixture, not a replacement for the retained S5 results.
+
         assertEquals(18, NetworkStudyValidator.validate(root.resolve(NetworkStudyExecutor.INDEX)));
     }
 
     @Test
     void coordinatedMissingAuxiliaryMetricsAreRejectedAfterArtifactIntegrityValidation() throws Exception {
-        // The generic metrics-v2 schema already requires mean waiting. Use the other three
-        // fields to ensure the study-specific missing-value guard, not that earlier guard, fires.
+
         for (int i = 1; i < AUXILIARY_METRICS.length; i++) {
             String[] metric = AUXILIARY_METRICS[i];
             Path root = copySmoke("missing-metric-" + metric[0]);
@@ -335,7 +333,7 @@ class NetworkStudyValidatorTest {
     void coordinatedNonFiniteAuxiliaryMetricsAreRejectedAfterArtifactIntegrityValidation() throws Exception {
         for (String[] metric : AUXILIARY_METRICS) {
             Path root = copySmoke("nonfinite-metric-" + metric[0]);
-            // Valid JSON numeric syntax, but not a finite value in the simulator's double domain.
+
             changeFirstMetricConsistently(root, metric[0], metric[1], JsonParser.parseString("1e999"));
             assertRejected(root, "model observations must be finite: " + metric[0]);
         }
@@ -354,7 +352,7 @@ class NetworkStudyValidatorTest {
     @Test
     void finiteMetricWireDomainIncludesZeroWaitingAndUnitUtilization() throws Exception {
         Path root = copySmoke("metric-domain-boundaries");
-        // These are wire-format boundary controls, not claims that the edited values were simulated.
+
         changeFirstMetricConsistently(
                 root, "p95WaitingSeconds", "p95ComputeTotalWaitingTimeSeconds", new JsonPrimitive(0.0));
         changeFirstMetricConsistently(
@@ -422,7 +420,6 @@ class NetworkStudyValidatorTest {
         write(path, manifest);
     }
 
-    /** Mutate all metric representations and repair the sidecar binding before testing the study gate. */
     private static void changeFirstMetricConsistently(
             Path root, String runKey, String metricKey, JsonElement replacement) throws Exception {
         JsonObject index = read(root.resolve(NetworkStudyExecutor.INDEX));
@@ -488,7 +485,6 @@ class NetworkStudyValidatorTest {
         index.add("summary", JSON.toJsonTree(NetworkStudySummary.summarize(runs)));
     }
 
-    /** Keep unrelated provenance defenses satisfied so coordinated matrix mutations are meaningful. */
     private static void writeStudyAndRebindProtocol(Path root, JsonObject index) throws Exception {
         JsonObject plan = index.getAsJsonObject("plan");
         Path protocol = root.resolve("protocol.json");

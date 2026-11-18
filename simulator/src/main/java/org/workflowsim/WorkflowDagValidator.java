@@ -10,29 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Validates task directed-acyclic-graph (DAG) invariants and computes task depths in a
- * deterministic order.
- *
- * <p>A root task has depth 1; any other task has the longest parent path length plus 1. The
- * computation is both part of input validation and a source of stable level information for
- * dependency-aware clustering and scheduling policies.</p>
- */
 public final class WorkflowDagValidator {
 
     private WorkflowDagValidator() {}
 
-    /**
-     * Validates task membership, parent-child edge symmetry, task-ID uniqueness, and
-     * acyclicity, and writes the task depths.
-     *
-     * <p>A root task has depth 1; any other task has the maximum depth over all parents
-     * plus 1. Roots and children are processed in task-ID order so that the same input
-     * yields identical depths across JVM runs.</p>
-     *
-     * @param tasks task list from one workflow input
-     * @throws WorkflowValidationException when the task list does not form a valid DAG
-     */
     public static void validateAndAssignDepths(List<Task> tasks) {
         if (tasks == null || tasks.isEmpty()) {
             throw new WorkflowValidationException("Workflow must contain at least one task");
@@ -41,7 +22,7 @@ public final class WorkflowDagValidator {
         Set<Task> taskSet = indexAndValidateTasks(tasks);
 
         Map<Task, Integer> remainingParents = new HashMap<>();
-        // Per-validation lazy indexes only: Task lists remain authoritative and keep their order.
+
         Map<Task, Set<Task>> parentMembership = new HashMap<>();
         Map<Task, Set<Task>> childMembership = new HashMap<>();
         for (Task task : tasks) {
@@ -72,7 +53,7 @@ public final class WorkflowDagValidator {
             List<Task> children = new ArrayList<>(parent.getChildList());
             children.sort(Comparator.comparingInt(Task::getCloudletId));
             for (Task child : children) {
-                // Depth is defined by the longest parent path, not by whichever path reaches the child first.
+
                 child.setDepth(Math.max(child.getDepth(), parent.getDepth() + 1));
                 int remaining = remainingParents.get(child) - 1;
                 remainingParents.put(child, remaining);
@@ -85,7 +66,7 @@ public final class WorkflowDagValidator {
         if (visited != tasks.size()) {
             throw new WorkflowValidationException("Workflow graph contains a cycle");
         }
-        // CWS rank is the longest descendant PROCESS path, not the root-to-task depth above.
+
         for (int index = ordered.size() - 1; index >= 0; index--) {
             Task task = ordered.get(index);
             int rank = 1;
@@ -96,11 +77,6 @@ public final class WorkflowDagValidator {
         }
     }
 
-    /**
-     * 2026-10-26 complexity extraction from validateAndAssignDepths; statements verbatim; order unchanged.
-     * Scope: per-task validation of non-nullness, length, ID uniqueness, and adjacency-list
-     * presence, plus indexing, and resets every depth to zero.
-     */
     private static Set<Task> indexAndValidateTasks(List<Task> tasks) {
         Map<Integer, Task> taskById = new HashMap<>();
         Set<Task> taskSet = new HashSet<>();

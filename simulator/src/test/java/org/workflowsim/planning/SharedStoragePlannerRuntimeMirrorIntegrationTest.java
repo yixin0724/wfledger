@@ -25,24 +25,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * SHARED-family planning-to-execution mirror, all five planners (2026-10-23, A3 authority close-out).
- *
- * <p>Contract under test: the SHARED_STORAGE planning track computes each task's shared-storage
- * input latency and converts it once into the execution envelope — the same effective-MI
- * construction the legacy runtime uses (docs/algorithms/CONTRACTS.md, SHARED computation
- * envelope). A complete {@link SimulationRunner} run must therefore reproduce an independent
- * re-parse plus re-plan's mapping and task windows bit-exactly, for HEFT, CPOP, DLS, ETF, and PEFT:</p>
- * <ol>
- *   <li>standard run: SHARED + legacy data movement + STATIC + SHARED_STORAGE_DLS/ETF;</li>
- *   <li>independent re-parse and fresh planner instance over the same DAX and platform;</li>
- *   <li>per-task assertions: VM binding, planned start, planned finish — zero tolerance.</li>
- * </ol>
- *
- * <p>If this mirror cannot hold for a semantics reason rather than a defect, the failure mode
- * itself is the finding: the family's honest invariant must then be documented and locked at
- * the level that holds, never silently widened.</p>
- */
 class SharedStoragePlannerRuntimeMirrorIntegrationTest {
 
     private static final double ZERO_TOLERANCE = 0.0;
@@ -88,10 +70,6 @@ class SharedStoragePlannerRuntimeMirrorIntegrationTest {
         mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm.SHARED_STORAGE_PEFT);
     }
 
-    /**
-     * Generic mirror driver: full SimulationRunner run vs independent re-parse + re-plan;
-     * per-task VM binding / planned start / planned finish must match with zero tolerance.
-     */
     private void mirrorPlannedWindowsAgainstActualRuntime(PlanningAlgorithm algorithm) throws Exception {
         Path workflow = sharedDax();
         PlatformProfile platform = sharedPlatform();
@@ -207,9 +185,6 @@ class SharedStoragePlannerRuntimeMirrorIntegrationTest {
         throw new IllegalArgumentException("no task with id " + taskId);
     }
 
-    // ---- Fixtures ----
-
-    /** Four-task two-layer DAG with inter-layer files for the shared-storage latency model. */
     private Path sharedDax() throws Exception {
         StringBuilder dax = new StringBuilder();
         dax.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");

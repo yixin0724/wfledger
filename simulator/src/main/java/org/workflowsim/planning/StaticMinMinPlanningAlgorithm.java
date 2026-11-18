@@ -6,13 +6,6 @@ import java.util.List;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 
-/**
- * Classic Min-Min completion-time baseline for independent tasks.
- *
- * <p>Each round first finds the minimum tentative completion time of every remaining Task and
- * then selects the global minimum; equal completion times are broken by Task ID, and VM-level
- * ties are broken by VM ID in the shared logic. This policy rejects Tasks that carry DAG edges.</p>
- */
 public final class StaticMinMinPlanningAlgorithm extends StaticIndependentPlanningSupport {
 
     @Override

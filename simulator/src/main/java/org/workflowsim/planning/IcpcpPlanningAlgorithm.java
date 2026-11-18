@@ -5,7 +5,6 @@ import org.workflowsim.planning.icpcp.IcpcpAdapter;
 import org.workflowsim.planning.icpcp.IcpcpPlanner;
 import org.workflowsim.planning.icpcp.IcpcpSchedule;
 
-/** IC-PCP one-phase deadline/cost planner with explicit infeasibility failure. */
 public final class IcpcpPlanningAlgorithm extends BasePlanningAlgorithm {
 
     private final PlanningContext context;

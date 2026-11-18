@@ -5,13 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Stage 2 artifact: on-host location results for all inputs listed in the manifest (read-only).
- *
- * <p>Each {@link ResolvedInput} records the original path, the actual local path, the verified
- * sha256, and the matched location tier, for configuration rebuilding and reporting; the
- * location process never silently substitutes an input.</p>
- */
 public final class RerunInputs {
 
     private final List<ResolvedInput> resolved;
@@ -27,7 +20,6 @@ public final class RerunInputs {
         return resolved;
     }
 
-    /** Return the i-th location result in the original manifest inputs[] order. */
     public ResolvedInput get(int index) {
         return resolved.get(index);
     }
@@ -36,7 +28,6 @@ public final class RerunInputs {
         return resolved.size();
     }
 
-    /** Verified location result for a single input. */
     public static final class ResolvedInput {
 
         private final String recordedPath;
@@ -56,12 +47,10 @@ public final class RerunInputs {
             this.tier = tier;
         }
 
-        /** Absolute path on the original machine, as recorded in the manifest. */
         public String getRecordedPath() {
             return recordedPath;
         }
 
-        /** File actually used on this host whose hash check passed. */
         public Path getResolvedPath() {
             return resolvedPath;
         }
@@ -74,10 +63,6 @@ public final class RerunInputs {
             return sizeBytes;
         }
 
-        /**
-         * Matched location tier: 1 = study inputs/ directory, 2 = the recorded absolute path
-         * used as is, 3 = relocated by relativizing against the recorded workingDirectory.
-         */
         public int getTier() {
             return tier;
         }

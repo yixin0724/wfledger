@@ -11,25 +11,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Write the auditable per-run evidence bundle set and the campaign index. */
 public final class ExperimentCampaignArtifactWriter {
 
     public static final String INDEX_FILE_NAME = "experiment-campaign-index.json";
 
     private ExperimentCampaignArtifactWriter() {}
 
-    /**
-     * Write a new or explicitly empty directory and validate the complete index before returning.
-     *
-     * <p>An incomplete campaign never obtains a valid index.</p>
-     *
-     * @param result campaign result that has finished executing and contains every declared run
-     * @param outputDirectory newly created or empty output directory
-     * @return campaign index and per-run artifact paths
-     * @throws IOException if artifact writing or complete-index validation fails
-     * @throws IllegalArgumentException if the result or output directory is null, or the
-     *         directory is not empty
-     */
     public static CampaignArtifacts write(ExperimentCampaignResult result, Path outputDirectory) throws IOException {
         if (result == null || outputDirectory == null) {
             throw new IllegalArgumentException("Campaign result and output directory are required");
@@ -96,7 +83,6 @@ public final class ExperimentCampaignArtifactWriter {
         return values;
     }
 
-    /** Immutable set of written campaign file locations. */
     public static final class CampaignArtifacts {
         private final Path index;
         private final List<RunArtifact> runs;
@@ -115,7 +101,6 @@ public final class ExperimentCampaignArtifactWriter {
         }
     }
 
-    /** One campaign index record and its relative evidence paths. */
     public static final class RunArtifact {
         private final String cellId;
         private final String comparisonGroup;

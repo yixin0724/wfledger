@@ -26,40 +26,14 @@ import org.workflowsim.Job;
 import org.workflowsim.Task;
 import org.workflowsim.utils.SimulationRandom;
 
-/**
- * Horizontal clustering strategy: merges tasks that share the same DAG depth.
- *
- * <p>The clustering strength can be controlled either by a target job count or by the
- * number of tasks per job. Before grouping, the strategy applies a pseudo-random
- * permutation from a named stream, so that randomness stays controlled by the session
- * seed.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- */
 public class HorizontalClustering extends BasicClustering {
 
-    /**
-     * Expected number of cluster jobs produced per DAG layer.
-     */
     private final int clusterNum;
-    /**
-     * Expected number of tasks contained in each cluster job.
-     */
+
     private final int clusterSize;
-    /**
-     * Mapping from a DAG depth to the task list of that layer.
-     */
+
     private final Map<Integer, List> mDepth2Task;
 
-    /**
-     * Creates a horizontal clusterer; at least one of {@code clusterNum} and
-     * {@code clusterSize} should be specified.
-     *
-     * @param clusterNum number of cluster jobs per layer ({@code clusters.num})
-     * @param clusterSize number of tasks per cluster job ({@code clusters.size})
-     */
     public HorizontalClustering(int clusterNum, int clusterSize) {
         super();
         this.clusterNum = clusterNum;
@@ -67,10 +41,6 @@ public class HorizontalClustering extends BasicClustering {
         this.mDepth2Task = new HashMap<>();
     }
 
-    /**
-     * Groups tasks by layer, performs horizontal clustering, and rebuilds job dependencies
-     * and delays.
-     */
     @Override
     public void run() {
         if (clusterNum > 0 || clusterSize > 0) {
@@ -86,14 +56,10 @@ public class HorizontalClustering extends BasicClustering {
                 }
             }
         }
-        /**
-         * Group by {@code clusters.num} first.
-         */
+
         if (clusterNum > 0) {
             bundleClustering();
-            /**
-             * Otherwise group by {@code clusters.size}.
-             */
+
         } else if (clusterSize > 0) {
             collapseClustering();
         }
@@ -102,9 +68,6 @@ public class HorizontalClustering extends BasicClustering {
         addClustDelay();
     }
 
-    /**
-     * Merges the tasks of each layer into a fixed number of jobs.
-     */
     private void bundleClustering() {
 
         for (Map.Entry<Integer, List> pairs : mDepth2Task.entrySet()) {
@@ -131,10 +94,10 @@ public class HorizontalClustering extends BasicClustering {
             for (int i = 0; i < this.clusterNum; i++) {
                 start = end + 1;
                 if (i < mid) {
-                    // Use the larger group size to absorb the remainder.
+
                     end = start + avg_b - 1;
                 } else {
-                    // Use the regular group size.
+
                     end = start + avg_a - 1;
                 }
 
@@ -149,9 +112,6 @@ public class HorizontalClustering extends BasicClustering {
         }
     }
 
-    /**
-     * Merges a fixed number of tasks into one job.
-     */
     private void collapseClustering() {
         for (Map.Entry<Integer, List> pairs : mDepth2Task.entrySet()) {
             List list = pairs.getValue();

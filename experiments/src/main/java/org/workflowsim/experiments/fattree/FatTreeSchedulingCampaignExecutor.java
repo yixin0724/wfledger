@@ -25,31 +25,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Fixed-parameter Fat-tree x scheduling campaign executor.
- *
- * <p>Parameters and historical provenance: see
- * {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}. The main matrix is
- * 10 DAGs x 4 planners x 3 data-movement models = 120 runs; the 3-host sensitivity OFAT scan
- * is 10 DAGs x 2 communication-aware planners x 6 topology variants = 120 runs; the 4-host
- * structural sensitivity scan (activating the discriminating power of the k, oversubscription
- * and placement axes) = 120 runs. Every run uses the same seed (91) and the 3/4-host
- * homogeneous platform declared by its block, with paired statistics along the DAG dimension
- * (Wilcoxon signed rank).</p>
- *
- * <p>The Montage/Sipht families are excluded: their original DAX files declare inconsistent
- * sizes for files of the same name (for example Montage's fit.txt), which the strict replica
- * validation of the LOCAL communication-aware planning family rejects; the compatibility
- * classification is locked by {@code FatTreeCampaignDagCompatibilityIntegrationTest}.</p>
- *
- * <p><b>Usage:</b> {@code main(<datasets-root>, <output-dir>)}; with no arguments it defaults
- * to {@code datasets} and {@code fattree-campaign-output/run-<timestamp>} under the current
- * working directory. It writes {@code campaign-results.json} (schema
- * {@code workflowsim-fattree-campaign-v1}) and {@code campaign-results.md}.</p>
- *
- * <p>Determinism: a rerun under the same dataset root produces bitwise-identical makespans
- * (sampled and locked by {@code FatTreeCampaignGoldenIntegrationTest}).</p>
- */
 public final class FatTreeSchedulingCampaignExecutor {
 
     static final String RESULTS_JSON_FILE_NAME = "campaign-results.json";
@@ -57,52 +32,21 @@ public final class FatTreeSchedulingCampaignExecutor {
     static final String RESULTS_SCHEMA = "workflowsim-fattree-campaign-v1";
     static final long FIXED_SEED = 91L;
 
-    /**
-     * Campaign comparison planners: two communication-aware plus two communication-unaware
-     * baselines (probe-verified as valid).
-     */
     static final List<Parameters.PlanningAlgorithm> PLANNERS = Collections.unmodifiableList(Arrays.asList(
             Parameters.PlanningAlgorithm.LOCAL_HEFT,
             Parameters.PlanningAlgorithm.LOCAL_CPOP,
             Parameters.PlanningAlgorithm.RANDOM,
             Parameters.PlanningAlgorithm.PSO));
 
-    /**
-     * Three V1 data-movement controls; their release and sharing rules differ, so cross-model
-     * monotonicity is diagnostic only.
-     */
     static final List<DataMovementModel> MODELS = Collections.unmodifiableList(Arrays.asList(
             DataMovementModel.preExecutionTransferDelayV1(),
             DataMovementModel.preExecutionTransferDelayWithContentionV1(),
             DataMovementModel.fatTreeContentionV1()));
 
-    /**
-     * Link baseline of the fixed historical apparatus: 0.125 MB/s, one eighth of the 1 MB/s VM
-     * endpoint bandwidth. Parameter selection and original recalibration notes: see
-     * {@code experiments/studies/fattree-scheduling-campaign/RETENTION.md}; do not derive
-     * cross-model identity/monotonicity conclusions for arbitrary topologies or loads from it.
-     */
     static final double BASELINE_LINK_BANDWIDTH_MB = 0.125;
 
-    /**
-     * A4 bandwidth-ratio control: baseline x 10 = 1.25 MB/s; the endpoint bandwidth stays 1 MB/s.
-     * Whether it degenerates to endpoint dominance is checked by the concrete path/concurrency
-     * and the regression fixture, not asserted as a general conclusion.
-     */
     static final double A4_LINK_BANDWIDTH_MB = BASELINE_LINK_BANDWIDTH_MB * 10.0;
 
-    /**
-     * 3-host sensitivity topology variants (OFAT): the baseline plus 5 single-axis variants, all
-     * under the R6 model.
-     *
-     * <p>Measured boundary: on 3 hosts any two concurrent flows necessarily share one endpoint
-     * host, so the routing variants (k, oversubscription, placement) change the set of shared
-     * links but not the set of flow overlaps on each link, and the fair-share rate profile is
-     * unchanged -- the structural axes degenerate on a 3-host platform (all identical in the
-     * measurements); the bandwidth-ratio axis (A4) stays effective. Discriminating power for
-     * the structural axes comes from the 4-host structural block
-     * ({@link #structuralVariants()}).</p>
-     */
     static final List<TopologyVariant> SENSITIVITY_VARIANTS = Collections.unmodifiableList(Arrays.asList(
             new TopologyVariant("baseline-k4-full", NetworkTopologySpec.fatTree(4, BASELINE_LINK_BANDWIDTH_MB)),
             new TopologyVariant("A1-k4-oversub2x", NetworkTopologySpec.fatTree(4, BASELINE_LINK_BANDWIDTH_MB, 2)),
@@ -113,12 +57,6 @@ public final class FatTreeSchedulingCampaignExecutor {
                     "A5-k4-full-same-edge-pair",
                     NetworkTopologySpec.fatTree(4, BASELINE_LINK_BANDWIDTH_MB, null, sameEdgePairPlacements()))));
 
-    /**
-     * 4-host structural sensitivity variants: the same axes as the 3-host case, but the A5
-     * placement covers 4 hosts ({0->0,1->0,2->2,3->2}: two same-edge host pairs spanning 2
-     * pods). With 4 hosts, cross flows that share no endpoint (for example 0->2 and 1->3)
-     * exist, which gives the k/oversubscription/placement axes discriminating power.
-     */
     static List<TopologyVariant> structuralVariants() {
         Map<Integer, Integer> pairPlacements = new LinkedHashMap<Integer, Integer>();
         pairPlacements.put(Integer.valueOf(0), Integer.valueOf(0));
@@ -138,12 +76,6 @@ public final class FatTreeSchedulingCampaignExecutor {
 
     private FatTreeSchedulingCampaignExecutor() {}
 
-    /**
-     * Same-edge hotspot placement: host0/host1 are explicitly placed on global edge index 0 (with
-     * k=4 each edge holds at most k/2=2 hosts, so 3 hosts cannot all share one edge), and host2
-     * goes to index 2 (pod1/edge0). Contrast with the default round-robin placement (indices
-     * 0,1,2: 3 edges across 2 pods).
-     */
     private static Map<Integer, Integer> sameEdgePairPlacements() {
         Map<Integer, Integer> placements = new LinkedHashMap<Integer, Integer>();
         placements.put(Integer.valueOf(0), Integer.valueOf(0));
@@ -152,12 +84,6 @@ public final class FatTreeSchedulingCampaignExecutor {
         return placements;
     }
 
-    /**
-     * Command-line entry point.
-     *
-     * @param args {@code <datasets-root> <output-dir>}; when empty, the default paths are used
-     * @throws Exception when any run is unhealthy, or when the arguments or the output writing fail
-     */
     public static void main(String[] args) throws Exception {
         Path datasetsRoot;
         Path outputDir;
@@ -193,13 +119,6 @@ public final class FatTreeSchedulingCampaignExecutor {
         System.out.println(results.toMarkdown());
     }
 
-    /**
-     * Discover the 10 core DAGs (3 families x 3 scales plus the HEFT paper example).
-     *
-     * <p>Montage/Sipht are not selected: their original DAX files declare inconsistent sizes for
-     * files of the same name, which the LOCAL communication-aware planning family (the family of
-     * the campaign's two main planners) rejects.</p>
-     */
     static List<DagScenario> discoverCoreDags(Path datasetsRoot) throws IOException {
         String[][] families = {
             {"epigenomics", "n24", "n46", "n100"},
@@ -236,18 +155,6 @@ public final class FatTreeSchedulingCampaignExecutor {
         return found;
     }
 
-    /**
-     * Run the campaign (reused by integration tests with a DAG subset and with the scans disabled).
-     *
-     * @param datasetsRoot dataset root (the current implementation uses it for label consistency
-     *                     only; the DAX paths come from dags)
-     * @param dags participating DAG scenarios
-     * @param includeSensitivity whether to run the 3-host sensitivity OFAT scan
-     * @param includeStructural whether to run the 4-host structural sensitivity scan
-     * @return the complete result of main matrix + sensitivity + structural sensitivity +
-     *         statistics + rankings
-     * @throws Exception when any run is unhealthy
-     */
     static CampaignResults runCampaign(
             Path datasetsRoot, List<DagScenario> dags, boolean includeSensitivity, boolean includeStructural)
             throws Exception {
@@ -329,10 +236,6 @@ public final class FatTreeSchedulingCampaignExecutor {
                 .build();
     }
 
-    /**
-     * Homogeneous platform (vmCount hosts = vmCount VMs, mips 1.0, 1 MB/s bandwidth per VM); the
-     * topology declaration is optional (required by R6).
-     */
     private static PlatformProfile platform(int vmCount, NetworkTopologySpec topology) {
         PlatformProfile.Builder builder = PlatformProfile.builder("campaign-platform");
         for (int id = 0; id < vmCount; id++) {
@@ -360,9 +263,6 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
     }
 
-    // ---- result aggregation ----
-
-    /** One DAG scenario (family + scale + DAX path). */
     static final class DagScenario {
         final String id;
         final String family;
@@ -377,7 +277,6 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
     }
 
-    /** Sensitivity topology variant. */
     static final class TopologyVariant {
         final String id;
         final NetworkTopologySpec spec;
@@ -388,10 +287,6 @@ public final class FatTreeSchedulingCampaignExecutor {
         }
     }
 
-    /**
-     * Complete campaign result: main matrix, sensitivity, structural sensitivity, paired
-     * statistics and ranking summary.
-     */
     static final class CampaignResults {
         final List<DagScenario> dags;
         final List<Map<String, Object>> mainMatrix;
@@ -409,7 +304,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             this.structural = structural;
         }
 
-        /** Per-DAG makespan series for (planner, modelKind) in the main matrix, in dags order. */
         List<Double> makespans(String planner, String modelKind) {
             List<Double> values = new ArrayList<Double>();
             for (DagScenario dag : dags) {
@@ -449,17 +343,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             throw new IllegalStateException("Missing " + block + " record " + dax + "/" + planner + "/" + variant);
         }
 
-        /**
-         * Weak-monotonicity diagnostics (V1 <= R2 <= R6, per DAG x planner).
-         *
-         * <p>The per-flow rate of R6 is indeed bounded by the superset of the R2 constraint
-         * domain (min(endpoint share, link share) <= endpoint share), but once completion times
-         * diverge the concurrent-flow pattern drifts with them, so weak monotonicity at the
-         * makespan level is no longer a theorem -- the measurements contain noise-level
-         * crossings (PSO x epigenomics-n100: R6 about 0.0075% below R2). The diagnostics record
-         * every violation and the maximum relative deviation truthfully, as a data report
-         * rather than a failure.</p>
-         */
         List<Map<String, Object>> monotonicityDiagnostics() {
             List<Map<String, Object>> violations = new ArrayList<Map<String, Object>>();
             String v1 =
@@ -496,12 +379,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             return violations;
         }
 
-        /**
-         * Strict weak-monotonicity assertion (V1 <= R2 <= R6). Applies only to the subset where it has
-         * been empirically established (for example the HEFT paper example, used by
-         * {@code FatTreeCampaignGoldenIntegrationTest}); the full set contains noise-level
-         * crossings, so use {@link #monotonicityDiagnostics()}.
-         */
         void assertWeakMonotonicity() {
             List<Map<String, Object>> violations = monotonicityDiagnostics();
             if (!violations.isEmpty()) {
@@ -509,7 +386,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** Planner ranking per model by mean makespan (ascending). */
         Map<String, List<String>> averageRankings() {
             Map<String, List<String>> rankings = new LinkedHashMap<String, List<String>>();
             for (DataMovementModel model : MODELS) {
@@ -535,7 +411,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             return rankings;
         }
 
-        /** Per-DAG, per-model winner (the planner with the smallest makespan). */
         Map<String, Map<String, String>> perDagWinners() {
             Map<String, Map<String, String>> winners = new LinkedHashMap<String, Map<String, String>>();
             for (DataMovementModel model : MODELS) {
@@ -558,10 +433,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             return winners;
         }
 
-        /**
-         * Within-model planner comparisons (baseline LOCAL_HEFT) plus cross-model comparisons
-         * (baseline V1), paired across all DAGs.
-         */
         List<Map<String, Object>> pairedStatistics() {
             List<Map<String, Object>> statistics = new ArrayList<Map<String, Object>>();
             String v1 =
@@ -607,15 +478,10 @@ public final class FatTreeSchedulingCampaignExecutor {
             return statistics;
         }
 
-        /** Sensitivity comparisons: each variant vs the baseline (same planner, R6 model, DAG-paired). */
         List<Map<String, Object>> sensitivityStatistics() {
             return scanStatistics(SENSITIVITY_VARIANTS, "sensitivity");
         }
 
-        /**
-         * 4-host structural sensitivity comparisons: each variant vs the baseline (same planner,
-         * R6 model, DAG-paired).
-         */
         List<Map<String, Object>> structuralStatistics() {
             return scanStatistics(structuralVariants(), "structural");
         }
@@ -719,7 +585,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             return md.toString();
         }
 
-        /** Report header summary (moved verbatim out of toMarkdown()). */
         private void appendHeader(StringBuilder md) {
             md.append("# Fat-tree × Scheduling Campaign Measured Results (auto-generated)\n\n");
             md.append("- seed=")
@@ -736,7 +601,6 @@ public final class FatTreeSchedulingCampaignExecutor {
                     .append(" runs\n\n");
         }
 
-        /** Main-matrix makespan table (moved verbatim). */
         private void appendMainMatrix(StringBuilder md) {
             md.append("## Main Matrix makespan (seconds)\n\n");
             md.append("| DAG |");
@@ -768,7 +632,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** Weak-monotonicity diagnostics table (moved verbatim). */
         private void appendMonotonicityDiagnostics(StringBuilder md) {
             md.append("\n## Weak-Monotonicity Diagnostics (V1 ≤ R2 ≤ R6)\n\n");
             List<Map<String, Object>> violations = monotonicityDiagnostics();
@@ -800,7 +663,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** Average-ranking section (moved verbatim). */
         private void appendAverageRankings(StringBuilder md) {
             md.append("\n## Average Ranking (makespan ascending)\n\n");
             for (Map.Entry<String, List<String>> entry : averageRankings().entrySet()) {
@@ -812,7 +674,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** Per-DAG winner table (moved verbatim). */
         private void appendPerDagWinners(StringBuilder md) {
             md.append("\n## Per-DAG Winner\n\n| DAG |");
             for (DataMovementModel model : MODELS) {
@@ -832,7 +693,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** Paired-statistics section (including the conditional sensitivity branch, moved verbatim). */
         private void appendPairedStatistics(StringBuilder md) {
             md.append("\n## Paired Wilcoxon (across DAGs)\n\n");
             md.append("| Axis | Baseline | Candidate | n (effective) | Median Diff (s)")
@@ -848,7 +708,6 @@ public final class FatTreeSchedulingCampaignExecutor {
             }
         }
 
-        /** 4-host structural sensitivity section (including the conditional branch, moved verbatim). */
         private void appendStructuralSensitivity(StringBuilder md) {
             if (!structural.isEmpty()) {
                 md.append("\n## 4-Host Structural-Sensitivity makespan").append(" (seconds, R6 model)\n\n");

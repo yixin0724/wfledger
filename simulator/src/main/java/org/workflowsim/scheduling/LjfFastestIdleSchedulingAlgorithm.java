@@ -23,39 +23,6 @@ import org.cloudbus.cloudsim.Log;
 import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
-/**
- * LJF-Fastest-Idle: picks the longest Job (Longest Job First) and assigns it to the fastest
- * idle VM.
- *
- * <p>It was originally named MaxMinSchedulingAlgorithm, but its behavior does not match the
- * classical Max-Min definition of Braun et al. 2001 (take the global maximum among the minimum
- * ECTs of all tasks). This implementation is an LJF variant, distinct from classical
- * Max-Min.</p>
- *
- * <p>For ready-batch Max-Min see {@link ReadyBatchMaxMinSchedulingAlgorithm}.</p>
- *
- * <p><strong>MIPS metric:</strong> a Job always occupies 1 PE, so "fastest VM" compares the
- * single-PE speed {@code getMips()} (the historical implementation used
- * {@code getCurrentRequestedTotalMips()}, which systematically picks the wrong VM under
- * multi-PE heterogeneous configurations); this is consistent with the metric of the
- * ReadyBatch family.</p>
- *
- * <p><strong>Sort key and tie notes (confirmed in review round 2026-09):</strong> the task
- * sort key is MI ({@code getCloudletLength()}) rather than the estimated execution time,
- * which differs slightly from textbook LJF on heterogeneous VMs; "fastest idle VM" traverses
- * the raw {@code vmList}, so equal-MIPS ties depend on the incoming order. With Jobs fixed at
- * 1 PE the difference is unreachable, and this class is outside the standard research entry
- * point, so it is not fixed.</p>
- *
- * <p><strong>Compatibility boundary:</strong> it serves historical direct API exploration
- * only; the standard research entry point does not accept the historical {@code MAXMIN}
- * label, and its results must not be presented as classical Max-Min.</p>
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.0
- * @date Apr 9, 2013
- * @see ReadyBatchMaxMinSchedulingAlgorithm
- */
 public class LjfFastestIdleSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     public LjfFastestIdleSchedulingAlgorithm() {

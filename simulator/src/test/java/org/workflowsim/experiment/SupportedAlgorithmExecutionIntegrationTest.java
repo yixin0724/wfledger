@@ -34,7 +34,7 @@ class SupportedAlgorithmExecutionIntegrationTest {
                 SchedulingAlgorithm.READY_BATCH_MINMIN,
                 SchedulingAlgorithm.READY_BATCH_MAXMIN,
                 SchedulingAlgorithm.DATA)) {
-            // The DATA algorithm's locality verdict requires LOCAL file system mode; the config layer rejects SHARED.
+
             SimulationConfig config = SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 3)
                     .schedulingAlgorithm(algorithm)
                     .fileSystem(
