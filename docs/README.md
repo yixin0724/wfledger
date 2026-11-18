@@ -92,6 +92,7 @@ and superseded audit drafts are not long-term entry points.
 
 ## Maintenance
 
+- [Contributing guide](<../CONTRIBUTING.md>): development setup, scientific constraints, verification, and pull-request expectations.
 - [Documentation and source-comment conventions](<advanced/CODE_STYLE.md>): content layering, link/example requirements, source protection, and the document check command.
 - [Mutation gate](<advanced/MUTATION_GATE.md>): registered-mutant zero-survival gate, killer-test ledger, and growth rules.
 - [Dataflow state and performance measurement](<advanced/DATAFLOW_STATE_COPY_PERFORMANCE.md>): immutable history/active working set, measurement conventions, and repeatable comparisons.

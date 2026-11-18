@@ -1,41 +1,54 @@
-# WorkflowSim
+# WorkflowSim-yixin
 
 [![CI](https://github.com/yixin0724/workflowsim-research/actions/workflows/ci.yml/badge.svg)](https://github.com/yixin0724/workflowsim-research/actions/workflows/ci.yml)
 [![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE)
 
-WorkflowSim is a discrete-event simulator for scientific workflow scheduling research. It models task dependencies, compute resources, storage, data transfer, and scheduling decisions in one declarative experiment, and produces replayable results with machine-checkable evidence.
+WorkflowSim-yixin is a discrete-event simulator for scientific workflow scheduling research. It models task dependencies, compute resources, storage, data transfer, and scheduling decisions in one declarative experiment, and produces replayable results with machine-checkable evidence.
 
-The simulator supports controlled comparisons under declared conditions. Its results are not substitutes for production-cluster monitoring, real-network prediction, or cloud-provider billing.
+It is intended for reproducible algorithm studies, not for production-cluster monitoring, real-network prediction, or cloud-provider billing.
+
+## What you can do
+
+- Compare static DAG planners and online ready-job schedulers on real scientific workflows.
+- Model endpoint and Fat-tree flow contention, file replicas, input visibility, bounded storage, and output write-back.
+- Evaluate makespan, waiting time, slowdown, utilization, cost, energy, EDP, carbon, and DVFS policies under declared models.
+- Rebuild experiments and independently validate manifests, metrics, event streams, file lifecycles, and energy accounting.
 
 ## Quick start
 
-Requires **JDK 17+ and Maven 3.6.3+**. From the repository root:
+Requires **JDK 17+ and Maven 3.6.3+**.
 
 ```bash
+git clone https://github.com/yixin0724/workflowsim-research.git
+cd workflowsim-research
+
 # Validate the example configuration
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   -Dexec.args="validate experiments/configs/online-comparison.json"
 
-# Run the experiment and generate the offline report
+# Run the experiment and generate offline reports
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
   -Dexec.args="run experiments/configs/online-comparison.json output/workbench"
 ```
 
-Open `index.html` in the output root to browse experiment records. Each experiment directory contains a `report.html` with detailed timelines and a `summary.html` / `summary.json` / `summary.csv` comparing workflow, algorithm, waiting time, slowdown, makespan, energy, EDP, cost, and completion counts. Completed results and failure causes are retained separately.
+Open **`output/workbench/index.html`** to browse experiment records. Each experiment directory contains:
 
-Generated files belong under `output/` and are not source inputs. Use `make clean-output` to remove regenerable working outputs when they are no longer needed.
+- `report.html` — detailed schedules and timelines;
+- `summary.html` / `summary.json` / `summary.csv` — algorithm and metric comparisons;
+- per-run manifests, metrics, and event streams.
 
-## Choose an example
+Generated files belong under `output/` and are not source inputs. Use `make clean-output` to remove regenerable working outputs.
+
+## Choose an experiment
 
 | Goal | Configuration |
 |---|---|
 | Compare online CPU scheduling policies | [Online scheduling comparison](<experiments/configs/online-comparison.json>) |
 | Compare static HEFT across seven scientific workflows | [Static makespan baseline](<experiments/configs/makespan-static-baseline.json>) |
 | Compare five online makespan algorithms across seven workflows | [Online makespan baseline](<experiments/configs/makespan-online-baseline.json>) |
-| Compare static HEFT at 1000 and 5000 tasks | [Static scale study](<experiments/configs/makespan-static-scale.json>) |
-| Compare online makespan algorithms at 1000 and 5000 tasks | [Online scale study](<experiments/configs/makespan-online-scale.json>) |
+| Compare static and online algorithms at 1000 and 5000 tasks | [Static scale study](<experiments/configs/makespan-static-scale.json>), [online scale study](<experiments/configs/makespan-online-scale.json>) |
 | Compare energy-aware planners with flat power | [Flat-power energy study](<experiments/configs/energy-flat.json>) |
 | Compare frequency policies and DVFS slack | [Tiered-power energy study](<experiments/configs/energy-tiered.json>) |
 | Model network contention | [Network comparison](<experiments/configs/network-comparison.json>) |
@@ -45,21 +58,9 @@ Generated files belong under `output/` and are not source inputs. Use `make clea
 
 Examples have different support matrices. Do not mix algorithms, file systems, and network options arbitrarily; consult the [capability matrix](<docs/advanced/DATAFLOW_CAPABILITY_MATRIX.md>) and [algorithm catalog](<docs/algorithms/CATALOG.md>).
 
-## Explore experiment results
+## Simulation scope
 
-| Topic | Report |
-|---|---|
-| HEFT, Min-Min, Max-Min, MCT, FCFS, and Round-Robin | [Traditional makespan comparison](<docs/experiments/MAKESPAN_BASELINE_COMPARISON.md>) |
-| 1000 and 5000 task workflows | [Scale comparison](<docs/experiments/MAKESPAN_SCALE_COMPARISON.md>) |
-| HEFT, GreenHEFT, MOHEFT, MIN_POWER, EDP selection, and DVFS slack | [Energy and EDP comparison](<docs/experiments/ENERGY_BASELINE_COMPARISON.md>) |
-| Implemented literature algorithms and verification scope | [Paper reproductions](<docs/experiments/PAPER_REPRODUCTIONS.md>) |
-| All reports, result files, reproduction commands, and evidence boundaries | [Experiment index](<docs/experiments/README.md>) |
-
-These reports describe specific simulation scenes, not universal algorithm rankings. Always compare the workflow, VM platform, storage model, power model, and metric definitions before interpreting a result.
-
-## Capability overview
-
-| Area | Scope |
+| Area | Supported model |
 |---|---|
 | Workflow inputs | Pegasus DAX XML and WfCommons WfFormat / WfInstances JSON; dependencies, work volume, and file declarations are read, while source-machine timelines are not replayed |
 | Platform | Explicit Host/VM specifications, deterministic placement, capacity prechecks, declared costs, and optional power or frequency tiers |
@@ -72,7 +73,9 @@ These reports describe specific simulation scenes, not universal algorithm ranki
 
 The maintained runner uses SPACE_SHARED VMs and accepts NONE task clustering only. Simulations are serialized within a JVM; larger experiment matrices require separate processes. Online target assignment and online CPU scheduling are distinct decision phases.
 
-## Execution pipeline and project layout
+**Not included:** packet-level TCP, packet loss or retransmission, switch queues, ECMP or adaptive routing, link propagation delay, VM migration, CPU oversubscription, hardware monitoring, or calibrated cloud prices. Planner objectives and runtime measurements are separate calibers.
+
+## Execution pipeline
 
 ```text
 workflow + SimulationConfig + PlatformProfile
@@ -82,6 +85,20 @@ workflow + SimulationConfig + PlatformProfile
     → SimulationReport → evidence validation → offline report / exact replay
 ```
 
+## Experiment reports
+
+| Topic | Report |
+|---|---|
+| HEFT, Min-Min, Max-Min, MCT, FCFS, and Round-Robin | [Traditional makespan comparison](<docs/experiments/MAKESPAN_BASELINE_COMPARISON.md>) |
+| 1000 and 5000 task workflows | [Scale comparison](<docs/experiments/MAKESPAN_SCALE_COMPARISON.md>) |
+| HEFT, GreenHEFT, MOHEFT, MIN_POWER, EDP selection, and DVFS slack | [Energy and EDP comparison](<docs/experiments/ENERGY_BASELINE_COMPARISON.md>) |
+| Implemented literature algorithms and verification scope | [Paper reproductions](<docs/experiments/PAPER_REPRODUCTIONS.md>) |
+| All reports, result files, reproduction commands, and evidence boundaries | [Experiment index](<docs/experiments/README.md>) |
+
+These reports describe specific simulation scenes, not universal algorithm rankings. Always compare the workflow, VM platform, storage model, power model, and metric definitions before interpreting a result.
+
+## Repository layout
+
 - `simulator/` — simulation core, platform, algorithms, network, policy interfaces, and tests.
 - `experiments/` — Workbench, examples, experiment drivers, reports, and retained study protocols.
 - `datasets/` — workflow inputs and [dataset notes](<datasets/README.md>).
@@ -90,7 +107,7 @@ workflow + SimulationConfig + PlatformProfile
 
 The core module does not depend on the experiment module.
 
-## Documentation and development
+## Documentation and contributing
 
 | Task | Guide |
 |---|---|
@@ -99,6 +116,7 @@ The core module does not depend on the experiment module.
 | Understand algorithm and metric definitions | [Algorithm contracts](<docs/algorithms/CONTRACTS.md>) and [metrics card](<docs/algorithms/METRICS_CARD.md>) |
 | Build, test, and use tooling | [Build guide](<docs/getting-started/BUILD.md>) |
 | Browse all documentation | [Documentation center](<docs/README.md>) |
+| Propose changes or report an issue | [Contributing guide](<CONTRIBUTING.md>) |
 
 Run the complete local acceptance gate before submitting changes:
 
