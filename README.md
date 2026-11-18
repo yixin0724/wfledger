@@ -117,6 +117,7 @@ The core module does not depend on the experiment module.
 | Build, test, and use tooling | [Build guide](<docs/getting-started/BUILD.md>) |
 | Browse all documentation | [Documentation center](<docs/README.md>) |
 | Propose changes or report an issue | [Contributing guide](<CONTRIBUTING.md>) |
+| Review vulnerability reporting and data-handling precautions | [Security guide](<SECURITY.md>) |
 
 Run the complete local acceptance gate before submitting changes:
 

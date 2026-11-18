@@ -3,6 +3,26 @@ target/
 *.class
 node_modules/
 
+# Local credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+credentials.json
+service-account.json
+**/credentials.json
+**/service-account.json
+**/local.properties
+
+# Generated evidence may contain host paths; do not add new runtime artifacts by accident
+output/**/*.manifest.json
+output/**/*.metrics.json
+output/**/*.events.jsonl
+
 # Python bytecode caches (a side effect of running the checkers locally)
 scripts/__pycache__/
 
