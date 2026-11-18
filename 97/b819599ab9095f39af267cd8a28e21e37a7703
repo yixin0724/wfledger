@@ -1,0 +1,25 @@
+.gitignore
+  s_24f59fb6b2f10b::t_875e7b424c7973 6-25
+README.md
+  s_24f59fb6b2f10b::t_39510a7e5e3df8 120
+SECURITY.md
+  s_24f59fb6b2f10b::t_64b52ff6214186 1-33
+docs/README.md
+  s_24f59fb6b2f10b::t_233899283ec4b3 96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "97b819599ab9095f39af267cd8a28e21e37a7703",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
