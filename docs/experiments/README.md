@@ -21,10 +21,9 @@ boundaries. Read the [algorithm catalog](<../algorithms/CATALOG.md>) and
 | [Traditional makespan baselines](<MAKESPAN_BASELINE_COMPARISON.md>) | 7 real DAX datasets × 6 algorithms = 42 runs | HEFT best on 5/7; MCT best on CyberShake 50; Max-Min best on CyberShake 100; Min-Min lowest mean wait on all 7 | One four-VM SHARED scene; not a universal ranking |
 | [1000 and 5000 task makespan](<MAKESPAN_SCALE_COMPARISON.md>) | Montage, CyberShake, Inspiral at 1000 and 5000 tasks = 36 runs | HEFT best on all three datasets at both scales; Min-Min lowest wait; throughput approximately stable | 5000 is five independent copies of each 1000-task DAG, not a new real trace |
 
-Result files:
-
-- [42-run baseline JSON](<../../output/makespan-baseline/results.json>)
-- [36-run scale JSON](<../../output/makespan-scale/results.json>)
+The complete result tables are included in these reports. Raw JSON results are generated locally under
+`output/makespan-baseline/` and `output/makespan-scale/`; generated evidence is intentionally not published
+in the source repository. Use the commands below to reproduce the full result files.
 
 ## Energy experiments
 
@@ -32,11 +31,12 @@ Result files:
 |---|---|---|---|
 | [Energy and EDP baselines](<ENERGY_BASELINE_COMPARISON.md>) | 5 real DAX datasets × 7 policies = 35 runs | MIN_POWER has lowest energy/EDP but usually much higher makespan; DVFS slack often gives a better tradeoff; GreenHEFT is not guaranteed to reduce total fleet energy | Flat and tiered power groups are separate; planner energy is not runtime total energy |
 
-Result file: [35-run energy JSON](<../../output/energy-baseline/results.json>).
+The energy report contains the full comparison table. Raw results are generated locally under
+`output/energy-baseline/` and are intentionally not published in the source repository.
 
-Workbench example outputs: [makespan](<../../output/workbench-makespan/>),
-[scale](<../../output/workbench-scale/>), and [energy](<../../output/workbench-energy/>). Each contains the
-standard configuration, per-run evidence, detailed report, and unified HTML/JSON/CSV summaries.
+Workbench outputs are generated under `output/workbench-makespan/`, `output/workbench-scale/`, and
+`output/workbench-energy/`. Each contains the standard configuration, per-run evidence, detailed report,
+and unified HTML/JSON/CSV summaries.
 
 ## Algorithm and execution audits
 
