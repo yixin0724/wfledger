@@ -42,6 +42,11 @@ jobs:
           python3 -B scripts/test-check-docs.py
           python3 -B scripts/check-docs.py
 
+      - name: Reject credentials and machine-local files before publishing
+        run: |
+          python3 -B scripts/test-check-upload-safety.py
+          python3 -B scripts/check-upload-safety.py
+
       - name: Verify the tree is maintained in English
         run: |
           python3 -B scripts/test-check-language.py

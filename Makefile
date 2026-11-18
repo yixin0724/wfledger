@@ -70,6 +70,7 @@ python-gate:
 		PYTHONDONTWRITEBYTECODE=1 python3 -B "$$test_file"; \
 	done
 	python3 -B scripts/check-docs.py
+	python3 -B scripts/check-upload-safety.py
 	python3 -B scripts/check-dataset-indexes.py
 	$(MAKE) language
 

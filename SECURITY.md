@@ -21,7 +21,7 @@ These artifacts are evidence, not anonymized telemetry. Review them before shari
 
 - Keep credentials in an untracked secret manager or environment-specific configuration, never in source files, experiment configurations, or test fixtures.
 - Do not run private or unpublished workflows through public CI or share their manifests without reviewing the paths, names, hashes, and metadata they disclose.
-- Keep generated results under `output/` or another untracked local directory. New manifest, metrics, and event files are ignored by default; existing tracked evidence remains governed by its retention contract.
+- Keep generated results under `output/` or another untracked local directory. Generated CI evidence and new manifest, metrics, and event files are ignored by default and must not be committed. `make quality-gate` runs `scripts/check-upload-safety.py` to reject runtime output, credentials, machine-local paths, and oversized files.
 - Review local outputs before publishing an archive. `make clean-output` removes only the documented regenerable output families, not every possible local experiment directory.
 - Do not use `git add -f` for ignored outputs or credentials without reviewing the exact files and their contents.
 - If a credential is committed, revoke and rotate it immediately. Removing it from the latest source does not remove it from Git history or public mirrors; history cleanup requires a separate coordinated action.

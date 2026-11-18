@@ -100,6 +100,18 @@ python3 -B scripts/check-docs.py --json
 
 The checker discovers existing project Markdown through Git metadata, excluding dependencies, build outputs, and local experiment results; it validates local targets, Markdown anchors, and source-text line numbers, and it does not access the network. Missing targets, wrong anchors, or unsupported reference forms produce diagnostics with file/line positions and a non-zero exit. Semantics and commands must still be checked against the source code; the rules are in [documentation and source-comment requirements](<../advanced/CODE_STYLE.md>).
 
+## Upload-safety check
+
+```bash
+python3 -B scripts/test-check-upload-safety.py
+python3 -B scripts/check-upload-safety.py
+```
+
+This check rejects credentials, private keys, machine-specific absolute paths, local IDE configuration,
+committed runtime output, escaping symlinks, and files above the GitHub size limit. It examines tracked
+and unignored candidate files, so generated evidence is blocked even if it was previously tracked or
+would otherwise be force-added. The check is included in `make quality-gate` and CI.
+
 ## Language check
 
 ```bash

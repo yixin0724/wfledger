@@ -22,6 +22,7 @@ service-account.json
 output/**/*.manifest.json
 output/**/*.metrics.json
 output/**/*.events.jsonl
+output/*-ci/
 
 # Python bytecode caches (a side effect of running the checkers locally)
 scripts/__pycache__/
