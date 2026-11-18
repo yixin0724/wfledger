@@ -1,0 +1,41 @@
+.github/workflows/ci.yml
+  s_24f59fb6b2f10b::t_940ca148d6210a 45-49
+.gitignore
+  s_24f59fb6b2f10b::t_60f4fcd56b2028 25
+Makefile
+  s_dadd725ad5fa69::t_c9ce1794d7da0c 73
+scripts/check-upload-safety.py
+  s_7bce2ecd1c2517::t_7c32022e08124d 1-112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5c86fe460dcda2bd83b0ba2ed37e7acb79e4cb49",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_7bce2ecd1c2517": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18701-66f4-7962-8f1b-52cf27c00cdb",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_dadd725ad5fa69": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "4dfb0258-ba81-41ba-8bb8-d8224cf6f738",
+        "model": "codefuse_official_channel/Kimi-K3.1-Pro:glink_domestic"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
