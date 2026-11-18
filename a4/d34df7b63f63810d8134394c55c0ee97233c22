@@ -1,0 +1,19 @@
+scripts/mutation-gate.py
+  s_24f59fb6b2f10b::t_c66392e98af235 184-189,195-196,535,538,559,609,615,625,665
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a4d34df7b63f63810d8134394c55c0ee97233c22",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
