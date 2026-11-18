@@ -1,0 +1,23 @@
+CONTRIBUTING.md
+  s_7bce2ecd1c2517::t_c5760f98148f59 1-50
+README.md
+  s_7bce2ecd1c2517::t_872478cb61b0bb 1,6,8-15,19,22-24,30,36-40,42,44,51,61,63,76-78,88-101,110,119
+docs/README.md
+  s_7bce2ecd1c2517::t_9378738cf88ba0 95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "12f569a776ca48c14ddad0a08477bd69187e17ec",
+  "prompts": {},
+  "sessions": {
+    "s_7bce2ecd1c2517": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18701-66f4-7962-8f1b-52cf27c00cdb",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
