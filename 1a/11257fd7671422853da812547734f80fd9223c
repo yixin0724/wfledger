@@ -1,0 +1,19 @@
+scripts/package-fgcs-artifact.py
+  s_f3e6329934107d::t_64eb853c0e6eb2 80-91,135-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1a11257fd7671422853da812547734f80fd9223c",
+  "prompts": {},
+  "sessions": {
+    "s_f3e6329934107d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f1a0-351c-7643-a3d0-36ad18902594",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
