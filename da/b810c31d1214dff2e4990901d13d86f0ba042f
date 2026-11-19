@@ -1,0 +1,65 @@
+experiments/src/main/java/org/workflowsim/experiments/fgcs/baseline/StaticPlannerBaselineStudy.java
+  s_f3e6329934107d::t_e0e6bab97646a6 1-82
+experiments/src/main/java/org/workflowsim/experiments/fgcs/differential/UpstreamDifferentialExporter.java
+  s_768a25909712fc::t_7445c2e01aad2b 75-90,102-110
+experiments/src/main/java/org/workflowsim/experiments/fgcs/microbench/ModelMicrobenchmarks.java
+  s_768a25909712fc::t_a7febef78d1854 1-839
+experiments/src/main/java/org/workflowsim/experiments/fgcs/verification/AdversarialBundle.java
+  s_768a25909712fc::t_7b77c9d5957b7b 1-157
+experiments/src/main/java/org/workflowsim/experiments/fgcs/verification/AdversarialEvidenceStudy.java
+  s_768a25909712fc::t_75e37828a3f0e5 1-726
+experiments/src/test/java/org/workflowsim/experiments/fgcs/baseline/StaticPlannerBaselineStudyTest.java
+  s_f3e6329934107d::t_dce43b22b9f61e 1-38
+experiments/studies/fgcs/differential/README.md
+  s_768a25909712fc::t_77a5d79fbaba8f 44
+experiments/studies/fgcs/differential/comparison.json
+  s_768a25909712fc::t_f5e3e66fc16bd9 6
+experiments/studies/fgcs/microbench/README.md
+  s_768a25909712fc::t_e78e3e7a026b75 1-49
+experiments/studies/fgcs/verification/README.md
+  s_768a25909712fc::t_8ba7390c0d2764 1-81
+scripts/run-fgcs-revision.py
+  s_3b2f7b713dedf9::t_c3bf6902801172 1-114
+scripts/test-package-fgcs-artifact.py
+  s_895fcb768c9750::t_09a23a7f06746b 1-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "dab810c31d1214dff2e4990901d13d86f0ba042f",
+  "prompts": {},
+  "sessions": {
+    "s_3b2f7b713dedf9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19f02-c571-7a50-8fc0-46d5641e5068",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_895fcb768c9750": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "e76929c3-ce90-47c5-88a7-7608ac91a50e",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_f3e6329934107d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f1a0-351c-7643-a3d0-36ad18902594",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
