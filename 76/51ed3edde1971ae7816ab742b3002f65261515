@@ -1,0 +1,41 @@
+AGENTS.md
+  s_768a25909712fc::t_523168a6f25b05 1
+CITATION.cff
+  s_768a25909712fc::t_957abab9644d8f 2-3,6
+CONTRIBUTING.md
+  s_768a25909712fc::t_62f902f2f1bd7f 1
+README.md
+  s_24f59fb6b2f10b::t_31a084c73ee707 1,6,10-13
+config/checkstyle/checkstyle.xml
+  s_768a25909712fc::t_6ec9d2f08a1ef2 6
+docs/SCIENCE-POSITION.md
+  s_768a25909712fc::t_663be97e3d12f1 4,107
+experiments/studies/fgcs/README.md
+  s_768a25909712fc::t_b84d11200b2767 5
+experiments/studies/sensitivity-r13-v2/RESULTS.md
+  s_768a25909712fc::t_dbdc39aba505ec 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7651ed3edde1971ae7816ab742b3002f65261515",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
