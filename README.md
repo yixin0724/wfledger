@@ -1,7 +1,7 @@
 # WfLedger
 
 [![CI](https://github.com/yixin0724/workflowsim-research/actions/workflows/ci.yml/badge.svg)](https://github.com/yixin0724/workflowsim-research/actions/workflows/ci.yml)
-[![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 
 WfLedger is a discrete-event simulator for scientific workflow scheduling research. It models task dependencies, compute resources, storage, data transfer, and scheduling decisions in one declarative experiment, and produces replayable results with machine-checkable evidence.
 
@@ -133,6 +133,8 @@ The gate covers unit and integration tests, coverage floors, core-API Javadoc, i
 
 ## License and citation
 
-Released under the **GNU General Public License, version 2 or (at your option) any later version** ([LICENSE](LICENSE)). The simulator embeds the CloudSim 3 toolkit (`simulator/src/main/java/org/cloudbus/`), distributed under the GNU GPL by The University of Melbourne; its original notices are retained.
+Released under the **GNU General Public License, version 3 or (at your option) any later version** ([LICENSE](LICENSE)). The simulator embeds modified WorkflowSim and CloudSim 3 source files; their original copyright and license notices are retained in the corresponding sources.
+
+Third-party provenance, modification notices, and bundled license texts are documented in [NOTICE.md](NOTICE.md), [THIRD_PARTY.md](THIRD_PARTY.md), and [licenses/README.md](licenses/README.md). The `org.workflowsim` Java namespace and Maven coordinates are compatibility identifiers, not upstream endorsements.
 
 To cite this software, use [CITATION.cff](CITATION.cff). GitHub exposes the metadata through the "Cite this repository" button, and reference managers can import it directly.

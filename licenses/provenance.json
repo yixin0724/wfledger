@@ -1,0 +1,55 @@
+{
+  "schema": "wfledger-license-provenance-v1",
+  "upstream": {
+    "repository": "https://github.com/WorkflowSim/WorkflowSim-1.0",
+    "commit": "d3ea21afd8ce6479bd292d3bd7469045d7a36089",
+    "archiveSha256": "fcf4c1b2cb8fe55e0949e08f434821f0c1fe9c4ed46d3b2fd09bd76ce6e9cae5"
+  },
+  "sourceAudit": {
+    "upstreamJavaFiles": 193,
+    "apacheHeaderFiles": 59,
+    "gtplHeaderFiles": 0,
+    "originalNoticesRetained": true,
+    "gtplApplicability": "The upstream GTPL notice does not identify a version or a complete per-file scope; the notice is retained without inferring that all upstream code is GTPL."
+  },
+  "files": {
+    "Apache-2.0.txt": {
+      "sourceUrl": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "license": "Apache-2.0",
+      "role": "WorkflowSim source headers and permissive dependencies",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sizeBytes": 11358
+    },
+    "CloudSim-LGPL-3.0.txt": {
+      "sourceUrl": "https://github.com/WorkflowSim/WorkflowSim-1.0/blob/d3ea21afd8ce6479bd292d3bd7469045d7a36089/license.txt",
+      "license": "LGPL-3.0",
+      "role": "License text bundled with the pinned upstream distribution",
+      "sha256": "23e1b0d2c3391186386e47878f73e4ba1cf14cafde7ee2d1a11aaa9e2f96d5af",
+      "sizeBytes": 7651
+    },
+    "WorkflowSim-GTPL-notice.txt": {
+      "sourceUrl": "https://github.com/WorkflowSim/WorkflowSim-1.0/blob/d3ea21afd8ce6479bd292d3bd7469045d7a36089/license-workflowsim.txt",
+      "license": "GTPL notice and USC copyright",
+      "role": "Verbatim upstream notice; its precise per-file scope is not inferred",
+      "sha256": "cdd8ec28bb23c97dd3dcf66713244b8d76a593bd990276bcd784731638d57f5f",
+      "sizeBytes": 600
+    },
+    "GTPL-3.0.txt": {
+      "sourceUrl": "https://scancode-licensedb.aboutcode.org/gtpl-v3.LICENSE",
+      "license": "GTPL-v3",
+      "role": "Reference text for the GTPL version documented publicly as version 3",
+      "sha256": "dabf535116cf05ba9e6e57e403283b535f04e8b6b8a72543b9e136210e215bb0",
+      "sizeBytes": 11710
+    },
+    "GPL-3.0.txt": {
+      "sourceUrl": "https://www.gnu.org/licenses/gpl-3.0.txt",
+      "license": "GPL-3.0-or-later",
+      "role": "WfLedger project license",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "sizeBytes": 35149
+    }
+  },
+  "projectLicense": "GPL-3.0-or-later",
+  "compatibilityRationale": "Apache-2.0, LGPL-3.0, and the Apache-like GTPL-v3 terms are preserved. The project uses the GPLv3 path rather than presenting the combined work as GPL-2.0-only.",
+  "boundary": "This is an engineering provenance record, not a legal opinion. New upstream imports require a fresh per-file license review; datasets, build dependencies, LaTeX templates, and external artifacts have separate license scopes."
+}

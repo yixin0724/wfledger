@@ -122,8 +122,11 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 | `config/` | Code tool-chain ledger (checkstyle tier rules, etc.) | Rules only grow; revise in step with CODE_STYLE.md |
 | `output/` | Run artifacts (gitignored) | Keep only tar originals plus currently active experiments; old heaps must be cleaned |
 | `AGENTS.md` | Coding-agent handbook | Changes require human review |
-| `LICENSE` | Official GPL-2.0 full text (338 lines from gnu.org, verbatim) | Must not be replaced with a permissive license: upstream CloudSim 3 is GPL (`simulator/src/main/java/org/cloudbus/`, 65 of 66 files carry the GPL header) |
-| `CITATION.cff` | Software citation metadata (read by GitHub "Cite this repository") | Version, date, and author changes must match an actual release; the license field is fixed to `GPL-2.0-or-later` |
+| `LICENSE` | Official GPL-3.0 full text | Must not be replaced with a permissive license: upstream CloudSim 3 carries copyleft notices (`simulator/src/main/java/org/cloudbus/`) |
+| `NOTICE.md` | Copyright, source lineage, and modification notices | Preserve upstream notices and record WfLedger modifications |
+| `THIRD_PARTY.md` | Third-party provenance and licensing ledger | Update whenever upstream code or dependency scope changes |
+| `licenses/` | License texts and source hashes | Keep upstream notices, texts, and `provenance.json` synchronized |
+| `CITATION.cff` | Software citation metadata (read by GitHub "Cite this repository") | Version, date, and author changes must match an actual release; the license field is fixed to `GPL-3.0-or-later` |
 | `.editorconfig` | Editor encoding, line-ending, indentation, and trailing-whitespace defaults | Keep in step with Spotless and CODE_STYLE.md; no formatter is driven by this file alone |
 | `Makefile` | Convenience commands | Maintained in step with the pom.xml targets |
 

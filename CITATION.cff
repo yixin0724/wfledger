@@ -6,7 +6,7 @@ authors:
   - name: "WfLedger contributors"
 version: "1.0"
 date-released: "2026-11-02"
-license: "GPL-2.0-or-later"
+license: "GPL-3.0-or-later"
 repository-code: "https://github.com/yixin0724/workflowsim-research"
 url: "https://github.com/yixin0724/workflowsim-research"
 abstract: >-

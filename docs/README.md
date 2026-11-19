@@ -90,6 +90,8 @@ and superseded audit drafts are not long-term entry points.
 ## Research, positioning and quality
 
 - [Science position statement](<SCIENCE-POSITION.md>): research identity, validity standard (internal validity), competitive positioning, and threats to validity.
+- [Third-party provenance and licensing](<../THIRD_PARTY.md>): WorkflowSim/CloudSim source evidence, license texts, and modification boundaries.
+- [WfLedger notice](<../NOTICE.md>): copyright, source lineage, and modification notices.
 
 ## Maintenance
 
