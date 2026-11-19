@@ -1,4 +1,4 @@
-# WorkflowSim Documentation Center
+# WfLedger Documentation Center
 
 This center maintains the current usage guides, model contracts, and verification rules.
 First-time users should read quick start → Workbench in order; consult the code-configuration

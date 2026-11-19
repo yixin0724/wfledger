@@ -16,7 +16,7 @@
 | Fresh-process production validator | `NETWORK_STUDY_VALIDATION PASSED runs=546 protocol=sensitivity-response-r13-v2 mode=full scope=DECLARED_PROTOCOL_INTEGRITY;NOT_A_CURRENT_CODE_RERUN` |
 | Independent Python evidence audit | PASS — 546 bundles, 0 issues (report: `output/r13-v2-audit-evidence`) |
 | Independent Python statistics audit | PASS — 1 study, 0 issues, full per-DAG effects recomputed (report: `output/r13-v2-audit-statistics`) |
-| Cross-layer diff vs archived `8681f9c` run | **546/546 cells bit-exact** on the five core metrics (simulation end, logical completion, mean/P95 waiting, mean VM utilization) plus status, task count, and input SHA-256; recorded plan differs only in absolute input root paths (legacy `WorkflowSim-1.0`-era layout vs current `WorkflowSim-yixin` layout) — environment identity, not semantics |
+| Cross-layer diff vs archived `8681f9c` run | **546/546 cells bit-exact** on the five core metrics (simulation end, logical completion, mean/P95 waiting, mean VM utilization) plus status, task count, and input SHA-256; recorded plan differs only in absolute input root paths (legacy `WorkflowSim-1.0`-era layout vs current WfLedger layout) — environment identity, not semantics |
 | Archived-layer audits (this machine) | Java: PASSED · Python statistics: PASS · Python evidence: PASS with the declared `--input-root datasets` relocation (classic DAXs relicated; hash and size still verified) |
 | Value anchor | HEFT CyberShake-100 / vm16 / endpoint = 283759.323274 s, bit-equal to the value recorded in the correctness-repair impact study |
 

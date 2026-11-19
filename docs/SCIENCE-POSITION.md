@@ -1,7 +1,7 @@
 # Science Position Statement
 
 > This statement tells researchers, reviewers, and developers the research identity, the
-> validity standard, and the evidence system of WorkflowSim-yixin.
+> validity standard, and the evidence system of WfLedger.
 > Basis: literature survey and two review-engineering rounds (2026-10-19/20).
 
 ## 1. Research object and methodological identity (Who we are)
@@ -104,7 +104,7 @@ Two declarations that differ from common misunderstandings:
   The exact supported domain is enforced by the current quality gate rather than by a version label.
 
 ---
-**Conclusion sentence (single paragraph, quotable standalone)**: WorkflowSim-yixin is a
+**Conclusion sentence (single paragraph, quotable standalone)**: WfLedger is a
 simulation-experiment platform for research on workflow-scheduling algorithms whose
 validity standard is internal validity and evidence completeness; the evidence for its
 trustworthy claims is not physical fidelity but "output-as-evidence — numbers a third

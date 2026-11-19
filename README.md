@@ -1,11 +1,15 @@
-# WorkflowSim-yixin
+# WfLedger
 
 [![CI](https://github.com/yixin0724/workflowsim-research/actions/workflows/ci.yml/badge.svg)](https://github.com/yixin0724/workflowsim-research/actions/workflows/ci.yml)
 [![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE)
 
-WorkflowSim-yixin is a discrete-event simulator for scientific workflow scheduling research. It models task dependencies, compute resources, storage, data transfer, and scheduling decisions in one declarative experiment, and produces replayable results with machine-checkable evidence.
+WfLedger is a discrete-event simulator for scientific workflow scheduling research. It models task dependencies, compute resources, storage, data transfer, and scheduling decisions in one declarative experiment, and produces replayable results with machine-checkable evidence.
 
 It is intended for reproducible algorithm studies, not for production-cluster monitoring, real-network prediction, or cloud-provider billing.
+
+## Name and lineage
+
+WfLedger means **workflow + evidence ledger**. The platform originated from WorkflowSim and retains a maintained CloudSim 3 event kernel, but is independently developed around explicit execution contracts, independently auditable evidence, and exact replay. The `org.workflowsim` Java namespace and Maven coordinates remain compatibility identifiers; they are not the product name. Ledger denotes an auditable record, not a blockchain or a cryptographic immutability claim.
 
 ## What you can do
 

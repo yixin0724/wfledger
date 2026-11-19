@@ -1,4 +1,4 @@
-# Contributing to WorkflowSim-yixin
+# Contributing to WfLedger
 
 Thank you for contributing. Bug reports, reproducible experiments, scheduling research, and carefully scoped platform improvements are welcome. Use the [issue tracker](https://github.com/yixin0724/workflowsim-research/issues) to describe a defect or propose a substantial change before implementing it.
 

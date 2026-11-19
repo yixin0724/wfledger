@@ -2,7 +2,7 @@
 
 ## Scope
 
-This study supports the manuscript **WorkflowSim-yixin: An Auditable Discrete-Event Simulator for Scientific Workflow Scheduling**, prepared for Future Generation Computer Systems. It separates experiment drivers from manuscript sources: Java drivers and tests belong to the Maven `experiments` module, this directory retains the protocol, and generated results remain under the ignored `paper/tmp/` workspace.
+This study supports the manuscript **WfLedger: An Auditable Discrete-Event Simulator for Scientific Workflow Scheduling**, prepared for Future Generation Computer Systems. It separates experiment drivers from manuscript sources: Java drivers and tests belong to the Maven `experiments` module, this directory retains the protocol, and generated results remain under the ignored `paper/tmp/` workspace.
 
 The study measures controlled simulator behavior and evidence-production costs. It does not claim production-cluster calibration, universal algorithm optimality, or equivalence between different data-movement and planner semantics.
 

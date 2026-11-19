@@ -1,9 +1,9 @@
 cff-version: 1.2.0
-message: "If you use WorkflowSim-yixin in research, please cite it using this metadata."
-title: "WorkflowSim-yixin: an auditable discrete-event simulator for scientific workflow scheduling research"
+message: "If you use WfLedger in research, please cite it using this metadata."
+title: "WfLedger: an auditable discrete-event simulator for scientific workflow scheduling research"
 type: software
 authors:
-  - name: "WorkflowSim-yixin contributors"
+  - name: "WfLedger contributors"
 version: "1.0"
 date-released: "2026-11-02"
 license: "GPL-2.0-or-later"

@@ -1,4 +1,4 @@
-# AGENTS.md — WorkflowSim-yixin Coding-Agent Handbook
+# AGENTS.md — WfLedger Coding-Agent Handbook
 
 > This repository is a **simulation and experimentation platform for the research
 > workflow-scheduling problem** (single-workflow DAG scheduling plus multi-workflow
