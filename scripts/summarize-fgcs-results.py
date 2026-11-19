@@ -85,6 +85,15 @@ def main():
         "sensitivity": sensitivity(rows["sensitivity"]),
         "overhead": overhead(rows["overhead"]),
         "energy": energy(rows["energy"]),
+        "overheadConfiguration": {
+            "inputPopulation": "UNIQUE_PRODUCER_FILE_IDENTITY_V1 for every mode",
+            "dataMovementModel": "COHERENT_STORAGE_DATAFLOW_V3 for every mode",
+            "planner": "RANDOM for every mode",
+            "fileSystem": "LOCAL for every mode",
+            "modesDifferOnlyByRecording": True,
+        },
+        "overheadEnvironment": json.loads((root / "revision-metadata.json").read_text())
+        if (root / "revision-metadata.json").is_file() else None,
     }
     write(root / "matrix-summary.json", summary)
     write(root / "overhead-summary.json", summary["overhead"])

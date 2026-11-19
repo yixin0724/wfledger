@@ -77,10 +77,10 @@ public final class UpstreamRunner {
         CloudSim.startSimulation();
         List<Job> jobs = engine.getJobsReceivedList();
         CloudSim.stopSimulation();
-        writeObservations(jobs);
+        writeObservations(jobs, vms);
     }
 
-    private static void writeObservations(List<Job> jobs) {
+    private static void writeObservations(List<Job> jobs, List<CondorVM> vms) {
         StringBuilder result = new StringBuilder("[\n");
         boolean first = true;
         for (Job job : jobs) {
@@ -98,6 +98,8 @@ public final class UpstreamRunner {
                         .append(",\"start\":").append(task.getExecStartTime())
                         .append(",\"finish\":").append(task.getTaskFinishTime())
                         .append(",\"jobFinish\":").append(job.getFinishTime())
+                        .append(",\"lengthMi\":").append(task.getCloudletLength())
+                        .append(",\"vmMips\":").append(vms.get(job.getVmId()).getMips())
                         .append(",\"status\":\"").append(job.getCloudletStatus()).append("\"}");
             }
         }

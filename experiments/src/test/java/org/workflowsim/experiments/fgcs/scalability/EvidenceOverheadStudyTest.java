@@ -39,7 +39,18 @@ class EvidenceOverheadStudyTest {
             }
             if (result.getLabel().contains("-lifecycle-")) {
                 assertTrue(result.getReport().getStorageLifecycleEvidence() != null);
+            } else {
+                assertTrue(result.getReport().getStorageLifecycleEvidence() == null);
             }
+            assertEquals(
+                    org.workflowsim.data.DataMovementModel.Kind.COHERENT_STORAGE_DATAFLOW_V3,
+                    result.getReport().getConfig().getDataMovementModel().getKind());
+            assertEquals(
+                    org.workflowsim.utils.Parameters.PlanningAlgorithm.RANDOM,
+                    result.getReport().getConfig().getPlanningAlgorithm());
+            assertEquals(
+                    org.workflowsim.utils.ReplicaCatalog.FileSystem.LOCAL,
+                    result.getReport().getConfig().getFileSystem());
             assertTrue(result.toJson().get("peakHeapBytes").getAsLong() > 0L);
             assertTrue(result.toJson().get("threadAllocatedBytes").getAsLong() > 0L);
         }

@@ -19,6 +19,8 @@ def main():
     parser = argparse.ArgumentParser(description="Reproduce FGCS results in a detached clean worktree")
     parser.add_argument("--worktree", required=True)
     parser.add_argument("--repetitions", type=int, default=5)
+    parser.add_argument("--reference", default="paper/tmp/experiments",
+                        help="reference result directory included in the reproduction package")
     args = parser.parse_args()
     if args.repetitions < 1:
         parser.error("repetitions must be positive")
@@ -31,7 +33,8 @@ def main():
     report_root.mkdir(parents=True, exist_ok=True)
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     subprocess.run(["git", "worktree", "add", "--detach", str(destination), commit], cwd=ROOT, check=True)
-    result = {"sourceCommit": commit, "worktree": str(destination), "repetitions": args.repetitions}
+    result = {"sourceCommit": commit, "worktree": str(destination), "repetitions": args.repetitions,
+              "reference": args.reference}
     try:
         run(["mvn", "-Pjavadoc", "clean", "verify"], destination, report_root / "maven-verify.log")
         result["mavenVerify"] = "PASS"
@@ -40,7 +43,7 @@ def main():
         result["matrix"] = "PASS"
         comparison = subprocess.run([
             sys.executable, "scripts/compare-fgcs-results.py",
-            str(ROOT / "paper/tmp/experiments"), str(destination / "paper/tmp/experiments"),
+            str(ROOT / args.reference), str(destination / args.reference),
         ], cwd=ROOT, text=True, capture_output=True)
         (report_root / "comparison.log").write_text(comparison.stdout + comparison.stderr, encoding="utf-8")
         if comparison.returncode:

@@ -72,6 +72,22 @@ public final class UpstreamDifferentialExporter {
         result.addProperty("speedRatio", 2);
         result.addProperty("logicalTasks", report.getMetrics().getLogicalTaskCount());
         result.addProperty("completed", report.isWorkflowCompletedSuccessfully());
+        java.util.Map<Integer, SimulationReport.TaskOutcome> outcomes =
+                new java.util.HashMap<Integer, SimulationReport.TaskOutcome>();
+        for (SimulationReport.TaskOutcome task : report.getTasks()) {
+            outcomes.put(task.getTaskId(), task);
+        }
+        java.util.Map<Integer, Double> vmMips = new java.util.HashMap<Integer, Double>();
+        for (PlatformProfile.VmSpec vm : platform.getVms()) {
+            vmMips.put(vm.getId(), vm.getMips());
+        }
+        result.add("vmMips", new com.google.gson.Gson().toJsonTree(vmMips));
+        if (report.getSharedStorageDagPlanTrace() != null) {
+            result.add(
+                    "criticalPathTaskIds",
+                    new com.google.gson.Gson()
+                            .toJsonTree(report.getSharedStorageDagPlanTrace().getCriticalPathTaskIds()));
+        }
         JsonArray tasks = new JsonArray();
         for (SimulationReport.JobOutcome job : report.getJobs()) {
             if (job.getClassType() != Parameters.ClassType.COMPUTE.value) {
@@ -83,6 +99,15 @@ public final class UpstreamDifferentialExporter {
                 task.addProperty("vmId", job.getVmId());
                 task.addProperty("start", job.getStartTime());
                 task.addProperty("jobFinish", job.getFinishTime());
+                SimulationReport.TaskOutcome outcome = outcomes.get(taskId);
+                if (outcome != null) {
+                    task.addProperty("taskStart", outcome.getStartTime());
+                    task.addProperty("taskFinish", outcome.getFinishTime());
+                    task.addProperty("lengthMi", outcome.getLengthMi());
+                    task.addProperty("effectiveExecutionLengthMi", outcome.getEffectiveExecutionLengthMi());
+                    task.addProperty("exactJobTiming", outcome.hasExactJobTiming());
+                }
+                task.addProperty("vmMips", vmMips.get(job.getVmId()));
                 task.addProperty("status", job.getStatus());
                 tasks.add(task);
             }

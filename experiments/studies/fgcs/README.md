@@ -16,6 +16,9 @@ The study measures controlled simulator behavior and evidence-production costs. 
 | Communication/storage ablation | Pre-execution transfer without contention, endpoint contention, Fat-tree, coherent-file V2, bounded-storage V3, topology and file-system switches | 18 |
 | Failure recovery | Three hand-derived DAGs and three real DAX families; disabled failure versus single-VM CRCH failure/retry | 12 |
 | Evidence overhead | Montage 50/1000/5000; recording OFF, ordinary events, and complete V3 lifecycle; one warm-up plus five measured runs per scenario | 45 |
+| Same-layer static planners | Seven classic DAX instances; HEFT, CPOP, PEFT under the original baseline platform | 21 |
+| Adversarial evidence | Two genuine V2/V3 bundles and nine semantic corruptions with valid recomputed hashes | 11 bundles / 18 corruption observations |
+| Model microbenchmarks | Progressive filling, replica visibility, output drain, and deterministic CRCH retry | 6 simulations / 4 contracts |
 
 Static planning and online ready-job scheduling are separate decision layers. Rows from different physical models or power groups are not pooled as a single algorithm ranking.
 
@@ -31,7 +34,15 @@ Use `--standard-only` for the 306 non-overhead rows or `--overhead-only` for the
 
 The standard drivers are under `experiments/src/main/java/org/workflowsim/experiments/fgcs/`; their tests are under the corresponding test tree. The Workbench JSON option `simulation.eventRecordingEnabled` defaults to `true` and must not be `false` together with lifecycle/network evidence capture.
 
-For the final clean-checkout acceptance, use `PYTHONDONTWRITEBYTECODE=1 python3 scripts/reproduce-fgcs-clean.py --worktree /tmp/fgcs-clean-reproduction`. It runs the full Maven gate and matrix in a detached worktree, then compares core results with `scripts/compare-fgcs-results.py`. Timing and evidence-byte fields are environment observations, not cross-directory identity requirements.
+For the final clean-checkout acceptance, use `PYTHONDONTWRITEBYTECODE=1 python3 scripts/reproduce-fgcs-clean.py --worktree /tmp/fgcs-clean-reproduction --reference paper/tmp/fgcs-revision`. It runs the full Maven gate and matrix in a detached worktree, then compares core results with `scripts/compare-fgcs-results.py`. Timing and evidence-byte fields are environment observations, not cross-directory identity requirements.
+
+## Revision evidence and controlled overhead
+
+The revised protocol adds same-layer static planning, adversarial artifact validation, and discriminating model microbenchmarks. `scripts/run-fgcs-revision.py` executes and verifies those studies under `paper/tmp/fgcs-revision/`. The adversarial results distinguish expected rejection, genuine acceptance, and explicit coverage-boundary acceptance; they are not summarized as universal validator coverage.
+
+The revised overhead matrix uses the same derived unique-producer input, LOCAL coherent-storage V3, RANDOM planner, STATIC dispatch, and storage platform for OFF, ordinary events, and full lifecycle modes. It changes only recording configuration within each task size. The earlier matrix that also changed raw/derived inputs, file systems, planners, and physical models is retained only as historical material and is not used as isolated recording-cost evidence.
+
+The older 18-row communication/storage matrix is smoke coverage, not a quantitative ablation of execution effects. The model microbenchmarks provide the discriminating evidence: progressive-filling service times, per-file visibility/CPU barriers, required-output terminal drain, and deterministic CRCH retry semantics.
 
 ## Differential evidence
 
@@ -41,7 +52,7 @@ Upstream HEFT uses classic point-to-point communication estimates. The current `
 
 ## Input populations
 
-The sensitivity, energy, and legacy differential runs use the repository's real DAX inputs. Small chain/fan/independent DAGs are hand-derived controlled fixtures. The 5000-task overhead input is the existing five-copy scale fixture, not a newly collected real trace.
+The sensitivity, energy, and legacy differential runs use classic Pegasus characterization DAX instances, not production execution traces. Small chain/fan/independent DAGs are hand-derived controlled fixtures. The 5000-task overhead input is the existing five-copy scale fixture, not a newly collected real trace.
 
 The bounded-storage V3 runtime requires an unambiguous producer identity. Several original DAX files contain repeated file names or inconsistent declarations. For lifecycle overhead only, `FgcDatasets.normalizeForStorage` creates a **derived unique-producer input**: each producer output receives a unique name, matching parent inputs are rewritten, and multiple matching parent outputs are explicitly expanded into separate input declarations. Runtime values, DAG edges, and producer output sizes are retained; file identity and the input population are adapted. A sidecar `*.derivation.json` records source and derived SHA-256 hashes, counts, and the rule. These derived inputs are not interchangeable with the raw DAX population and must not be used for direct legacy-versus-V3 performance rankings.
 
@@ -53,6 +64,6 @@ The overhead record distinguishes simulation nanoseconds, artifact-write nanosec
 
 ## Retention and non-claims
 
-Generated results, evidence sidecars, logs, normalized inputs, and compilation artifacts are retained locally under `paper/tmp/experiments/`. Only the protocol, compact differential comparison, source adapter, and verifier tests are source-controlled. A clean reproduction must regenerate the reports and validate the retained evidence; an old result file is not itself proof of correctness.
+Generated results, evidence sidecars, logs, normalized inputs, and compilation artifacts are retained locally under `paper/tmp/experiments/` and `paper/tmp/fgcs-revision/`. Only the protocol, compact differential comparison, source adapter, and verifier tests are source-controlled. A clean reproduction must regenerate the reports and validate the retained evidence; an old result file is not itself proof of correctness.
 
 The study does not claim exhaustive model coverage, a complete paper-corpus reproduction, real-network packet fidelity, a universal energy policy ranking, or equivalence between raw and unique-producer-derived inputs.

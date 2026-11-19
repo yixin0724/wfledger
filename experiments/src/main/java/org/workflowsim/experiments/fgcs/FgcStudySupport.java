@@ -215,6 +215,23 @@ public final class FgcStudySupport {
             value.addProperty("tailResidual", audit.getTailResidualSeconds());
             value.addProperty("dependencyResidual", audit.getDependencyResidualSeconds());
             value.addProperty("completed", report.isWorkflowCompletedSuccessfully());
+            value.addProperty(
+                    "planningAlgorithm",
+                    report.getConfig().getPlanningAlgorithm().name());
+            value.addProperty(
+                    "schedulingAlgorithm",
+                    report.getConfig().getSchedulingAlgorithm().name());
+            value.addProperty(
+                    "dataMovementModel",
+                    report.getConfig().getDataMovementModel().getKind().name());
+            value.addProperty("fileSystem", report.getConfig().getFileSystem().name());
+            value.addProperty("eventRecordingEnabled", report.getConfig().isEventRecordingEnabled());
+            value.addProperty(
+                    "networkEvidenceMode",
+                    report.getConfig().getNetworkEvidenceConfig().getMode().name());
+            value.addProperty("randomSeed", report.getConfig().getRandomSeed());
+            value.addProperty("vmCount", report.getPlatform().getVms().size());
+            value.addProperty("eventRecorderCap", report.getConfig().getEventRecorderCap());
             JsonObject mapping = new JsonObject();
             for (java.util.Map.Entry<Integer, Integer> entry :
                     audit.getMapping().entrySet()) {

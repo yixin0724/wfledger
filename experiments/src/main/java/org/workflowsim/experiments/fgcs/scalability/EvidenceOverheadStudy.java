@@ -31,39 +31,31 @@ public final class EvidenceOverheadStudy {
 
     public static FgcStudySupport.Measurement run(String workflow, String mode, int repetition, Path evidenceRoot)
             throws SimulationExecutionException {
-        String input = FgcDatasets.real(workflow);
-        SimulationConfig.Builder builder = FgcStudySupport.base(input, 4);
+        String input;
+        try {
+            input = FgcDatasets.normalizeForStorage(workflow, evidenceRoot.resolve("inputs"))
+                    .toString();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Cannot derive bounded-storage overhead input", exception);
+        }
+        SimulationConfig.Builder builder = FgcStudySupport.base(input, 4)
+                .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
+                .dataMovementModel(DataMovementModel.coherentStorageDataflowV3())
+                .planningAlgorithm(Parameters.PlanningAlgorithm.RANDOM)
+                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC);
         Path evidence = null;
         if ("off".equals(mode)) {
             builder.eventRecordingEnabled(false);
         } else if ("events".equals(mode)) {
             evidence = evidenceRoot.resolve("events-" + repetition);
         } else if ("lifecycle".equals(mode)) {
-            try {
-                input = FgcDatasets.normalizeForStorage(workflow, evidenceRoot.resolve("inputs"))
-                        .toString();
-            } catch (IOException exception) {
-                throw new IllegalStateException("Cannot derive bounded-storage overhead input", exception);
-            }
-            builder = FgcStudySupport.base(input, 4)
-                    .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
-                    .dataMovementModel(DataMovementModel.coherentStorageDataflowV3())
-                    .networkEvidence(NetworkEvidenceConfig.storageLifecycleV3(2000000))
-                    .planningAlgorithm(Parameters.PlanningAlgorithm.RANDOM)
-                    .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC);
+            builder.networkEvidence(NetworkEvidenceConfig.storageLifecycleV3(2000000));
             evidence = evidenceRoot.resolve("lifecycle-" + repetition);
         } else {
             throw new IllegalArgumentException("Unknown overhead mode " + mode);
         }
-        if (!"lifecycle".equals(mode)) {
-            builder.planningAlgorithm(Parameters.PlanningAlgorithm.SHARED_STORAGE_HEFT)
-                    .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC);
-        }
         return FgcStudySupport.run(
-                workflow + "-" + mode + "-r" + repetition,
-                builder.build(),
-                "lifecycle".equals(mode) ? FgcPlatforms.storage(4, 1) : FgcPlatforms.flat(4, 1),
-                evidence);
+                workflow + "-" + mode + "-r" + repetition, builder.build(), FgcPlatforms.storage(4, 1), evidence);
     }
 
     public static List<FgcStudySupport.Measurement> run(Path evidenceRoot, int repetitions)
@@ -80,7 +72,7 @@ public final class EvidenceOverheadStudy {
     }
 
     public static void main(String[] args) throws Exception {
-        Path output = Paths.get(args.length == 0 ? "paper/tmp/experiments/overhead/results.json" : args[0]);
+        Path output = Paths.get(args.length == 0 ? "paper/tmp/fgcs-revision/overhead/results.json" : args[0]);
         if (args.length >= 5) {
             String workflow = args[1];
             String mode = args[2];
