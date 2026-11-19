@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
+import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +61,24 @@ EVIDENCE = r"""\begin{tikzpicture}[
 def write(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text + "\n", encoding="utf-8")
+
+
+def compile_vector(name, body):
+    work = ROOT / "paper/tmp/figure-build"
+    work.mkdir(parents=True, exist_ok=True)
+    source = work / (name + ".tex")
+    document = "\\documentclass[border=3pt]{standalone}\n\\usepackage{pgf}\n\\begin{document}\n" + body + "\n\\end{document}\n"
+    source.write_text(document, encoding="utf-8")
+    result = subprocess.run(["tectonic", "--outdir", str(work), str(source)], cwd=ROOT,
+                            text=True, capture_output=True)
+    if result.returncode:
+        raise RuntimeError(result.stdout + result.stderr)
+    (ROOT / "paper/fgcs/figures" / (name + ".pdf")).write_bytes((work / (name + ".pdf")).read_bytes())
+    return (work / (name + ".pdf"))
+
+
+def image(name):
+    return "\\begin{pgfpicture}\\end{pgfpicture}"
 
 
 def sensitivity(rows):
@@ -123,6 +144,108 @@ def energy(rows):
     return "\n".join(parts)
 
 
+def box(x, y, width, height, text, dashed=False):
+    dash = ",dash pattern=on 2pt off 1pt" if dashed else ""
+    label = text.replace("\\n", "\\\\")
+    return ("\\pgftext[at={\\pgfpoint{" + str(x) + "mm}{" + str(y) + "mm}}]{" + label + "}\n"
+            + "\\pgfpathrectangle{\\pgfpoint{" + str(x - width / 2) + "mm}{" + str(y - height / 2) + "mm}}"
+            + "{\\pgfpoint{" + str(width) + "mm}{" + str(height) + "mm}}\\pgfsetstrokeoptions{stroke,0.5pt" + dash + "}\\pgfusepath{stroke}\n")
+
+
+def arrow(x1, y1, x2, y2):
+    return ("\\pgfsetarrowsend{latex}\\pgfpathmoveto{\\pgfpoint{" + str(x1) + "mm}{" + str(y1) + "mm}}"
+            "\\pgfpathlineto{\\pgfpoint{" + str(x2) + "mm}{" + str(y2) + "mm}}\\pgfusepath{stroke}\n")
+
+
+def line(x1, y1, x2, y2, color="black"):
+    return ("\\color{" + color + "}\\pgfpathmoveto{\\pgfpoint{" + str(x1) + "mm}{" + str(y1) + "mm}}"
+            "\\pgfpathlineto{\\pgfpoint{" + str(x2) + "mm}{" + str(y2) + "mm}}\\pgfusepath{stroke}\\color{black}\n")
+
+
+def execution_figure():
+    body = "\\begin{pgfpicture}\n"
+    stages = [(0, "Dependency\\nready"), (36, "Planning or\\ntarget assignment"), (76, "Input visibility\\nand preparation"),
+              (113, "CPU execution\\nand completion"), (149, "Output commit\\nand terminal drain")]
+    for x, label in stages:
+        body += box(x, 12, 33, 9, label) + box(x, 0, 33, 8, "Evidence\\nobservation", True)
+        body += arrow(x, 7.5, x, 4)
+    for (x, _), (next_x, _) in zip(stages, stages[1:]):
+        body += arrow(x + 16.5, 12, next_x - 16.5, 12)
+    body += "\\end{pgfpicture}"
+    return image("execution-semantics")
+
+
+def evidence_figure():
+    body = "\\begin{pgfpicture}\n"
+    for y, label in [(32, "Inputs, configuration,\\nplatform, source identity"),
+                     (19, "Declared execution\\nand decision records"),
+                     (6, "Manifest, metrics, events,\\nfile/storage lifecycles")]:
+        body += box(24, y, 47, 9, label)
+    body += arrow(24, 27.5, 24, 23.5) + arrow(24, 14.5, 24, 10.5)
+    body += box(75, 6, 39, 9, "Independent validators\\nand semantic replay", True)
+    body += arrow(47.5, 6, 55.5, 6)
+    body += box(75, -7, 39, 8, "Identity, divergence,\\ninvalid, refusal", True)
+    body += arrow(75, 1.5, 75, -3)
+    body += box(24, -7, 47, 8, "Independent of the\\nproduction execution path", True)
+    body += arrow(24, 1.5, 24, -3)
+    body += "\\end{pgfpicture}"
+    return image("evidence-chain")
+
+
+def sensitivity_figure(rows):
+    selected = {}
+    for row in rows:
+        label = row["label"]
+        if "-r2-b15-" not in label:
+            continue
+        workflow = Path(label.split("-v", 1)[0]).stem.replace("_50", "")
+        vms = int(label.split("-v", 1)[1].split("-", 1)[0])
+        selected.setdefault((workflow, vms), {})[label.rsplit("-", 1)[1]] = row["makespanSeconds"]
+    colors = {"Montage": "blue", "CyberShake": "red", "Inspiral": "teal"}
+    body = "\\begin{pgfpicture}\n"
+    body += line(0, 0, 95, 0) + line(0, 0, 0, 42)
+    for vms, x in ((1, 5), (2, 30), (4, 65), (8, 90)):
+        body += "\\pgftext[at={\\pgfpoint{" + str(x) + "mm}{-3mm}}]{\\scriptsize " + str(vms) + "}\n"
+    body += "\\pgftext[at={\\pgfpoint{47mm}{-7mm}}]{\\scriptsize VM count}\n"
+    body += "\\pgftext[at={\\pgfpoint{42mm}{-12mm}}]{\\scriptsize (Min-Min -- HEFT) / HEFT (\\%)}\n"
+    for workflow in ("Montage", "CyberShake", "Inspiral"):
+        points = []
+        for vms, x in ((1, 5), (2, 30), (4, 65), (8, 90)):
+            pair = selected[(workflow, vms)]
+            delta = 100.0 * (pair["READY_BATCH_MINMIN"] - pair["STATIC"]) / pair["STATIC"]
+            y = 4 + 0.008 * delta
+            points.append((x, y))
+        for (x1, y1), (x2, y2) in zip(points, points[1:]):
+            body += line(x1, y1, x2, y2, colors[workflow])
+        for x, y in points:
+            body += "\\color{" + colors[workflow] + "}\\pgfpathcircle{\\pgfpoint{" + str(x) + "mm}{" + str(y) + "mm}}{0.7mm}\\pgfusepath{fill}\\color{black}\n"
+    body += "\\end{pgfpicture}"
+    return image("sensitivity-effects")
+
+
+def energy_figure(rows):
+    groups = {}
+    for row in rows:
+        if "-nonmonotonic-" in row["label"]:
+            continue
+        groups.setdefault(Path(row["label"]).stem, {})[row["label"].rsplit("-", 1)[1]] = row
+    body = "\\begin{pgfpicture}\n"
+    body += line(0, 0, 95, 0) + line(0, 0, 0, 42)
+    colors = {"default": "black", "MIN_POWER": "blue", "EDP_HEURISTIC": "red", "dvfs": "teal"}
+    for workflow in sorted(groups):
+        baseline = groups[workflow]["default"]
+        for policy, color in colors.items():
+            row = groups[workflow].get(policy)
+            if row:
+                x = (row["makespanSeconds"] / baseline["makespanSeconds"] - 0.8) * 65
+                y = row["energyJoules"] / baseline["energyJoules"] * 34
+                body += "\\color{" + color + "}\\pgfpathcircle{\\pgfpoint{" + str(x) + "mm}{" + str(y) + "mm}}{0.7mm}\\pgfusepath{fill}\\color{black}\n"
+    body += "\\pgftext[at={\\pgfpoint{47mm}{-4mm}}]{\\scriptsize Makespan / default HEFT (x-axis starts at 0.8)}\n"
+    body += "\\pgftext[at={\\pgfpoint{47mm}{-9mm}}]{\\scriptsize Energy / default HEFT}\n"
+    body += "\\end{pgfpicture}"
+    return image("energy-tradeoffs")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate editable vector figures from retained FGCS results")
     parser.add_argument("--input", default="paper/tmp/experiments")
@@ -130,10 +253,10 @@ def main():
     args = parser.parse_args()
     root = ROOT / args.input
     output = ROOT / args.output
-    write(output / "execution-semantics.tex", EXECUTION)
-    write(output / "evidence-chain.tex", EVIDENCE)
-    write(output / "sensitivity-effects.tex", sensitivity(json.loads((root / "sensitivity/results.json").read_text())))
-    write(output / "energy-tradeoffs.tex", energy(json.loads((root / "energy/results.json").read_text())))
+    compile_vector("execution-semantics", execution_figure())
+    compile_vector("evidence-chain", evidence_figure())
+    compile_vector("sensitivity-effects", sensitivity_figure(json.loads((root / "sensitivity/results.json").read_text())))
+    compile_vector("energy-tradeoffs", energy_figure(json.loads((root / "energy/results.json").read_text())))
     print("FGCS_FIGURES_WRITTEN", output)
 
 

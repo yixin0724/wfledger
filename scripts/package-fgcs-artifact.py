@@ -77,8 +77,18 @@ for name, expected in metadata["expectedResultRows"].items():
     path = root / "results" / name / "results.json"
     if not path.is_file():
         issues.append("missing results/" + name + "/results.json")
-    elif len(json.loads(path.read_text())) != expected:
-        issues.append("row count mismatch " + name)
+        continue
+    document = json.loads(path.read_text())
+    if isinstance(document, list):
+        actual = len(document)
+    elif name == "verification":
+        actual = document["rq1"]["genuineCases"] + document["rq2"]["corruptedCases"]
+    elif name == "microbench":
+        actual = document["simulationRuns"] if "simulationRuns" in document else len(document["cases"])
+    else:
+        actual = len(document.get("cases", []))
+    if actual != expected:
+        issues.append("row count mismatch " + name + " expected=" + str(expected) + " actual=" + str(actual))
 if issues:
     print("FGCS_ARTIFACT_FAILED")
     for issue in issues:
@@ -122,8 +132,18 @@ def main():
     for name in ("differential", "sensitivity", "energy", "ablation", "recovery", "overhead",
                  "verification", "microbench", "static-baseline"):
         path = ROOT / args.results / name / "results.json"
-        if path.is_file():
-            metadata["expectedResultRows"][name] = len(json.loads(path.read_text()))
+        if not path.is_file():
+            continue
+        document = json.loads(path.read_text())
+        if isinstance(document, list):
+            count = len(document)
+        elif name == "verification":
+            count = document["rq1"]["genuineCases"] + document["rq2"]["corruptedCases"]
+        elif name == "microbench":
+            count = document["simulationRuns"] if "simulationRuns" in document else len(document["cases"])
+        else:
+            count = len(document["cases"])
+        metadata["expectedResultRows"][name] = count
     metadata["retainedFilesBeforeManifest"] = result_count
     (output / "artifact-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     (output / "verify-artifact.py").write_text(verifier_text(), encoding="utf-8")
