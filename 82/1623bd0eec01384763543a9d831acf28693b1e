@@ -1,0 +1,59 @@
+.gitattributes
+  s_f3e6329934107d::t_dd2c14fa605db7 1-2
+AGENTS.md
+  s_24f59fb6b2f10b::t_3b1102ececaedc 125-129
+CITATION.cff
+  s_f3e6329934107d::t_9fb94aa7b8577a 9
+Makefile
+  s_f3e6329934107d::t_394cb4f6b1acfb 74
+NOTICE.md
+  s_f3e6329934107d::t_69c1cc23c49cb6 1-50
+README.md
+  s_f3e6329934107d::t_bacfd7ade32622 4,136-138
+THIRD_PARTY.md
+  s_f3e6329934107d::t_15316cbc993985 1-57
+docs/README.md
+  s_f3e6329934107d::t_f556f9a5fd8fbc 93-94
+licenses/Apache-2.0.txt
+  s_f3e6329934107d::t_28d4680c6a2139 1-202
+licenses/CloudSim-LGPL-3.0.txt
+  s_f3e6329934107d::t_deff59e30d67b5 1-165
+licenses/GPL-3.0.txt
+  s_f3e6329934107d::t_0dbc6e1ef4f3a0 1-674
+licenses/GTPL-3.0.txt
+  s_f3e6329934107d::t_31fef912a4c1ac 1-213
+licenses/README.md
+  s_f3e6329934107d::t_cfba695021c0af 1-20
+licenses/WorkflowSim-GTPL-notice.txt
+  s_f3e6329934107d::t_78251af2758480 1-14
+licenses/provenance.json
+  s_f3e6329934107d::t_d1407701870d26 1-55
+scripts/check-license-compliance.py
+  s_f3e6329934107d::t_5c692d91bc57a4 1-92
+scripts/test-license-compliance.py
+  s_f3e6329934107d::t_bf0a1596e27828 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "821623bd0eec01384763543a9d831acf28693b1e",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_f3e6329934107d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f1a0-351c-7643-a3d0-36ad18902594",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
