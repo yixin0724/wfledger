@@ -18,23 +18,33 @@ public final class AlgorithmMetricAudit {
     public static AuditResult run(SimulationConfig config, PlatformProfile platform, String label)
             throws SimulationExecutionException {
         SimulationReport report = new SimulationRunner().run(config, platform);
+        return evaluate(report, config, platform, label);
+    }
+
+    public static AuditResult evaluate(
+            SimulationReport report, SimulationConfig config, PlatformProfile platform, String label) {
         Map<Integer, Integer> mapping = new LinkedHashMap<Integer, Integer>();
-        Map<Integer, SimulationReport.TaskOutcome> successfulTasks =
-                new LinkedHashMap<Integer, SimulationReport.TaskOutcome>();
+        Map<Integer, SimulationReport.JobOutcome> successfulTasks =
+                new LinkedHashMap<Integer, SimulationReport.JobOutcome>();
         for (SimulationReport.TaskOutcome task : report.getTasks()) {
             mapping.put(task.getTaskId(), task.getVmId());
-            if (task.getTaskStatus() == org.cloudbus.cloudsim.Cloudlet.SUCCESS) {
-                SimulationReport.TaskOutcome previous = successfulTasks.get(task.getTaskId());
-                if (previous == null || task.getFinishTime() < previous.getFinishTime()) {
-                    successfulTasks.put(task.getTaskId(), task);
+        }
+        for (SimulationReport.JobOutcome job : report.getJobs()) {
+            if (job.getClassType() == org.workflowsim.utils.Parameters.ClassType.COMPUTE.value
+                    && job.getStatus() == org.cloudbus.cloudsim.Cloudlet.SUCCESS) {
+                for (Integer taskId : job.getTaskIds()) {
+                    SimulationReport.JobOutcome previous = successfulTasks.get(taskId);
+                    if (previous == null || job.getFinishTime() < previous.getFinishTime()) {
+                        successfulTasks.put(taskId, job);
+                    }
                 }
             }
         }
         double dependencyResidual = 0.0;
         for (SimulationReport.TaskNode node : report.getWorkflowGraph()) {
-            SimulationReport.TaskOutcome child = successfulTasks.get(node.getTaskId());
+            SimulationReport.JobOutcome child = successfulTasks.get(node.getTaskId());
             for (Integer parentId : node.getParentIds()) {
-                SimulationReport.TaskOutcome parent = successfulTasks.get(parentId);
+                SimulationReport.JobOutcome parent = successfulTasks.get(parentId);
                 if (child != null && parent != null) {
                     double residual = parent.getFinishTime() - child.getStartTime();
                     dependencyResidual = Math.max(dependencyResidual, residual);
@@ -89,8 +99,10 @@ public final class AlgorithmMetricAudit {
         for (SimulationEvent event : report.getEvents()) {
             lastEvent = Math.max(lastEvent, event.getSimulationTime());
         }
-        double makespanResidual = Math.max(
-                Math.abs(lastEvent - report.getMakespan()), Math.max(0.0, lastJobFinish - report.getMakespan()));
+        double makespanResidual = config.isEventRecordingEnabled()
+                ? Math.max(
+                        Math.abs(lastEvent - report.getMakespan()), Math.max(0.0, lastJobFinish - report.getMakespan()))
+                : Math.max(0.0, lastJobFinish - report.getMakespan());
         double tailResidual = 0.0;
         if (report.getLogicalTaskCompletionSeconds() != null && report.getTerminalLifecycleTailSeconds() != null) {
             tailResidual = Math.abs((report.getMakespan() - report.getLogicalTaskCompletionSeconds())

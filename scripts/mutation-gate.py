@@ -192,8 +192,12 @@ REGISTRY = [
         id="M20",
         name="Runner ignores the configured event-recorder cap and constructs the default recorder",
         file="simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java",
-        old="""        SimulationEventRecorder events = new SimulationEventRecorder(config.getEventRecorderCap());""",
-        new="""        SimulationEventRecorder events = new SimulationEventRecorder();""",
+        old="""        SimulationEventRecorder events = config.isEventRecordingEnabled()
+                ? new SimulationEventRecorder(config.getEventRecorderCap())
+                : SimulationEventRecorder.disabled();""",
+        new="""        SimulationEventRecorder events = config.isEventRecordingEnabled()
+                ? new SimulationEventRecorder()
+                : SimulationEventRecorder.disabled();""",
         killers="SimulationRunnerEventRecorderCapIntegrationTest"),
     dict(
         id="M21",
@@ -525,8 +529,8 @@ EXPERIMENTS_REGISTRY = [
         id="M30",
         name="Workbench drops the event-recorder cap from the simulation allowlist",
         file="experiments/src/main/java/org/workflowsim/experiments/workbench/WorkbenchConfig.java",
-        old="                \"eventRecorderCap\",\n                \"deadlineSeconds\",\n",
-        new="                // M30: cap allowlist entry deliberately removed\n                \"deadlineSeconds\",\n",
+        old="                \"eventRecorderCap\",\n                \"eventRecordingEnabled\",\n                \"deadlineSeconds\",\n",
+        new="                \"eventRecordingEnabled\",\n                \"deadlineSeconds\",\n",
         killers="WorkbenchConfigTest",
         module="experiments"),
 ]

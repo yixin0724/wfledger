@@ -32,6 +32,7 @@ final class FileLifecycleContextValidator {
     private final Map<Integer, Job> jobs = new LinkedHashMap<>();
     private final Map<Integer, JsonObject> taskOutcomes = new HashMap<>();
     private final Map<Integer, Integer> taskScopes = new HashMap<>();
+    private final Map<Integer, Double> vmMips = new HashMap<>();
     private final Map<Integer, Double> arrivals = new HashMap<>();
     private final Map<Integer, JsonObject> requested = new HashMap<>(),
             cpu = new HashMap<>(),
@@ -265,6 +266,12 @@ final class FileLifecycleContextValidator {
                 obj(result, "actualVmHostAssignments"),
                 decoded.getEvidence().getFabric(),
                 decoded.storage);
+        for (JsonElement row : arr(obj(root, "platform"), "vms")) {
+            JsonObject vm = object(row);
+            if (vm.has("mips")) {
+                vmMips.put(integer(need(vm, "id")), number(need(vm, "mips")));
+            }
+        }
         initRootScopes(root, config, decoded);
         initJobOutcomes(root, result, decoded);
         verifyJobOutcomeCoverage(decoded);
@@ -424,7 +431,7 @@ final class FileLifecycleContextValidator {
 
     private void verifyTaskTimingWindow(JsonObject task, Job job) throws IOException {
         double taskStart = number(need(task, "startTime")), taskFinish = number(need(task, "finishTime"));
-        if (taskStart != job.start || taskFinish < taskStart || taskFinish > job.finish + timeTolerance(job.finish)) {
+        if (taskStart != job.start || taskFinish < taskStart || taskFinish > job.finish + taskTimingTolerance(job)) {
             throw fail("Task model window differs from actual V2 Job bounds");
         }
         if (task.has("exactJobTiming")
@@ -1381,6 +1388,17 @@ final class FileLifecycleContextValidator {
         for (int i = 0; i < x.size(); i++) {
             same(x.get(i), y.get(i), message);
         }
+    }
+
+    private double taskTimingTolerance(Job job) throws IOException {
+        Double mips = vmMips.get(job.vm);
+        if (mips == null) {
+            return timeTolerance(job.finish);
+        }
+        if (!Double.isFinite(mips) || mips <= 0.0) {
+            throw fail("Task timing quantization requires a positive VM MIPS declaration");
+        }
+        return timeTolerance(job.finish) + 1.0 / mips;
     }
 
     private static double timeTolerance(double value) {

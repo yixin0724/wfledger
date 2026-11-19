@@ -1,0 +1,125 @@
+package fgcs.upstream;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import org.cloudbus.cloudsim.CloudletSchedulerSpaceShared;
+import org.cloudbus.cloudsim.DatacenterCharacteristics;
+import org.cloudbus.cloudsim.HarddriveStorage;
+import org.cloudbus.cloudsim.Host;
+import org.cloudbus.cloudsim.Log;
+import org.cloudbus.cloudsim.Pe;
+import org.cloudbus.cloudsim.Storage;
+import org.cloudbus.cloudsim.VmAllocationPolicySimple;
+import org.cloudbus.cloudsim.VmSchedulerTimeShared;
+import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
+import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
+import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
+import org.workflowsim.CondorVM;
+import org.workflowsim.Job;
+import org.workflowsim.Task;
+import org.workflowsim.WorkflowDatacenter;
+import org.workflowsim.WorkflowEngine;
+import org.workflowsim.WorkflowPlanner;
+import org.workflowsim.utils.ClusteringParameters;
+import org.workflowsim.utils.OverheadParameters;
+import org.workflowsim.utils.Parameters;
+import org.workflowsim.utils.ReplicaCatalog;
+
+/**
+ * Minimal observation adapter for the separately downloaded upstream WorkflowSim source tree.
+ *
+ * <p>This file contains no upstream implementation source. Each invocation is a fresh JVM because
+ * upstream CloudSim 3 uses process-global state. VM IDs intentionally remain zero-based; the Python
+ * comparator adds one before comparing them with the current exporter's one-based IDs.
+ */
+public final class UpstreamRunner {
+    private UpstreamRunner() {}
+
+    public static void main(String[] args) throws Exception {
+        if (args.length != 4) {
+            throw new IllegalArgumentException("Usage: UpstreamRunner DAX SCHEDULER VM_COUNT SPEED_RATIO");
+        }
+        String workflow = args[0];
+        String schedulerName = args[1];
+        int vmCount = Integer.parseInt(args[2]);
+        int speedRatio = Integer.parseInt(args[3]);
+        if (!new File(workflow).isFile()) {
+            throw new IllegalArgumentException("Missing workflow " + workflow);
+        }
+        if (!"READY_BATCH_MINMIN".equals(schedulerName) && !"STATIC".equals(schedulerName)) {
+            throw new IllegalArgumentException("Unsupported differential scheduler " + schedulerName);
+        }
+
+        Log.disable();
+        Parameters.SchedulingAlgorithm scheduler = "READY_BATCH_MINMIN".equals(schedulerName)
+                ? Parameters.SchedulingAlgorithm.MINMIN : Parameters.SchedulingAlgorithm.STATIC;
+        Parameters.PlanningAlgorithm planner = scheduler == Parameters.SchedulingAlgorithm.STATIC
+                ? Parameters.PlanningAlgorithm.HEFT : Parameters.PlanningAlgorithm.INVALID;
+        Parameters.init(vmCount, workflow, null, null, new OverheadParameters(0, null, null, null, null, 0),
+                new ClusteringParameters(0, 0, ClusteringParameters.ClusteringMethod.NONE, null), scheduler, planner,
+                null, 0);
+        ReplicaCatalog.init(ReplicaCatalog.FileSystem.SHARED);
+        CloudSim.init(1, Calendar.getInstance(), false);
+        WorkflowDatacenter datacenter = createDatacenter("Datacenter_0", vmCount, speedRatio);
+        WorkflowPlanner plannerEntity = new WorkflowPlanner("planner_0", 1);
+        WorkflowEngine engine = plannerEntity.getWorkflowEngine();
+        List<CondorVM> vms = new ArrayList<CondorVM>();
+        for (int index = 0; index < vmCount; index++) {
+            double mips = 500.0 * Math.pow(speedRatio, index);
+            vms.add(new CondorVM(index, engine.getSchedulerId(0), mips, 1, 4096, 100, 1000, "Xen",
+                    new CloudletSchedulerSpaceShared()));
+        }
+        engine.submitVmList(vms, 0);
+        engine.bindSchedulerDatacenter(datacenter.getId(), 0);
+        CloudSim.startSimulation();
+        List<Job> jobs = engine.getJobsReceivedList();
+        CloudSim.stopSimulation();
+        writeObservations(jobs);
+    }
+
+    private static void writeObservations(List<Job> jobs) {
+        StringBuilder result = new StringBuilder("[\n");
+        boolean first = true;
+        for (Job job : jobs) {
+            if (job.getClassType() != Parameters.ClassType.COMPUTE.value) {
+                continue;
+            }
+            for (Task task : job.getTaskList()) {
+                if (!first) {
+                    result.append(",\n");
+                }
+                first = false;
+                result.append("  {\"jobId\":").append(job.getCloudletId())
+                        .append(",\"taskId\":").append(task.getCloudletId())
+                        .append(",\"vmId\":").append(job.getVmId())
+                        .append(",\"start\":").append(task.getExecStartTime())
+                        .append(",\"finish\":").append(task.getTaskFinishTime())
+                        .append(",\"jobFinish\":").append(job.getFinishTime())
+                        .append(",\"status\":\"").append(job.getCloudletStatus()).append("\"}");
+            }
+        }
+        result.append("\n]\n");
+        System.out.print(result.toString());
+    }
+
+    private static WorkflowDatacenter createDatacenter(String name, int count, int ratio) throws Exception {
+        List<Host> hosts = new ArrayList<Host>();
+        for (int index = 0; index < count; index++) {
+            double mips = 500.0 * Math.pow(ratio, index);
+            List<Pe> pes = new ArrayList<Pe>();
+            pes.add(new Pe(0, new PeProvisionerSimple(mips)));
+            hosts.add(new Host(index, new RamProvisionerSimple(4096), new BwProvisionerSimple(10000), 1000000, pes,
+                    new VmSchedulerTimeShared(pes)));
+        }
+        DatacenterCharacteristics characteristics = new DatacenterCharacteristics("x86", "Linux", "Xen", hosts,
+                10.0, 3.0, 0.05, 0.1, 0.1);
+        List<Storage> storage = new ArrayList<Storage>();
+        HarddriveStorage disk = new HarddriveStorage(name, 1000000000000L);
+        disk.setMaxTransferRate(15);
+        storage.add(disk);
+        return new WorkflowDatacenter(name, characteristics, new VmAllocationPolicySimple(hosts), storage, 0);
+    }
+}

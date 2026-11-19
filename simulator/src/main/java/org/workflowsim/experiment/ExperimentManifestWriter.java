@@ -258,6 +258,9 @@ public final class ExperimentManifestWriter {
         if (config.getEventRecorderCap() != SimulationConfig.DEFAULT_EVENT_RECORDER_CAP) {
             values.put("eventRecorderCap", config.getEventRecorderCap());
         }
+        if (!config.isEventRecordingEnabled()) {
+            values.put("eventRecordingEnabled", Boolean.FALSE);
+        }
         values.put("costModel", config.getCostModel().name());
         values.put(
                 "modeledProcessingCostScope",

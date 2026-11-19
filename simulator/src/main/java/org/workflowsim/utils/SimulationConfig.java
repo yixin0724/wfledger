@@ -50,6 +50,7 @@ public final class SimulationConfig {
     private final org.workflowsim.utils.EbpsmConfig ebpsmConfig;
     private final org.workflowsim.utils.CrchConfig crchConfig;
     private final int eventRecorderCap;
+    private final boolean eventRecordingEnabled;
 
     private SimulationConfig(Builder builder) {
         this.workflowPaths = Collections.unmodifiableList(new ArrayList<>(builder.workflowPaths));
@@ -78,6 +79,7 @@ public final class SimulationConfig {
         this.ebpsmConfig = builder.ebpsmConfig;
         this.crchConfig = builder.crchConfig;
         this.eventRecorderCap = builder.eventRecorderCap;
+        this.eventRecordingEnabled = builder.eventRecordingEnabled;
     }
 
     public static Builder builder(String workflowPath, int vmCount) {
@@ -192,6 +194,10 @@ public final class SimulationConfig {
         return eventRecorderCap;
     }
 
+    public boolean isEventRecordingEnabled() {
+        return eventRecordingEnabled;
+    }
+
     public Builder toBuilder() {
         return new Builder(workflowPaths, vmCount)
                 .workflowArrivalSeconds(workflowArrivalSeconds)
@@ -213,6 +219,7 @@ public final class SimulationConfig {
                 .dataflowAssignment(dataflowAssignmentConfig)
                 .taskCostMatrix(taskCostMatrix)
                 .eventRecorderCap(eventRecorderCap)
+                .eventRecordingEnabled(eventRecordingEnabled)
                 .frequencyPolicy(frequencyPolicy);
     }
 
@@ -276,6 +283,7 @@ public final class SimulationConfig {
         }
 
         private int eventRecorderCap = DEFAULT_EVENT_RECORDER_CAP;
+        private boolean eventRecordingEnabled = true;
 
         private Builder(List<String> workflowPaths, int vmCount) {
             if (workflowPaths == null || workflowPaths.isEmpty()) {
@@ -312,6 +320,11 @@ public final class SimulationConfig {
                 throw new IllegalArgumentException("Event recorder cap must be strictly positive: " + value);
             }
             this.eventRecorderCap = value;
+            return this;
+        }
+
+        public Builder eventRecordingEnabled(boolean value) {
+            this.eventRecordingEnabled = value;
             return this;
         }
 

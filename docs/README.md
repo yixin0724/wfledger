@@ -78,6 +78,7 @@ and superseded audit drafts are not long-term entry points.
   MOHEFT, MIN_POWER, EDP_HEURISTIC and DVFS slack on real scientific workflows.
 - [Evidence replay and difference comparison](<experiments/RERUN_DIFF_CONTRACT.md>): configuration rebuilding, verdicts, exact core quantities, and the small set of volatile fields.
 - [Independent study-audit tooling](<../scripts/STUDY_AUDIT.md>): the actual scope of general evidence/statistics checks, distinguished from dataflow-specific certificates.
+- [FGCS study protocol](<../experiments/studies/fgcs/README.md>): external differential, sensitivity, energy, communication/storage ablation, and independent-JVM evidence-overhead matrices.
 
 ## Standard benchmark
 

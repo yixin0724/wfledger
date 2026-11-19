@@ -98,6 +98,19 @@ The complete acceptance command is `make quality-gate`; it includes Maven, cover
 Python checks, documentation, language and dataset checks. A separate mutation run is required for
 semantic canaries and must not run concurrently with other builds.
 
+## Workbench event recording
+
+Standard Workbench JSON accepts the optional literal boolean `simulation.eventRecordingEnabled`, default `true`.
+Setting it to `false` disables events-v1 capture without changing workflow execution: the run still completes, its
+events artifact is empty, and the manifest explicitly records `configuration.eventRecordingEnabled=false`. This switch
+never silently discards requested lifecycle evidence. Workbench rejects `eventRecordingEnabled=false` together with an
+enabled `simulation.networkEvidence` object during preflight; omit that object or keep event recording enabled. All
+existing defaults and physical/model combination checks continue to apply.
+
+## FGCS study
+
+The [FGCS study protocol](../../experiments/studies/fgcs/README.md) defines the complete differential, sensitivity, energy, communication/storage ablation, and evidence-overhead matrices. Its generated outputs remain in `paper/tmp/`; the protocol and compact differential verifier are source-controlled. Unique-producer-derived lifecycle inputs are explicitly separated from raw DAX inputs.
+
 ## Reading rules and current limitations
 
 1. **Makespan is not the only scheduling objective.** Also report waiting time, true slowdown,

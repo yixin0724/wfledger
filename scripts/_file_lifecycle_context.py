@@ -223,6 +223,15 @@ def _platform(root, fabric=None, *, source_routing="BYPASS_TOPOLOGY_DESTINATION_
 def _time_tolerance(value):
     return min(8.0 * math.ulp(value), value * 1e-12)
 
+def _task_time_tolerance(job, vms):
+    vm = vms.get(job["vm"])
+    need(vm is not None, "Task timing quantization requires a declared VM")
+    if "mips" not in vm:
+        return _time_tolerance(job["finish"])
+    mips = _time(_field(vm, "mips"))
+    need(math.isfinite(mips) and mips > 0.0, "Task timing quantization requires positive VM MIPS")
+    return _time_tolerance(job["finish"]) + 1.0 / mips
+
 def _jobs(result, plan, vms, end):
     all_jobs = _rows(_field(result, "jobs"), "jobId")
     jobs = {}
@@ -244,7 +253,7 @@ def _jobs(result, plan, vms, end):
              _id(_field(row, "jobStatus")) == job["status"] == _id(_field(row, "taskStatus")),
              "singleton Task/Job identity or terminal status differs")
         start, finish = _time(_field(row, "startTime")), _time(_field(row, "finishTime"))
-        need(start == job["start"] and start <= finish <= job["finish"] + _time_tolerance(job["finish"]),
+        need(start == job["start"] and start <= finish <= job["finish"] + _task_time_tolerance(job, vms),
              "Task model window differs from actual Job envelope")
         if "exactJobTiming" in row:
             need(_bool(row["exactJobTiming"]) == (start == job["start"] and finish == job["finish"]),

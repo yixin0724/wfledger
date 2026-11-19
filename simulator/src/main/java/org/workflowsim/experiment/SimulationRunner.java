@@ -38,6 +38,11 @@ public final class SimulationRunner {
                     + " does not match platform VM count " + platform.getVms().size());
         }
         validateCostModel(config, platform);
+        if (!config.isEventRecordingEnabled()
+                && config.getNetworkEvidenceConfig().isEnabled()) {
+            throw new SimulationConfigurationException(
+                    "Lifecycle evidence requires event recording; explicitly disable both or enable both");
+        }
         if (config.getDataMovementModel().isCoherentStorageDataflowV3() != (platform.getSourceStorage() != null)) {
             throw new SimulationConfigurationException(
                     "Bounded sourceStorage must be present exactly for the storage V3 dataflow model");
@@ -134,7 +139,9 @@ public final class SimulationRunner {
             org.workflowsim.network.FatTreeTopology fatTreeTopology)
             throws Exception {
 
-        SimulationEventRecorder events = new SimulationEventRecorder(config.getEventRecorderCap());
+        SimulationEventRecorder events = config.isEventRecordingEnabled()
+                ? new SimulationEventRecorder(config.getEventRecorderCap())
+                : SimulationEventRecorder.disabled();
         SimulationAssembly assembly = assembleSession(session, config, platform, events, fatTreeTopology);
         WorkflowDatacenter datacenter = assembly.datacenter;
         WorkflowPlanner planner = assembly.planner;

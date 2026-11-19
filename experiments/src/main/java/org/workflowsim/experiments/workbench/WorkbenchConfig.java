@@ -169,6 +169,7 @@ public final class WorkbenchConfig {
                 "runtimeReferenceMips",
                 "minEventIntervalSeconds",
                 "eventRecorderCap",
+                "eventRecordingEnabled",
                 "deadlineSeconds",
                 "deadlineSecondsByWorkflow",
                 "costModel",
@@ -180,6 +181,12 @@ public final class WorkbenchConfig {
         NetworkEvidenceConfig networkEvidence = sim.has("networkEvidence")
                 ? org.workflowsim.data.NetworkEvidenceConfigCodec.decodeConfig(sim.get("networkEvidence"))
                 : NetworkEvidenceConfig.off();
+        boolean eventRecordingEnabled = !sim.has("eventRecordingEnabled")
+                || booleanValue(sim.get("eventRecordingEnabled"), "simulation.eventRecordingEnabled");
+        if (!eventRecordingEnabled && networkEvidence.isEnabled()) {
+            throw new IllegalArgumentException("simulation.eventRecordingEnabled=false is incompatible with enabled"
+                    + " simulation.networkEvidence; explicitly disable lifecycle evidence or enable event recording");
+        }
         if (!movement.usesCoherentDataflowRuntime()
                 && movement.isFatTreeContentionV1() != (platform.getNetworkTopology() != null)) {
             throw new IllegalArgumentException("Fat-tree data movement and networkTopology must be selected together");
@@ -193,7 +200,7 @@ public final class WorkbenchConfig {
         if (movement.isCoherentStorageDataflowV3() != (platform.getSourceStorage() != null)) {
             throw new IllegalArgumentException("sourceStorage must be declared exactly for storage V3 models");
         }
-        return new SimulationModels(sim, fs, movement, networkEvidence, costModel(sim));
+        return new SimulationModels(sim, fs, movement, networkEvidence, eventRecordingEnabled, costModel(sim));
     }
 
     private static Parameters.CostModel costModel(JsonObject sim) {
@@ -291,6 +298,7 @@ public final class WorkbenchConfig {
                         .fileSystem(models.fileSystem)
                         .dataMovementModel(models.movement)
                         .networkEvidence(models.networkEvidence)
+                        .eventRecordingEnabled(models.eventRecordingEnabled)
                         .dataflowAssignment(assignment)
                         .schedulingAlgorithm(resolved.scheduler)
                         .planningAlgorithm(planner)
@@ -447,6 +455,7 @@ public final class WorkbenchConfig {
         final ReplicaCatalog.FileSystem fileSystem;
         final DataMovementModel movement;
         final NetworkEvidenceConfig networkEvidence;
+        final boolean eventRecordingEnabled;
         final Parameters.CostModel costModel;
 
         SimulationModels(
@@ -454,11 +463,13 @@ public final class WorkbenchConfig {
                 ReplicaCatalog.FileSystem fileSystem,
                 DataMovementModel movement,
                 NetworkEvidenceConfig networkEvidence,
+                boolean eventRecordingEnabled,
                 Parameters.CostModel costModel) {
             this.sim = sim;
             this.fileSystem = fileSystem;
             this.movement = movement;
             this.networkEvidence = networkEvidence;
+            this.eventRecordingEnabled = eventRecordingEnabled;
             this.costModel = costModel;
         }
     }
@@ -1041,6 +1052,13 @@ public final class WorkbenchConfig {
                     field + " must be finite and " + (positive ? "positive" : "nonnegative"));
         }
         return number;
+    }
+
+    private static boolean booleanValue(JsonElement value, String field) {
+        if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isBoolean()) {
+            throw new IllegalArgumentException(field + " must be a boolean");
+        }
+        return value.getAsBoolean();
     }
 
     private static long longValue(JsonElement value, String field) {

@@ -1,0 +1,75 @@
+{
+  "protocol": "FGCS_MATRIX_V1",
+  "decisionLayers": ["static-planning", "online-ready-job-scheduling", "control-ready-vm-assignment"],
+  "standardRunner": {
+    "clustering": "NONE",
+    "cloudletScheduler": "SPACE_SHARED",
+    "logicalTasksPerJob": 1,
+    "serialWithinJvm": true,
+    "sessionBoundary": "SimulationSession"
+  },
+  "matrices": {
+    "differential": {
+      "currentRuns": 24,
+      "pairedCases": 12,
+      "shapes": ["chain", "fan", "independent"],
+      "realFamilies": ["Montage_50", "CyberShake_50", "Sipht_60"],
+      "algorithms": ["SHARED_STORAGE_HEFT", "READY_BATCH_MINMIN"],
+      "currentSeeds": [7, 11],
+      "upstreamCommit": "d3ea21afd8ce6479bd292d3bd7469045d7a36089"
+    },
+    "sensitivity": {
+      "runs": 216,
+      "workflows": ["Montage_50", "CyberShake_50", "Inspiral_50"],
+      "vmCounts": [1, 2, 4, 8],
+      "speedRatios": [1, 2, 4],
+      "storageRatesMbPerSecond": [1, 15, 100],
+      "algorithms": ["SHARED_STORAGE_HEFT", "READY_BATCH_MINMIN"]
+    },
+    "energy": {
+      "runs": 36,
+      "workflows": ["Montage_50", "CyberShake_50", "Sipht_60", "Inspiral_50", "Epigenomics_46"],
+      "planners": ["GREEN_HEFT", "MO_HEFT", "SHARED_STORAGE_HEFT"],
+      "policies": ["DEFAULT", "MIN_POWER", "EDP_HEURISTIC", "DVFS_SLACK"],
+      "nonMonotonicCounterexamples": true,
+      "powerGroupsSeparated": ["flat", "tiered", "non-monotonic-tier"]
+    },
+    "ablation": {
+      "runs": 18,
+      "models": ["PRE_EXECUTION_TRANSFER_DELAY_V1", "PRE_EXECUTION_TRANSFER_DELAY_WITH_CONTENTION_V1", "FAT_TREE_CONTENTION_V1", "COHERENT_FILE_DATAFLOW_V2", "COHERENT_STORAGE_DATAFLOW_V3"],
+      "fixtureShapes": ["chain", "fan"],
+      "sidecarsRequiredForEnabledModes": true
+    },
+    "recovery": {
+      "runs": 12,
+      "workflows": ["chain", "fan", "independent", "Montage_50", "CyberShake_50", "Sipht_60"],
+      "modes": ["disabled", "single-vm-crch-failure"],
+      "scheduler": "CRCH",
+      "retryBudget": 20,
+      "dependencyAndMetricChecks": true
+    },
+    "overhead": {
+      "runs": 45,
+      "workflows": ["Montage_50", "Montage_1000", "Montage_5000"],
+      "modes": ["off", "events", "lifecycle"],
+      "warmupPerScenario": 1,
+      "measuredRepetitions": 5,
+      "independentJvmPerScenario": true,
+      "lifecycleInputPopulation": "UNIQUE_PRODUCER_FILE_IDENTITY_V1 derived inputs; not raw DAX equivalence",
+      "measures": ["simulationNanos", "artifactWriteNanos", "auditNanos", "eventCount", "artifactBytes", "heapBeforeBytes", "peakHeapBytes", "threadAllocatedBytes"]
+    }
+  },
+  "acceptance": {
+    "allLogicalTasksComplete": true,
+    "independentResidualTolerance": 0.0001,
+    "offEventCount": 0,
+    "enabledEventCountPositive": true,
+    "lifecycleEvidenceNonempty": true,
+    "failOnConfigurationError": true,
+    "failOnTruncatedEvidence": true
+  },
+  "outputRoot": "paper/tmp/experiments",
+  "generatedOutputsTracked": false,
+  "rawDaxBytesModified": false,
+  "productionCalibrationClaimed": false
+}
