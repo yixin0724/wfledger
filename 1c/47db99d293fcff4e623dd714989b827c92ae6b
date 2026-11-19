@@ -1,0 +1,145 @@
+docs/README.md
+  s_24f59fb6b2f10b::t_9da450c9080131 81
+docs/advanced/FILE_LIFECYCLE_FORMAT.md
+  s_f3e6329934107d::t_f9cef3aa0d35b5 101
+docs/algorithms/CONTRACTS.md
+  s_f3e6329934107d::t_d26eb78dc5517f 39-40
+docs/experiments/README.md
+  s_f3e6329934107d::t_4cac29e153c410 101-113
+experiments/src/main/java/org/workflowsim/experiments/audit/AlgorithmMetricAudit.java
+  s_768a25909712fc::t_94785dd2fd5f2f 21-25,27-28,31-39,45,47,102-105
+experiments/src/main/java/org/workflowsim/experiments/fgcs/FgcDatasets.java
+  s_768a25909712fc::t_16480592692dd6 1-284
+experiments/src/main/java/org/workflowsim/experiments/fgcs/FgcPlatforms.java
+  s_768a25909712fc::t_67294265ab55ac 1-101
+experiments/src/main/java/org/workflowsim/experiments/fgcs/FgcStudySupport.java
+  s_768a25909712fc::t_cd2ddeb6ecfb82 1-227
+experiments/src/main/java/org/workflowsim/experiments/fgcs/ablation/CommunicationStorageAblation.java
+  s_768a25909712fc::t_a781f991442e26 1-115
+experiments/src/main/java/org/workflowsim/experiments/fgcs/differential/UpstreamDifferentialExporter.java
+  s_768a25909712fc::t_3bbdeb9ce2e115 1-93
+experiments/src/main/java/org/workflowsim/experiments/fgcs/differential/UpstreamDifferentialStudy.java
+  s_768a25909712fc::t_36cb59def9622c 1-137
+experiments/src/main/java/org/workflowsim/experiments/fgcs/energy/EnergySensitivityStudy.java
+  s_768a25909712fc::t_d6a1e5ef9462d7 1-87
+experiments/src/main/java/org/workflowsim/experiments/fgcs/recovery/FailureRecoveryStudy.java
+  s_f3e6329934107d::t_fe008839e6ef10 1-82
+experiments/src/main/java/org/workflowsim/experiments/fgcs/scalability/EvidenceOverheadStudy.java
+  s_768a25909712fc::t_4dc3111c208060 1-108
+experiments/src/main/java/org/workflowsim/experiments/fgcs/sensitivity/SensitivityStudy.java
+  s_768a25909712fc::t_a3527552828e6d 1-55
+experiments/src/main/java/org/workflowsim/experiments/workbench/WorkbenchConfig.java
+  s_24f59fb6b2f10b::t_ca7f6cb428b5fb 172,184-189,203,301,458,466,472,1057-1063
+experiments/src/test/java/org/workflowsim/experiments/fgcs/FgcStudySupportTest.java
+  s_3a0920642253f6::t_1e5a58ec9458df 1-41
+experiments/src/test/java/org/workflowsim/experiments/fgcs/FgcsStudyIntegrationTest.java
+  s_f3e6329934107d::t_6d6b84bf073c19 1-53
+experiments/src/test/java/org/workflowsim/experiments/fgcs/ablation/CommunicationStorageAblationTest.java
+  s_768a25909712fc::t_e95d011d21adfe 1-44
+experiments/src/test/java/org/workflowsim/experiments/fgcs/differential/UpstreamDifferentialExporterTest.java
+  s_f3e6329934107d::t_cdd2cc7600a128 1-99
+experiments/src/test/java/org/workflowsim/experiments/fgcs/differential/UpstreamDifferentialStudyTest.java
+  s_768a25909712fc::t_e7a8c317c03996 1-40
+experiments/src/test/java/org/workflowsim/experiments/fgcs/energy/EnergySensitivityStudyTest.java
+  s_768a25909712fc::t_441691147b98e6 1-27
+experiments/src/test/java/org/workflowsim/experiments/fgcs/recovery/FailureRecoveryStudyTest.java
+  s_f3e6329934107d::t_f10e4ec71260c2 1-49
+experiments/src/test/java/org/workflowsim/experiments/fgcs/scalability/EvidenceOverheadStudyTest.java
+  s_f3e6329934107d::t_1c637c401b3ef1 1-99
+experiments/src/test/java/org/workflowsim/experiments/fgcs/sensitivity/SensitivityStudyTest.java
+  s_768a25909712fc::t_40d6eb146f80e1 1-27
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchEventRecordingTest.java
+  s_768a25909712fc::t_59c61c2f12e4df 1-173
+experiments/studies/fgcs/README.md
+  s_f3e6329934107d::t_d6c492b68390d2 1-58
+experiments/studies/fgcs/differential/README.md
+  s_f3e6329934107d::t_42df11a8cde64c 1-158
+experiments/studies/fgcs/differential/UpstreamRunner.java.txt
+  s_f3e6329934107d::t_1bea2ed4937621 1-125
+experiments/studies/fgcs/differential/compare.py
+  s_f3e6329934107d::t_00a78e9022c60a 1-530
+experiments/studies/fgcs/differential/comparison.json
+  s_f3e6329934107d::t_cb852f82d40874 1-323
+experiments/studies/fgcs/differential/upstream-lock.json
+  s_72cc88c5e18cc4::t_219ace3fc39920 1-25
+experiments/studies/fgcs/protocol.json
+  s_24f59fb6b2f10b::t_08d30fdd65b788 1-75
+scripts/_file_lifecycle_context.py
+  s_f3e6329934107d::t_decf9ec4a0bc61 226-234,256
+scripts/compare-fgcs-results.py
+  s_f3e6329934107d::t_9819cac6e5cf70 1-63
+scripts/mutation-gate.py
+  s_f3e6329934107d::t_2471504e2719e3 195-200,532-533
+scripts/reproduce-fgcs-clean.py
+  s_f3e6329934107d::t_6e88327cdfd770 1-60
+scripts/run-fgcs-matrix.py
+  s_f3e6329934107d::t_5aeb484f47c3ad 1-176
+scripts/summarize-fgcs-results.py
+  s_f3e6329934107d::t_acc59bcc11646a 1-105
+scripts/test-compare-fgcs-results.py
+  s_24f59fb6b2f10b::t_7874f57b854317 1-49
+scripts/test-run-fgcs-matrix.py
+  s_f3e6329934107d::t_e6300551eb15f6 1-65
+scripts/test-verify-fgcs-derived-input.py
+  s_3a0920642253f6::t_b4470d7a0b4ce6 1-76
+scripts/verify-fgcs-derived-input.py
+  s_24f59fb6b2f10b::t_f58db47c0e8018 1-155
+simulator/src/main/java/org/workflowsim/experiment/ExperimentManifestWriter.java
+  s_768a25909712fc::t_ba951ec3a064a9 261-263
+simulator/src/main/java/org/workflowsim/experiment/FileLifecycleContextValidator.java
+  s_24f59fb6b2f10b::t_c4788723b24283 35,269-274,434,1393-1403
+simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java
+  s_768a25909712fc::t_7f7f4a4d196028 41-45,142-144
+simulator/src/main/java/org/workflowsim/utils/SimulationConfig.java
+  s_768a25909712fc::t_d8ae8cb09e929b 53,82,197-200,222,286,326-330
+simulator/src/test/java/org/workflowsim/experiment/SimulationEventRecordingConfigurationTest.java
+  s_768a25909712fc::t_9812b70958786d 1-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1c47db99d293fcff4e623dd714989b827c92ae6b",
+  "prompts": {},
+  "sessions": {
+    "s_24f59fb6b2f10b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15261-5714-7e81-a927-1927a8caa494",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_3a0920642253f6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ed6f-8fb9-7a63-b9de-4ca4b3645837",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_72cc88c5e18cc4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce64-ac3e-7432-b9b5-5dc7dd6906fd",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_f3e6329934107d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f1a0-351c-7643-a3d0-36ad18902594",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
