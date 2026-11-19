@@ -195,9 +195,8 @@ REGISTRY = [
         old="""        SimulationEventRecorder events = config.isEventRecordingEnabled()
                 ? new SimulationEventRecorder(config.getEventRecorderCap())
                 : SimulationEventRecorder.disabled();""",
-        new="""        SimulationEventRecorder events = config.isEventRecordingEnabled()
-                ? new SimulationEventRecorder()
-                : SimulationEventRecorder.disabled();""",
+        new="""        SimulationEventRecorder events =
+                config.isEventRecordingEnabled() ? new SimulationEventRecorder() : SimulationEventRecorder.disabled();""",
         killers="SimulationRunnerEventRecorderCapIntegrationTest"),
     dict(
         id="M21",
