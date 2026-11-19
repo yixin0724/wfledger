@@ -1,0 +1,19 @@
+scripts/mutation-gate.py
+  s_f3e6329934107d::t_353f30cd615388 198-199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "261f28c3c31aeb829837a935f5b9095a82f088c4",
+  "prompts": {},
+  "sessions": {
+    "s_f3e6329934107d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f1a0-351c-7643-a3d0-36ad18902594",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
