@@ -28,7 +28,8 @@ class RevisionVerifierTest(unittest.TestCase):
         (root / "contracts/results.json").write_text(json.dumps({"cases": [
             {"id": "case", "passed": True, "expected": {"time": 2.0}, "observed": {"time": 2.0}},
         ]}))
-        (root / "contracts/recovery-study-results.json").write_text(json.dumps([
+        (root / "recovery").mkdir()
+        (root / "recovery/results.json").write_text(json.dumps([
             {"label": "case", "recoveryClassification": "EXERCISED_FAILURE_RETRY",
              "failedJobs": 1, "retryJobsCreated": 1},
         ] * 12))

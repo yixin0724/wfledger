@@ -329,7 +329,10 @@ if mutation_path.is_file():
     if summary["killed"] != summary["total"] or summary["survived"] or summary["staleIds"] or summary["infraFailureIds"]:
         issues.append("mutation gate is not fully killed and current")
 if "classifiedRecoveryRuns" in metadata:
-    recovery_rows = json.loads((root / "results/contracts/recovery-study-results.json").read_text())
+    recovery_path = root / "results/recovery/results.json"
+    if not recovery_path.is_file():
+        recovery_path = root / "results/contracts/recovery-study-results.json"
+    recovery_rows = json.loads(recovery_path.read_text())
     if len(recovery_rows) != metadata["classifiedRecoveryRuns"]:
         issues.append("classified recovery row count mismatch")
     for row in recovery_rows:
@@ -608,7 +611,9 @@ def main():
             count = len(document["cases"])
         metadata["expectedResultRows"][name] = count
     metadata["retainedFilesBeforeManifest"] = result_count
-    recovery_results = ROOT / args.results / "contracts/recovery-study-results.json"
+    recovery_results = ROOT / args.results / "recovery/results.json"
+    if not recovery_results.is_file():
+        recovery_results = ROOT / args.results / "contracts/recovery-study-results.json"
     if recovery_results.is_file():
         metadata["classifiedRecoveryRuns"] = len(json.loads(recovery_results.read_text()))
     metadata["derivationInputCount"] = derivation_count

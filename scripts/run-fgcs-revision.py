@@ -75,7 +75,9 @@ def verify(output):
         document = json.loads(rerun_path.read_text())
         if document["summary"]["unexpectedOutcomes"] != 0 or len(document["cases"]) != 9:
             issues.append("manifest-guided rerun protocol mismatch")
-    recovery_path = output / "contracts/recovery-study-results.json"
+    recovery_path = output / "recovery/results.json"
+    if not recovery_path.is_file():
+        recovery_path = output / "contracts/recovery-study-results.json"
     if not recovery_path.is_file():
         issues.append("missing classified recovery results")
     else:
