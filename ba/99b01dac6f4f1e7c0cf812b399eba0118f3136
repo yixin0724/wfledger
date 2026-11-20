@@ -1,0 +1,39 @@
+scripts/compare-fgcs-results.py
+  s_f3e6329934107d::t_1b1941268fb98b 46-86,92,96-99,106-108
+scripts/render-fgcs-figures.py
+  s_895fcb768c9750::t_641d0d6b8b7847 2,5,7,10,13-14,17-19,22-24,27-30,34-35,38-40,44-48,50-53,55,60-76,85-89,91,93-99,104-108,113-116,122-133,136,141-169,173-174,177-181
+scripts/reproduce-fgcs-clean.py
+  s_f3e6329934107d::t_0a90688f9c73a8 32-34,43-44,46,49-58
+scripts/run-fgcs-revision.py
+  s_f3e6329934107d::t_fb3ef1a6ace576 101-103,106
+scripts/test-compare-fgcs-results.py
+  s_f3e6329934107d::t_7f1f72f3202464 25-37,60-80
+scripts/test-package-fgcs-artifact.py
+  s_f3e6329934107d::t_fa199dcdc3bacc 26-59
+scripts/test-render-fgcs-figures.py
+  s_f3e6329934107d::t_a5f14f94785162 1-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ba99b01dac6f4f1e7c0cf812b399eba0118f3136",
+  "prompts": {},
+  "sessions": {
+    "s_895fcb768c9750": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "e76929c3-ce90-47c5-88a7-7608ac91a50e",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_f3e6329934107d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f1a0-351c-7643-a3d0-36ad18902594",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
