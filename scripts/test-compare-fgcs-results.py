@@ -22,6 +22,19 @@ class CompareResultsTest(unittest.TestCase):
             "eventCount": 4, "mapping": {"1": 2}, "makespanSeconds": 3.0,
         }
 
+    def populate(self, root):
+        root.mkdir(parents=True)
+        (root / "verification").mkdir()
+        (root / "microbench").mkdir()
+        (root / "verification/results.json").write_text(json.dumps({
+            "rq1": {"genuineCases": 1}, "rq2": {"corruptedCases": 1},
+            "cases": [{"id": "case", "observations": [{"validator": "JAVA", "expected": "ACCEPT",
+                                                       "actual": "ACCEPT", "reasonMatched": True}]}],
+        }))
+        (root / "microbench/results.json").write_text(json.dumps({"cases": [
+            {"id": "case", "expected": {"time": 2.0}, "observed": {"time": 2.0}},
+        ]}))
+
     def test_core_match_ignores_wall_clock_and_artifact_metadata(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -43,6 +56,27 @@ class CompareResultsTest(unittest.TestCase):
             _, differences = MODULE.compare(left, right, ["sensitivity"])
             self.assertTrue(any("makespanSeconds" in item for item in differences))
             self.assertTrue(any("mapping" in item for item in differences))
+
+    def test_revision_comparison_matches_independent_semantics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            left, right = Path(directory) / "left", Path(directory) / "right"
+            self.populate(left)
+            self.populate(right)
+            count, differences = MODULE.compare_revision(left, right)
+            self.assertEqual(1, count)
+            self.assertEqual([], differences)
+
+    def test_revision_comparison_rejects_changed_observation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            left, right = Path(directory) / "left", Path(directory) / "right"
+            self.populate(left)
+            self.populate(right)
+            path = right / "microbench/results.json"
+            document = json.loads(path.read_text())
+            document["cases"][0]["observed"]["time"] = 3.0
+            path.write_text(json.dumps(document))
+            _, differences = MODULE.compare_revision(left, right)
+            self.assertIn("case.observed: time differs", differences)
 
 
 if __name__ == "__main__":

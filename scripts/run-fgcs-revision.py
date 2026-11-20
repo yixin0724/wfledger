@@ -98,9 +98,12 @@ def main():
         for name in args.drivers.split(","):
             if name not in DRIVERS:
                 parser.error("unknown revision driver " + name)
+            driver_output = output / name
+            if name == "static-baseline":
+                driver_output = driver_output / "results.json"
             run(["mvn", "-q", "-pl", ":workflowsim-workbench", "-am", "compile", "exec:java",
                  "-Dexec.mainClass=" + DRIVERS[name],
-                 "-Dexec.args=" + str((output / name).relative_to(ROOT))], output / "logs" / (name + ".log"))
+                 "-Dexec.args=" + str(driver_output.relative_to(ROOT))], output / "logs" / (name + ".log"))
     verify(output)
     (output / "revision-metadata.json").write_text(json.dumps(metadata(output), indent=2) + "\n", encoding="utf-8")
     print("FGCS_REVISION_VERIFIED static=21 microbenchSimulations=6 adversarialBundles=11 overhead=45")

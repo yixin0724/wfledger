@@ -10,13 +10,13 @@ is stored here: --reproduce downloads and compiles the commit-pinned upstream tr
 
 from __future__ import annotations
 
+import os
 import argparse
 import copy
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import math
-import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -25,7 +25,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = Path(os.environ.get("FGCS_ARTIFACT_ROOT", Path(__file__).resolve().parents[4]))
 STUDY = Path(__file__).resolve().parent
 LOCK_PATH = STUDY / "upstream-lock.json"
 ADAPTER_PATH = STUDY / "UpstreamRunner.java.txt"
@@ -175,7 +175,9 @@ def resolve_workflow(case, base, observations_path):
     path = Path(declared)
     candidates = [path] if path.is_absolute() else [ROOT / path, observations_path.parent / path]
     if base in REAL_WORKFLOWS:
-        candidates.append(ROOT / REAL_WORKFLOWS[base])
+        candidates.extend([ROOT / REAL_WORKFLOWS[base], observations_path.parent / REAL_WORKFLOWS[base]])
+    else:
+        candidates.append(observations_path.parent / "inputs" / expected_name)
     for candidate in candidates:
         if candidate.is_file():
             return candidate.resolve()

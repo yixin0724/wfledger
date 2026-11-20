@@ -23,6 +23,40 @@ class ArtifactPackageTest(unittest.TestCase):
             self.assertIn('"workflow": "datasets/x.dax"', text)
             self.assertNotIn(str(Path(__file__).resolve().parents[1]), text)
 
+    def test_manifest_relocation_preserves_input_identity_and_declared_paths(self):
+        project = Path(__file__).resolve().parents[1]
+        base = project / "paper/tmp/fgcs-revision"
+        base.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=base) as directory:
+            root = Path(directory)
+            source = root / "input.dax"
+            source.write_text("workflow fixture")
+            results = root / "archive-results"
+            retained = results / root.name / "input.dax"
+            retained.parent.mkdir(parents=True)
+            retained.write_bytes(source.read_bytes())
+            manifest = results / "case/result.manifest.json"
+            manifest.parent.mkdir()
+            original_path = str(source)
+            document = {
+                "configuration": {"workflowPaths": [original_path]},
+                "inputs": [{"path": original_path, "sha256": MODULE.sha256(source)}],
+                "result": {"workflowOutcomes": [{"path": original_path}]},
+                "provenance": {"execution": {"workingDirectory": str(project)},
+                               "core": {"codeSource": "file:" + str(project) + "/simulator/target/classes/"}},
+            }
+            manifest.write_text(json.dumps(document))
+            original_hash = MODULE.sha256(manifest)
+            MODULE.relocate_manifest(manifest, results)
+            relocated = json.loads(manifest.read_text())
+            expected = "/results/" + root.name + "/input.dax"
+            self.assertEqual("/", relocated["provenance"]["execution"]["workingDirectory"])
+            self.assertEqual([expected], relocated["configuration"]["workflowPaths"])
+            self.assertEqual(expected, relocated["inputs"][0]["path"])
+            self.assertEqual(expected, relocated["result"]["workflowOutcomes"][0]["path"])
+            self.assertEqual(MODULE.sha256(source), relocated["inputs"][0]["sha256"])
+            self.assertNotEqual(original_hash, MODULE.sha256(manifest))
+
     def test_embedded_verifier_checks_hashes_and_rows(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

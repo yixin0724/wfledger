@@ -29,7 +29,9 @@ def main():
         parser.error("worktree must be outside the source checkout")
     if destination.exists() and any(destination.iterdir()):
         parser.error("worktree must be new or empty")
-    report_root = ROOT / "paper/tmp/clean-reproduction"
+    revision_protocol = Path(args.reference).name == "fgcs-revision"
+    report_name = "clean-reproduction-revision" if revision_protocol else "clean-reproduction"
+    report_root = ROOT / "paper/tmp" / report_name
     report_root.mkdir(parents=True, exist_ok=True)
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     subprocess.run(["git", "worktree", "add", "--detach", str(destination), commit], cwd=ROOT, check=True)
@@ -38,13 +40,22 @@ def main():
     try:
         run(["mvn", "-Pjavadoc", "clean", "verify"], destination, report_root / "maven-verify.log")
         result["mavenVerify"] = "PASS"
-        run([sys.executable, "scripts/run-fgcs-matrix.py", "--repetitions", str(args.repetitions)],
-            destination, report_root / "matrix.log")
+        run([sys.executable, "scripts/run-fgcs-matrix.py", "--repetitions", str(args.repetitions),
+             "--output", args.reference], destination, report_root / "matrix.log")
         result["matrix"] = "PASS"
-        comparison = subprocess.run([
+        comparison_command = [
             sys.executable, "scripts/compare-fgcs-results.py",
             str(ROOT / args.reference), str(destination / args.reference),
-        ], cwd=ROOT, text=True, capture_output=True)
+        ]
+        if revision_protocol:
+            run([sys.executable, "scripts/run-fgcs-revision.py", "--output", args.reference],
+                destination, report_root / "revision-drivers.log")
+            result["revisionDrivers"] = "PASS"
+            comparison_command.extend([
+                "--names", "differential,sensitivity,energy,ablation,recovery,overhead,static-baseline",
+                "--revision",
+            ])
+        comparison = subprocess.run(comparison_command, cwd=ROOT, text=True, capture_output=True)
         (report_root / "comparison.log").write_text(comparison.stdout + comparison.stderr, encoding="utf-8")
         if comparison.returncode:
             raise RuntimeError("core result comparison failed")
