@@ -1,0 +1,105 @@
+experiments/src/main/java/org/workflowsim/experiments/fgcs/FgcStudySupport.java
+  s_10bbd229c700a4::t_0b3221989b9931 8,24,60-87,89-119,151-218,227-230,232-234,236,246-249,251-253,262-265,267-269,301-307,313-335,345-346,351-355,357-368,398-403
+experiments/src/main/java/org/workflowsim/experiments/fgcs/contracts/SemanticContractBenchmarks.java
+  s_10bbd229c700a4::t_314b3113b2aaab 1-949
+experiments/src/main/java/org/workflowsim/experiments/fgcs/energy/EnergyDeadlineStudy.java
+  s_768a25909712fc::t_436d49e302c1f7 1-113
+experiments/src/main/java/org/workflowsim/experiments/fgcs/recovery/FailureRecoveryStudy.java
+  s_768a25909712fc::t_a34a3779e45a01 3-5,9,20,27-31,34-38,46,52-56,64,71-94,98-106,109-115,120,127-166,168-170
+experiments/src/main/java/org/workflowsim/experiments/fgcs/rerun/ManifestGuidedRerunStudy.java
+  s_10bbd229c700a4::t_37bb8afacca38a 1-810
+experiments/src/main/java/org/workflowsim/experiments/fgcs/rerun/RerunStudyBundle.java
+  s_10bbd229c700a4::t_5db5c9bb639fa0 1-196
+experiments/src/main/java/org/workflowsim/experiments/fgcs/scalability/EvidenceOverheadStudy.java
+  s_10bbd229c700a4::t_a70bfbe4634952 3,5-7,14-15,20,28-33,35-38,49-73,76-91,103-106,109-253,256-280,283-285,288-289,298-299,303-312,315-318,320-325
+experiments/src/main/java/org/workflowsim/experiments/fgcs/sensitivity/CapacityControlledSensitivityStudy.java
+  s_10bbd229c700a4::t_af141b13a64556 1-133
+experiments/src/main/java/org/workflowsim/experiments/makespan/MakespanBaselineComparison.java
+  s_f3e6329934107d::t_d003d06d6a45f3 126
+experiments/src/test/java/org/workflowsim/experiments/fgcs/RoundTwoEvidenceIntegrationTest.java
+  s_768a25909712fc::t_cf7fa035f53de1 1-78
+experiments/src/test/java/org/workflowsim/experiments/fgcs/baseline/StaticPlannerBaselineStudyTest.java
+  s_10bbd229c700a4::t_c82e1680846ac8 28-56
+experiments/src/test/java/org/workflowsim/experiments/fgcs/contracts/SemanticContractBenchmarksTest.java
+  s_10bbd229c700a4::t_3d80dafd248d43 1-319
+experiments/src/test/java/org/workflowsim/experiments/fgcs/energy/EnergyDeadlineStudyTest.java
+  s_768a25909712fc::t_6aca81305a0179 1-54
+experiments/src/test/java/org/workflowsim/experiments/fgcs/recovery/FailureRecoveryStudyTest.java
+  s_f3e6329934107d::t_84959b9714c792 4,23,32-37,39-48,51,62,64-81,83
+experiments/src/test/java/org/workflowsim/experiments/fgcs/rerun/ManifestGuidedRerunStudyTest.java
+  s_10bbd229c700a4::t_48be33311dd7b9 1-228
+experiments/src/test/java/org/workflowsim/experiments/fgcs/scalability/EvidenceOverheadStudyTest.java
+  s_10bbd229c700a4::t_e648ccce775b8c 4-5,9,11,18-22,28-32,34-37,47-64,66-73,76-93,95,105-127,131,133-165,174,178-188,193-194,196,200-204,206-208,220
+experiments/studies/fgcs/README.md
+  s_63358334ca69a7::t_9230a79f064eb7 17-22,34,41,45,47,49,55,69,73
+experiments/studies/fgcs/contracts/README.md
+  s_f3e6329934107d::t_ccb3fea0b23957 1-70
+experiments/studies/fgcs/differential/README.md
+  s_768a25909712fc::t_3b7c5f01c7d38a 44,47-50
+experiments/studies/fgcs/overhead/protocol.json
+  s_10bbd229c700a4::t_4c6329347ad531 1-106
+experiments/studies/fgcs/protocol.json
+  s_768a25909712fc::t_4b880df3484724 2,12-15,31-40,48-56,62,68,71-73,76,80,84-104,112-114,117-118,120,123-124
+experiments/studies/fgcs/rerun/README.md
+  s_768a25909712fc::t_6fccd5c2eadcd3 1-188
+scripts/compare-fgcs-results.py
+  s_63358334ca69a7::t_81ab65145c6542 13-14,18-35,37-38,54-58,60-63,91,98-110,112-115,118-167,169-175,184-185,189-192,194,196-197,205-206,209
+scripts/prepare-fgcs-differential.py
+  s_768a25909712fc::t_1651af76843496 1-74
+scripts/reproduce-fgcs-clean.py
+  s_63358334ca69a7::t_c03b96a892b073 18-24,29,34-37,43-44,62-66,71-73
+scripts/run-fgcs-revision.py
+  s_10bbd229c700a4::t_ba1b5b75fae272 15-29,49-52,59-64,66-67,71-80,82-89,103-107,109,118,120,126-128,137,143,150
+scripts/test-compare-fgcs-results.py
+  s_768a25909712fc::t_2e8b80e9d3d6a1 32-33,38-47,71-132,142-160
+scripts/test-package-fgcs-artifact.py
+  s_768a25909712fc::t_ed52a3b5b8b3ec 43,60-167,174
+scripts/test-prepare-fgcs-differential.py
+  s_768a25909712fc::t_bbdf1135445615 1-22
+scripts/test-reproduce-fgcs-clean.py
+  s_768a25909712fc::t_caf5d314964d3c 1-24
+scripts/test-run-fgcs-matrix.py
+  s_10bbd229c700a4::t_5c02de0b0c588a 14-84,87,91,104-121,123,129-136,142,145-212
+scripts/test-summarize-fgcs-results.py
+  s_10bbd229c700a4::t_2392ead94668ae 1-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c8e7697522e087437f773a6d610cb70c0e77b05e",
+  "prompts": {},
+  "sessions": {
+    "s_10bbd229c700a4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d28d-a218-7892-b3de-5c416d5b9035",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_63358334ca69a7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f7f1-4ed4-7ea3-bd10-99bb6d9d190c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_f3e6329934107d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f1a0-351c-7643-a3d0-36ad18902594",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
