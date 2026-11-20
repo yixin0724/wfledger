@@ -10,7 +10,7 @@ This study remedies the earlier single-static-baseline limitation by comparing t
 
 The earlier 42-run baseline contains HEFT plus five online policies. Its “HEFT best static” observation is not a static-algorithm tournament. The present matrix is a same-layer comparison; it is not merged with online ready-job schedulers into a single winner population.
 
-The driver and tests are in `org.workflowsim.experiments.fgcs.baseline`. Each result includes mapping, makespan, waiting, slowdown, energy, cost, and independent audit residuals. Results are generated under `paper/tmp/fgcs-revision/static-baseline/`.
+The driver and tests are in `org.workflowsim.experiments.fgcs.baseline`. Each result includes mapping, makespan, waiting, slowdown, energy, cost, and independent audit residuals. Results are generated under `paper/tmp/fgcs-round2/static-baseline/`. The platform is obtained directly from `MakespanBaselineComparison.platform()`, so the VM identifiers, prices (1/2/4/8 cost units per second), and all other declarations match the original baseline exactly. An earlier draft used a 1/2/3/4 price profile and was not a valid cost comparison.
 
 Run from the repository root:
 

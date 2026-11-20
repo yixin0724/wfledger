@@ -41,8 +41,12 @@ recorded only to identify the original bytes; reproduction always uses the commi
 any size or hash mismatch.
 
 The retained paired observation input has SHA-256
-`e0094ddbcf5bef6ccd96d9ebf432ed7dd0670cc4c7672adada5e9d11dccafd67`. Each DAX SHA-256 is recorded
+`4cda40ddb3abbbbca82ac6dd8e3c132f0fdb5bc4c342add47043725c479cb257`. Each DAX SHA-256 is recorded
 per case in [comparison.json](comparison.json).
+
+## Required generation step
+
+Run `scripts/prepare-fgcs-differential.py` before packaging. It uses the immutable archive recorded above, compiles the upstream adapter and current exporter, writes `differential/upstream-observations.json`, regenerates `comparison.json`, and records `observation-provenance.json`. The output and work directories are separate so stale observations cannot be substituted for a new run. The source archive identity is verified by the comparator before any observations are accepted.
 
 ## Matched protocol and semantic limits
 

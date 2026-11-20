@@ -40,6 +40,20 @@ def marker(x, y, color):
             "\\pgfusepath{fill}\\color{black}\n")
 
 
+def policy_marker(x, y, policy, color):
+    if policy == "default":
+        return marker(x, y, color)
+    if policy == "MIN_POWER":
+        return ("\\color{" + color + "}\\pgfpathrectangle{" + point(x - 0.8, y - 0.8) + "}"
+                "{" + point(1.6, 1.6) + "}\\pgfusepath{fill}\\color{black}\n")
+    if policy == "EDP_HEURISTIC":
+        return ("\\color{" + color + "}\\pgfpathmoveto{" + point(x, y + 0.9) + "}"
+                "\\pgfpathlineto{" + point(x - 0.9, y - 0.8) + "}\\pgfpathlineto{" + point(x + 0.9, y - 0.8) + "}"
+                "\\pgfpathclose\\pgfusepath{fill}\\color{black}\n")
+    return ("\\color{" + color + "}" + line(x - 0.8, y - 0.8, x + 0.8, y + 0.8, color)
+            + line(x - 0.8, y + 0.8, x + 0.8, y - 0.8, color) + "\\color{black}\n")
+
+
 def execution_figure():
     stages = [(0, "Dependency\\nready", "Parent and\\nattempt identity"),
               (37, "Planning or\\ntarget assignment", "Decision, VM,\\nand order"),
@@ -52,6 +66,7 @@ def execution_figure():
         body += arrow(x, 7, x, 5)
     for (x, _, _), (next_x, _, _) in zip(stages, stages[1:]):
         body += arrow(x + 16.5, 12, next_x - 16.5, 12)
+    body += text(75.5, -10, "Data preparation may overlap VM busy intervals; a failed attempt returns to target assignment.")
     return body + "\\end{pgfpicture}"
 
 
@@ -67,9 +82,9 @@ def evidence_figure():
     body += arrow(48, 4, 56.5, 4)
     body += box(79, -10, 45, 10, "Identity, divergence,\\ninvalid, or refusal")
     body += arrow(79, -1, 79, -5)
-    body += box(24, -10, 48, 10, "Semantic replay and\\ndeclared core identity")
+    body += box(24, -10, 48, 10, "Re-simulation and\\nexact core identity")
     body += arrow(24, -1, 24, -5) + arrow(48, -10, 56.5, -10)
-    body += text(51.5, -19, "Independent of the production execution path; auditor scope remains explicit.", "tiny")
+    body += text(51.5, -19, "\\shortstack{Independent of the production execution path;\\\\auditor scope remains explicit.}")
     return body + "\\end{pgfpicture}"
 
 
@@ -93,6 +108,7 @@ def sensitivity_figure(rows):
         body += text(x, -3, str(vms))
     body += text(47, -7, "VM count")
     body += text(47, -12, "$\\operatorname{sgn}(\\Delta)\\log(1+|\\Delta|)$; $\\Delta$=relative Min-Min--HEFT difference")
+    body += text(47, -16, "Ties: abs(deltaT) <= 1e-9 s or relative <= 1e-12")
     for percent, transformed in ((-100, -math.log(2)), (0, 0), (100, math.log(2)), (1000, math.log(11))):
         y = 24 + 11 * transformed
         body += line(-0.7, y, 0.7, y) + text(-10, y, str(percent) + "\\%")
@@ -123,7 +139,7 @@ def energy_figure(rows):
             groups.setdefault(Path(row["label"]).stem, {})[row["label"].rsplit("-", 1)[1]] = row
     colors = {"Montage_50": "blue", "CyberShake_50": "red", "Sipht_60": "orange",
               "Inspiral_50": "teal", "Epigenomics_46": "purple"}
-    labels = {"default": "D", "MIN_POWER": "M", "EDP_HEURISTIC": "E", "dvfs": "V"}
+    policies = ("default", "MIN_POWER", "EDP_HEURISTIC", "dvfs")
     body = "\\begin{pgfpicture}\n" + line(0, 0, 95, 0) + line(0, 0, 0, 42)
     for value in (0.8, 1.0, 1.5, 2.0):
         x = (value - 0.8) * 65
@@ -133,17 +149,22 @@ def energy_figure(rows):
         body += line(-0.7, y, 0.7, y) + text(-7, y, str(value))
     for workflow in sorted(groups):
         baseline = groups[workflow]["default"]
-        for policy, label in labels.items():
+        for policy in policies:
             row = groups[workflow].get(policy)
             if row:
                 x = (row["makespanSeconds"] / baseline["makespanSeconds"] - 0.8) * 65
                 y = row["energyJoules"] / baseline["energyJoules"] * 34
-                body += marker(x, y, colors[workflow]) + text(x + 1.5, y + 1, label, "tiny")
+                body += policy_marker(x, y, policy, colors[workflow])
     body += text(47, -7, "Makespan / default HEFT")
-    body += text(47, -12, "Energy / default HEFT; D=default, M=MIN\\_POWER, E=EDP, V=DVFS")
+    body += text(47, -12, "Energy / default HEFT")
+    names = {"Montage_50": "Montage", "CyberShake_50": "CyberShake", "Sipht_60": "SIPHT",
+             "Inspiral_50": "Inspiral", "Epigenomics_46": "Epigenomics"}
     for index, (workflow, color) in enumerate(colors.items()):
-        x, y = (index % 3) * 32 + 7, 47 - (index // 3) * 5
-        body += marker(x, y, color) + text(x + 12, y, workflow.replace("_50", "").replace("_46", "").replace("_60", ""), "tiny")
+        x, y = (index % 3) * 32 + 7, 52 - (index // 3) * 5
+        body += marker(x, y, color) + text(x + 12, y, names[workflow], "tiny")
+    for policy, label, x in (("default", "default", 3), ("MIN_POWER", "MIN\\_POWER", 27),
+                             ("EDP_HEURISTIC", "EDP", 52), ("dvfs", "DVFS", 75)):
+        body += policy_marker(x, 36, policy, "black") + text(x + 9, 36, label, "tiny")
     return body + "\\end{pgfpicture}"
 
 
@@ -171,7 +192,7 @@ def compile_vector(name, body):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", default="paper/tmp/fgcs-revision")
+    parser.add_argument("--input", default="paper/tmp/fgcs-round2")
     args = parser.parse_args()
     root = ROOT / args.input
     sensitivity = json.loads((root / "sensitivity/results.json").read_text(encoding="utf-8"))

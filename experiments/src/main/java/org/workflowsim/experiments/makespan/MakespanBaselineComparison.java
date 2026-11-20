@@ -123,7 +123,7 @@ public final class MakespanBaselineComparison {
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
-    private static PlatformProfile platform() {
+    public static PlatformProfile platform() {
         return PlatformProfile.builder("makespan-baseline")
                 .addHost(new PlatformProfile.HostSpec(0, 1, 500.0, 4096, 10000L, 100000L))
                 .addHost(new PlatformProfile.HostSpec(1, 1, 1000.0, 4096, 10000L, 100000L))

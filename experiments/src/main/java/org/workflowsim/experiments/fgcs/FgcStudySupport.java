@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.workflowsim.data.DataMovementModel;
 import org.workflowsim.exception.SimulationExecutionException;
@@ -20,6 +21,7 @@ import org.workflowsim.utils.SimulationConfig;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public final class FgcStudySupport {
@@ -55,43 +57,66 @@ public final class FgcStudySupport {
                 heapPools.add(pool);
             }
         }
-        long start = System.nanoTime();
-        SimulationReport report = new SimulationRunner().run(config, platform);
-        long simulationNanos = System.nanoTime() - start;
-        long auditStart = System.nanoTime();
-        AlgorithmMetricAudit.AuditResult audit = AlgorithmMetricAudit.evaluate(report, config, platform, label);
-        long auditNanos = System.nanoTime() - auditStart;
-        long bytes = 0L;
-        long writeStart = System.nanoTime();
-        try {
-            if (artifactDirectory != null) {
-                Files.createDirectories(artifactDirectory);
-                ExperimentArtifactWriter.write(report, artifactDirectory, "result");
-                bytes = directoryBytes(artifactDirectory);
+        try (HeapSampler heapSampler = new HeapSampler(memory)) {
+            long start = System.nanoTime();
+            SimulationReport report = new SimulationRunner().run(config, platform);
+            long simulationNanos = System.nanoTime() - start;
+            long auditStart = System.nanoTime();
+            AlgorithmMetricAudit.AuditResult audit = AlgorithmMetricAudit.evaluate(report, config, platform, label);
+            long auditNanos = System.nanoTime() - auditStart;
+            long bytes = 0L;
+            long manifestBytes = 0L;
+            long metricsBytes = 0L;
+            long eventStreamBytes = 0L;
+            long lifecycleEvidenceBytes = 0L;
+            long writeStart = System.nanoTime();
+            try {
+                if (artifactDirectory != null) {
+                    Files.createDirectories(artifactDirectory);
+                    ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                            ExperimentArtifactWriter.write(report, artifactDirectory, "result");
+                    bytes = directoryBytes(artifactDirectory);
+                    manifestBytes = Files.size(artifacts.getManifest());
+                    metricsBytes = Files.size(artifacts.getMetrics());
+                    eventStreamBytes = Files.size(artifacts.getEvents());
+                    if (artifacts.getStorageLifecycle() != null) {
+                        lifecycleEvidenceBytes = Files.size(artifacts.getStorageLifecycle());
+                    }
+                }
+            } catch (IOException exception) {
+                throw new IllegalStateException("Cannot write FGCS evidence for " + label, exception);
             }
-        } catch (IOException exception) {
-            throw new IllegalStateException("Cannot write FGCS evidence for " + label, exception);
+            // R-round2: size accounting ends before memory instrumentation is read.
+            long artifactWriteNanos = System.nanoTime() - writeStart;
+            long heapPoolPeakSumBytes = 0L;
+            for (java.lang.management.MemoryPoolMXBean pool : heapPools) {
+                heapPoolPeakSumBytes += pool.getPeakUsage().getUsed();
+            }
+            long threadAllocatedBytes = threadAllocatedBefore < 0L
+                    ? -1L
+                    : ((com.sun.management.ThreadMXBean) threads)
+                                    .getThreadAllocatedBytes(
+                                            Thread.currentThread().getId())
+                            - threadAllocatedBefore;
+            heapSampler.sampleNow();
+            return new Measurement(
+                    label,
+                    report,
+                    audit,
+                    simulationNanos,
+                    artifactWriteNanos,
+                    auditNanos,
+                    bytes,
+                    manifestBytes,
+                    metricsBytes,
+                    eventStreamBytes,
+                    lifecycleEvidenceBytes,
+                    heapBeforeBytes,
+                    heapPoolPeakSumBytes,
+                    heapSampler.getSampledPeakBytes(),
+                    heapSampler.getSampleCount(),
+                    threadAllocatedBytes);
         }
-        long peakHeapBytes = 0L;
-        for (java.lang.management.MemoryPoolMXBean pool : heapPools) {
-            peakHeapBytes += pool.getPeakUsage().getUsed();
-        }
-        long threadAllocatedBytes = threadAllocatedBefore < 0L
-                ? -1L
-                : ((com.sun.management.ThreadMXBean) threads)
-                                .getThreadAllocatedBytes(Thread.currentThread().getId())
-                        - threadAllocatedBefore;
-        return new Measurement(
-                label,
-                report,
-                audit,
-                simulationNanos,
-                System.nanoTime() - writeStart,
-                auditNanos,
-                bytes,
-                heapBeforeBytes,
-                peakHeapBytes,
-                threadAllocatedBytes);
     }
 
     public static void writeResults(Path output, List<Measurement> measurements) throws IOException {
@@ -123,6 +148,74 @@ public final class FgcStudySupport {
         }
     }
 
+    /** Samples total heap used at one instant; this deliberately does not aggregate asynchronous pool peaks. */
+    private static final class HeapSampler implements AutoCloseable {
+        private static final long REQUESTED_INTERVAL_NANOS = 1000000L;
+        private final java.lang.management.MemoryMXBean memory;
+        private final Thread thread;
+        private final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
+        private volatile boolean running = true;
+        private long sampledPeakBytes;
+        private long sampleCount;
+
+        private HeapSampler(java.lang.management.MemoryMXBean memory) {
+            this.memory = memory;
+            sampleNow();
+            thread = new Thread(
+                    () -> {
+                        try {
+                            while (running) {
+                                sampleNow();
+                                Thread.sleep(1L);
+                            }
+                        } catch (InterruptedException interrupted) {
+                            if (running) {
+                                failure.compareAndSet(null, interrupted);
+                            }
+                        } catch (Throwable throwable) {
+                            failure.compareAndSet(null, throwable);
+                            running = false;
+                        }
+                    },
+                    "fgcs-total-heap-sampler");
+            thread.setDaemon(true);
+            thread.start();
+        }
+
+        private synchronized void sampleNow() {
+            long used = memory.getHeapMemoryUsage().getUsed();
+            sampledPeakBytes = Math.max(sampledPeakBytes, used);
+            sampleCount++;
+        }
+
+        private synchronized long getSampledPeakBytes() {
+            return sampledPeakBytes;
+        }
+
+        private synchronized long getSampleCount() {
+            return sampleCount;
+        }
+
+        @Override
+        public void close() {
+            running = false;
+            thread.interrupt();
+            try {
+                thread.join(5000L);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while stopping FGCS heap sampler", interrupted);
+            }
+            if (thread.isAlive()) {
+                throw new IllegalStateException("FGCS heap sampler did not stop");
+            }
+            Throwable problem = failure.get();
+            if (problem != null) {
+                throw new IllegalStateException("FGCS heap sampler failed", problem);
+            }
+        }
+    }
+
     public static final class Measurement {
         private final String label;
         private final SimulationReport report;
@@ -131,9 +224,16 @@ public final class FgcStudySupport {
         private final long artifactWriteNanos;
         private final long auditNanos;
         private final long artifactBytes;
+        private final long manifestBytes;
+        private final long metricsBytes;
+        private final long eventStreamBytes;
+        private final long lifecycleEvidenceBytes;
         private final long heapBeforeBytes;
-        private final long peakHeapBytes;
+        private final long heapPoolPeakSumBytes;
+        private final long sampledTotalHeapPeakBytes;
+        private final long heapSampleCount;
         private final long threadAllocatedBytes;
+        private final JsonObject protocolMetadata = new JsonObject();
 
         private Measurement(
                 String label,
@@ -143,8 +243,14 @@ public final class FgcStudySupport {
                 long artifactWriteNanos,
                 long auditNanos,
                 long artifactBytes,
+                long manifestBytes,
+                long metricsBytes,
+                long eventStreamBytes,
+                long lifecycleEvidenceBytes,
                 long heapBeforeBytes,
-                long peakHeapBytes,
+                long heapPoolPeakSumBytes,
+                long sampledTotalHeapPeakBytes,
+                long heapSampleCount,
                 long threadAllocatedBytes) {
             this.label = label;
             this.report = report;
@@ -153,8 +259,14 @@ public final class FgcStudySupport {
             this.artifactWriteNanos = artifactWriteNanos;
             this.auditNanos = auditNanos;
             this.artifactBytes = artifactBytes;
+            this.manifestBytes = manifestBytes;
+            this.metricsBytes = metricsBytes;
+            this.eventStreamBytes = eventStreamBytes;
+            this.lifecycleEvidenceBytes = lifecycleEvidenceBytes;
             this.heapBeforeBytes = heapBeforeBytes;
-            this.peakHeapBytes = peakHeapBytes;
+            this.heapPoolPeakSumBytes = heapPoolPeakSumBytes;
+            this.sampledTotalHeapPeakBytes = sampledTotalHeapPeakBytes;
+            this.heapSampleCount = heapSampleCount;
             this.threadAllocatedBytes = threadAllocatedBytes;
         }
 
@@ -186,13 +298,41 @@ public final class FgcStudySupport {
             return label;
         }
 
+        /** Adds overhead-only measurements without changing the existing callers' simulation or audit path. */
+        public void addProtocolMetadata(JsonObject metadata) {
+            for (java.util.Map.Entry<String, JsonElement> entry : metadata.entrySet()) {
+                protocolMetadata.add(entry.getKey(), entry.getValue());
+            }
+        }
+
         public JsonObject toJson() {
             SimulationMetrics metrics = report.getMetrics();
             JsonObject value = new JsonObject();
             value.addProperty("label", label);
             value.addProperty("makespanSeconds", report.getMakespan());
-            value.addProperty("meanWaitingSeconds", metrics.getMeanComputeTotalWaitingTimeSeconds());
-            value.addProperty("meanTrueSlowdown", metrics.getMeanComputeTrueSlowdown());
+            boolean eventDependentMetricsAvailable =
+                    report.getConfig().isEventRecordingEnabled() && metrics.getTrueSlowdownObservationCount() > 0;
+            // R-round2: VM submission is not dependency-ready time. Disabled event recording therefore
+            // makes these event-derived observations unavailable rather than numeric zero measurements.
+            value.addProperty(
+                    "meanWaitingSeconds",
+                    eventDependentMetricsAvailable
+                            ? Double.valueOf(metrics.getMeanComputeTotalWaitingTimeSeconds())
+                            : null);
+            value.addProperty(
+                    "meanTrueSlowdown",
+                    eventDependentMetricsAvailable ? Double.valueOf(metrics.getMeanComputeTrueSlowdown()) : null);
+            value.addProperty("meanWaitingSecondsAvailable", eventDependentMetricsAvailable);
+            value.addProperty("meanTrueSlowdownAvailable", eventDependentMetricsAvailable);
+            value.addProperty(
+                    "eventDependentMetricAvailability",
+                    eventDependentMetricsAvailable
+                            ? "AVAILABLE"
+                            : !report.getConfig().isEventRecordingEnabled()
+                                    ? "UNAVAILABLE_EVENT_RECORDING_DISABLED"
+                                    : "UNAVAILABLE_NO_TRUE_SLOWDOWN_OBSERVATIONS");
+            value.addProperty("totalWaitingTimeObservationCount", metrics.getTotalWaitingTimeObservationCount());
+            value.addProperty("trueSlowdownObservationCount", metrics.getTrueSlowdownObservationCount());
             value.addProperty("throughputJobsPerSecond", metrics.getComputeJobOutcomeThroughputPerSecond());
             value.addProperty("meanVmUtilization", metrics.getMeanVmModeledIntervalUtilization());
             value.addProperty("energyJoules", report.getEnergyAccounting().getTotalEnergyJoules());
@@ -202,13 +342,30 @@ public final class FgcStudySupport {
             value.addProperty("logicalTasks", metrics.getLogicalTaskCount());
             value.addProperty("completedTasks", metrics.getSuccessfullyCompletedLogicalTaskCount());
             value.addProperty("simulationNanos", simulationNanos);
+            value.addProperty("serializationAndSizeAccountingNanos", artifactWriteNanos);
+            // Retained as a compatibility alias for older FGCS callers; both values have the same timed scope.
             value.addProperty("artifactWriteNanos", artifactWriteNanos);
             value.addProperty("auditNanos", auditNanos);
             value.addProperty("eventCount", report.getEvents().size());
             value.addProperty("artifactBytes", artifactBytes);
+            value.addProperty("manifestBytes", manifestBytes);
+            value.addProperty("metricsBytes", metricsBytes);
+            value.addProperty("eventStreamBytes", eventStreamBytes);
+            value.addProperty("lifecycleEvidenceBytes", lifecycleEvidenceBytes);
+            value.addProperty("lifecycleEvidenceAvailable", report.getStorageLifecycleEvidence() != null);
             value.addProperty("heapBeforeBytes", heapBeforeBytes);
-            value.addProperty("peakHeapBytes", peakHeapBytes);
-            value.addProperty("threadAllocatedBytes", threadAllocatedBytes);
+            value.addProperty("heapPoolPeakSumBytes", heapPoolPeakSumBytes);
+            value.addProperty("sampledTotalHeapPeakBytes", sampledTotalHeapPeakBytes);
+            value.addProperty("heapSampleCount", heapSampleCount);
+            value.addProperty("heapSampleRequestedIntervalNanos", HeapSampler.REQUESTED_INTERVAL_NANOS);
+            value.addProperty(
+                    "sampledTotalHeapPeakScope",
+                    "SAMPLED_APPROXIMATION_OF_SIMULTANEOUS_TOTAL_HEAP_USED_DURING_SIMULATION_"
+                            + "SERIALIZATION_AND_IN_MEMORY_AUDIT_NOT_TRUE_PEAK_OR_MINIMUM_MEMORY");
+            value.addProperty(
+                    "heapPoolPeakSumScope", "SUM_OF_INDEPENDENT_HEAP_POOL_PEAKS_NOT_SIMULTANEOUS_NOT_MINIMUM_MEMORY");
+            value.addProperty(
+                    "threadAllocatedBytes", threadAllocatedBytes < 0L ? null : Long.valueOf(threadAllocatedBytes));
             value.addProperty("energyResidual", audit.getEnergyResidualJoules());
             value.addProperty("costResidual", audit.getCostResidual());
             value.addProperty("makespanResidual", audit.getMakespanResidualSeconds());
@@ -238,6 +395,12 @@ public final class FgcStudySupport {
                 mapping.addProperty(String.valueOf(entry.getKey()), entry.getValue());
             }
             value.add("mapping", mapping);
+            for (java.util.Map.Entry<String, JsonElement> entry : protocolMetadata.entrySet()) {
+                if (value.has(entry.getKey())) {
+                    throw new IllegalStateException("Protocol metadata collides with base field " + entry.getKey());
+                }
+                value.add(entry.getKey(), entry.getValue());
+            }
             return value;
         }
     }

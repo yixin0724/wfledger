@@ -19,6 +19,47 @@ public final class FgcPlatforms {
         return create(vmCount, speedRatio, false, false, null, null, Double.valueOf(storageRate));
     }
 
+    public static PlatformProfile fixedCapacity(int vmCount, int speedRatio, int storageRate) {
+        PlatformProfile raw = flat(vmCount, speedRatio, storageRate);
+        double total = 0.0;
+        for (PlatformProfile.VmSpec vm : raw.getVms()) {
+            total += vm.getMips();
+        }
+        double target = vmCount * 500.0;
+        PlatformProfile.Builder builder = PlatformProfile.builder("fgcs-fixed-capacity")
+                .storage(new PlatformProfile.StorageSpec(1000000000L, storageRate));
+        for (int index = 0; index < vmCount; index++) {
+            PlatformProfile.HostSpec host = raw.getHosts().get(index);
+            PlatformProfile.VmSpec vm = raw.getVms().get(index);
+            double mips = vm.getMips() * target / total;
+            // R2-CAPACITY: legacy Pe.getMips() truncates to int; ceiling only the host PE
+            // preserves the normalized VM rate while avoiding a sub-one-MIPS allocation failure.
+            builder.addHost(new PlatformProfile.HostSpec(
+                    host.getId(),
+                    host.getPes(),
+                    Math.ceil(mips),
+                    host.getRamMb(),
+                    host.getBandwidth(),
+                    host.getStorageMb()));
+            builder.addVm(new PlatformProfile.VmSpec(
+                    vm.getId(),
+                    mips,
+                    vm.getPes(),
+                    vm.getRamMb(),
+                    vm.getBandwidth(),
+                    vm.getImageSizeMb(),
+                    vm.getVmm(),
+                    PlatformProfile.CloudletSchedulerMode.SPACE_SHARED,
+                    vm.getCosts(),
+                    vm.getIdlePowerWatts(),
+                    vm.getMaxPowerWatts(),
+                    null,
+                    java.util.Collections.emptyList()));
+            builder.pinVmToHost(vm.getId(), host.getId());
+        }
+        return builder.build();
+    }
+
     public static PlatformProfile tiered(int vmCount, int speedRatio, boolean nonMonotonic) {
         return create(vmCount, speedRatio, true, nonMonotonic, null, null, null);
     }

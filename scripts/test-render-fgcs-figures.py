@@ -39,9 +39,10 @@ class FigureGenerationTest(unittest.TestCase):
             rows.append({"label": workflow + ".dax-default", "makespanSeconds": 100.0, "energyJoules": 50.0})
             rows.append({"label": workflow + ".dax-MIN_POWER", "makespanSeconds": 120.0, "energyJoules": 25.0})
         body = MODULE.energy_figure(rows)
-        for family in ("Montage", "CyberShake", "Sipht", "Inspiral", "Epigenomics"):
+        for family in ("Montage", "CyberShake", "SIPHT", "Inspiral", "Epigenomics"):
             self.assertIn(family, body)
-        self.assertIn("M=MIN", body)
+        self.assertIn("MIN\\_POWER", body)
+        self.assertIn("policy_marker", MODULE.policy_marker.__name__)
         self.assertIn("Makespan / default HEFT", body)
 
 

@@ -21,9 +21,21 @@ class RevisionVerifierTest(unittest.TestCase):
         }))
         (root / "microbench").mkdir()
         (root / "microbench/results.json").write_text(json.dumps({"cases": [{"id": "case", "expected": {"time": 2.0}, "observed": {"time": 2.0}}]}))
-        for name, count in (("static-baseline", 21), ("overhead", 45)):
+        for name, count in MODULE.EXPECTED_LIST_ROWS.items():
             (root / name).mkdir()
             (root / name / "results.json").write_text(json.dumps([{}] * count))
+        (root / "contracts").mkdir()
+        (root / "contracts/results.json").write_text(json.dumps({"cases": [
+            {"id": "case", "passed": True, "expected": {"time": 2.0}, "observed": {"time": 2.0}},
+        ]}))
+        (root / "contracts/recovery-study-results.json").write_text(json.dumps([
+            {"label": "case", "recoveryClassification": "EXERCISED_FAILURE_RETRY",
+             "failedJobs": 1, "retryJobsCreated": 1},
+        ] * 12))
+        (root / "rerun").mkdir()
+        (root / "rerun/results.json").write_text(json.dumps({
+            "summary": {"unexpectedOutcomes": 0}, "cases": [{}] * 9,
+        }))
 
     def test_verified_revision_artifacts(self):
         with tempfile.TemporaryDirectory() as directory:

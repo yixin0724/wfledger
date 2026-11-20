@@ -603,6 +603,15 @@ def run_maven(arguments):
         ["mvn"] + arguments, cwd=str(ROOT), capture_output=True, text=True)
     return proc.returncode, proc.stdout + proc.stderr, time.time() - started
 
+def git_revision():
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=str(ROOT), capture_output=True, text=True)
+        return proc.stdout.strip() if proc.returncode == 0 else None
+    except OSError:
+        return None
+
+
 def git_tree_dirty():
     try:
         proc = subprocess.run(
@@ -692,13 +701,13 @@ def main(argv=None):
         registry = [mutant for mutant in registry if mutant["id"] in wanted]
 
     started = time.time()
+    dirty = git_tree_dirty()
     if args.dry_run:
         states = collect_anchor_states(registry)
         results = [{"id": mutant["id"], "name": mutant["name"], "file": mutant["file"],
                     "status": states[mutant["id"]], "stage": "dry-run"}
                    for mutant in registry]
     else:
-        dirty = git_tree_dirty()
         if dirty:
             print("mutation-gate: refusing to run on a dirty Git tree; "
                   "commit or stash first", file=sys.stderr)
@@ -712,6 +721,9 @@ def main(argv=None):
         "schema": "workflowsim-mutation-gate-v1",
         "scope": "REGISTERED_MUTANT_SURVIVAL_GATE_NOT_A_TEST substitute_entry",
         "mode": "dry-run" if args.dry_run else "full",
+        "sourceCommit": git_revision(),
+        "sourceTreeDirty": dirty,
+        "command": ["python3", "-B", "scripts/mutation-gate.py"] + list(argv if argv is not None else sys.argv[1:]),
         "modules": sorted({mutant.get("module", "simulator") for mutant in registry}),
         "summary": summarize(results),
         "results": results,
