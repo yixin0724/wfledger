@@ -67,6 +67,9 @@ def main():
             run([sys.executable, "scripts/run-fgcs-revision.py", "--output", args.reference],
                 destination, report_root / "revision-drivers.log")
             result["revisionDrivers"] = "PASS"
+            run([sys.executable, "scripts/summarize-fgcs-results.py", "--input", args.reference],
+                destination, report_root / "summaries.log")
+            result["summaries"] = "PASS"
             comparison_command.extend([
                 "--names", "differential,sensitivity,energy,ablation,recovery,overhead,static-baseline,"
                 + "fixed-capacity-sensitivity,energy-deadline",
