@@ -175,7 +175,10 @@ class ArtifactPackageTest(unittest.TestCase):
             reconstructed = template.replace("${SOURCE_ROOT}/", lineage["sourceRootPrefix"])
             import hashlib
             self.assertEqual(lineage["raw"], hashlib.sha256(reconstructed.encode()).hexdigest())
-            self.assertEqual(normalized.read_text(), reconstructed.replace(lineage["sourceRootPrefix"], ""))
+            self.assertEqual("results/differential/inputs/chain.dax", json.loads(normalized.read_text())[0]["workflow"])
+            for entry in lineage["pathMap"]:
+                reconstructed = reconstructed.replace(entry["raw"], entry["normalized"])
+            self.assertEqual(normalized.read_text(), reconstructed)
 
     def test_embedded_verifier_checks_hashes_and_rows(self):
         with tempfile.TemporaryDirectory() as directory:

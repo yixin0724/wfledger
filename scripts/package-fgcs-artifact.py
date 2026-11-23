@@ -246,19 +246,37 @@ def create_differential_lineage(source, normalized, output_root):
     template_path = output_root / "results/differential/upstream-observations.source-template.json"
     template_path.parent.mkdir(parents=True, exist_ok=True)
     template_path.write_text(template, encoding="utf-8")
-    normalized_text = normalized.read_text(encoding="utf-8")
-    normalized_document = json.loads(normalized_text)
-    for case in normalized_document:
-        case["workflow"] = prefix + case["workflow"]
-    if json.loads(raw_text) != normalized_document:
-        raise ValueError("normalized differential observations are not the declared root-removal transformation")
+    path_map = []
+    normalized_text = raw_text
+    for case in observations:
+        original = case["workflow"]
+        if not original.startswith(prefix):
+            raise ValueError("workflow path is outside the declared source root: " + original)
+        relative = original[len(prefix):]
+        if relative.startswith("paper/tmp/"):
+            parts = relative.split("/")
+            if len(parts) < 4:
+                raise ValueError("workflow result path is incomplete: " + original)
+            tail = "/".join(parts[3:])
+            normalized_path = ("results/differential/" + tail) if parts[2] == "fgcs-round2-differential-reproduction" else "results/" + tail
+        elif relative.startswith("datasets/"):
+            normalized_path = "results/differential/" + relative
+        else:
+            raise ValueError("workflow input is outside the retained result tree: " + original)
+        normalized_text = normalized_text.replace(original, normalized_path)
+        path_map.append({"raw": original, "normalized": normalized_path})
+    normalized.write_text(normalized_text, encoding="utf-8")
+    if json.loads(normalized_text) != [
+            dict(case, workflow=entry["normalized"]) for case, entry in zip(observations, path_map)]:
+        raise ValueError("normalized differential observations do not match the declared path map")
     return {
         "raw": sha256(source),
         "normalized": sha256(normalized),
         "sourceRootPrefix": prefix,
         "template": "results/differential/upstream-observations.source-template.json",
         "templateSha256": sha256(template_path),
-        "normalization": "Replace ${SOURCE_ROOT}/ with sourceRootPrefix to reconstruct raw; remove that prefix to obtain normalized bytes",
+        "pathMap": path_map,
+        "normalization": "Replace ${SOURCE_ROOT}/ with sourceRootPrefix to reconstruct raw; pathMap maps each raw workflow path to its packaged input path",
     }
 
 
@@ -321,9 +339,13 @@ if lineage:
         issues.append("differential source-template hash mismatch")
     if hashlib.sha256(reconstructed.encode()).hexdigest() != lineage["raw"]:
         issues.append("differential raw observation hash cannot be reconstructed")
-    normalized = (root / "results/differential/upstream-observations.json").read_text()
-    if reconstructed.replace(lineage["sourceRootPrefix"], "") != normalized:
-        issues.append("differential normalization is not the declared root-removal transformation")
+    normalized = reconstructed
+    for entry in lineage.get("pathMap", []):
+        if normalized.count(entry["raw"]) != 1:
+            issues.append("differential raw path is missing or duplicated: " + entry["raw"])
+        normalized = normalized.replace(entry["raw"], entry["normalized"])
+    if normalized != (root / "results/differential/upstream-observations.json").read_text():
+        issues.append("differential normalization does not match the declared path map")
 mutation_path = root / "validation/mutation-gate.json"
 if mutation_path.is_file():
     mutation = json.loads(mutation_path.read_text())

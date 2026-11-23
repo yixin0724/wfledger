@@ -24,6 +24,21 @@ def relative_path(value, label):
     return path
 
 
+def copy_reproduction_inputs(work, output):
+    inputs = Path(work) / "inputs"
+    if not inputs.is_dir():
+        raise ValueError("reproduction did not retain its DAX input directory")
+    target = Path(output) / "inputs"
+    target.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for source in inputs.glob("*.dax"):
+        shutil.copyfile(source, target / source.name)
+        count += 1
+    if not count:
+        raise ValueError("reproduction input directory contains no DAX files")
+    return count
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate pinned current/upstream FGCS differential observations")
     parser.add_argument("--output", default="paper/tmp/fgcs-round2/differential")
@@ -46,6 +61,7 @@ def main():
         if not observations.is_file():
             raise ValueError("reproduction did not generate upstream-observations.json")
         shutil.copyfile(observations, output / "upstream-observations.json")
+        copy_reproduction_inputs(work, output)
         comparison = subprocess.run([sys.executable, "-B", str(COMPARE),
                                      "--observations", str(output / "upstream-observations.json"),
                                      "--output", str(output / "comparison.json"), "--no-table"],
