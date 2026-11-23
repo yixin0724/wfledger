@@ -209,13 +209,11 @@ def collect_derivations(source_results, output_results, output_root):
         source = (source if source.is_absolute() else ROOT / source).resolve()
         derived = (derived if derived.is_absolute() else ROOT / derived).resolve()
         if not derived.is_file():
-            try:
-                derived_relative = derived.relative_to(ROOT)
-            except ValueError:
-                derived_relative = derived.relative_to(source_results.parent)
-            candidate = source_results / derived_relative
-            if candidate.is_file() and sha256(candidate) == provenance["derivedSha256"]:
-                derived = candidate
+            matches = [candidate for candidate in output_results.rglob("*.dax")
+                       if candidate.is_file() and sha256(candidate) == provenance["derivedSha256"]]
+            if len(matches) != 1:
+                raise ValueError("cannot resolve exactly one retained derived input by declared hash: " + str(sidecar))
+            derived = matches[0].resolve()
         if not source.is_file() or not derived.is_file():
             raise ValueError("derivation input is missing for " + str(sidecar))
         subprocess.run(["python3", "-B", str(ROOT / "scripts/verify-fgcs-derived-input.py"),
