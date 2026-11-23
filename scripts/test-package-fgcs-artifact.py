@@ -148,6 +148,18 @@ class ArtifactPackageTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unexpectedly has an input"):
                 MODULE.validate_negative_fixture_inputs(root)
 
+    def test_detached_source_root_is_removed_from_text_observations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "paper/tmp/fgcs-round2/differential"
+            source.mkdir(parents=True)
+            (source / "observations.json").write_text(json.dumps([{"workflow": str(root / "paper/tmp/x/chain.dax")}]))
+            destination = root / "artifact"
+            MODULE.collect_results(source.parent, destination, root)
+            text = (destination / "differential/observations.json").read_text()
+            self.assertNotIn(str(root), text)
+            self.assertIn("paper/tmp/x/chain.dax", text)
+
     def test_differential_lineage_reconstructs_raw_and_normalized_bytes(self):
         project = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as directory:

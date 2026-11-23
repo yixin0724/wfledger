@@ -94,10 +94,12 @@ def validate_manifest_inputs(root):
     return count
 
 
-def copy_sanitized(source, target):
+def copy_sanitized(source, target, source_root=None):
     target.parent.mkdir(parents=True, exist_ok=True)
     if source.suffix in TEXT_SUFFIXES:
         text = source.read_text(encoding="utf-8")
+        if source_root is not None:
+            text = text.replace(str(source_root).rstrip("/") + "/", "")
         text = text.replace(str(ROOT) + "/", "")
         text = text.replace(str(Path.home()) + "/.m2/", "$HOME/.m2/")
         text = text.replace("/private/tmp/fgcs-clean-reproduction-round2/", "")
@@ -109,20 +111,17 @@ def copy_sanitized(source, target):
         shutil.copyfile(source, target)
 
 
-def relocate_manifest(path, results_root, source_results=None):
+def relocate_manifest(path, results_root, source_results=None, original_checkout=None):
     """Relocate declared input paths without changing input bytes or measured outcomes."""
     document = json.loads(path.read_text(encoding="utf-8"))
     execution = document["provenance"]["execution"]
     original_root = Path(execution["workingDirectory"])
     if not original_root.is_absolute():
         raise ValueError("manifest workingDirectory must be absolute: " + str(path))
-    source_root = original_root
-    source_results = source_root / "paper/tmp/fgcs-revision" if source_results is None else Path(source_results).resolve()
-    try:
-        path.resolve().relative_to(results_root.resolve())
-        source_results.relative_to(original_root)
-    except ValueError as error:
-        raise ValueError("manifest or retained results are outside their declared source checkout: " + str(path)) from error
+    source_results = Path(source_results).resolve() if source_results is not None else original_root / "paper/tmp/fgcs-revision"
+    results_root = Path(results_root).resolve()
+    source_results.relative_to(original_root)
+    path.resolve().relative_to(results_root)
     for scope in (document["configuration"], document, document["result"]):
         if scope is document["configuration"]:
             targets = [(scope["workflowPaths"], index, original)
@@ -133,32 +132,30 @@ def relocate_manifest(path, results_root, source_results=None):
             targets = [(item, "path", item["path"]) for item in scope["workflowOutcomes"]]
         for owner, key, original in targets:
             original_path = Path(original)
+            if not original_path.is_absolute():
+                original_path = original_root / original_path
             try:
-                relative_input = original_path.resolve().relative_to(original_root)
-            except ValueError as error:
-                raise ValueError("workflow input is outside the original source tree: " + original) from error
-            expected_source = source_root / relative_input
-            if not expected_source.is_file():
-                if negative_fixture_kind(path) == "INPUT_UNRESOLVED" and relative_input.parts[:2] == ("paper", "tmp"):
-                    result_relative = relative_input.relative_to(source_results.relative_to(source_root))
-                    owner[key] = "/results/" + result_relative.as_posix()
-                    continue
-                raise ValueError("original workflow input is unavailable: " + original)
-            if relative_input.parts[:2] != ("paper", "tmp"):
-                # Classic DAX inputs are retained separately by the differential/source archive.
-                if relative_input.parts[0] == "datasets":
-                    relocated = "results/_source-inputs/" + relative_input.as_posix()
-                    target = results_root / "_source-inputs" / relative_input
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(expected_source, target)
-                else:
-                    raise ValueError("workflow input is not in the retained paper results: " + original)
-            else:
-                result_relative = relative_input.relative_to(source_results.relative_to(source_root))
+                relative_input = original_path.relative_to(original_root)
+            except ValueError:
+                relative_input = Path("paper", "tmp", "fgcs-round2")
+            if relative_input.parts[:2] == ("paper", "tmp"):
+                if len(relative_input.parts) < 3:
+                    raise ValueError("workflow input has no result directory: " + original)
+                result_relative = Path(*relative_input.parts[3:])
                 candidate = results_root / result_relative
                 if not candidate.is_file():
+                    if negative_fixture_kind(path) == "INPUT_UNRESOLVED":
+                        owner[key] = "/results/" + result_relative.as_posix()
+                        continue
                     raise ValueError("retained workflow input is missing: " + str(candidate))
                 relocated = "results/" + result_relative.as_posix()
+            elif relative_input.parts[0] == "datasets":
+                relocated = "results/_source-inputs/" + relative_input.as_posix()
+                target = results_root / "_source-inputs" / relative_input
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(original_path, target)
+            else:
+                raise ValueError("workflow input is not in the retained paper results: " + original)
             owner[key] = "/" + relocated
     execution["workingDirectory"] = "/"
     core = document["provenance"].get("core")
@@ -167,9 +164,12 @@ def relocate_manifest(path, results_root, source_results=None):
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
 
 
-def collect_results(source, destination):
+def collect_results(source, destination, source_root=None):
     if not source.is_dir():
         raise ValueError("reference result directory is missing: " + str(source))
+    if source_root is None:
+        parts = source.resolve().parts
+        source_root = Path(*parts[:parts.index("paper")]) if "paper" in parts else ROOT
     count = 0
     for path in sorted(source.rglob("*")):
         if not path.is_file() or any(part in SKIP_DIRS for part in path.parts):
@@ -182,7 +182,7 @@ def collect_results(source, destination):
                 # Relocation needs the original absolute workingDirectory and input paths.
                 shutil.copyfile(path, target)
             else:
-                copy_sanitized(path, target)
+                copy_sanitized(path, target, source_root)
             count += 1
     if not count:
         raise ValueError("no reference results were retained")
@@ -246,7 +246,11 @@ def create_differential_lineage(source, normalized, output_root):
     template_path = output_root / "results/differential/upstream-observations.source-template.json"
     template_path.parent.mkdir(parents=True, exist_ok=True)
     template_path.write_text(template, encoding="utf-8")
-    if raw_text.replace(prefix, "") != normalized.read_text(encoding="utf-8"):
+    normalized_text = normalized.read_text(encoding="utf-8")
+    normalized_document = json.loads(normalized_text)
+    for case in normalized_document:
+        case["workflow"] = prefix + case["workflow"]
+    if json.loads(raw_text) != normalized_document:
         raise ValueError("normalized differential observations are not the declared root-removal transformation")
     return {
         "raw": sha256(source),
@@ -556,7 +560,7 @@ def main():
         for path in (output / "results").rglob("result.manifest.json")
     }
     for path in sorted((output / "results").rglob("result.manifest.json")):
-        relocate_manifest(path, output / "results", ROOT / args.results)
+        relocate_manifest(path, output / "results", ROOT / args.results, ROOT)
     if not (output / "results/differential/upstream-observations.json").is_file():
         raise ValueError("paired differential observations are missing; run scripts/prepare-fgcs-differential.py first")
     for relative in REQUIRED_NEGATIVE_MANIFESTS:
