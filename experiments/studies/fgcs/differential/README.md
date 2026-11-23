@@ -41,7 +41,7 @@ recorded only to identify the original bytes; reproduction always uses the commi
 any size or hash mismatch.
 
 The retained paired observation input has SHA-256
-`4cda40ddb3abbbbca82ac6dd8e3c132f0fdb5bc4c342add47043725c479cb257`. Each DAX SHA-256 is recorded
+`97bc412b8d5ea793bd095246c0de04ed658d2afb1769b8234be9ea7f171d6800`. Each DAX SHA-256 is recorded
 per case in [comparison.json](comparison.json).
 
 ## Required generation step
