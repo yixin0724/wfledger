@@ -378,10 +378,13 @@ if lineage:
     if hashlib.sha256(reconstructed.encode()).hexdigest() != lineage["raw"]:
         issues.append("differential raw observation hash cannot be reconstructed")
     normalized = reconstructed
-    for entry in lineage.get("pathMap", []):
-        if normalized.count(entry["raw"]) != 1:
-            issues.append("differential raw path is missing or duplicated: " + entry["raw"])
-        normalized = normalized.replace(entry["raw"], entry["normalized"])
+    raw_cases = json.loads(reconstructed)
+    path_map = {entry["raw"]: entry["normalized"] for entry in lineage.get("pathMap", [])}
+    for raw_path, packaged_path in path_map.items():
+        expected_occurrences = sum(case.get("workflow") == raw_path for case in raw_cases)
+        if normalized.count(raw_path) != expected_occurrences:
+            issues.append("differential raw path occurrence mismatch: " + raw_path)
+        normalized = normalized.replace(raw_path, packaged_path)
     if normalized != (root / "results/differential/upstream-observations.json").read_text():
         issues.append("differential normalization does not match the declared path map")
 mutation_path = root / "validation/mutation-gate.json"
@@ -565,6 +568,8 @@ def validate_portable_reruns(output):
             for name in ("rerun-report.json", "rerun-report.md"):
                 text = (destination / name).read_text(encoding="utf-8")
                 text = text.replace(str(Path(directory)) + "/", "")
+                text = text.replace(str(ROOT) + "/", "")
+                text = text.replace("/private/tmp/", "detached-worktree/")
                 (target / name).write_text(text, encoding="utf-8")
             lines.append(case_id + " verdict=IDENTICAL_CORE inputTier=1 verified=true")
         target = output / "validation/portable-rerun.log"

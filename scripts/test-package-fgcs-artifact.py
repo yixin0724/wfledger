@@ -233,6 +233,40 @@ class ArtifactPackageTest(unittest.TestCase):
             self.assertIsNone(MODULE.current_mutation_report("missing"))
         MODULE.ROOT = original_root
 
+    def test_embedded_verifier_accepts_repeated_workflow_paths(self):
+        import hashlib
+        import subprocess
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            differential = root / "results/differential"
+            differential.mkdir(parents=True)
+            raw_path = "/source/paper/tmp/fgcs-round2-differential-reproduction/inputs/chain.dax"
+            packaged_path = "results/differential/inputs/chain.dax"
+            raw = json.dumps([{"workflow": raw_path}, {"workflow": raw_path}], indent=2) + "\n"
+            normalized = json.dumps([{"workflow": packaged_path}, {"workflow": packaged_path}], indent=2) + "\n"
+            template = raw.replace("/source/", "${SOURCE_ROOT}/")
+            (differential / "results.json").write_text("[]")
+            (differential / "upstream-observations.json").write_text(normalized)
+            (differential / "upstream-observations.source-template.json").write_text(template)
+            metadata = {
+                "sourceCommit": "abc", "expectedResultRows": {"differential": 0},
+                "differentialObservationHashes": {
+                    "raw": hashlib.sha256(raw.encode()).hexdigest(),
+                    "normalized": hashlib.sha256(normalized.encode()).hexdigest(),
+                    "sourceRootPrefix": "/source/",
+                    "template": "results/differential/upstream-observations.source-template.json",
+                    "templateSha256": hashlib.sha256(template.encode()).hexdigest(),
+                    "pathMap": [{"raw": raw_path, "normalized": packaged_path},
+                                {"raw": raw_path, "normalized": packaged_path}],
+                },
+            }
+            (root / "artifact-metadata.json").write_text(json.dumps(metadata))
+            (root / "derivation-input-map.json").write_text("[]")
+            (root / "verify-artifact.py").write_text(MODULE.verifier_text())
+            (root / "SHA256SUMS").write_text("")
+            result = subprocess.run(["python3", str(root / "verify-artifact.py")], text=True, capture_output=True)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
     def test_embedded_verifier_checks_hashes_and_rows(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
