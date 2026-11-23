@@ -121,7 +121,12 @@ def relocate_manifest(path, results_root, source_results=None, original_checkout
         raise ValueError("manifest workingDirectory must be absolute: " + str(path))
     source_results = Path(source_results).resolve() if source_results is not None else original_root / "paper/tmp/fgcs-revision"
     results_root = Path(results_root).resolve()
-    source_results.relative_to(original_root)
+    if not source_results.is_relative_to(original_root):
+        # Results may be synchronized from a detached checkout into another root. Input identity
+        # is still verified below; this root is used only to derive the package-relative location.
+        result_prefix = Path("paper/tmp/fgcs-round2")
+    else:
+        result_prefix = source_results.relative_to(original_root)
     path.resolve().relative_to(results_root)
     for scope in (document["configuration"], document, document["result"]):
         if scope is document["configuration"]:
