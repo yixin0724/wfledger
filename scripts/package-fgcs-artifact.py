@@ -101,6 +101,7 @@ def copy_sanitized(source, target, source_root=None):
         if source_root is not None:
             text = text.replace(str(source_root).rstrip("/") + "/", "")
         text = text.replace(str(ROOT) + "/", "")
+        text = text.replace("/private/tmp/", "detached-worktree/")
         text = text.replace(str(Path.home()) + "/.m2/", "$HOME/.m2/")
         text = text.replace("/private/tmp/fgcs-clean-reproduction-round2/", "")
         text = text.replace("/private/tmp/fgcs-clean-reproduction-round2", "detached-worktree")

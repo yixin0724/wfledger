@@ -160,6 +160,17 @@ class ArtifactPackageTest(unittest.TestCase):
             self.assertNotIn(str(root), text)
             self.assertIn("paper/tmp/x/chain.dax", text)
 
+    def test_detached_log_paths_are_normalized_without_changing_result_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "paper/tmp/fgcs-round2/example.log"
+            source.parent.mkdir(parents=True)
+            source.write_text("workingDirectory=/private/tmp/fgcs-clean-0d177d6\n")
+            target = root / "artifact/example.log"
+            MODULE.copy_sanitized(source, target)
+            self.assertNotIn("/private/tmp/", target.read_text())
+            self.assertIn("detached-worktree/fgcs-clean-0d177d6", target.read_text())
+
     def test_differential_lineage_reconstructs_raw_and_normalized_bytes(self):
         project = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as directory:
