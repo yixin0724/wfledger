@@ -53,6 +53,10 @@ def main():
         (output / "comparison.log").write_text(comparison.stdout + comparison.stderr, encoding="utf-8")
         if comparison.returncode:
             raise ValueError("differential comparison failed")
+        with (output / "adjudication.log").open("w", encoding="utf-8") as log:
+            subprocess.run([sys.executable, "-B", str(ROOT / "scripts/analyze-fgcs-differential.py"),
+                            str(output / "upstream-observations.json"), str(output / "adjudication.json")],
+                           cwd=ROOT, check=True, stdout=log, stderr=subprocess.STDOUT)
         lock = json.loads(LOCK.read_text(encoding="utf-8"))
         metadata = {
             "upstreamCommit": lock["commit"],

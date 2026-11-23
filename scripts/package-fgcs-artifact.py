@@ -649,6 +649,10 @@ def main():
         validate_java_bundles(output)
         validate_portable_reruns(output)
     differential_environment = dict(os.environ, FGCS_ARTIFACT_ROOT=str(output))
+    subprocess.run(["python3", "-B", str(output / "scripts/analyze-fgcs-differential.py"),
+                    str(output / "results/differential/upstream-observations.json"),
+                    str(output / "results/differential/adjudication.json")],
+                   cwd=output, check=True, stdout=subprocess.DEVNULL)
     subprocess.run(["python3", "-B", str(output / "protocols/differential/compare.py"),
                     "--observations", str(output / "results/differential/upstream-observations.json"),
                     "--output", str(output / "results/differential/normalized-comparison.json"), "--no-table"],
