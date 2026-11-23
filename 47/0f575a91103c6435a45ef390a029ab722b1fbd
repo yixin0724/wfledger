@@ -1,0 +1,18 @@
+scripts/render-fgcs-overhead-tables.py
+  h_adc77830afcf4d 1-108
+scripts/reproduce-fgcs-clean.py
+  h_adc77830afcf4d 70-72
+scripts/test-render-fgcs-overhead-tables.py
+  h_adc77830afcf4d 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "470f575a91103c6435a45ef390a029ab722b1fbd",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
