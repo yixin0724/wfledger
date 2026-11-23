@@ -207,7 +207,13 @@ def collect_derivations(source_results, output_results, output_root):
         subprocess.run(["python3", "-B", str(ROOT / "scripts/verify-fgcs-derived-input.py"),
                         str(source), str(derived), str(sidecar)], cwd=ROOT, check=True,
                        stdout=subprocess.DEVNULL)
-        derived_relative = derived.relative_to(source_results)
+        try:
+            derived_relative = derived.relative_to(source_results)
+        except ValueError:
+            parts = derived.parts
+            if "paper" not in parts or parts.index("paper") + 4 >= len(parts):
+                raise ValueError("derived input is outside the retained result tree: " + str(derived))
+            derived_relative = Path(*parts[parts.index("paper") + 4:])
         retained_source = output_results / "_derivation-sources" / sha256(source) / source.name
         retained_source.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, retained_source)
