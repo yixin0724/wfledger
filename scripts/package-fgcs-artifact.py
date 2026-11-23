@@ -218,7 +218,18 @@ def collect_derivations(source_results, output_results, output_root):
         retained_source = output_results / "_derivation-sources" / sha256(source) / source.name
         retained_source.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, retained_source)
-        if not (output_results / derived_relative).is_file():
+        retained_derived = output_results / derived_relative
+        if not retained_derived.is_file():
+            candidates = [candidate for candidate in output_results.rglob(derived.name)
+                          if candidate.is_file() and sha256(candidate) == provenance["derivedSha256"]]
+            if len(candidates) != 1:
+                raise ValueError("cannot resolve exactly one retained derived input by hash: " + str(derived))
+            retained_derived = candidates[0]
+            derived_relative = retained_derived.relative_to(output_results)
+            retained_sidecar = output_root / mappings[-1]["sidecar"] if mappings else sidecar
+            provenance["derivedPath"] = "results/" + derived_relative.as_posix()
+            retained_sidecar.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
+        if not retained_derived.is_file():
             raise ValueError("retained derived input is missing: " + str(derived_relative))
         mappings.append({
             "sidecar": "results/" + sidecar.relative_to(source_results).as_posix(),
