@@ -1,0 +1,18 @@
+experiments/src/main/java/org/workflowsim/experiments/fgcs/FgcDatasets.java
+  h_adc77830afcf4d 71-74,76
+experiments/src/test/java/org/workflowsim/experiments/fgcs/FgcDatasetsDerivationTest.java
+  h_adc77830afcf4d 1-51
+experiments/studies/fgcs/README.md
+  h_adc77830afcf4d 63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0d177d65194563b123111dd436fec16f7285ed1f",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
