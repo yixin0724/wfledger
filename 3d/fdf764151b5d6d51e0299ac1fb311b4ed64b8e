@@ -1,0 +1,14 @@
+scripts/package-fgcs-artifact.py
+  h_adc77830afcf4d 558
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3dfdf764151b5d6d51e0299ac1fb311b4ed64b8e",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
