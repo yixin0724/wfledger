@@ -534,10 +534,11 @@ def main():
         copy_sanitized(mutation_report, output / "validation/mutation-gate.json")
     for name in ("makespan-baseline", "makespan-scale"):
         source = ROOT / args.results / name / "results.json"
+        target = output / "results" / name / "results.json"
         if not source.is_file():
             source = ROOT / "output" / name / "results.json"
-        if source.is_file():
-            copy_sanitized(source, output / "results" / name / "results.json")
+        if source.is_file() and not target.exists():
+            copy_sanitized(source, target)
     for name in ("report.json", "comparison.log", "maven-verify.log", "matrix.log"):
         source = ROOT / "paper/tmp/clean-reproduction" / name
         if source.is_file():
