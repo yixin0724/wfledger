@@ -1,0 +1,20 @@
+scripts/package-fgcs-artifact.py
+  h_adc77830afcf4d 249-271,278-279,342-348
+scripts/prepare-fgcs-differential.py
+  h_adc77830afcf4d 27-41,64
+scripts/test-package-fgcs-artifact.py
+  h_adc77830afcf4d 178-181
+scripts/test-prepare-fgcs-differential.py
+  h_adc77830afcf4d 12-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "95cbdc4ccd11819c8896730b70064309b8b136e8",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
