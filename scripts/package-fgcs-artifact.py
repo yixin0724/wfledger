@@ -101,6 +101,7 @@ def copy_sanitized(source, target, source_root=None):
         if source_root is not None:
             text = text.replace(str(source_root).rstrip("/") + "/", "")
         text = text.replace(str(ROOT) + "/", "")
+        text = text.replace(str(ROOT), "source-checkout")
         text = text.replace("/private/tmp/", "detached-worktree/")
         text = text.replace(str(Path.home()) + "/.m2/", "$HOME/.m2/")
         text = text.replace("/private/tmp/fgcs-clean-reproduction-round2/", "")
@@ -569,6 +570,7 @@ def validate_portable_reruns(output):
                 text = (destination / name).read_text(encoding="utf-8")
                 text = text.replace(str(Path(directory)) + "/", "")
                 text = text.replace(str(ROOT) + "/", "")
+                text = text.replace(str(ROOT), "source-checkout")
                 text = text.replace("/private/tmp/", "detached-worktree/")
                 (target / name).write_text(text, encoding="utf-8")
             lines.append(case_id + " verdict=IDENTICAL_CORE inputTier=1 verified=true")

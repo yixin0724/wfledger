@@ -165,10 +165,11 @@ class ArtifactPackageTest(unittest.TestCase):
             root = Path(directory)
             source = root / "paper/tmp/fgcs-round2/example.log"
             source.parent.mkdir(parents=True)
-            source.write_text("workingDirectory=/private/tmp/fgcs-clean-0d177d6\n")
+            source.write_text("workingDirectory=/private/tmp/fgcs-clean-0d177d6\ncheckout=" + str(MODULE.ROOT) + "\n")
             target = root / "artifact/example.log"
             MODULE.copy_sanitized(source, target)
             self.assertNotIn("/private/tmp/", target.read_text())
+            self.assertNotIn(str(MODULE.ROOT), target.read_text())
             self.assertIn("detached-worktree/fgcs-clean-0d177d6", target.read_text())
 
     def test_derivation_sidecar_prefers_packaged_results_over_warmup(self):
