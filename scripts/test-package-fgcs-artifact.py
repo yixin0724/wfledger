@@ -171,6 +171,36 @@ class ArtifactPackageTest(unittest.TestCase):
             self.assertNotIn("/private/tmp/", target.read_text())
             self.assertIn("detached-worktree/fgcs-clean-0d177d6", target.read_text())
 
+    def test_derivation_sidecar_prefers_packaged_results_over_warmup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw = root / "raw.dax"
+            raw.write_text('<adag><job id="j1"><uses name="file" link="output" size="1"/></job></adag>')
+            derived_text = '<adag><job id="j1"><uses name="file__producer_j1" link="output" size="1"/></job></adag>'
+            source_results = root / "source-results"
+            measured = source_results / "overhead/evidence/measured/inputs/derived.dax"
+            warmup = source_results / "overhead/evidence/warmup/inputs/derived.dax"
+            measured.parent.mkdir(parents=True)
+            warmup.parent.mkdir(parents=True)
+            measured.write_text(derived_text)
+            warmup.write_text(derived_text)
+            sidecar = source_results / "overhead/evidence/measured/inputs/derived.dax.derivation.json"
+            sidecar.write_text(json.dumps({
+                "sourcePath": str(raw), "derivedPath": "results/overhead/evidence/measured/inputs/derived.dax",
+                "sourceSha256": MODULE.sha256(raw), "derivedSha256": MODULE.sha256(measured),
+                "rawInputEquivalenceClaimed": False, "dependencyEdgeCount": 0,
+                "multiProducerInputExpansions": 0, "additionalInputDeclarations": 0,
+            }))
+            output = root / "package"
+            MODULE.collect_results(source_results, output / "results")
+            self.assertEqual(1, MODULE.collect_derivations(source_results, output / "results", output))
+            mapping = json.loads((output / "derivation-input-map.json").read_text())
+            self.assertEqual("results/overhead/evidence/measured/inputs/derived.dax", mapping[0]["derived"])
+            relocated = json.loads((output / mapping[0]["sidecar"]).read_text())
+            self.assertEqual(mapping[0]["derived"], relocated["derivedPath"])
+            self.assertEqual("results/overhead/evidence/measured/inputs/derived.dax",
+                             json.loads((source_results / "overhead/evidence/measured/inputs/derived.dax.derivation.json").read_text())["derivedPath"])
+
     def test_differential_lineage_reconstructs_raw_and_normalized_bytes(self):
         project = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as directory:

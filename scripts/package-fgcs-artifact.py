@@ -196,54 +196,63 @@ def collect_results(source, destination, source_root=None):
 
 
 def collect_derivations(source_results, output_results, output_root):
+    """Retain raw inputs and relocate every sidecar to verified packaged bytes."""
     source_results = Path(source_results).resolve()
     output_results = Path(output_results).resolve()
     output_root = Path(output_root).resolve()
     mappings = []
+
+    def candidates_for(path, output=False):
+        raw = str(path)
+        if raw.startswith("results/"):
+            yield (output_results if output else source_results) / raw[len("results/"):]
+        if "/paper/tmp/" in raw:
+            tail = raw.split("/paper/tmp/", 1)[1].split("/", 1)
+            if len(tail) == 2:
+                yield (output_results if output else source_results) / tail[1]
+        if raw.startswith("paper/tmp/"):
+            tail = raw.split("/", 3)
+            if len(tail) == 4:
+                yield (output_results if output else source_results) / tail[3]
+        if not output:
+            for marker in ("/datasets/", "/experiments/"):
+                if marker in raw:
+                    yield ROOT / marker.strip("/") / raw.split(marker, 1)[1]
+        if not output or not Path(raw).is_absolute():
+            yield (output_results if output else ROOT) / raw
+
     for sidecar in sorted(source_results.rglob("*.derivation.json")):
         if any(part in SKIP_DIRS for part in sidecar.relative_to(source_results).parts):
             continue
         provenance = json.loads(sidecar.read_text(encoding="utf-8"))
-        source = Path(provenance["sourcePath"])
-        derived = Path(provenance["derivedPath"])
-        source = (source if source.is_absolute() else ROOT / source).resolve()
-        derived = (derived if derived.is_absolute() else ROOT / derived).resolve()
-        if not derived.is_file():
-            matches = [candidate for candidate in output_results.rglob("*.dax")
-                       if candidate.is_file() and sha256(candidate) == provenance["derivedSha256"]]
-            if len(matches) != 1:
-                raise ValueError("cannot resolve exactly one retained derived input by declared hash: " + str(sidecar))
-            derived = matches[0].resolve()
-        if not source.is_file() or not derived.is_file():
-            raise ValueError("derivation input is missing for " + str(sidecar))
+        source_candidates = list(candidates_for(provenance["sourcePath"]))
+        derived_candidates = list(candidates_for(provenance["derivedPath"], output=True))
+        source = next((p.resolve() for p in source_candidates if p.is_file()
+                       and sha256(p) == provenance["sourceSha256"]), None)
+        derived = next((p.resolve() for p in derived_candidates if p.is_file()
+                        and sha256(p) == provenance["derivedSha256"]), None)
+        if derived is None:
+            derived_matches = [p for p in output_results.rglob("*.dax")
+                               if not any(part in SKIP_DIRS for part in p.relative_to(output_results).parts)
+                               and p.is_file() and sha256(p) == provenance["derivedSha256"]]
+            if len(derived_matches) == 1:
+                derived = derived_matches[0].resolve()
+        if source is None or derived is None:
+            raise ValueError("cannot resolve source and derived inputs by declared hashes: " + str(sidecar))
+        derived.relative_to(output_results)
         subprocess.run(["python3", "-B", str(ROOT / "scripts/verify-fgcs-derived-input.py"),
                         str(source), str(derived), str(sidecar)], cwd=ROOT, check=True,
                        stdout=subprocess.DEVNULL)
-        try:
-            derived_relative = derived.relative_to(source_results)
-        except ValueError:
-            parts = derived.parts
-            if "paper" not in parts or parts.index("paper") + 4 >= len(parts):
-                raise ValueError("derived input is outside the retained result tree: " + str(derived))
-            derived_relative = Path(*parts[parts.index("paper") + 4:])
+        derived_relative = derived.relative_to(output_results)
         retained_source = output_results / "_derivation-sources" / sha256(source) / source.name
         retained_source.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, retained_source)
-        retained_derived = output_results / derived_relative
-        if not retained_derived.is_file():
-            candidates = [candidate for candidate in output_results.rglob(derived.name)
-                          if candidate.is_file() and sha256(candidate) == provenance["derivedSha256"]]
-            if len(candidates) != 1:
-                raise ValueError("cannot resolve exactly one retained derived input by hash: " + str(derived))
-            retained_derived = candidates[0]
-            derived_relative = retained_derived.relative_to(output_results)
-            retained_sidecar = output_root / mappings[-1]["sidecar"] if mappings else sidecar
-            provenance["derivedPath"] = "results/" + derived_relative.as_posix()
-            retained_sidecar.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
-        if not retained_derived.is_file():
-            raise ValueError("retained derived input is missing: " + str(derived_relative))
+        retained_sidecar = output_root / "results" / sidecar.relative_to(source_results)
+        provenance["sourcePath"] = retained_source.relative_to(output_root).as_posix()
+        provenance["derivedPath"] = "results/" + derived_relative.as_posix()
+        retained_sidecar.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
         mappings.append({
-            "sidecar": "results/" + sidecar.relative_to(source_results).as_posix(),
+            "sidecar": retained_sidecar.relative_to(output_root).as_posix(),
             "source": retained_source.relative_to(output_root).as_posix(),
             "derived": "results/" + derived_relative.as_posix(),
             "sourceSha256": sha256(source),
