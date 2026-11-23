@@ -53,7 +53,10 @@ def compare(left, right, names):
             for field in CORE_FIELDS:
                 x_missing, y_missing = field not in x, field not in y
                 if x_missing or y_missing:
-                    if x_missing != y_missing or field not in OPTIONAL_CORE_FIELDS:
+                    unavailable = (field in ("meanWaitingSeconds", "meanTrueSlowdown")
+                                   and x.get("eventRecordingEnabled") is False
+                                   and y.get("eventRecordingEnabled") is False)
+                    if x_missing != y_missing or (field not in OPTIONAL_CORE_FIELDS and not unavailable):
                         differences.append(label + ": " + field + " presence differs")
                     continue
                 xv, yv = x.get(field), y.get(field)

@@ -80,6 +80,31 @@ class CompareResultsTest(unittest.TestCase):
             _, differences = MODULE.compare_revision(left, right)
             self.assertIn("case: actualVerdict differs", differences)
 
+    def test_event_off_unavailable_metrics_are_not_numeric_measurements(self):
+        with tempfile.TemporaryDirectory() as directory:
+            left, right = Path(directory) / "left", Path(directory) / "right"
+            for root in (left, right):
+                (root / "overhead").mkdir(parents=True)
+                (root / "overhead/results.json").write_text(json.dumps([{
+                    "label": "case-off", "eventRecordingEnabled": False,
+                    "meanWaitingSecondsAvailable": False, "meanTrueSlowdownAvailable": False,
+                    "mapping": {}, "completed": True, "logicalTasks": 1, "completedTasks": 1,
+                    "makespanSeconds": 1.0, "throughputJobsPerSecond": 1.0,
+                    "meanVmUtilization": 0.0, "energyJoules": 1.0, "energyDelayProduct": 1.0,
+                    "modeledProcessingCost": 0.0, "eventCount": 0, "energyResidual": 0.0,
+                    "costResidual": 0.0, "makespanResidual": 0.0, "tailResidual": 0.0,
+                    "dependencyResidual": 0.0,
+                }]))
+            compared, differences = MODULE.compare(left, right, ["overhead"])
+            self.assertEqual(1, compared)
+            self.assertEqual([], differences)
+            path = right / "overhead/results.json"
+            document = json.loads(path.read_text())
+            document[0]["meanTrueSlowdown"] = 0.0
+            path.write_text(json.dumps(document))
+            _, differences = MODULE.compare(left, right, ["overhead"])
+            self.assertIn("case-off: meanTrueSlowdown presence differs", differences)
+
     def test_duplicate_labels_and_missing_core_fields_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             left, right = Path(directory) / "left", Path(directory) / "right"
