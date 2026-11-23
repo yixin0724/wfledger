@@ -1,0 +1,16 @@
+experiments/studies/fgcs/differential/README.md
+  h_adc77830afcf4d 44
+experiments/studies/fgcs/differential/comparison.json
+  h_adc77830afcf4d 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "836fe37759fe96722299f22b46571fe276d1a8d2",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
