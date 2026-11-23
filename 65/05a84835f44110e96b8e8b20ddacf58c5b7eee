@@ -1,0 +1,21 @@
+scripts/compare-fgcs-results.py
+  s_38e072a1703a74::t_37d5eb951f5649 56-59
+scripts/test-compare-fgcs-results.py
+  s_38e072a1703a74::t_59882cc795606e 83-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6505a84835f44110e96b8e8b20ddacf58c5b7eee",
+  "prompts": {},
+  "sessions": {
+    "s_38e072a1703a74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bf32-10e9-7023-8acf-dcdf576f0c20",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
