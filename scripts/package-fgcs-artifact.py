@@ -555,7 +555,7 @@ def main():
     result_count = collect_results(ROOT / args.results, output / "results")
     derivation_count = collect_derivations(ROOT / args.results, output / "results", output)
     copy_manuscript(output)
-    mutation_report = ROOT / "output/mutation-gate/mutation-gate-round2-cda359c.json"
+    mutation_report = ROOT / "output/mutation-gate/mutation-gate-round2-3dfdf76.json"
     if mutation_report.is_file():
         copy_sanitized(mutation_report, output / "validation/mutation-gate.json")
     for name in ("makespan-baseline", "makespan-scale"):
