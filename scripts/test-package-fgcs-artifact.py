@@ -180,6 +180,18 @@ class ArtifactPackageTest(unittest.TestCase):
                 reconstructed = reconstructed.replace(entry["raw"], entry["normalized"])
             self.assertEqual(normalized.read_text(), reconstructed)
 
+    def test_mutation_report_selection_requires_the_current_commit(self):
+        original_root = MODULE.ROOT
+        with tempfile.TemporaryDirectory() as directory:
+            MODULE.ROOT = Path(directory)
+            (MODULE.ROOT / "output/mutation-gate").mkdir(parents=True)
+            for name, commit in (("old", "old"), ("current", "current")):
+                (MODULE.ROOT / "output/mutation-gate" / ("mutation-gate-round2-" + name + ".json")).write_text(
+                    json.dumps({"sourceCommit": commit}))
+            self.assertEqual("mutation-gate-round2-current.json", MODULE.current_mutation_report("current").name)
+            self.assertIsNone(MODULE.current_mutation_report("missing"))
+        MODULE.ROOT = original_root
+
     def test_embedded_verifier_checks_hashes_and_rows(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

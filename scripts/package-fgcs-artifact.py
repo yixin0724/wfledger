@@ -540,6 +540,19 @@ def validate_portable_reruns(output):
         target.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def current_mutation_report(commit):
+    candidates = sorted((ROOT / "output/mutation-gate").glob("mutation-gate-round2-*.json"),
+                        key=lambda path: path.stat().st_mtime, reverse=True)
+    for path in candidates:
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if document.get("sourceCommit") == commit:
+            return path
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Create a versioned local FGCS source and evidence package")
     parser.add_argument("--results", default="paper/tmp/fgcs-round2")
@@ -561,8 +574,8 @@ def main():
     result_count = collect_results(ROOT / args.results, output / "results")
     derivation_count = collect_derivations(ROOT / args.results, output / "results", output)
     copy_manuscript(output)
-    mutation_report = ROOT / "output/mutation-gate/mutation-gate-round2-3dfdf76.json"
-    if mutation_report.is_file():
+    mutation_report = current_mutation_report(commit)
+    if mutation_report is not None:
         copy_sanitized(mutation_report, output / "validation/mutation-gate.json")
     for name in ("makespan-baseline", "makespan-scale"):
         source = ROOT / args.results / name / "results.json"
