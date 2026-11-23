@@ -68,9 +68,12 @@ public final class FgcDatasets {
             throw new IllegalArgumentException("Unknown FGCS DAG shape " + kind);
         }
         dax.append("</adag>\n");
+        // R2-DERIVATION: preserve raw bytes before normalization; normalizing the output in place
+        // would corrupt source/derived identities and make a stale sidecar appear self-consistent.
+        Path rawOutput = directory.resolve("raw-" + kind + ".dax");
+        Files.write(rawOutput, dax.toString().getBytes(StandardCharsets.UTF_8));
         Path output = directory.resolve(kind + ".dax");
-        Files.write(output, dax.toString().getBytes(StandardCharsets.UTF_8));
-        return normalizeForStorage(output, output);
+        return normalizeForStorage(rawOutput, output);
     }
 
     public static Path normalizeForStorage(String relativePath, Path directory) throws IOException {
