@@ -1,0 +1,30 @@
+docs/advanced/DVFS_DIMENSION_DESIGN.md
+  h_adc77830afcf4d 152-159
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 81
+docs/benchmark/STANDARD_BENCHMARK.md
+  h_adc77830afcf4d 262
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 79
+experiments/src/test/java/org/workflowsim/experiments/benchmark/DvfsFleetScaleAuditIntegrationTest.java
+  h_adc77830afcf4d 96-103
+scripts/mutation-gate.py
+  h_adc77830afcf4d 466,468-472
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  h_adc77830afcf4d 505-506,511
+simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java
+  h_adc77830afcf4d 367-392,407
+simulator/src/test/java/org/workflowsim/experiment/FrequencySpeedConsistencyTest.java
+  h_adc77830afcf4d 1-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "483500761a5c025f6a3a1bff2a07bb75fae0230f",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
