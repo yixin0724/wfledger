@@ -197,6 +197,8 @@ public final class WorkflowPlanner extends SimEntity {
                 processImpactFactors(getTaskList());
 
                 getWorkflowEngine()
+                        .setWorkflowContext(getTaskList(), getWorkflowParser().getTaskWorkflowIndices());
+                getWorkflowEngine()
                         .setWorkflowArrivals(
                                 Parameters.getWorkflowArrivalSeconds(),
                                 getWorkflowParser().getTaskWorkflowIndices());

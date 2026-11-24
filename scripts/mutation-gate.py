@@ -505,6 +505,15 @@ REGISTRY = [
         old="                if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE || !isCompatible(job, vm)) {",
         new="                if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE) {",
         killers="CrchSchedulingAlgorithmTest"),
+    dict(
+        id="M71",
+        name="EBPSM budget update ignores the completed task's spare budget and debt",
+        file="simulator/src/main/java/org/workflowsim/scheduling/ebpsm/EbpsmBudgetLedger.java",
+        # FGCS-R5 (2026-11-24): Algorithm 3 must redistribute beta_u = unscheduled + (tf.budget + sb - C); the
+        # mutant redistributes only the unscheduled sub-budgets, so no spare can upgrade and no debt is charged.
+        old="        redistribute(state, betaU);",
+        new="        redistribute(state, unscheduled + 0.0 * betaU);",
+        killers="EbpsmBudgetLedgerTest,EbpsmSchedulingAlgorithmTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

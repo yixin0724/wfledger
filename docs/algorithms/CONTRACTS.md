@@ -298,36 +298,73 @@ declared VM costs in a real session.
 ### EBPSM Budget and Cache Scheduling (R-PAPER-09, 2026-11-06)
 
 `EBPSM` implements the public EBPSM resource-sharing policy rather than the closed MCPA alternative.
-`EbpsmBudgetDistributor` applies DTL/EFT order and SFTD upgrades. `EbpsmSchedulingAlgorithm` follows
+`EbpsmSchedulingAlgorithm` follows
 [Algorithm 2 of Hilman, Rodriguez and Buyya](<https://arxiv.org/abs/1903.01113>): ready tasks in ascending
 estimated start, then PE-compatible idle VMs with the required input data, then with the deployed container
 image, then any other idle compatible VM, each tier choosing the fastest VM whose predicted cost
-`ceil(seconds) * vmCostPerSecond` fits the task's sub-budget. The prediction is
+`ceil(seconds) * vmCostPerSecond` fits the task's current sub-budget. The prediction is
 `read + effectiveCompute + write + container`: read/write follow paper Eqs. 1–2 with the declared global
 storage rates and decimal-MB/s VM bandwidth (read is 0 on a VM caching every real input), compute is the
 effective execution length of `TaskExecutionModel` on that VM, and the container term is the declared
-provisioning delay unless the image is deployed.
+provisioning delay unless the image is deployed. EBPSM requires one Task per compute Job (clustering NONE).
+
+Per-workflow budgets (FGCS-R5, 2026-11-24): `EbpsmConfig.forWorkflowBudgets` declares one user budget `beta_w`
+per workflow index (the input order of the configured workflow paths; 0 for a single workflow). The former
+per-task budget constructor was removed rather than reinterpreted. `WorkflowPlanner` injects the parsed Tasks and
+the parser's Task-to-workflow map into each scheduler policy that implements `WorkflowContextAware` (no global
+static). At the first scheduling round the policy derives **VM types** from the declared pool, one per distinct
+(MIPS, price, PEs, bandwidth) class with VM provisioning delay 0 (the fixed VMs are already leased), and
+`EbpsmBudgetDistributor` runs Algorithm 1 per workflow:
+
+- order `S`: DTL levels (Eq. 7) and ascending EFT within a level (Eq. 8), computed in topological order with the
+  processing time of each task on its cheapest type, ties by task ID; parents outside the distributed set do not
+  count, so on a redistribution a task whose parents completed is level 0;
+- cost of a task on a type: Eq. 5 `ceil(prov_vmt + prov_c + PT) * c_vmt` with one-second billing, where `PT`
+  (Eq. 4) is the uncached read + effective compute + write on a VM of the type;
+- `while beta > 0` (lines 12–17): the next task of `S` receives its cheapest-type cost and `beta` drops by it;
+  tasks not reached keep budget 0 (line 5); the undistributed (possibly negative) residual is the spare budget `sb`;
+- SFTD: when every task was reached and `beta > 0` remains, each task in `S` moves once to its fastest compatible
+  type whose extra cost fits the remainder.
+
+A workflow whose budget is below the sum of its tasks' cheapest-type costs is rejected at start (the paper
+rejects jobs with insufficient budgets, Sec. 5).
+
+Budget update (FGCS-R5): on every returned attempt `EbpsmBudgetLedger` applies Algorithm 3 to the attempt's
+workflow. The actual cost is `ceil(envelope + prov_c if the image was not deployed at dispatch) * price`, where the
+envelope runs from the Job's execution start (charged stage-in included) to the Task's modeled finish. With
+`T_u` the unscheduled tasks, if `C <= tf.budget + sb` the remainder joins `beta_u = sum(T_u budgets)`, otherwise the
+debt `C - (tf.budget + sb)` is subtracted; Algorithm 1 then redistributes `beta_u` over `T_u` and its residual is
+the new `sb`. Hence `beta_w = spent + sum(T_u and dispatched budgets) + sb` after every step. **Failed attempts are
+charged**: the paper bills VM usage per period regardless of the outcome and Eq. 6 constrains the actual cost, so
+a failed attempt is charged its cost through the same update with a zero sub-budget and its Task rejoins `T_u`
+with its sub-budget for the retry. A debt can leave a task with budget 0 that no VM can meet; it then falls under
+the idle-pool rule below.
 
 Cache publication (FGCS-R3, 2026-11-24): `WorkflowScheduler` notifies `JobReturnListener` policies when an
 attempt returns, after the failure model has fixed every Task status. For each **successful** Task, EBPSM adds
 its container image and its real input and output files to the executing VM's local storage (paper Sec. 3.2
 keeps `d_in` and `d_out`); a failed attempt publishes nothing, and nothing is published at dispatch. Local
-storage is unbounded in this subset (no FIFO eviction).
+storage is unbounded in this subset: the paper's FIFO eviction needs a per-VM local-storage capacity, which the
+declared platform does not carry for this purpose, so it remains a documented deviation.
 
 Budget fallback (FGCS-R3, 2026-11-24): the paper's last resort when no idle VM fits is provisioning a new VM of
 the fastest type within budget; the fixed declared pool cannot do that, so it is replaced by explicit rules
 instead of a silent skip. A task stays queued while any VM is busy
-after the round (a return is what frees a VM or grows a cache). If the round leaves an unaffordable task and an
-entirely idle pool, or if even the best-case prediction (cached input, deployed container) exceeds the budget on
-every compatible VM, the run fails with an `IllegalStateException`. The idle-pool rule is deliberately
+after the round (a return is what frees a VM, grows a cache, or updates budgets). If the round leaves an
+unaffordable task and an entirely idle pool, the run fails with an `IllegalStateException`. (The FGCS-R3
+best-case pre-check against a static sub-budget was removed in FGCS-R5 because sub-budgets now change on every
+completion.) The idle-pool rule is deliberately
 conservative: it does not wait for a future workflow arrival or a delayed release that might warm a cache. These predictions are the policy's own estimate: the platform runtime
 does not model EBPSM's VM-local cache and still charges the configured data-movement model (under SHARED, the
 storage read on every attempt), so locality changes decisions, not simulated read time.
 
 `EbpsmConfig` is injected through `SimulationConfig.ebpsmConfig`, so no hidden budget or cache source exists.
-`EbpsmIntegrationTest` runs two staggered workflows and a parent→child chain in which the child is admitted
-only on the VM holding the parent's published output; direct tests cover PE, bandwidth-budget, effective-length,
-deferral, fail-fast, input retention and unsuccessful-output counterexamples. The subset uses a fixed declared
+`EbpsmBudgetDistributorTest` and `EbpsmBudgetLedgerTest` hand-derive Algorithm 1 (two VM types, DTL/EFT order,
+`while beta > 0`, SFTD) and Algorithm 3 (spare, debt, failed attempt, conservation). `EbpsmIntegrationTest` runs
+two staggered workflows, a parent→child chain in which the child is placed on the VM holding the parent's
+published output, and a chain in which the parent's spare budget upgrades the child to the faster VM it could
+not afford under its initial sub-budget; direct tests cover PE, bandwidth-budget, effective-length, deferral,
+debt fail-fast, input retention and unsuccessful-output counterexamples. The subset uses a fixed declared
 VM pool and does not claim Docker deployment, elastic provisioning, or full WaaS corpus reproduction.
 
 ### DVFS Slack Allocation and Tier Consumption (R-PAPER-10, 2026-11-08)

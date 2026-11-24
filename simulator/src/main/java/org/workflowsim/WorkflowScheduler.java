@@ -53,6 +53,7 @@ import org.workflowsim.scheduling.ReshiStrategy;
 import org.workflowsim.scheduling.StaticSchedulePlan;
 import org.workflowsim.scheduling.StaticSchedulingAlgorithm;
 import org.workflowsim.scheduling.TimedStaticSchedulingAlgorithm;
+import org.workflowsim.scheduling.WorkflowContextAware;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationConfig;
@@ -79,6 +80,10 @@ public class WorkflowScheduler extends DatacenterBroker {
 
     private final Map<Integer, Integer> createdVmHostAssignments = new LinkedHashMap<Integer, Integer>();
 
+    private List<Task> workflowTasks;
+
+    private Map<Integer, Integer> workflowIndices;
+
     public WorkflowScheduler(String name) throws Exception {
         super(name);
     }
@@ -100,6 +105,30 @@ public class WorkflowScheduler extends DatacenterBroker {
             throw new IllegalArgumentException("Event recorder cannot be null");
         }
         this.eventRecorder = value;
+    }
+
+    /**
+     * Stores the parsed workflow structure and binds it to the active policy when that policy is
+     * {@link WorkflowContextAware} (FGCS-R5, 2026-11-24).
+     *
+     * @param tasks parsed Tasks
+     * @param taskWorkflowIndices workflow index of every Task ID
+     */
+    public void setWorkflowContext(List<Task> tasks, Map<Integer, Integer> taskWorkflowIndices) {
+        if (tasks == null || taskWorkflowIndices == null) {
+            throw new IllegalArgumentException("Workflow context requires Tasks and workflow indices");
+        }
+        this.workflowTasks = Collections.unmodifiableList(new ArrayList<Task>(tasks));
+        this.workflowIndices = Collections.unmodifiableMap(new LinkedHashMap<Integer, Integer>(taskWorkflowIndices));
+        if (activeSchedulingPolicy instanceof WorkflowContextAware) {
+            ((WorkflowContextAware) activeSchedulingPolicy).bindWorkflows(workflowTasks, workflowIndices);
+        }
+    }
+
+    private void bindWorkflowContext(BaseSchedulingAlgorithm policy) {
+        if (policy instanceof WorkflowContextAware && workflowTasks != null) {
+            ((WorkflowContextAware) policy).bindWorkflows(workflowTasks, workflowIndices);
+        }
     }
 
     public Map<Integer, Integer> getCreatedVmHostAssignments() {
@@ -221,6 +250,7 @@ public class WorkflowScheduler extends DatacenterBroker {
                 activeSchedulingPolicy =
                         Parameters.getRegisteredSchedulingAlgorithmProvider().create();
                 activeSchedulingPolicyType = SchedulingAlgorithm.INVALID;
+                bindWorkflowContext(activeSchedulingPolicy);
             }
             return activeSchedulingPolicy;
         }
@@ -228,6 +258,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         if (activeSchedulingPolicy == null || activeSchedulingPolicyType != configuredType) {
             activeSchedulingPolicy = createSchedulingPolicy(configuredType);
             activeSchedulingPolicyType = configuredType;
+            bindWorkflowContext(activeSchedulingPolicy);
         }
         return activeSchedulingPolicy;
     }

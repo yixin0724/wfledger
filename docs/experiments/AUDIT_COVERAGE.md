@@ -236,7 +236,7 @@ recurrence; no historical ledger rows were removed.
 | R-PAPER-06 | The platform lacked a makespan-energy Pareto scheduler | VERIFIED_PARETO_CORE — MOHEFT beam search and balanced selection; M41/M42 guard dominance and tradeoff semantics |
 | R-PAPER-07 | Deadline and VM-cost inputs lacked a literature scheduler | VERIFIED_DEADLINE_COST_CORE — IC-PCP paths and feasible cost selection; M43/M44 guard END slack and incremental cost |
 | R-PAPER-08 | Network/dataflow execution lacked a literature contention scheduler | REMOVED (FGCS-R3, 2026-11-24) — Network-Aware HEFT and M45/M59 were removed; its flows did not exist in the bound SHARED runtime |
-| R-PAPER-09 | Multi-workflow execution lacked a literature budget/cache scheduler | VERIFIED_BUDGET_CACHE_CORE — EBPSM SFTD and cache preference; M46/M47 guard cache and budget semantics |
+| R-PAPER-09 | Multi-workflow execution lacked a literature budget/cache scheduler | VERIFIED_BUDGET_CACHE_CORE — EBPSM per-workflow SFTD, Algorithm 3 budget update (FGCS-R5) and cache preference; M46/M47/M71 guard cache, budget and budget-update semantics |
 | R-PAPER-10 | Frequency tiers lacked a literature slack-allocation scheduler | VERIFIED_SLACK_CORE — HEFT mapping plus energy-decreasing DVFS; M48 prevents energy-increasing downgrades |
 | R-PAPER-11 | Failure retry lacked a literature checkpoint-recovery scheduler | VERIFIED_RECOVERY_CORE — CRCH remaining-work retry and alternative VM; M49/M50 guard saved work and failed-VM avoidance |
 | R-PAPER-12 | Pairwise communication-aware DHEFT was missing from the LOCAL planner family | VERIFIED_DHEFT_CORE — DHEFT ready-task EFT and minimum bandwidth; M51/M52 guard bandwidth and parent finish |

@@ -84,6 +84,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M68 | Tiered retry restarts from the already scaled length | Declared-work retry restart (FGCS-R4, 2026-11-24) |
 | M69 | CRCH credits the input read as checkpointed compute | CRCH compute-window checkpoints (FGCS-R4) |
 | M70 | CRCH placement ignores PE compatibility | CRCH PE compatibility (FGCS-R4) |
+| M71 | EBPSM budget update ignores the completed task's spare budget and debt | EBPSM Algorithm 3 budget update (FGCS-R5, 2026-11-24) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -118,12 +119,12 @@ allowlist omission. M31 (2026-11-04, B5) adds the profile semantic-fingerprint a
 admitted-copy count must be rejected by the independent comparator, not hidden by timing. M32
 (2026-11-05, R-PAPER-01) adds the CaWoSched green-window selection axis. M33 (R-PAPER-01B)
 adds the power-weighted slack-score axis. M34/M35 (R-PAPER-01C/D) add missing-link and exact-DP
-axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) and M59 (R-AUDIT-01) were retired with the Network-Aware HEFT removal (FGCS-R3, 2026-11-24). M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms. M66/M67 (R-EXP-01) add retry dependency and remaining-work axes.
+axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) and M59 (R-AUDIT-01) were retired with the Network-Aware HEFT removal (FGCS-R3, 2026-11-24). M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms. M66/M67 (R-EXP-01) add retry dependency and remaining-work axes. M71 (FGCS-R5, 2026-11-24) adds the EBPSM Algorithm 3 budget-update axis.
 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 64 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 65 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)

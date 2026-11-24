@@ -168,8 +168,10 @@ class AlgorithmExperimentAuditTest {
         Map<Integer, Set<String>> containers = new HashMap<Integer, Set<String>>();
         Map<Integer, String> images = new HashMap<Integer, String>();
         Map<Integer, Double> costs = new HashMap<Integer, Double>();
+        // FGCS-R5 (2026-11-24): EBPSM budgets are per workflow (index 0 and 1 for the two inputs).
+        budgets.put(0, 100.0);
+        budgets.put(1, 100.0);
         for (int id = 0; id <= 10; id++) {
-            budgets.put(id, 100.0);
             images.put(id, "default");
         }
         for (int vm : Arrays.asList(3, 8)) {
@@ -180,7 +182,7 @@ class AlgorithmExperimentAuditTest {
         SimulationConfig config = SimulationConfig.builder(Arrays.asList(first.toString(), second.toString()), 2)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.EBPSM)
                 .workflowArrivalSeconds(Arrays.asList(0.0, 5.0))
-                .ebpsmConfig(new EbpsmConfig(budgets, inputs, containers, images, costs, 1000.0, 1000.0, 0.0))
+                .ebpsmConfig(EbpsmConfig.forWorkflowBudgets(budgets, inputs, containers, images, costs, 1000.0, 1000.0, 0.0))
                 .costModel(Parameters.CostModel.VM)
                 .runtimeReferenceMips(1.0)
                 .randomSeed(seed)

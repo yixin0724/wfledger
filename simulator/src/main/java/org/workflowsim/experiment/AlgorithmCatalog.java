@@ -330,13 +330,16 @@ public final class AlgorithmCatalog {
 
     private static void ebpsmScheduler(Map<String, Object> values) {
         values.put("decisionLayer", "ONLINE_MULTI_WORKFLOW_BUDGET_CACHE");
-        values.put("inputDomain", "MULTI_WORKFLOW_DAG_WITH_TASK_BUDGETS_AND_CACHES");
+        values.put("inputDomain", "MULTI_WORKFLOW_DAG_WITH_WORKFLOW_BUDGETS_AND_CACHES");
         values.put(
                 "decisionRule",
-                "SFTD budget distribution plus input/container cache preference and budget-gated dispatch");
+                "Per-workflow SFTD budget distribution (Algorithm 1), completion budget update (Algorithm 3),"
+                        + " input/container cache preference and budget-gated dispatch");
         // FGCS-R3 (2026-11-24) A1/A2: V2 publishes caches on successful completion and fails fast when no
         // compatible VM can ever meet a Task's sub-budget, evaluated after the whole scheduling round.
-        values.put("implementationRevision", "EBPSM_COMPLETION_CACHE_PUBLISH_FAIL_FAST_BUDGET_V2");
+        // FGCS-R5 (2026-11-24): V3 replaces static per-task budgets with per-workflow budgets distributed by
+        // Algorithm 1 over pool-derived VM types and updated by Algorithm 3 on every returned attempt.
+        values.put("implementationRevision", "EBPSM_WORKFLOW_BUDGET_ALGORITHM3_UPDATE_V3");
         values.put("verification", "EBPSM_BUDGET_CACHE_REGRESSION_COVERED");
         values.put(
                 "limitations",
