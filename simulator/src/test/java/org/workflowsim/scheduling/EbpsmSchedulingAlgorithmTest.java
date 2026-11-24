@@ -275,6 +275,18 @@ class EbpsmSchedulingAlgorithmTest {
         assertEquals(Collections.singletonList(producing), scheduler.getScheduledList());
     }
 
+    /** FGCS-R3 (2026-11-24, A2): a Job no declared VM can host fails instead of waiting forever. */
+    @Test
+    void failsFastWhenNoDeclaredVmIsCompatible() {
+        Job job = producer();
+        job.setNumberOfPes(2);
+        EbpsmSchedulingAlgorithm scheduler = new EbpsmSchedulingAlgorithm(publicationConfig());
+        scheduler.setCloudletList(Collections.singletonList(job));
+        scheduler.setVmList(Arrays.asList(vm(0), vm(1)));
+
+        assertThrows(IllegalArgumentException.class, scheduler::run);
+    }
+
     private static Job producer() {
         Task producer = new Task(1, 100L);
         producer.getFileList().add(file("new.bin", FileType.OUTPUT));

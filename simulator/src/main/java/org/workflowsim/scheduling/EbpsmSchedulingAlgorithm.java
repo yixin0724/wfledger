@@ -60,6 +60,7 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm impl
 
     @Override
     public void run() {
+        validateCloudletCompatibility();
         EbpsmConfig active = activeConfig();
         ensureCaches(active);
         List<Job> jobs = new ArrayList<Job>();
