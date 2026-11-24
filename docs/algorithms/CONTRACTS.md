@@ -40,6 +40,14 @@ SPACE_SHARED retains the CloudSim integer-MI scheduling convention used by the s
 
 Ties must be resolved by each policy's explicit rules: in ready-batch Min/Max-Min, task ties use the smaller Job ID and candidate VM ties the smaller VM ID; FCFS/MCT preserve the ready arrival order, and round robin preserves its cross-batch cursor. Static independent tasks establish order by Task ID; in static DAGs, equal priorities and equal candidate scores usually fall back to Task/VM IDs, with DLS/ETF having the further priority rules described below. Unstable set iteration order must not replace these rules.
 
+### Online Scheduling Rounds (FGCS-R3, 2026-11-24)
+
+A round is an immediate-mode decision: candidates are the currently idle PE-compatible VMs, each receives at most one Job, and Min-Min/Max-Min recompute over the remaining idle VMs after each assignment. Busy VMs and future availability are not modeled, so `READY_BATCH_MINMIN/MAXMIN/MCT` are not the batch heuristics of Braun et al. (2001). Their cost is the runtime envelope `(L + floor(mips(v) * inputSeconds)) / mips(v)` with the SHARED `inputSeconds` supplied by the datacenter function that charges it. It is 0 under LOCAL, pre-execution and coherent models; task-cost matrices are not part of this online estimate.
+
+Rounds are coalesced per simulation instant: a round is re-posted at zero delay until no other consumable event remains at the same clock, so its batch contains every Job released at that instant. Coalescing uses exact binary64 clock equality; completions that differ in the last bit, or releases carrying a positive overhead, form later rounds.
+
+Head-of-line behavior is part of the policy. FCFS, `READY_BATCH_MCT` and `READY_BATCH_ROUNDROBIN` (hence `CWS_RANKMIN_RR`) are strict FIFO over their queue order: the first Job with no idle compatible VM blocks every later Job, without backfilling. Min-Min/Max-Min select among placeable Jobs and are work-conserving, so an unplaceable Job does not block others. EBPSM is also work-conserving and skips a Job that must wait. The [round tests](<../../simulator/src/test/java/org/workflowsim/planning/ReadyBatchRoundSemanticsIntegrationTest.java>) and [compatibility tests](<../../simulator/src/test/java/org/workflowsim/scheduling/SupportedOnlineSchedulingCompatibilityTest.java>) hand-derive these rules.
+
 The [shared-storage HEFT tests](<../../simulator/src/test/java/org/workflowsim/planning/SharedStorageHeftPlanningAlgorithmTest.java>) verify rank, PE exclusion, and gap insertion; the [DLS/ETF insertion boundary tests](<../../simulator/src/test/java/org/workflowsim/planning/SharedStorageDlsEtfSlotSemanticsAuditTest.java>) cover abutting intervals, tiny gaps, floating-point boundaries, and reservation changes, so that caching or interval merging does not change the scheduling semantics.
 
 ## Communication Estimation and Execution Models

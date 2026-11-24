@@ -76,6 +76,35 @@ class SupportedOnlineSchedulingCompatibilityTest {
         }
     }
 
+    /**
+     * FGCS-R3 (2026-11-24, B2): CONTRACTS head-of-line rule. The 2-PE head Job can use only the
+     * busy VM 9 while the 1-PE Job behind it could use idle VM 2. Arrival-order policies are strict
+     * FIFO and dispatch nothing; selection-based policies are work-conserving and dispatch Job 11.
+     */
+    @Test
+    void headOfLineBlockingFollowsTheDeclaredPolicyFamily() throws Exception {
+        for (SchedulerFactory factory : supportedSchedulers()) {
+            if (factory.name.equals("DATA")) {
+                continue;
+            }
+            Job head = job(10, 2);
+            Job behind = job(11, 1);
+            CondorVM busy = vm(9, 1000.0, 2);
+            busy.setState(org.workflowsim.WorkflowSimTags.VM_STATUS_BUSY);
+            BaseSchedulingAlgorithm scheduler = factory.create();
+            scheduler.setCloudletList(Arrays.<Cloudlet>asList(head, behind));
+            scheduler.setVmList(Arrays.asList(vm(2, 1000.0, 1), busy));
+
+            scheduler.run();
+
+            boolean workConserving =
+                    factory.name.equals("READY_BATCH_MINMIN") || factory.name.equals("READY_BATCH_MAXMIN");
+            List<Cloudlet> expected =
+                    workConserving ? Arrays.<Cloudlet>asList(behind) : java.util.Collections.<Cloudlet>emptyList();
+            assertEquals(expected, scheduler.getScheduledList(), factory.name);
+        }
+    }
+
     private static List<SchedulerFactory> supportedSchedulers() {
         return Arrays.asList(
                 new SchedulerFactory("FCFS", FCFSSchedulingAlgorithm::new),

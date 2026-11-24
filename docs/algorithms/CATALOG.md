@@ -34,10 +34,10 @@ The table below is the complete set of labels accepted at the standard entry poi
 
 | Label | Actual decision |
 | --- | --- |
-| `FCFS` | ready-arrival order; picks the idle compatible VM with the smallest VM ID |
-| `READY_BATCH_MINMIN` | every unassigned Job first computes its minimum ECT, then the global minimum is chosen; recomputed after each assignment |
-| `READY_BATCH_MAXMIN` | every unassigned Job first computes its minimum ECT, then the maximum of those is chosen; recomputed after each assignment |
-| `READY_BATCH_MCT` | ready-arrival order; among currently idle compatible VMs picks the smallest `length/MIPS` |
+| `FCFS` | strict ready-arrival FIFO; picks the idle compatible VM with the smallest VM ID |
+| `READY_BATCH_MINMIN` | immediate mode: every unassigned Job computes its minimum envelope time over idle VMs, the global minimum is assigned; recomputed over the remaining idle VMs; one Job per idle VM per round |
+| `READY_BATCH_MAXMIN` | as above, but the maximum of the per-Job minima is assigned |
+| `READY_BATCH_MCT` | strict ready-arrival FIFO; among currently idle compatible VMs picks the smallest envelope time |
 | `READY_BATCH_ROUNDROBIN` | a persistent cursor ordered by VM ID rotates, skipping busy or incompatible VMs |
 | `CWS_RANKMIN_RR` | static-DAG CWS descendant-PROCESS rank descending, `isRealInputFile` bytes ascending, then persistent RR over idle compatible VMs |
 | `RESHI_C` | direct-child-count descending with explicit Reshi task-node ranking over idle PE-compatible VMs |
@@ -49,13 +49,15 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `STATIC` | executes an existing mapping/binding; with a full static plan it additionally enforces the per-VM order — it is not an independent optimization algorithm |
 | `CARBON_WINDOW_DEFER` | defers the whole ready batch to the next declared carbon window whose green power is strictly higher (each Job at most once — a per-Job bound, so a later ready wave may hop once more), then dispatches FCFS to the smallest idle compatible VM; needs `carbonWindows`; a windowless platform is rejected rather than silently degraded (C1, 2026-11-02) |
 
-The ready-batch ECT comparison quantity is `length/MIPS`; it excludes future availability,
-input transfer, or contention. For fixed positive lengths and identical candidate sets, the
-minimum ECT is equivalent to the maximum MIPS; different labels alone do not imply different
-mappings. `DATA` compares bytes, not transfer seconds.
+The ready-batch comparison quantity is the envelope time `(length + floor(MIPS * readSeconds)) / MIPS`,
+where `readSeconds` is the SHARED input read the runtime charges inside the envelope and 0 for other
+file systems and pre-execution/coherent models (FGCS-R3, 2026-11-24). It excludes busy VMs, future
+availability, and contention, so these labels are not Braun et al.'s batch heuristics. For one Job and
+identical candidates the minimum normally selects the maximum MIPS; different labels alone do not
+imply different mappings. `DATA` compares bytes, not transfer seconds.
 
 The same-named static planning labels compare [TaskExecutionModel](<../../simulator/src/main/java/org/workflowsim/utils/TaskExecutionModel.java>)
-matrix seconds instead of this bare `length/MIPS` quantity, so a campaign comparison group
+matrix seconds instead of this raw-length envelope quantity, so a campaign comparison group
 must not place the two cost calibers side by side; [ExperimentPlan](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentPlan.java>)
 rejects the mixed group at construction, and [AlgorithmCatalog](<../../simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java>)
 owns the classification (AUD-F09).

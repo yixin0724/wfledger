@@ -1,5 +1,8 @@
 # 1000 and 5000 Task Makespan Comparison (2026-11-09)
 
+> Recorded before FGCS-R3 (2026-11-24). Online rows use the former read-free estimate and
+> event-order-dependent rounds; they must be rerun before being cited for the current version.
+
 ## Setup and scale construction
 
 The 1000-task inputs are the real Montage, CyberShake and Inspiral DAX workflows. No 5000-task DAX is

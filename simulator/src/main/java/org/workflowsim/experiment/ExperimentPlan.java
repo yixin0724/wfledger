@@ -203,7 +203,7 @@ public final class ExperimentPlan {
 
     private static String describeCostCaliber(AlgorithmCatalog.CostComparisonCaliber caliber, Cell cell) {
         String quantity = caliber == AlgorithmCatalog.CostComparisonCaliber.ONLINE_READY_BATCH
-                ? "bare length/MIPS ECT"
+                ? "raw length/MIPS plus charged SHARED input read"
                 : "TaskExecutionModel matrix seconds";
         return caliber.name() + " (" + quantity + "; planning "
                 + cell.getConfig().getPlanningAlgorithm() + ", scheduling "

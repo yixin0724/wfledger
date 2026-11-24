@@ -414,6 +414,39 @@ public class CloudSim {
         return ev;
     }
 
+    /**
+     * Returns whether an event other than the excluded tag still awaits processing at the current
+     * clock. FGCS-R3 (2026-11-24, B2): schedulers use this to settle same-instant releases before
+     * a round; the excluded round tag prevents several schedulers from waiting on each other.
+     * Events addressed to entities that no longer run are ignored because they are never consumed.
+     *
+     * @param excludedTag event tag to ignore
+     * @return true when a same-instant event is pending
+     */
+    public static boolean hasPendingEventAtCurrentTime(int excludedTag) {
+        for (Iterator<SimEvent> it = future.iterator(); it.hasNext(); ) {
+            SimEvent event = it.next();
+            if (event.eventTime() > clock) {
+                break;
+            }
+            if (isConsumablePending(event, excludedTag)) {
+                return true;
+            }
+        }
+        for (Iterator<SimEvent> it = deferred.iterator(); it.hasNext(); ) {
+            if (isConsumablePending(it.next(), excludedTag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isConsumablePending(SimEvent event, int excludedTag) {
+        return event.getType() == SimEvent.SEND
+                && event.getTag() != excludedTag
+                && entities.get(event.getDestination()).getState() == SimEntity.RUNNABLE;
+    }
+
     public static SimEvent cancel(int src, Predicate p) {
         SimEvent ev = null;
         Iterator<SimEvent> iter = future.iterator();

@@ -22,7 +22,13 @@ final class LargeWorkflowScaleRegressionTest {
 
     private static final double LOCAL_HEFT_GOLDEN_MAKESPAN = 253528.51872582204;
 
-    private static final double READY_BATCH_MINMIN_GOLDEN_MAKESPAN = 1223.7949999999978;
+    /**
+     * Golden regression (drift detector, not a correctness oracle). FGCS-R3 (2026-11-24): moved
+     * from 1223.7949999999978 because ready-batch estimates now include the charged SHARED read
+     * (B1) and a round contains all same-instant releases (B2); the hand-derived proofs are in
+     * ReadyBatchRoundSemanticsIntegrationTest.
+     */
+    private static final double READY_BATCH_MINMIN_GOLDEN_MAKESPAN = 1227.6469999999981;
 
     private static final double FCFS_GOLDEN_MAKESPAN = 1223.8519999999985;
 

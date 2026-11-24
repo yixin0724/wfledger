@@ -16,6 +16,7 @@ public class ReadyBatchMCTSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
         for (int i = 0; i < size; i++) {
             Cloudlet cloudlet = (Cloudlet) getCloudletList().get(i);
+            double readSeconds = inputReadSeconds(cloudlet);
             CondorVM bestVm = null;
             double minCompletionTime = Double.MAX_VALUE;
 
@@ -24,7 +25,7 @@ public class ReadyBatchMCTSchedulingAlgorithm extends BaseSchedulingAlgorithm {
                     continue;
                 }
 
-                double completionTime = (double) cloudlet.getCloudletLength() / vm.getMips();
+                double completionTime = envelopeSeconds(cloudlet, vm, readSeconds);
                 if (completionTime < minCompletionTime) {
                     minCompletionTime = completionTime;
                     bestVm = vm;

@@ -1,5 +1,8 @@
 # Standard Benchmark `benchmark-standard-v1`
 
+> Recorded before FGCS-R3 (2026-11-24). Online rows use the former read-free estimate and
+> event-order-dependent rounds; they must be rerun before being cited for the current version.
+
 The platform's first frozen public benchmark: a standard comparison of the maintained
 algorithm corpus under frozen conditions, with every number backed by a manifest-v4 bundle
 that any third party can independently re-verify with the repository's Python auditor.

@@ -15,6 +15,10 @@ public class ReadyBatchMinMinSchedulingAlgorithm extends BaseSchedulingAlgorithm
         int taskCount = getCloudletList().size();
         boolean[] scheduled = new boolean[taskCount];
         int scheduledCount = 0;
+        double[] inputReadSeconds = new double[taskCount];
+        for (int t = 0; t < taskCount; t++) {
+            inputReadSeconds[t] = inputReadSeconds((Cloudlet) getCloudletList().get(t));
+        }
 
         while (scheduledCount < taskCount) {
 
@@ -36,7 +40,7 @@ public class ReadyBatchMinMinSchedulingAlgorithm extends BaseSchedulingAlgorithm
                         continue;
                     }
 
-                    double ect = (double) cloudlet.getCloudletLength() / vm.getMips();
+                    double ect = envelopeSeconds(cloudlet, vm, inputReadSeconds[t]);
                     if (ect < minEctForTask) {
                         minEctForTask = ect;
                         bestVmForTask = v;

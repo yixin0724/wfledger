@@ -1,5 +1,8 @@
 # Traditional Makespan Baseline Comparison (2026-11-09)
 
+> Recorded before FGCS-R3 (2026-11-24). Online rows use the former read-free estimate and
+> event-order-dependent rounds; they must be rerun before being cited for the current version.
+
 ## Experimental setup
 
 Seven real Pegasus DAX workflows were run through `SimulationRunner`: Montage 50/100,

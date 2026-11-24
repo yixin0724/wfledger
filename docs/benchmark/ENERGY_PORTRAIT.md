@@ -1,5 +1,8 @@
 # Energy Portrait of the Algorithm Corpus
 
+> Recorded before FGCS-R3 (2026-11-24). Online rows use the former read-free estimate and
+> event-order-dependent rounds; they must be rerun before being cited for the current version.
+
 The platform's first statistical energy study: the ten-algorithm corpus of
 [`benchmark-standard-power-v1`](<STANDARD_BENCHMARK.md>) analyzed under the frozen
 homogeneous power model (250 W idle / 400 W max per VM) across 160 audited runs —

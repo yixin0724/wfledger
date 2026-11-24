@@ -23,6 +23,7 @@ import java.util.List;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.Vm;
 import org.workflowsim.CondorVM;
+import org.workflowsim.Job;
 
 public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInterface {
 
@@ -31,6 +32,8 @@ public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInte
     private List<? extends Vm> vmList;
 
     private List<Cloudlet> scheduledList;
+
+    private InputReadEstimator inputReadEstimator;
 
     public BaseSchedulingAlgorithm() {
         this.scheduledList = new ArrayList();
@@ -62,6 +65,47 @@ public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInte
     @Override
     public List getScheduledList() {
         return this.scheduledList;
+    }
+
+    /**
+     * Binds the runtime's input-read cost function; unbound direct use charges no read.
+     *
+     * @param value runtime estimator
+     */
+    public final void setInputReadEstimator(InputReadEstimator value) {
+        this.inputReadEstimator = value;
+    }
+
+    /**
+     * Returns the input-read seconds the runtime will charge inside the Job envelope.
+     *
+     * @param cloudlet ready cloudlet
+     * @return finite non-negative seconds
+     */
+    protected final double inputReadSeconds(Cloudlet cloudlet) {
+        if (inputReadEstimator == null || !(cloudlet instanceof Job)) {
+            return 0.0;
+        }
+        double seconds = inputReadEstimator.inputReadSeconds((Job) cloudlet);
+        if (!Double.isFinite(seconds) || seconds < 0.0) {
+            throw new IllegalStateException("Input-read estimate of Job " + cloudlet.getCloudletId()
+                    + " must be finite and non-negative: " + seconds);
+        }
+        return seconds;
+    }
+
+    /**
+     * Returns the runtime envelope seconds on an idle VM, including the single integer-MI read
+     * conversion shared with the runtime and the SHARED planners.
+     *
+     * @param cloudlet ready cloudlet
+     * @param vm candidate VM
+     * @param inputReadSeconds charged read seconds
+     * @return envelope seconds
+     */
+    protected static double envelopeSeconds(Cloudlet cloudlet, CondorVM vm, double inputReadSeconds) {
+        long readMi = (long) (vm.getMips() * inputReadSeconds);
+        return (cloudlet.getCloudletLength() + readMi) / vm.getMips();
     }
 
     protected final void validateCloudletCompatibility() {

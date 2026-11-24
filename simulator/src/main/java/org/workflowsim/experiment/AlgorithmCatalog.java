@@ -173,14 +173,19 @@ public final class AlgorithmCatalog {
             case FCFS:
                 values.put("decisionLayer", "ONLINE_READY_JOB");
                 values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
-                values.put("decisionRule", "First-ready-job, first-idle-VM dispatch");
+                values.put(
+                        "decisionRule",
+                        "Strict ready-arrival FIFO on the smallest-ID idle compatible VM;"
+                                + " blocks at the first unplaceable Job");
                 values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
                 values.put("limitations", limitations("Orders ready Jobs, not raw Tasks or an offline DAG schedule."));
                 break;
             case READY_BATCH_ROUNDROBIN:
                 values.put("decisionLayer", "ONLINE_READY_JOB");
                 values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
-                values.put("decisionRule", "Retained round-robin cursor over idle VMs for each ready batch");
+                values.put(
+                        "decisionRule",
+                        "Retained round-robin cursor over idle VMs; strict FIFO, blocks at the first unplaceable Job");
                 values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
                 values.put(
                         "limitations",
@@ -210,16 +215,26 @@ public final class AlgorithmCatalog {
             case READY_BATCH_MINMIN:
                 values.put("decisionLayer", "ONLINE_READY_JOB");
                 values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
-                values.put("decisionRule", "Ready-batch iterative minimum completion-time selection");
+                values.put(
+                        "decisionRule",
+                        "Immediate-mode idle-VM Min-Min: one Job per idle VM per round, minimum envelope time"
+                                + " (compute plus charged SHARED read), recomputed after each assignment");
                 values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
-                values.put("limitations", limitations("Not the offline independent-task Min-Min heuristic."));
+                values.put(
+                        "limitations",
+                        limitations("Not the Braun 2001 batch Min-Min heuristic: busy VMs are not candidates."));
                 break;
             case READY_BATCH_MAXMIN:
                 values.put("decisionLayer", "ONLINE_READY_JOB");
                 values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
-                values.put("decisionRule", "Ready-batch iterative maximum of each Job's minimum completion time");
+                values.put(
+                        "decisionRule",
+                        "Immediate-mode idle-VM Max-Min: one Job per idle VM per round, maximum of minimum envelope"
+                                + " times (compute plus charged SHARED read), recomputed after each assignment");
                 values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
-                values.put("limitations", limitations("Not the offline independent-task Max-Min heuristic."));
+                values.put(
+                        "limitations",
+                        limitations("Not the Braun 2001 batch Max-Min heuristic: busy VMs are not candidates."));
                 break;
             case DATA:
                 dataScheduler(values);
@@ -249,7 +264,10 @@ public final class AlgorithmCatalog {
     private static void readyBatchMctScheduler(Map<String, Object> values) {
         values.put("decisionLayer", "ONLINE_READY_JOB");
         values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
-        values.put("decisionRule", "Ready-batch minimum estimated completion time under current idle-VM state");
+        values.put(
+                "decisionRule",
+                "Immediate-mode idle-VM MCT: strict ready-arrival FIFO, minimum envelope time (compute plus"
+                        + " charged SHARED read); blocks at the first unplaceable Job");
         values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
         values.put(
                 "limitations",
@@ -257,7 +275,7 @@ public final class AlgorithmCatalog {
                         "Not the offline independent-task MCT heuristic; "
                                 + "it does not reserve future VM availability.",
                         "For a fixed positive Job length and the same idle compatible candidates, "
-                                + "minimizing length/MIPS is equivalent to choosing maximum MIPS."));
+                                + "minimizing envelope time normally selects the maximum MIPS."));
     }
 
     private static void dataScheduler(Map<String, Object> values) {

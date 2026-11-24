@@ -15,6 +15,10 @@ public class ReadyBatchMaxMinSchedulingAlgorithm extends BaseSchedulingAlgorithm
         int taskCount = getCloudletList().size();
         boolean[] scheduled = new boolean[taskCount];
         int scheduledCount = 0;
+        double[] inputReadSeconds = new double[taskCount];
+        for (int t = 0; t < taskCount; t++) {
+            inputReadSeconds[t] = inputReadSeconds((Cloudlet) getCloudletList().get(t));
+        }
 
         while (scheduledCount < taskCount) {
             double globalMaxEct = -1.0;
@@ -34,7 +38,7 @@ public class ReadyBatchMaxMinSchedulingAlgorithm extends BaseSchedulingAlgorithm
                     if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE || !isCompatible(cloudlet, vm)) {
                         continue;
                     }
-                    double ect = (double) cloudlet.getCloudletLength() / vm.getMips();
+                    double ect = envelopeSeconds(cloudlet, vm, inputReadSeconds[t]);
                     if (ect < minEctForTask) {
                         minEctForTask = ect;
                         bestVmForTask = v;

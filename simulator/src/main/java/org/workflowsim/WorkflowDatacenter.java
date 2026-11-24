@@ -592,6 +592,33 @@ public class WorkflowDatacenter extends Datacenter {
         return fileTransferTime;
     }
 
+    /**
+     * Returns the SHARED input-read seconds this runtime charges inside a compute Job's envelope.
+     *
+     * <p>FGCS-R3 (2026-11-24, B1): online completion estimates delegate here so that they use the
+     * charged cost function. Non-SHARED, pre-execution and coherent models return 0 because their
+     * input preparation is either VM-dependent or precedes the envelope.
+     *
+     * @param job ready Job
+     * @return non-negative seconds
+     */
+    public double sharedEnvelopeInputReadSeconds(Job job) {
+        if (job.getClassType() != ClassType.COMPUTE.value
+                || ReplicaCatalog.getFileSystem() != ReplicaCatalog.FileSystem.SHARED
+                || dataMovementModel.usesCoherentDataflowRuntime()
+                || dataMovementModel.isPreExecutionTransferDelayV1()
+                || dataMovementModel.isPreExecutionTransferDelayWithContentionV1()
+                || dataMovementModel.isFatTreeContentionV1()) {
+            return 0.0;
+        }
+        try {
+            return estimateDataStageInForComputeJob(job.getFileList(), job).getTransferSeconds();
+        } catch (Exception exception) {
+            throw new IllegalStateException(
+                    "Could not estimate SHARED input read of Job " + job.getCloudletId(), exception);
+        }
+    }
+
     private void submitJobToScheduler(Job job, CondorVM vm, double fileTransferTime, boolean ack) {
         int vmId = job.getVmId();
 

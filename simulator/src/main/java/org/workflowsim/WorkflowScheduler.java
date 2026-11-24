@@ -59,7 +59,11 @@ import org.workflowsim.utils.SimulationConfig;
 
 public class WorkflowScheduler extends DatacenterBroker {
 
+    private static final Object SETTLING_ROUND = new Object();
+
     private int workflowEngineId;
+
+    private boolean roundPending;
 
     private BaseSchedulingAlgorithm activeSchedulingPolicy;
 
@@ -267,7 +271,7 @@ public class WorkflowScheduler extends DatacenterBroker {
             submitCloudlets();
 
             if (!getCloudletList().isEmpty()) {
-                sendNow(this.getId(), WorkflowSimTags.CLOUDLET_UPDATE);
+                requestSchedulingRound();
             }
         } else {
 
@@ -287,7 +291,31 @@ public class WorkflowScheduler extends DatacenterBroker {
         }
     }
 
+    /**
+     * Requests one coalesced round at the current instant.
+     *
+     * <p>FGCS-R3 (2026-11-24, B2): root cause — a Job return ran a round before the engine
+     * released that return's same-instant children, so a "batch" depended on event order. The
+     * round is now re-posted at zero delay until no other event remains at this instant.
+     */
+    private void requestSchedulingRound() {
+        if (!roundPending) {
+            roundPending = true;
+            sendNow(this.getId(), WorkflowSimTags.CLOUDLET_UPDATE, SETTLING_ROUND);
+        }
+    }
+
     protected void processCloudletUpdate(SimEvent ev) {
+
+        if (ev.getData() == SETTLING_ROUND) {
+            roundPending = false;
+        } else if (roundPending) {
+            return;
+        }
+        if (CloudSim.hasPendingEventAtCurrentTime(WorkflowSimTags.CLOUDLET_UPDATE)) {
+            requestSchedulingRound();
+            return;
+        }
 
         if (getVmsCreatedList().size() < getVmList().size() - getVmsDestroyed()) {
             return;
@@ -302,6 +330,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         scheduler.getScheduledList().clear();
         scheduler.setCloudletList(getCloudletList());
         scheduler.setVmList(getVmsCreatedList());
+        scheduler.setInputReadEstimator(this::chargedInputReadSeconds);
         int readyJobs = getCloudletList().size();
         int idleVms = 0;
         for (Object item : getVmsCreatedList()) {
@@ -328,6 +357,16 @@ public class WorkflowScheduler extends DatacenterBroker {
         getCloudletSubmittedList().addAll(scheduledList);
         cloudletsSubmitted += scheduledList.size();
         armDeferralWakeUp(scheduler, scheduledList);
+    }
+
+    private double chargedInputReadSeconds(Job job) {
+        Object datacenter = getDatacenterIdsList().isEmpty()
+                ? null
+                : CloudSim.getEntity(getDatacenterIdsList().get(0));
+        if (!(datacenter instanceof WorkflowDatacenter)) {
+            throw new IllegalStateException(getName() + " has no WorkflowDatacenter for input-read estimates");
+        }
+        return ((WorkflowDatacenter) datacenter).sharedEnvelopeInputReadSeconds(job);
     }
 
     private void armDeferralWakeUp(BaseSchedulingAlgorithm policy, List<Cloudlet> scheduledList) {
@@ -535,7 +574,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         cloudletsSubmitted--;
 
         if (!getCloudletList().isEmpty()) {
-            schedule(this.getId(), 0.0, WorkflowSimTags.CLOUDLET_UPDATE);
+            requestSchedulingRound();
         }
     }
 
@@ -591,7 +630,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         }
         getCloudletList().addAll(list);
 
-        sendNow(this.getId(), WorkflowSimTags.CLOUDLET_UPDATE);
+        requestSchedulingRound();
     }
 
     @Override
