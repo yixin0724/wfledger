@@ -224,17 +224,23 @@ is not the paper's empirical neural-network model or the MOHEFT Pareto optimizer
 `GreenHeftPlannerTest` distinguishes energy-first selection and gap insertion;
 `GreenHeftAdapterTest` verifies PE compatibility and multi-PE duration.
 
-### MOHEFT Pareto Beam Search (R-PAPER-06, 2026-11-06)
+### MOHEFT Pareto Beam Search (R-PAPER-06, 2026-11-06; FGCS-R3, 2026-11-24)
 
-`MO_HEFT` expands HEFT-ordered task-to-VM candidates and keeps non-dominated makespan-energy
-solutions. Candidates use the same PE filtering and reservation-gap insertion as GreenHEFT, so the
-front does not lose feasible low-energy early-gap schedules. `MoHeftPlanner` retains both objective
-extremes, applies crowding-distance truncation at beam width 8, and selects a balanced schedule by
-normalized distance to the ideal point. A candidate is dominated only when another candidate is no
-worse in both objectives and strictly better in at least one. The balanced tie-break is makespan,
-energy, then deterministic candidate ID. `MoHeftPlannerTest` covers dominated-candidate removal,
-Pareto extremes, balanced selection and gap-inserted candidates; `MoHeftIntegrationTest` covers a
-real three-point tradeoff. This is not an exact full Pareto optimizer or an empirical neural-network model.
+`MO_HEFT` expands HEFT-ordered task-to-VM candidates and, after each task, keeps the K = 8 best partial
+schedules by **non-dominated sorting plus crowding distance** (Durillo, Nae and Prodan, FGCS 2014):
+whole fronts are taken in rank order while they fit, the overflowing front is truncated by descending
+crowding distance (boundary points get infinite distance, so both objective extremes survive), and ties
+use the ascending candidate ID. Before 2026-11-24 only the first front was kept, so the beam shrank when
+that front had fewer than K members and dominated partial schedules that later become non-dominated were
+lost (FGCS-R3 M5). The returned Pareto front is the non-dominated subset of the final beam; a balanced
+schedule is chosen by normalized distance to the ideal point with makespan, energy, then candidate ID as
+tie-breaks. A candidate is dominated only when another is no worse in both objectives and strictly
+better in at least one. Candidates use the same PE filtering, SHARED envelope durations and root release
+as GreenHEFT, and the exact insertion test `start + duration <= gapStart` of the SHARED planners (the
+former `+1e-9` tolerance was removed, FGCS-R3 m7). `MoHeftPlannerTest` covers dominated-candidate
+removal, Pareto extremes, the hand-derived later-front refill case, exact insertion, balanced selection
+and gap-inserted candidates; `MoHeftIntegrationTest` covers a real three-point tradeoff. This is not an
+exact full Pareto optimizer or an empirical neural-network model.
 
 ### IC-PCP Deadline/Cost Partial Critical Paths (R-PAPER-07, 2026-11-06; FGCS-R3, 2026-11-24)
 

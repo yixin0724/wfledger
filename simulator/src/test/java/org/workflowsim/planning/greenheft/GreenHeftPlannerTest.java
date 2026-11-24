@@ -77,6 +77,36 @@ class GreenHeftPlannerTest {
         assertEquals(7.0, schedule.getTotalEnergyJoules(), 1.0e-9);
     }
 
+    /**
+     * FGCS-R3 (2026-11-24) m7: exact insertion boundary, as in the SHARED planners. Same derivation as
+     * the MOHEFT case: the child occupies VM0 [10,22]; the independent task of 10 + 5e-10 s overruns the
+     * [0,10] gap and must start at 22 (the superseded 1e-9 tolerance inserted it at 0).
+     */
+    @Test
+    void insertionUsesTheExactGapBoundary() {
+        double overrun = 10.0 + 5.0e-10;
+        GreenHeftTask parent = new GreenHeftTask(
+                1,
+                values(5.0, 5.0),
+                values(50.0, 5.0),
+                Collections.<Integer>emptyList(),
+                Collections.singletonMap(2, 5.0));
+        GreenHeftTask child = new GreenHeftTask(
+                2, values(12.0, 12.0), values(1.0, 100.0), Collections.singletonList(1), Collections.emptyMap());
+        GreenHeftTask independent = new GreenHeftTask(
+                3,
+                values(overrun, overrun),
+                values(1.0, 100.0),
+                Collections.<Integer>emptyList(),
+                Collections.emptyMap());
+
+        GreenHeftSchedule schedule =
+                new GreenHeftPlanner().schedule(new GreenHeftProblem(Arrays.asList(parent, child, independent)));
+
+        assertEquals(0, schedule.getTaskPlan(3).getVmId());
+        assertEquals(22.0, schedule.getTaskPlan(3).getStartSeconds(), 0.0);
+    }
+
     @Test
     void rejectsACycleInsteadOfReturningAnInvalidSchedule() {
         GreenHeftTask first = new GreenHeftTask(

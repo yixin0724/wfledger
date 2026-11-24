@@ -77,7 +77,8 @@ public final class GreenHeftPlanner {
             return start;
         }
         for (GreenHeftSchedule.Entry reservation : reservations) {
-            if (start + duration <= reservation.getStartSeconds() + 1.0e-9) {
+            // FGCS-R3 (2026-11-24) m7: exact gap test, as in the SHARED planners.
+            if (start + duration <= reservation.getStartSeconds()) {
                 break;
             }
             start = Math.max(start, reservation.getFinishSeconds());

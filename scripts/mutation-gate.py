@@ -407,7 +407,7 @@ REGISTRY = [
         id="M56",
         name="GreenHEFT reverts to append-only placement",
         file="simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftPlanner.java",
-        old="            if (start + duration <= reservation.getStartSeconds() + 1.0e-9) {",
+        old="            if (start + duration <= reservation.getStartSeconds()) {",
         new="            if (false) {",
         killers="GreenHeftPlannerTest"),
     dict(
