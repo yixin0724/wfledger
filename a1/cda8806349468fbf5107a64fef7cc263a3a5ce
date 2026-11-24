@@ -1,0 +1,33 @@
+docs/algorithms/CATALOG.md
+  s_d9232ffa62c6d8::t_0f52e81afc4f17 45
+docs/algorithms/CONTRACTS.md
+  s_d9232ffa62c6d8::t_c0fe34fc6415fd 272-301
+scripts/mutation-gate.py
+  s_768a25909712fc::t_a19adfb190dcfd 380,485-486
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  s_768a25909712fc::t_9a5f6414ec01ab 48,564-567
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a1cda8806349468fbf5107a64fef7cc263a3a5ce",
+  "prompts": {},
+  "sessions": {
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_d9232ffa62c6d8": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "5fd6baa4-e7a0-485b-8122-a31022e7699c",
+        "model": "codefuse_official_channel/Kimi-K3.1-Pro:glink_domestic"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
