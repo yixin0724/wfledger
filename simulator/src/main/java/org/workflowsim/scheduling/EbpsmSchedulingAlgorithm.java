@@ -33,10 +33,9 @@ import org.workflowsim.utils.TaskExecutionModel;
  *   <li>A2: a task that fit no idle VM's sub-budget was silently skipped and could starve until
  *       the event queue drained. Algorithm 2's last resort is provisioning a new VM of the fastest
  *       type within budget, which this fixed declared pool does not model. The task is therefore
- *       deferred only while a compatible VM is busy (its return is the only event that frees a VM
- *       or grows a cache); when every compatible VM is idle and none fits, or when even the
- *       best-case (fully cached) prediction exceeds the budget on every compatible VM, the run
- *       fails explicitly.
+ *       deferred while any VM is busy after the round (a return is what frees a VM or grows a
+ *       cache). A round that leaves such a task and an entirely idle pool, or a budget that even
+ *       the fully cached prediction exceeds on every compatible VM, fails explicitly.
  *   <li>A2: the prediction uses the effective execution length on the candidate VM
  *       ({@link TaskExecutionModel}) and counts only real input files, matching the runtime's
  *       compute envelope; read/write/container terms follow paper Eqs. 1–2 with the declared
@@ -71,17 +70,15 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm impl
             int byStart = Double.compare(estimatedStart(first), estimatedStart(second));
             return byStart != 0 ? byStart : Integer.compare(first.getCloudletId(), second.getCloudletId());
         });
+        List<Integer> unaffordable = new ArrayList<Integer>();
         for (Job job : jobs) {
             List<CondorVM> idle = new ArrayList<CondorVM>();
-            boolean compatibleBusy = false;
             for (CondorVM vm : sortedVmsById()) {
                 if (!isCompatible(job, vm)) {
                     continue;
                 }
                 if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE) {
                     idle.add(vm);
-                } else {
-                    compatibleBusy = true;
                 }
             }
             if (idle.isEmpty()) {
@@ -112,16 +109,26 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm impl
                 selected = choose(idle, task, budget, active);
             }
             if (selected == null) {
-                if (!compatibleBusy) {
-                    throw new IllegalStateException("EBPSM task " + task.getCloudletId() + " fits no idle VM within"
-                            + " its sub-budget " + budget + " and no compatible VM is busy, so no future"
-                            + " return can free a VM or grow a cache; the fixed declared pool cannot provision"
-                            + " the paper's fallback VM (FGCS-R3 A2)");
-                }
+                unaffordable.add(task.getCloudletId());
                 continue;
             }
             assign(job, selected);
         }
+        requireProgressPossible(unaffordable);
+    }
+
+    private void requireProgressPossible(List<Integer> unaffordable) {
+        if (unaffordable.isEmpty()) {
+            return;
+        }
+        for (CondorVM vm : sortedVmsById()) {
+            if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE) {
+                return;
+            }
+        }
+        throw new IllegalStateException("EBPSM tasks " + unaffordable + " fit no idle VM within their sub-budgets"
+                + " while the whole pool is idle, so no running attempt can change a VM or cache state; the"
+                + " fixed declared pool cannot provision the paper's fallback VM (FGCS-R3 A2)");
     }
 
     /**

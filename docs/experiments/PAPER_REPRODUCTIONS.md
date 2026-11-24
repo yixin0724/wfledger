@@ -229,8 +229,8 @@ EBPSM preprocesses task budgets using DTL/EFT order and slowest-first upgrades, 
 Jobs by input-data cache, container-image cache, and other idle VMs in that order. Each candidate
 must fit the task's sub-budget. Successful Tasks publish their container image and input/output files
 into the executing VM's cache on completion (FGCS-R3, 2026-11-24; previously publication was attempted
-only at dispatch and never took effect). A task that fits no idle VM stays queued only while a
-compatible VM is busy; otherwise the run fails explicitly, replacing the paper's elastic-provisioning
+only at dispatch and never took effect). A task that fits no idle VM stays queued while any
+VM is busy; an idle pool with an unaffordable task fails explicitly, replacing the paper's elastic-provisioning
 fallback that the fixed pool cannot model. Two workflows with staggered arrivals and a parent→child
 cache-locality chain complete through the standard runner. The current subset uses a fixed declared VM pool and
 explicit cache declarations, not Docker deployment, elastic VM provisioning, or a full WaaS corpus.

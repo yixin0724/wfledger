@@ -286,10 +286,11 @@ storage is unbounded in this subset (no FIFO eviction).
 
 Budget fallback (FGCS-R3, 2026-11-24): the paper's last resort when no idle VM fits is provisioning a new VM of
 the fastest type within budget; the fixed declared pool cannot do that, so it is replaced by explicit rules
-instead of a silent skip. A task stays queued for a later cycle only while some compatible VM is busy (its
-return is the only event that frees a VM or grows a cache). If every compatible VM is idle and none fits, or if
-even the best-case prediction (cached input, deployed container) exceeds the budget on every compatible VM, the
-run fails with an `IllegalStateException`. These predictions are the policy's own estimate: the platform runtime
+instead of a silent skip. A task stays queued while any VM is busy
+after the round (a return is what frees a VM or grows a cache). If the round leaves an unaffordable task and an
+entirely idle pool, or if even the best-case prediction (cached input, deployed container) exceeds the budget on
+every compatible VM, the run fails with an `IllegalStateException`. The idle-pool rule is deliberately
+conservative: it does not wait for a future workflow arrival or a delayed release that might warm a cache. These predictions are the policy's own estimate: the platform runtime
 does not model EBPSM's VM-local cache and still charges the configured data-movement model (under SHARED, the
 storage read on every attempt), so locality changes decisions, not simulated read time.
 

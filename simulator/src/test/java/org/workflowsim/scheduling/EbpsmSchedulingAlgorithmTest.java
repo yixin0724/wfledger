@@ -253,6 +253,28 @@ class EbpsmSchedulingAlgorithmTest {
         assertThrows(IllegalStateException.class, scheduler::run);
     }
 
+    /**
+     * FGCS-R3 (2026-11-24, A2): the stall check is a whole-round property. The consumer (Job 2,
+     * cost 3 > 1.5 on both idle VMs, derived above) precedes producer Job 3 in the queue order;
+     * dispatching the producer makes a VM busy whose return can publish new.bin, so the consumer is
+     * deferred, not failed.
+     */
+    @Test
+    void aLaterDispatchInTheSameRoundPreventsAPrematureFailure() {
+        Job blocked = consumer();
+        Task task = new Task(1, 100L);
+        task.getFileList().add(file("new.bin", FileType.OUTPUT));
+        Job producing = new Job(3, 100L);
+        producing.getTaskList().add(task);
+        EbpsmSchedulingAlgorithm scheduler = new EbpsmSchedulingAlgorithm(publicationConfig());
+        scheduler.setVmList(Arrays.asList(vm(0), vm(1)));
+        scheduler.setCloudletList(Arrays.asList(blocked, producing));
+
+        scheduler.run();
+
+        assertEquals(Collections.singletonList(producing), scheduler.getScheduledList());
+    }
+
     private static Job producer() {
         Task producer = new Task(1, 100L);
         producer.getFileList().add(file("new.bin", FileType.OUTPUT));
