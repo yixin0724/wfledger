@@ -733,10 +733,6 @@ public class WorkflowDatacenter extends Datacenter {
         }
     }
 
-    protected double processDataStageInForComputeJob(List<FileItem> requiredFiles, Job job) throws Exception {
-        return estimateDataStageInForComputeJob(requiredFiles, job).getTransferSeconds();
-    }
-
     private DataTransferEstimate estimateDataStageInForComputeJob(List<FileItem> requiredFiles, Job job)
             throws Exception {
         if (dataMovementModel.usesCoherentDataflowRuntime()) {
@@ -877,7 +873,8 @@ public class WorkflowDatacenter extends Datacenter {
 
     private void updateCloudletProcessing(boolean executionSetChanging) {
         if (executionSetChanging
-                || CloudSim.clock() < 0.111
+                || CloudSim.clock()
+                        < SimulationTiming.initialProcessingThresholdSeconds(CloudSim.getMinTimeBetweenEvents())
                 || CloudSim.clock() >= getLastProcessTime() + CloudSim.getMinTimeBetweenEvents()) {
             List<? extends Host> list = getVmAllocationPolicy().getHostList();
             double smallerTime = Double.MAX_VALUE;

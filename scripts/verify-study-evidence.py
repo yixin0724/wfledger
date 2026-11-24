@@ -89,7 +89,8 @@ def critical_path_reference(config, platform, raw_tasks):
     min_interval = number(config.get("cloudSimMinEventIntervalSeconds", 0.1), "min interval")
 
     stage_raw = 110.0 / fastest_mips
-    stage_secs = max(stage_raw, min_interval + 0.01) + min_interval
+    # FGCS-R3 (2026-11-24, A4): the completion safety margin is tick / 10 (SimulationTiming).
+    stage_secs = max(stage_raw, min_interval + min_interval / 10.0) + min_interval
 
     matrix = {}
     matrix_spec = config.get("taskCostMatrix")

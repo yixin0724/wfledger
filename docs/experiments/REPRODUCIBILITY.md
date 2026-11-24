@@ -13,7 +13,7 @@ Research code enters the standard runner through the immutable [SimulationConfig
 | Algorithm and file system | Java defaults to FCFS, INVALID planning, and SHARED; other combinations must be selected explicitly and pass validation |
 | Data movement | Defaults to `LEGACY_WORKFLOWSIM_V1`; switching the model must not be treated as an implementation detail that leaves results unchanged |
 | Runtime conversion | Defaults to `runtimeReferenceMips=1000.0` and `runtimeScale=1.0`; seconds convert to MI as `max(100, floor(runtime * referenceMips * scale))` |
-| Kernel tick | `cloudSimMinEventIntervalSeconds` is a positive finite value, defaults to 0.1 simulated seconds, and affects event release and completion; it is not a network-latency calibration |
+| Kernel tick | `cloudSimMinEventIntervalSeconds` is a positive finite value, defaults to 0.1 simulated seconds, and affects event release and completion; the completion safety margin is `tick/10` and the initial-processing threshold `tick + tick/10 + tick/100` (0.01 s and 0.111 s at the default, FGCS-R3); it is not a network-latency calibration |
 | Arrival times | The inputs and the equally long arrival table are known before startup and released at seconds counted from simulated time zero; all zeros by default |
 | Deadline | 0 means not requested; a positive signed-long threshold only observes `simulationEndSeconds` and does not change scheduling, admission, retries, or termination |
 | Overheads and failures | Off by default; when enabled, record the immutable distribution specifications, depth/VM layout, and retry budget — never reuse an already-consumed random generator |
