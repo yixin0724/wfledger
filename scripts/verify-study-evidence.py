@@ -41,6 +41,20 @@ def events_attribute(event, attribute):
 CS_SCOPE = "SHARED_STORAGE_NO_CLUSTERING_NO_FAILURE_NO_OVERHEAD_SPACE_SHARED"
 CS_OUTSIDE = "UNAVAILABLE_OUTSIDE_CONTROLLED_SHARED_STORAGE_SCOPE"
 
+def task_window_verdict(failed, start, finish, planned_seconds, tol):
+    """Checks one Task attempt window against its planned compute seconds.
+
+    FGCS-R5 (2026-11-24): mirrors WorkflowDatacenter. A successful attempt computes exactly its planned
+    seconds. A failure ends the attempt at the first failure arrival in the half-open compute window
+    [start, start + planned), so a failed window is the executed portion: non-negative and strictly
+    shorter than planned. Returns (ok, seconds the envelope must cover).
+    """
+    executed = finish - start
+    if not failed:
+        return abs(executed - planned_seconds) <= tol, planned_seconds
+    ok = executed >= -tol and executed < planned_seconds - tol
+    return ok, min(planned_seconds, max(0.0, executed))
+
 def critical_path_reference(config, platform, raw_tasks):
 
     import math
@@ -477,6 +491,11 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 costs[key] = number(needed(entry, "executionSeconds"), "matrix seconds", positive=True)
             audit.ensure(set(costs) >= {(tid, vmid) for tid in logical_ids for vmid in vms}, "matrix-complete-coverage", prefix)
         seen_attempts = set()
+        failure_cfg = config.get("failureModel")
+        crch_attempts = (config.get("schedulingAlgorithm") == "CRCH"
+                         or (isinstance(failure_cfg, dict) and failure_cfg.get("clusteringAlgorithm") == "FTCLUSTERING_CRCH"))
+        if crch_attempts:
+            coverage["crchExecutedWork"] = "DECLARED_NOT_RECOMPUTED_CHECKPOINT_PARAMETERS_ABSENT_FROM_MANIFEST"
         for task in task_outcomes:
             tid, jid = integer(needed(task, "taskId"), "task id", True), integer(needed(task, "jobId"), "task job id", True)
             audit.ensure((tid, jid) not in seen_attempts, "unique-task-attempt", prefix, [tid, jid])
@@ -496,8 +515,18 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 audit.problem("missing-effective-cost-coordinate", prefix, [tid, vmid])
                 continue
             effective = java_round(costs[(tid, vmid)] * mips) if matrix is not None else raw_mi
+            if crch_attempts:
+                # FGCS-R5 (2026-11-24): a CRCH attempt executes its work plus ceil(n*gamma*mips) checkpoint MI,
+                # and a resumption on the checkpointing VM computes only the work after the latest checkpoint.
+                # The checkpoint interval and overhead are not manifest fields, so the declared executed MI is
+                # taken as given (bounded by the raw work plus overhead) and the window is checked against it.
+                declared = integer(needed(task, "effectiveExecutionLengthMi"), "effective MI", True)
+                audit.ensure(0 < declared, "crch-effective-mi-positive", prefix, [tid, declared])
+                effective = declared
             audit.ensure(0 < effective <= LONG_MAX // 1_000_000, "representable-effective-mi", prefix, [tid, effective])
-            if not old or "effectiveExecutionLengthMi" in task:
+            if crch_attempts:
+                pass
+            elif not old or "effectiveExecutionLengthMi" in task:
                 audit.ensure("effectiveExecutionLengthMi" in task, "missing-effective-mi-declaration", prefix, tid)
                 if "effectiveExecutionLengthMi" in task:
                     audit.ensure(integer(task["effectiveExecutionLengthMi"], "effective MI", True) == effective, "effective-mi-declaration", prefix, [tid, task["effectiveExecutionLengthMi"]], effective)
@@ -508,7 +537,10 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             allowance = 1.0 / mips + tolerance(start, finish, jstart, jfinish)
             audit.ensure(start + tolerance(start, jstart) >= jstart and finish <= jfinish + allowance and finish + tolerance(start, finish) >= start,
                          "task-window-within-job", prefix, {"taskId": tid, "jobId": jid, "start": start, "finish": finish, "jobStart": jstart, "jobFinish": jfinish}, allowance)
-            audit.ensure(time_equal(finish - start, expected_seconds, start, finish), "effective-task-window", prefix, [tid, finish - start], expected_seconds)
+            window_ok, expected_seconds = task_window_verdict(job["status"] == FAILED, start, finish, expected_seconds,
+                                                             tolerance(start, finish))
+            audit.ensure(window_ok, "failed-task-window-within-compute" if job["status"] == FAILED else "effective-task-window",
+                         prefix, [tid, finish - start], expected_seconds)
             audit.ensure(jfinish - jstart + allowance >= expected_seconds + max(0.0, start - jstart), "cpu-lower-bound", prefix,
                          {"taskId": tid, "jobId": jid, "actualEnvelope": jfinish - jstart, "allowance": allowance}, expected_seconds + max(0.0, start - jstart))
             if needed(task, "exactJobTiming") is True:

@@ -26,6 +26,14 @@ public class Job extends Task {
 
     private Long workBeforeTierScalingMi;
 
+    private double failureInstantSeconds = Double.NaN;
+
+    private long crchCreditedWorkMi;
+
+    private long crchAttemptWorkMi;
+
+    private long crchPlannedCheckpoints;
+
     public Job(final int jobId, final long jobLength) {
 
         super(jobId, jobLength);
@@ -69,6 +77,63 @@ public class Job extends Task {
      */
     public long getRestartWorkMi() {
         return workBeforeTierScalingMi == null ? getEffectiveExecutionLengthMi() : workBeforeTierScalingMi.longValue();
+    }
+
+    /**
+     * Records the failure arrival that ends this attempt inside its compute window.
+     *
+     * <p>FGCS-R5 (2026-11-24): root cause - the failure model was evaluated only when the attempt had
+     * already run its whole length, so a failed attempt always executed (and was charged) in full. The
+     * datacenter now fixes the failure instant when the compute window is known and ends the attempt there.
+     *
+     * @param value finite failure instant in simulation seconds
+     */
+    public void setFailureInstantSeconds(double value) {
+        if (!Double.isFinite(value) || value < 0.0 || hasFailureInstant()) {
+            throw new IllegalStateException("Job " + getCloudletId() + " failure instant must be set once, finite");
+        }
+        this.failureInstantSeconds = value;
+    }
+
+    /** @return whether a failure arrival ends this attempt before its modeled compute finish */
+    public boolean hasFailureInstant() {
+        return !Double.isNaN(failureInstantSeconds);
+    }
+
+    /** @return the failure instant, or NaN when the attempt is not failed by an arrival */
+    public double getFailureInstantSeconds() {
+        return failureInstantSeconds;
+    }
+
+    /**
+     * Records the CRCH checkpoint plan of this attempt (FGCS-R5, 2026-11-24).
+     *
+     * @param creditedWorkMi saved work this attempt skips on its VM
+     * @param attemptWorkMi work this attempt computes, excluding checkpoint overhead
+     * @param plannedCheckpoints checkpoints this attempt takes if it does not fail
+     */
+    public void setCrchAttemptPlan(long creditedWorkMi, long attemptWorkMi, long plannedCheckpoints) {
+        if (creditedWorkMi < 0L || attemptWorkMi <= 0L || plannedCheckpoints < 0L) {
+            throw new IllegalArgumentException("Invalid CRCH attempt plan for Job " + getCloudletId());
+        }
+        this.crchCreditedWorkMi = creditedWorkMi;
+        this.crchAttemptWorkMi = attemptWorkMi;
+        this.crchPlannedCheckpoints = plannedCheckpoints;
+    }
+
+    public long getCrchCreditedWorkMi() {
+        return crchCreditedWorkMi;
+    }
+
+    public long getCrchAttemptWorkMi() {
+        if (crchAttemptWorkMi <= 0L) {
+            throw new IllegalStateException("Job " + getCloudletId() + " has no CRCH attempt plan");
+        }
+        return crchAttemptWorkMi;
+    }
+
+    public long getCrchPlannedCheckpoints() {
+        return crchPlannedCheckpoints;
     }
 
     public void setTaskList(List list) {

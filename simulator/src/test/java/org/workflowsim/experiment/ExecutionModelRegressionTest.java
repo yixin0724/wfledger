@@ -117,12 +117,21 @@ class ExecutionModelRegressionTest {
                 .build();
         SimulationReport report = run(config, platform(1000.0));
         assertTrue(report.getFailedJobs() > 0, "The fixed input must actually exercise retry");
+        // FGCS-R5 (2026-11-24): a failure now ends its attempt at the failure arrival inside the
+        // compute window, so only successful attempts span the whole envelope; a failed one ends
+        // after its 1 s stage-in and before the 1 s compute completes.
         for (SimulationReport.JobOutcome job : computeJobs(report)) {
-            assertEquals(
-                    2.0,
-                    job.getExecutionTime(),
-                    1e-9,
-                    "Each attempt is one second of compute plus one second of SHARED stage-in");
+            if (job.getStatus() == org.cloudbus.cloudsim.Cloudlet.SUCCESS) {
+                assertEquals(
+                        2.0,
+                        job.getExecutionTime(),
+                        1e-9,
+                        "Each successful attempt is one second of compute plus one second of SHARED stage-in");
+            } else {
+                assertTrue(
+                        job.getExecutionTime() >= 1.0 - 1e-9 && job.getExecutionTime() < 2.0,
+                        "A failed attempt ends inside its compute window: " + job.getExecutionTime());
+            }
         }
         assertEquals(1, report.getMetrics().getLogicalTaskCount());
         assertTrue(report.isWorkflowCompletedSuccessfully());
@@ -147,7 +156,13 @@ class ExecutionModelRegressionTest {
             assertTrue(report.getFailedJobs() > 0, "The fixed input must actually exercise retry");
             for (SimulationReport.JobOutcome job : computeJobs(report)) {
                 assertEquals(1, job.getVmId(), "STATIC must preserve the selected fastest VM");
-                assertEquals(0.5, job.getExecutionTime(), 1e-9);
+                // FGCS-R5 (2026-11-24): failed attempts end at their failure arrival, inside the
+                // 0.5 s compute window; the guard keeps every attempt at least one kernel tick long.
+                if (job.getStatus() == org.cloudbus.cloudsim.Cloudlet.SUCCESS) {
+                    assertEquals(0.5, job.getExecutionTime(), 1e-9);
+                } else {
+                    assertTrue(job.getExecutionTime() <= 0.5 + 1e-9, "failed attempt: " + job.getExecutionTime());
+                }
                 SimulationEvent transfer = null;
                 for (SimulationEvent event : report.getEvents()) {
                     if (event.getType() == SimulationEventType.DATA_STAGE_IN_MODELED

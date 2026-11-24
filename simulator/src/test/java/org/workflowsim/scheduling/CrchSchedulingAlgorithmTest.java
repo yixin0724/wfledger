@@ -9,10 +9,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Job;
+import org.workflowsim.Task;
 import org.workflowsim.utils.CrchConfig;
 import org.workflowsim.utils.CrchRecovery;
 import org.workflowsim.utils.CrchRegistry;
 
+/**
+ * FGCS-R5 (2026-11-24): CRCH retry placement follows the paper's same/different-resource comparison
+ * (arXiv:1810.06361v2 Eq. 20/21): saved checkpoints shorten the retry only on the checkpointing VM.
+ */
 class CrchSchedulingAlgorithmTest {
 
     @AfterEach
@@ -20,39 +25,82 @@ class CrchSchedulingAlgorithmTest {
         CrchRegistry.clear();
     }
 
+    /**
+     * 4000 MI failed 3.5 s into compute on VM 3 with λ = 1, γ = 0.1: 3000 MI saved on VM 3. On VM 3
+     * the retry is 1000 MI with no checkpoint, 1.0 s; on VM 8 it is 4000 MI with 3 checkpoints,
+     * 4300 MI, 4.3 s. The retry stays on VM 3.
+     */
     @Test
-    void retryUsesTheBestNonFailedVm() {
+    void retryResumesOnTheCheckpointingVmWhenThatFinishesFirst() {
         CrchRegistry.configure(new CrchConfig(1.0, 0.1));
-        CrchRecovery recovery = CrchRegistry.recordFailure(1, 3, 0.0, 3.5, 4000L, 1000.0);
+        CrchRecovery recovery = CrchRegistry.recordFailure(1, 3, 0L, 4000L, 3L, 3.5, 1000.0);
         CrchRegistry.registerRetry(9, recovery);
-        Job job = new Job(9, 1000L);
-        CrchSchedulingAlgorithm scheduler = new CrchSchedulingAlgorithm();
-        scheduler.setCloudletList(Arrays.asList(job));
-        scheduler.setVmList(Arrays.asList(vm(3), vm(8)));
+        Job job = job(9, 1, 4000L);
 
-        scheduler.run();
+        run(job, vm(3, 1000.0, 1), vm(8, 1000.0, 1));
 
-        assertEquals(8, job.getVmId());
+        assertEquals(3, job.getVmId());
     }
 
-    private static CondorVM vm(int id) {
-        return new CondorVM(id, 0, 1000.0, 1, 512, 100L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
+    /**
+     * Same failure; VM 8 is four times faster. VM 3: 1000 MI / 1000 MIPS = 1.0 s. VM 8: 4000 MI at
+     * 4000 MIPS is 1 s of work, no checkpoint, 1.0 s: a tie, which goes to the lower ID, VM 3. At
+     * 5000 MIPS VM 8 needs 0.8 s and wins although it must re-execute the saved work.
+     */
+    @Test
+    void aFasterVmWinsOnlyWhenItsFullReexecutionFinishesFirst() {
+        CrchRegistry.configure(new CrchConfig(1.0, 0.1));
+        CrchRegistry.registerRetry(9, CrchRegistry.recordFailure(1, 3, 0L, 4000L, 3L, 3.5, 1000.0));
+        Job tie = job(9, 1, 4000L);
+        run(tie, vm(3, 1000.0, 1), vm(8, 4000.0, 1));
+        assertEquals(3, tie.getVmId());
+
+        Job faster = job(9, 1, 4000L);
+        run(faster, vm(3, 1000.0, 1), vm(8, 5000.0, 1));
+        assertEquals(8, faster.getVmId());
+    }
+
+    /**
+     * A fresh 3000 MI Job pays two checkpoints (0.2 s) everywhere, so the faster VM wins: 3.2 s on
+     * VM 3 at 1000 MIPS versus 3000 MI at 2000 MIPS = 1.5 s with one checkpoint, 1.6 s, on VM 8.
+     */
+    @Test
+    void aFreshJobGoesToTheEarliestFinishingVm() {
+        CrchRegistry.configure(new CrchConfig(1.0, 0.1));
+        Job job = job(1, 1, 3000L);
+
+        run(job, vm(3, 1000.0, 1), vm(8, 2000.0, 1));
+
+        assertEquals(8, job.getVmId());
     }
 
     /** FGCS-R4 (2026-11-24): a two-PE Job must skip the faster one-PE VM 3. */
     @Test
     void neverSelectsAPeIncompatibleVm() {
         CrchRegistry.configure(new CrchConfig(1.0, 0.1));
-        CondorVM fast = new CondorVM(3, 0, 4000.0, 1, 512, 100L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
-        CondorVM wide = new CondorVM(8, 0, 1000.0, 2, 512, 100L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
-        Job job = new Job(1, 4000L);
+        Job job = job(1, 1, 4000L);
         job.setNumberOfPes(2);
-        CrchSchedulingAlgorithm scheduler = new CrchSchedulingAlgorithm();
-        scheduler.setCloudletList(Arrays.asList(job));
-        scheduler.setVmList(Arrays.asList(fast, wide));
+        job.getTaskList().get(0).setNumberOfPes(2);
 
-        scheduler.run();
+        run(job, vm(3, 4000.0, 1), vm(8, 1000.0, 2));
 
         assertEquals(8, job.getVmId());
+    }
+
+    private static void run(Job job, CondorVM... vms) {
+        CrchSchedulingAlgorithm scheduler = new CrchSchedulingAlgorithm();
+        scheduler.setCloudletList(Arrays.asList(job));
+        scheduler.setVmList(Arrays.asList(vms));
+        scheduler.run();
+    }
+
+    private static Job job(int jobId, int taskId, long workMi) {
+        Job job = new Job(jobId, workMi);
+        job.getTaskList().add(new Task(taskId, workMi));
+        return job;
+    }
+
+    private static CondorVM vm(int id, double mips, int pes) {
+        return new CondorVM(id, 0, mips, pes, 512, 100L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
     }
 }

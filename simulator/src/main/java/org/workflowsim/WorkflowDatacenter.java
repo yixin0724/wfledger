@@ -533,15 +533,51 @@ public class WorkflowDatacenter extends Datacenter {
             if (job.getTaskList().size() == 1 && job.getTaskList().get(0).hasVmExecutionCostSeconds()) {
                 computeLengthMi = job.getTaskList().get(0).getEffectiveExecutionLengthMi();
             }
-            if (org.workflowsim.utils.CrchRegistry.hasRecovery(job.getCloudletId())) {
-                for (Task task : job.getTaskList()) {
-                    task.setEffectiveExecutionLengthMi(computeLengthMi);
-                }
+            if (org.workflowsim.utils.CrchRegistry.isConfigured()) {
+                computeLengthMi = projectCrchAttemptLength(job, vm);
             }
         }
 
         job.setEffectiveExecutionLengthMi(computeLengthMi);
         job.setCloudletLength(computeLengthMi);
+    }
+
+    /**
+     * Returns the executed MI of one CRCH-managed compute attempt and records its checkpoint plan.
+     *
+     * <p>FGCS-R5 (2026-11-24): root cause - a successful CRCH attempt ran the bare work, so the
+     * checkpoint overhead {@code γ} the paper charges to every execution ({@code CO = TET × γ/λ},
+     * arXiv:1810.06361v2 Eq. 10) never reached makespan, energy or cost, and only a failed attempt's
+     * retry paid an ad-hoc {@code ceil(γ·mips)} MI. The attempt now computes {@code W} MI and executes
+     * {@code W + ceil(n·γ·mips)} MI with {@code n} from {@link org.workflowsim.utils.CrchCheckpointModel}.
+     * {@code W} is the Task's full work on this VM, except for a retry resuming on the VM that holds its
+     * checkpoints, which computes only the work after the latest checkpoint (checkpoints are VM-local,
+     * Sec. 3.1.3; Eq. 20 versus Eq. 21). Restoring a checkpoint costs nothing beyond the lost work, as in
+     * Eq. 20, so no restore term is charged.
+     */
+    private long projectCrchAttemptLength(Job job, CondorVM vm) {
+        if (job.getTaskList().size() != 1) {
+            throw new IllegalStateException("CRCH attempts must contain exactly one Task; Job " + job.getCloudletId()
+                    + " has " + job.getTaskList().size());
+        }
+        Task task = job.getTaskList().get(0);
+        long credited = 0L;
+        long workMi = TaskExecutionModel.executionLengthMi(task, vm.getId(), vm.getMips());
+        if (org.workflowsim.utils.CrchRegistry.hasRecovery(job.getCloudletId())) {
+            org.workflowsim.utils.CrchRecovery recovery =
+                    org.workflowsim.utils.CrchRegistry.getRecovery(job.getCloudletId());
+            credited = recovery.creditOn(vm.getId());
+            if (credited > 0L) {
+                workMi = recovery.getRemainingWorkMi();
+            }
+        }
+        org.workflowsim.utils.CrchConfig crch = org.workflowsim.utils.CrchRegistry.get();
+        long checkpoints = org.workflowsim.utils.CrchCheckpointModel.checkpointCount(
+                workMi, vm.getMips(), crch.getCheckpointIntervalSeconds());
+        long attemptMi = org.workflowsim.utils.CrchCheckpointModel.attemptLengthMi(workMi, vm.getMips(), crch);
+        job.setCrchAttemptPlan(credited, workMi, checkpoints);
+        task.setEffectiveExecutionLengthMi(attemptMi);
+        return attemptMi;
     }
 
     private void applyCostModelResourceParameters(Job job, CondorVM vm) {
@@ -646,6 +682,9 @@ public class WorkflowDatacenter extends Datacenter {
         double effectiveStageInSeconds =
                 effectiveCloudletStageInSeconds(job, vm, cloudletLengthBeforeStageIn, fileTransferTime);
         updateTaskExecTime(job, vm, effectiveStageInSeconds, fileTransferTime);
+        if (job.hasFailureInstant()) {
+            estimatedFinishTime = truncateAtFailure(job, vm, job.getCloudletLength() - cloudletLengthBeforeStageIn);
+        }
 
         double completionTime = SimulationTiming.earliestCloudletCompletionTime(
                 CloudSim.clock(), CloudSim.clock() + estimatedFinishTime, CloudSim.getMinTimeBetweenEvents());
@@ -660,6 +699,36 @@ public class WorkflowDatacenter extends Datacenter {
             int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
             sendNow(job.getUserId(), tag, data);
         }
+    }
+
+    /**
+     * Shortens a failing attempt so that it ends at its failure instant.
+     *
+     * <p>FGCS-R5 (2026-11-24): root cause - the failure model only flagged an attempt after it had run
+     * its whole length, so the VM stayed busy and was charged energy and cost until the modeled finish.
+     * The executable length becomes the stage-in MI plus {@code ceil((f - computeStart) · mips)} compute
+     * MI. The space-shared scheduler then completes and frees the VM at the first whole-MI boundary at or
+     * after {@code f} (at most {@code 1/mips} later, the granularity every cloudlet already has, and never
+     * earlier than the kernel completion guard), and no completion event of the discarded remainder is
+     * left in the future queue.
+     *
+     * @return the new estimated execution seconds of the envelope
+     */
+    private double truncateAtFailure(Job job, CondorVM vm, long stageInMi) {
+        if (job.getTaskList().size() != 1) {
+            throw new IllegalStateException("A failing attempt must contain exactly one Task under clustering NONE; "
+                    + "Job " + job.getCloudletId() + " has " + job.getTaskList().size());
+        }
+        double computeStart = job.getTaskList().get(0).getExecStartTime();
+        double executed = (job.getFailureInstantSeconds() - computeStart) * vm.getMips();
+        long computeMi = Math.max(0L, (long) Math.ceil(executed - 1.0e-9));
+        long length = Math.max(1L, stageInMi + computeMi);
+        if (length > job.getCloudletLength()) {
+            throw new IllegalStateException(
+                    "Failure instant of Job " + job.getCloudletId() + " lies beyond its compute window");
+        }
+        job.setCloudletLength(length);
+        return length / vm.getMips();
     }
 
     private double effectiveCloudletStageInSeconds(
@@ -706,6 +775,13 @@ public class WorkflowDatacenter extends Datacenter {
             startTime += taskRuntime;
 
             task.setTaskFinishTime(startTime);
+            if (job.getClassType() == ClassType.COMPUTE.value && !job.hasFailureInstant()) {
+                double failure = failureInstant(task, job.getVmId(), task.getExecStartTime(), startTime);
+                if (!Double.isNaN(failure)) {
+                    job.setFailureInstantSeconds(failure);
+                    task.setTaskFinishTime(failure);
+                }
+            }
             eventRecorder.record(
                     SimulationEventType.TASK_EXECUTION_MODELED,
                     CloudSim.clock(),
@@ -728,6 +804,15 @@ public class WorkflowDatacenter extends Datacenter {
                             "taskTimingScope",
                             "MODEL_DERIVED_COMPUTE_WINDOW"));
             firstTask = false;
+        }
+    }
+
+    private static double failureInstant(Task task, int vmId, double start, double finish) {
+        try {
+            return FailureGenerator.failureInstant(task, vmId, start, finish);
+        } catch (Exception exception) {
+            throw new IllegalStateException(
+                    "Failure generation failed for Task " + task.getCloudletId() + " on VM " + vmId, exception);
         }
     }
 
@@ -936,7 +1021,7 @@ public class WorkflowDatacenter extends Datacenter {
                     if (cl != null) {
                         if (cl instanceof Job && ((Job) cl).getClassType() == ClassType.COMPUTE.value) {
 
-                            FailureGenerator.generate((Job) cl);
+                            FailureGenerator.applySubmittedOutcome((Job) cl);
                         }
                         register(cl);
                         sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);

@@ -257,6 +257,19 @@ class IndependentAuditorTests(unittest.TestCase):
     def cli(self, script, source, output):
         return subprocess.run([sys.executable, str(HERE / script), str(source), "--output", str(output)], capture_output=True, text=True)
 
+    def test_failed_attempt_window_is_the_executed_compute_portion(self):
+        # FGCS-R5 (2026-11-24): hand-derived from the mid-execution failure contract. A 2 s compute window
+        # [0.21, 2.21) failed by the arrival 2.1 executes 1.89 s; the envelope must cover only those 1.89 s.
+        verdict = evidence.task_window_verdict
+        self.assertEqual((True, 2.0), verdict(False, 0.21, 2.21, 2.0, 1e-9))
+        ok, covered = verdict(True, 0.21, 2.1, 2.0, 1e-9)
+        self.assertTrue(ok)
+        self.assertAlmostEqual(1.89, covered, delta=1e-12)
+        self.assertTrue(verdict(True, 0.21, 0.21, 2.0, 1e-9)[0], "a failure at compute start executes nothing")
+        self.assertFalse(verdict(True, 0.21, 2.21, 2.0, 1e-9)[0], "an arrival at the window end is not a failure")
+        self.assertFalse(verdict(True, 0.21, 2.5, 2.0, 1e-9)[0], "a failed window cannot outlast its compute")
+        self.assertFalse(verdict(False, 0.21, 2.1, 2.0, 1e-9)[0], "a successful window must be complete")
+
     def test_java_round_ties_and_near_ties(self):
         self.assertEqual(0, java_round(0.49999999999999994))
         self.assertEqual(1, java_round(0.5))

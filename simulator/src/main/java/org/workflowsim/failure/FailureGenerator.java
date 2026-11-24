@@ -87,44 +87,53 @@ public class FailureGenerator {
     }
 
     protected static boolean checkFailureStatus(Task task, int vmId) throws Exception {
-
         if (FailureParameters.getFailureGeneratorMode() == FailureParameters.FTCFailure.FAILURE_NONE) {
             return false;
         }
+        return !Double.isNaN(failureInstant(task, vmId, task.getExecStartTime(), task.getTaskFinishTime()));
+    }
 
-        DistributionGenerator generator = FailureParameters.getGeneratorForFailureScope(vmId, task.getDepth());
-
-        double start = task.getExecStartTime();
-        double end = task.getTaskFinishTime();
-
-        if (Double.isNaN(start)
-                || Double.isInfinite(start)
-                || Double.isNaN(end)
-                || Double.isInfinite(end)
-                || end < start) {
-            throw new IllegalStateException("Task " + task.getCloudletId()
-                    + " has an invalid failure-observation window [" + start + ", " + end + "]");
+    /**
+     * Returns the failure arrival that ends a compute window, consuming the scope's arrival samples.
+     *
+     * <p>FGCS-R5 (2026-11-24): root cause - the outcome was decided at the attempt's completion
+     * boundary, so a failed attempt always ran its full length. The datacenter now calls this when it
+     * submits the attempt, with the modeled compute window {@code [start, finish)}, and ends the attempt
+     * at the returned instant. The consumption rule is unchanged: every arrival before {@code start} is
+     * consumed, the first arrival in the window is consumed and is the failure, and later arrivals stay
+     * unconsumed. The window is half-open: an arrival exactly at {@code finish} does not fail the attempt.
+     * Samples are now consumed in submission (compute-start) order instead of completion order; the two
+     * orders coincide on VM-keyed scopes because one VM runs one attempt at a time.
+     *
+     * @param task logical Task whose depth selects the generator
+     * @param vmId VM whose ID selects the generator
+     * @param start compute-window start
+     * @param finish compute-window finish, at least {@code start}
+     * @return the failure instant in {@code [start, finish)}, or NaN when the window survives
+     * @throws Exception when the arrival cache cannot be extended to cover {@code start}
+     */
+    public static double failureInstant(Task task, int vmId, double start, double finish) throws Exception {
+        if (FailureParameters.getFailureGeneratorMode() == FailureParameters.FTCFailure.FAILURE_NONE) {
+            return Double.NaN;
         }
-
+        if (!Double.isFinite(start) || !Double.isFinite(finish) || finish < start) {
+            throw new IllegalStateException("Task " + task.getCloudletId()
+                    + " has an invalid failure-observation window [" + start + ", " + finish + ")");
+        }
+        DistributionGenerator generator = FailureParameters.getGeneratorForFailureScope(vmId, task.getDepth());
         ensureUnconsumedArrivalCoverage(generator, start);
         double[] samples = generator.getCumulativeSamples();
         for (int sampleId = generator.getConsumedSampleCount(); sampleId < samples.length; sampleId++) {
             if (samples[sampleId] < start) {
-
                 generator.consumeSamplesThrough(sampleId);
                 continue;
             }
-            if (end < samples[sampleId]) {
-
-                return false;
-            }
-            if (start <= samples[sampleId]) {
-
+            if (samples[sampleId] < finish) {
                 generator.consumeSamplesThrough(sampleId);
-                return true;
+                return samples[sampleId];
             }
+            return Double.NaN;
         }
-
         throw new IllegalStateException("Failure arrival cache has no unconsumed sample after coverage");
     }
 
@@ -146,6 +155,44 @@ public class FailureGenerator {
     private static int extensionCount(DistributionGenerator generator) {
         Integer value = FAILURE_SIZE_EXTENSIONS.get(generator);
         return value == null ? 0 : value.intValue();
+    }
+
+    /**
+     * Fixes the outcome of a returned compute attempt.
+     *
+     * <p>FGCS-R5 (2026-11-24): the failure decision is taken at submission
+     * ({@link #failureInstant(Task, int, double, double)}); a returned attempt fails exactly when the
+     * datacenter recorded a failure instant for it, and every Task of a failed attempt is failed.
+     *
+     * @param job returned compute attempt
+     * @return whether the attempt failed
+     */
+    public static boolean applySubmittedOutcome(Job job) {
+        boolean failed = job.hasFailureInstant();
+        if (failed && FailureParameters.getFailureGeneratorMode() == FailureParameters.FTCFailure.FAILURE_NONE) {
+            throw new IllegalStateException("Job " + job.getCloudletId() + " carries a failure instant although "
+                    + "the failure model is disabled");
+        }
+        try {
+            for (Task task : job.getTaskList()) {
+                task.setCloudletStatus(failed ? Cloudlet.FAILED : Cloudlet.SUCCESS);
+                if (FailureParameters.getFailureGeneratorMode() != FailureParameters.FTCFailure.FAILURE_NONE) {
+                    FailureMonitor.postFailureRecord(new FailureRecord(
+                            0,
+                            failed ? 1 : 0,
+                            task.getDepth(),
+                            1,
+                            job.getVmId(),
+                            task.getCloudletId(),
+                            job.getUserId()));
+                }
+            }
+            job.setCloudletStatus(failed ? Cloudlet.FAILED : Cloudlet.SUCCESS);
+        } catch (Exception exception) {
+            throw new IllegalStateException(
+                    "Could not fix the outcome of Job " + job.getCloudletId() + " on VM " + job.getVmId(), exception);
+        }
+        return failed;
     }
 
     public static boolean generate(Job job) {
