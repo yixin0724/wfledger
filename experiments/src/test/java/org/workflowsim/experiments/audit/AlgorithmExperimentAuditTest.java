@@ -182,7 +182,8 @@ class AlgorithmExperimentAuditTest {
         SimulationConfig config = SimulationConfig.builder(Arrays.asList(first.toString(), second.toString()), 2)
                 .schedulingAlgorithm(Parameters.SchedulingAlgorithm.EBPSM)
                 .workflowArrivalSeconds(Arrays.asList(0.0, 5.0))
-                .ebpsmConfig(EbpsmConfig.forWorkflowBudgets(budgets, inputs, containers, images, costs, 1000.0, 1000.0, 0.0))
+                .ebpsmConfig(
+                        EbpsmConfig.forWorkflowBudgets(budgets, inputs, containers, images, costs, 1000.0, 1000.0, 0.0))
                 .costModel(Parameters.CostModel.VM)
                 .runtimeReferenceMips(1.0)
                 .randomSeed(seed)
