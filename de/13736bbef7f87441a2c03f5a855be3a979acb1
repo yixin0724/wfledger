@@ -1,0 +1,45 @@
+experiments/src/test/java/org/workflowsim/experiments/network/NetworkStudyTest.java
+  s_768a25909712fc::t_338187f577ca86 46,59,76,123-124,126-136,138,142,149-151
+experiments/src/test/java/org/workflowsim/experiments/network/NetworkStudyValidatorTest.java
+  s_768a25909712fc::t_2d1302309dd00f 287-326,405,413,422-423
+experiments/studies/PROTOCOL_COMPATIBILITY.md
+  s_768a25909712fc::t_ddd1efd925a275 10-14,18
+experiments/studies/README.md
+  s_768a25909712fc::t_faf549717a6b13 31-32,60,63
+experiments/studies/fgcs/README.md
+  s_768a25909712fc::t_c86b25bda63cc6 45-46
+experiments/studies/network-limited-r10/PROTOCOL.md
+  s_768a25909712fc::t_008bb1ea0692c0 3
+experiments/studies/sensitivity-r13-v2/PROTOCOL.md
+  s_768a25909712fc::t_2e6871731474a1 3-7
+experiments/studies/sensitivity-r13/PROTOCOL.md
+  s_768a25909712fc::t_f7f19ea2fa684a 16
+experiments/studies/sensitivity-r13/RESULTS.md
+  s_768a25909712fc::t_fd0e871267b13e 16
+scripts/STUDY_AUDIT.md
+  s_768a25909712fc::t_0ce920e683335f 56-58,60
+scripts/summarize-fgcs-results.py
+  s_768a25909712fc::t_da33d3fb43e57d 241,243-246,272
+scripts/test-run-fgcs-matrix.py
+  s_768a25909712fc::t_a5559bd4fd2a44 114-120,221-241
+scripts/test-run-fgcs-revision.py
+  s_768a25909712fc::t_7501d6ed643acd 40-47,63-72
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmCatalogTest.java
+  s_768a25909712fc::t_5f4c25ff2442d9 155-207
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "de13736bbef7f87441a2c03f5a855be3a979acb1",
+  "prompts": {},
+  "sessions": {
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
