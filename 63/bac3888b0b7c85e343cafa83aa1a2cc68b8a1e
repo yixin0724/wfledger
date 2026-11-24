@@ -1,0 +1,20 @@
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 289-293
+docs/experiments/PAPER_REPRODUCTIONS.md
+  h_adc77830afcf4d 232-233
+simulator/src/main/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithm.java
+  h_adc77830afcf4d 36-38,73,112,117-131
+simulator/src/test/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithmTest.java
+  h_adc77830afcf4d 256-277
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "63bac3888b0b7c85e343cafa83aa1a2cc68b8a1e",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
