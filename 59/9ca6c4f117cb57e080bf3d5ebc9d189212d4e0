@@ -1,0 +1,23 @@
+scripts/test-study-verifiers.py
+  s_ed26367bf29515::t_2a53613e46148a 379-396
+simulator/src/main/java/org/workflowsim/experiment/EnergyAccounting.java
+  s_ed26367bf29515::t_b7c92cfb4bc1fa 44,103-130
+simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java
+  s_ed26367bf29515::t_c84146a15e7c07 52-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "599ca6c4f117cb57e080bf3d5ebc9d189212d4e0",
+  "prompts": {},
+  "sessions": {
+    "s_ed26367bf29515": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "session-77b74019-1759-44eb-8730-eeb50f7e1164",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
