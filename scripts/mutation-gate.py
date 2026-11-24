@@ -484,8 +484,9 @@ REGISTRY = [
     dict(
         id="M67",
         name="CRCH retry overwrites remaining work with the original task length",
+        # FGCS-R5 (2026-11-24): re-anchored to the VM-local resumption in projectCrchAttemptLength.
         file="simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java",
-        old="            if (org.workflowsim.utils.CrchRegistry.hasRecovery(job.getCloudletId())) {",
+        old="            if (credited > 0L) {",
         new="            if (false) {",
         killers="CrchIntegrationTest"),
     dict(
