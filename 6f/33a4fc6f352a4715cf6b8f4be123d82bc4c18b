@@ -1,0 +1,36 @@
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 67,80,88-91,126,131,137
+docs/algorithms/CATALOG.md
+  h_adc77830afcf4d 47
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 394-452,516
+docs/experiments/ALGORITHM_METRIC_AUDIT.md
+  h_adc77830afcf4d 28
+docs/experiments/AUDIT_COVERAGE.md
+  h_adc77830afcf4d 241
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  h_adc77830afcf4d 46
+docs/experiments/PAPER_REPRODUCTIONS.md
+  h_adc77830afcf4d 264-280
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 82
+docs/experiments/VV_CASE_LEDGER.md
+  h_adc77830afcf4d 95
+scripts/mutation-gate.py
+  h_adc77830afcf4d 367-370,374-380,463-466,502-504,522-553
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  h_adc77830afcf4d 313-318,322-323
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmCatalogTest.java
+  h_adc77830afcf4d 167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6f33a4fc6f352a4715cf6b8f4be123d82bc4c18b",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
