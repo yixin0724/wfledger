@@ -1,0 +1,29 @@
+experiments/src/main/java/org/workflowsim/examples/WorkflowSimBasicExample1.java
+  s_ed26367bf29515::t_fa5cf0a3b23779 86
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchConfigTest.java
+  s_ed26367bf29515::t_43ec58d0671521 930-934
+simulator/src/test/java/org/workflowsim/ReproducibilityTest.java
+  s_ed26367bf29515::t_b4b1e90cd899b9 11-12,42,49,67,72
+simulator/src/test/java/org/workflowsim/experiment/FatTreeContentionIntegrationTest.java
+  s_ed26367bf29515::t_20c5471b108436 157
+simulator/src/test/java/org/workflowsim/experiment/LinkContentionSemanticsTest.java
+  s_ed26367bf29515::t_689959ab822b8d 90
+simulator/src/test/java/org/workflowsim/experiment/LocalHeftPaperReproductionTest.java
+  s_ed26367bf29515::t_22c4ccbd08659e 134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "340c2068e2806d9fdbbf604aaabbd9be83cb6af7",
+  "prompts": {},
+  "sessions": {
+    "s_ed26367bf29515": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "session-77b74019-1759-44eb-8730-eeb50f7e1164",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
