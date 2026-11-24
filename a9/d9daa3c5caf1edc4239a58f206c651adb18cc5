@@ -1,0 +1,26 @@
+docs/algorithms/CATALOG.md
+  h_adc77830afcf4d 91
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 108
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  h_adc77830afcf4d 563-564
+simulator/src/main/java/org/workflowsim/planning/SharedStorageDagPlanner.java
+  h_adc77830afcf4d 245-247,249,428-429,464-491
+simulator/src/test/java/org/workflowsim/planning/PlanningDagReferencePropertyAuditTest.java
+  h_adc77830afcf4d 122-131,133-135,145,272,291-295,361-362,367,372,618,829,845
+simulator/src/test/java/org/workflowsim/planning/SharedStorageDlsEtfSlotSemanticsAuditTest.java
+  h_adc77830afcf4d 237-250,364-368,419-421,449,459
+simulator/src/test/java/org/workflowsim/planning/SharedStorageDlsPlanningAlgorithmTest.java
+  h_adc77830afcf4d 19-30,49-51,55-57,61-79,129-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a9d9daa3c5caf1edc4239a58f206c651adb18cc5",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
