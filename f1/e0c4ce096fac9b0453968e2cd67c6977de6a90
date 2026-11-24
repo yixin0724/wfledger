@@ -1,0 +1,16 @@
+scripts/test-study-verifiers.py
+  h_adc77830afcf4d 437-489
+scripts/verify-study-evidence.py
+  h_adc77830afcf4d 537-541,544-546,548-556
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f1e0c4ce096fac9b0453968e2cd67c6977de6a90",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
