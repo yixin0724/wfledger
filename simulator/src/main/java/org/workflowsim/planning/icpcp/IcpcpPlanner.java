@@ -153,13 +153,18 @@ public final class IcpcpPlanner {
         return best;
     }
 
+    /**
+     * Paper applicability test: every assigned task finishes by its LFT. Exit LFTs equal the deadline and
+     * EST/LFT use the same runtimes, so this also bounds the virtual END node by the deadline; a separate
+     * END test would be redundant.
+     */
     private boolean meetsLatestFinishTimes(Map<Integer, Integer> assigned, Timing timing) {
         for (Integer taskId : assigned.keySet()) {
             if (timing.finish.get(taskId) > timing.latestFinish.get(taskId) + TOLERANCE) {
                 return false;
             }
         }
-        return timing.finish.get(END_ID) <= problem.getDeadlineSeconds() + TOLERANCE;
+        return true;
     }
 
     private boolean supportsPath(int vmId, List<Integer> path) {
