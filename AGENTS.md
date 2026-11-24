@@ -78,15 +78,17 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 4. **The events v1 event schema must not be changed unilaterally**: new event types or key
    fields require user adjudication (the pending F-006/F-007 proposals are exactly this
    case).
-5. The clustering legacy zone (the `clustering/balancing` family and DC/DR/BLOCK/VERTICAL
-   in `ReclusteringEngine`) is **historical compatibility code**: genuine defects may be
-   fixed (write the red test first); its semantics must not change and it must not be
-   extended. The standard `SimulationRunner` accepts clustering NONE only — that is by
-   design.
-6. Deprecated scheduling labels (`MINMIN`/`MAXMIN`/`MCT`/`ROUNDROBIN`, etc.) being
-   **rejected by the standard runner is designed behavior**, not a bug awaiting a fix.
+5. Task clustering is **NONE only**: the legacy clustering family (Horizontal/Vertical/
+   Block/Balanced) and the DC/SR/DR/BLOCK/VERTICAL reclustering modes were removed on
+   2026-11-24 by user adjudication (recoverable from git history). `ReclusteringEngine`
+   keeps only the NOOP and CRCH retry paths; do not reintroduce clustering without a new
+   contract and user adjudication.
+6. The deprecated scheduling labels (`MINMIN`/`MAXMIN`/`MCT`/`ROUNDROBIN`) and the RL demo
+   track (`RL_POLICY`, `org.workflowsim.rl`) were removed on 2026-11-24; use the maintained
+   `READY_BATCH_*` labels or the `SchedulingAlgorithmProvider` SPI instead.
 7. Every mutable global static (`Parameters`/`FailureMonitor`/`ReplicaCatalog`/
-   `NetworkTopology` and 68 fields in total, with the ledger frozen in
+   `NetworkTopology` and 68 fields in total (re-verified 2026-11-24 after removing
+   `RlPolicyRegistry` and `Parameters.legacySchedulingAliasesEnabled`), with the ledger frozen in
    `SessionResetMatrixTest.AUDIT_CLASSES`) must be accessed within a `SimulationSession`
    lifetime; before adding a global static, ask yourself why session injection is not used.
 8. Randomness must go through the `SimulationRandom` named streams; bare `new Random()` and
@@ -160,5 +162,5 @@ comparators using `Long.compare`, the parser's two-phase commit).
 - Algorithm semantics and the combination matrix: `docs/algorithms/CATALOG.md` +
   `CONTRACTS.md`
 - Dataset rules: `datasets/README.md`
-- Historical sediment (defect ledger, methodology): `docs/history/` (the temporary review
-  area was removed; do not recreate a directory with that name)
+- Historical sediment (defect ledger, methodology): git history (the former `docs/history/`
+  directory and the temporary review area were removed; do not recreate them)
