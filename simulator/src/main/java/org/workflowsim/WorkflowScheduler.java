@@ -42,17 +42,13 @@ import org.workflowsim.scheduling.DeferralAwareSchedulingAlgorithm;
 import org.workflowsim.scheduling.DvfsSlackSchedulingAlgorithm;
 import org.workflowsim.scheduling.EbpsmSchedulingAlgorithm;
 import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
-import org.workflowsim.scheduling.FastestVmSchedulingAlgorithm;
-import org.workflowsim.scheduling.FirstFitIdleSchedulingAlgorithm;
 import org.workflowsim.scheduling.FrequencyTierSelector;
-import org.workflowsim.scheduling.LjfFastestIdleSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchMCTSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchMaxMinSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchMinMinSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchRoundRobinSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReshiSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReshiStrategy;
-import org.workflowsim.scheduling.SptFastestIdleSchedulingAlgorithm;
 import org.workflowsim.scheduling.StaticSchedulePlan;
 import org.workflowsim.scheduling.StaticSchedulingAlgorithm;
 import org.workflowsim.scheduling.TimedStaticSchedulingAlgorithm;
@@ -170,22 +166,6 @@ public class WorkflowScheduler extends DatacenterBroker {
             case READY_BATCH_ROUNDROBIN:
                 algorithm = new ReadyBatchRoundRobinSchedulingAlgorithm();
                 break;
-            case MINMIN:
-                requireLegacyAliasDeclaration(name, "SPT-fastest-idle");
-                algorithm = new SptFastestIdleSchedulingAlgorithm();
-                break;
-            case MAXMIN:
-                requireLegacyAliasDeclaration(name, "LJF-fastest-idle");
-                algorithm = new LjfFastestIdleSchedulingAlgorithm();
-                break;
-            case MCT:
-                requireLegacyAliasDeclaration(name, "fastest-VM");
-                algorithm = new FastestVmSchedulingAlgorithm();
-                break;
-            case ROUNDROBIN:
-                requireLegacyAliasDeclaration(name, "First-Fit-Idle");
-                algorithm = new FirstFitIdleSchedulingAlgorithm();
-                break;
             case DATA:
                 algorithm = new DataAwareSchedulingAlgorithm();
                 break;
@@ -227,17 +207,6 @@ public class WorkflowScheduler extends DatacenterBroker {
                         + "(AUD-F21).");
         }
         return algorithm;
-    }
-
-    private static void requireLegacyAliasDeclaration(SchedulingAlgorithm name, String actualPolicy) {
-        if (!Parameters.isLegacySchedulingAliasesEnabled()) {
-            throw new IllegalStateException("SchedulingAlgorithm." + name + " is a deprecated "
-                    + "compatibility label: WorkflowScheduler binds the " + actualPolicy
-                    + " policy, not classic " + name + ", and SimulationRunner already rejects "
-                    + "it. Use the maintained READY_BATCH_* labels for research evidence, or "
-                    + "call Parameters.enableLegacySchedulingAliases() before Parameters.init "
-                    + "when running the historical examples (AUD-F10).");
-        }
     }
 
     protected BaseSchedulingAlgorithm getSchedulingPolicy() {

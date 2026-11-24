@@ -35,7 +35,6 @@ public final class ExampleCliSupport {
         }
         resetLegacyState();
         Parameters.setRandomSeed(rootSeed);
-        Parameters.enableLegacySchedulingAliases();
         ACTIVE_EXAMPLE_ID.set(exampleId);
     }
 

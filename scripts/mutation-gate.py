@@ -158,13 +158,6 @@ REGISTRY = [
         new="                    if (existingCaliber != null && existingCaliber == caliber) {",
         killers="ExperimentPlanCaliberGuardTest"),
     dict(
-        id="M17",
-        name="deprecated-label bypass only throws when legacy aliases are enabled",
-        file="simulator/src/main/java/org/workflowsim/WorkflowScheduler.java",
-        old="        if (!Parameters.isLegacySchedulingAliasesEnabled()) {",
-        new="        if (Parameters.isLegacySchedulingAliasesEnabled()) {",
-        killers="WorkflowSchedulerLegacyAliasTest"),
-    dict(
         id="M18",
         name="finished lifecycle validator still accepts event feeding",
         file="simulator/src/main/java/org/workflowsim/experiment/FileLifecycleContextValidator.java",

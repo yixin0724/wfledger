@@ -26,14 +26,6 @@ class SimulationRunnerAlgorithmContractTest {
     }
 
     @Test
-    void standardRunnerRejectsEveryLegacySchedulerCompatibilityLabel() {
-        assertLegacySchedulerRejected(SchedulingAlgorithm.MINMIN);
-        assertLegacySchedulerRejected(SchedulingAlgorithm.MAXMIN);
-        assertLegacySchedulerRejected(SchedulingAlgorithm.MCT);
-        assertLegacySchedulerRejected(SchedulingAlgorithm.ROUNDROBIN);
-    }
-
-    @Test
     void standardRunnerRejectsLegacyFailureReclustering() {
         SimulationConfig config = SimulationConfig.builder("workflow.dax", 1)
                 .schedulingAlgorithm(SchedulingAlgorithm.FCFS)
@@ -73,15 +65,5 @@ class SimulationRunnerAlgorithmContractTest {
         SimulationConfigurationException exception = assertThrows(
                 SimulationConfigurationException.class, () -> new SimulationRunner().run(config, platform));
         assertTrue(exception.getMessage().contains("TIME_SHARED"));
-    }
-
-    private static void assertLegacySchedulerRejected(SchedulingAlgorithm schedulingAlgorithm) {
-        SimulationConfig config = SimulationConfig.builder("workflow.dax", 1)
-                .schedulingAlgorithm(schedulingAlgorithm)
-                .build();
-        SimulationConfigurationException exception =
-                assertThrows(SimulationConfigurationException.class, () -> new SimulationRunner()
-                        .run(config, PlatformProfiles.homogeneousLocal("legacy-scheduler", 1)));
-        assertTrue(exception.getMessage().contains("not supported by SimulationRunner"));
     }
 }

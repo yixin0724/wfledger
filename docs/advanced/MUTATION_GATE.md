@@ -32,7 +32,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M14 | Holm step-down drops the `(familySize - rank)` multiplier | within-family multiplicity correction (AUD-F06) |
 | M15 | Event recorder cap admits one event beyond the budget | recorder retention fail-fast (AUD-F07) |
 | M16 | Cost-caliber guard rejects homogeneous groups instead of mixed ones | comparison-group caliber homogeneity (AUD-F09) |
-| M17 | Deprecated-label bypass only throws when legacy aliases are enabled | legacy label gate closure (AUD-F10) |
+| M17 | *Retired 2026-11-24*: the deprecated scheduling labels and their alias gate were removed, so the axis no longer exists | — |
 | M18 | Finished lifecycle validator still accepts event feeding | lifecycle single-use contract (AUD-F15) |
 | M19 | INVALID label binds the FCFS policy instead of the static no-decision shell | unmapped label explicit binding (AUD-F21) |
 | M20 | Runner ignores the configured event-recorder cap and constructs the default recorder | cap configuration outlet (AUD-F07 follow-up, 2026-11-04) |
@@ -122,13 +122,13 @@ axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 65 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 64 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)
 python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
 
-# Both families sequentially (67 canaries total)
+# Both families sequentially (66 canaries total)
 python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

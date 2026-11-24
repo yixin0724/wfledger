@@ -8,8 +8,8 @@ import java.util.List;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.Vm;
 import org.junit.jupiter.api.Test;
-import org.workflowsim.scheduling.MinMinSchedulingAlgorithm;
-import org.workflowsim.scheduling.RoundRobinSchedulingAlgorithm;
+import org.workflowsim.scheduling.ReadyBatchMinMinSchedulingAlgorithm;
+import org.workflowsim.scheduling.ReadyBatchRoundRobinSchedulingAlgorithm;
 
 class ReproducibilityTest {
 
@@ -39,14 +39,14 @@ class ReproducibilityTest {
     @Test
     void minMinSameInputSameOutput() {
 
-        MinMinSchedulingAlgorithm s1 = new MinMinSchedulingAlgorithm();
+        ReadyBatchMinMinSchedulingAlgorithm s1 = new ReadyBatchMinMinSchedulingAlgorithm();
         List<Cloudlet> c1 = buildCloudlets();
         List<Vm> v1 = buildVms();
         s1.setCloudletList(c1);
         s1.setVmList(v1);
         s1.run();
 
-        MinMinSchedulingAlgorithm s2 = new MinMinSchedulingAlgorithm();
+        ReadyBatchMinMinSchedulingAlgorithm s2 = new ReadyBatchMinMinSchedulingAlgorithm();
         List<Cloudlet> c2 = buildCloudlets();
         List<Vm> v2 = buildVms();
         s2.setCloudletList(c2);
@@ -64,12 +64,12 @@ class ReproducibilityTest {
 
     @Test
     void roundRobinSameInputSameOutput() {
-        RoundRobinSchedulingAlgorithm s1 = new RoundRobinSchedulingAlgorithm();
+        ReadyBatchRoundRobinSchedulingAlgorithm s1 = new ReadyBatchRoundRobinSchedulingAlgorithm();
         s1.setCloudletList(buildCloudlets());
         s1.setVmList(buildVms());
         s1.run();
 
-        RoundRobinSchedulingAlgorithm s2 = new RoundRobinSchedulingAlgorithm();
+        ReadyBatchRoundRobinSchedulingAlgorithm s2 = new ReadyBatchRoundRobinSchedulingAlgorithm();
         s2.setCloudletList(buildCloudlets());
         s2.setVmList(buildVms());
         s2.run();

@@ -131,7 +131,7 @@ class LocalHeftPaperReproductionTest {
 
         IllegalArgumentException unmapped =
                 assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
-                        .schedulingAlgorithm(Parameters.SchedulingAlgorithm.MINMIN)
+                        .schedulingAlgorithm(Parameters.SchedulingAlgorithm.READY_BATCH_MINMIN)
                         .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
                         .dataMovementModel(DataMovementModel.preExecutionTransferDelayV1())
                         .build());

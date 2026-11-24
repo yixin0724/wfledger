@@ -33,12 +33,7 @@ class AlgorithmSupportMatrixTest {
                 SchedulingAlgorithm.EBPSM,
                 SchedulingAlgorithm.DVFS_SLACK,
                 SchedulingAlgorithm.CRCH);
-        EnumSet<SchedulingAlgorithm> unavailable = EnumSet.of(
-                SchedulingAlgorithm.MINMIN,
-                SchedulingAlgorithm.MAXMIN,
-                SchedulingAlgorithm.MCT,
-                SchedulingAlgorithm.ROUNDROBIN,
-                SchedulingAlgorithm.INVALID);
+        EnumSet<SchedulingAlgorithm> unavailable = EnumSet.of(SchedulingAlgorithm.INVALID);
 
         assertExactPartition(SchedulingAlgorithm.class, supported, unavailable);
         for (SchedulingAlgorithm algorithm : supported) {

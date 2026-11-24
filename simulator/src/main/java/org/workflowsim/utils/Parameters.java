@@ -30,18 +30,6 @@ public class Parameters {
         READY_BATCH_MCT,
         READY_BATCH_ROUNDROBIN,
 
-        @Deprecated
-        MINMIN,
-
-        @Deprecated
-        MAXMIN,
-
-        @Deprecated
-        MCT,
-
-        @Deprecated
-        ROUNDROBIN,
-
         DATA,
         STATIC,
         FCFS,
@@ -148,8 +136,6 @@ public class Parameters {
 
     private static org.workflowsim.experiment.registry.SchedulingAlgorithmProvider
             registeredSchedulingAlgorithmProvider;
-
-    private static boolean legacySchedulingAliasesEnabled;
 
     private static PlanningAlgorithm planningAlgorithm;
 
@@ -308,14 +294,6 @@ public class Parameters {
         return registeredSchedulingAlgorithmProvider;
     }
 
-    public static void enableLegacySchedulingAliases() {
-        legacySchedulingAliasesEnabled = true;
-    }
-
-    public static boolean isLegacySchedulingAliasesEnabled() {
-        return legacySchedulingAliasesEnabled;
-    }
-
     public static PlanningAlgorithm getPlanningAlgorithm() {
         return planningAlgorithm;
     }
@@ -394,7 +372,6 @@ public class Parameters {
         SOURCE = "source";
         schedulingAlgorithm = SchedulingAlgorithm.INVALID;
         registeredSchedulingAlgorithmProvider = null;
-        legacySchedulingAliasesEnabled = false;
         planningAlgorithm = PlanningAlgorithm.INVALID;
         reduceMethod = null;
         vmNum = 0;

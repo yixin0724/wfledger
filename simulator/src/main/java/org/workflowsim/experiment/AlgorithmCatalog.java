@@ -34,10 +34,6 @@ public final class AlgorithmCatalog {
             case DVFS_SLACK:
             case CRCH:
                 return true;
-            case MINMIN:
-            case MAXMIN:
-            case MCT:
-            case ROUNDROBIN:
             case INVALID:
             default:
                 return false;
@@ -238,18 +234,6 @@ public final class AlgorithmCatalog {
                         limitations("A SimulationConfig requires a non-INVALID planner; model-generated stage-in Jobs"
                                 + "use the legacy fallback mapping."));
                 break;
-            case MINMIN:
-                legacyScheduler(values, "SPT-fastest-idle ready-job variant", "READY_BATCH_MINMIN");
-                break;
-            case MAXMIN:
-                legacyScheduler(values, "LJF-fastest-idle ready-job variant", "READY_BATCH_MAXMIN");
-                break;
-            case MCT:
-                legacyScheduler(values, "Greedy fastest-idle-VM ready-job variant", "READY_BATCH_MCT");
-                break;
-            case ROUNDROBIN:
-                legacyScheduler(values, "First-fit-idle ready-job variant", "READY_BATCH_ROUNDROBIN");
-                break;
             case INVALID:
             default:
                 values.put("decisionLayer", "NONE");
@@ -290,18 +274,6 @@ public final class AlgorithmCatalog {
                         "Input byte counts are not transfer times; this scheduler does not "
                                 + "consult DataMovementModel endpoint latency or transfer rates.",
                         "No calibrated network, replica, or bandwidth-contention model is implied."));
-    }
-
-    private static void legacyScheduler(Map<String, Object> values, String rule, String replacement) {
-        values.put("decisionLayer", "ONLINE_READY_JOB");
-        values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
-        values.put("decisionRule", rule);
-        values.put("verification", "LEGACY_COMPATIBILITY_ONLY_NOT_SUPPORTED_BY_SIMULATION_RUNNER");
-        values.put(
-                "limitations",
-                limitations("The standard SimulationRunner rejects this label because it is not "
-                        + "the classical offline heuristic; use " + replacement
-                        + " for the maintained online variant."));
     }
 
     private static void cwsRankMinScheduler(Map<String, Object> values) {

@@ -188,22 +188,13 @@ Scope and boundaries:
 
 | Legacy label | Current status and retained behavior | Maintenance entry |
 | --- | --- | --- |
-| `MINMIN` | enum retained but rejected by the standard runner; the [SPT-fastest-idle implementation](<../../simulator/src/main/java/org/workflowsim/scheduling/SptFastestIdleSchedulingAlgorithm.java>) picks the shorter Job by raw length first | online: `READY_BATCH_MINMIN`; independent global mapping: `STATIC_MINMIN` |
-| `MAXMIN` | enum retained but rejected by the standard runner; the [LJF-fastest-idle implementation](<../../simulator/src/main/java/org/workflowsim/scheduling/LjfFastestIdleSchedulingAlgorithm.java>) picks the longer Job first | online: `READY_BATCH_MAXMIN`; independent-task mapping: `STATIC_MAXMIN` |
-| `MCT` | enum retained but rejected by the standard runner; the [fastest-idle-VM implementation](<../../simulator/src/main/java/org/workflowsim/scheduling/FastestVmSchedulingAlgorithm.java>) maintains no offline availability | online: `READY_BATCH_MCT`; independent-task mapping: `STATIC_MCT` |
-| `ROUNDROBIN` | enum retained but rejected by the standard runner; the [first-fit-idle implementation](<../../simulator/src/main/java/org/workflowsim/scheduling/FirstFitIdleSchedulingAlgorithm.java>) is not a persistent-cursor rotation | online: `READY_BATCH_ROUNDROBIN`; independent-task mapping: `STATIC_ROUND_ROBIN` |
+| `MINMIN` / `MAXMIN` / `MCT` / `ROUNDROBIN` | removed from the scheduling enum on 2026-11-24 together with their historical SPT/LJF/fastest-VM/first-fit-idle bindings; configurations naming them fail at parse time | online: the matching `READY_BATCH_*` label; independent-task mapping: `STATIC_MINMIN` / `STATIC_MAXMIN` / `STATIC_MCT` / `STATIC_ROUND_ROBIN` |
 | `HEFT` / `DHEFT` | not in the current planning enum; legacy code does not compile unchanged | choose the SHARED_STORAGE or LOCAL family by model — not an unconditional synonym |
 | `SchedulingAlgorithm.INVALID` | not runnable | choose an explicit online label or a legal STATIC combination |
 
-`SPT`, `LJF`, `FASTEST_VM`, and `FIRST_FIT_IDLE` are not current scheduling enum names;
-retained implementation classes must not be treated as new runnable labels on that basis.
-The four deprecated scheduling enums additionally bind their historical policies in
-WorkflowScheduler only after the explicit `Parameters.enableLegacySchedulingAliases()`
-declaration (AUD-F10): `ExampleCliSupport.begin` makes that declaration on behalf of the
-historical examples, a direct `Parameters.init` caller gets an explicit failure naming the
-actual policy instead of a silently mislabeled run, and the standard runner keeps rejecting
-the labels. The rejection behavior of legacy labels is covered by the
-[standard entry-point test](<../../simulator/src/test/java/org/workflowsim/experiment/SimulationRunnerAlgorithmContractTest.java>).
+`SPT`, `LJF`, `FASTEST_VM`, and `FIRST_FIT_IDLE` are not scheduling enum names, and their
+historical implementation classes no longer exist; the pre-removal code (including the
+AUD-F10 explicit alias declaration) is available in git history before 2026-11-24.
 Migration must declare the decision layer and model; do not relabel old results as
 evidence about another algorithm.
 

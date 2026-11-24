@@ -18,7 +18,6 @@ class WorkflowSchedulerExplicitBindingTest {
     @BeforeEach
     void resetLegacyState() {
         Parameters.reset();
-        Parameters.enableLegacySchedulingAliases();
         CloudSim.init(1, Calendar.getInstance(), false);
     }
 

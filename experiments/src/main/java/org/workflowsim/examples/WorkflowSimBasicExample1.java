@@ -83,7 +83,7 @@ public class WorkflowSimBasicExample1 {
 
             String daxPath = ExampleCliSupport.singleDax(args, DEFAULT_DAX_PATH);
 
-            Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
+            Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.READY_BATCH_MINMIN;
             Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.SHARED;
 
