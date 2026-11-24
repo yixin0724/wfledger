@@ -73,7 +73,12 @@ public final class DvfsSlackPlanningAlgorithm extends BasePlanningAlgorithm {
                     earliest,
                     parents));
         }
-        lastSchedule = new DvfsSlackOptimizer().optimize(input, tiers, deadline);
+        Map<Integer, Double> capacity = new LinkedHashMap<Integer, Double>();
+        for (Object vm : getVmList()) {
+            org.workflowsim.CondorVM condorVm = (org.workflowsim.CondorVM) vm;
+            capacity.put(condorVm.getId(), condorVm.getMips());
+        }
+        lastSchedule = new DvfsSlackOptimizer().optimize(input, tiers, capacity, deadline);
         Map<Integer, Double> selectedTiers = new LinkedHashMap<Integer, Double>();
         for (DvfsSlackSchedule.Entry entry : lastSchedule.getTaskPlans()) {
             Task task = tasksById.get(entry.getTaskId());

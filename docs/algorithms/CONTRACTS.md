@@ -313,6 +313,15 @@ each Job, not the zero-based Job ID. The standard runner consumes the selected t
 existing admission-time DVFS mechanism. This is a greedy subset, not a global DVFS optimality or full
 paper-corpus claim.
 
+Plan/runtime consistency (FGCS-R3, 2026-11-24, m6). The runtime rescales the declared work to
+`round(L * vmMips / tierMips)` MI executed at the VM capacity, adds SHARED stage-in MI at the VM capacity
+(so stage-in seconds do not depend on the tier), and charges the selected tier's `P_max − P_idle(default)`
+over the whole Job envelope including stage-in. The planner previously used the exact `L / tierMips`,
+which differs from the runtime's whole-MI rescaling (0.6667 s versus 0.6665 s for 1000 MI at 1500 of
+2000 MIPS); it now uses the runtime rescaling. The stage-in convention was already consistent on both
+sides and is unchanged. The [DVFS mirror test](<../../simulator/src/test/java/org/workflowsim/planning/DvfsSlackRuntimeMirrorIntegrationTest.java>)
+checks VM bindings, selected tiers, compute starts and Job envelopes against the runtime.
+
 ### CRCH Synchronized-Checkpoint Recovery (R-PAPER-11, 2026-11-08)
 
 `CRCH` implements the checkpointing part of the 2019 CRCH paper. A checkpoint commits only after

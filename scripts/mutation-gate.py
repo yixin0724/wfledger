@@ -400,8 +400,8 @@ REGISTRY = [
         id="M55",
         name="DVFS slack drops SHARED stage-in and root release timing",
         file="simulator/src/main/java/org/workflowsim/planning/dvfs/DvfsSlackOptimizer.java",
-        old="            double start = Math.max(\n                    task.getEarliestStartSeconds(), Math.max(available.getOrDefault(task.getVmId(), 0.0), ready));\n            double finish = start + task.getStageInSeconds() + task.getWorkMi() / tier.getMips();",
-        new="            double start = Math.max(available.getOrDefault(task.getVmId(), 0.0), ready);\n            double finish = start + task.getWorkMi() / tier.getMips();",
+        old="            double start = Math.max(\n                    task.getEarliestStartSeconds(), Math.max(available.getOrDefault(task.getVmId(), 0.0), ready));\n            double finish = start + task.getStageInSeconds() + scaledWorkSeconds(task, tier);",
+        new="            double start = Math.max(available.getOrDefault(task.getVmId(), 0.0), ready);\n            double finish = start + scaledWorkSeconds(task, tier);",
         killers="DvfsSlackIntegrationTest"),
     dict(
         id="M56",
