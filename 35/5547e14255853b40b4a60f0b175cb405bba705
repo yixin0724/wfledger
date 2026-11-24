@@ -1,0 +1,24 @@
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 84-86,126,132
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 358-359,369-371
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 79
+scripts/mutation-gate.py
+  h_adc77830afcf4d 483-503
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  h_adc77830afcf4d 314
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmCatalogTest.java
+  h_adc77830afcf4d 166-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "355547e14255853b40b4a60f0b175cb405bba705",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
