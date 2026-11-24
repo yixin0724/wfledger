@@ -97,8 +97,8 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `CAWOSCHED_SLACK` | SHARED DAG | SHARED HEFT mapping/order followed by slack-scored absolute-start CaWoSched planning |
 | `CAWOSCHED_PRESSURE` | SHARED DAG | SHARED HEFT mapping/order followed by pressure-scored absolute-start CaWoSched planning |
 | `NACO_GA_HEFT` | LOCAL DAG | DNC evaluation in megabit units, reverse-topological HEFT elite seed, PE-compatible GPX crossover, mutation, tournament and elite replacement |
-| `GREEN_HEFT` | SHARED DAG | HEFT upward rank with minimum-energy VM selection and finish-time tie-break |
-| `MO_HEFT` | SHARED DAG | HEFT-ordered beam search with non-dominated filtering, crowding and balanced makespan-energy choice |
+| `GREEN_HEFT` | SHARED DAG | HEFT upward rank with minimum-energy VM selection over SHARED envelopes and finish-time tie-break |
+| `MO_HEFT` | SHARED DAG | HEFT-ordered beam search keeping the K best by non-dominated sorting and crowding, SHARED envelopes, balanced makespan-energy choice |
 | `IC_PCP` | SHARED DAG | latest-data-arrival critical-parent PCP with EST/LFT, whole-path placement on one VM checked against every assigned task's LFT, SHARED bootstrap/input envelopes (no point-to-point edge time), minimum incremental path cost |
 | `DVFS_SLACK` | SHARED DAG | HEFT mapping followed by iterative energy-decreasing slack allocation |
 | `DHEFT` | LOCAL DAG | official ready-wave EFT with pairwise minimum bandwidth and actual parent finish times |
