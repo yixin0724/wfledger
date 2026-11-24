@@ -216,9 +216,16 @@ not train the paper's regression-tree recommender or replay AWS instance profile
 
 `GREEN_HEFT` preserves HEFT upward-rank prioritization and changes VM selection to minimum
 predicted task energy, with finish time and VM ID as deterministic tie-breaks. Candidate VMs are
-PE-compatible, duration keeps the declared per-PE work convention `MI / per-PE MIPS`, and later tasks use earliest legal
-reservation-gap insertion rather than append-only placement. `GreenHeftAdapter` requires one declared
-plain power profile per VM and estimates task energy as full-load watts times raw-MI execution seconds.
+PE-compatible and later tasks use earliest legal reservation-gap insertion (exact `start + duration <=
+gapStart`) rather than append-only placement. Since FGCS-R3 (2026-11-24, M6) durations use the SHARED
+compute envelope `(L_raw + floor(mips * inputSeconds)) / mips` and roots wait for the 110-MI stage-in Job
+plus the root-release interval, exactly as `SharedStorageDagPlanner`; edges carry no point-to-point time.
+Previously durations were raw `MI / MIPS` and roots started at 0, so planned windows did not mirror
+execution. `GreenHeftAdapter` requires one declared plain power profile per VM and estimates task energy
+as full-load watts times the envelope seconds (the runtime charges the dynamic power over the whole Job
+envelope). The [energy planner mirror test](<../../simulator/src/test/java/org/workflowsim/planning/EnergyPlannerRuntimeMirrorIntegrationTest.java>)
+checks that GreenHEFT and the MOHEFT balanced schedule reproduce runtime VM bindings, compute starts
+(exact) and envelope finishes (within floating-point reassociation, 1e-9 s).
 Missing power, multiple frequency tiers, or a task-cost matrix fails explicitly. The implementation
 is not the paper's empirical neural-network model or the MOHEFT Pareto optimizer.
 `GreenHeftPlannerTest` distinguishes energy-first selection and gap insertion;

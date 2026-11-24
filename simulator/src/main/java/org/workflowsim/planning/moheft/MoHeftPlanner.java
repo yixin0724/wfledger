@@ -202,7 +202,7 @@ public final class MoHeftPlanner {
             for (Map.Entry<Integer, List<MoHeftSchedule.Entry>> entry : reservations.entrySet()) {
                 nextReservations.put(entry.getKey(), new ArrayList<MoHeftSchedule.Entry>(entry.getValue()));
             }
-            double parentReady = 0.0;
+            double parentReady = task.getParentTaskIds().isEmpty() ? problem.getRootReleaseSeconds() : 0.0;
             for (Integer parentId : task.getParentTaskIds()) {
                 MoHeftSchedule.Entry parent = nextEntries.get(parentId);
                 if (parent == null) {

@@ -26,7 +26,7 @@ public final class GreenHeftPlanner {
             double bestFinish = Double.POSITIVE_INFINITY;
             double bestStart = Double.POSITIVE_INFINITY;
             for (Integer vmId : task.getComputeSecondsByVm().keySet()) {
-                double parentReady = 0.0;
+                double parentReady = task.getParentTaskIds().isEmpty() ? problem.getRootReleaseSeconds() : 0.0;
                 for (Integer parentId : task.getParentTaskIds()) {
                     GreenHeftTask parentTask = problem.getTask(parentId);
                     GreenHeftSchedule.Entry parent = scheduled.get(parentId);

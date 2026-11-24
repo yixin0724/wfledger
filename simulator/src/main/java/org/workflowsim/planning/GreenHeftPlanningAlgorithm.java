@@ -21,7 +21,12 @@ public final class GreenHeftPlanningAlgorithm extends BasePlanningAlgorithm {
     @Override
     public void run() {
         context.validateSharedStorageStaticDag();
-        GreenHeftProblem problem = GreenHeftAdapter.toProblem(getTaskList(), getVmList(), context.getPlatform());
+        GreenHeftProblem problem = GreenHeftAdapter.toProblem(
+                getTaskList(),
+                getVmList(),
+                context.getPlatform(),
+                context.getSharedStorageTransferRateMbPerSecond(),
+                context.getCloudSimMinEventIntervalSeconds());
         lastSchedule = new GreenHeftPlanner().schedule(problem);
         for (Task task : getTaskList()) {
             GreenHeftSchedule.Entry entry = lastSchedule.getTaskPlan(task.getCloudletId());
