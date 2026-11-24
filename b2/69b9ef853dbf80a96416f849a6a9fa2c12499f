@@ -1,0 +1,26 @@
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 37
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 16
+scripts/mutation-gate.py
+  h_adc77830afcf4d 261-262
+scripts/verify-study-evidence.py
+  h_adc77830afcf4d 92-93
+simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java
+  h_adc77830afcf4d 876-877
+simulator/src/main/java/org/workflowsim/utils/SimulationTiming.java
+  h_adc77830afcf4d 3-14,17,21-46,56
+simulator/src/test/java/org/workflowsim/experiment/SimulationTickSensitivityTest.java
+  h_adc77830afcf4d 45-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b269b9ef853dbf80a96416f849a6a9fa2c12499f",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
