@@ -480,6 +480,27 @@ REGISTRY = [
         old="            if (org.workflowsim.utils.CrchRegistry.hasRecovery(job.getCloudletId())) {",
         new="            if (false) {",
         killers="CrchIntegrationTest"),
+    dict(
+        id="M68",
+        name="Tiered retry restarts from the already scaled length",
+        file="simulator/src/main/java/org/workflowsim/reclustering/ReclusteringEngine.java",
+        old="                jobList.add(createJob(id, job, job.getRestartWorkMi(), job.getTaskList(), true));",
+        new="                jobList.add(createJob(id, job, job.getEffectiveExecutionLengthMi(), job.getTaskList(), true));",
+        killers="RetryWorkAccountingIntegrationTest"),
+    dict(
+        id="M69",
+        name="CRCH credits the input read as checkpointed compute",
+        file="simulator/src/main/java/org/workflowsim/reclustering/ReclusteringEngine.java",
+        old="                        attempt.getExecStartTime(),",
+        new="                        job.getExecStartTime(),",
+        killers="RetryWorkAccountingIntegrationTest"),
+    dict(
+        id="M70",
+        name="CRCH placement ignores PE compatibility",
+        file="simulator/src/main/java/org/workflowsim/scheduling/CrchSchedulingAlgorithm.java",
+        old="                if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE || !isCompatible(job, vm)) {",
+        new="                if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE) {",
+        killers="CrchSchedulingAlgorithmTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

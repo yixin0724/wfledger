@@ -311,6 +311,7 @@ public final class AlgorithmCatalog {
         values.put("decisionLayer", "ONLINE_CHECKPOINT_RECOVERY");
         values.put("inputDomain", "DAG_WITH_CRCH_FAILURE_RETRY_AND_CHECKPOINTS");
         values.put("decisionRule", "Synchronized checkpoint remaining-work retry and alternative-VM selection");
+        values.put("implementationRevision", "CRCH_COMPUTE_WINDOW_CHECKPOINT_PE_FILTER_V2");
         values.put("verification", "CRCH_RECOVERY_REGRESSION_COVERED");
         values.put(
                 "limitations",

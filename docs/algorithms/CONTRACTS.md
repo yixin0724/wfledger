@@ -355,7 +355,8 @@ checks VM bindings, selected tiers, compute starts and Job envelopes against the
 ### CRCH Synchronized-Checkpoint Recovery (R-PAPER-11, 2026-11-08)
 
 `CRCH` implements the checkpointing part of the 2019 CRCH paper. A checkpoint commits only after
-its compute interval plus the configured checkpoint overhead fits in elapsed execution time; saved
+its compute interval plus the configured checkpoint overhead fits in the attempt's modeled compute window
+(FGCS-R4, 2026-11-24: the input read and any post-processing delay are not compute time); saved
 work is capped at the original task length. Retry work is the remaining MI plus one recovery-overhead
 MI equivalent. `ReclusteringEngine.process` registers the recovery for the retry Job, while
 `CrchSchedulingAlgorithm` avoids the failed VM when an alternative exists. `FTCLUSTERING_CRCH` is an
@@ -365,6 +366,9 @@ releases its child; retry creation replaces the failed parent in the dependency 
 remaining MI is preserved in execution and TaskOutcome timing. M49/M50 guard saved-work and
 alternative-VM semantics; direct tests cover overhead-delayed checkpoints and capped saved work;
 `CrchIntegrationTest` verifies a real failure, successful-parent ordering and remaining-work timing.
+Placement considers PE-compatible VMs only. CRCH with frequency tiers is rejected because saved work,
+overhead and placement use nominal VM MIPS. Under `FTCLUSTERING_NOOP` a retry restarts from the declared
+work and is tier-scaled once per attempt. `RetryWorkAccountingIntegrationTest` hand-derives these rules.
 
 ### DHEFT Ready-Task and Pairwise Bandwidth (R-PAPER-12, 2026-11-08)
 

@@ -81,6 +81,9 @@ closed with dedicated boundary/conservation tests at that time.
 | M65 | EDP heuristic double-counts default idle during busy execution | EDP conservation-consistent tier choice (R-AUDIT-01) |
 | M66 | Failed parent releases its child before a successful retry | Successful-parent dependency gate (R-EXP-01, 2026-11-09) |
 | M67 | CRCH retry overwrites remaining work with the original task length | CRCH remaining-work preservation (R-EXP-01) |
+| M68 | Tiered retry restarts from the already scaled length | Declared-work retry restart (FGCS-R4, 2026-11-24) |
+| M69 | CRCH credits the input read as checkpointed compute | CRCH compute-window checkpoints (FGCS-R4) |
+| M70 | CRCH placement ignores PE compatibility | CRCH PE compatibility (FGCS-R4) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -120,13 +123,13 @@ axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 63 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 64 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)
 python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
 
-# Both families sequentially (65 canaries total)
+# Both families sequentially (66 canaries total)
 python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)
