@@ -73,7 +73,6 @@ public final class AlgorithmCatalog {
             case GREEN_HEFT:
             case MO_HEFT:
             case IC_PCP:
-            case NETWORK_HEFT:
             case DVFS_SLACK:
             case DHEFT:
             case PSO:
@@ -365,9 +364,6 @@ public final class AlgorithmCatalog {
             case IC_PCP:
                 icpcpPlanner(values);
                 break;
-            case NETWORK_HEFT:
-                networkHeftPlanner(values);
-                break;
             case DVFS_SLACK:
                 dvfsSlackPlanner(values);
                 break;
@@ -413,17 +409,6 @@ public final class AlgorithmCatalog {
         values.put(
                 "limitations",
                 limitations("Greedy slack subset; no exact global DVFS optimum or full paper corpus claim"));
-    }
-
-    private static void networkHeftPlanner(Map<String, Object> values) {
-        values.put("decisionLayer", "STATIC_DAG_NETWORK_HEFT");
-        values.put("inputDomain", "SHARED_DAG_WITH_FILE_BYTES_AND_SHARED_BOTTLENECK");
-        values.put("decisionRule", "HEFT with fair-shared bottleneck flow stretching and iterative rescheduling");
-        values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
-        values.put("verification", "NETWORK_HEFT_PAPER_FIGURE_REGRESSION_COVERED");
-        values.put(
-                "limitations",
-                limitations("Fair capacity sharing subset; no TCP throughput model or full Grid corpus claim"));
     }
 
     private static void icpcpPlanner(Map<String, Object> values) {

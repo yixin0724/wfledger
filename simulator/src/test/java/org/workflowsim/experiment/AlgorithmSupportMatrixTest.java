@@ -67,7 +67,6 @@ class AlgorithmSupportMatrixTest {
                 PlanningAlgorithm.GREEN_HEFT,
                 PlanningAlgorithm.MO_HEFT,
                 PlanningAlgorithm.IC_PCP,
-                PlanningAlgorithm.NETWORK_HEFT,
                 PlanningAlgorithm.DVFS_SLACK,
                 PlanningAlgorithm.DHEFT,
                 PlanningAlgorithm.PSO,

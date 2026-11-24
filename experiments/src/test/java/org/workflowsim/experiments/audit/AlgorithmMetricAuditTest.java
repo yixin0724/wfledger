@@ -56,7 +56,6 @@ class AlgorithmMetricAuditTest {
         for (Parameters.PlanningAlgorithm planner : Arrays.asList(
                 Parameters.PlanningAlgorithm.GREEN_HEFT,
                 Parameters.PlanningAlgorithm.MO_HEFT,
-                Parameters.PlanningAlgorithm.NETWORK_HEFT,
                 Parameters.PlanningAlgorithm.IC_PCP)) {
             assertClean(AlgorithmMetricAudit.run(
                     base(planner, ReplicaCatalog.FileSystem.SHARED, DataMovementModel.legacyWorkflowsimV1()),

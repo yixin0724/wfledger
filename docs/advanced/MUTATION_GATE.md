@@ -60,7 +60,6 @@ closed with dedicated boundary/conservation tests at that time.
 | M42 | MOHEFT balanced choice ignores makespan tradeoff | MOHEFT balanced selection (R-PAPER-06, 2026-11-06) |
 | M43 | IC-PCP ignores the virtual END deadline slack | IC-PCP deadline feasibility (R-PAPER-07, 2026-11-06) |
 | M44 | IC-PCP path choice ignores incremental cost | IC-PCP path-cost selection (R-PAPER-07, 2026-11-06) |
-| M45 | Network-Aware HEFT gives every flow the full bottleneck | Network-Aware HEFT flow stretching (R-PAPER-08, 2026-11-06) |
 | M46 | EBPSM ignores input-data cache preference | EBPSM cache preference (R-PAPER-09, 2026-11-06) |
 | M47 | EBPSM dispatches tasks above their budget | EBPSM budget gate (R-PAPER-09, 2026-11-06) |
 | M48 | DVFS slack allocation accepts an energy-increasing downgrade | DVFS slack optimization (R-PAPER-10, 2026-11-08) |
@@ -74,7 +73,6 @@ closed with dedicated boundary/conservation tests at that time.
 | M56 | GreenHEFT reverts to append-only placement | GreenHEFT gap insertion (R-AUDIT-01) |
 | M57 | GreenHEFT admits PE-incompatible VMs | GreenHEFT PE compatibility (R-AUDIT-01) |
 | M58 | DHEFT drops decimal-megabyte bandwidth conversion | DHEFT bandwidth units (R-AUDIT-01) |
-| M59 | Network-Aware HEFT disables reservation-gap insertion | NetworkHEFT insertion EFT (R-AUDIT-01) |
 | M60 | Reshi-M reapplies prediction noise inside its comparator | Reshi-M prediction invariance (R-AUDIT-01) |
 | M61 | CWS counts non-real input bytes in its tie-break | CWS real-input ordering (R-AUDIT-01) |
 | M62 | NACO double-counts parent-produced input as external disk read | NACO DNC input accounting (R-AUDIT-01) |
@@ -117,7 +115,7 @@ allowlist omission. M31 (2026-11-04, B5) adds the profile semantic-fingerprint a
 admitted-copy count must be rejected by the independent comparator, not hidden by timing. M32
 (2026-11-05, R-PAPER-01) adds the CaWoSched green-window selection axis. M33 (R-PAPER-01B)
 adds the power-weighted slack-score axis. M34/M35 (R-PAPER-01C/D) add missing-link and exact-DP
-axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) adds the Network-Aware HEFT bottleneck-sharing axis. M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms. M66/M67 (R-EXP-01) add retry dependency and remaining-work axes.
+axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) and M59 (R-AUDIT-01) were retired with the Network-Aware HEFT removal (FGCS-R3, 2026-11-24). M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms. M66/M67 (R-EXP-01) add retry dependency and remaining-work axes.
 
 ## Usage
 

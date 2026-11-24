@@ -11,7 +11,7 @@ run or a plausible makespan proves correctness.
 
 | Group | Scenarios | Algorithms | Seeds | Runs |
 |---|---|---|---:|---:|
-| SHARED | reverse-ID chain, fan-out/fan-in with duplicate OUTPUT, independent tasks, large files | SHARED_HEFT, Network-Aware HEFT, GreenHEFT, MOHEFT, IC-PCP | 7, 11 | 40 |
+| SHARED | reverse-ID chain, fan-out/fan-in with duplicate OUTPUT, independent tasks, large files | SHARED_HEFT, GreenHEFT, MOHEFT, IC-PCP | 7, 11 | 32 |
 | LOCAL | same DAG/resource families | LOCAL_HEFT, DHEFT, NACO GA/HEFT | 7, 11 | 24 |
 | Online | reverse-ID chain, fan-out/fan-in, independent tasks | CWS, Reshi-C, Reshi-M | 7, 11 | 18 |
 | Special | carbon slack/pressure, DVFS tiers, CRCH failure, EBPSM staggered workflows | algorithm-specific configurations | 7 | 4 |

@@ -40,7 +40,6 @@ and a linked contract revision, not a silent update to match production output.
 | GreenHEFT | `PAPER` | `GreenHeftPlannerTest` and `GreenHeftIntegrationTest`; energy-first mapping and declared-power oracle, M40 |
 | MOHEFT | `PAPER` / `CONTRACT` | `MoHeftPlannerTest` and `MoHeftIntegrationTest`; dominance, Pareto extremes and balanced selection, M41/M42 |
 | IC-PCP | `PAPER` / `CONTRACT` | `IcpcpPlannerTest` and `IcpcpIntegrationTest`; low-cost path, deadline infeasibility, fork/join and cycle, M43/M44 |
-| Network-Aware HEFT | `PAPER` | `NetworkHeftPlannerTest` and `NetworkHeftIntegrationTest`; shared-bottleneck stretching and 25→32 direction, M45 |
 | EBPSM | `PAPER` / `CONTRACT` | `EbpsmBudgetDistributorTest`, `EbpsmSchedulingAlgorithmTest`, and `EbpsmIntegrationTest`; SFTD, cache preference and budget gate, M46/M47 |
 | DVFS slack allocation | `PAPER` / `CONTRACT` | `DvfsSlackOptimizerTest` and `DvfsSlackIntegrationTest`; energy/deadline-gated downscaling and runtime tier consumption, M48 |
 | CRCH checkpoint recovery | `PAPER` | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, and `CrchIntegrationTest`; saved-work and alternative-VM recovery, M49/M50 |

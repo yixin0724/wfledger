@@ -100,7 +100,6 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `GREEN_HEFT` | SHARED DAG | HEFT upward rank with minimum-energy VM selection and finish-time tie-break |
 | `MO_HEFT` | SHARED DAG | HEFT-ordered beam search with non-dominated filtering, crowding and balanced makespan-energy choice |
 | `IC_PCP` | SHARED DAG | critical-parent PCP with EST/LFT, SHARED bootstrap/input envelopes, minimum incremental path cost and deadline slack |
-| `NETWORK_HEFT` | SHARED DAG | fair-shared bottleneck flow stretching with iterative insertion-based HEFT rescheduling |
 | `DVFS_SLACK` | SHARED DAG | HEFT mapping followed by iterative energy-decreasing slack allocation |
 | `DHEFT` | LOCAL DAG | official ready-wave EFT with pairwise minimum bandwidth and actual parent finish times |
 
@@ -119,7 +118,6 @@ mean multiple Jobs can be dispatched simultaneously.
 | GreenHEFT DAG | GREEN_HEFT / STATIC | SHARED + declared per-VM power; no failure, no overhead; raw task lengths only | rejected without power or with frequency tiers |
 | MOHEFT DAG | MO_HEFT / STATIC | SHARED + declared per-VM power; no failure, no overhead; raw task lengths only | rejected without power or with frequency tiers |
 | IC-PCP DAG | IC_PCP / STATIC | SHARED + positive deadline and declared VM costs; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix or deadline <= 0 |
-| Network-Aware HEFT DAG | NETWORK_HEFT / STATIC | SHARED + file-carrying DAG and shared bottleneck; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |
 | DVFS slack DAG | DVFS_SLACK / DVFS_SLACK | SHARED + positive deadline and per-VM frequency tiers; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix, no tiers, or deadline <= 0 |
 | CaWoSched timed DAG | CAWOSCHED_SLACK / CAWOSCHED_PRESSURE / STATIC | SHARED + `legacyWorkflowsimV1()` + complete `carbonWindows`; no failure, no overhead | rejected |
 | LOCAL DAG | LOCAL family / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead | usable |

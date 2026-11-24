@@ -45,7 +45,7 @@ and unified HTML/JSON/CSV summaries.
 | [Algorithm and metric audit](<ALGORITHM_METRIC_AUDIT.md>) | All reproduced algorithm families and metric formulas | Links decision semantics, adapters, task mapping, runtime execution and independent metric recomputation |
 | [Algorithm experiment audit](<ALGORITHM_EXPERIMENT_AUDIT.md>) | 82 matrix runs plus special/metamorphic cases | Uses DAG/resource/failure/seed experiments to find defects that static review misses |
 | [Cross-paper comparison](<CROSS_PAPER_COMPARISON.md>) | Compatible SHARED and LOCAL scenes | Shows why identical mappings produce identical metrics and why planner/runtime costs must be separated |
-| [Paper reproductions](<PAPER_REPRODUCTIONS.md>) | CaWoSched, CWS, NACO, Reshi, GreenHEFT, MOHEFT, IC-PCP, Network-Aware HEFT, EBPSM, DVFS, CRCH and DHEFT | Primary-paper/reference-artifact/implementation/verification chain and explicit adaptation scope |
+| [Paper reproductions](<PAPER_REPRODUCTIONS.md>) | CaWoSched, CWS, NACO, Reshi, GreenHEFT, MOHEFT, IC-PCP, EBPSM, DVFS, CRCH and DHEFT | Primary-paper/reference-artifact/implementation/verification chain and explicit adaptation scope |
 | [Audit coverage](<AUDIT_COVERAGE.md>) | Registered semantic and mutation axes | Explains which defects are guarded by current tests and which claims are not made |
 | [V&V case ledger](<VV_CASE_LEDGER.md>) | Verification, validation and regression cases | Separates verified behavior from experimental observations and historical evidence |
 | [Golden evidence registry](<GOLDEN_EVIDENCE_REGISTRY.md>) | Paper, contract, invariant and regression evidence | Identifies the legal source of each expected value |

@@ -341,13 +341,6 @@ REGISTRY = [
         new="            if (best == null\n                    || slack > best.slack + 1.0e-9",
         killers="IcpcpPlannerTest"),
     dict(
-        id="M45",
-        name="Network-Aware HEFT gives every flow the full bottleneck",
-        file="simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftFlowStretcher.java",
-        old="                flow.remaining = Math.max(0.0, flow.remaining - capacityBytesPerSecond * (end - time) / active.size());",
-        new="                flow.remaining = Math.max(0.0, flow.remaining - capacityBytesPerSecond * (end - time));",
-        killers="NetworkHeftPlannerTest"),
-    dict(
         id="M46",
         name="EBPSM ignores input-data cache preference",
         file="simulator/src/main/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithm.java",
@@ -431,13 +424,6 @@ REGISTRY = [
         old="            bandwidth.put(vm.getId(), vm.getBw() * 1.0e6);",
         new="            bandwidth.put(vm.getId(), (double) vm.getBw());",
         killers="DheftAdapterTest"),
-    dict(
-        id="M59",
-        name="Network-Aware HEFT disables reservation-gap insertion",
-        file="simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftPlanner.java",
-        old="            if (start + duration <= reservation.start) {",
-        new="            if (false) {",
-        killers="NetworkHeftPlannerTest"),
     dict(
         id="M60",
         name="Reshi-M reapplies prediction noise inside its comparator",

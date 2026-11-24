@@ -251,19 +251,9 @@ infeasible deadline, billing-period arithmetic, fork/join and cycle rejection; `
 covers units, PE filtering, duplicate declarations, SHARED input envelopes and absolute deadlines;
 `IcpcpIntegrationTest` covers declared VM costs in a real session.
 
-### Network-Aware HEFT Bottleneck Stretching (R-PAPER-08, 2026-11-06)
+### Network-Aware HEFT Bottleneck Stretching (R-PAPER-08, removed)
 
-`NETWORK_HEFT` forms flows for cross-VM parent-child edges and stretches them on a shared
-bottleneck. Active flows share the declared capacity, and each edge keeps an independent
-`parentId→childId` duration key so multiple parents of one task cannot overwrite each other.
-`NetworkHeftPlanner` applies insertion-based HEFT over PE-compatible candidates with the stretched
-durations and keeps the best realistic schedule. The adapter converts decimal MB/s to bit/s for
-nominal edge time and to the corresponding byte/s bottleneck capacity; duplicate OUTPUT declarations
-are membership, not repeated payload. A zero-byte edge with a positive nominal duration derives its
-work from the supplied capacity rather than a hidden rate. The six-task paper-style case yields
-nominal 25 seconds and stretched 32 seconds; M45 kills removal of per-flow capacity sharing. The
-current adapter uses one shared bottleneck and fair sharing, not the full TCP throughput model or
-automatic path detection.
+`NETWORK_HEFT` is no longer a planning label. Removed on 2026-11-24 (FGCS-R3): the planner optimized cross-VM point-to-point flows on a shared bottleneck, but it was bound to the SHARED runtime, which has no point-to-point edges, so its planned schedule could not mirror execution; no retained FGCS study or configuration used it. The last implementation is preserved in git history before this removal.
 
 ### EBPSM Budget and Cache Scheduling (R-PAPER-09, 2026-11-06)
 

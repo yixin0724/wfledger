@@ -89,7 +89,7 @@ class CrossPaperComparisonTest {
             }
         }
 
-        assertEquals(5, shared.size());
+        assertEquals(4, shared.size());
         assertEquals(2, local.size());
         for (CrossPaperComparison.RunResult result : shared) {
             assertTrue(result.isCompleted(), result.getAlgorithm());

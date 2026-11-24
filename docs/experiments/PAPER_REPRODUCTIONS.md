@@ -196,24 +196,9 @@ decimal MB/s. VM rates are cost per second and the generalized billing-period fo
 rounded period's full seconds; the current adapter uses a one-second period. This is not IC-PCPD2,
 dynamic VM provisioning, a full event replay, or a full paper-corpus reproduction.
 
-## Network-Aware HEFT — The Scientific World Journal 2014
+## Network-Aware HEFT — The Scientific World Journal 2014 (removed)
 
-| Item | Record |
-|---|---|
-| Paper | Muhammad Murtaza Yousaf, Michael Welzl, *Network-Aware HEFT Scheduling for Grid*, The Scientific World Journal, 2014, Article 317284 |
-| Primary source | [DOI](https://doi.org/10.1155/2014/317284), [PMC full text](https://pmc.ncbi.nlm.nih.gov/articles/PMC3919093/) |
-| Platform classes | `org.workflowsim.planning.networkheft` and `NetworkHeftPlanningAlgorithm` |
-| Verification | `NetworkHeftPlannerTest`, `NetworkHeftAdapterTest`, `NetworkHeftFlowStretcherTest`, `NetworkHeftIntegrationTest`; M45 |
-| Status | `VERIFIED_BOTTLENECK_CORE` for fair-shared bottleneck flow stretching and iterative HEFT rescheduling |
-
-The implementation forms cross-VM flows, orders them by start time, shares bottleneck capacity among
-active flows, advances to the next arrival or completion, and reschedules insertion-based HEFT with
-stretched edge durations over PE-compatible candidates. Nominal edge time and bottleneck capacity use
-consistent conversions of declared decimal MB/s; duplicate parent OUTPUT declarations are membership,
-and zero-byte positive-duration edges preserve their nominal duration using the supplied capacity.
-The paper-style six-task case reproduces the nominal 25-second schedule and the stretched 32-second
-result. The current adapter uses one shared bottleneck per experiment and fair capacity sharing; it
-does not claim the full TCP throughput model, path-detection system, or complete Grid workflow corpus.
+The adaptation of Yousaf and Welzl ([DOI](https://doi.org/10.1155/2014/317284)) is no longer part of the platform. Removed on 2026-11-24 (FGCS-R3): the planner optimized cross-VM point-to-point flows on a shared bottleneck, but it was bound to the SHARED runtime, which has no point-to-point edges, so its planned schedule could not mirror execution; no retained FGCS study or configuration used it. The last implementation is preserved in git history before this removal.
 
 ## EBPSM — Multi-tenant WaaS Resource Sharing (2020)
 

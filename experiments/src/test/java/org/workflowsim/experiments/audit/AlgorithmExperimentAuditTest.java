@@ -33,8 +33,7 @@ import org.workflowsim.utils.SimulationConfig;
 
 class AlgorithmExperimentAuditTest {
 
-    private static final List<String> SHARED =
-            Arrays.asList("SHARED_STORAGE_HEFT", "NETWORK_HEFT", "GREEN_HEFT", "MO_HEFT", "IC_PCP");
+    private static final List<String> SHARED = Arrays.asList("SHARED_STORAGE_HEFT", "GREEN_HEFT", "MO_HEFT", "IC_PCP");
     private static final List<String> LOCAL = Arrays.asList("LOCAL_HEFT", "DHEFT", "NACO_GA_HEFT");
     private static final List<String> ONLINE = Arrays.asList("CWS_RANKMIN_RR", "RESHI_C", "RESHI_M");
 
@@ -52,7 +51,7 @@ class AlgorithmExperimentAuditTest {
                 }
             }
         }
-        assertTrue(runs == 40);
+        assertTrue(runs == 32);
         System.out.println("EXPERIMENT_SUMMARY sharedRuns=" + runs);
     }
 
