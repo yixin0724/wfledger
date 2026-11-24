@@ -43,6 +43,7 @@ import org.workflowsim.scheduling.DvfsSlackSchedulingAlgorithm;
 import org.workflowsim.scheduling.EbpsmSchedulingAlgorithm;
 import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
 import org.workflowsim.scheduling.FrequencyTierSelector;
+import org.workflowsim.scheduling.JobReturnListener;
 import org.workflowsim.scheduling.ReadyBatchMCTSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchMaxMinSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchMinMinSchedulingAlgorithm;
@@ -524,6 +525,10 @@ public class WorkflowScheduler extends DatacenterBroker {
                     CloudSim.clock(),
                     job,
                     SimulationEventRecorder.attributes("failedStatus", true));
+        }
+        BaseSchedulingAlgorithm policy = getSchedulingPolicy();
+        if (policy instanceof JobReturnListener) {
+            ((JobReturnListener) policy).onJobReturned(job);
         }
         schedule(this.workflowEngineId, delay, CloudSimTags.CLOUDLET_RETURN, cloudlet);
 

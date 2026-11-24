@@ -42,7 +42,7 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `CWS_RANKMIN_RR` | static-DAG CWS descendant-PROCESS rank descending, `isRealInputFile` bytes ascending, then persistent RR over idle compatible VMs |
 | `RESHI_C` | direct-child-count descending with explicit Reshi task-node ranking over idle PE-compatible VMs |
 | `RESHI_M` | historical-average-runtime descending with explicit Reshi task-node ranking over idle PE-compatible VMs; prediction-error invariant |
-| `EBPSM` | multi-workflow SFTD budget distribution plus input/container cache preference and budget-gated dispatch |
+| `EBPSM` | multi-workflow SFTD budget distribution plus input/container cache preference (published on successful completion) and budget-gated dispatch; fails fast when the fixed pool cannot meet a sub-budget |
 | `DVFS_SLACK` | STATIC dispatch with one planner-selected frequency tier per logical Task |
 | `CRCH` | synchronized-checkpoint remaining-work retry with alternative-VM selection |
 | `DATA` | chooses the idle compatible VM with the fewest non-local real input bytes; requires LOCAL |

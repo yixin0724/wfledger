@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.cloudbus.cloudsim.Cloudlet;
 import org.workflowsim.CondorVM;
 import org.workflowsim.FileItem;
 import org.workflowsim.Job;
@@ -15,8 +16,36 @@ import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.utils.EbpsmConfig;
 import org.workflowsim.utils.EbpsmRegistry;
 import org.workflowsim.utils.Parameters.FileType;
+import org.workflowsim.utils.TaskExecutionModel;
 
-public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
+/**
+ * Fixed-pool subset of EBPSM (Hilman, Rodriguez and Buyya, "Resource-sharing Policy in
+ * Multi-tenant Scientific Workflow-as-a-Service Cloud Platform", Algorithm 2).
+ *
+ * <p>FGCS-R3 (2026-11-24) root causes fixed here:
+ *
+ * <ul>
+ *   <li>A1: outputs and container images were "published" only at dispatch, where no Task is
+ *       {@code SUCCESS}, so the cache never grew. Publication now happens in
+ *       {@link #onJobReturned(Job)}: a successful Task leaves its container image and its input and
+ *       output files in the executing VM's local storage (paper Sec. 3.2); a failed attempt
+ *       publishes nothing. Local storage is unbounded (no FIFO eviction in this subset).
+ *   <li>A2: a task that fit no idle VM's sub-budget was silently skipped and could starve until
+ *       the event queue drained. Algorithm 2's last resort is provisioning a new VM of the fastest
+ *       type within budget, which this fixed declared pool does not model. The task is therefore
+ *       deferred only while a compatible VM is busy (its return is the only event that frees a VM
+ *       or grows a cache); when every compatible VM is idle and none fits, or when even the
+ *       best-case (fully cached) prediction exceeds the budget on every compatible VM, the run
+ *       fails explicitly.
+ *   <li>A2: the prediction uses the effective execution length on the candidate VM
+ *       ({@link TaskExecutionModel}) and counts only real input files, matching the runtime's
+ *       compute envelope; read/write/container terms follow paper Eqs. 1–2 with the declared
+ *       {@link EbpsmConfig} rates. They are the policy's estimate only: the platform runtime does not
+ *       model EBPSM's VM-local cache and still charges its own data-movement model (for SHARED, the
+ *       storage read on every attempt), so cache locality changes decisions, not simulated read time.
+ * </ul>
+ */
+public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm implements JobReturnListener {
 
     private final EbpsmConfig config;
     private Map<Integer, Set<String>> cachedInputs;
@@ -32,41 +61,42 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     @Override
     public void run() {
-        EbpsmConfig active = config == null ? EbpsmRegistry.get() : config;
+        EbpsmConfig active = activeConfig();
         ensureCaches(active);
         List<Job> jobs = new ArrayList<Job>();
         for (Object item : getCloudletList()) {
             jobs.add((Job) item);
         }
         jobs.sort((first, second) -> {
-            int byStart = Double.compare(estimatedStart(second), estimatedStart(first));
-            return byStart != 0 ? -byStart : Integer.compare(first.getCloudletId(), second.getCloudletId());
+            int byStart = Double.compare(estimatedStart(first), estimatedStart(second));
+            return byStart != 0 ? byStart : Integer.compare(first.getCloudletId(), second.getCloudletId());
         });
         for (Job job : jobs) {
             List<CondorVM> idle = new ArrayList<CondorVM>();
+            boolean compatibleBusy = false;
             for (CondorVM vm : sortedVmsById()) {
-                if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE && isCompatible(job, vm)) {
+                if (!isCompatible(job, vm)) {
+                    continue;
+                }
+                if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE) {
                     idle.add(vm);
+                } else {
+                    compatibleBusy = true;
                 }
             }
             if (idle.isEmpty()) {
-                break;
+                continue;
             }
             if (job.getTaskList().isEmpty()) {
-                CondorVM selected = idle.get(0);
-                selected.setState(WorkflowSimTags.VM_STATUS_BUSY);
-                job.setVmId(selected.getId());
-                getScheduledList().add(job);
+                assign(job, idle.get(0));
                 continue;
             }
             Task task = job.getTaskList().get(0);
             double budget = active.getTaskBudget(task.getCloudletId());
+            requireAttainableBudget(task, budget, active);
             List<CondorVM> inputCandidates = new ArrayList<CondorVM>();
             List<CondorVM> containerCandidates = new ArrayList<CondorVM>();
             for (CondorVM vm : idle) {
-                if (!isCompatible(task, vm)) {
-                    continue;
-                }
                 if (hasRequiredInput(task, vm.getId())) {
                     inputCandidates.add(vm);
                 }
@@ -82,22 +112,79 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
                 selected = choose(idle, task, budget, active);
             }
             if (selected == null) {
+                if (!compatibleBusy) {
+                    throw new IllegalStateException("EBPSM task " + task.getCloudletId() + " fits no idle VM within"
+                            + " its sub-budget " + budget + " and no compatible VM is busy, so no future"
+                            + " return can free a VM or grow a cache; the fixed declared pool cannot provision"
+                            + " the paper's fallback VM (FGCS-R3 A2)");
+                }
                 continue;
             }
-            selected.setState(WorkflowSimTags.VM_STATUS_BUSY);
-            job.setVmId(selected.getId());
-            getScheduledList().add(job);
-            publish(task, selected.getId(), active);
+            assign(job, selected);
         }
+    }
+
+    /**
+     * Publishes the container image and the input/output files of every successful Task of a
+     * returned attempt into the executing VM's local storage.
+     *
+     * @param job returned attempt with final Task statuses
+     */
+    @Override
+    public void onJobReturned(Job job) {
+        if (job.getTaskList().isEmpty()) {
+            return;
+        }
+        EbpsmConfig active = activeConfig();
+        ensureCaches(active);
+        Set<String> files = cachedInputs.get(job.getVmId());
+        Set<String> images = containerImages.get(job.getVmId());
+        if (files == null || images == null) {
+            throw new IllegalStateException(
+                    "EBPSM job " + job.getCloudletId() + " returned from undeclared VM " + job.getVmId());
+        }
+        for (Task task : job.getTaskList()) {
+            if (task.getCloudletStatus() != Cloudlet.SUCCESS) {
+                continue;
+            }
+            images.add(active.getContainerImage(task.getCloudletId()));
+            for (FileItem file : task.getFileList()) {
+                if (file.getType() == FileType.OUTPUT || file.isRealInputFile(task.getFileList())) {
+                    files.add(file.getName());
+                }
+            }
+        }
+    }
+
+    private EbpsmConfig activeConfig() {
+        return config == null ? EbpsmRegistry.get() : config;
+    }
+
+    private void assign(Job job, CondorVM vm) {
+        vm.setState(WorkflowSimTags.VM_STATUS_BUSY);
+        job.setVmId(vm.getId());
+        getScheduledList().add(job);
+    }
+
+    private void requireAttainableBudget(Task task, double budget, EbpsmConfig active) {
+        for (CondorVM vm : sortedVmsById()) {
+            if (isCompatible(task, vm)
+                    && cost(predictedSeconds(task, vm, active, true, true), vm, active) <= budget + 1.0e-9) {
+                return;
+            }
+        }
+        throw new IllegalStateException("EBPSM task " + task.getCloudletId() + " exceeds its sub-budget " + budget
+                + " on every compatible VM even with cached input and deployed container; the fixed"
+                + " declared pool cannot provision the paper's fallback VM (FGCS-R3 A2)");
     }
 
     private CondorVM choose(List<CondorVM> candidates, Task task, double budget, EbpsmConfig active) {
         CondorVM best = null;
         double bestSeconds = Double.POSITIVE_INFINITY;
         for (CondorVM vm : candidates) {
-            double seconds = predictedSeconds(task, vm, active);
-            double cost = Math.ceil(seconds) * active.getVmCostPerSecond(vm.getId());
-            if (cost <= budget + 1.0e-9
+            double seconds = predictedSeconds(
+                    task, vm, active, hasRequiredInput(task, vm.getId()), hasContainer(task, vm.getId(), active));
+            if (cost(seconds, vm, active) <= budget + 1.0e-9
                     && (seconds < bestSeconds - 1.0e-9
                             || (Math.abs(seconds - bestSeconds) <= 1.0e-9 && vm.getId() < best.getId()))) {
                 best = vm;
@@ -107,28 +194,34 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
         return best;
     }
 
-    private double predictedSeconds(Task task, CondorVM vm, EbpsmConfig active) {
+    private static double cost(double seconds, CondorVM vm, EbpsmConfig active) {
+        return Math.ceil(seconds) * active.getVmCostPerSecond(vm.getId());
+    }
+
+    private double predictedSeconds(
+            Task task, CondorVM vm, EbpsmConfig active, boolean inputCached, boolean containerDeployed) {
         double inputBytes = 0.0;
         double outputBytes = 0.0;
         for (FileItem file : task.getFileList()) {
-            if (file.getType() == FileType.INPUT) {
+            if (file.isRealInputFile(task.getFileList())) {
                 inputBytes += file.getSize();
             } else if (file.getType() == FileType.OUTPUT) {
                 outputBytes += file.getSize();
             }
         }
-        double read = hasRequiredInput(task, vm.getId())
+        double read = inputCached
                 ? 0.0
                 : inputBytes / active.getGlobalReadRateBytesPerSecond() + inputBytes / (1000000.0 * vm.getBw());
         double write = outputBytes / active.getGlobalWriteRateBytesPerSecond() + outputBytes / (1000000.0 * vm.getBw());
-        double container = hasContainer(task, vm.getId(), active) ? 0.0 : active.getContainerProvisioningDelaySeconds();
-        return read + task.getCloudletLength() / vm.getMips() + write + container;
+        double container = containerDeployed ? 0.0 : active.getContainerProvisioningDelaySeconds();
+        double compute = TaskExecutionModel.executionSeconds(task, vm.getId(), vm.getMips());
+        return read + compute + write + container;
     }
 
     private boolean hasRequiredInput(Task task, int vmId) {
+        Set<String> cached = cachedInputs.getOrDefault(vmId, new HashSet<String>());
         for (FileItem file : task.getFileList()) {
-            if (file.getType() == FileType.INPUT
-                    && !cachedInputs.getOrDefault(vmId, new HashSet<String>()).contains(file.getName())) {
+            if (file.isRealInputFile(task.getFileList()) && !cached.contains(file.getName())) {
                 return false;
             }
         }
@@ -151,18 +244,6 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             CondorVM vm = (CondorVM) item;
             cachedInputs.put(vm.getId(), new HashSet<String>(active.getCachedInputs(vm.getId())));
             containerImages.put(vm.getId(), new HashSet<String>(active.getContainerImages(vm.getId())));
-        }
-    }
-
-    private void publish(Task task, int vmId, EbpsmConfig active) {
-        if (task.getCloudletStatus() != org.cloudbus.cloudsim.Cloudlet.SUCCESS) {
-            return;
-        }
-        containerImages.get(vmId).add(active.getContainerImage(task.getCloudletId()));
-        for (FileItem file : task.getFileList()) {
-            if (file.getType() == FileType.OUTPUT) {
-                cachedInputs.get(vmId).add(file.getName());
-            }
         }
     }
 

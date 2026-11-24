@@ -358,7 +358,7 @@ REGISTRY = [
         id="M47",
         name="EBPSM dispatches tasks above their budget",
         file="simulator/src/main/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithm.java",
-        old="            if (cost <= budget + 1.0e-9",
+        old="            if (cost(seconds, vm, active) <= budget + 1.0e-9",
         new="            if (true",
         killers="EbpsmSchedulingAlgorithmTest"),
     dict(
@@ -463,8 +463,8 @@ REGISTRY = [
         id="M63",
         name="EBPSM publishes unsuccessful output as readable cache",
         file="simulator/src/main/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithm.java",
-        old="        if (task.getCloudletStatus() != org.cloudbus.cloudsim.Cloudlet.SUCCESS) {",
-        new="        if (false) {",
+        old="            if (task.getCloudletStatus() != Cloudlet.SUCCESS) {",
+        new="            if (false) {",
         killers="EbpsmSchedulingAlgorithmTest"),
     dict(
         id="M64",

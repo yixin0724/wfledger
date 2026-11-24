@@ -268,15 +268,36 @@ automatic path detection.
 ### EBPSM Budget and Cache Scheduling (R-PAPER-09, 2026-11-06)
 
 `EBPSM` implements the public EBPSM resource-sharing policy rather than the closed MCPA alternative.
-`EbpsmBudgetDistributor` applies DTL/EFT order and SFTD upgrades. `EbpsmSchedulingAlgorithm` prefers
-PE-compatible VMs with required input data, then deployed container images, then other idle compatible
-VMs; every candidate must fit the task's sub-budget. Network transfer estimates use decimal MB/s,
-PE compatibility is mandatory, and duration keeps the declared per-PE work convention. Output files and deployed images enter the cache
-only after a successful Task, never at dispatch or after a failed attempt. `EbpsmConfig` is injected
-through `SimulationConfig.ebpsmConfig`, so no hidden budget or cache source exists.
-`EbpsmIntegrationTest` runs two staggered workflows; direct tests cover PE, bandwidth-budget and
-unsuccessful-output counterexamples. The subset uses a fixed declared VM pool and does not claim
-Docker deployment, elastic provisioning, or full WaaS corpus reproduction.
+`EbpsmBudgetDistributor` applies DTL/EFT order and SFTD upgrades. `EbpsmSchedulingAlgorithm` follows
+[Algorithm 2 of Hilman, Rodriguez and Buyya](<https://arxiv.org/abs/1903.01113>): ready tasks in ascending
+estimated start, then PE-compatible idle VMs with the required input data, then with the deployed container
+image, then any other idle compatible VM, each tier choosing the fastest VM whose predicted cost
+`ceil(seconds) * vmCostPerSecond` fits the task's sub-budget. The prediction is
+`read + effectiveCompute + write + container`: read/write follow paper Eqs. 1–2 with the declared global
+storage rates and decimal-MB/s VM bandwidth (read is 0 on a VM caching every real input), compute is the
+effective execution length of `TaskExecutionModel` on that VM, and the container term is the declared
+provisioning delay unless the image is deployed.
+
+Cache publication (FGCS-R3, 2026-11-24): `WorkflowScheduler` notifies `JobReturnListener` policies when an
+attempt returns, after the failure model has fixed every Task status. For each **successful** Task, EBPSM adds
+its container image and its real input and output files to the executing VM's local storage (paper Sec. 3.2
+keeps `d_in` and `d_out`); a failed attempt publishes nothing, and nothing is published at dispatch. Local
+storage is unbounded in this subset (no FIFO eviction).
+
+Budget fallback (FGCS-R3, 2026-11-24): the paper's last resort when no idle VM fits is provisioning a new VM of
+the fastest type within budget; the fixed declared pool cannot do that, so it is replaced by explicit rules
+instead of a silent skip. A task stays queued for a later cycle only while some compatible VM is busy (its
+return is the only event that frees a VM or grows a cache). If every compatible VM is idle and none fits, or if
+even the best-case prediction (cached input, deployed container) exceeds the budget on every compatible VM, the
+run fails with an `IllegalStateException`. These predictions are the policy's own estimate: the platform runtime
+does not model EBPSM's VM-local cache and still charges the configured data-movement model (under SHARED, the
+storage read on every attempt), so locality changes decisions, not simulated read time.
+
+`EbpsmConfig` is injected through `SimulationConfig.ebpsmConfig`, so no hidden budget or cache source exists.
+`EbpsmIntegrationTest` runs two staggered workflows and a parent→child chain in which the child is admitted
+only on the VM holding the parent's published output; direct tests cover PE, bandwidth-budget, effective-length,
+deferral, fail-fast, input retention and unsuccessful-output counterexamples. The subset uses a fixed declared
+VM pool and does not claim Docker deployment, elastic provisioning, or full WaaS corpus reproduction.
 
 ### DVFS Slack Allocation and Tier Consumption (R-PAPER-10, 2026-11-08)
 
