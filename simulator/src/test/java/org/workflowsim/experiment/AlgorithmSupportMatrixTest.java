@@ -26,7 +26,6 @@ class AlgorithmSupportMatrixTest {
                 SchedulingAlgorithm.READY_BATCH_ROUNDROBIN,
                 SchedulingAlgorithm.DATA,
                 SchedulingAlgorithm.STATIC,
-                SchedulingAlgorithm.RL_POLICY,
                 SchedulingAlgorithm.CARBON_WINDOW_DEFER,
                 SchedulingAlgorithm.CWS_RANKMIN_RR,
                 SchedulingAlgorithm.RESHI_C,

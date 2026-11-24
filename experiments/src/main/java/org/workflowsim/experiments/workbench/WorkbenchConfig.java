@@ -426,11 +426,8 @@ public final class WorkbenchConfig {
         }
         if (registeredProvider == null
                 && (!AlgorithmCatalog.isSupportedBySimulationRunner(planner)
-                        || !AlgorithmCatalog.isSupportedBySimulationRunner(scheduler)
-                        || scheduler == Parameters.SchedulingAlgorithm.RL_POLICY)) {
-            throw new IllegalArgumentException(
-                    "Workbench requires maintained built-in algorithms; external RL policies use the Java "
-                            + "RlEnvironment adapter");
+                        || !AlgorithmCatalog.isSupportedBySimulationRunner(scheduler))) {
+            throw new IllegalArgumentException("Workbench requires maintained built-in algorithms");
         }
         return new ResolvedScheduler(scheduler, registeredProvider);
     }

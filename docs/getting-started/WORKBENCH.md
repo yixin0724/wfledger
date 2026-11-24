@@ -84,7 +84,7 @@ Simply replace the configuration argument of `run` with the chosen file. The pai
 
 Without a planner the default is INVALID/FCFS; with a non-INVALID planner declared the default is STATIC; the default dispatcher for explicit online binding is also STATIC. See the [algorithm catalog](<../algorithms/CATALOG.md>) for each algorithm's specific prerequisites; the fact that the JSON fields parse does not by itself make every combination valid.
 
-Unknown or duplicate fields, strings posing as numbers, invalid integers, duplicate algorithm IDs, cross-decision-layer mixed comparisons, missing inputs, and invalid model combinations are rejected; the independent task mapper does not accept inputs containing dependency edges. Workbench is fixed to no failures and no overhead; such research must use the [Java API](<CODE_CONFIG_EXPERIMENTS.md>). `RL_POLICY` also connects external policies through the Java `RlEnvironment`; Workbench does not train the model.
+Unknown or duplicate fields, strings posing as numbers, invalid integers, duplicate algorithm IDs, cross-decision-layer mixed comparisons, missing inputs, and invalid model combinations are rejected; the independent task mapper does not accept inputs containing dependency edges. Workbench is fixed to no failures and no overhead; such research must use the [Java API](<CODE_CONFIG_EXPERIMENTS.md>).
 
 ## The Nine Data Movement Models
 

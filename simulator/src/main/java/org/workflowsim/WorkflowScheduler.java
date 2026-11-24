@@ -52,7 +52,6 @@ import org.workflowsim.scheduling.ReadyBatchMinMinSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReadyBatchRoundRobinSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReshiSchedulingAlgorithm;
 import org.workflowsim.scheduling.ReshiStrategy;
-import org.workflowsim.scheduling.RlPolicySchedulingAlgorithm;
 import org.workflowsim.scheduling.SptFastestIdleSchedulingAlgorithm;
 import org.workflowsim.scheduling.StaticSchedulePlan;
 import org.workflowsim.scheduling.StaticSchedulingAlgorithm;
@@ -170,9 +169,6 @@ public class WorkflowScheduler extends DatacenterBroker {
                 break;
             case READY_BATCH_ROUNDROBIN:
                 algorithm = new ReadyBatchRoundRobinSchedulingAlgorithm();
-                break;
-            case RL_POLICY:
-                algorithm = new RlPolicySchedulingAlgorithm();
                 break;
             case MINMIN:
                 requireLegacyAliasDeclaration(name, "SPT-fastest-idle");

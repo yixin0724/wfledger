@@ -26,7 +26,6 @@ public final class AlgorithmCatalog {
             case READY_BATCH_ROUNDROBIN:
             case DATA:
             case STATIC:
-            case RL_POLICY:
             case CARBON_WINDOW_DEFER:
             case CWS_RANKMIN_RR:
             case RESHI_C:
@@ -239,9 +238,6 @@ public final class AlgorithmCatalog {
                         limitations("A SimulationConfig requires a non-INVALID planner; model-generated stage-in Jobs"
                                 + "use the legacy fallback mapping."));
                 break;
-            case RL_POLICY:
-                rlPolicyScheduler(values);
-                break;
             case MINMIN:
                 legacyScheduler(values, "SPT-fastest-idle ready-job variant", "READY_BATCH_MINMIN");
                 break;
@@ -294,25 +290,6 @@ public final class AlgorithmCatalog {
                         "Input byte counts are not transfer times; this scheduler does not "
                                 + "consult DataMovementModel endpoint latency or transfer rates.",
                         "No calibrated network, replica, or bandwidth-contention model is implied."));
-    }
-
-    private static void rlPolicyScheduler(Map<String, Object> values) {
-        values.put("decisionLayer", "ONLINE_READY_JOB");
-        values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
-        values.put(
-                "decisionRule",
-                "Registered RlPolicy selects a VM index per ready Job "
-                        + "(RlEnvironment episode; reward = negative makespan)");
-        values.put("verification", "RL_EPISODE_ENVIRONMENT_REGRESSION_COVERED");
-        values.put(
-                "limitations",
-                limitations(
-                        "The policy is an external decision function; the platform "
-                                + "guarantees deterministic episodes and action validation only.",
-                        "Actions on busy/incompatible/reserved VMs skip the Job for that update; no built-in "
-                                + "learning algorithm is provided.",
-                        "Must run through RlEnvironment.runEpisode; SimulationRunner alone fails without a "
-                                + "registered policy."));
     }
 
     private static void legacyScheduler(Map<String, Object> values, String rule, String replacement) {

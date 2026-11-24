@@ -46,8 +46,6 @@ public class Parameters {
         STATIC,
         FCFS,
 
-        RL_POLICY,
-
         CARBON_WINDOW_DEFER,
 
         CWS_RANKMIN_RR,

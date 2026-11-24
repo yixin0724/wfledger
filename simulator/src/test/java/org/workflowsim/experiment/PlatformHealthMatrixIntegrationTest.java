@@ -13,9 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.data.DataMovementModel;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.platform.PlatformProfiles;
-import org.workflowsim.rl.EarliestFinishGreedyPolicy;
-import org.workflowsim.rl.RlEnvironment;
-import org.workflowsim.rl.RlEpisodeResult;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
@@ -163,27 +160,6 @@ class PlatformHealthMatrixIntegrationTest {
             assertReportHealthy(report, "arrival:" + algorithm);
             assertArrivalGated(report, 2000.0, "arrival:" + algorithm);
         }
-    }
-
-    @Test
-    void rlPolicyEpisodeIsHealthyUnderStaggeredArrival() throws Exception {
-        Log.disable();
-        SimulationConfig config = SimulationConfig.builder(
-                        Arrays.asList(
-                                resourcePath("/dax/heft-paper-example.dax"),
-                                resourcePath("/dax/heft-paper-example.dax")),
-                        3)
-                .schedulingAlgorithm(SchedulingAlgorithm.RL_POLICY)
-                .workflowArrivalSeconds(Arrays.asList(0.0, 2000.0))
-                .build();
-        RlEpisodeResult episode =
-                new RlEnvironment().runEpisode(config, paperPlatform(), new EarliestFinishGreedyPolicy());
-        SimulationReport report = episode.getReport();
-        assertReportHealthy(report, "arrival:RL_POLICY");
-        assertArrivalGated(report, 2000.0, "arrival:RL_POLICY");
-        assertEquals(
-                report.getTotalJobs(), episode.getDecisions().size(), "the RL decision trace must cover every Job");
-        assertEquals(-episode.getMakespan(), episode.getReward(), 0.0, "RL reward contract reward = -makespan");
     }
 
     private static void assertReportHealthy(SimulationReport report, String label) {

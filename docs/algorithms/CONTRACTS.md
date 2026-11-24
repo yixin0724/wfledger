@@ -168,7 +168,6 @@ PSO fitness = 0.8 * sum(effectiveSeconds(t,assignedVm) * assignedVmMips / 1000)
 
 This objective ignores DAG edges and the network. Only in the matrix-free raw MI model is the cost term mathematically equal to `sum(L_raw)/1000` and independent of the mapping; floating-point rounding must be considered separately. With matrices, the cost can vary with the mapping. It is not actual cloud billing and is not guaranteed to outperform other baselines.
 
-RL uses a separate ready-job contract: actions are ordered by ready arrival, their value is the index into the VM-ID-sorted list rather than the VM ID, and `-1` skips; null, a wrong length, or an out-of-range value aborts, while a busy, incompatible, or already-occupied target makes the Job skip this round instead of automatically reselecting. Successful dispatches enter the trajectory, and the reward is the negative makespan; persistent lack of progress is intercepted. See the [RL dispatcher](<../../simulator/src/main/java/org/workflowsim/scheduling/RlPolicySchedulingAlgorithm.java>) for the implementation; it contains no learning algorithm. The whole RL track is a demo interface (AUD-F11): the observation is deliberately non-Markovian (current ready queue and VM load view only — no DAG structure, transfer state, or history), the reward is terminal-only, and the policy registry is a static single-process registry, so concurrent episodes in one JVM are not supported.
 
 ### CWS RankMin-RR Static-DAG Adaptation (R-PAPER-02, 2026-11-05)
 

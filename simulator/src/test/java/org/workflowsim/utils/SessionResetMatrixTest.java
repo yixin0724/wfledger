@@ -33,7 +33,6 @@ class SessionResetMatrixTest {
             "org.cloudbus.cloudsim.NetworkTopology",
             "org.workflowsim.utils.ReplicaCatalog",
             "org.cloudbus.cloudsim.Log",
-            "org.workflowsim.rl.RlPolicyRegistry",
             "org.workflowsim.utils.SimulationRandom",
             "org.workflowsim.utils.DistributionGenerator",
             "org.workflowsim.utils.SimulationSession",

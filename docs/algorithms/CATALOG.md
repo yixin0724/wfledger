@@ -46,7 +46,6 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `DVFS_SLACK` | STATIC dispatch with one planner-selected frequency tier per logical Task |
 | `CRCH` | synchronized-checkpoint remaining-work retry with alternative-VM selection |
 | `DATA` | chooses the idle compatible VM with the fewest non-local real input bytes; requires LOCAL |
-| `RL_POLICY` | the policy registered via `RlEnvironment.runEpisode(...)` selects the VM list index |
 | `STATIC` | executes an existing mapping/binding; with a full static plan it additionally enforces the per-VM order — it is not an independent optimization algorithm |
 | `CARBON_WINDOW_DEFER` | defers the whole ready batch to the next declared carbon window whose green power is strictly higher (each Job at most once — a per-Job bound, so a later ready wave may hop once more), then dispatches FCFS to the smallest idle compatible VM; needs `carbonWindows`; a windowless platform is rejected rather than silently degraded (C1, 2026-11-02) |
 
@@ -67,13 +66,8 @@ wake it up at the start of the chosen window. The scheduler schedules that wake-
 deferral-aware policy that leaves ready Jobs unscheduled *without* a future wake time fails
 loudly instead of hanging the workflow.
 
-Ordinary online policies and RL dispatch at most one Job per VM per cycle; remaining Jobs
-wait for later updates. `RL_POLICY` cannot be an ordinary Workbench JSON candidate; it must
-go through [RlEnvironment](<../../simulator/src/main/java/org/workflowsim/rl/RlEnvironment.java>),
-which provides the environment, trajectories, and rewards but no DQN/PPO-style learner. The
-RL track is a demo interface (AUD-F11): the observation is deliberately non-Markovian (no DAG
-structure, transfer state, or history), the reward is terminal-only, and the policy
-registry is static and single-process.
+Ordinary online policies dispatch at most one Job per VM per cycle; remaining Jobs wait for
+later updates.
 
 ## Current planner labels
 

@@ -163,15 +163,7 @@ class PackageDependencyGuardTest {
                         "org.workflowsim.platform")));
         edges.put(
                 "org.workflowsim.scheduling",
-                new TreeSet<String>(java.util.Arrays.asList(
-                        "org.workflowsim.platform", "org.workflowsim.rl", "org.workflowsim.utils")));
-        edges.put(
-                "org.workflowsim.rl",
-                new TreeSet<String>(java.util.Arrays.asList(
-                        "org.workflowsim.exception",
-                        "org.workflowsim.experiment",
-                        "org.workflowsim.platform",
-                        "org.workflowsim.utils")));
+                new TreeSet<String>(java.util.Arrays.asList("org.workflowsim.platform", "org.workflowsim.utils")));
         edges.put(
                 "org.workflowsim.experiment.registry",
                 new TreeSet<String>(java.util.Arrays.asList(

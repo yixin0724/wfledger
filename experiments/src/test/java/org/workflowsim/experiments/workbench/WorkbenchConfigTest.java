@@ -924,11 +924,15 @@ class WorkbenchConfigTest {
         JsonObject duplicates = base();
         algorithms(duplicates, algorithm("same", "FCFS", null), algorithm("same", "READY_BATCH_MCT", null));
         rejectRead(duplicates, "unique");
-        for (String scheduler : Arrays.asList("MINMIN", "RL_POLICY")) {
-            JsonObject root = base();
-            algorithms(root, algorithm("candidate", scheduler, null));
-            rejectRead(root, "maintained built-in algorithms");
-        }
+        JsonObject invalidLabel = base();
+        algorithms(invalidLabel, algorithm("candidate", "INVALID", null));
+        rejectRead(invalidLabel, "maintained built-in algorithms");
+        JsonObject legacyLabel = base();
+        algorithms(legacyLabel, algorithm("candidate", "MINMIN", null));
+        rejectRead(legacyLabel, "maintained built-in algorithms");
+        JsonObject removedRl = base();
+        algorithms(removedRl, algorithm("candidate", "RL_POLICY", null));
+        rejectRead(removedRl, "No enum constant");
         JsonObject noPlanner = base();
         algorithms(noPlanner, algorithm("static", "STATIC", null));
         rejectRead(noPlanner, "requires a planning algorithm");

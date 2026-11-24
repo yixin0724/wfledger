@@ -67,10 +67,7 @@ class AlgorithmCatalogCaliberTest {
     @Test
     void classifiesRemainingMaintainedCombinationsAsNoCostComparison() {
         for (SchedulingAlgorithm algorithm : new SchedulingAlgorithm[] {
-            SchedulingAlgorithm.FCFS,
-            SchedulingAlgorithm.DATA,
-            SchedulingAlgorithm.RL_POLICY,
-            SchedulingAlgorithm.CARBON_WINDOW_DEFER
+            SchedulingAlgorithm.FCFS, SchedulingAlgorithm.DATA, SchedulingAlgorithm.CARBON_WINDOW_DEFER
         }) {
             assertEquals(
                     AlgorithmCatalog.CostComparisonCaliber.NONE,

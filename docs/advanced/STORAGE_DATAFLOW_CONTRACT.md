@@ -15,7 +15,7 @@ The storage model adds bounded read/write/NIC resources, a physical storage atta
 | File system | LOCAL, or the SHARED post-commit cached read defined below |
 | Capture | `FILE_STORAGE_LIFECYCLE_V3`; `NetworkEvidenceConfig.storageLifecycleV3(B)`, where `B` is a record budget in `1..2147483647` |
 
-OFF retains no event history and does not change the physics of the run. Ordinary non-online runs still keep the core file plan; online certification additionally requires a matching, complete lifecycle capture. The CPU online scheduler, RL_POLICY, and the original LOCAL planner cannot directly substitute for the target-assignment rules here.
+OFF retains no event history and does not change the physics of the run. Ordinary non-online runs still keep the core file plan; online certification additionally requires a matching, complete lifecycle capture. The CPU online scheduler and the original LOCAL planner cannot directly substitute for the target-assignment rules here.
 
 Runnable examples are the [shared-capacity example](<../../experiments/configs/storage-dataflow-v3.json>) and the [isolated path-bottleneck control](<../../experiments/configs/storage-dataflow-isolated-v3.json>). They hold the inputs, the assignment configuration, and the storage and visibility rules fixed, varying only cross-flow capacity sharing; identical downstream source selection or completion times across the whole DAG cannot be guaranteed on that basis.
 

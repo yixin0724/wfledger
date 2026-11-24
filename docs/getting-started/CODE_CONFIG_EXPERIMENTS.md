@@ -193,11 +193,10 @@ and the [algorithm contracts](<../algorithms/CONTRACTS.md>).
 
 ### Plugging in an external policy
 
-`RL_POLICY` registers a policy and runs an episode via
-[RlEnvironment](<../../simulator/src/main/java/org/workflowsim/rl/RlEnvironment.java>)'s
-`runEpisode(config, platform, policy)`, providing observations, actions, trajectories, and
-rewards — not a learning algorithm. The online target assignment of coherent models is a
-different interface from this RL hook; see the
+External online schedulers plug in through the ServiceLoader
+[SchedulingAlgorithmProvider](<../../simulator/src/main/java/org/workflowsim/experiment/registry/SchedulingAlgorithmProvider.java>)
+SPI described in the [algorithm catalog](<../algorithms/CATALOG.md>). The online target
+assignment of coherent models is a different interface; see the
 [online assignment contract](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>).
 
 ## Reading and saving results
