@@ -1,0 +1,19 @@
+simulator/src/test/java/org/workflowsim/scheduling/ebpsm/EbpsmBudgetDistributorTest.java
+  s_6ca16550e33473::t_3bdfbc99a0b6f4 4-5,7,11,16-25,28-76,78-105,107-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f49c9a8df3df87c360c938a7efe01d58733e4655",
+  "prompts": {},
+  "sessions": {
+    "s_6ca16550e33473": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "session-3a7e2c42-aaa8-4e4e-8030-13e4dabd5b61",
+        "model": "codefuse_official_channel/GLM-5.3:glink_domestic"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
