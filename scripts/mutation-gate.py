@@ -328,10 +328,10 @@ REGISTRY = [
         killers="MoHeftPlannerTest"),
     dict(
         id="M43",
-        name="IC-PCP ignores the virtual END deadline slack",
+        name="IC-PCP ignores the latest-finish-time feasibility of assigned tasks",
         file="simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpPlanner.java",
-        old="        return timing.finish.get(END_ID) <= problem.getDeadlineSeconds() + TOLERANCE;",
-        new="        return true;",
+        old="            if (timing.finish.get(taskId) > timing.latestFinish.get(taskId) + TOLERANCE) {",
+        new="            if (false) {",
         killers="IcpcpPlannerTest"),
     dict(
         id="M44",

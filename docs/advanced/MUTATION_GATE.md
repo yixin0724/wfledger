@@ -58,7 +58,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M40 | GreenHEFT selects earliest finish instead of minimum energy | GreenHEFT energy-first VM selection (R-PAPER-05, 2026-11-06) |
 | M41 | MOHEFT dominance ignores energy | MOHEFT Pareto filtering (R-PAPER-06, 2026-11-06) |
 | M42 | MOHEFT balanced choice ignores makespan tradeoff | MOHEFT balanced selection (R-PAPER-06, 2026-11-06) |
-| M43 | IC-PCP ignores the virtual END deadline slack | IC-PCP deadline feasibility (R-PAPER-07, 2026-11-06) |
+| M43 | IC-PCP ignores the latest-finish-time feasibility of assigned tasks | IC-PCP deadline feasibility (R-PAPER-07, 2026-11-06; re-anchored FGCS-R3, 2026-11-24: the END check is implied by exit LFTs) |
 | M44 | IC-PCP path choice ignores incremental cost | IC-PCP path-cost selection (R-PAPER-07, 2026-11-06) |
 | M46 | EBPSM ignores input-data cache preference | EBPSM cache preference (R-PAPER-09, 2026-11-06) |
 | M47 | EBPSM dispatches tasks above their budget | EBPSM budget gate (R-PAPER-09, 2026-11-06) |
