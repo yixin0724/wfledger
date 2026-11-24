@@ -1,0 +1,26 @@
+simulator/src/main/java/org/workflowsim/Job.java
+  h_adc77830afcf4d 27-28,50-73
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  h_adc77830afcf4d 452
+simulator/src/main/java/org/workflowsim/experiment/SimulationRunner.java
+  h_adc77830afcf4d 381-388
+simulator/src/main/java/org/workflowsim/reclustering/ReclusteringEngine.java
+  h_adc77830afcf4d 80,85-87,89,91-92
+simulator/src/main/java/org/workflowsim/scheduling/CrchSchedulingAlgorithm.java
+  h_adc77830afcf4d 12-17,23,38,54
+simulator/src/test/java/org/workflowsim/planning/RetryWorkAccountingIntegrationTest.java
+  h_adc77830afcf4d 1-182
+simulator/src/test/java/org/workflowsim/scheduling/CrchSchedulingAlgorithmTest.java
+  h_adc77830afcf4d 41-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3dbe8f921e8739099b8d8146042d38059d79e42c",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
