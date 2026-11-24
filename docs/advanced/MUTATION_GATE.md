@@ -64,7 +64,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M47 | EBPSM dispatches tasks above their budget | EBPSM budget gate (R-PAPER-09, 2026-11-06) |
 | M48 | DVFS slack allocation accepts an energy-increasing downgrade | DVFS slack optimization (R-PAPER-10, 2026-11-08) |
 | M49 | CRCH recovery ignores completed checkpoint work | CRCH saved-work recovery (R-PAPER-11, 2026-11-08) |
-| M50 | CRCH retry selects the failed VM again | CRCH alternative-VM selection (R-PAPER-11, 2026-11-08) |
+| M50 | CRCH credits saved work on a VM that did not take the checkpoints | CRCH VM-local checkpoints (R-PAPER-11; re-derived FGCS-R5, 2026-11-24) |
 | M51 | DHEFT uses maximum instead of minimum pairwise bandwidth | DHEFT pairwise bandwidth (R-PAPER-12, 2026-11-08) |
 | M52 | DHEFT ignores parent finish time | DHEFT dependency readiness (R-PAPER-12, 2026-11-08) |
 | M53 | Cross-paper comparison drops direct IC-PCP planner cost | Planner/runtime cost separation (R-COMPARE-02, 2026-11-08) |
@@ -77,7 +77,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M61 | CWS counts non-real input bytes in its tie-break | CWS real-input ordering (R-AUDIT-01) |
 | M62 | NACO double-counts parent-produced input as external disk read | NACO DNC input accounting (R-AUDIT-01) |
 | M63 | EBPSM publishes unsuccessful output as readable cache | EBPSM successful-only publication (R-AUDIT-01) |
-| M64 | CRCH ignores checkpoint overhead when committing progress | CRCH checkpoint commit timing (R-AUDIT-01) |
+| M64 | CRCH ignores checkpoint overhead when committing progress | CRCH checkpoint commit timing (R-AUDIT-01; re-anchored FGCS-R5) |
 | M65 | EDP heuristic depends on the dispatch clock | Clock-invariant local EDP (R-AUDIT-01; re-anchored FGCS-R5, 2026-11-24) |
 | M66 | Failed parent releases its child before a successful retry | Successful-parent dependency gate (R-EXP-01, 2026-11-09) |
 | M67 | CRCH retry overwrites remaining work with the original task length | CRCH remaining-work preservation (R-EXP-01) |
@@ -85,6 +85,10 @@ closed with dedicated boundary/conservation tests at that time.
 | M69 | CRCH credits the input read as checkpointed compute | CRCH compute-window checkpoints (FGCS-R4) |
 | M70 | CRCH placement ignores PE compatibility | CRCH PE compatibility (FGCS-R4) |
 | M71 | EBPSM budget update ignores the completed task's spare budget and debt | EBPSM Algorithm 3 budget update (FGCS-R5, 2026-11-24) |
+| M72 | CRCH checkpointing is free on a successful attempt | CRCH per-attempt checkpoint overhead (FGCS-R5, 2026-11-24) |
+| M73 | A failed attempt runs to its modeled completion instead of ending at the failure | Mid-execution failure (FGCS-R5) |
+| M74 | CRCH placement ignores the saved work on the checkpointing VM | CRCH same- versus different-VM placement (FGCS-R5) |
+| M75 | CRCH resumption charges a restore overhead beyond the lost work | CRCH no restore term (FGCS-R5) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -119,18 +123,18 @@ allowlist omission. M31 (2026-11-04, B5) adds the profile semantic-fingerprint a
 admitted-copy count must be rejected by the independent comparator, not hidden by timing. M32
 (2026-11-05, R-PAPER-01) adds the CaWoSched green-window selection axis. M33 (R-PAPER-01B)
 adds the power-weighted slack-score axis. M34/M35 (R-PAPER-01C/D) add missing-link and exact-DP
-axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) and M59 (R-AUDIT-01) were retired with the Network-Aware HEFT removal (FGCS-R3, 2026-11-24). M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms. M66/M67 (R-EXP-01) add retry dependency and remaining-work axes. M71 (FGCS-R5, 2026-11-24) adds the EBPSM Algorithm 3 budget-update axis.
+axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) and M59 (R-AUDIT-01) were retired with the Network-Aware HEFT removal (FGCS-R3, 2026-11-24). M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms. M66/M67 (R-EXP-01) add retry dependency and remaining-work axes. M71 (FGCS-R5, 2026-11-24) adds the EBPSM Algorithm 3 budget-update axis. M72–M75 (FGCS-R5, 2026-11-24) add the per-attempt checkpoint-overhead, mid-execution-failure, VM-local placement and no-restore-term axes; M50 was re-derived from failed-VM avoidance to VM-local credit by lead adjudication, and M49/M64/M69 were re-anchored to the new code.
 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 65 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 69 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)
 python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
 
-# Both families sequentially (66 canaries total)
+# Both families sequentially (71 canaries total)
 python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

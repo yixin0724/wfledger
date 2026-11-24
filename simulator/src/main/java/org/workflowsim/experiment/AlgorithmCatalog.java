@@ -310,12 +310,17 @@ public final class AlgorithmCatalog {
     private static void crchScheduler(Map<String, Object> values) {
         values.put("decisionLayer", "ONLINE_CHECKPOINT_RECOVERY");
         values.put("inputDomain", "DAG_WITH_CRCH_FAILURE_RETRY_AND_CHECKPOINTS");
-        values.put("decisionRule", "Synchronized checkpoint remaining-work retry and alternative-VM selection");
-        values.put("implementationRevision", "CRCH_COMPUTE_WINDOW_CHECKPOINT_PE_FILTER_V2");
+        values.put(
+                "decisionRule",
+                "Synchronized checkpoints charged on every attempt; VM-local saved work; earliest checkpointed finish");
+        // FGCS-R5 (2026-11-24): V3 charges checkpoint overhead on every attempt, ends failed attempts at the
+        // failure instant, credits saved work only on the checkpointing VM, and drops the restore overhead MI.
+        values.put("implementationRevision", "CRCH_MID_EXECUTION_FAILURE_VM_LOCAL_CHECKPOINT_V3");
         values.put("verification", "CRCH_RECOVERY_REGRESSION_COVERED");
         values.put(
                 "limitations",
-                limitations("Checkpointing only; no replication-count learning or full CRCH clustering module"));
+                limitations("Checkpointing only; no replication-count learning or PCA clustering module; transient"
+                        + " failures without a VM repair interval"));
     }
 
     private static void dvfsSlackScheduler(Map<String, Object> values) {

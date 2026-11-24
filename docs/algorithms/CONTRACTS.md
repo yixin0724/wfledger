@@ -391,21 +391,65 @@ checks VM bindings, selected tiers, compute starts and Job envelopes against the
 
 ### CRCH Synchronized-Checkpoint Recovery (R-PAPER-11, 2026-11-08)
 
-`CRCH` implements the checkpointing part of the 2019 CRCH paper. A checkpoint commits only after
-its compute interval plus the configured checkpoint overhead fits in the attempt's modeled compute window
-(FGCS-R4, 2026-11-24: the input read and any post-processing delay are not compute time); saved
-work is capped at the original task length. Retry work is the remaining MI plus one recovery-overhead
-MI equivalent. `ReclusteringEngine.process` registers the recovery for the retry Job, while
-`CrchSchedulingAlgorithm` avoids the failed VM when an alternative exists. `FTCLUSTERING_CRCH` is an
-explicit standard-runner mode; the historical DC/SR/DR/BLOCK/VERTICAL reclustering modes were removed on 2026-11-24.
-The subset does not implement replication-count learning or PCA clustering. A failed parent never
-releases its child; retry creation replaces the failed parent in the dependency list, and CRCH
-remaining MI is preserved in execution and TaskOutcome timing. M49/M50 guard saved-work and
-alternative-VM semantics; direct tests cover overhead-delayed checkpoints and capped saved work;
-`CrchIntegrationTest` verifies a real failure, successful-parent ordering and remaining-work timing.
-Placement considers PE-compatible VMs only. CRCH with frequency tiers is rejected because saved work,
-overhead and placement use nominal VM MIPS. Under `FTCLUSTERING_NOOP` a retry restarts from the declared
-work and is tier-scaled once per attempt. `RetryWorkAccountingIntegrationTest` hand-derives these rules.
+`CRCH` implements the checkpointing part of the 2019 CRCH paper ([arXiv:1810.06361v2](https://arxiv.org/html/1810.06361v2),
+Sec. 3.1.3, Algorithm 3, Eq. 8–11 and 20–21). Revision `CRCH_MID_EXECUTION_FAILURE_VM_LOCAL_CHECKPOINT_V3`
+(FGCS-R5, 2026-11-24) defines the model exactly ([CrchCheckpointModel](<../../simulator/src/main/java/org/workflowsim/utils/CrchCheckpointModel.java>)):
+
+- **Checkpoints on every attempt.** An attempt that computes `W` MI at `mips` has `T = W / mips` seconds of
+  work. A checkpoint is taken after every `λ` seconds of compute progress while work remains, so the attempt
+  takes `n = max(0, ceil(T/λ) − 1)` checkpoints (none at completion) and executes `W + ceil(n·γ·mips)` MI. The
+  overhead therefore appears in the makespan, busy time, energy and cost of successful attempts too, as the
+  paper's `CO = TET × γ/λ` (Eq. 10–11) charges every execution. Example: 3000 MI at 1000 MIPS, `λ = 1 s`,
+  `γ = 0.1 s` takes 2 checkpoints and runs 3.2 s.
+- **Commit timing.** Checkpoint `k` completes `k·(λ+γ)` seconds after compute start. A failure `e` seconds
+  into compute has committed `min(n, floor(e/(λ+γ)))` checkpoints, each saving `λ·mips` MI. Only compute time
+  counts (FGCS-R4: the input read and any post-processing delay are not compute time). Saved work is always
+  less than the task, because no checkpoint is taken at completion.
+- **VM-local checkpoints.** Checkpoints live on the failed VM's stable storage. A retry on that VM computes
+  only the work after the latest checkpoint; a retry on any other VM re-executes the full work (the paper's
+  same/different resource cases, Eq. 20 versus Eq. 21). A resumption that fails again keeps the earlier credit
+  and adds its own committed checkpoints.
+- **No restore term.** Eq. 20 charges only the lost work beyond the latest checkpoint, so resuming costs
+  nothing extra; the former ad-hoc `ceil(γ·mips)` recovery MI on every retry was removed.
+- **Placement.** `CrchSchedulingAlgorithm` scores every idle PE-compatible VM by the attempt's execution
+  seconds `(W_v + ceil(n_v·γ·mips_v)) / mips_v`, where `W_v` is the remaining work on the checkpointing VM and
+  the full work elsewhere; the minimum wins and ties go to the lower VM ID. All candidates start now, so the
+  common `now` term of the paper's minimum EST does not change the order. A busy failed VM is simply not a
+  candidate in that round.
+
+`ReclusteringEngine.process` records the committed checkpoints at the failure instant and registers the
+recovery for the retry Job. `FTCLUSTERING_CRCH` is an explicit standard-runner mode; the historical
+DC/SR/DR/BLOCK/VERTICAL reclustering modes were removed on 2026-11-24. A failed parent never releases its
+child; retry creation replaces the failed parent in the dependency list, and the retry's executed MI is
+preserved in execution and TaskOutcome timing. Placement considers PE-compatible VMs only. CRCH with
+frequency tiers is rejected because saved work, overhead and placement use nominal VM MIPS. Under
+`FTCLUSTERING_NOOP` a retry restarts from the declared work and is tier-scaled once per attempt.
+
+Remaining deviations from the paper: no replication-count learning and no PCA/hierarchical clustering
+module (checkpointing subset only); failures are transient arrivals without a VM repair interval, so
+Algorithm 3's downtime end `Y` and its "wait for the failed VM" branch have no counterpart.
+
+Verification: [CrchRegistryTest](<../../simulator/src/test/java/org/workflowsim/utils/CrchRegistryTest.java>)
+(checkpoint counts, overhead, commit timing, VM-local credit),
+[CrchSchedulingAlgorithmTest](<../../simulator/src/test/java/org/workflowsim/scheduling/CrchSchedulingAlgorithmTest.java>)
+(same- versus different-VM finish), [MidExecutionFailureIntegrationTest](<../../simulator/src/test/java/org/workflowsim/planning/MidExecutionFailureIntegrationTest.java>),
+`CrchIntegrationTest` and `RetryWorkAccountingIntegrationTest` hand-derive these rules; M49/M50/M64 and
+M72–M75 guard them.
+
+### Mid-Execution Failure (FGCS-R5, 2026-11-24)
+
+For every failure-enabled run (NOOP and CRCH), `WorkflowDatacenter` evaluates the failure model when an
+attempt's modeled compute window `[start, finish)` is known, at submission. Arrival consumption is unchanged
+in rule: every arrival of the Task's generator scope before `start` is consumed; the first arrival in the
+half-open window is consumed and is the failure instant `f`; later arrivals stay unconsumed. Samples are
+consumed in compute-start order (previously completion order; the two coincide for VM-keyed scopes). A failing
+attempt's executable length is cut to its stage-in MI plus `ceil((f − start)·mips)` compute MI, so the
+space-shared scheduler frees the VM at `f` (at most `1/mips` later, the existing whole-MI granularity, and
+never before the kernel completion guard) and the Job returns FAILED there. Busy time, energy and the CPU
+envelope cost are charged up to the failure only. The failed TaskOutcome window is `[start, f]`; its
+`effectiveExecutionLengthMi` keeps the planned attempt MI, so the executed portion is `f − start`. An arrival
+at or after `finish` is not a failure. Coherent V2/V3 runtimes use the same path; their `JOB_FINISHED`
+terminal is recorded at the returned clock.
 
 ### DHEFT Ready-Task and Pairwise Bandwidth (R-PAPER-12, 2026-11-08)
 
@@ -469,6 +513,6 @@ The Jain index is `(sum(u))² / (n * sum(u²))`. Over the same window, the same 
 
 ## Evidence and Claim Scope
 
-The failure model determines the outcome at the attempt envelope's completion boundary, and only successful outputs can become readable sources for later stages; this is controlled attempt/retry semantics, not mid-flight power loss, real distributed transactions, or storage-system calibration.
+The failure model ends an attempt at the first failure arrival inside its modeled compute window (FGCS-R5, 2026-11-24; earlier revisions decided the outcome at the attempt envelope's completion boundary), and only successful outputs can become readable sources for later stages; this is controlled attempt/retry semantics with transient failures, not VM repair intervals, real distributed transactions, or storage-system calibration.
 
 The algorithm contract, execution version, and model configuration in the manifest must be consistent with the actual inputs, platform, and evidence. Artifact structure/hash verification, lifecycle causality checks, algorithm oracles, statistical significance, and real-world calibration are distinct layers and cannot substitute for one another. Preserve the original evidence identity; do not mask differences through renaming, altering goldens, or mixing different decision/execution layers.

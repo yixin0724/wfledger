@@ -261,15 +261,23 @@ optimality, or a reproduction of its synthetic workload corpus.
 | Paper | Amrith Rajagopal Setlur, S. Jaya Nirmala, Har Simrat Singh, Sudhanshu Khoriya, *An Efficient Fault Tolerant Workflow Scheduling Approach using Replication Heuristics and Checkpointing in the Cloud*, Journal of Parallel and Distributed Computing, 2019 |
 | Primary source | [arXiv:1810.06361v2](https://arxiv.org/html/1810.06361v2), [publisher record](https://www.sciencedirect.com/science/article/abs/pii/S0743731518306580) |
 | License | CC BY 4.0 |
-| Platform classes | `CrchRegistry`, `CrchRecovery`, `CrchSchedulingAlgorithm`, and the `FTCLUSTERING_CRCH` retry path |
-| Verification | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, `CrchIntegrationTest`; M49/M50 |
-| Status | `VERIFIED_RECOVERY_CORE` for synchronized-checkpoint remaining-work retry and alternative-VM selection |
+| Platform classes | `CrchCheckpointModel`, `CrchRegistry`, `CrchRecovery`, `CrchSchedulingAlgorithm`, and the `FTCLUSTERING_CRCH` retry path |
+| Verification | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, `MidExecutionFailureIntegrationTest`, `CrchIntegrationTest`, `RetryWorkAccountingIntegrationTest`; M49/M50/M64, M72–M75 |
+| Status | `VERIFIED_RECOVERY_CORE` for synchronized checkpoints charged on every attempt, mid-execution failure, VM-local saved work and earliest-checkpointed-finish placement |
 
-The implementation records completed synchronized checkpoints in session state, computes the remaining
-MI from the latest checkpoint, registers a recovery result at `ReclusteringEngine.process`, and chooses
-an alternative VM for the retry. A real FAILURE_VM run completes with one failed VM and one stable VM.
-The checkpoint-only subset does not implement replication-count learning, PCA clustering, or the full
-CRCH replication heuristic.
+Revision `CRCH_MID_EXECUTION_FAILURE_VM_LOCAL_CHECKPOINT_V3` (FGCS-R5, 2026-11-24) follows Sec. 3.1.3 and
+Algorithm 3: a resource fails during execution, `α` checkpoints completed before the failure are kept on that
+VM's stable storage, every attempt pays `γ` per checkpoint (`CO = TET × γ/λ`, Eq. 10), a resubmission on the
+same VM resumes from the latest checkpoint and one on a different VM re-executes the completed checkpoints
+(Eq. 20/21, "if not it pays the overhead of re-executing already completed checkpoints"). Restoring costs
+nothing beyond the lost work, so no restore term is charged. Placement picks the earliest checkpointed finish
+among idle PE-compatible VMs. The exact formulas are in the [CRCH contract](<../algorithms/CONTRACTS.md>).
+The earlier revision credited saved work on an alternative VM, charged checkpoint overhead only on retries,
+and let failed attempts run to completion; it is superseded.
+
+Remaining deviations: the checkpoint-only subset does not implement replication-count learning, PCA
+clustering, or the full CRCH replication heuristic; failures are transient arrivals without a VM repair
+interval, so Algorithm 3's downtime end `Y` and its wait-for-the-failed-VM branch have no counterpart.
 
 ## DHEFT — Distributed HEFT
 

@@ -44,7 +44,7 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `RESHI_M` | historical-average-runtime descending with explicit Reshi task-node ranking over idle PE-compatible VMs; prediction-error invariant |
 | `EBPSM` | per-workflow Algorithm 1 (SFTD) budget distribution with Algorithm 3 redistribution after every returned attempt, plus input/container cache preference (published on successful completion) and budget-gated dispatch; fails fast when the fixed pool cannot meet a sub-budget |
 | `DVFS_SLACK` | STATIC dispatch with one planner-selected frequency tier per logical Task |
-| `CRCH` | synchronized-checkpoint remaining-work retry with alternative-VM selection |
+| `CRCH` | synchronized checkpoints charged on every attempt; VM-local saved work; earliest-checkpointed-finish placement |
 | `DATA` | chooses the idle compatible VM with the fewest non-local real input bytes; requires LOCAL |
 | `STATIC` | executes an existing mapping/binding; with a full static plan it additionally enforces the per-VM order — it is not an independent optimization algorithm |
 | `CARBON_WINDOW_DEFER` | defers the whole ready batch to the next declared carbon window whose green power is strictly higher (each Job at most once — a per-Job bound, so a later ready wave may hop once more), then dispatches FCFS to the smallest idle compatible VM; needs `carbonWindows`; a windowless platform is rejected rather than silently degraded (C1, 2026-11-02) |

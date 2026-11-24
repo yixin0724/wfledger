@@ -364,17 +364,20 @@ REGISTRY = [
     dict(
         id="M49",
         name="CRCH recovery ignores completed checkpoint work",
-        file="simulator/src/main/java/org/workflowsim/utils/CrchRegistry.java",
-        old="        long remaining = Math.max(0L, workMi - savedMi);",
-        new="        long remaining = workMi;",
+        # FGCS-R5 (2026-11-24): re-anchored; the remaining work is now derived in CrchRecovery.
+        file="simulator/src/main/java/org/workflowsim/utils/CrchRecovery.java",
+        old="        return workMi - savedWorkMi;",
+        new="        return workMi;",
         killers="CrchRegistryTest"),
     dict(
         id="M50",
-        name="CRCH retry selects the failed VM again",
-        file="simulator/src/main/java/org/workflowsim/scheduling/CrchSchedulingAlgorithm.java",
-        old="                if (recovery != null && vm.getId() == recovery.getFailedVmId()) {",
-        new="                if (false) {",
-        killers="CrchSchedulingAlgorithmTest"),
+        name="CRCH credits saved work on a VM that did not take the checkpoints",
+        # FGCS-R5 (2026-11-24): re-derived by lead adjudication. Checkpoints are VM-local (arXiv:1810.06361v2
+        # Sec. 3.1.3, Eq. 20/21); the former "avoid the failed VM" axis no longer exists.
+        file="simulator/src/main/java/org/workflowsim/utils/CrchRecovery.java",
+        old="        return vmId == failedVmId ? savedWorkMi : 0L;",
+        new="        return savedWorkMi;",
+        killers="CrchRegistryTest,MidExecutionFailureIntegrationTest"),
     dict(
         id="M51",
         name="DHEFT uses maximum instead of minimum pairwise bandwidth",
@@ -457,9 +460,10 @@ REGISTRY = [
     dict(
         id="M64",
         name="CRCH ignores checkpoint overhead when committing progress",
-        file="simulator/src/main/java/org/workflowsim/utils/CrchRegistry.java",
-        old="            double candidate = checkpointedWorkSeconds\n                    + active.getCheckpointIntervalSeconds()\n                    + active.getCheckpointOverheadSeconds();",
-        new="            double candidate = checkpointedWorkSeconds + active.getCheckpointIntervalSeconds() + 0.0;",
+        # FGCS-R5 (2026-11-24): re-anchored to the checkpoint period k*(lambda+gamma) in CrchCheckpointModel.
+        file="simulator/src/main/java/org/workflowsim/utils/CrchCheckpointModel.java",
+        old="        double period = config.getCheckpointIntervalSeconds() + config.getCheckpointOverheadSeconds();",
+        new="        double period = config.getCheckpointIntervalSeconds();",
         killers="CrchRegistryTest"),
     dict(
         id="M65",
@@ -495,8 +499,9 @@ REGISTRY = [
         id="M69",
         name="CRCH credits the input read as checkpointed compute",
         file="simulator/src/main/java/org/workflowsim/reclustering/ReclusteringEngine.java",
-        old="                        attempt.getExecStartTime(),",
-        new="                        job.getExecStartTime(),",
+        # FGCS-R5 (2026-11-24): re-anchored to the failure-instant elapsed time.
+        old="                        job.getFailureInstantSeconds() - attempt.getExecStartTime(),",
+        new="                        job.getFailureInstantSeconds() - job.getExecStartTime(),",
         killers="RetryWorkAccountingIntegrationTest"),
     dict(
         id="M70",
@@ -514,6 +519,38 @@ REGISTRY = [
         old="        redistribute(state, betaU);",
         new="        redistribute(state, unscheduled + 0.0 * betaU);",
         killers="EbpsmBudgetLedgerTest,EbpsmSchedulingAlgorithmTest"),
+    dict(
+        id="M72",
+        name="CRCH checkpointing is free on a successful attempt",
+        # FGCS-R5 (2026-11-24): CO = TET x gamma/lambda is paid by every execution (Eq. 10-11).
+        file="simulator/src/main/java/org/workflowsim/utils/CrchCheckpointModel.java",
+        old="        return Math.addExact(workMi, overheadMi(checkpoints, mips, config));",
+        new="        return Math.addExact(workMi, 0L * overheadMi(checkpoints, mips, config));",
+        killers="CrchRegistryTest,MidExecutionFailureIntegrationTest"),
+    dict(
+        id="M73",
+        name="A failed attempt runs to its modeled completion instead of ending at the failure",
+        # FGCS-R5 (2026-11-24): failures end attempts mid-execution for every failure-enabled run.
+        file="simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java",
+        old="        job.setCloudletLength(length);\n        return length / vm.getMips();",
+        new="        job.setCloudletLength(job.getCloudletLength());\n        return job.getCloudletLength() / vm.getMips();",
+        killers="MidExecutionFailureIntegrationTest"),
+    dict(
+        id="M74",
+        name="CRCH placement ignores the saved work on the checkpointing VM",
+        # FGCS-R5 (2026-11-24): placement compares resumption (Eq. 20) with re-execution (Eq. 21).
+        file="simulator/src/main/java/org/workflowsim/scheduling/CrchSchedulingAlgorithm.java",
+        old="        if (recovery != null && recovery.creditOn(vm.getId()) > 0L) {",
+        new="        if (recovery != null && recovery.creditOn(vm.getId()) < 0L) {",
+        killers="CrchSchedulingAlgorithmTest"),
+    dict(
+        id="M75",
+        name="CRCH resumption charges a restore overhead beyond the lost work",
+        # FGCS-R5 (2026-11-24): Eq. 20 has no restore term; the former ceil(gamma*mips) retry MI is removed.
+        file="simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java",
+        old="                workMi = recovery.getRemainingWorkMi();",
+        new="                workMi = recovery.getRemainingWorkMi() + 100L;",
+        killers="CrchIntegrationTest,MidExecutionFailureIntegrationTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [

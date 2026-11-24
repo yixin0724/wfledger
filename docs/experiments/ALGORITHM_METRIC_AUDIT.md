@@ -25,7 +25,7 @@ runtime accounting; IC-PCP planner cost is read directly from the planner schedu
 | IC-PCP | Bit-rate conversion, PE filtering, duplicate-output membership, SHARED bootstrap/storage timing, billing-period cost |
 | EBPSM | PE filtering, decimal-MB/s transfer estimates, successful-only output publication |
 | DVFS slack | SHARED HEFT allocation/timing, full-fleet default-idle plus tier-dynamic energy, unused-VM and terminal-idle inclusion |
-| CRCH | Checkpoint interval plus overhead before commit, capped saved work, recovery-overhead MI |
+| CRCH | Checkpoint `k` commits `k·(λ+γ)` into compute, overhead MI on every attempt, VM-local saved work (FGCS-R5) |
 | DHEFT | Matrix rejection, decimal-MB/s conversion, PE filtering, official ready-list waves, duplicate-output membership |
 | EDP heuristic | Default idle charged only outside the local execution interval |
 | Tiered energy | Peak power uses the maximum declared tier power, not necessarily the default tier |

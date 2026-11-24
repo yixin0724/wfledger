@@ -43,7 +43,7 @@ and a linked contract revision, not a silent update to match production output.
 | IC-PCP | `PAPER` / `CONTRACT` | `IcpcpPlannerTest` and `IcpcpIntegrationTest`; hand-derived latest-arrival critical parent, LFT-checked placement, low-cost path, deadline infeasibility, fork/join and cycle, M43/M44 |
 | EBPSM | `PAPER` / `CONTRACT` | `EbpsmBudgetDistributorTest`, `EbpsmBudgetLedgerTest`, `EbpsmSchedulingAlgorithmTest`, and `EbpsmIntegrationTest`; SFTD, Algorithm 3 budget update, cache preference and budget gate, M46/M47/M71 |
 | DVFS slack allocation | `PAPER` / `CONTRACT` | `DvfsSlackOptimizerTest`, `DvfsSlackIntegrationTest` and `DvfsSlackRuntimeMirrorIntegrationTest`; energy/deadline-gated downscaling, runtime tier consumption and plan/runtime mirror, M48 |
-| CRCH checkpoint recovery | `PAPER` | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, and `CrchIntegrationTest`; saved-work and alternative-VM recovery, M49/M50 |
+| CRCH checkpoint recovery | `PAPER` | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, and `CrchIntegrationTest`; saved-work, VM-local credit and mid-execution failure (FGCS-R5), M49/M50, M72–M75 |
 | DHEFT | `PAPER` | `DheftPlannerTest` and `DheftIntegrationTest`; pairwise bandwidth and parent-finish EFT, M51/M52 |
 | Cross-paper scenes | `CONTRACT` | `CrossPaperComparisonTest`; SHARED/LOCAL separation, distinct mappings, direct planner cost, independent energy residual, M53 |
 | Algorithm/metric audit | `PAPER` / `CONTRACT` / `INVARIANT` | `AlgorithmMetricAuditTest` plus family counterexamples; independent makespan/energy/cost/tail recomputation and M54–M65 |

@@ -164,7 +164,7 @@ class AlgorithmCatalogTest {
             {Parameters.SchedulingAlgorithm.READY_BATCH_MAXMIN, "READY_BATCH_MAXMIN_CHARGED_SHARED_READ_ENVELOPE_V2"},
             {Parameters.SchedulingAlgorithm.READY_BATCH_MCT, "READY_BATCH_MCT_CHARGED_SHARED_READ_ENVELOPE_V2"},
             {Parameters.SchedulingAlgorithm.EBPSM, "EBPSM_WORKFLOW_BUDGET_ALGORITHM3_UPDATE_V3"},
-            {Parameters.SchedulingAlgorithm.CRCH, "CRCH_COMPUTE_WINDOW_CHECKPOINT_PE_FILTER_V2"}
+            {Parameters.SchedulingAlgorithm.CRCH, "CRCH_MID_EXECUTION_FAILURE_VM_LOCAL_CHECKPOINT_V3"}
         };
         for (Object[] row : expected) {
             SimulationConfig config = SimulationConfig.builder("workflow.dax", 2)
