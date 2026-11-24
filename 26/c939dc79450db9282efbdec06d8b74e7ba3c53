@@ -1,0 +1,18 @@
+docs/algorithms/CATALOG.md
+  h_adc77830afcf4d 100-101
+docs/experiments/GOLDEN_EVIDENCE_REGISTRY.md
+  h_adc77830afcf4d 26,41-43,45
+simulator/src/test/java/org/workflowsim/planning/SharedStorageTopcuogluZeroCommunicationGoldenTest.java
+  h_adc77830afcf4d 1-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "26c939dc79450db9282efbdec06d8b74e7ba3c53",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
