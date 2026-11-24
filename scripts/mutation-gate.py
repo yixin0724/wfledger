@@ -450,7 +450,9 @@ REGISTRY = [
         name="EBPSM publishes unsuccessful output as readable cache",
         file="simulator/src/main/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithm.java",
         old="            if (task.getCloudletStatus() != Cloudlet.SUCCESS) {",
-        new="            if (false) {",
+        # FGCS-R4 (2026-11-24): keep the Cloudlet reference; a bare `false` left an unused import, so
+        # Checkstyle failed the build before any killer test ran (INFRA_FAILURE, not a kill).
+        new="            if (task.getCloudletStatus() != Cloudlet.SUCCESS && false) {",
         killers="EbpsmSchedulingAlgorithmTest"),
     dict(
         id="M64",
