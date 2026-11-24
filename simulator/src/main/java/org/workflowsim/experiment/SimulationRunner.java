@@ -49,6 +49,11 @@ public final class SimulationRunner {
         }
 
         validateFrequencyDimension(config, platform);
+        try {
+            EnergyAccounting.requireAllOrNonePowered(platform);
+        } catch (IllegalStateException exception) {
+            throw new SimulationConfigurationException(exception.getMessage(), exception);
+        }
 
         validateCarbonDeferralDimension(config, platform);
 

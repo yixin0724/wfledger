@@ -390,6 +390,12 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                                  + " truth required (BAT-D1)")
             vm_tiers[vmid] = tiers
             tier_max_by_vm[vmid] = {t[0]: t[2] for t in tiers}
+        # FGCS-R3 (2026-11-24, A5): mirror EnergyAccounting.requireAllOrNonePowered. A fleet in
+        # which only part of the VMs declares power would book the rest at 0 J.
+        powered_vms = sorted(vmid for vmid, p in vm_power.items() if p[0] > 0.0 or p[1] > 0.0 or vmid in vm_tiers)
+        if powered_vms and len(powered_vms) != len(vm_power):
+            raise CheckError("energy accounting requires a power model on every VM or on none; powered VMs "
+                             + str(powered_vms) + " of " + str(sorted(vm_power)))
         tier_of_job = {}
         tier_intervals_by_vm = {}
         jobs, task_outcomes = needed(result, "jobs"), needed(result, "tasks")

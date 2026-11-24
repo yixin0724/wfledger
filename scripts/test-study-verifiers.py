@@ -376,6 +376,24 @@ class IndependentAuditorTests(unittest.TestCase):
             self.assertTrue(any("totalEnergyJoules" in str(i.get("location", "")) for i in bad["issues"]),
                             "corrupted total energy must be caught: " + json.dumps(bad["issues"][:2]))
 
+    def test_mixed_powered_and_unpowered_fleet_is_rejected(self):
+        # FGCS-R3 (2026-11-24, A5): all-or-none power declaration, mirrored from
+        # EnergyAccounting.requireAllOrNonePowered; a second unpowered VM next to a powered one
+        # must fail instead of contributing a silent 0 J.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "mixed"
+            make_bundle(root)
+            manifest = json.loads((root / "run.manifest.json").read_text(encoding="utf-8"))
+            manifest["platform"]["vms"][0]["idlePowerWatts"] = 100.0
+            manifest["platform"]["vms"][0]["maxPowerWatts"] = 400.0
+            manifest["platform"]["vms"].append({"id": 1, "mips": 1000.0, "pes": 1, "schedulerMode": "SPACE_SHARED"})
+            (root / "run.manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            report_path = Path(tmp) / "mixed-report.json"
+            evidence.main(["--output", str(report_path), str(root / "run.manifest.json")])
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            self.assertEqual("FAIL", report["status"])
+            self.assertIn("every VM or on none", json.dumps(report["issues"]))
+
     def test_event_stream_order_sequence_and_blank_lines_are_killed(self):
 
         def run_case(mutate):

@@ -92,6 +92,56 @@ class EnergyConservationLawTest {
         assertEquals(0.0, ea.getPeakPowerWatts(), 0.0);
     }
 
+    /**
+     * FGCS-R3 (2026-11-24, A5): a fleet where VM 0 declares a power model and VM 1 does not
+     * used to report VM 1 as 0 J, silently understating fleet energy. The contract is
+     * all-or-none (ENERGY_DIMENSION_DESIGN.md §2.2): the accounting layer must refuse it.
+     */
+    @Test
+    void mixedPoweredAndUnpoweredFleetIsRejectedByAccounting() throws Exception {
+        SimulationReport report = runScenario(0.0, 0.0);
+        IllegalStateException failure = assertThrows(
+                IllegalStateException.class,
+                () -> EnergyAccounting.fromFrozenMetrics(
+                        report.getMakespan(), report.getMetrics().getVmMetrics(), mixedPlatform()));
+        assertTrue(failure.getMessage().contains("VM 1"), failure.getMessage());
+    }
+
+    /** FGCS-R3 (2026-11-24, A5): the standard runner preflights the same all-or-none rule. */
+    @Test
+    void mixedPoweredAndUnpoweredFleetIsRejectedBeforeSimulation() throws Exception {
+        SimulationConfig config = SimulationConfig.builder(dax().toString(), 2)
+                .planningAlgorithm(PlanningAlgorithm.SHARED_STORAGE_HEFT)
+                .schedulingAlgorithm(SchedulingAlgorithm.STATIC)
+                .fileSystem(ReplicaCatalog.FileSystem.SHARED)
+                .dataMovementModel(DataMovementModel.legacyWorkflowsimV1())
+                .randomSeed(20261027L)
+                .build();
+        assertThrows(org.workflowsim.exception.SimulationConfigurationException.class, () -> new SimulationRunner()
+                .run(config, mixedPlatform()));
+    }
+
+    private static PlatformProfile mixedPlatform() {
+        PlatformProfile.Builder b = PlatformProfile.builder("energy-test-mixed");
+        b.addHost(new PlatformProfile.HostSpec(0, 2, 2000.0, 2048, 10_000L, 1_000_000L));
+        b.addVm(new PlatformProfile.VmSpec(
+                0,
+                1000.0,
+                1,
+                512,
+                1_000L,
+                10_000L,
+                "Xen",
+                PlatformProfile.CloudletSchedulerMode.SPACE_SHARED,
+                null,
+                100.0,
+                400.0));
+        b.addHost(new PlatformProfile.HostSpec(1, 2, 2000.0, 2048, 10_000L, 1_000_000L));
+        b.addVm(new PlatformProfile.VmSpec(
+                1, 1000.0, 1, 512, 1_000L, 10_000L, "Xen", PlatformProfile.CloudletSchedulerMode.SPACE_SHARED));
+        return b.build();
+    }
+
     @Test
     void manifestExportsEnergyMetricsAndSurvivesValidation() throws Exception {
         SimulationConfig config = SimulationConfig.builder(twoTaskDax().toString(), 2)

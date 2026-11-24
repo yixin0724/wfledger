@@ -117,7 +117,12 @@ AlgorithmDeclaration:
 ```
 
 **Combination matrix**: if power fields are declared, energy metrics are computed;
-if not, `totalEnergyJoules=0` is a legally declared run (backward-compatible).
+if not, `totalEnergyJoules=0` is a legally declared run (backward-compatible). The
+declaration is **all-or-none** (FGCS-R3, 2026-11-24): every VM declares a power source
+(plain idle/max fields or frequency tiers) or none does. A mixed fleet is rejected by
+`SimulationRunner` preflight, by `EnergyAccounting.requireAllOrNonePowered`, and by the
+Python auditor, because booking the unpowered VMs at 0 J would silently understate fleet
+energy.
 
 **Python auditor**: recomputes `totalEnergyJoules` from vmIntervals + power fields;
 or verifies `=0` when no power model is present.
