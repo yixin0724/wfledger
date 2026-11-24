@@ -1,0 +1,22 @@
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 316-324
+scripts/mutation-gate.py
+  h_adc77830afcf4d 403-404
+simulator/src/main/java/org/workflowsim/planning/DvfsSlackPlanningAlgorithm.java
+  h_adc77830afcf4d 76-81
+simulator/src/main/java/org/workflowsim/planning/dvfs/DvfsSlackOptimizer.java
+  h_adc77830afcf4d 11-22,25-27,32,35-57,98-108,139
+simulator/src/test/java/org/workflowsim/planning/DvfsSlackRuntimeMirrorIntegrationTest.java
+  h_adc77830afcf4d 1-153
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6c6f9d1c6cc9919fd40028ca82db5a65f1cc0441",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
