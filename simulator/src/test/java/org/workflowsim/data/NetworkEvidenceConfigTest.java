@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.experiment.ExperimentManifestWriter;
 import org.workflowsim.failure.FailureModelConfig;
 import org.workflowsim.failure.FailureParameters;
-import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.DistributionGenerator;
 import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.OverheadModelConfig;
@@ -220,11 +219,6 @@ class NetworkEvidenceConfigTest {
         assertThrows(IllegalArgumentException.class, () -> configured(DataMovementModel.fatTreeContentionV1())
                 .networkEvidence(option)
                 .overheadModel(OverheadModelConfig.builder().bandwidth(1.0).build())
-                .build());
-        assertThrows(IllegalArgumentException.class, () -> configured(DataMovementModel.fatTreeContentionV1())
-                .networkEvidence(option)
-                .clusteringParameters(
-                        new ClusteringParameters(2, 0, ClusteringParameters.ClusteringMethod.HORIZONTAL, null))
                 .build());
     }
 

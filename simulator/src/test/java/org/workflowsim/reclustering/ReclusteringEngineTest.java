@@ -18,7 +18,6 @@ import org.workflowsim.Job;
 import org.workflowsim.Task;
 import org.workflowsim.failure.FailureMonitor;
 import org.workflowsim.failure.FailureParameters;
-import org.workflowsim.failure.FailureRecord;
 import org.workflowsim.utils.Parameters.ClassType;
 import org.workflowsim.utils.Parameters.FileType;
 
@@ -104,76 +103,6 @@ class ReclusteringEngineTest {
         assertEquals(5.0, copy.getVmExecutionCostSeconds(8), 0.0);
         assertEquals(8, retry.getVmId(), "A static target is already needed before data preparation");
         assertNotSame(original, copy);
-    }
-
-    @Test
-    void partitionedRetriesKeepEveryTaskAndOnlyTheFilesOfTheirOwnTaskSubset() throws Exception {
-        Task first = task(1, 100L, Cloudlet.FAILED);
-        Task second = task(2, 200L, Cloudlet.FAILED);
-        Task third = task(3, 300L, Cloudlet.FAILED);
-        Task fourth = task(4, 400L, Cloudlet.FAILED);
-        Task fifth = task(5, 500L, Cloudlet.FAILED);
-        Job failed = computeJob(40, first, second, third, fourth, fifth);
-        Job child = new Job(41, 100L);
-        failed.addChild(child);
-
-        List<Job> retries = ReclusteringEngine.partitionRetryTasks(failed, 100, failed.getTaskList(), 2, false);
-
-        assertEquals(3, retries.size());
-        assertEquals(Arrays.asList(100, 101, 102), jobIds(retries));
-        assertEquals(Arrays.asList(1, 2), taskIds(retries.get(0)));
-        assertEquals(Arrays.asList(3, 4), taskIds(retries.get(1)));
-        assertEquals(Arrays.asList(5), taskIds(retries.get(2)));
-        assertEquals(Arrays.asList(300L, 700L, 500L), jobLengths(retries));
-        assertEquals(Arrays.asList("input-1", "input-2"), fileNames(retries.get(0)));
-        assertEquals(Arrays.asList("input-3", "input-4"), fileNames(retries.get(1)));
-        assertEquals(Arrays.asList("input-5"), fileNames(retries.get(2)));
-        for (Job retry : retries) {
-            assertEquals(ClassType.COMPUTE.value, retry.getClassType());
-            assertTrue(child.getParentList().contains(retry));
-            for (Task copied : retry.getTaskList()) {
-                assertEquals(Cloudlet.CREATED, copied.getCloudletStatus());
-            }
-        }
-        assertEquals(Cloudlet.FAILED, second.getCloudletStatus());
-    }
-
-    @Test
-    void failedOnlyPartitionAtKOneDoesNotDropBoundaryTasks() throws Exception {
-        Task first = task(1, 100L, Cloudlet.FAILED);
-        Task second = task(2, 200L, Cloudlet.SUCCESS);
-        Task third = task(3, 300L, Cloudlet.FAILED);
-        Task fourth = task(4, 400L, Cloudlet.FAILED);
-        Job failed = computeJob(40, first, second, third, fourth);
-
-        List<Job> retries = ReclusteringEngine.partitionRetryTasks(failed, 200, failed.getTaskList(), 1, true);
-
-        assertEquals(Arrays.asList(200, 201, 202), jobIds(retries));
-        assertEquals(Arrays.asList(1), taskIds(retries.get(0)));
-        assertEquals(Arrays.asList(3), taskIds(retries.get(1)));
-        assertEquals(Arrays.asList(4), taskIds(retries.get(2)));
-        assertEquals(Arrays.asList(100L, 300L, 400L), jobLengths(retries));
-    }
-
-    @Test
-    void dcProcessUsesTheLosslessPartitionPathWhenFailureMonitorSelectsKOne() throws Exception {
-        FailureParameters.init(
-                FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_DC,
-                FailureParameters.FTCMonitor.MONITOR_ALL,
-                FailureParameters.FTCFailure.FAILURE_NONE,
-                null);
-        FailureMonitor.init();
-
-        FailureMonitor.postFailureRecord(new FailureRecord(1.0, 1, 1, 3, 0, 0, 7));
-        Job failed = computeJob(
-                40, task(1, 100L, Cloudlet.FAILED), task(2, 200L, Cloudlet.FAILED), task(3, 300L, Cloudlet.FAILED));
-
-        List<Job> retries = ReclusteringEngine.process(failed, 300);
-
-        assertEquals(Arrays.asList(300, 301, 302), jobIds(retries));
-        assertEquals(Arrays.asList(1), taskIds(retries.get(0)));
-        assertEquals(Arrays.asList(2), taskIds(retries.get(1)));
-        assertEquals(Arrays.asList(3), taskIds(retries.get(2)));
     }
 
     private static Job computeJob(int id, Task... tasks) {

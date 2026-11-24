@@ -270,7 +270,6 @@
                                             <exclude>org.cloudbus.*</exclude>
                                             <exclude>org.workflowsim.exception</exclude>
                                             <exclude>org.workflowsim.reclustering</exclude>
-                                            <exclude>org.workflowsim.clustering.balancing.methods</exclude>
                                             <exclude>org.workflowsim.examples*</exclude>
                                             <exclude>org.workflowsim.experiments.benchmark</exclude>
                                         </excludes>

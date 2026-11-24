@@ -75,18 +75,6 @@ REGISTRY = [
         killers="WorkflowInputValidationTest,WorkflowParserStrictValidationTest,"
                 "WfCommonsJsonParserValidationTest,WorkflowDependencyParsingScalabilityTest"),
     dict(
-        id="M7",
-        name="balanced merge drops the child-side tail unlink",
-        file="simulator/src/main/java/org/workflowsim/clustering/balancing/methods/BalancingMethod.java",
-        old="""            taskSet.getParentList().remove(tail);
-            if (!taskSet.getParentList().contains(head)) {
-                taskSet.getParentList().add(head);
-            }""",
-        new="""            if (!taskSet.getParentList().contains(head)) {
-                taskSet.getParentList().add(head);
-            }""",
-        killers="ClusteringConservationPropertyTest"),
-    dict(
         id="M8",
         name="online assignment halves the compute estimate of the nominal score",
         file="simulator/src/main/java/org/workflowsim/data/v2/DataflowVmAssigner.java",

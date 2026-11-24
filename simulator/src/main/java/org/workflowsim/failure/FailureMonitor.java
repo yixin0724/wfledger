@@ -61,47 +61,6 @@ public class FailureMonitor {
         }
     }
 
-    protected static double getK(double d, double a, double t) {
-        double k = (-d + Math.sqrt(d * d - 4 * d / Math.log(1 - a))) / (2 * t);
-        return k;
-    }
-
-    public static int getClusteringFactor(FailureRecord record) {
-
-        double d = record.delayLength;
-
-        double t = record.length;
-        double a = 0.0;
-        switch (FailureParameters.getMonitorMode()) {
-            case MONITOR_JOB:
-
-            case MONITOR_ALL:
-                a = analyze(0, record.depth);
-                break;
-            case MONITOR_VM:
-                a = analyze(0, record.vmId);
-                break;
-            case MONITOR_VM_JOB:
-                a = analyzeVmDepth(record.vmId, record.depth);
-                break;
-
-            default:
-                break;
-        }
-
-        if (a <= 0.0) {
-            return record.allTaskNum;
-        } else {
-            double k = getK(d, a, t);
-
-            if (k <= 1) {
-                k = 1;
-            }
-
-            return (int) k;
-        }
-    }
-
     public static void postFailureRecord(FailureRecord record) {
         requireInitialized();
 

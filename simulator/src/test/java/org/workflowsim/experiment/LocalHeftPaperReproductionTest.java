@@ -10,7 +10,6 @@ import org.cloudbus.cloudsim.Log;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.data.DataMovementModel;
 import org.workflowsim.platform.PlatformProfile;
-import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
@@ -136,16 +135,6 @@ class LocalHeftPaperReproductionTest {
                         .dataMovementModel(DataMovementModel.preExecutionTransferDelayV1())
                         .build());
         assertTrue(unmapped.getMessage().contains("INVALID"), unmapped.getMessage());
-
-        IllegalArgumentException clustering =
-                assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
-                        .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
-                        .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
-                        .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
-                        .clusteringParameters(
-                                new ClusteringParameters(0, 0, ClusteringParameters.ClusteringMethod.BALANCED, ""))
-                        .build());
-        assertTrue(clustering.getMessage().contains("NONE"), clustering.getMessage());
     }
 
     private static SimulationReport runPaperExample() throws Exception {

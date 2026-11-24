@@ -31,8 +31,6 @@ public class FailureRecord {
 
     public int workflowId;
 
-    public double delayLength;
-
     public FailureRecord(double length, int tasks, int depth, int all, int vm, int job, int workflow) {
         this.length = length;
         this.failedTasksNum = tasks;

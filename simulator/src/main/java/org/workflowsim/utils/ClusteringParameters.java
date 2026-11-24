@@ -22,11 +22,7 @@ public class ClusteringParameters {
     private final int clusters_size;
 
     public enum ClusteringMethod {
-        HORIZONTAL,
-        VERTICAL,
-        NONE,
-        BLOCK,
-        BALANCED
+        NONE
     }
 
     private final String code;

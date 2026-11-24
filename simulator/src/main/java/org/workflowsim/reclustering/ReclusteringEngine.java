@@ -16,24 +16,17 @@
 package org.workflowsim.reclustering;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.cloudbus.cloudsim.Cloudlet;
-import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.workflowsim.FileItem;
 import org.workflowsim.Job;
 import org.workflowsim.Task;
-import org.workflowsim.failure.FailureMonitor;
 import org.workflowsim.failure.FailureParameters;
-import org.workflowsim.failure.FailureRecord;
 import org.workflowsim.utils.CrchRecovery;
 import org.workflowsim.utils.CrchRegistry;
-import org.workflowsim.utils.OverheadParameters;
-import org.workflowsim.utils.Parameters;
 
 public class ReclusteringEngine {
 
@@ -89,26 +82,6 @@ public class ReclusteringEngine {
 
                 break;
 
-            case FTCLUSTERING_DC:
-                jobList = DCReclustering(jobList, job, id, job.getTaskList());
-                break;
-
-            case FTCLUSTERING_SR:
-                jobList = SRReclustering(jobList, job, id);
-
-                break;
-
-            case FTCLUSTERING_DR:
-                jobList = DRReclustering(jobList, job, id, job.getTaskList());
-                break;
-
-            case FTCLUSTERING_BLOCK:
-                jobList = BlockReclustering(jobList, job, id);
-                break;
-
-            case FTCLUSTERING_VERTICAL:
-                jobList = VerticalReclustering(jobList, job, id);
-                break;
             case FTCLUSTERING_CRCH:
                 CrchRecovery recovery = CrchRegistry.recordFailure(
                         job.getTaskList().get(0).getCloudletId(),
@@ -179,267 +152,6 @@ public class ReclusteringEngine {
             for (String requiredFile : task.getRequiredFiles()) {
                 retry.addRequiredFile(requiredFile);
             }
-        }
-    }
-
-    static List<Job> partitionRetryTasks(
-            Job job, int firstId, List<Task> candidates, int clusterSize, boolean failedOnly) {
-        if (job == null || candidates == null) {
-            throw new IllegalArgumentException("Retry partition requires a Job and candidate tasks");
-        }
-        if (firstId < 0 || clusterSize <= 0) {
-            throw new IllegalArgumentException("Retry Job ID must be non-negative and cluster size positive");
-        }
-
-        List<Job> retries = new ArrayList<Job>();
-        List<Task> currentTasks = new ArrayList<Task>();
-        long currentLength = 0L;
-        int nextId = firstId;
-        for (Task task : candidates) {
-            if (task == null) {
-                throw new IllegalArgumentException("Retry candidate task cannot be null");
-            }
-            if (failedOnly && task.getCloudletStatus() != Cloudlet.FAILED) {
-                continue;
-            }
-            if (currentTasks.size() == clusterSize) {
-                retries.add(createJob(nextId++, job, currentLength, currentTasks, false));
-                currentTasks = new ArrayList<Task>();
-                currentLength = 0L;
-            }
-            if (task.getCloudletLength() > Long.MAX_VALUE - currentLength) {
-                throw new IllegalStateException("Retry Job length overflow for failed Job " + job.getCloudletId());
-            }
-            currentTasks.add(task);
-            currentLength += task.getCloudletLength();
-        }
-        if (!currentTasks.isEmpty()) {
-            retries.add(createJob(nextId, job, currentLength, currentTasks, false));
-        }
-        if (!retries.isEmpty()) {
-            updateDependencies(job, retries);
-        }
-        return retries;
-    }
-
-    private static Map<Integer, List<Task>> getDepthMap(List<Task> list) {
-        Map<Integer, List<Task>> map = new HashMap<>();
-
-        for (Task task : list) {
-            int depth = task.getDepth();
-            if (!map.containsKey(depth)) {
-                map.put(depth, new ArrayList<>());
-            }
-            List<Task> dl = map.get(depth);
-            if (!dl.contains(task)) {
-                dl.add(task);
-            }
-        }
-
-        return map;
-    }
-
-    private static int getMin(Map<Integer, List<Task>> map) {
-        if (map != null && !map.isEmpty()) {
-            int min = Integer.MAX_VALUE;
-            for (int value : map.keySet()) {
-                if (value < min) {
-                    min = value;
-                }
-            }
-            return min;
-        }
-        return -1;
-    }
-
-    private static boolean checkFailed(List<Task> list) {
-        boolean all = false;
-        for (Task task : list) {
-            if (task.getCloudletStatus() == Cloudlet.FAILED) {
-                all = true;
-                break;
-            }
-        }
-        return all;
-    }
-
-    private static List<Job> VerticalReclustering(List<Job> jobList, Job job, int id) {
-        Map<Integer, List<Task>> map = getDepthMap(job.getTaskList());
-
-        if (map.size() == 1) {
-
-            jobList = DCReclustering(jobList, job, id, job.getTaskList());
-
-            return jobList;
-        }
-        int min = getMin(map);
-        int max = min + map.size() - 1;
-        int mid = (min + max) / 2;
-        List listUp = new ArrayList<>();
-        List listDown = new ArrayList<>();
-        for (int i = min; i < min + map.size(); i++) {
-            List<Task> list = map.get(i);
-            if (i <= mid) {
-                listUp.addAll(list);
-            } else {
-                listDown.addAll(list);
-            }
-        }
-        List<Job> newUpList = DCReclustering(new ArrayList(), job, id, listUp);
-        id += newUpList.size();
-        jobList.addAll(newUpList);
-        jobList.addAll(DCReclustering(new ArrayList(), job, id, listDown));
-        return jobList;
-    }
-
-    private static List BlockReclustering(List jobList, Job job, int id) {
-        Map map = getDepthMap(job.getTaskList());
-        if (map.size() == 1) {
-            jobList = DRReclustering(jobList, job, id, job.getTaskList());
-            return jobList;
-        }
-
-        int min = getMin(map);
-        for (int i = min; i < min + map.size(); i++) {
-
-            List list = (List) map.get(i);
-
-            if (checkFailed(list)) {
-
-                List newList = DRReclustering(new ArrayList(), job, id, list);
-                id = newList.size() + id;
-                jobList.addAll(newList);
-            } else {
-
-            }
-        }
-
-        return jobList;
-    }
-
-    private static List<Job> DCReclustering(List<Job> jobList, Job job, int id, List<Task> allTaskList) {
-
-        Task firstTask = allTaskList.get(0);
-
-        OverheadParameters overhead = Parameters.getOverheadParams();
-        double clusteringDelay = overhead == null ? 0.0 : overhead.getClustDelay(job);
-        double taskLength =
-                (double) firstTask.getCloudletLength() / 1000 + clusteringDelay / getDividend(job.getDepth());
-        FailureRecord record = new FailureRecord(
-                taskLength, 0, job.getDepth(), allTaskList.size(), job.getVmId(), job.getCloudletId(), job.getUserId());
-        record.delayLength = getCumulativeDelay(job.getDepth());
-        int suggestedK = FailureMonitor.getClusteringFactor(record);
-
-        int clusterSize = suggestedK > 0 ? suggestedK : Math.max(1, allTaskList.size());
-        jobList.addAll(partitionRetryTasks(job, id, allTaskList, clusterSize, false));
-        return jobList;
-    }
-
-    private static List<Job> SRReclustering(List<Job> jobList, Job job, int id) {
-        List<Task> newTaskList = new ArrayList<>();
-        long length = 0;
-        for (Task task : job.getTaskList()) {
-            if (task.getCloudletStatus() == Cloudlet.FAILED) {
-                newTaskList.add(task);
-                length += task.getCloudletLength();
-            } else {
-            }
-        }
-        jobList.add(createJob(id, job, length, newTaskList, true));
-        return jobList;
-    }
-
-    private static int getDividend(int depth) {
-        int dividend = 1;
-        switch (depth) {
-            case 1:
-                dividend = 78;
-                break;
-            case 2:
-                dividend = 229;
-                break;
-            case 5:
-                dividend = 64;
-                break;
-            default:
-                Log.printLine("Eroor");
-                break;
-        }
-        return dividend;
-    }
-
-    private static double getCumulativeDelay(int depth) {
-        double delay = 0.0;
-        OverheadParameters overhead = Parameters.getOverheadParams();
-        if (overhead == null) {
-            return delay;
-        }
-        if (overhead.getQueueDelay() != null && overhead.getQueueDelay().containsKey(depth)) {
-            delay += overhead.getQueueDelay().get(depth).getMLEMean();
-        }
-        if (overhead.getWEDDelay() != null && overhead.getWEDDelay().containsKey(depth)) {
-            delay += overhead.getWEDDelay().get(depth).getMLEMean();
-        }
-        if (overhead.getPostDelay() != null && overhead.getPostDelay().containsKey(depth)) {
-            delay += overhead.getPostDelay().get(depth).getMLEMean();
-        }
-        return delay;
-    }
-
-    private static double getOverheadLikelihoodPrior(int depth) {
-        double prior = 0.0;
-        OverheadParameters overhead = Parameters.getOverheadParams();
-        if (overhead == null) {
-            return prior;
-        }
-
-        if (overhead.getQueueDelay() != null && overhead.getQueueDelay().containsKey(depth)) {
-            prior = overhead.getQueueDelay().get(depth).getLikelihoodPrior();
-        } else if (overhead.getWEDDelay() != null && overhead.getWEDDelay().containsKey(depth)) {
-            prior = overhead.getWEDDelay().get(depth).getMLEMean();
-        } else if (overhead.getPostDelay() != null && overhead.getPostDelay().containsKey(depth)) {
-            prior = overhead.getPostDelay().get(depth).getMLEMean();
-        }
-        return prior;
-    }
-
-    private static List DRReclustering(List<Job> jobList, Job job, int id, List<Task> allTaskList) {
-        Task firstTask = allTaskList.get(0);
-
-        double taskLength = (double) firstTask.getCloudletLength() / 1000;
-
-        double phi_ts = getOverheadLikelihoodPrior(job.getDepth());
-        double delay = getCumulativeDelay(job.getDepth());
-        int suggestedK;
-
-        double theta = FailureParameters.getGeneratorForFailureScope(job.getVmId(), job.getDepth())
-                .getMLEMean();
-
-        double phi_gamma = FailureParameters.getGeneratorForFailureScope(job.getVmId(), job.getDepth())
-                .getLikelihoodPrior();
-        suggestedK = ClusteringSizeEstimator.estimateK(taskLength, delay, theta, phi_gamma, phi_ts);
-
-        Log.printLine("t=" + taskLength + " d=" + delay + " theta=" + theta + " k=" + suggestedK);
-
-        int clusterSize = suggestedK > 0 ? suggestedK : Math.max(1, allTaskList.size());
-        jobList.addAll(partitionRetryTasks(job, id, allTaskList, clusterSize, true));
-        return jobList;
-    }
-
-    private static void updateDependencies(Job job, List<Job> jobList) {
-
-        List<Task> parents = job.getParentList();
-        List<Task> children = job.getChildList();
-        for (Job rawJob : jobList) {
-            rawJob.setChildList(children);
-            rawJob.setParentList(parents);
-        }
-        for (Task parent : parents) {
-            parent.getChildList().addAll(jobList);
-        }
-        for (Task childTask : children) {
-            Job childJob = (Job) childTask;
-            childJob.getParentList().addAll(jobList);
         }
     }
 }

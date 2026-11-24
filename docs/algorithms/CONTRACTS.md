@@ -298,7 +298,7 @@ its compute interval plus the configured checkpoint overhead fits in elapsed exe
 work is capped at the original task length. Retry work is the remaining MI plus one recovery-overhead
 MI equivalent. `ReclusteringEngine.process` registers the recovery for the retry Job, while
 `CrchSchedulingAlgorithm` avoids the failed VM when an alternative exists. `FTCLUSTERING_CRCH` is an
-explicit standard-runner mode and does not relax the historical DC/DR/BLOCK/VERTICAL rejection rules.
+explicit standard-runner mode; the historical DC/SR/DR/BLOCK/VERTICAL reclustering modes were removed on 2026-11-24.
 The subset does not implement replication-count learning or PCA clustering. A failed parent never
 releases its child; retry creation replaces the failed parent in the dependency list, and CRCH
 remaining MI is preserved in execution and TaskOutcome timing. M49/M50 guard saved-work and

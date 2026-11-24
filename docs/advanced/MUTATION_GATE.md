@@ -22,7 +22,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M4 | Fat-tree aggregation index picks `halfK` instead of `availableAggregateCount` | topology routing determinism |
 | M5 | Fluid completion tolerance magnified 1000x | numerical tolerance boundary |
 | M6 | MI conversion `floor` → `round` at the parser boundary | input quantization semantics |
-| M7 | Balanced merge drops the child-side tail unlink | clustering conservation law |
+| M7 | *Retired 2026-11-24*: the balanced-clustering family was removed, so the axis no longer exists | — |
 | M8 | Online assignment halves the compute estimate | coherent binding nominal score |
 | M9 | Task execution window offset by 1e-6 s | timing-window exactness |
 | M10 | SHARED DLS dynamic level flips the earliest-start subtraction into an addition | DLS decision surface |
@@ -122,13 +122,13 @@ axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 64 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 63 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)
 python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
 
-# Both families sequentially (66 canaries total)
+# Both families sequentially (65 canaries total)
 python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)

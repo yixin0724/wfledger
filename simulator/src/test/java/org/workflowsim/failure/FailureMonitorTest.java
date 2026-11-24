@@ -11,7 +11,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.Job;
 import org.workflowsim.Task;
-import org.workflowsim.reclustering.ReclusteringEngine;
 import org.workflowsim.utils.Parameters.ClassType;
 
 class FailureMonitorTest {
@@ -38,26 +37,6 @@ class FailureMonitorTest {
         assertEquals(0.0, FailureMonitor.analyzeVmDepth(7, 4), 0.0);
         assertEquals(0.0, FailureMonitor.analyzeVmDepth(8, 3), 0.0);
         assertEquals(0.0, FailureMonitor.analyzeVmDepth(9, 3), 0.0);
-        assertEquals(1, FailureMonitor.getClusteringFactor(new FailureRecord(1.0, 0, 3, 4, 7, 13, 0)));
-    }
-
-    @Test
-    void dcRecoveryReadsTheActualFailedJobVmRatherThanVmZero() throws Exception {
-        FailureParameters.init(
-                FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_DC,
-                FailureParameters.FTCMonitor.MONITOR_VM,
-                FailureParameters.FTCFailure.FAILURE_NONE,
-                null);
-        FailureMonitor.init();
-
-        FailureMonitor.postFailureRecord(new FailureRecord(1.0, 1, 1, 3, 0, 0, 0));
-        Job failed = computeJob(40, 2, task(1, 100L), task(2, 200L), task(3, 300L));
-
-        List<Job> retries = ReclusteringEngine.process(failed, 100);
-
-        assertEquals(1, retries.size());
-        assertEquals(100, retries.get(0).getCloudletId());
-        assertEquals(Arrays.asList(1, 2, 3), taskIds(retries.get(0)));
     }
 
     private static Job computeJob(int id, int vmId, Task... tasks) {

@@ -32,12 +32,7 @@ public class FailureParameters {
     private static Map<Integer, DistributionGenerator[]> generatorsByVmId;
 
     public enum FTCluteringAlgorithm {
-        FTCLUSTERING_DC,
-        FTCLUSTERING_SR,
-        FTCLUSTERING_DR,
         FTCLUSTERING_NOOP,
-        FTCLUSTERING_BLOCK,
-        FTCLUSTERING_VERTICAL,
 
         FTCLUSTERING_CRCH
     }

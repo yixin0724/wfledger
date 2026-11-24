@@ -24,10 +24,6 @@ import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
 import org.workflowsim.clustering.BasicClustering;
-import org.workflowsim.clustering.BlockClustering;
-import org.workflowsim.clustering.HorizontalClustering;
-import org.workflowsim.clustering.VerticalClustering;
-import org.workflowsim.clustering.balancing.BalancedClustering;
 import org.workflowsim.experiment.SimulationEventRecorder;
 import org.workflowsim.experiment.SimulationEventType;
 import org.workflowsim.scheduling.StaticSchedulePlan;
@@ -92,32 +88,7 @@ public final class ClusteringEngine extends SimEntity {
     protected void processClustering() {
 
         ClusteringParameters params = Parameters.getClusteringParameters();
-        switch (params.getClusteringMethod()) {
-            case HORIZONTAL:
-                if (params.getClustersNum() != 0) {
-                    this.engine = new HorizontalClustering(params.getClustersNum(), 0);
-                } else if (params.getClustersSize() != 0) {
-                    this.engine = new HorizontalClustering(0, params.getClustersSize());
-                }
-                break;
-
-            case VERTICAL:
-                int depth = 1;
-                this.engine = new VerticalClustering(depth);
-                break;
-
-            case BLOCK:
-                this.engine = new BlockClustering(params.getClustersNum(), params.getClustersSize());
-                break;
-
-            case BALANCED:
-                this.engine = new BalancedClustering(params.getClustersNum());
-                break;
-
-            default:
-                this.engine = new BasicClustering();
-                break;
-        }
+        this.engine = new BasicClustering();
         engine.setTaskList(getTaskList());
         engine.run();
         setJobList(engine.getJobList());

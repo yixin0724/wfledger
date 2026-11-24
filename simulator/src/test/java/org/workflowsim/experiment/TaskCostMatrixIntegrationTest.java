@@ -14,7 +14,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.platform.PlatformProfiles;
-import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
@@ -70,16 +69,6 @@ class TaskCostMatrixIntegrationTest {
                         .taskCostMatrix(matrix)
                         .build());
         assertTrue(online.getMessage().contains("STATIC"));
-
-        IllegalArgumentException clustering =
-                assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
-                        .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
-                        .planningAlgorithm(Parameters.PlanningAlgorithm.RANDOM)
-                        .clusteringParameters(
-                                new ClusteringParameters(0, 0, ClusteringParameters.ClusteringMethod.BALANCED, null))
-                        .taskCostMatrix(matrix)
-                        .build());
-        assertTrue(clustering.getMessage().contains("NONE"));
     }
 
     @Test

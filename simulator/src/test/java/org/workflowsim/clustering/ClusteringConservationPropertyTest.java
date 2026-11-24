@@ -19,7 +19,6 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Job;
 import org.workflowsim.Task;
 import org.workflowsim.WorkflowDagValidator;
-import org.workflowsim.clustering.balancing.BalancedClustering;
 import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
@@ -190,93 +189,6 @@ class ClusteringConservationPropertyTest {
         assertEquals(dag.tasks.size(), jobs.size(), "without clustering the Job count must equal the task count");
         Map<Integer, Job> membership = taskMembership(jobs, dag);
         assertPartitionAndLength(jobs, dag, membership, engine.getTaskFiles());
-    }
-
-    @Test
-    void horizontalClusterNumBalancesLayersAndConservesEverything() {
-        horizontalConserves(3, 0);
-    }
-
-    @Test
-    void horizontalClusterSizeCollapsesLayersAndConservesEverything() {
-        horizontalConserves(0, 2);
-    }
-
-    private void horizontalConserves(int clusterNum, int clusterSize) {
-        initLegacy(new ClusteringParameters(clusterNum, clusterSize, ClusteringParameters.ClusteringMethod.NONE, null));
-        List<Job> jobs = runEngine(new HorizontalClustering(clusterNum, clusterSize), true);
-        for (Job job : jobs) {
-            int depth = Integer.MIN_VALUE;
-            for (Task task : job.getTaskList()) {
-                if (depth == Integer.MIN_VALUE) {
-                    depth = task.getDepth();
-                } else {
-                    assertEquals(
-                            depth,
-                            task.getDepth(),
-                            "a horizontal-clustering Job must contain tasks of one depth level only");
-                }
-            }
-        }
-        assertTrue(jobs.size() < layeredDag(true).tasks.size(), "enabling clustering must yield fewer Jobs than tasks");
-    }
-
-    @Test
-    void verticalClusteringMergesAlongDependencyChainsAndConservesEverything() {
-        List<Job> jobs = runEngine(new VerticalClustering(1), true);
-        for (Job job : jobs) {
-            List<Task> members = job.getTaskList();
-            for (int i = 1; i < members.size(); i++) {
-                Task left = members.get(i - 1);
-                Task right = members.get(i);
-                assertTrue(
-                        left.getChildList().contains(right)
-                                || left.getParentList().contains(right),
-                        "adjacent members of a VERTICAL clustering must share "
-                                + "a task-level parent-child edge: "
-                                + left.getCloudletId() + " and " + right.getCloudletId());
-            }
-        }
-    }
-
-    @Test
-    void blockClusteringConservesPartitionDependenciesAndFiles() throws Exception {
-        runEngine(new BlockClustering(3, 2), true);
-    }
-
-    @Test
-    void balancedVerticalCodeRestoresOriginalDependenciesAndConservesEverything() {
-        balancedConserves("v");
-    }
-
-    @Test
-    void balancedRandomCodeRestoresOriginalDependenciesAndConservesEverything() {
-        balancedConserves("r");
-    }
-
-    private void balancedConserves(String code) {
-        initLegacy(new ClusteringParameters(3, 0, ClusteringParameters.ClusteringMethod.BALANCED, code));
-        Dag dag = layeredDag(true);
-        Map<Integer, Set<Integer>> parentsBefore = dependencySnapshot(dag.tasks);
-        Map<Integer, Set<Integer>> childrenBefore = dependencySnapshotChildren(dag.tasks);
-        BalancedClustering engine = new BalancedClustering(3);
-        engine.setTaskList(new ArrayList<Task>(dag.tasks));
-        engine.run();
-
-        assertPartitionDependenciesFilesLength(engine.getJobList(), dag, engine.getTaskFiles());
-
-        for (Task task : dag.tasks) {
-            Set<Integer> parents = dependencySnapshot(dag.tasks).get(task.getCloudletId());
-            Set<Integer> children = dependencySnapshotChildren(dag.tasks).get(task.getCloudletId());
-            assertEquals(
-                    parentsBefore.get(task.getCloudletId()),
-                    parents,
-                    "BALANCED(" + code + ") must restore the parent set after execution: task " + task.getCloudletId());
-            assertEquals(
-                    childrenBefore.get(task.getCloudletId()),
-                    children,
-                    "BALANCED(" + code + ") must restore the child set after execution: task " + task.getCloudletId());
-        }
     }
 
     private static void assertPartitionDependenciesFilesLength(List<Job> jobs, Dag dag, List<FileItem> taskFiles) {

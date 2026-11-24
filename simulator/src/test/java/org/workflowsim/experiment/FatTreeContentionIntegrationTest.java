@@ -17,7 +17,6 @@ import org.workflowsim.failure.FailureModelConfig;
 import org.workflowsim.failure.FailureParameters;
 import org.workflowsim.network.NetworkTopologySpec;
 import org.workflowsim.platform.PlatformProfile;
-import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.DistributionGenerator;
 import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.OverheadModelConfig;
@@ -159,18 +158,6 @@ class FatTreeContentionIntegrationTest {
                         .dataMovementModel(DataMovementModel.fatTreeContentionV1())
                         .build());
         assertTrue(unmapped.getMessage().contains("planning algorithm"), unmapped.getMessage());
-
-        IllegalArgumentException clustered =
-                assertThrows(IllegalArgumentException.class, () -> SimulationConfig.builder(workflow, 3)
-                        .planningAlgorithm(Parameters.PlanningAlgorithm.LOCAL_HEFT)
-                        .schedulingAlgorithm(Parameters.SchedulingAlgorithm.STATIC)
-                        .taskCostMatrix(paperCostMatrix())
-                        .clusteringParameters(
-                                new ClusteringParameters(2, 0, ClusteringParameters.ClusteringMethod.HORIZONTAL, null))
-                        .fileSystem(ReplicaCatalog.FileSystem.LOCAL)
-                        .dataMovementModel(DataMovementModel.fatTreeContentionV1())
-                        .build());
-        assertTrue(clustered.getMessage().contains("clustering method NONE"), clustered.getMessage());
 
         Map<Integer, DistributionSpec[]> failureRows = new LinkedHashMap<Integer, DistributionSpec[]>();
         for (int vmId = 0; vmId < 3; vmId++) {
