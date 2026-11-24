@@ -1,0 +1,33 @@
+docs/advanced/STORAGE_DATAFLOW_CONTRACT.md
+  s_ed26367bf29515::t_32d66f6aae6c49 18
+docs/algorithms/CATALOG.md
+  s_ed26367bf29515::t_02f166c1e3c5ff 69-70
+docs/getting-started/CODE_CONFIG_EXPERIMENTS.md
+  s_ed26367bf29515::t_90839825689e88 196-199
+docs/getting-started/WORKBENCH.md
+  s_ed26367bf29515::t_695d13482788c9 87
+experiments/src/main/java/org/workflowsim/experiments/workbench/WorkbenchConfig.java
+  s_ed26367bf29515::t_41149ed760dfe6 429-430
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchConfigTest.java
+  s_ed26367bf29515::t_ae190384b9b7aa 927-935
+simulator/src/test/java/org/workflowsim/PackageDependencyGuardTest.java
+  s_ed26367bf29515::t_8f8066ee74316a 166
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmCatalogCaliberTest.java
+  s_ed26367bf29515::t_2918bd90906ed6 70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8492f05b35b8b94bed3cf4b9e092b980df70978d",
+  "prompts": {},
+  "sessions": {
+    "s_ed26367bf29515": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "session-77b74019-1759-44eb-8730-eeb50f7e1164",
+        "model": "codefuse_official_channel/GLM-5.3"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
