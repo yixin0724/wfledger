@@ -534,17 +534,27 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         def field_values(rows, field):
             return [number(needed(row, field), field, nonnegative=True) for row in rows]
         waits, slow, ready_dec, dec_start, success_waits, success_slow = [], [], [], [], [], []
+        # FGCS-R3 (2026-11-24): mirror SimulationMetrics' three independent sample sets exactly.
+        # Waiting/bounded slowdown need only JOB_READY with start >= ready; ready->decision needs
+        # both events with decision >= ready; decision->start needs the decision with
+        # start >= decision. Missing or out-of-order observations are excluded, never clamped to
+        # a zero sample (METRICS_CARD / CONTRACTS "Waiting, Slowdown, and Missing Observations").
         for job in computes:
             jid = job["jobId"]
-            if jid not in by_type["JOB_READY"] or jid not in by_type["JOB_RETURNED"] or jid not in by_type["SCHEDULING_DECISION"]:
-                continue
-            ready = number(by_type["JOB_READY"][jid]["simulationTime"])
-            decision = number(by_type["SCHEDULING_DECISION"][jid]["simulationTime"])
+            ready = number(by_type["JOB_READY"][jid]["simulationTime"]) if jid in by_type["JOB_READY"] else None
+            decision = (number(by_type["SCHEDULING_DECISION"][jid]["simulationTime"])
+                        if jid in by_type["SCHEDULING_DECISION"] else None)
             start, finish = number(job["startTime"]), number(job["finishTime"])
-            waiting = max(0.0, start - ready)
-            slowdown = max(1.0, (waiting + max(0.0, finish - start)) / max(10.0, finish - start))
+            if ready is not None and decision is not None and decision >= ready:
+                ready_dec.append(decision - ready)
+            if decision is not None and start >= decision:
+                dec_start.append(start - decision)
+            if ready is None or not start >= ready:
+                continue
+            waiting = start - ready
+            execution = max(0.0, finish - start)
+            slowdown = max(1.0, (waiting + execution) / max(10.0, execution))
             waits.append(waiting); slow.append(slowdown)
-            ready_dec.append(max(0.0, decision - ready)); dec_start.append(max(0.0, start - decision))
             if job["status"] == SUCCESS:
                 success_waits.append(waiting); success_slow.append(slowdown)
         data = list(by_type["DATA_STAGE_IN_MODELED"].values())

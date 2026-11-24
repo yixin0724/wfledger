@@ -434,6 +434,59 @@ class IndependentAuditorTests(unittest.TestCase):
             self.assertTrue(any("lastSequence" in json.dumps(issue) for issue in report["issues"]),
                             "corrupted lastSequence must be caught: " + json.dumps(report["issues"][:2]))
 
+    def rewrite_compute_events(self, name, mutate, **metric_updates):
+        manifest = make_bundle(self.root / name)
+        doc = json.loads(manifest.read_text())
+        events_path = manifest.parent / "run.events.jsonl"
+        events = [json.loads(line) for line in events_path.read_text().splitlines() if line.strip()]
+        events = mutate(events)
+        for index, event in enumerate(events):
+            event["sequence"] = index
+        events_path.write_text(''.join(json.dumps(e) + '\n' for e in events), encoding="utf-8")
+        doc["events"]["eventCount"] = len(events)
+        doc["metrics"].update(metric_updates)
+        bind_sidecars(manifest, doc)
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        return audit
+
+    def test_waiting_sample_does_not_require_a_scheduling_decision(self):
+        # FGCS-R3 (2026-11-24): METRICS_CARD/CONTRACTS define the waiting and bounded-slowdown
+        # sample by JOB_READY plus start >= ready only; SimulationMetrics does not require
+        # SCHEDULING_DECISION or JOB_RETURNED. Dropping the compute Job's decision keeps one
+        # waiting/slowdown observation (wait = 0.21 - 0.21 = 0) and removes both decision
+        # split samples, so their counts become 0 by the same contract.
+        audit = self.rewrite_compute_events(
+            "no-decision",
+            lambda events: [e for e in events if not (e["type"] == "SCHEDULING_DECISION" and e["jobId"] == 0)],
+            readyToDecisionObservationCount=0, decisionToStartObservationCount=0)
+        # The stream-completeness layer still reports the missing decision; only the metric
+        # recomputation must agree with SimulationMetrics.
+        self.assertEqual(0, audit.counts.get("metric-mismatch", 0), audit.report())
+        self.assertEqual(1, audit.counts.get("missing-SCHEDULING_DECISION", 0), audit.report())
+
+    def test_out_of_order_ready_is_excluded_not_clamped_to_zero(self):
+        # FGCS-R3 (2026-11-24): a compute Job whose JOB_READY (0.5) follows its start (0.21) is
+        # an out-of-order observation; the contract excludes it instead of substituting a zero
+        # wait. The waiting/slowdown/success samples are therefore empty (count 0, API mean 0.0),
+        # ready->decision is excluded (decision 0.21 < ready 0.5), and decision->start keeps
+        # its one sample (0.21 - 0.21 = 0).
+        def late_ready(events):
+            ready = next(e for e in events if e["type"] == "JOB_READY" and e["jobId"] == 0)
+            events.remove(ready)
+            ready["simulationTime"] = 0.5
+            index = next(i for i, e in enumerate(events) if e["simulationTime"] > 0.5)
+            events.insert(index, ready)
+            return events
+        audit = self.rewrite_compute_events(
+            "late-ready", late_ready,
+            totalWaitingTimeObservationCount=0, trueSlowdownObservationCount=0,
+            successOnlyWaitingObservationCount=0, readyToDecisionObservationCount=0,
+            meanComputeTrueSlowdown=0.0, successOnlyMeanComputeTrueSlowdown=0.0,
+            medianComputeTrueSlowdown=0.0, p95ComputeTrueSlowdown=0.0, maxComputeTrueSlowdown=0.0)
+        self.assertEqual(0, audit.counts.get("metric-mismatch", 0), audit.report())
+        self.assertEqual(1, audit.counts.get("ready-decision-start", 0), audit.report())
+
     def test_healthy_single_manifest_and_matrix_override(self):
         for name, duration, effective, matrix in (("plain", 1.0, 1000, False), ("matrix", 0.5, 500, True)):
             manifest = make_bundle(self.root / name, duration, effective, matrix)
