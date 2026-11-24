@@ -99,8 +99,8 @@ REGISTRY = [
         id="M10",
         name="SHARED DLS dynamic level flips the earliest-start subtraction into an addition",
         file="simulator/src/main/java/org/workflowsim/planning/SharedStorageDagPlanner.java",
-        old="                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() - earliestStart);",
-        new="                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() + earliestStart);",
+        old="                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() - earliestStart + delta);",
+        new="                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() + earliestStart + delta);",
         killers="SharedStoragePlannerRuntimeMirrorIntegrationTest,SharedStorageDlsPlanningAlgorithmTest,"
                 "SharedStorageDlsEtfSlotSemanticsAuditTest,SharedStorageDlsEtfSlotVisitAuditTest"),
     dict(
@@ -330,15 +330,15 @@ REGISTRY = [
         id="M43",
         name="IC-PCP ignores the virtual END deadline slack",
         file="simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpPlanner.java",
-        old="        minimum = Math.min(minimum, latest.get(END_ID) - starts.get(END_ID));",
-        new="        // END slack intentionally ignored by the mutant",
+        old="        return timing.finish.get(END_ID) <= problem.getDeadlineSeconds() + TOLERANCE;",
+        new="        return true;",
         killers="IcpcpPlannerTest"),
     dict(
         id="M44",
         name="IC-PCP path choice ignores incremental cost",
         file="simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpPlanner.java",
-        old="            if (best == null\n                    || costDelta < best.costDelta - 1.0e-9",
-        new="            if (best == null\n                    || slack > best.slack + 1.0e-9",
+        old="                if (best == null || delta < bestDelta - TOLERANCE) {",
+        new="                if (best == null) {",
         killers="IcpcpPlannerTest"),
     dict(
         id="M46",
