@@ -1,0 +1,24 @@
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 227-243
+scripts/mutation-gate.py
+  h_adc77830afcf4d 410
+simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftPlanner.java
+  h_adc77830afcf4d 80-81
+simulator/src/main/java/org/workflowsim/planning/moheft/MoHeftPlanner.java
+  h_adc77830afcf4d 40,42,44,47-73,99,101-102,104-106,111,116-118,130,221-222
+simulator/src/test/java/org/workflowsim/planning/greenheft/GreenHeftPlannerTest.java
+  h_adc77830afcf4d 80-109
+simulator/src/test/java/org/workflowsim/planning/moheft/MoHeftPlannerTest.java
+  h_adc77830afcf4d 76-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "76c724e8a52488273a8500adc95c847b182dfdc5",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
