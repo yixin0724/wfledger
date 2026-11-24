@@ -1,0 +1,34 @@
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 118
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 255-257
+docs/experiments/ALGORITHM_EXPERIMENT_AUDIT.md
+  h_adc77830afcf4d 14
+docs/experiments/ALGORITHM_METRIC_AUDIT.md
+  h_adc77830afcf4d 47-48
+docs/experiments/AUDIT_COVERAGE.md
+  h_adc77830afcf4d 238
+docs/experiments/CROSS_PAPER_COMPARISON.md
+  h_adc77830afcf4d 30-31,39
+docs/experiments/PAPER_REPRODUCTIONS.md
+  h_adc77830afcf4d 199,201
+docs/experiments/README.md
+  h_adc77830afcf4d 48
+docs/experiments/VV_CASE_LEDGER.md
+  h_adc77830afcf4d 92
+experiments/src/test/java/org/workflowsim/experiments/audit/AlgorithmExperimentAuditTest.java
+  h_adc77830afcf4d 37,55
+experiments/src/test/java/org/workflowsim/experiments/comparison/CrossPaperComparisonTest.java
+  h_adc77830afcf4d 92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "69bb7ad4de2d1178dfa56dc34f0d8f5a472efc92",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
