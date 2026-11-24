@@ -9,11 +9,18 @@ import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.utils.CrchRecovery;
 import org.workflowsim.utils.CrchRegistry;
 
+/**
+ * CRCH retry placement: fastest idle PE-compatible VM other than the failed one.
+ *
+ * <p>FGCS-R4 (2026-11-24): root cause - this was the only online policy without the PE filter, so a
+ * multi-PE Job could be placed on a narrower VM.
+ */
 public final class CrchSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
     @Override
     public void run() {
         CrchRegistry.get();
+        validateCloudletCompatibility();
         for (CondorVM vm : sortedVmsById()) {
             CrchRegistry.registerVmSpeed(vm.getId(), vm.getMips());
         }
@@ -28,7 +35,7 @@ public final class CrchSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             CondorVM selected = null;
             double best = Double.POSITIVE_INFINITY;
             for (CondorVM vm : sortedVmsById()) {
-                if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE) {
+                if (vm.getState() != WorkflowSimTags.VM_STATUS_IDLE || !isCompatible(job, vm)) {
                     continue;
                 }
                 if (recovery != null && vm.getId() == recovery.getFailedVmId()) {
@@ -44,7 +51,7 @@ public final class CrchSchedulingAlgorithm extends BaseSchedulingAlgorithm {
             }
             if (selected == null && recovery != null) {
                 for (CondorVM vm : sortedVmsById()) {
-                    if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE) {
+                    if (vm.getState() == WorkflowSimTags.VM_STATUS_IDLE && isCompatible(job, vm)) {
                         selected = vm;
                         break;
                     }

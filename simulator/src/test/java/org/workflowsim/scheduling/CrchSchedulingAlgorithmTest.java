@@ -38,4 +38,21 @@ class CrchSchedulingAlgorithmTest {
     private static CondorVM vm(int id) {
         return new CondorVM(id, 0, 1000.0, 1, 512, 100L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
     }
+
+    /** FGCS-R4 (2026-11-24): a two-PE Job must skip the faster one-PE VM 3. */
+    @Test
+    void neverSelectsAPeIncompatibleVm() {
+        CrchRegistry.configure(new CrchConfig(1.0, 0.1));
+        CondorVM fast = new CondorVM(3, 0, 4000.0, 1, 512, 100L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
+        CondorVM wide = new CondorVM(8, 0, 1000.0, 2, 512, 100L, 10000L, "Xen", new CloudletSchedulerSpaceShared());
+        Job job = new Job(1, 4000L);
+        job.setNumberOfPes(2);
+        CrchSchedulingAlgorithm scheduler = new CrchSchedulingAlgorithm();
+        scheduler.setCloudletList(Arrays.asList(job));
+        scheduler.setVmList(Arrays.asList(fast, wide));
+
+        scheduler.run();
+
+        assertEquals(8, job.getVmId());
+    }
 }

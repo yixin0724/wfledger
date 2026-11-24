@@ -378,6 +378,14 @@ public final class SimulationRunner {
                             + "declared frequencyTiers; on an all-plain platform the policy would be "
                             + "silently inert (BAT-D2)");
         }
+        if (anyTieredVm
+                && (config.getSchedulingAlgorithm() == SchedulingAlgorithm.CRCH
+                        || config.getFailureModel().getClusteringAlgorithm()
+                                == FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_CRCH)) {
+            throw new SimulationConfigurationException("CRCH recovery cannot be combined with frequency tiers: saved"
+                    + " work, checkpoint overhead and retry placement use nominal VM MIPS, so the tier speed would be"
+                    + " silently ignored (FGCS-R4)");
+        }
         if (config.getTaskCostMatrix() != null && anyTieredVm) {
             throw new SimulationConfigurationException("A task cost matrix cannot be combined with frequency"
                     + " tiers: the STATIC dispatch path re-derives Job MI from matrix seconds at datacenter"

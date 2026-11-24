@@ -449,6 +449,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         PlatformProfile.FrequencyTier selected = selectFrequencyTier(job, tiers);
         long scaledWork = scaledTierWorkMi(job, vm, selected);
 
+        job.setWorkBeforeTierScalingMi(job.getEffectiveExecutionLengthMi());
         job.setTierMips(selected.getMips());
         job.setEffectiveExecutionLengthMi(scaledWork);
         job.setCloudletLength(scaledWork);

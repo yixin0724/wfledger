@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.cloudbus.cloudsim.Cloudlet;
-import org.cloudbus.cloudsim.core.CloudSim;
 import org.workflowsim.FileItem;
 import org.workflowsim.Job;
 import org.workflowsim.Task;
@@ -78,16 +77,19 @@ public class ReclusteringEngine {
 
         switch (FailureParameters.getFTCluteringAlgorithm()) {
             case FTCLUSTERING_NOOP:
-                jobList.add(createJob(id, job, job.getEffectiveExecutionLengthMi(), job.getTaskList(), true));
+                jobList.add(createJob(id, job, job.getRestartWorkMi(), job.getTaskList(), true));
 
                 break;
 
             case FTCLUSTERING_CRCH:
+                // FGCS-R4 (2026-11-24): root cause - the window ran from the envelope start to the engine
+                // clock, so the input read and post-processing delay were credited as checkpointed compute.
+                Task attempt = job.getTaskList().get(0);
                 CrchRecovery recovery = CrchRegistry.recordFailure(
-                        job.getTaskList().get(0).getCloudletId(),
+                        attempt.getCloudletId(),
                         job.getVmId(),
-                        job.getExecStartTime(),
-                        CloudSim.clock(),
+                        attempt.getExecStartTime(),
+                        attempt.getTaskFinishTime(),
                         job.getEffectiveExecutionLengthMi(),
                         CrchRegistry.getVmMips(job.getVmId()));
                 long remaining = recovery.getRemainingWorkMi()

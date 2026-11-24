@@ -24,6 +24,8 @@ public class Job extends Task {
 
     private Double tierMips;
 
+    private Long workBeforeTierScalingMi;
+
     public Job(final int jobId, final long jobLength) {
 
         super(jobId, jobLength);
@@ -43,6 +45,30 @@ public class Job extends Task {
             throw new IllegalArgumentException("Frequency tier mips must be positive and finite: " + tierMips);
         }
         this.tierMips = tierMips;
+    }
+
+    /**
+     * Records the attempt's declared work before a frequency tier rescales its length.
+     *
+     * @param value positive MI
+     */
+    public void setWorkBeforeTierScalingMi(long value) {
+        if (value <= 0L) {
+            throw new IllegalArgumentException("Work before tier scaling must be positive MI: " + value);
+        }
+        this.workBeforeTierScalingMi = value;
+    }
+
+    /**
+     * Returns the work a full restart of this attempt must execute.
+     *
+     * <p>FGCS-R4 (2026-11-24): root cause - a retry was built from the tier-scaled effective length
+     * and scaled again at dispatch, so each retry's duration grew by {@code vmMips / tierMips}.
+     *
+     * @return declared MI of this attempt, independent of its frequency tier
+     */
+    public long getRestartWorkMi() {
+        return workBeforeTierScalingMi == null ? getEffectiveExecutionLengthMi() : workBeforeTierScalingMi.longValue();
     }
 
     public void setTaskList(List list) {
