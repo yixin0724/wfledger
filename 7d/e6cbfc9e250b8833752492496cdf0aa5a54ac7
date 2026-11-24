@@ -1,0 +1,16 @@
+AGENTS.md
+  h_adc77830afcf4d 81-88,90-91,165-166
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7de6cbfc9e250b8833752492496cdf0aa5a54ac7",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
