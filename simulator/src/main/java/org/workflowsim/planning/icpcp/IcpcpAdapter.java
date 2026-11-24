@@ -2,7 +2,6 @@ package org.workflowsim.planning.icpcp;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -10,10 +9,18 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.FileItem;
 import org.workflowsim.Task;
 import org.workflowsim.platform.PlatformProfile;
-import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.SimulationConstants;
 import org.workflowsim.utils.SimulationTiming;
 
+/**
+ * Converts WorkflowSim tasks into an IC-PCP problem under the SHARED compute-envelope model.
+ *
+ * <p>FGCS-R3 (2026-11-24) M3 root cause: the adapter added a point-to-point edge transfer
+ * ({@code bytes / mean VM bandwidth}) on top of task durations that already include the shared-storage
+ * read of every real input, so cross-VM edges were charged twice relative to the runtime, which has no
+ * point-to-point edges in SHARED. Edge transfer times are now zero; every input read stays in the
+ * consumer's {@code (L_raw + floor(mips * inputSeconds)) / mips} envelope.
+ */
 public final class IcpcpAdapter {
 
     private IcpcpAdapter() {}
@@ -38,10 +45,8 @@ public final class IcpcpAdapter {
             throw new IllegalArgumentException(
                     "IC-PCP requires tasks, VMs, platform, a positive deadline, and a positive event interval");
         }
-        double averageBandwidth = 0.0;
         Map<Integer, Double> costs = new LinkedHashMap<Integer, Double>();
         for (CondorVM vm : vms) {
-            averageBandwidth += vm.getBw() * 8.0e6;
             PlatformProfile.VmSpec spec = findVm(platform, vm.getId());
             PlatformProfile.CostSpec cost = spec.hasCosts() ? spec.getCosts() : platform.getCosts();
             if (cost == null) {
@@ -49,7 +54,6 @@ public final class IcpcpAdapter {
             }
             costs.put(vm.getId(), cost.getCpuPerSecond());
         }
-        averageBandwidth /= Math.max(1, vms.size());
         double workflowStart = sharedBootstrapFinish(vms, minimumEventIntervalSeconds);
         double storageRate = platform.getStorage().getMaxTransferRateMbPerSecond();
         List<IcpcpTask> converted = new ArrayList<IcpcpTask>();
@@ -71,21 +75,11 @@ public final class IcpcpAdapter {
                 throw new IllegalArgumentException(
                         "IC-PCP cannot map task " + task.getCloudletId() + "; no PE-compatible VM");
             }
-            LinkedHashSet<String> outputNames = new LinkedHashSet<String>();
-            for (FileItem output : task.getFileList()) {
-                if (output.getType() == FileType.OUTPUT) {
-                    outputNames.add(output.getName());
-                }
-            }
+            // FGCS-R3 (2026-11-24) M3: SHARED has no point-to-point edges; the child's read of this
+            // task's output is already part of the child's envelope duration above.
             Map<Integer, Double> children = new LinkedHashMap<Integer, Double>();
             for (Task child : task.getChildList()) {
-                double bytes = 0.0;
-                for (FileItem input : child.getFileList()) {
-                    if (input.getType() == FileType.INPUT && outputNames.contains(input.getName())) {
-                        bytes += input.getSize();
-                    }
-                }
-                children.put(child.getCloudletId(), bytes * 8.0 / averageBandwidth);
+                children.put(child.getCloudletId(), 0.0);
             }
             List<Integer> parents = new ArrayList<Integer>();
             for (Task parent : task.getParentList()) {

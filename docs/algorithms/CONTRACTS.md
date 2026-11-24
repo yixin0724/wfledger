@@ -236,22 +236,39 @@ energy, then deterministic candidate ID. `MoHeftPlannerTest` covers dominated-ca
 Pareto extremes, balanced selection and gap-inserted candidates; `MoHeftIntegrationTest` covers a
 real three-point tradeoff. This is not an exact full Pareto optimizer or an empirical neural-network model.
 
-### IC-PCP Deadline/Cost Partial Critical Paths (R-PAPER-07, 2026-11-06)
+### IC-PCP Deadline/Cost Partial Critical Paths (R-PAPER-07, 2026-11-06; FGCS-R3, 2026-11-24)
 
-`IC_PCP` implements one-phase IC-PCP: initial HEFT priority, EST/LFT, critical-parent partial
-critical paths, whole-path VM trials over PE-compatible resources, and feasible
-minimum-incremental-cost assignment. A virtual END node participates in the minimum slack check; an
-infeasible deadline fails explicitly. The SHARED adapter starts root work after the model-generated
-110-MI stage-in Job and root-release interval, and includes each task's shared-storage input seconds
-using the same single integer-MI conversion and `envelopeMI / vmMips` duration as the SHARED
-baseline. Its homogeneous communication
-estimate converts declared decimal MB/s to bit/s consistently. Cost is computed per VM as
-`ceil((lastFinish-firstStart)/billingPeriod) * billingPeriod * vmCostPerSecond`; the current adapter
-uses a one-second billing period. No silent fallback to an arbitrary VM, dynamic provisioning,
-IC-PCPD2, or full event-replay guarantee is made. `IcpcpPlannerTest` covers a low-cost chain,
-infeasible deadline, billing-period arithmetic, fork/join and cycle rejection; `IcpcpAdapterTest`
-covers units, PE filtering, duplicate declarations, SHARED input envelopes and absolute deadlines;
-`IcpcpIntegrationTest` covers declared VM costs in a real session.
+`IC_PCP` implements one-phase IC-PCP of [Abrishami, Naghibzadeh and Epema](<https://doi.org/10.1016/j.future.2012.05.004>)
+over the fixed declared VM pool. EST/EFT/LFT are computed over the DAG plus the per-VM task sequences;
+an unassigned task uses its minimum compatible duration (MET) and counts the edge transfer time. The
+**critical parent** of a task is its unassigned parent with the latest data arrival `EFT(p) + TT(p,t)`
+(ties: lower Task ID); partial critical paths are built backwards from the virtual END node and the
+parents of every assigned path task are then processed recursively, as in the paper.
+
+`AssignPath` places the whole path consecutively on one VM at one position of that VM's existing task
+sequence, recomputes the schedule, and accepts the candidate only if every assigned task — the path and
+the tasks already on any VM — finishes by its LFT and the makespan meets the deadline. Among applicable
+candidates it chooses the minimum incremental billed cost, then the lower VM ID, then the earlier
+position. Cost per VM is `ceil((lastFinish-firstStart)/billingPeriod) * billingPeriod * vmCostPerSecond`;
+the current adapter uses a one-second billing period.
+
+**Remaining deviation from the paper (fixed-pool adaptation).** No instance can be launched: a VM with no
+tasks plays the role of a new instance of its type at its declared rate, and when no VM is applicable
+the planner fails explicitly instead of launching one. Inserting a path may delay (never reorder or
+remap) already placed tasks, but only within their LFTs; the paper's instances never host two paths with
+interleaved idle gaps in the same way because each new path either fits an idle slot of an existing
+instance or gets a new instance. There is no IC-PCPD2, dynamic provisioning, or full event-replay claim.
+
+The SHARED adapter starts root work after the model-generated 110-MI stage-in Job and root-release
+interval and includes each task's shared-storage input seconds using the same single integer-MI
+conversion and `envelopeMI / vmMips` duration as the SHARED baseline. **Edge transfer times are zero**:
+the SHARED runtime has no point-to-point edges and every input read is already inside the consumer's
+envelope; the pre-2026-11-24 adapter added `bytes / meanBandwidth` on top and double-counted cross-VM
+edges (FGCS-R3 M3). `IcpcpPlannerTest` covers the hand-derived critical-parent case where smallest slack
+and latest arrival disagree, LFT-based rejection of an instance, a low-cost chain, infeasible deadline,
+billing arithmetic, fork/join and cycle rejection; `IcpcpAdapterTest` covers units, PE filtering, the
+zero SHARED edge time, SHARED input envelopes and absolute deadlines; `IcpcpIntegrationTest` covers
+declared VM costs in a real session.
 
 ### Network-Aware HEFT Bottleneck Stretching (R-PAPER-08, removed)
 
