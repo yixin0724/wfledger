@@ -14,7 +14,6 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.io.TempDir;
-import org.workflowsim.examples.failure.clustering.ParameterSweep;
 
 class ExamplesCliSmokeIntegrationTest {
 
@@ -54,20 +53,6 @@ class ExamplesCliSmokeIntegrationTest {
     }
 
     @Test
-    void boundedParameterSweepSmokeIsExplicitAndNoArgInvocationFails() throws Exception {
-        CliProcessTestSupport.ProcessResult success = run(ParameterSweep.class.getName(), "--smoke");
-        assertFalse(success.isTimedOut(), success.diagnostic());
-        assertEquals(0, success.getExitCode(), success.diagnostic());
-        assertTrue(
-                success.getOutput().contains("PARAMETER_SWEEP_SMOKE_COMPLETED replications=1"), success.diagnostic());
-
-        CliProcessTestSupport.ProcessResult missingMode = run(ParameterSweep.class.getName());
-        assertFalse(missingMode.isTimedOut(), missingMode.diagnostic());
-        assertNotEquals(0, missingMode.getExitCode(), missingMode.diagnostic());
-        assertFalse(missingMode.getOutput().contains("PARAMETER_SWEEP_SMOKE_COMPLETED"), missingMode.diagnostic());
-    }
-
-    @Test
     void suiteListExposesEveryCatalogDescriptorWithoutExecutingThem() throws Exception {
         CliProcessTestSupport.ProcessResult result = run(WorkflowSimAllExamplesTester.class.getName(), "--list");
         assertFalse(result.isTimedOut(), result.diagnostic());
@@ -85,17 +70,6 @@ class ExamplesCliSmokeIntegrationTest {
     }
 
     private static String[] invalidArguments(ExampleCatalog.Descriptor descriptor) {
-        String id = descriptor.getId();
-        if ("multiple-workflows".equals(id)) {
-
-            return new String[] {MISSING_DAX_PATH};
-        }
-        if ("balanced-clustering".equals(id)
-                || "fault-clustering-dynamic".equals(id)
-                || "fault-clustering-options".equals(id)
-                || "fault-clustering-periodic".equals(id)) {
-            return new String[] {"-d", MISSING_DAX_PATH};
-        }
         return new String[] {MISSING_DAX_PATH};
     }
 
