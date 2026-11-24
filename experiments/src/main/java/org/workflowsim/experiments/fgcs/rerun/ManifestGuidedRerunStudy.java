@@ -197,7 +197,7 @@ public final class ManifestGuidedRerunStudy {
                             expect(
                                             RerunVerdict.DIVERGED,
                                             "Configuration Rebuilding Rules forward runtimeScale. Under the recorded"
-                                                    + " parser and WORK_CONSERVING_TASK_EXECUTION_V2 semantics, every"
+                                                    + " parser and WORK_CONSERVING_TASK_EXECUTION_V3 semantics, every"
                                                     + " nonzero effective Task length is runtimeSeconds ×"
                                                     + " runtimeReferenceMips × runtimeScale. Doubling the scale"
                                                     + " changes effectiveExecutionLengthMi and downstream timing core"

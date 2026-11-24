@@ -152,6 +152,59 @@ class AlgorithmCatalogTest {
         }
     }
 
+    /**
+     * FGCS-R3 (2026-11-24): every algorithm whose decision semantics changed in the FGCS-R3 corrections declares
+     * a new machine-readable implementationRevision, so manifests written before the change cannot impersonate the
+     * corrected algorithm. Tags follow the existing CPOP/PEFT pattern (rule summary plus revision suffix).
+     */
+    @Test
+    void fgcsR3CorrectedSchedulersDeclareRevisedImplementationTags() {
+        Object[][] expected = {
+            {Parameters.SchedulingAlgorithm.READY_BATCH_MINMIN, "READY_BATCH_MINMIN_CHARGED_SHARED_READ_ENVELOPE_V2"},
+            {Parameters.SchedulingAlgorithm.READY_BATCH_MAXMIN, "READY_BATCH_MAXMIN_CHARGED_SHARED_READ_ENVELOPE_V2"},
+            {Parameters.SchedulingAlgorithm.READY_BATCH_MCT, "READY_BATCH_MCT_CHARGED_SHARED_READ_ENVELOPE_V2"},
+            {Parameters.SchedulingAlgorithm.EBPSM, "EBPSM_COMPLETION_CACHE_PUBLISH_FAIL_FAST_BUDGET_V2"}
+        };
+        for (Object[] row : expected) {
+            SimulationConfig config = SimulationConfig.builder("workflow.dax", 2)
+                    .schedulingAlgorithm((Parameters.SchedulingAlgorithm) row[0])
+                    .build();
+            Map<String, Object> scheduler = nested(AlgorithmCatalog.forConfiguration(config), "scheduler");
+            assertEquals(row[1], scheduler.get("implementationRevision"), String.valueOf(row[0]));
+        }
+    }
+
+    @Test
+    void fgcsR3CorrectedPlannersDeclareRevisedImplementationTags() {
+        Object[][] expected = {
+            {Parameters.PlanningAlgorithm.IC_PCP, "ICPCP_LATEST_ARRIVAL_CRITICAL_PARENT_LFT_PATH_SHARED_EDGES_V2"},
+            {Parameters.PlanningAlgorithm.MO_HEFT, "MOHEFT_NSGA2_BEAM_REFILL_SHARED_ENVELOPE_V2"},
+            {Parameters.PlanningAlgorithm.GREEN_HEFT, "GREENHEFT_SHARED_ENVELOPE_STAGE_IN_RELEASE_V2"},
+            {Parameters.PlanningAlgorithm.SHARED_STORAGE_DLS, "DLS_SIH_LEE_MEDIAN_STATIC_LEVEL_DELTA_V2"},
+            {Parameters.PlanningAlgorithm.DVFS_SLACK, "DVFS_SLACK_WHOLE_MI_TIER_RESCALING_V2"},
+            {Parameters.PlanningAlgorithm.LOCAL_HEFT, "HEFT_MEAN_RATE_COMMUNICATION_V2"},
+            {Parameters.PlanningAlgorithm.LOCAL_CPOP, "CPOP_PREDECESSOR_RANK_TIGHT_PATH_V3"},
+            {Parameters.PlanningAlgorithm.LOCAL_PEFT, "PEFT_SUCCESSOR_COST_OCT_EXIT_ZERO_V3"}
+        };
+        for (Object[] row : expected) {
+            SimulationConfig.Builder builder = SimulationConfig.builder("workflow.dax", 2)
+                    .planningAlgorithm((Parameters.PlanningAlgorithm) row[0])
+                    .schedulingAlgorithm(
+                            row[0] == Parameters.PlanningAlgorithm.DVFS_SLACK
+                                    ? Parameters.SchedulingAlgorithm.DVFS_SLACK
+                                    : Parameters.SchedulingAlgorithm.STATIC);
+            if (row[0] == Parameters.PlanningAlgorithm.IC_PCP || row[0] == Parameters.PlanningAlgorithm.DVFS_SLACK) {
+                builder.deadline(100L);
+            }
+            if (row[0].toString().startsWith("LOCAL_")) {
+                builder.fileSystem(ReplicaCatalog.FileSystem.LOCAL)
+                        .dataMovementModel(org.workflowsim.data.DataMovementModel.preExecutionTransferDelayV1());
+            }
+            Map<String, Object> planner = nested(AlgorithmCatalog.forConfiguration(builder.build()), "planner");
+            assertEquals(row[1], planner.get("implementationRevision"), String.valueOf(row[0]));
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<String, Object> nested(Map<String, Object> values, String key) {
         return (Map<String, Object>) values.get(key);

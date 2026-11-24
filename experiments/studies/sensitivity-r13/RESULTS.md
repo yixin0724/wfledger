@@ -13,7 +13,7 @@
 > and the [full dissertation](<https://repositorio-aberto.up.pt/bitstream/10216/92290/2/129782.pdf>),
 > Chapter 3, printed p.71 (Eq.7 / exit condition) and p.73 (Algorithm 1), give the successor
 > `w(child,p')` and the exit `OCT=0`. The current executor produces
-> `sensitivity-response-r13-v2`, not the legacy results on this page; the current contract and the
+> `sensitivity-response-r13-v3` (`-v2` is the historical V2-era identity), not the legacy results on this page; the current contract and the
 > retained corrected study are in
 > [protocol revisions](<../PROTOCOL_COMPATIBILITY.md>) and
 > [study-impact re-verification](<../correctness-repair/RESULTS.md>).

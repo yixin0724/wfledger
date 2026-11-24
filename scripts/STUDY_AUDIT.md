@@ -53,11 +53,11 @@ The statistics checker supports only explicitly registered `protocol` and `full/
 
 | Registered study | Current identity | Compatibility identities that require `--historical` |
 | --- | --- | --- |
-| Network-limited comparison | `network-limited-r10-v3` | `network-limited-r10-v2` |
-| Planner comparison | `peft-comparison-r12-v2` | `peft-comparison-r12-v1` |
-| Sensitivity comparison | `sensitivity-response-r13-v2` | `sensitivity-response-r13-v1` |
+| Network-limited comparison | `network-limited-r10-v4` | `network-limited-r10-v3` (V2 execution), `network-limited-r10-v2` |
+| Planner comparison | `peft-comparison-r12-v3` | `peft-comparison-r12-v2` (V2 execution), `peft-comparison-r12-v1` |
+| Sensitivity comparison | `sensitivity-response-r13-v3` | `sensitivity-response-r13-v2` (V2 execution), `sensitivity-response-r13-v1` |
 
-These strings are protocol identifiers in the [executable registry](<_study_audit.py>); retained evidence cannot be renamed just to tidy the documentation. The basic evidence checker requires manifest v4; older v4 evidence that lacks the current execution-semantics declarations must also explicitly enable the compatibility mode, and `--historical` does not upgrade v2/v3 manifests into v4.
+These strings are protocol identifiers in the [executable registry](<_study_audit.py>); retained evidence cannot be renamed just to tidy the documentation. The basic evidence checker requires manifest v4; older v4 evidence that lacks the current execution-semantics declaration, or that declares the historical `WORK_CONSERVING_TASK_EXECUTION_V2` (current is V3 since FGCS-R3, 2026-11-24), must also explicitly enable the compatibility mode, and `--historical` does not upgrade v2/v3 manifests into v4.
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-evidence.py \

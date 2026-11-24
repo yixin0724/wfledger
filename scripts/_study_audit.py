@@ -10,15 +10,23 @@ from fractions import Fraction
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-EXECUTION_SEMANTICS = "WORK_CONSERVING_TASK_EXECUTION_V2"
+# FGCS-R3 (2026-11-24): the current execution identity is V3; V2 is a historical read-only identity that only
+# --historical audits accept (mirrors TaskExecutionModel and NetworkStudyPlan).
+EXECUTION_SEMANTICS = "WORK_CONSERVING_TASK_EXECUTION_V3"
+HISTORICAL_EXECUTION_SEMANTICS_V2 = "WORK_CONSERVING_TASK_EXECUTION_V2"
+HISTORICAL_EXECUTION_SEMANTICS = (HISTORICAL_EXECUTION_SEMANTICS_V2,)
 LONG_MAX = (1 << 63) - 1
+# protocol -> (variant, historical, declared executionSemantics or None when the field must be absent)
 PROTOCOLS = {
-    "network-limited-r10-v3": ("r10", False),
-    "network-limited-r10-v2": ("r10", True),
-    "peft-comparison-r12-v2": ("r12", False),
-    "peft-comparison-r12-v1": ("r12", True),
-    "sensitivity-response-r13-v2": ("r13", False),
-    "sensitivity-response-r13-v1": ("r13", True),
+    "network-limited-r10-v4": ("r10", False, EXECUTION_SEMANTICS),
+    "network-limited-r10-v3": ("r10", True, HISTORICAL_EXECUTION_SEMANTICS_V2),
+    "network-limited-r10-v2": ("r10", True, None),
+    "peft-comparison-r12-v3": ("r12", False, EXECUTION_SEMANTICS),
+    "peft-comparison-r12-v2": ("r12", True, HISTORICAL_EXECUTION_SEMANTICS_V2),
+    "peft-comparison-r12-v1": ("r12", True, None),
+    "sensitivity-response-r13-v3": ("r13", False, EXECUTION_SEMANTICS),
+    "sensitivity-response-r13-v2": ("r13", True, HISTORICAL_EXECUTION_SEMANTICS_V2),
+    "sensitivity-response-r13-v1": ("r13", True, None),
 }
 CLASSIC_INPUTS = [
     ("epigenomics-100", "epigenomics", "dax/epigenomics/n100/Epigenomics_100.dax", "374521746417b18133682de21b654b84c32acde6332462c0ce916c4ba12c7f36"),
@@ -279,7 +287,7 @@ def layered_xml(width):
 def registered_plan(protocol, mode):
     if protocol not in PROTOCOLS or mode not in ("full", "smoke"):
         raise CheckError("unregistered protocol/mode: {}/{}".format(protocol, mode))
-    variant, historical = PROTOCOLS[protocol]
+    variant, historical, semantics = PROTOCOLS[protocol]
     full = mode == "full"
     vms = [4, 8, 16, 32] if variant == "r13" and full else ([4, 16] if full else [4])
     networks = ["endpoint", "fat-tree-constrained", "fat-tree-wide"]
@@ -314,8 +322,8 @@ def registered_plan(protocol, mode):
         plan.update(midLinkMbPerSecond=0.5, fastLinkMbPerSecond=5.0,
                     fatTreeKRule="k=4 for vmCount<=16; k=8 for vmCount=32", heterogeneityMipsPatterns=MIPS_PATTERNS,
                     conditions=[dict(zip(("vmCount", "network", "heterogeneity"), c)) for c in conditions])
-    if not historical:
-        plan["executionSemantics"] = EXECUTION_SEMANTICS
+    if semantics is not None:
+        plan["executionSemantics"] = semantics
     return variant, historical, plan, cells
 
 def validate_registered_plan(plan, audit, allow_historical=False):

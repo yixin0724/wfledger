@@ -13,7 +13,7 @@
 > [public repository record](<https://repositorio-aberto.up.pt/handle/10216/92290>) and in the
 > [full doctoral dissertation](<https://repositorio-aberto.up.pt/bitstream/10216/92290/2/129782.pdf>),
 > Chapter 3, printed p.71 (Eq.7: successor `w(child,p')`, exit `OCT=0`) and p.73 (Algorithm 1).
-> The current executor produces `sensitivity-response-r13-v2`; the historical run commands below
+> The current executor produces `sensitivity-response-r13-v3` (`-v2` is the historical V2-era identity); the historical run commands below
 > do not restore the legacy implementation. The current protocol and the retained corrected-model
 > study are in [protocol revisions](<../PROTOCOL_COMPATIBILITY.md>)
 > and [study-impact re-verification](<../correctness-repair/RESULTS.md>), respectively.

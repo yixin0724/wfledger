@@ -7,6 +7,8 @@ import platform
 import subprocess
 import sys
 
+from _fgcs_protocol import check_manifest_semantics, declared_execution_semantics
+
 ROOT = Path(__file__).resolve().parents[1]
 DRIVERS = {
     "static-baseline": "org.workflowsim.experiments.fgcs.baseline.StaticPlannerBaselineStudy",
@@ -94,6 +96,12 @@ def verify(output):
             issues.append("missing " + name)
         elif len(json.loads(path.read_text())) != expected:
             issues.append("wrong row count for " + name)
+    # FGCS-R3 (2026-11-24): generated rerun/adversarial evidence must carry the protocol's current execution
+    # identity; retained V2-era bundles cannot satisfy a new round-two verification.
+    expected = declared_execution_semantics()
+    for name in ("rerun/evidence", "verification/evidence"):
+        _, failures = check_manifest_semantics(output / name, expected)
+        issues.extend(failures)
     if issues:
         raise ValueError("; ".join(issues))
 
@@ -108,7 +116,8 @@ def metadata(output):
     counts["manifestGuidedRerunCases"] = len(json.loads((output / "rerun/results.json").read_text())["cases"])
     counts["semanticContracts"] = len(json.loads((output / "contracts/results.json").read_text())["cases"])
     return {
-        "protocol": "FGCS_ROUND2_V3",
+        "protocol": "FGCS_ROUND2_V4",
+        "executionSemantics": declared_execution_semantics(),
         "sourceCommit": commit,
         "sourceTreeDirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()),
         "java": subprocess.run([java_bin, "-version"], capture_output=True, text=True).stderr.strip(),

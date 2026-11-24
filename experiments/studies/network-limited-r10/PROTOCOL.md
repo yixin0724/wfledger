@@ -1,6 +1,6 @@
 # R10 Historical Study Provenance and Eligibility Notes
 
-> This page documents only the retained `network-limited-r10-v2` study; it is not the current model protocol. The current executor produces `network-limited-r10-v3`; for how to run it and the certification scope see [protocol revisions](<../PROTOCOL_COMPATIBILITY.md>). The old data is neither rewritten nor relabelled as a new execution model.
+> This page documents only the retained `network-limited-r10-v2` study; it is not the current model protocol. The current executor produces `network-limited-r10-v4` (V3 execution; `network-limited-r10-v3` is the historical V2-era identity); for how to run it and the certification scope see [protocol revisions](<../PROTOCOL_COMPATIBILITY.md>). The old data is neither rewritten nor relabelled as a new execution model.
 
 ## Provenance of the Frozen Study
 

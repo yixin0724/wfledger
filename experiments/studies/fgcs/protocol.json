@@ -1,5 +1,8 @@
 {
-  "protocol": "FGCS_ROUND2_MATRIX_V3",
+  "protocol": "FGCS_ROUND2_MATRIX_V4",
+  "executionSemantics": "WORK_CONSERVING_TASK_EXECUTION_V3",
+  "historicalExecutionSemantics": ["WORK_CONSERVING_TASK_EXECUTION_V2"],
+  "executionSemanticsRule": "Every result.manifest.json produced for this protocol must declare executionSemantics exactly; evidence declaring a historical identity (FGCS_ROUND2_MATRIX_V3 and earlier, V2) is read-only and cannot satisfy V4",
   "decisionLayers": ["static-planning", "online-ready-job-scheduling", "control-ready-vm-assignment"],
   "standardRunner": {
     "clustering": "NONE",

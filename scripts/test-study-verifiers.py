@@ -179,10 +179,10 @@ def make_large_clock_bundle(root, lost_cpu_seconds=0.0):
     bind_sidecars(manifest, doc)
     return manifest
 
-def make_statistics_study(root):
+def make_statistics_study(root, protocol="peft-comparison-r12-v3"):
 
     root.mkdir(parents=True)
-    _, _, plan, _ = registered_plan("peft-comparison-r12-v2", "smoke")
+    _, _, plan, _ = registered_plan(protocol, "smoke")
     for w in plan["workflows"]:
         w["path"] = str(root / w["path"])
     write_json(root / "protocol.json", plan)
@@ -207,7 +207,7 @@ def make_statistics_study(root):
                 config = {"vmCount": 4, "rootSeed": 11, "planningAlgorithm": planner, "schedulingAlgorithm": "STATIC", "fileSystem": "LOCAL",
                           "runtimeScale": 1, "runtimeReferenceMips": 1000, "cloudSimMinEventIntervalSeconds": 0.1, "deadline": 0,
                           "taskCostMatrix": None, "reduceMethod": None, "costModel": "DATACENTER", "workflowArrivalSeconds": [0],
-                          "workflowPaths": [workflow["path"]], "executionSemantics": EXECUTION_SEMANTICS,
+                          "workflowPaths": [workflow["path"]], "executionSemantics": plan["executionSemantics"],
                           "clustering": {"method": "NONE", "clustersNum": 0, "clustersSize": 0, "code": None},
                           "overheadModel": {"workflowEngineDelayInterval": 0, "bandwidth": 0, "workflowEngineDelays": {}, "queueDelays": {}, "postDelays": {}, "clusteringDelays": {}},
                           "failureModel": {"generatorMode": "FAILURE_NONE", "clusteringAlgorithm": "FTCLUSTERING_NOOP", "monitorMode": "MONITOR_NONE",
@@ -264,9 +264,23 @@ class IndependentAuditorTests(unittest.TestCase):
         self.assertEqual(2**52 + 1, java_round(float(2**52 + 1)))
 
     def test_independent_registration_counts_and_frozen_synthetic_hashes(self):
-        for protocol, counts in (("network-limited-r10-v3", (504, 36)), ("peft-comparison-r12-v2", (126, 18)), ("sensitivity-response-r13-v2", (546, 30))):
+        # FGCS-R3 (2026-11-24): current V3 identities, V2-era historical identities, and the oldest identities.
+        registry = (("network-limited-r10-v4", False, "WORK_CONSERVING_TASK_EXECUTION_V3", (504, 36)),
+                    ("network-limited-r10-v3", True, "WORK_CONSERVING_TASK_EXECUTION_V2", (504, 36)),
+                    ("network-limited-r10-v2", True, None, (504, 36)),
+                    ("peft-comparison-r12-v3", False, "WORK_CONSERVING_TASK_EXECUTION_V3", (126, 18)),
+                    ("peft-comparison-r12-v2", True, "WORK_CONSERVING_TASK_EXECUTION_V2", (126, 18)),
+                    ("peft-comparison-r12-v1", True, None, (126, 18)),
+                    ("sensitivity-response-r13-v3", False, "WORK_CONSERVING_TASK_EXECUTION_V3", (546, 30)),
+                    ("sensitivity-response-r13-v2", True, "WORK_CONSERVING_TASK_EXECUTION_V2", (546, 30)),
+                    ("sensitivity-response-r13-v1", True, None, (546, 30)))
+        self.assertEqual("WORK_CONSERVING_TASK_EXECUTION_V3", EXECUTION_SEMANTICS)
+        for protocol, historical, semantics, counts in registry:
             for mode, count in zip(("full", "smoke"), counts):
-                self.assertEqual(count, len(registered_plan(protocol, mode)[3]))
+                _, old, plan, cells = registered_plan(protocol, mode)
+                self.assertEqual(count, len(cells))
+                self.assertEqual(historical, old, protocol)
+                self.assertEqual(semantics, plan.get("executionSemantics"), protocol)
         self.assertEqual("2a7a23bed50abc515523036ea220f292be0a8196a554e8dafeb2e8aba2407ee6", hashlib.sha256(layered_xml(8).encode()).hexdigest())
         self.assertEqual("342347cfb5cb139b52d903a611cb84ff205078250d3bdb754152cfb239af97e2", hashlib.sha256(layered_xml(32).encode()).hexdigest())
 
@@ -578,6 +592,25 @@ class IndependentAuditorTests(unittest.TestCase):
                                 for i in audit.issues), (field, audit.report()))
         write_json(manifest, original)
 
+    def test_statistics_bind_v2_era_protocol_only_in_historical_mode(self):
+        # FGCS-R3 (2026-11-24): a retained V2-era study stays auditable read-only, but never as current evidence.
+        source = make_statistics_study(self.root / "v2-era", "peft-comparison-r12-v2")
+        audit = Audit()
+        statistics.inspect_index(source, audit)
+        self.assertGreater(audit.counts.get("historical-mode-required", 0), 0, audit.report())
+        audit = Audit()
+        report, _ = statistics.inspect_index(source, audit, historical=True)
+        self.assertEqual(0, audit.issue_count, audit.report())
+        self.assertEqual("WORK_CONSERVING_TASK_EXECUTION_V2", report["model"])
+        index = json.loads(source.read_text())
+        manifest = source.parent / index["runs"][0]["manifest"]
+        doc = json.loads(manifest.read_text())
+        doc["configuration"]["executionSemantics"] = EXECUTION_SEMANTICS
+        write_json(manifest, doc)
+        audit = Audit()
+        statistics.inspect_index(source, audit, historical=True)
+        self.assertGreater(audit.counts.get("fixed-condition", 0), 0, "V3 run cannot sit in a V2-era study")
+
     def test_statistics_emit_full_per_dag_effects_and_reject_pruning(self):
         source = make_statistics_study(self.root / "study")
         audit = Audit()
@@ -635,6 +668,25 @@ class ContractEventAuditTests(unittest.TestCase):
         revision_manifest = inject_contract_events(make_bundle(self.root / "revisioned"))
         evidence.inspect_manifest(revision_manifest, revision_report)
         self.assertEqual(0, revision_report.issue_count, revision_report.report())
+
+    def test_v2_execution_identity_requires_historical_mode_and_unknown_identity_is_rejected(self):
+        # FGCS-R3 (2026-11-24): V2 is historical read-only; an unregistered identity is never accepted.
+        manifest = make_bundle(self.root / "v2-identity")
+        doc = json.loads(manifest.read_text())
+        doc["configuration"]["executionSemantics"] = "WORK_CONSERVING_TASK_EXECUTION_V2"
+        bind_sidecars(manifest, doc)
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertGreater(audit.counts.get("historical-mode-required", 0), 0, audit.report())
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit, historical=True)
+        self.assertEqual(0, audit.counts.get("execution-model-identity", 0), audit.report())
+        self.assertEqual(0, audit.counts.get("historical-mode-required", 0), audit.report())
+        doc["configuration"]["executionSemantics"] = "WORK_CONSERVING_TASK_EXECUTION_V9"
+        bind_sidecars(manifest, doc)
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit, historical=True)
+        self.assertGreater(audit.counts.get("execution-model-identity", 0), 0, audit.report())
 
     def test_terminal_clock_identity_mismatch_is_detected(self):
         manifest = inject_contract_events(make_bundle(self.root / "terminal-mismatch"), terminal_delta=0.05)

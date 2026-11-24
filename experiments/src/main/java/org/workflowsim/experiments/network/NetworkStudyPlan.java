@@ -23,10 +23,26 @@ import org.workflowsim.utils.TaskExecutionModel;
 
 public final class NetworkStudyPlan {
 
-    public static final String PROTOCOL = "network-limited-r10-v3";
+    /*
+     * FGCS-R3 (2026-11-24): the registered plan embeds TaskExecutionModel.EXECUTION_SEMANTICS, so advancing the
+     * execution identity to WORK_CONSERVING_TASK_EXECUTION_V3 requires new protocol identities. The previous
+     * current identities (r10-v3, r12-v2, r13-v2) are now historical read-only protocols whose plan and run
+     * manifests must declare exactly WORK_CONSERVING_TASK_EXECUTION_V2; the oldest identities keep their
+     * original shape without any executionSemantics field.
+     */
+    public static final String PROTOCOL = "network-limited-r10-v4";
 
-    public static final String PEFT_COMPARISON_PROTOCOL = "peft-comparison-r12-v2";
-    public static final String SENSITIVITY_PROTOCOL = "sensitivity-response-r13-v2";
+    public static final String PEFT_COMPARISON_PROTOCOL = "peft-comparison-r12-v3";
+    public static final String SENSITIVITY_PROTOCOL = "sensitivity-response-r13-v3";
+
+    /** Historical protocol executed under {@code WORK_CONSERVING_TASK_EXECUTION_V2}. */
+    public static final String V2_EXECUTION_PROTOCOL = "network-limited-r10-v3";
+
+    /** Historical protocol executed under {@code WORK_CONSERVING_TASK_EXECUTION_V2}. */
+    public static final String V2_EXECUTION_PEFT_COMPARISON_PROTOCOL = "peft-comparison-r12-v2";
+
+    /** Historical protocol executed under {@code WORK_CONSERVING_TASK_EXECUTION_V2}. */
+    public static final String V2_EXECUTION_SENSITIVITY_PROTOCOL = "sensitivity-response-r13-v2";
 
     public static final String HISTORICAL_PROTOCOL = "network-limited-r10-v2";
 
@@ -185,9 +201,35 @@ public final class NetworkStudyPlan {
     }
 
     public boolean isHistoricalProtocol() {
-        return HISTORICAL_PROTOCOL.equals(protocol)
-                || HISTORICAL_PEFT_COMPARISON_PROTOCOL.equals(protocol)
-                || HISTORICAL_SENSITIVITY_PROTOCOL.equals(protocol);
+        return isUndeclaredExecutionProtocol(protocol) || isV2ExecutionProtocol(protocol);
+    }
+
+    /**
+     * Returns the {@code executionSemantics} value that this protocol's plan and run configurations must declare,
+     * or {@code null} for the oldest protocols, which predate the field and must not acquire it.
+     *
+     * @return declared execution identity, or {@code null} when the field must be absent
+     */
+    public String declaredExecutionSemantics() {
+        if (isUndeclaredExecutionProtocol(protocol)) {
+            return null;
+        }
+        if (isV2ExecutionProtocol(protocol)) {
+            return TaskExecutionModel.HISTORICAL_EXECUTION_SEMANTICS_V2;
+        }
+        return TaskExecutionModel.EXECUTION_SEMANTICS;
+    }
+
+    private static boolean isUndeclaredExecutionProtocol(String value) {
+        return HISTORICAL_PROTOCOL.equals(value)
+                || HISTORICAL_PEFT_COMPARISON_PROTOCOL.equals(value)
+                || HISTORICAL_SENSITIVITY_PROTOCOL.equals(value);
+    }
+
+    private static boolean isV2ExecutionProtocol(String value) {
+        return V2_EXECUTION_PROTOCOL.equals(value)
+                || V2_EXECUTION_PEFT_COMPARISON_PROTOCOL.equals(value)
+                || V2_EXECUTION_SENSITIVITY_PROTOCOL.equals(value);
     }
 
     private static String currentProtocol(StudyVariant variant) {
@@ -209,11 +251,17 @@ public final class NetworkStudyPlan {
             throw new IllegalArgumentException("Study mode must be smoke or full");
         }
         StudyVariant variant;
-        if (PROTOCOL.equals(protocol) || HISTORICAL_PROTOCOL.equals(protocol)) {
+        if (PROTOCOL.equals(protocol)
+                || V2_EXECUTION_PROTOCOL.equals(protocol)
+                || HISTORICAL_PROTOCOL.equals(protocol)) {
             variant = StudyVariant.R10;
-        } else if (PEFT_COMPARISON_PROTOCOL.equals(protocol) || HISTORICAL_PEFT_COMPARISON_PROTOCOL.equals(protocol)) {
+        } else if (PEFT_COMPARISON_PROTOCOL.equals(protocol)
+                || V2_EXECUTION_PEFT_COMPARISON_PROTOCOL.equals(protocol)
+                || HISTORICAL_PEFT_COMPARISON_PROTOCOL.equals(protocol)) {
             variant = StudyVariant.PEFT_COMPARISON;
-        } else if (SENSITIVITY_PROTOCOL.equals(protocol) || HISTORICAL_SENSITIVITY_PROTOCOL.equals(protocol)) {
+        } else if (SENSITIVITY_PROTOCOL.equals(protocol)
+                || V2_EXECUTION_SENSITIVITY_PROTOCOL.equals(protocol)
+                || HISTORICAL_SENSITIVITY_PROTOCOL.equals(protocol)) {
             variant = StudyVariant.SENSITIVITY_R13;
         } else {
             throw new IllegalArgumentException("Unknown protocol: " + protocol);
@@ -457,8 +505,9 @@ public final class NetworkStudyPlan {
                         : "DAG_PAIRED_AFTER_SEED_MEAN;SEPARATE_POPULATIONS;"
                                 + "HOLM_TWO_PLANNERS;DESCRIPTIVE_SELECTED_CORPUS");
         result.put("transferStart", "ALL_GROUPS_START_AT_JOB_READY");
-        if (!isHistoricalProtocol()) {
-            result.put("executionSemantics", TaskExecutionModel.EXECUTION_SEMANTICS);
+        String declared = declaredExecutionSemantics();
+        if (declared != null) {
+            result.put("executionSemantics", declared);
         }
         return result;
     }

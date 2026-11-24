@@ -111,6 +111,13 @@ class FgcsMatrixVerifierTest(unittest.TestCase):
         path = root / "overhead/results.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(rows), encoding="utf-8")
+        self.write_manifest(root / "overhead/evidence/measured/artifacts/run-0", "WORK_CONSERVING_TASK_EXECUTION_V3")
+
+    @staticmethod
+    def write_manifest(directory, semantics):
+        directory.mkdir(parents=True, exist_ok=True)
+        configuration = {} if semantics is None else {"executionSemantics": semantics}
+        (directory / "result.manifest.json").write_text(json.dumps({"configuration": configuration}), encoding="utf-8")
 
     def read_overhead(self, root):
         path = root / "overhead/results.json"
@@ -210,6 +217,27 @@ class FgcsMatrixVerifierTest(unittest.TestCase):
             rows[0]["peakHeapBytes"] = rows[0]["heapPoolPeakSumBytes"]
             path.write_text(json.dumps(rows), encoding="utf-8")
             self.assert_rejected(root, "ambiguous peakHeapBytes")
+
+    def test_protocol_declares_current_v3_execution_identity(self):
+        # FGCS-R3 (2026-11-24): new FGCS runs are V3; V2 is historical only.
+        self.assertEqual("WORK_CONSERVING_TASK_EXECUTION_V3", MODULE.declared_execution_semantics())
+
+    def test_v2_or_undeclared_manifest_cannot_impersonate_a_new_run(self):
+        for semantics in ("WORK_CONSERVING_TASK_EXECUTION_V2", None):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.populate(root)
+                self.write_manifest(root / "overhead/evidence/measured/artifacts/run-old", semantics)
+                with self.assertRaisesRegex(ValueError, "executionSemantics"):
+                    MODULE.verify(root, 1)
+
+    def test_overhead_without_manifests_cannot_bind_the_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.populate(root)
+            (root / "overhead/evidence/measured/artifacts/run-0/result.manifest.json").unlink()
+            with self.assertRaisesRegex(ValueError, "no result.manifest.json"):
+                MODULE.verify(root, 1)
 
     def test_missing_matrix_is_not_a_pass(self):
         with tempfile.TemporaryDirectory() as directory:

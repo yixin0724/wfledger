@@ -218,6 +218,8 @@ public final class AlgorithmCatalog {
                         "decisionRule",
                         "Immediate-mode idle-VM Min-Min: one Job per idle VM per round, minimum envelope time"
                                 + " (compute plus charged SHARED read), recomputed after each assignment");
+                // FGCS-R3 (2026-11-24) B1: V2 adds the runtime-charged SHARED input read to the envelope.
+                values.put("implementationRevision", "READY_BATCH_MINMIN_CHARGED_SHARED_READ_ENVELOPE_V2");
                 values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
                 values.put(
                         "limitations",
@@ -230,6 +232,8 @@ public final class AlgorithmCatalog {
                         "decisionRule",
                         "Immediate-mode idle-VM Max-Min: one Job per idle VM per round, maximum of minimum envelope"
                                 + " times (compute plus charged SHARED read), recomputed after each assignment");
+                // FGCS-R3 (2026-11-24) B1: V2 adds the runtime-charged SHARED input read to the envelope.
+                values.put("implementationRevision", "READY_BATCH_MAXMIN_CHARGED_SHARED_READ_ENVELOPE_V2");
                 values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
                 values.put(
                         "limitations",
@@ -267,6 +271,8 @@ public final class AlgorithmCatalog {
                 "decisionRule",
                 "Immediate-mode idle-VM MCT: strict ready-arrival FIFO, minimum envelope time (compute plus"
                         + " charged SHARED read); blocks at the first unplaceable Job");
+        // FGCS-R3 (2026-11-24) B1: V2 adds the runtime-charged SHARED input read to the envelope.
+        values.put("implementationRevision", "READY_BATCH_MCT_CHARGED_SHARED_READ_ENVELOPE_V2");
         values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
         values.put(
                 "limitations",
@@ -327,6 +333,9 @@ public final class AlgorithmCatalog {
         values.put(
                 "decisionRule",
                 "SFTD budget distribution plus input/container cache preference and budget-gated dispatch");
+        // FGCS-R3 (2026-11-24) A1/A2: V2 publishes caches on successful completion and fails fast when no
+        // compatible VM can ever meet a Task's sub-budget, evaluated after the whole scheduling round.
+        values.put("implementationRevision", "EBPSM_COMPLETION_CACHE_PUBLISH_FAIL_FAST_BUDGET_V2");
         values.put("verification", "EBPSM_BUDGET_CACHE_REGRESSION_COVERED");
         values.put(
                 "limitations",
@@ -422,6 +431,8 @@ public final class AlgorithmCatalog {
         values.put("decisionLayer", "STATIC_DAG_DVFS_SLACK");
         values.put("inputDomain", "SHARED_DAG_WITH_FREQUENCY_TIERS_AND_POSITIVE_DEADLINE");
         values.put("decisionRule", "HEFT mapping followed by iterative energy-decreasing slack allocation");
+        // FGCS-R3 (2026-11-24) m6: V2 plans each tier with the runtime whole-MI rescaling.
+        values.put("implementationRevision", "DVFS_SLACK_WHOLE_MI_TIER_RESCALING_V2");
         values.put("requiredScheduler", SchedulingAlgorithm.DVFS_SLACK.name());
         values.put("verification", "DVFS_SLACK_REGRESSION_COVERED");
         values.put(
@@ -433,6 +444,9 @@ public final class AlgorithmCatalog {
         values.put("decisionLayer", "STATIC_DAG_DEADLINE_COST_PCP");
         values.put("inputDomain", "SHARED_DAG_WITH_POSITIVE_DEADLINE_AND_VM_COST");
         values.put("decisionRule", "Critical-parent PCP with EST/LFT, incremental cost and flexibility");
+        // FGCS-R3 (2026-11-24) M1-M3: V2 uses the latest-data-arrival critical parent, LFT-checked whole-path
+        // placement, and SHARED edges without an extra point-to-point transfer.
+        values.put("implementationRevision", "ICPCP_LATEST_ARRIVAL_CRITICAL_PARENT_LFT_PATH_SHARED_EDGES_V2");
         values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
         values.put("verification", "ICPCP_DEADLINE_COST_REGRESSION_COVERED");
         values.put("limitations", limitations("One-phase IC-PCP core; no dynamic provisioning or IC-PCPD2 claim"));
@@ -443,6 +457,9 @@ public final class AlgorithmCatalog {
         values.put("inputDomain", "SHARED_DAG_WITH_DECLARED_VM_POWER");
         values.put(
                 "decisionRule", "HEFT-ordered beam search with non-dominated filtering, crowding and balanced choice");
+        // FGCS-R3 (2026-11-24) M5/M6/m7: V2 refills the beam from later NSGA-II fronts, uses exact insertion,
+        // and plans with the SHARED envelope plus stage-in release.
+        values.put("implementationRevision", "MOHEFT_NSGA2_BEAM_REFILL_SHARED_ENVELOPE_V2");
         values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
         values.put("verification", "MOHEFT_PARETO_REGRESSION_COVERED");
         values.put(
@@ -455,6 +472,8 @@ public final class AlgorithmCatalog {
         values.put("decisionLayer", "STATIC_DAG_ENERGY_HEFT");
         values.put("inputDomain", "SHARED_DAG_WITH_DECLARED_VM_POWER");
         values.put("decisionRule", "HEFT upward rank with minimum-energy VM and finish-time tie-break");
+        // FGCS-R3 (2026-11-24) M6/m7: V2 plans with the SHARED envelope, stage-in release and exact insertion.
+        values.put("implementationRevision", "GREENHEFT_SHARED_ENVELOPE_STAGE_IN_RELEASE_V2");
         values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
         values.put("verification", "GREENHEFT_ENERGY_REGRESSION_COVERED");
         values.put(
@@ -581,6 +600,8 @@ public final class AlgorithmCatalog {
                         + "median-execution-time static level minus insertion-based earliest start time "
                         + "plus the Sih-Lee delta (median minus own execution time); "
                         + "equal dynamic levels use lower Task ID, then lower VM ID");
+        // FGCS-R3 (2026-11-24) m1: V2 uses the Sih-Lee median static level and delta term.
+        values.put("implementationRevision", "DLS_SIH_LEE_MEDIAN_STATIC_LEVEL_DELTA_V2");
         values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
         values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
         values.put("reproductionScope", "CORE_DLS_DYNAMIC_LEVEL_SEMANTICS_ADAPTED_TO_CONTROLLED_SHARED_STORAGE_MODEL");
@@ -682,6 +703,9 @@ public final class AlgorithmCatalog {
                         + "Per-parent transfer estimates start at parent finish, external inputs at dependency "
                         + "readiness with destination bandwidth. Timestamped replicas prevent future-locality "
                         + "discounts; transfer holds may overlap VM busy time and reservations contain compute only");
+        // FGCS-R3 (2026-11-24) m2/m4: V2 averages communication as data over the mean pair rate and skips
+        // child inputs the child itself produces.
+        values.put("implementationRevision", "HEFT_MEAN_RATE_COMMUNICATION_V2");
         values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
         values.put("verification", "PAPER_REPRODUCTION_REGRESSION_COVERED");
         values.put(
@@ -721,7 +745,9 @@ public final class AlgorithmCatalog {
                         + "critical-path edges satisfy the upward-rank recurrence and constant critical priority; "
                         + "critical tasks use one minimum-total-compute VM compatible with the entire path; "
                         + "other tasks use insertion EFT over their compatible VMs");
-        values.put("implementationRevision", "CPOP_PREDECESSOR_RANK_TIGHT_PATH_V2");
+        // FGCS-R3 (2026-11-24) m2/m4: V3 keeps the V2 rank/path rule with data-over-mean-rate communication
+        // and real-input edge bytes.
+        values.put("implementationRevision", "CPOP_PREDECESSOR_RANK_TIGHT_PATH_V3");
         values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
         values.put("verification", "PAPER_REPRODUCTION_REGRESSION_COVERED");
         values.put(
@@ -763,7 +789,8 @@ public final class AlgorithmCatalog {
                         + "model uses bytes/(1e6 × min(bw_p,bw_p')). Select the dependency-ready task "
                         + "with highest compatible-VM mean OCT (ties use lower task ID), then the "
                         + "compatible VM minimizing insertion EFT+OCT (ties use lower VM ID).");
-        values.put("implementationRevision", "PEFT_SUCCESSOR_COST_OCT_EXIT_ZERO_V2");
+        // FGCS-R3 (2026-11-24) m4: V3 keeps the V2 recurrence; edge bytes skip child inputs the child produces.
+        values.put("implementationRevision", "PEFT_SUCCESSOR_COST_OCT_EXIT_ZERO_V3");
         values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
         values.put("verification", "PAPER_REPRODUCTION_REGRESSION_COVERED");
         values.put(

@@ -10,7 +10,7 @@ from fractions import Fraction
 from decimal import Decimal
 from pathlib import Path
 
-from _study_audit import (Audit, CheckError, EXECUTION_SEMANTICS, LONG_MAX, RUN_METRICS,
+from _study_audit import (Audit, CheckError, EXECUTION_SEMANTICS, HISTORICAL_EXECUTION_SEMANTICS, LONG_MAX, RUN_METRICS,
                           contained_file, decode_json, digest, exact_equal, integer, java_round,
                           mean, needed, number, ordered_sum, parse_workflow, percentile,
                           protect_output, read_json, resolve_input, union_length, write_report)
@@ -180,8 +180,12 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         result, metrics = needed(doc, "result"), needed(doc, "metrics")
         marker = config.get("executionSemantics")
         old = marker is None
-        audit.ensure(not old or historical, "historical-mode-required", prefix)
-        audit.ensure(old or marker == EXECUTION_SEMANTICS, "execution-model-identity", prefix, marker, EXECUTION_SEMANTICS)
+        # FGCS-R3 (2026-11-24): a V2 declaration is a recognized historical identity; like an absent marker it
+        # is accepted only under --historical and is never relabelled as the current V3 execution.
+        historical_marker = marker in HISTORICAL_EXECUTION_SEMANTICS
+        audit.ensure(not (old or historical_marker) or historical, "historical-mode-required", prefix, marker)
+        audit.ensure(old or historical_marker or marker == EXECUTION_SEMANTICS, "execution-model-identity", prefix,
+                     marker, EXECUTION_SEMANTICS)
         coverage["executionMode"] = "HISTORICAL_DECLARATION" if old else marker
         if needed(needed(config, "clustering"), "method") != "NONE":
             raise CheckError("clustering is outside the supported independent raw-task/job projection")

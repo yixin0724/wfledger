@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 import sys
 
-from _study_audit import (Audit, CheckError, EXECUTION_SEMANTICS, MIPS_PATTERNS, NETWORK_BANDWIDTH,
+from _study_audit import (Audit, CheckError, MIPS_PATTERNS, NETWORK_BANDWIDTH,
                           RUN_METRICS, contained_file, digest, exact_equal, integer, mean, median,
                           needed, number, percentile, protect_output, read_json, registered_plan,
                           run_key, validate_registered_plan, write_report)
@@ -61,10 +61,12 @@ def check_run_binding(index_path, plan, row, historical, protocol_sha, audit):
              "overheadModel": {"workflowEngineDelayInterval": 0, "bandwidth": 0, "workflowEngineDelays": {},
                                "queueDelays": {}, "postDelays": {}, "clusteringDelays": {}}}
     require_exact_fields(config, fixed, audit, location + ":configuration")
-    if historical:
+    declared = plan.get("executionSemantics")
+    if declared is None:
         audit.ensure("executionSemantics" not in config, "historical-model-not-retagged", location)
     else:
-        require_exact_fields(config, {"executionSemantics": EXECUTION_SEMANTICS}, audit, location)
+        # FGCS-R3 (2026-11-24): each run binds the plan's own registered identity (V3 current, V2 historical).
+        require_exact_fields(config, {"executionSemantics": declared}, audit, location)
     require_exact_fields(needed(config, "dataMovementModel"), {"kind": kind, "accessLinkBandwidthMbPerSecond": 0,
                          "accessLinkLatencySeconds": 0, "sourceEndpointBandwidthMbPerSecond": 0,
                          "transferStartSemantics": "ALL_GROUPS_START_AT_JOB_READY;NO_RETROACTIVE_PARENT_PROGRESS",
@@ -130,7 +132,7 @@ def inspect_index(path, audit, historical=False):
             raise CheckError("statistics require a registered network study index, not a single manifest")
         plan = needed(doc, "plan")
         variant, old, expected_cells = validate_registered_plan(plan, audit, historical)
-        answer.update(protocol=plan["protocol"], mode=plan["mode"], model="HISTORICAL_R10_EXECUTION" if old else EXECUTION_SEMANTICS)
+        answer.update(protocol=plan["protocol"], mode=plan["mode"], model=plan.get("executionSemantics") or "HISTORICAL_R10_EXECUTION")
         if old and variant in ("r12", "r13"):
             answer["historicalWarning"] = "The historical LOCAL_PEFT recurrence was nonstandard; arithmetic agreement does not validate standard PEFT/OCT claims."
         protocol_path = contained_file(path.parent, "protocol.json")

@@ -7,15 +7,15 @@ Registered identity covers both the **protocol ID and the mode**. An identical p
 
 The strings below come from [NetworkStudyPlan](<../../experiments/src/main/java/org/workflowsim/experiments/network/NetworkStudyPlan.java>); they are the actual protocol identifiers and must not be renamed during documentation reorganization.
 
-| CLI variant | Current execution protocol | Accepted historical protocol | full / smoke plan units |
-| --- | --- | --- | ---: |
-| `r10`, also the default variant | `network-limited-r10-v3` | `network-limited-r10-v2` | 504 / 36 |
-| `peft-comparison` | `peft-comparison-r12-v2` | `peft-comparison-r12-v1` | 126 / 18 |
-| `sensitivity-r13` | `sensitivity-response-r13-v2` | `sensitivity-response-r13-v1` | 546 / 30 |
+| CLI variant | Current execution protocol (V3) | Accepted historical protocol, V2 execution | Accepted historical protocol, undeclared execution | full / smoke plan units |
+| --- | --- | --- | --- | ---: |
+| `r10`, also the default variant | `network-limited-r10-v4` | `network-limited-r10-v3` | `network-limited-r10-v2` | 504 / 36 |
+| `peft-comparison` | `peft-comparison-r12-v3` | `peft-comparison-r12-v2` | `peft-comparison-r12-v1` | 126 / 18 |
+| `sensitivity-r13` | `sensitivity-response-r13-v3` | `sensitivity-response-r13-v2` | `sensitivity-response-r13-v1` | 546 / 30 |
 
 The counts in the table are the plan sizes of the registered matrices, not numbers of completed runs or passing tests. smoke has its own inputs, conditions, and seeds; it is not an arbitrarily pruned full, and changing only the mode does not obtain the full-study identity.
 
-The executor produces only the current protocols; there is no switch that disguises an old execution identity under current code. Both the current protocols and the run configurations must declare `WORK_CONSERVING_TASK_EXECUTION_V2`; the accepted older protocols keep their original v4 shape and must not adopt the current execution label and then keep impersonating a historical identity.
+The executor produces only the current protocols; there is no switch that disguises an old execution identity under current code. Both the current protocols and the run configurations must declare `WORK_CONSERVING_TASK_EXECUTION_V3`. FGCS-R3 (2026-11-24) advanced the execution identity from V2 to V3 (change list in [Reproducibility](<../../docs/experiments/REPRODUCIBILITY.md#execution-identity-v2--v3-fgcs-r3-2026-11-24>)), so the previous current protocols became historical: their plan and every run configuration must declare exactly `WORK_CONSERVING_TASK_EXECUTION_V2`. The oldest protocols keep their original v4 shape without the field. No historical protocol may adopt the current execution label, and V2 evidence cannot be relabelled as a current protocol.
 
 Run commands, the current matrix conditions, and the statistical scope are concentrated in the [campaign guide](<../../docs/experiments/CAMPAIGNS.md>). The provenance of the original studies and their historical numbers is traced through the [studies directory](<../../experiments/studies/README.md>) and serves neither as an entry point for new users nor as current golden values.
 

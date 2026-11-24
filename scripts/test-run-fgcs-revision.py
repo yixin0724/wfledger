@@ -37,6 +37,14 @@ class RevisionVerifierTest(unittest.TestCase):
         (root / "rerun/results.json").write_text(json.dumps({
             "summary": {"unexpectedOutcomes": 0}, "cases": [{}] * 9,
         }))
+        for name in ("rerun/evidence/genuine-v2", "verification/evidence/genuine-v3"):
+            self.write_manifest(root / name, "WORK_CONSERVING_TASK_EXECUTION_V3")
+
+    @staticmethod
+    def write_manifest(directory, semantics):
+        directory.mkdir(parents=True, exist_ok=True)
+        configuration = {} if semantics is None else {"executionSemantics": semantics}
+        (directory / "result.manifest.json").write_text(json.dumps({"configuration": configuration}))
 
     def test_verified_revision_artifacts(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -51,6 +59,16 @@ class RevisionVerifierTest(unittest.TestCase):
             (root / "microbench/results.json").write_text(json.dumps({"cases": [{"id": "case", "expected": {"time": 2.0}, "observed": {"time": 3.0}}]}))
             with self.assertRaisesRegex(ValueError, "case: time"):
                 MODULE.verify(root)
+
+    def test_retained_v2_evidence_cannot_satisfy_a_new_revision_run(self):
+        # FGCS-R3 (2026-11-24): the protocol declares V3 for new runs; V2-era bundles are historical only.
+        for name in ("rerun/evidence/old", "verification/evidence/old"):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.populate(root)
+                self.write_manifest(root / name, "WORK_CONSERVING_TASK_EXECUTION_V2")
+                with self.assertRaisesRegex(ValueError, "executionSemantics"):
+                    MODULE.verify(root)
 
     def test_expected_observation_pairs_preserve_hand_derivation(self):
         case = {"expected": {"x": 1.0}, "observed": {"x": 1.0}}

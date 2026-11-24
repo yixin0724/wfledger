@@ -9,6 +9,8 @@ import platform
 import subprocess
 import sys
 
+from _fgcs_protocol import check_manifest_semantics, declared_execution_semantics
+
 ROOT = Path(__file__).resolve().parents[1]
 MAIN = {
     "differential": "org.workflowsim.experiments.fgcs.differential.UpstreamDifferentialStudy",
@@ -312,9 +314,19 @@ def verify_standard(output):
     return total
 
 
+def verify_execution_semantics(output, expected=None):
+    """FGCS-R3 (2026-11-24): every overhead manifest must declare the protocol's current execution identity."""
+    expected = expected or declared_execution_semantics()
+    count, failures = check_manifest_semantics(output / "overhead/evidence", expected)
+    if failures:
+        raise ValueError("\n".join(failures))
+    return count
+
+
 def verify(output, repetitions):
     standard = verify_standard(output)
     overhead = verify_overhead(output, repetitions)
+    verify_execution_semantics(output)
     return standard + overhead
 
 
@@ -322,7 +334,8 @@ def write_metadata(output, repetitions):
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     status = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True)
     metadata = {
-        "protocol": "FGCS_MATRIX_V1",
+        "protocol": "FGCS_MATRIX_V2",
+        "executionSemantics": declared_execution_semantics(),
         "overheadProtocol": OVERHEAD_PROTOCOL,
         "sourceCommit": commit,
         "sourceTreeDirty": bool(status.strip()),
@@ -357,6 +370,8 @@ def main():
     if args.verify_only:
         count = (verify_overhead(output, args.repetitions) if args.overhead_only
                  else verify_standard(output) if args.standard_only else verify(output, args.repetitions))
+        if args.overhead_only:
+            verify_execution_semantics(output)
         print("FGCS_VERIFIED_RUNS", count)
         return
     if not args.overhead_only:
@@ -365,6 +380,8 @@ def main():
         run_overhead(output, args.repetitions)
     count = (verify_overhead(output, args.repetitions) if args.overhead_only
              else verify_standard(output) if args.standard_only else verify(output, args.repetitions))
+    if args.overhead_only:
+        verify_execution_semantics(output)
     print("FGCS_VERIFIED_RUNS", count)
     write_metadata(output, args.repetitions)
 

@@ -238,8 +238,12 @@ def main():
     paired = paired_deltas(rows["overhead"])
     environment_path = (root / "run-metadata.json") if (root / "run-metadata.json").is_file() else (
         root / "revision-metadata.json")
+    environment = json.loads(environment_path.read_text(encoding="utf-8")) if environment_path.is_file() else None
     summary = {
-        "protocol": "FGCS_MATRIX_V1",
+        "protocol": "FGCS_MATRIX_V2",
+        # FGCS-R3 (2026-11-24): report the identity the run metadata recorded, never the current declaration;
+        # a summary of V2-era results therefore shows null or V2 rather than impersonating V3.
+        "executionSemantics": environment.get("executionSemantics") if environment else None,
         "overheadProtocol": "FGCS_OVERHEAD_ROUND2_V2",
         "counts": {name: len(items) for name, items in rows.items()},
         "completed": {name: sum(item["completed"] for item in items) for name, items in rows.items()},
@@ -265,8 +269,7 @@ def main():
             "eventDependentOffMetrics": "null/NA with availability and observation counts; never numeric zero",
             "modesDifferOnlyByRecording": True,
         },
-        "overheadEnvironment": json.loads(environment_path.read_text(encoding="utf-8"))
-        if environment_path.is_file() else None,
+        "overheadEnvironment": environment,
     }
     write((root / "overhead" if args.overhead_only else root) / "matrix-summary.json", summary)
     write(root / "overhead/overhead-summary.json", summary["overhead"])

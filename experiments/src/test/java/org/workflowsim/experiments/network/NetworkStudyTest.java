@@ -43,7 +43,7 @@ class NetworkStudyTest {
     void peftComparisonVariantReusesFrozenMatrixWithThreeDeterministicPlanners(@TempDir Path output) throws Exception {
         NetworkStudyPlan full = NetworkStudyPlan.create("full", true, datasets(), output.resolve("peft-full"));
         assertEquals(NetworkStudyPlan.PEFT_COMPARISON_PROTOCOL, full.getProtocol());
-        assertEquals("peft-comparison-r12-v2", full.getProtocol());
+        assertEquals("peft-comparison-r12-v3", full.getProtocol());
         assertEquals(7, full.getWorkflows().size());
         assertEquals(Arrays.asList(4, 16), full.getVmCounts());
         assertEquals(126, full.getRunCount());
@@ -56,7 +56,7 @@ class NetworkStudyTest {
         assertEquals(1, full.seeds(Parameters.PlanningAlgorithm.LOCAL_PEFT).size());
         assertEquals(11L, full.seeds(Parameters.PlanningAlgorithm.LOCAL_PEFT).get(0));
         Map<String, Object> protocol = full.asMap();
-        assertEquals("peft-comparison-r12-v2", protocol.get("protocol"));
+        assertEquals("peft-comparison-r12-v3", protocol.get("protocol"));
         assertTrue(protocol.get("inference").toString().contains("HOLM_TWO_PLANNERS"));
         assertEquals(
                 18,
@@ -73,7 +73,7 @@ class NetworkStudyTest {
     void sensitivityVariantDeclaresResponseSurfaceMatrix(@TempDir Path output) throws Exception {
         NetworkStudyPlan full = NetworkStudyPlan.create(
                 "full", NetworkStudyPlan.StudyVariant.SENSITIVITY_R13, datasets(), output.resolve("r13-full"));
-        assertEquals("sensitivity-response-r13-v2", full.getProtocol());
+        assertEquals("sensitivity-response-r13-v3", full.getProtocol());
         assertEquals(NetworkStudyPlan.SENSITIVITY_PROTOCOL, full.getProtocol());
         assertEquals(7, full.getWorkflows().size());
         assertEquals(Arrays.asList(4, 8, 16, 32), full.getVmCounts());
@@ -120,23 +120,35 @@ class NetworkStudyTest {
 
     @Test
     void registeredNewAndHistoricalMatricesHaveIndependentModeIdentitiesWithoutFileIo() {
+        // FGCS-R3 (2026-11-24): three identities per variant — oldest (no executionSemantics), V2-era
+        // (executionSemantics = WORK_CONSERVING_TASK_EXECUTION_V2, historical) and current (V3).
         String[][] protocols = {
-            {NetworkStudyPlan.HISTORICAL_PROTOCOL, NetworkStudyPlan.PROTOCOL},
-            {NetworkStudyPlan.HISTORICAL_PEFT_COMPARISON_PROTOCOL, NetworkStudyPlan.PEFT_COMPARISON_PROTOCOL},
-            {NetworkStudyPlan.HISTORICAL_SENSITIVITY_PROTOCOL, NetworkStudyPlan.SENSITIVITY_PROTOCOL}
+            {NetworkStudyPlan.HISTORICAL_PROTOCOL, NetworkStudyPlan.V2_EXECUTION_PROTOCOL, NetworkStudyPlan.PROTOCOL},
+            {
+                NetworkStudyPlan.HISTORICAL_PEFT_COMPARISON_PROTOCOL,
+                NetworkStudyPlan.V2_EXECUTION_PEFT_COMPARISON_PROTOCOL,
+                NetworkStudyPlan.PEFT_COMPARISON_PROTOCOL
+            },
+            {
+                NetworkStudyPlan.HISTORICAL_SENSITIVITY_PROTOCOL,
+                NetworkStudyPlan.V2_EXECUTION_SENSITIVITY_PROTOCOL,
+                NetworkStudyPlan.SENSITIVITY_PROTOCOL
+            }
         };
+        String[] declaredSemantics = {null, "WORK_CONSERVING_TASK_EXECUTION_V2", "WORK_CONSERVING_TASK_EXECUTION_V3"};
         int[] fullCounts = {504, 126, 546};
         int[] smokeCounts = {36, 18, 30};
         for (int variant = 0; variant < protocols.length; variant++) {
-            for (int revision = 0; revision < 2; revision++) {
+            for (int revision = 0; revision < 3; revision++) {
                 for (String mode : Arrays.asList("full", "smoke")) {
                     NetworkStudyPlan declared = NetworkStudyPlan.canonical(mode, protocols[variant][revision]);
                     assertEquals(
                             "full".equals(mode) ? fullCounts[variant] : smokeCounts[variant], declared.getRunCount());
                     assertEquals(
                             "full".equals(mode) ? 7 : 2, declared.getWorkflows().size());
-                    assertEquals(revision == 0, declared.isHistoricalProtocol());
-                    assertEquals(revision == 1, declared.asMap().containsKey("executionSemantics"));
+                    assertEquals(revision < 2, declared.isHistoricalProtocol());
+                    assertEquals(declaredSemantics[revision], declared.asMap().get("executionSemantics"));
+                    assertEquals(revision > 0, declared.asMap().containsKey("executionSemantics"));
                     for (NetworkStudyPlan.WorkflowCase workflow : declared.getWorkflows()) {
                         assertFalse(
                                 workflow.path.isAbsolute(),

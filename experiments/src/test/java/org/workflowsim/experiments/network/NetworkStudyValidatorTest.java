@@ -284,6 +284,46 @@ class NetworkStudyValidatorTest {
         assertEquals(18, NetworkStudyValidator.validate(root.resolve(NetworkStudyExecutor.INDEX)));
     }
 
+    /**
+     * FGCS-R3 (2026-11-24): the V2-era protocols are read-only historical identities whose plan and manifests
+     * declare exactly WORK_CONSERVING_TASK_EXECUTION_V2; such retained evidence stays readable.
+     */
+    @Test
+    void v2EraWireShapeRemainsReadableAsHistoricalProtocol() throws Exception {
+        Path root = copySmoke("v2-era-wire-shape");
+        JsonObject index = read(root.resolve(NetworkStudyExecutor.INDEX));
+        index.getAsJsonObject("plan").addProperty("protocol", NetworkStudyPlan.V2_EXECUTION_PEFT_COMPARISON_PROTOCOL);
+        index.getAsJsonObject("plan").addProperty("executionSemantics", "WORK_CONSERVING_TASK_EXECUTION_V2");
+        for (JsonElement value : index.getAsJsonArray("runs")) {
+            Path path = root.resolve(value.getAsJsonObject().get("manifest").getAsString());
+            JsonObject manifest = read(path);
+            manifest.getAsJsonObject("configuration")
+                    .addProperty("executionSemantics", "WORK_CONSERVING_TASK_EXECUTION_V2");
+            write(path, manifest);
+        }
+        writeStudyAndRebindProtocol(root, index);
+
+        assertEquals(18, NetworkStudyValidator.validate(root.resolve(NetworkStudyExecutor.INDEX)));
+    }
+
+    @Test
+    void currentV3EvidenceCannotImpersonateV2EraProtocol() throws Exception {
+        Path root = copySmoke("v3-as-v2-era");
+        JsonObject index = read(root.resolve(NetworkStudyExecutor.INDEX));
+        index.getAsJsonObject("plan").addProperty("protocol", NetworkStudyPlan.V2_EXECUTION_PEFT_COMPARISON_PROTOCOL);
+        index.getAsJsonObject("plan").addProperty("executionSemantics", "WORK_CONSERVING_TASK_EXECUTION_V2");
+        writeStudyAndRebindProtocol(root, index);
+        assertRejected(root, "V3 run manifests cannot be relabelled as a V2-era historical protocol");
+    }
+
+    @Test
+    void v2ManifestsCannotImpersonateCurrentProtocol() throws Exception {
+        Path root = copySmoke("v2-as-current");
+        mutateFirstManifest(root, manifest -> manifest.getAsJsonObject("configuration")
+                .addProperty("executionSemantics", "WORK_CONSERVING_TASK_EXECUTION_V2"));
+        assertRejected(root, "a V2 manifest cannot pass as current V3 protocol evidence");
+    }
+
     @Test
     void coordinatedMissingAuxiliaryMetricsAreRejectedAfterArtifactIntegrityValidation() throws Exception {
 
@@ -362,6 +402,7 @@ class NetworkStudyValidatorTest {
 
     private void assertEmptyMatricesRejected(String mode) throws Exception {
         String[] historical = {"network-limited-r10-v2", "peft-comparison-r12-v1", "sensitivity-response-r13-v1"};
+        String[] v2Era = {"network-limited-r10-v3", "peft-comparison-r12-v2", "sensitivity-response-r13-v2"};
         NetworkStudyPlan.StudyVariant[] variants = NetworkStudyPlan.StudyVariant.values();
         for (int i = 0; i < variants.length; i++) {
             Path root = Files.createDirectories(temporary.resolve(mode + "-" + variants[i]));
@@ -369,6 +410,7 @@ class NetworkStudyValidatorTest {
                     NetworkStudyPlan.create(mode, variants[i], NetworkStudyTest.datasets(), root.resolve("inputs"));
             List<String> ids = new ArrayList<String>();
             ids.add(historical[i]);
+            ids.add(v2Era[i]);
             if (!historical[i].equals(declared.getProtocol())) {
                 ids.add(declared.getProtocol());
             }
@@ -377,6 +419,8 @@ class NetworkStudyValidatorTest {
                 plan.addProperty("protocol", id);
                 if (historical[i].equals(id)) {
                     plan.remove("executionSemantics");
+                } else if (v2Era[i].equals(id)) {
+                    plan.addProperty("executionSemantics", "WORK_CONSERVING_TASK_EXECUTION_V2");
                 }
                 plan.add("workflows", new JsonArray());
                 plan.addProperty("runCount", 0);

@@ -28,7 +28,8 @@ registers distinct identities for the three CLI variants (`r10`, `peft-compariso
 `sensitivity-r13`); an identical parameter matrix does not mean an identical execution
 model.
 
-Current execution uses `WORK_CONSERVING_TASK_EXECUTION_V2`; the two PEFT studies use the
+Current execution uses `WORK_CONSERVING_TASK_EXECUTION_V3` (FGCS-R3, 2026-11-24; every retained study
+below was produced under V2 or earlier and is historical); the two PEFT studies use the
 standard recurrence with successor costs and a zero exit OCT. A complete study must be
 executed explicitly into a new directory — renaming a smoke run is not a study; old
 protocol identities serve only read-only historical integrity checks. The retained
@@ -56,10 +57,10 @@ must never be overwritten by new runs.
 | Fat-tree campaign | R8 recalibrated version; 360 cells, seed 91 | [sources and parameters](<fattree-scheduling-campaign/RETENTION.md>); the repository retains the [JSON](<fattree-scheduling-campaign/campaign-results.json>) and the [numeric tables](<fattree-scheduling-campaign/campaign-results.md>) |
 | R10 first pilot | 576 cells; 12 incompatible runs failed, not certified as a complete comparison | `output/network-study-r10-pilot.tar.gz` (compressed tar original); [exclusion notes](<network-limited-r10/PROTOCOL.md>) |
 | R10 qualified matrix | `network-limited-r10-v2`; 504 cells | [historical provenance](<network-limited-r10/PROTOCOL.md>); `output/network-study-r10-final/`; `output/network-study-r10-evidence.tar.gz` |
-| R12 / S5 PEFT comparison | `peft-comparison-r12-v1`; 126 cells; legacy PEFT non-standard | `output/peft-comparison-r12/`; `output/peft-comparison-r12-evidence.tar.gz`; corrected identity is `peft-comparison-r12-v2` |
+| R12 / S5 PEFT comparison | `peft-comparison-r12-v1`; 126 cells; legacy PEFT non-standard | `output/peft-comparison-r12/`; `output/peft-comparison-r12-evidence.tar.gz`; corrected V2-era identity is `peft-comparison-r12-v2`; current is `peft-comparison-r12-v3` |
 | R13 sensitivity response surface | `sensitivity-response-r13-v1`; 546 cells; legacy PEFT non-standard | original [preregistered protocol](<sensitivity-r13/PROTOCOL.md>) and [assessment record](<sensitivity-r13/RESULTS.md>) archived in place; `output/sensitivity-r13/`; `output/sensitivity-r13-evidence.tar.gz` |
 | Post-correctness-repair recheck | frozen-implementation study of the current three protocols at Java commit `8681f9c` | [sources, numeric changes, and retention notes](<correctness-repair/RESULTS.md>); `output/workbench-correctness-repair-97c66a0/studies/` |
-| R13 v2 current recertification | `sensitivity-response-r13-v2`; 546 cells; executed at HEAD `f00ff69` (2026-10-23), bit-identical to the `8681f9c` impact layer | [protocol](<sensitivity-r13-v2/PROTOCOL.md>) and [results](<sensitivity-r13-v2/RESULTS.md>) (English); `output/sensitivity-r13-v2/`; `output/sensitivity-r13-v2-evidence.tar.gz` |
+| R13 v2 recertification (historical since FGCS-R3) | `sensitivity-response-r13-v2`, `WORK_CONSERVING_TASK_EXECUTION_V2`; 546 cells; executed at HEAD `f00ff69` (2026-10-23), bit-identical to the `8681f9c` impact layer | [protocol](<sensitivity-r13-v2/PROTOCOL.md>) and [results](<sensitivity-r13-v2/RESULTS.md>) (English); `output/sensitivity-r13-v2/`; `output/sensitivity-r13-v2-evidence.tar.gz` |
 
 ### R12 provenance and comparison boundary
 

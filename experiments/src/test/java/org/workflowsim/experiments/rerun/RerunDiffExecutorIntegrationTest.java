@@ -113,6 +113,40 @@ class RerunDiffExecutorIntegrationTest {
                         .getAsString());
     }
 
+    /**
+     * FGCS-R3 (2026-11-24): evidence declaring the historical WORK_CONSERVING_TASK_EXECUTION_V2 identity remains
+     * readable and rebuildable, but the current V3 re-simulation must report the identity change as a core
+     * divergence rather than an identical core (docs/experiments/RERUN_DIFF_CONTRACT.md).
+     */
+    @Test
+    void historicalV2ExecutionIdentityIsReadableButDivergesFromCurrentV3() throws Exception {
+        Path run = Files.createDirectories(temporary.resolve("historical-v2-identity"));
+        RerunTestSupport.copyEvidenceFiles(classicRun, run);
+        JsonObject manifest = readManifest(run);
+        manifest.getAsJsonObject("configuration")
+                .addProperty("executionSemantics", TaskExecutionModel.HISTORICAL_EXECUTION_SEMANTICS_V2);
+        Files.write(
+                run.resolve("result.manifest.json"),
+                new GsonBuilder()
+                        .serializeNulls()
+                        .setPrettyPrinting()
+                        .create()
+                        .toJson(manifest)
+                        .getBytes(StandardCharsets.UTF_8));
+
+        RerunReport report = RerunDiffExecutor.execute(run, temporary.resolve("v2-identity-out"));
+
+        assertEquals(RerunVerdict.DIVERGED, report.getVerdict(), report.toJson());
+        assertTrue(report.getCoreDivergences().stream()
+                .anyMatch(change -> "/configuration/executionSemantics".equals(change.getPointer())));
+        assertEquals(
+                "WORK_CONSERVING_TASK_EXECUTION_V3",
+                readManifest(temporary.resolve("v2-identity-out/rerun"))
+                        .getAsJsonObject("configuration")
+                        .get("executionSemantics")
+                        .getAsString());
+    }
+
     private static JsonObject readManifest(Path run) throws Exception {
         return JsonParser.parseString(
                         new String(Files.readAllBytes(run.resolve("result.manifest.json")), StandardCharsets.UTF_8))

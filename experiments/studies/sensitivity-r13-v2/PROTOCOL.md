@@ -1,6 +1,10 @@
 # Sensitivity Response-Surface Study (R13): Re-Certification Protocol (v2)
 
-> **Current layer.** This page registers the re-certification study `sensitivity-response-r13-v2`
+> **Historical since FGCS-R3 (2026-11-24).** The identity below was executed under
+> `WORK_CONSERVING_TASK_EXECUTION_V2`; the current executor produces `sensitivity-response-r13-v3`
+> under V3 (see [protocol revisions](<../PROTOCOL_COMPATIBILITY.md>)). The record below is unchanged.
+>
+> **Re-certification layer.** This page registers the re-certification study `sensitivity-response-r13-v2`
 > executed on 2026-10-23 at repository HEAD `f00ff69`. The original preregistered study
 > ([v1 archive](<../sensitivity-r13/PROTOCOL.md>)) used a non-standard LOCAL_PEFT recursion
 > (self cost inside OCT, averaged exit) and was archived without certifying standard PEFT; the
