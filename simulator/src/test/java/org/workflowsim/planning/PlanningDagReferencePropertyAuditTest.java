@@ -119,7 +119,20 @@ class PlanningDagReferencePropertyAuditTest {
                 count++;
             }
             r.meanWork[task] /= count;
+            double[] compatible = new double[count];
+            int filled = 0;
+            for (int vm = 0; vm < f.m; vm++) {
+                if (f.compatible(task, vm)) {
+                    compatible[filled++] = r.work[task][vm];
+                }
+            }
+            Arrays.sort(compatible);
+            r.medianWork[task] =
+                    count % 2 == 1 ? compatible[count / 2] : (compatible[count / 2 - 1] + compatible[count / 2]) / 2.0;
         }
+        // FGCS-R3 (2026-11-24, m1): Sih and Lee 1993 build the DLS static level from the median
+        // execution time; HEFT/CPOP/PEFT keep the Topcuoglu mean node weight.
+        double[] nodeWeight = kind(algorithm, "DLS") ? r.medianWork : r.meanWork;
 
         for (int index = order.length - 1; index >= 0; index--) {
             int task = order[index];
@@ -129,7 +142,7 @@ class PlanningDagReferencePropertyAuditTest {
                     tail = Math.max(tail, r.upward[child] + meanCommunication(f, local, task, child));
                 }
             }
-            r.upward[task] = r.meanWork[task] + tail;
+            r.upward[task] = nodeWeight[task] + tail;
             int count = 0;
             for (int vm = 0; vm < f.m; vm++) {
                 if (!f.compatible(task, vm)) {
@@ -256,7 +269,7 @@ class PlanningDagReferencePropertyAuditTest {
             Fixture f, Reference r, PlanningAlgorithm algorithm, Choice first, Choice second) {
         int comparison;
         if (kind(algorithm, "DLS")) {
-            comparison = Double.compare(r.upward[first.task] - first.start, r.upward[second.task] - second.start);
+            comparison = Double.compare(dynamicLevel(r, first), dynamicLevel(r, second));
             if (comparison != 0) {
                 return comparison > 0;
             }
@@ -273,6 +286,11 @@ class PlanningDagReferencePropertyAuditTest {
         return f.ids[first.task] != f.ids[second.task]
                 ? f.ids[first.task] < f.ids[second.task]
                 : f.vmIds[first.vm] < f.vmIds[second.vm];
+    }
+
+    /** Sih and Lee 1993: {@code DL = SL*(n) - EST(n,p) + (E*(n) - E(n,p))} (FGCS-R3, m1). */
+    private static double dynamicLevel(Reference r, Choice choice) {
+        return r.upward[choice.task] - choice.start + (r.medianWork[choice.task] - r.work[choice.task][choice.vm]);
     }
 
     private static boolean ready(Fixture f, Reference r, int task) {
@@ -340,17 +358,18 @@ class PlanningDagReferencePropertyAuditTest {
         if (!local || f.bytes[parent][child] == 0L) {
             return 0.0;
         }
-        double total = 0.0;
+        // FGCS-R3 (2026-11-24, m2): Topcuoglu 2002 c̄ = data / B̄ with B̄ the mean pair rate.
+        double rate = 0.0;
         int pairs = 0;
         for (int from = 0; from < f.m; from++) {
             for (int to = 0; to < f.m; to++) {
                 if (from != to && f.compatible(parent, from) && f.compatible(child, to)) {
-                    total += communication(f, true, parent, child, from, to);
+                    rate += Math.min(f.bandwidth[from], f.bandwidth[to]);
                     pairs++;
                 }
             }
         }
-        return pairs == 0 ? 0.0 : total / pairs;
+        return pairs == 0 ? 0.0 : f.bytes[parent][child] / 1.0e6 / (rate / pairs);
     }
 
     private static double communication(Fixture f, boolean local, int parent, int child, int from, int to) {
@@ -596,7 +615,7 @@ class PlanningDagReferencePropertyAuditTest {
                 } else if (kind(algorithm, "DLS")) {
                     assertEquals(Integer.valueOf(r.selectionOrder[task]), plan.getDlsSelectionOrder(), item + " order");
                     assertEquals(
-                            r.upward[task] - r.start[task],
+                            r.upward[task] - r.start[task] + (r.medianWork[task] - r.work[task][r.vm[task]]),
                             plan.getDlsDynamicLevelAtSelection(),
                             EPSILON,
                             item + " level");
@@ -807,6 +826,7 @@ class PlanningDagReferencePropertyAuditTest {
         final double[][] stageIn;
         final double[][] oct;
         final double[] meanWork;
+        final double[] medianWork;
         final double[] upward;
         final double[] downward;
         final double[] rankOct;
@@ -822,6 +842,7 @@ class PlanningDagReferencePropertyAuditTest {
             stageIn = new double[tasks][vms];
             oct = new double[tasks][vms];
             meanWork = new double[tasks];
+            medianWork = new double[tasks];
             upward = new double[tasks];
             downward = new double[tasks];
             rankOct = new double[tasks];

@@ -560,7 +560,8 @@ public final class AlgorithmCatalog {
         values.put(
                 "decisionRule",
                 "Dynamic-level selection over dependency-ready Task-VM candidates: "
-                        + "upward-rank static level minus insertion-based earliest start time; "
+                        + "median-execution-time static level minus insertion-based earliest start time "
+                        + "plus the Sih-Lee delta (median minus own execution time); "
                         + "equal dynamic levels use lower Task ID, then lower VM ID");
         values.put("requiredScheduler", SchedulingAlgorithm.STATIC.name());
         values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");

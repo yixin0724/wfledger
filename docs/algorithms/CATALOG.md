@@ -88,7 +88,7 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `STATIC_ROUND_ROBIN` | independent tasks | rotates compatible VMs by Task ID; the choice rule ignores cost |
 | `SHARED_STORAGE_HEFT` | SHARED DAG | upward-rank priority with insertion-based earliest-finish assignment |
 | `SHARED_STORAGE_CPOP` | SHARED DAG | `r_u + r_d` priority; one critical path pinned to the best all-path-compatible VM |
-| `SHARED_STORAGE_DLS` | SHARED DAG | picks the largest `b-level − earliest insertion start` among dependency-ready Task-VM pairs |
+| `SHARED_STORAGE_DLS` | SHARED DAG | picks the largest Sih–Lee dynamic level `SL*(median) − earliest insertion start + (median − own duration)` among dependency-ready Task-VM pairs |
 | `SHARED_STORAGE_ETF` | SHARED DAG | earliest insertion start first; equal starts tie-break with b-level and further rules |
 | `SHARED_STORAGE_PEFT` | SHARED DAG | ready task with the largest average OCT, VM with the smallest `EFT + OCT`; the communication term is 0 |
 | `LOCAL_HEFT` | LOCAL DAG | upward rank including average communication, insertion-based EFT |

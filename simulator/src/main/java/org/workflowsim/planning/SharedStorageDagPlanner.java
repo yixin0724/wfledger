@@ -242,8 +242,11 @@ final class SharedStorageDagPlanner {
                     continue;
                 }
                 double earliestStart = earliestStartForReadyPair(vm, readyTime, duration);
+                // FGCS-R3 (2026-11-24) m1: Sih and Lee 1993 heterogeneous dynamic level
+                // DL(n,p) = SL*(n) - max(DA, TF) + Δ(n,p), Δ(n,p) = E*(n) - E(n,p).
+                double delta = medianExecutionTime(task) - duration;
                 DlsCandidate candidate =
-                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() - earliestStart);
+                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() - earliestStart + delta);
                 if (selected == null || candidate.isBetterThan(selected)) {
                     selected = candidate;
                 }
@@ -422,7 +425,8 @@ final class SharedStorageDagPlanner {
         for (Task child : task.getChildList()) {
             childMaximum = Math.max(childMaximum, upwardRanks.get(child).doubleValue());
         }
-        double result = averageExecutionTime(task) + childMaximum;
+        double nodeWeight = strategy == Strategy.DLS ? medianExecutionTime(task) : averageExecutionTime(task);
+        double result = nodeWeight + childMaximum;
         upwardRanks.put(task, result);
         return result;
     }
@@ -455,6 +459,34 @@ final class SharedStorageDagPlanner {
                     strategy + " cannot map task " + task.getCloudletId() + "; no compatible VM");
         }
         return total / count;
+    }
+
+    /**
+     * Median execution time {@code E*(n)} over the compatible VMs, the node weight of the DLS static
+     * level and the reference of its {@code Δ(n,p)} term.
+     *
+     * <p>FGCS-R3 (2026-11-24) m1 root cause: SHARED_STORAGE_DLS used the HEFT mean node weight and
+     * omitted {@code Δ(n,p)}. Sih and Lee (IEEE TPDS 4(2), 1993, Section V) define the heterogeneous
+     * static level from the median execution time and add {@code Δ(n,p) = E*(n) - E(n,p)} to the
+     * dynamic level. For an even count the median is the mean of the two middle values.
+     */
+    private double medianExecutionTime(Task task) {
+        List<Double> durations = new ArrayList<Double>();
+        for (Double duration : executionTimes.get(task).values()) {
+            if (!Double.isInfinite(duration.doubleValue())) {
+                durations.add(duration);
+            }
+        }
+        if (durations.isEmpty()) {
+            throw new IllegalArgumentException(
+                    strategy + " cannot map task " + task.getCloudletId() + "; no compatible VM");
+        }
+        Collections.sort(durations);
+        int middle = durations.size() / 2;
+        if (durations.size() % 2 == 1) {
+            return durations.get(middle).doubleValue();
+        }
+        return (durations.get(middle - 1).doubleValue() + durations.get(middle).doubleValue()) / 2.0;
     }
 
     private List<Task> identifyCriticalPath(List<Task> tasks) {
