@@ -1,0 +1,52 @@
+docs/algorithms/CATALOG.md
+  h_adc77830afcf4d 37-40,52-57,60
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 43-50
+docs/benchmark/ENERGY_PORTRAIT.md
+  h_adc77830afcf4d 3-5
+docs/benchmark/STANDARD_BENCHMARK.md
+  h_adc77830afcf4d 3-5
+docs/experiments/CAMPAIGNS.md
+  h_adc77830afcf4d 35,37
+docs/experiments/MAKESPAN_BASELINE_COMPARISON.md
+  h_adc77830afcf4d 3-5
+docs/experiments/MAKESPAN_SCALE_COMPARISON.md
+  h_adc77830afcf4d 3-5
+simulator/src/main/java/org/cloudbus/cloudsim/core/CloudSim.java
+  h_adc77830afcf4d 417-449
+simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java
+  h_adc77830afcf4d 595-621
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  h_adc77830afcf4d 62-63,66-67,274,294-307,310-319,333,362-371,577,633
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  h_adc77830afcf4d 176-179,186-188,218-221,223-225,230-233,235-237,267-270,278
+simulator/src/main/java/org/workflowsim/experiment/ExperimentPlan.java
+  h_adc77830afcf4d 206
+simulator/src/main/java/org/workflowsim/scheduling/BaseSchedulingAlgorithm.java
+  h_adc77830afcf4d 26,36-37,70-110
+simulator/src/main/java/org/workflowsim/scheduling/InputReadEstimator.java
+  h_adc77830afcf4d 1-22
+simulator/src/main/java/org/workflowsim/scheduling/ReadyBatchMCTSchedulingAlgorithm.java
+  h_adc77830afcf4d 19,28
+simulator/src/main/java/org/workflowsim/scheduling/ReadyBatchMaxMinSchedulingAlgorithm.java
+  h_adc77830afcf4d 18-21,41
+simulator/src/main/java/org/workflowsim/scheduling/ReadyBatchMinMinSchedulingAlgorithm.java
+  h_adc77830afcf4d 18-21,43
+simulator/src/test/java/org/workflowsim/experiment/LargeWorkflowScaleRegressionTest.java
+  h_adc77830afcf4d 25-31
+simulator/src/test/java/org/workflowsim/planning/ReadyBatchRoundSemanticsIntegrationTest.java
+  h_adc77830afcf4d 1-100
+simulator/src/test/java/org/workflowsim/scheduling/SupportedOnlineSchedulingCompatibilityTest.java
+  h_adc77830afcf4d 79-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e1e82eaf81d3b2bec63fbb7f25fd1aefbd7e0a03",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
