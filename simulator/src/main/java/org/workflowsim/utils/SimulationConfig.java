@@ -537,7 +537,6 @@ public final class SimulationConfig {
                     || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
                     || planningAlgorithm == PlanningAlgorithm.MO_HEFT
                     || planningAlgorithm == PlanningAlgorithm.IC_PCP
-                    || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT
                     || planningAlgorithm == PlanningAlgorithm.DVFS_SLACK) {
                 if (fileSystem != ReplicaCatalog.FileSystem.SHARED) {
                     throw new IllegalArgumentException(planningAlgorithm + " requires shared storage");
@@ -587,7 +586,6 @@ public final class SimulationConfig {
                         || planningAlgorithm == PlanningAlgorithm.GREEN_HEFT
                         || planningAlgorithm == PlanningAlgorithm.MO_HEFT
                         || planningAlgorithm == PlanningAlgorithm.IC_PCP
-                        || planningAlgorithm == PlanningAlgorithm.NETWORK_HEFT
                         || planningAlgorithm == PlanningAlgorithm.DVFS_SLACK) {
                     throw new IllegalArgumentException("A task cost matrix cannot be combined with "
                             + planningAlgorithm + ": this planning track estimates "

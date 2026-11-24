@@ -234,7 +234,20 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
                 total += result.work[task][machine];
                 compatible++;
             }
-            result.rank[task] = total / compatible;
+            double[] durations = new double[compatible];
+            int filled = 0;
+            for (int machine = 0; machine < fixture.vmIds.length; machine++) {
+                if (!Double.isInfinite(result.work[task][machine])) {
+                    durations[filled++] = result.work[task][machine];
+                }
+            }
+            Arrays.sort(durations);
+            result.median[task] = compatible % 2 == 1
+                    ? durations[compatible / 2]
+                    : (durations[compatible / 2 - 1] + durations[compatible / 2]) / 2.0;
+            // FGCS-R3 (2026-11-24, m1): DLS static level uses the median (Sih and Lee 1993); ETF keeps
+            // the mean b-level.
+            result.rank[task] = strategy == Strategy.DLS ? result.median[task] : total / compatible;
         }
 
         for (int task = fixture.n - 1; task >= 0; task--) {
@@ -348,7 +361,11 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
             int selectedVm,
             double selectedStart) {
         int primary = strategy == Strategy.DLS
-                ? Double.compare(result.rank[task] - start, result.rank[selectedTask] - selectedStart)
+                ? Double.compare(
+                        result.rank[task] - start + (result.median[task] - result.work[task][machine]),
+                        result.rank[selectedTask]
+                                - selectedStart
+                                + (result.median[selectedTask] - result.work[selectedTask][selectedVm]))
                 : Double.compare(selectedStart, start);
         if (primary != 0) {
             return primary > 0;
@@ -399,7 +416,9 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
                 assertEquals(
                         Integer.valueOf(expected.order[task]), plan.getDlsSelectionOrder(), subject + " DLS order");
                 assertEquals(
-                        bits(expected.rank[task] - expected.start[task]),
+                        bits(expected.rank[task]
+                                - expected.start[task]
+                                + (expected.median[task] - expected.work[task][selectedVm])),
                         bits(plan.getDlsDynamicLevelAtSelection().doubleValue()),
                         subject + " DLS metric");
                 assertNull(plan.getEtfEarliestStartAtSelection());
@@ -427,6 +446,7 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
         final double[][] work;
         final double[][] stageIn;
         final double[] rank;
+        final double[] median;
         final double[] start;
         final double[] finish;
         final int[] vm;
@@ -436,6 +456,7 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
             work = new double[tasks][machines];
             stageIn = new double[tasks][machines];
             rank = new double[tasks];
+            median = new double[tasks];
             start = new double[tasks];
             finish = new double[tasks];
             vm = new int[tasks];

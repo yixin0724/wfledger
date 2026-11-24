@@ -37,13 +37,40 @@ public final class MoHeftPlanner {
                     expanded.add(candidate.append(task, vmId, problem, nextId++));
                 }
             }
-            beam = selectDiverse(nonDominated(expanded), beamWidth);
+            beam = selectBest(expanded, beamWidth);
         }
+        List<Candidate> finalFront = nonDominated(beam);
         List<MoHeftSchedule> front = new ArrayList<MoHeftSchedule>();
-        for (Candidate candidate : beam) {
+        for (Candidate candidate : finalFront) {
             front.add(candidate.toSchedule());
         }
-        return new MoHeftResult(front, balanced(beam).toSchedule());
+        return new MoHeftResult(front, balanced(finalFront).toSchedule());
+    }
+
+    /**
+     * Keeps the {@code limit} best candidates by non-dominated sorting and crowding distance.
+     *
+     * <p>FGCS-R3 (2026-11-24) M5 root cause: the beam was {@code selectDiverse(nonDominated(expanded))},
+     * so it shrank below {@code K} whenever the first front had fewer than {@code K} members, and the
+     * discarded dominated partial schedules could no longer grow into non-dominated complete schedules.
+     * Durillo, Nae and Prodan (FGCS 36, 2014) keep the K best partial schedules ranked by non-dominated
+     * sorting with crowding distance (NSGA-II environmental selection): whole fronts are taken in rank
+     * order while they fit, and the front that overflows is truncated by descending crowding distance
+     * (ties by ascending candidate ID, for determinism).
+     */
+    private static List<Candidate> selectBest(List<Candidate> candidates, int limit) {
+        List<Candidate> remaining = new ArrayList<Candidate>(candidates);
+        List<Candidate> selected = new ArrayList<Candidate>();
+        while (selected.size() < limit && !remaining.isEmpty()) {
+            List<Candidate> front = nonDominated(remaining);
+            remaining.removeAll(front);
+            if (selected.size() + front.size() <= limit) {
+                selected.addAll(front);
+            } else {
+                selected.addAll(byCrowding(front, limit - selected.size()));
+            }
+        }
+        return selected;
     }
 
     private static List<Candidate> nonDominated(List<Candidate> candidates) {
@@ -69,55 +96,26 @@ public final class MoHeftPlanner {
         return noWorse && strictlyBetter;
     }
 
-    private static List<Candidate> selectDiverse(List<Candidate> candidates, int limit) {
-        if (candidates.size() <= limit) {
-            return candidates;
-        }
+    private static List<Candidate> byCrowding(List<Candidate> front, int count) {
         Map<Long, Double> distance = new HashMap<Long, Double>();
-        addDistances(candidates, distance, true);
-        addDistances(candidates, distance, false);
-        List<Candidate> selected = new ArrayList<Candidate>();
-        addExtreme(selected, candidates, true, true);
-        addExtreme(selected, candidates, true, false);
-        addExtreme(selected, candidates, false, true);
-        addExtreme(selected, candidates, false, false);
-        if (selected.size() >= limit) {
-            return new ArrayList<Candidate>(selected.subList(0, limit));
+        for (Candidate candidate : front) {
+            distance.put(candidate.id, 0.0);
         }
-        List<Candidate> ordered = new ArrayList<Candidate>(candidates);
+        addDistances(front, distance, true);
+        addDistances(front, distance, false);
+        List<Candidate> ordered = new ArrayList<Candidate>(front);
         ordered.sort((first, second) -> {
             int byDistance = Double.compare(distance.get(second.id), distance.get(first.id));
             return byDistance != 0 ? byDistance : Long.compare(first.id, second.id);
         });
-        for (Candidate candidate : ordered) {
-            if (!selected.contains(candidate)) {
-                selected.add(candidate);
-                if (selected.size() == limit) {
-                    break;
-                }
-            }
-        }
-        return selected;
-    }
-
-    private static void addExtreme(
-            List<Candidate> selected, List<Candidate> candidates, boolean makespan, boolean minimum) {
-        Candidate best = null;
-        for (Candidate candidate : candidates) {
-            if (best == null
-                    || (makespan && (minimum ? candidate.makespan < best.makespan : candidate.makespan > best.makespan))
-                    || (!makespan && (minimum ? candidate.energy < best.energy : candidate.energy > best.energy))) {
-                best = candidate;
-            }
-        }
-        if (best != null && !selected.contains(best)) {
-            selected.add(best);
-        }
+        return new ArrayList<Candidate>(ordered.subList(0, count));
     }
 
     private static void addDistances(List<Candidate> candidates, Map<Long, Double> distance, boolean makespan) {
         List<Candidate> ordered = new ArrayList<Candidate>(candidates);
-        ordered.sort(Comparator.comparingDouble(candidate -> makespan ? candidate.makespan : candidate.energy));
+        ordered.sort(
+                Comparator.<Candidate>comparingDouble(candidate -> makespan ? candidate.makespan : candidate.energy)
+                        .thenComparingLong(candidate -> candidate.id));
         double first = makespan ? ordered.get(0).makespan : ordered.get(0).energy;
         double last = makespan ? ordered.get(ordered.size() - 1).makespan : ordered.get(ordered.size() - 1).energy;
         double range = last - first;
@@ -129,7 +127,7 @@ public final class MoHeftPlanner {
                 double previous = makespan ? ordered.get(index - 1).makespan : ordered.get(index - 1).energy;
                 double next = makespan ? ordered.get(index + 1).makespan : ordered.get(index + 1).energy;
                 double contribution = range == 0.0 ? 0.0 : (next - previous) / range;
-                distance.put(candidate.id, distance.getOrDefault(candidate.id, 0.0) + contribution);
+                distance.put(candidate.id, distance.get(candidate.id) + contribution);
             }
         }
     }
@@ -204,7 +202,7 @@ public final class MoHeftPlanner {
             for (Map.Entry<Integer, List<MoHeftSchedule.Entry>> entry : reservations.entrySet()) {
                 nextReservations.put(entry.getKey(), new ArrayList<MoHeftSchedule.Entry>(entry.getValue()));
             }
-            double parentReady = 0.0;
+            double parentReady = task.getParentTaskIds().isEmpty() ? problem.getRootReleaseSeconds() : 0.0;
             for (Integer parentId : task.getParentTaskIds()) {
                 MoHeftSchedule.Entry parent = nextEntries.get(parentId);
                 if (parent == null) {
@@ -220,7 +218,8 @@ public final class MoHeftPlanner {
             List<MoHeftSchedule.Entry> vmReservations = nextReservations.get(vmId);
             if (vmReservations != null) {
                 for (MoHeftSchedule.Entry reservation : vmReservations) {
-                    if (start + task.getComputeSecondsByVm().get(vmId) <= reservation.getStartSeconds() + 1.0e-9) {
+                    // FGCS-R3 (2026-11-24) m7: exact gap test, as in the SHARED planners.
+                    if (start + task.getComputeSecondsByVm().get(vmId) <= reservation.getStartSeconds()) {
                         break;
                     }
                     start = Math.max(start, reservation.getFinishSeconds());

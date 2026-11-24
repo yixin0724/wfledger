@@ -26,7 +26,7 @@ public final class GreenHeftPlanner {
             double bestFinish = Double.POSITIVE_INFINITY;
             double bestStart = Double.POSITIVE_INFINITY;
             for (Integer vmId : task.getComputeSecondsByVm().keySet()) {
-                double parentReady = 0.0;
+                double parentReady = task.getParentTaskIds().isEmpty() ? problem.getRootReleaseSeconds() : 0.0;
                 for (Integer parentId : task.getParentTaskIds()) {
                     GreenHeftTask parentTask = problem.getTask(parentId);
                     GreenHeftSchedule.Entry parent = scheduled.get(parentId);
@@ -77,7 +77,8 @@ public final class GreenHeftPlanner {
             return start;
         }
         for (GreenHeftSchedule.Entry reservation : reservations) {
-            if (start + duration <= reservation.getStartSeconds() + 1.0e-9) {
+            // FGCS-R3 (2026-11-24) m7: exact gap test, as in the SHARED planners.
+            if (start + duration <= reservation.getStartSeconds()) {
                 break;
             }
             start = Math.max(start, reservation.getFinishSeconds());

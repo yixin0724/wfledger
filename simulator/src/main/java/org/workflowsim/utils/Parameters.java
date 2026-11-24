@@ -80,8 +80,6 @@ public class Parameters {
 
         IC_PCP,
 
-        NETWORK_HEFT,
-
         DVFS_SLACK,
 
         DHEFT,

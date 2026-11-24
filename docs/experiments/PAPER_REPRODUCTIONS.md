@@ -184,36 +184,26 @@ semantics were inspected independently; no third-party code was copied without a
 | License | No license file was found in the reference repository; inspected for algorithm semantics only, not copied or redistributed |
 | Platform classes | `org.workflowsim.planning.icpcp` and `IcpcpPlanningAlgorithm` |
 | Verification | `IcpcpPlannerTest`, `IcpcpAdapterTest`, `IcpcpIntegrationTest`; M43/M44 |
-| Status | `VERIFIED_DEADLINE_COST_CORE` for one-phase PCP, EST/LFT, path-cost and deadline-feasible VM selection |
+| Status | `VERIFIED_DEADLINE_COST_CORE` for one-phase PCP, latest-arrival critical parent, EST/LFT, LFT-checked whole-path placement and path-cost selection |
 
-The planner constructs critical-parent partial critical paths using `lft-est`, tries each whole path on
-each PE-compatible VM, and selects the feasible candidate with minimum incremental cost and maximum
-flexibility. The virtual END node participates in slack calculation, so an infeasible deadline fails
-explicitly rather than falling back to an arbitrary VM. The SHARED adapter uses raw MI plus the same
-integer-MI storage-input envelope as the SHARED baseline, starts after the model-generated stage-in
-and root-release interval, and converts homogeneous estimated network transfer time from declared
-decimal MB/s. VM rates are cost per second and the generalized billing-period formula charges each
-rounded period's full seconds; the current adapter uses a one-second period. This is not IC-PCPD2,
-dynamic VM provisioning, a full event replay, or a full paper-corpus reproduction.
+The planner selects the critical parent as the unassigned parent with the latest data arrival
+`EFT(p) + TT(p,t)`, the definition of the paper (and of its PCP predecessor). The reference artifact
+instead selects the minimum `lft - est`; that variant was the source of the pre-2026-11-24 behavior and
+is deliberately not followed (FGCS-R3 M1). Each whole path is tried at every position of every
+PE-compatible VM's task sequence and accepted only if every assigned task still meets its LFT (FGCS-R3
+M2); the minimum incremental cost wins. The virtual END node participates, so an infeasible deadline
+fails explicitly rather than falling back to an arbitrary VM. The SHARED adapter uses raw MI plus the
+same integer-MI storage-input envelope as the SHARED baseline, starts after the model-generated stage-in
+and root-release interval, and charges no point-to-point edge time because the SHARED runtime has none
+(FGCS-R3 M3). VM rates are cost per second and the generalized billing-period formula charges each
+rounded period's full seconds; the current adapter uses a one-second period. The fixed pool cannot launch
+new instances (see the IC-PCP contract for the exact remaining deviation). This is not IC-PCPD2,
+dynamic VM provisioning, a full event replay, or a full paper-corpus reproduction. The paper's worked
+example data were not obtainable for this revision; the golden case in `IcpcpPlannerTest` is hand-derived.
 
-## Network-Aware HEFT — The Scientific World Journal 2014
+## Network-Aware HEFT — The Scientific World Journal 2014 (removed)
 
-| Item | Record |
-|---|---|
-| Paper | Muhammad Murtaza Yousaf, Michael Welzl, *Network-Aware HEFT Scheduling for Grid*, The Scientific World Journal, 2014, Article 317284 |
-| Primary source | [DOI](https://doi.org/10.1155/2014/317284), [PMC full text](https://pmc.ncbi.nlm.nih.gov/articles/PMC3919093/) |
-| Platform classes | `org.workflowsim.planning.networkheft` and `NetworkHeftPlanningAlgorithm` |
-| Verification | `NetworkHeftPlannerTest`, `NetworkHeftAdapterTest`, `NetworkHeftFlowStretcherTest`, `NetworkHeftIntegrationTest`; M45 |
-| Status | `VERIFIED_BOTTLENECK_CORE` for fair-shared bottleneck flow stretching and iterative HEFT rescheduling |
-
-The implementation forms cross-VM flows, orders them by start time, shares bottleneck capacity among
-active flows, advances to the next arrival or completion, and reschedules insertion-based HEFT with
-stretched edge durations over PE-compatible candidates. Nominal edge time and bottleneck capacity use
-consistent conversions of declared decimal MB/s; duplicate parent OUTPUT declarations are membership,
-and zero-byte positive-duration edges preserve their nominal duration using the supplied capacity.
-The paper-style six-task case reproduces the nominal 25-second schedule and the stretched 32-second
-result. The current adapter uses one shared bottleneck per experiment and fair capacity sharing; it
-does not claim the full TCP throughput model, path-detection system, or complete Grid workflow corpus.
+The adaptation of Yousaf and Welzl ([DOI](https://doi.org/10.1155/2014/317284)) is no longer part of the platform. Removed on 2026-11-24 (FGCS-R3): the planner optimized cross-VM point-to-point flows on a shared bottleneck, but it was bound to the SHARED runtime, which has no point-to-point edges, so its planned schedule could not mirror execution; no retained FGCS study or configuration used it. The last implementation is preserved in git history before this removal.
 
 ## EBPSM — Multi-tenant WaaS Resource Sharing (2020)
 

@@ -23,6 +23,7 @@ and a linked contract revision, not a silent update to match production output.
 | Evidence | Class | Test and scope |
 |---|---|---|
 | HEFT ten-task cost/communication example | `PAPER` | `LocalHeftPlanningAlgorithmPaperTableTest`; ranks, first placement, non-overlap, and dependency timing |
+| SHARED HEFT/CPOP ten-task zero-communication case | `PAPER` (adapted) | `SharedStorageTopcuogluZeroCommunicationGoldenTest`; Topcuoglu 2002 DAG with P1 lengths, hand-derived ranks, critical path, windows and 33.21 s makespan (FGCS-R3) |
 | PEFT Figure 1/Tables 5–6 | `PAPER` | `LocalPeftPrimarySourcePaperTest` and its `peft-paper-example.SOURCE.md` provenance record |
 | Braun independent-task ECT table | `PAPER` | `StaticIndependentGoldenTableTest`; MCT, MinMin, MaxMin, Sufferage, MET, and OLB hand derivations |
 | Shared DAG small-graph reference | `INVARIANT` | `PlanningDagReferencePropertyAuditTest`; independent topological DP, exhaustive paths, and permutation invariance |
@@ -37,12 +38,11 @@ and a linked contract revision, not a silent update to match production output.
 | CWS RankMin-RR | `PAPER` | `CwsDagRankTest`, `CwsRankMinRoundRobinSchedulingAlgorithmTest`, and `CwsFigureOneIntegrationTest`; exact Figure 1 rank/DAG and 5.21→4.21 direction, M36 |
 | NACO hybrid GA/HEFT + DNC | `PAPER` / `CONTRACT` | `NacoDncEvaluatorTest`, `NacoGaHeftOptimizerTest`, and `NacoGaHeftIntegrationTest`; hand-derived DNC/mapping and elite-GA checks, M37/M38 |
 | Reshi-C/M | `PAPER` | `ReshiSchedulingAlgorithmTest`, `ReshiIntegrationTest`, and `ReshiPredictionErrorModelTest`; explicit rank/history and sign-clamp, M39 |
-| GreenHEFT | `PAPER` | `GreenHeftPlannerTest` and `GreenHeftIntegrationTest`; energy-first mapping and declared-power oracle, M40 |
-| MOHEFT | `PAPER` / `CONTRACT` | `MoHeftPlannerTest` and `MoHeftIntegrationTest`; dominance, Pareto extremes and balanced selection, M41/M42 |
-| IC-PCP | `PAPER` / `CONTRACT` | `IcpcpPlannerTest` and `IcpcpIntegrationTest`; low-cost path, deadline infeasibility, fork/join and cycle, M43/M44 |
-| Network-Aware HEFT | `PAPER` | `NetworkHeftPlannerTest` and `NetworkHeftIntegrationTest`; shared-bottleneck stretching and 25→32 direction, M45 |
+| GreenHEFT | `PAPER` | `GreenHeftPlannerTest`, `GreenHeftIntegrationTest` and `EnergyPlannerRuntimeMirrorIntegrationTest`; energy-first mapping, declared-power oracle, exact insertion and SHARED plan/runtime mirror, M40 |
+| MOHEFT | `PAPER` / `CONTRACT` | `MoHeftPlannerTest`, `MoHeftIntegrationTest` and `EnergyPlannerRuntimeMirrorIntegrationTest`; dominance, later-front refill, Pareto extremes, balanced selection and plan/runtime mirror, M41/M42 |
+| IC-PCP | `PAPER` / `CONTRACT` | `IcpcpPlannerTest` and `IcpcpIntegrationTest`; hand-derived latest-arrival critical parent, LFT-checked placement, low-cost path, deadline infeasibility, fork/join and cycle, M43/M44 |
 | EBPSM | `PAPER` / `CONTRACT` | `EbpsmBudgetDistributorTest`, `EbpsmSchedulingAlgorithmTest`, and `EbpsmIntegrationTest`; SFTD, cache preference and budget gate, M46/M47 |
-| DVFS slack allocation | `PAPER` / `CONTRACT` | `DvfsSlackOptimizerTest` and `DvfsSlackIntegrationTest`; energy/deadline-gated downscaling and runtime tier consumption, M48 |
+| DVFS slack allocation | `PAPER` / `CONTRACT` | `DvfsSlackOptimizerTest`, `DvfsSlackIntegrationTest` and `DvfsSlackRuntimeMirrorIntegrationTest`; energy/deadline-gated downscaling, runtime tier consumption and plan/runtime mirror, M48 |
 | CRCH checkpoint recovery | `PAPER` | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, and `CrchIntegrationTest`; saved-work and alternative-VM recovery, M49/M50 |
 | DHEFT | `PAPER` | `DheftPlannerTest` and `DheftIntegrationTest`; pairwise bandwidth and parent-finish EFT, M51/M52 |
 | Cross-paper scenes | `CONTRACT` | `CrossPaperComparisonTest`; SHARED/LOCAL separation, distinct mappings, direct planner cost, independent energy residual, M53 |

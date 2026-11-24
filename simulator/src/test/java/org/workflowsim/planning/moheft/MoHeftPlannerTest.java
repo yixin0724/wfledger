@@ -73,6 +73,78 @@ class MoHeftPlannerTest {
         assertTrue(found, "The unique 7 J candidate must use the legal earlier gap");
     }
 
+    /**
+     * FGCS-R3 (2026-11-24) golden (c), M5. Durillo, Nae and Prodan (FGCS 36, 2014, MOHEFT) keep the K best
+     * partial schedules by non-dominated sorting plus crowding distance, filling from later fronts when
+     * the first front has fewer than K members. Hand derivation with K=2 and two independent tasks of
+     * equal mean duration 1.25 (HEFT order 1 then 2 by Task ID):
+     *
+     * <p>Task 1: VM0 (1 s, 1 J), VM1 (1.5 s, 1.5 J). Step 1 front F1={1@VM0}, F2={1@VM1}; both kept.
+     * Task 2: VM0 (1 s, 1 J), VM1 (1.5 s, 5 J). Step 2 candidates (makespan, energy):
+     * A=1@VM0,2@VM0 (2, 2); B=1@VM0,2@VM1 (1.5, 6); C=1@VM1,2@VM0 (1.5, 2.5); D=1@VM1,2@VM1 (3, 6.5).
+     * C dominates B and D, so the final front is {A, C}. Truncating to the first front at step 1 (the
+     * superseded behavior) loses C and returns {A, B}. Balanced choice: normalized distances are A=1 and
+     * C=1; the tie goes to the smaller makespan, C.
+     */
+    @Test
+    void beamIsRefilledFromLaterFrontsWhenTheFirstFrontIsSmallerThanTheBeam() {
+        GreenHeftTask first = new GreenHeftTask(
+                1, values(1.0, 1.5), values(1.0, 1.5), Collections.<Integer>emptyList(), Collections.emptyMap());
+        GreenHeftTask second = new GreenHeftTask(
+                2, values(1.0, 1.5), values(1.0, 5.0), Collections.<Integer>emptyList(), Collections.emptyMap());
+
+        MoHeftResult result = new MoHeftPlanner(2).schedule(new GreenHeftProblem(Arrays.asList(first, second)));
+
+        assertEquals(2, result.getParetoFront().size());
+        boolean hasA = false;
+        boolean hasC = false;
+        for (MoHeftSchedule schedule : result.getParetoFront()) {
+            hasA |= schedule.getMakespanSeconds() == 2.0 && schedule.getTotalEnergyJoules() == 2.0;
+            hasC |= schedule.getMakespanSeconds() == 1.5 && schedule.getTotalEnergyJoules() == 2.5;
+        }
+        assertTrue(hasA && hasC, "front must be {(2 s, 2 J), (1.5 s, 2.5 J)}");
+        assertEquals(1, result.getBalancedSchedule().getTaskPlan(1).getVmId());
+        assertEquals(0, result.getBalancedSchedule().getTaskPlan(2).getVmId());
+    }
+
+    /**
+     * FGCS-R3 (2026-11-24) m7: insertion uses the exact {@code start + duration <= gapEnd} test of the
+     * SHARED planners, not a 1e-9 tolerance. Hand derivation: parent (5 s; 50 J on VM0, 5 J on VM1) goes
+     * to VM1 [0,5]; the child (12 s; 1 J on VM0) waits for the 5 s edge and takes VM0 [10,22]; the
+     * independent task (10 + 5e-10 s; 1 J on VM0) does not fit the [0,10] gap, so its minimum-energy
+     * schedule runs it at [22, 32 + 5e-10]. The energy extreme (7 J) survives every truncation.
+     */
+    @Test
+    void insertionDoesNotAdmitATaskThatOverrunsTheGapByLessThanTheOldTolerance() {
+        double overrun = 10.0 + 5.0e-10;
+        GreenHeftTask parent = new GreenHeftTask(
+                1,
+                values(5.0, 5.0),
+                values(50.0, 5.0),
+                Collections.<Integer>emptyList(),
+                Collections.singletonMap(2, 5.0));
+        GreenHeftTask child = new GreenHeftTask(
+                2, values(12.0, 12.0), values(1.0, 100.0), Collections.singletonList(1), Collections.emptyMap());
+        GreenHeftTask independent = new GreenHeftTask(
+                3,
+                values(overrun, overrun),
+                values(1.0, 100.0),
+                Collections.<Integer>emptyList(),
+                Collections.emptyMap());
+
+        MoHeftResult result =
+                new MoHeftPlanner(8).schedule(new GreenHeftProblem(Arrays.asList(parent, child, independent)));
+
+        MoHeftSchedule minimumEnergy = null;
+        for (MoHeftSchedule schedule : result.getParetoFront()) {
+            if (minimumEnergy == null || schedule.getTotalEnergyJoules() < minimumEnergy.getTotalEnergyJoules()) {
+                minimumEnergy = schedule;
+            }
+        }
+        assertEquals(7.0, minimumEnergy.getTotalEnergyJoules(), 0.0);
+        assertEquals(22.0, minimumEnergy.getTaskPlan(3).getStartSeconds(), 0.0);
+    }
+
     private static Map<Integer, Double> values(double... numbers) {
         Map<Integer, Double> result = new LinkedHashMap<Integer, Double>();
         for (int index = 0; index < numbers.length; index++) {

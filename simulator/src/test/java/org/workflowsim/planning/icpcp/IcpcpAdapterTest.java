@@ -18,8 +18,15 @@ import org.workflowsim.utils.Parameters.FileType;
 
 class IcpcpAdapterTest {
 
+    /**
+     * FGCS-R3 (2026-11-24) M3: the SHARED runtime has no point-to-point edges; a child reads the parent's
+     * output from shared storage inside its own execution envelope. The adapter therefore must not add an
+     * edge transfer on top of the envelope. Hand derivation (contract: CONTRACTS.md SHARED compute
+     * envelope): child input 1 MB at 20 MB/s = 0.05 s, 1000 MIPS gives floor(50) MI, so the child duration
+     * is (1000 + 50) / 1000 = 1.05 s and the parent-to-child edge time is 0.
+     */
     @Test
-    void convertsDeclaredDecimalMegabytesAndCountsDuplicateOutputsAsMembership() {
+    void sharedStorageEdgesCarryNoPointToPointTransferBecauseReadsAreInTheEnvelope() {
         Task parent = task(1, 1000L, 1);
         Task child = task(2, 1000L, 1);
         connect(parent, child);
@@ -31,7 +38,8 @@ class IcpcpAdapterTest {
 
         IcpcpProblem problem = IcpcpAdapter.toProblem(Arrays.asList(parent, child), vms, platform(vms, 20), 100.0);
 
-        assertEquals(0.01, problem.getTask(1).getCommunicationSecondsByChild().get(2), 1.0e-12);
+        assertEquals(0.0, problem.getTask(1).getCommunicationSecondsByChild().get(2), 0.0);
+        assertEquals(1.05, problem.getTask(2).getComputeSecondsByVm().get(3), 1.0e-12);
     }
 
     @Test

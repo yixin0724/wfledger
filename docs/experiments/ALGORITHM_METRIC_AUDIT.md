@@ -23,7 +23,6 @@ runtime accounting; IC-PCP planner cost is read directly from the planner schedu
 | GreenHEFT | PE filtering and earliest legal reservation-gap insertion |
 | MOHEFT | Gap-inserted Pareto candidates preserved; dominance and balanced selection retained |
 | IC-PCP | Bit-rate conversion, PE filtering, duplicate-output membership, SHARED bootstrap/storage timing, billing-period cost |
-| Network-Aware HEFT | Bandwidth/capacity units, PE filtering, duplicate-output membership, insertion-based EFT, capacity-derived zero-byte flow work |
 | EBPSM | PE filtering, decimal-MB/s transfer estimates, successful-only output publication |
 | DVFS slack | SHARED HEFT allocation/timing, full-fleet default-idle plus tier-dynamic energy, unused-VM and terminal-idle inclusion |
 | CRCH | Checkpoint interval plus overhead before commit, capped saved work, recovery-overhead MI |
@@ -45,8 +44,8 @@ runtime accounting; IC-PCP planner cost is read directly from the planner schedu
 
 ## Regression and mutation coverage
 
-`AlgorithmMetricAuditTest` runs SHARED/LOCAL baselines, GreenHEFT, MOHEFT, IC-PCP, Network-Aware
-HEFT, DHEFT, NACO, CaWoSched, CWS, Reshi-C/M, EBPSM, CRCH and DVFS. M54–M65 add targeted mutants
+`AlgorithmMetricAuditTest` runs SHARED/LOCAL baselines, GreenHEFT, MOHEFT, IC-PCP,
+DHEFT, NACO, CaWoSched, CWS, Reshi-C/M, EBPSM, CRCH and DVFS. M54–M65 add targeted mutants
 for the newly corrected mechanisms; M49 was re-anchored to the revised CRCH saved-work expression.
 The full Maven/Python/documentation/language/dataset gate and the complete registered mutation gate
 are required before close-out.

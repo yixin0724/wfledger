@@ -99,8 +99,8 @@ REGISTRY = [
         id="M10",
         name="SHARED DLS dynamic level flips the earliest-start subtraction into an addition",
         file="simulator/src/main/java/org/workflowsim/planning/SharedStorageDagPlanner.java",
-        old="                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() - earliestStart);",
-        new="                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() + earliestStart);",
+        old="                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() - earliestStart + delta);",
+        new="                        new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() + earliestStart + delta);",
         killers="SharedStoragePlannerRuntimeMirrorIntegrationTest,SharedStorageDlsPlanningAlgorithmTest,"
                 "SharedStorageDlsEtfSlotSemanticsAuditTest,SharedStorageDlsEtfSlotVisitAuditTest"),
     dict(
@@ -328,25 +328,18 @@ REGISTRY = [
         killers="MoHeftPlannerTest"),
     dict(
         id="M43",
-        name="IC-PCP ignores the virtual END deadline slack",
+        name="IC-PCP ignores the latest-finish-time feasibility of assigned tasks",
         file="simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpPlanner.java",
-        old="        minimum = Math.min(minimum, latest.get(END_ID) - starts.get(END_ID));",
-        new="        // END slack intentionally ignored by the mutant",
+        old="            if (timing.finish.get(taskId) > timing.latestFinish.get(taskId) + TOLERANCE) {",
+        new="            if (false) {",
         killers="IcpcpPlannerTest"),
     dict(
         id="M44",
         name="IC-PCP path choice ignores incremental cost",
         file="simulator/src/main/java/org/workflowsim/planning/icpcp/IcpcpPlanner.java",
-        old="            if (best == null\n                    || costDelta < best.costDelta - 1.0e-9",
-        new="            if (best == null\n                    || slack > best.slack + 1.0e-9",
+        old="                if (best == null || delta < bestDelta - TOLERANCE) {",
+        new="                if (best == null) {",
         killers="IcpcpPlannerTest"),
-    dict(
-        id="M45",
-        name="Network-Aware HEFT gives every flow the full bottleneck",
-        file="simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftFlowStretcher.java",
-        old="                flow.remaining = Math.max(0.0, flow.remaining - capacityBytesPerSecond * (end - time) / active.size());",
-        new="                flow.remaining = Math.max(0.0, flow.remaining - capacityBytesPerSecond * (end - time));",
-        killers="NetworkHeftPlannerTest"),
     dict(
         id="M46",
         name="EBPSM ignores input-data cache preference",
@@ -407,14 +400,14 @@ REGISTRY = [
         id="M55",
         name="DVFS slack drops SHARED stage-in and root release timing",
         file="simulator/src/main/java/org/workflowsim/planning/dvfs/DvfsSlackOptimizer.java",
-        old="            double start = Math.max(\n                    task.getEarliestStartSeconds(), Math.max(available.getOrDefault(task.getVmId(), 0.0), ready));\n            double finish = start + task.getStageInSeconds() + task.getWorkMi() / tier.getMips();",
-        new="            double start = Math.max(available.getOrDefault(task.getVmId(), 0.0), ready);\n            double finish = start + task.getWorkMi() / tier.getMips();",
+        old="            double start = Math.max(\n                    task.getEarliestStartSeconds(), Math.max(available.getOrDefault(task.getVmId(), 0.0), ready));\n            double finish = start + task.getStageInSeconds() + scaledWorkSeconds(task, tier);",
+        new="            double start = Math.max(available.getOrDefault(task.getVmId(), 0.0), ready);\n            double finish = start + scaledWorkSeconds(task, tier);",
         killers="DvfsSlackIntegrationTest"),
     dict(
         id="M56",
         name="GreenHEFT reverts to append-only placement",
         file="simulator/src/main/java/org/workflowsim/planning/greenheft/GreenHeftPlanner.java",
-        old="            if (start + duration <= reservation.getStartSeconds() + 1.0e-9) {",
+        old="            if (start + duration <= reservation.getStartSeconds()) {",
         new="            if (false) {",
         killers="GreenHeftPlannerTest"),
     dict(
@@ -431,13 +424,6 @@ REGISTRY = [
         old="            bandwidth.put(vm.getId(), vm.getBw() * 1.0e6);",
         new="            bandwidth.put(vm.getId(), (double) vm.getBw());",
         killers="DheftAdapterTest"),
-    dict(
-        id="M59",
-        name="Network-Aware HEFT disables reservation-gap insertion",
-        file="simulator/src/main/java/org/workflowsim/planning/networkheft/NetworkHeftPlanner.java",
-        old="            if (start + duration <= reservation.start) {",
-        new="            if (false) {",
-        killers="NetworkHeftPlannerTest"),
     dict(
         id="M60",
         name="Reshi-M reapplies prediction noise inside its comparator",

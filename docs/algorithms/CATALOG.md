@@ -90,7 +90,7 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `STATIC_ROUND_ROBIN` | independent tasks | rotates compatible VMs by Task ID; the choice rule ignores cost |
 | `SHARED_STORAGE_HEFT` | SHARED DAG | upward-rank priority with insertion-based earliest-finish assignment |
 | `SHARED_STORAGE_CPOP` | SHARED DAG | `r_u + r_d` priority; one critical path pinned to the best all-path-compatible VM |
-| `SHARED_STORAGE_DLS` | SHARED DAG | picks the largest `b-level − earliest insertion start` among dependency-ready Task-VM pairs |
+| `SHARED_STORAGE_DLS` | SHARED DAG | picks the largest Sih–Lee dynamic level `SL*(median) − earliest insertion start + (median − own duration)` among dependency-ready Task-VM pairs |
 | `SHARED_STORAGE_ETF` | SHARED DAG | earliest insertion start first; equal starts tie-break with b-level and further rules |
 | `SHARED_STORAGE_PEFT` | SHARED DAG | ready task with the largest average OCT, VM with the smallest `EFT + OCT`; the communication term is 0 |
 | `LOCAL_HEFT` | LOCAL DAG | upward rank including average communication, insertion-based EFT |
@@ -99,10 +99,9 @@ The table lists all supported values of `Parameters.PlanningAlgorithm`. Except f
 | `CAWOSCHED_SLACK` | SHARED DAG | SHARED HEFT mapping/order followed by slack-scored absolute-start CaWoSched planning |
 | `CAWOSCHED_PRESSURE` | SHARED DAG | SHARED HEFT mapping/order followed by pressure-scored absolute-start CaWoSched planning |
 | `NACO_GA_HEFT` | LOCAL DAG | DNC evaluation in megabit units, reverse-topological HEFT elite seed, PE-compatible GPX crossover, mutation, tournament and elite replacement |
-| `GREEN_HEFT` | SHARED DAG | HEFT upward rank with minimum-energy VM selection and finish-time tie-break |
-| `MO_HEFT` | SHARED DAG | HEFT-ordered beam search with non-dominated filtering, crowding and balanced makespan-energy choice |
-| `IC_PCP` | SHARED DAG | critical-parent PCP with EST/LFT, SHARED bootstrap/input envelopes, minimum incremental path cost and deadline slack |
-| `NETWORK_HEFT` | SHARED DAG | fair-shared bottleneck flow stretching with iterative insertion-based HEFT rescheduling |
+| `GREEN_HEFT` | SHARED DAG | HEFT upward rank with minimum-energy VM selection over SHARED envelopes and finish-time tie-break |
+| `MO_HEFT` | SHARED DAG | HEFT-ordered beam search keeping the K best by non-dominated sorting and crowding, SHARED envelopes, balanced makespan-energy choice |
+| `IC_PCP` | SHARED DAG | latest-data-arrival critical-parent PCP with EST/LFT, whole-path placement on one VM checked against every assigned task's LFT, SHARED bootstrap/input envelopes (no point-to-point edge time), minimum incremental path cost |
 | `DVFS_SLACK` | SHARED DAG | HEFT mapping followed by iterative energy-decreasing slack allocation |
 | `DHEFT` | LOCAL DAG | official ready-wave EFT with pairwise minimum bandwidth and actual parent finish times |
 
@@ -121,7 +120,6 @@ mean multiple Jobs can be dispatched simultaneously.
 | GreenHEFT DAG | GREEN_HEFT / STATIC | SHARED + declared per-VM power; no failure, no overhead; raw task lengths only | rejected without power or with frequency tiers |
 | MOHEFT DAG | MO_HEFT / STATIC | SHARED + declared per-VM power; no failure, no overhead; raw task lengths only | rejected without power or with frequency tiers |
 | IC-PCP DAG | IC_PCP / STATIC | SHARED + positive deadline and declared VM costs; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix or deadline <= 0 |
-| Network-Aware HEFT DAG | NETWORK_HEFT / STATIC | SHARED + file-carrying DAG and shared bottleneck; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix |
 | DVFS slack DAG | DVFS_SLACK / DVFS_SLACK | SHARED + positive deadline and per-VM frequency tiers; no failure, no overhead; raw task lengths only | rejected with taskCostMatrix, no tiers, or deadline <= 0 |
 | CaWoSched timed DAG | CAWOSCHED_SLACK / CAWOSCHED_PRESSURE / STATIC | SHARED + `legacyWorkflowsimV1()` + complete `carbonWindows`; no failure, no overhead | rejected |
 | LOCAL DAG | LOCAL family / STATIC | LOCAL + the V1 pre-execution family; no failure, no overhead | usable |

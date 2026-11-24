@@ -24,7 +24,6 @@ public final class CrossPaperComparison {
             throws SimulationExecutionException {
         Parameters.PlanningAlgorithm[] algorithms = {
             Parameters.PlanningAlgorithm.SHARED_STORAGE_HEFT,
-            Parameters.PlanningAlgorithm.NETWORK_HEFT,
             Parameters.PlanningAlgorithm.GREEN_HEFT,
             Parameters.PlanningAlgorithm.MO_HEFT,
             Parameters.PlanningAlgorithm.IC_PCP

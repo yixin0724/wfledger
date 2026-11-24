@@ -27,15 +27,16 @@ not interchangeable.
 
 ## SHARED scene
 
+`NETWORK_HEFT` was removed from this scene on 2026-11-24 (FGCS-R3) together with the planner.
+
 | Algorithm | Task 1 → VM | Task 2 → VM | Makespan (s) | Total energy (J) | Modeled processing cost | IC-PCP planner cost |
 |---|---:|---:|---:|---:|---:|---:|
 | `SHARED_STORAGE_HEFT` | 3 | 3 | 2.21 | 434.05 | 21.1 | — |
-| `NETWORK_HEFT` | 3 | 3 | 2.21 | 434.05 | 21.1 | — |
 | `GREEN_HEFT` | 8 | 8 | 4.21 | 264.05 | 5.1 | — |
 | `MO_HEFT` | 3 | 8 | 3.21 | 349.05 | 13.1 | — |
 | `IC_PCP` | 8 | 8 | 4.21 | 264.05 | 5.1 | 4.0 |
 
-HEFT and Network-Aware HEFT choose the same mapping in this small scene. GreenHEFT and IC-PCP also
+GreenHEFT and IC-PCP
 choose the same mapping but optimize different objectives; MOHEFT chooses a mixed mapping. The test
 requires at least three distinct mappings so a degenerate all-identical comparison cannot pass.
 

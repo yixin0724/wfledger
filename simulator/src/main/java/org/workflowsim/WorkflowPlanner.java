@@ -39,7 +39,6 @@ import org.workflowsim.planning.LocalHeftPlanningAlgorithm;
 import org.workflowsim.planning.LocalPeftPlanningAlgorithm;
 import org.workflowsim.planning.MoHeftPlanningAlgorithm;
 import org.workflowsim.planning.NacoGaHeftPlanningAlgorithm;
-import org.workflowsim.planning.NetworkHeftPlanningAlgorithm;
 import org.workflowsim.planning.PSOPlanningAlgorithm;
 import org.workflowsim.planning.PlanningContext;
 import org.workflowsim.planning.RandomPlanningAlgorithm;
@@ -340,9 +339,6 @@ public final class WorkflowPlanner extends SimEntity {
                 break;
             case IC_PCP:
                 planner = new IcpcpPlanningAlgorithm(planningContext);
-                break;
-            case NETWORK_HEFT:
-                planner = new NetworkHeftPlanningAlgorithm(planningContext);
                 break;
             case DVFS_SLACK:
                 planner = new DvfsSlackPlanningAlgorithm(planningContext);

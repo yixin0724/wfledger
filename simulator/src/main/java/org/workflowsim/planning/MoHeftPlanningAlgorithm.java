@@ -22,7 +22,12 @@ public final class MoHeftPlanningAlgorithm extends BasePlanningAlgorithm {
     @Override
     public void run() {
         context.validateSharedStorageStaticDag();
-        GreenHeftProblem problem = GreenHeftAdapter.toProblem(getTaskList(), getVmList(), context.getPlatform());
+        GreenHeftProblem problem = GreenHeftAdapter.toProblem(
+                getTaskList(),
+                getVmList(),
+                context.getPlatform(),
+                context.getSharedStorageTransferRateMbPerSecond(),
+                context.getCloudSimMinEventIntervalSeconds());
         lastResult = new MoHeftPlanner(8).schedule(problem);
         MoHeftSchedule selected = lastResult.getBalancedSchedule();
         for (Task task : getTaskList()) {

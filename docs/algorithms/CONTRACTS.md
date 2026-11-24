@@ -78,6 +78,8 @@ LOCAL_HEFT/CPOP/PEFT require LOCAL, STATIC, no failures/overheads, and the V1 pr
 - INPUT replicas become available when the full hold ends, and OUTPUT at the planned computation completion. Future replicas must not let a Task inserted into an earlier gap hit it early; inputs may arrive earlier than when the consumer actually starts computing.
 - The VM reserves computation only, and input preparation may overlap the VM's busy intervals. This is a partial-plan estimate, not an event replay of the whole run.
 
+- Rank communication `c̄(parent,child)` follows Topcuoglu et al. 2002: `c̄ = L̄ + bytes / B̄`, with no startup term (`L̄ = 0`) and `B̄` the mean slower-endpoint rate over ordered pairs of distinct VMs compatible with parent and child; it is not the mean of per-pair transfer times (FGCS-R3, 2026-11-24). Edge bytes count only child INPUT declarations that are real inputs (`FileItem.isRealInputFile`), every real declaration being charged exactly as the runtime pre-execution estimate and the data-arrival estimate charge it.
+
 The [input availability regression](<../../simulator/src/test/java/org/workflowsim/planning/LocalDataAvailabilityPlanningTest.java>) covers external root inputs, future replicas, usable gaps, and inputs arriving earlier than the computation start. File name/size conflicts can make some readily available inputs inapplicable, and the success of an ordinary online run cannot be used to infer that LOCAL planning is also legal.
 
 When V1 endpoints or Fat-tree contention are enabled, **planning still has no contention**: at run time all parent groups start together at Job readiness, without retroactively accumulating transfer progress since the earlier parent completions. The solver uses max-min progressive filling constrained jointly by nominal caps and resource capacity, reclaiming and reallocating capacity at internal completion points; it is not a simple fixed `capacity/n`. Therefore the difference between contention-free V1 and contended V1 also includes the transfer-start rule. Fat-tree additionally imposes deterministic directed-path constraints, and the external SOURCE still bypasses the fabric; see the [topology and routing contract](<../advanced/FAT_TREE_DESIGN.md>) for details.
@@ -111,7 +113,7 @@ CPOP priority(t) = r_u(t) + r_d(t)
 
 The `max_child` term of the exit task is 0. HEFT sorts by descending upward rank and then selects the insertion-based minimum EFT. CPOP selects the highest priority within the dependency-ready set; the critical path is determined along the actual edges that satisfy the rank recurrence, selecting one path rather than all equal-priority nodes, and is pinned to the VM with the smallest total model duration that supports the whole path.
 
-SHARED_STORAGE_DLS maximizes `b-level − earliestInsertionStart` over ready Task–VM pairs, breaking ties by Task ID and then VM ID. SHARED_STORAGE_ETF minimizes the insertion start time, preferring the higher b-level on equal starts, and then Task/VM IDs. They retain the selection cores of [DLS](<https://doi.org/10.1109/71.207593>) and [ETF](<https://doi.org/10.1137/0218016>), but they do not thereby acquire the original papers' interconnect hardware, communication resources, or homogeneous-processor assumptions.
+SHARED_STORAGE_DLS maximizes the heterogeneous dynamic level of Sih and Lee, `DL(t,v) = SL*(t) − earliestInsertionStart(t,v) + Δ(t,v)` with `Δ(t,v) = E*(t) − w(t,v)`, over ready Task–VM pairs, breaking ties by Task ID and then VM ID. `E*(t)` is the median model duration over the compatible VMs (mean of the two middle values for an even count) and the static level `SL*` uses `E*` as its node weight instead of HEFT's mean `w̄` (FGCS-R3, 2026-11-24; previously the mean b-level was used and `Δ` was omitted). SHARED_STORAGE_ETF minimizes the insertion start time, preferring the higher b-level on equal starts, and then Task/VM IDs. They retain the selection cores of [DLS](<https://doi.org/10.1109/71.207593>) and [ETF](<https://doi.org/10.1137/0218016>), but they do not thereby acquire the original papers' interconnect hardware, communication resources, or homogeneous-processor assumptions.
 
 ### PEFT's Successor-Cost Recurrence
 
@@ -222,56 +224,76 @@ not train the paper's regression-tree recommender or replay AWS instance profile
 
 `GREEN_HEFT` preserves HEFT upward-rank prioritization and changes VM selection to minimum
 predicted task energy, with finish time and VM ID as deterministic tie-breaks. Candidate VMs are
-PE-compatible, duration keeps the declared per-PE work convention `MI / per-PE MIPS`, and later tasks use earliest legal
-reservation-gap insertion rather than append-only placement. `GreenHeftAdapter` requires one declared
-plain power profile per VM and estimates task energy as full-load watts times raw-MI execution seconds.
+PE-compatible and later tasks use earliest legal reservation-gap insertion (exact `start + duration <=
+gapStart`) rather than append-only placement. Since FGCS-R3 (2026-11-24, M6) durations use the SHARED
+compute envelope `(L_raw + floor(mips * inputSeconds)) / mips` and roots wait for the 110-MI stage-in Job
+plus the root-release interval, exactly as `SharedStorageDagPlanner`; edges carry no point-to-point time.
+Previously durations were raw `MI / MIPS` and roots started at 0, so planned windows did not mirror
+execution. `GreenHeftAdapter` requires one declared plain power profile per VM and estimates task energy
+as full-load watts times the envelope seconds (the runtime charges the dynamic power over the whole Job
+envelope). The [energy planner mirror test](<../../simulator/src/test/java/org/workflowsim/planning/EnergyPlannerRuntimeMirrorIntegrationTest.java>)
+checks that GreenHEFT and the MOHEFT balanced schedule reproduce runtime VM bindings, compute starts
+(exact) and envelope finishes (within floating-point reassociation, 1e-9 s).
 Missing power, multiple frequency tiers, or a task-cost matrix fails explicitly. The implementation
 is not the paper's empirical neural-network model or the MOHEFT Pareto optimizer.
 `GreenHeftPlannerTest` distinguishes energy-first selection and gap insertion;
 `GreenHeftAdapterTest` verifies PE compatibility and multi-PE duration.
 
-### MOHEFT Pareto Beam Search (R-PAPER-06, 2026-11-06)
+### MOHEFT Pareto Beam Search (R-PAPER-06, 2026-11-06; FGCS-R3, 2026-11-24)
 
-`MO_HEFT` expands HEFT-ordered task-to-VM candidates and keeps non-dominated makespan-energy
-solutions. Candidates use the same PE filtering and reservation-gap insertion as GreenHEFT, so the
-front does not lose feasible low-energy early-gap schedules. `MoHeftPlanner` retains both objective
-extremes, applies crowding-distance truncation at beam width 8, and selects a balanced schedule by
-normalized distance to the ideal point. A candidate is dominated only when another candidate is no
-worse in both objectives and strictly better in at least one. The balanced tie-break is makespan,
-energy, then deterministic candidate ID. `MoHeftPlannerTest` covers dominated-candidate removal,
-Pareto extremes, balanced selection and gap-inserted candidates; `MoHeftIntegrationTest` covers a
-real three-point tradeoff. This is not an exact full Pareto optimizer or an empirical neural-network model.
+`MO_HEFT` expands HEFT-ordered task-to-VM candidates and, after each task, keeps the K = 8 best partial
+schedules by **non-dominated sorting plus crowding distance** (Durillo, Nae and Prodan, FGCS 2014):
+whole fronts are taken in rank order while they fit, the overflowing front is truncated by descending
+crowding distance (boundary points get infinite distance, so both objective extremes survive), and ties
+use the ascending candidate ID. Before 2026-11-24 only the first front was kept, so the beam shrank when
+that front had fewer than K members and dominated partial schedules that later become non-dominated were
+lost (FGCS-R3 M5). The returned Pareto front is the non-dominated subset of the final beam; a balanced
+schedule is chosen by normalized distance to the ideal point with makespan, energy, then candidate ID as
+tie-breaks. A candidate is dominated only when another is no worse in both objectives and strictly
+better in at least one. Candidates use the same PE filtering, SHARED envelope durations and root release
+as GreenHEFT, and the exact insertion test `start + duration <= gapStart` of the SHARED planners (the
+former `+1e-9` tolerance was removed, FGCS-R3 m7). `MoHeftPlannerTest` covers dominated-candidate
+removal, Pareto extremes, the hand-derived later-front refill case, exact insertion, balanced selection
+and gap-inserted candidates; `MoHeftIntegrationTest` covers a real three-point tradeoff. This is not an
+exact full Pareto optimizer or an empirical neural-network model.
 
-### IC-PCP Deadline/Cost Partial Critical Paths (R-PAPER-07, 2026-11-06)
+### IC-PCP Deadline/Cost Partial Critical Paths (R-PAPER-07, 2026-11-06; FGCS-R3, 2026-11-24)
 
-`IC_PCP` implements one-phase IC-PCP: initial HEFT priority, EST/LFT, critical-parent partial
-critical paths, whole-path VM trials over PE-compatible resources, and feasible
-minimum-incremental-cost assignment. A virtual END node participates in the minimum slack check; an
-infeasible deadline fails explicitly. The SHARED adapter starts root work after the model-generated
-110-MI stage-in Job and root-release interval, and includes each task's shared-storage input seconds
-using the same single integer-MI conversion and `envelopeMI / vmMips` duration as the SHARED
-baseline. Its homogeneous communication
-estimate converts declared decimal MB/s to bit/s consistently. Cost is computed per VM as
-`ceil((lastFinish-firstStart)/billingPeriod) * billingPeriod * vmCostPerSecond`; the current adapter
-uses a one-second billing period. No silent fallback to an arbitrary VM, dynamic provisioning,
-IC-PCPD2, or full event-replay guarantee is made. `IcpcpPlannerTest` covers a low-cost chain,
-infeasible deadline, billing-period arithmetic, fork/join and cycle rejection; `IcpcpAdapterTest`
-covers units, PE filtering, duplicate declarations, SHARED input envelopes and absolute deadlines;
-`IcpcpIntegrationTest` covers declared VM costs in a real session.
+`IC_PCP` implements one-phase IC-PCP of [Abrishami, Naghibzadeh and Epema](<https://doi.org/10.1016/j.future.2012.05.004>)
+over the fixed declared VM pool. EST/EFT/LFT are computed over the DAG plus the per-VM task sequences;
+an unassigned task uses its minimum compatible duration (MET) and counts the edge transfer time. The
+**critical parent** of a task is its unassigned parent with the latest data arrival `EFT(p) + TT(p,t)`
+(ties: lower Task ID); partial critical paths are built backwards from the virtual END node and the
+parents of every assigned path task are then processed recursively, as in the paper.
 
-### Network-Aware HEFT Bottleneck Stretching (R-PAPER-08, 2026-11-06)
+`AssignPath` places the whole path consecutively on one VM at one position of that VM's existing task
+sequence, recomputes the schedule, and accepts the candidate only if every assigned task — the path and
+the tasks already on any VM — finishes by its LFT and the makespan meets the deadline. Among applicable
+candidates it chooses the minimum incremental billed cost, then the lower VM ID, then the earlier
+position. Cost per VM is `ceil((lastFinish-firstStart)/billingPeriod) * billingPeriod * vmCostPerSecond`;
+the current adapter uses a one-second billing period.
 
-`NETWORK_HEFT` forms flows for cross-VM parent-child edges and stretches them on a shared
-bottleneck. Active flows share the declared capacity, and each edge keeps an independent
-`parentId→childId` duration key so multiple parents of one task cannot overwrite each other.
-`NetworkHeftPlanner` applies insertion-based HEFT over PE-compatible candidates with the stretched
-durations and keeps the best realistic schedule. The adapter converts decimal MB/s to bit/s for
-nominal edge time and to the corresponding byte/s bottleneck capacity; duplicate OUTPUT declarations
-are membership, not repeated payload. A zero-byte edge with a positive nominal duration derives its
-work from the supplied capacity rather than a hidden rate. The six-task paper-style case yields
-nominal 25 seconds and stretched 32 seconds; M45 kills removal of per-flow capacity sharing. The
-current adapter uses one shared bottleneck and fair sharing, not the full TCP throughput model or
-automatic path detection.
+**Remaining deviation from the paper (fixed-pool adaptation).** No instance can be launched: a VM with no
+tasks plays the role of a new instance of its type at its declared rate, and when no VM is applicable
+the planner fails explicitly instead of launching one. Inserting a path may delay (never reorder or
+remap) already placed tasks, but only within their LFTs; the paper's instances never host two paths with
+interleaved idle gaps in the same way because each new path either fits an idle slot of an existing
+instance or gets a new instance. There is no IC-PCPD2, dynamic provisioning, or full event-replay claim.
+
+The SHARED adapter starts root work after the model-generated 110-MI stage-in Job and root-release
+interval and includes each task's shared-storage input seconds using the same single integer-MI
+conversion and `envelopeMI / vmMips` duration as the SHARED baseline. **Edge transfer times are zero**:
+the SHARED runtime has no point-to-point edges and every input read is already inside the consumer's
+envelope; the pre-2026-11-24 adapter added `bytes / meanBandwidth` on top and double-counted cross-VM
+edges (FGCS-R3 M3). `IcpcpPlannerTest` covers the hand-derived critical-parent case where smallest slack
+and latest arrival disagree, LFT-based rejection of an instance, a low-cost chain, infeasible deadline,
+billing arithmetic, fork/join and cycle rejection; `IcpcpAdapterTest` covers units, PE filtering, the
+zero SHARED edge time, SHARED input envelopes and absolute deadlines; `IcpcpIntegrationTest` covers
+declared VM costs in a real session.
+
+### Network-Aware HEFT Bottleneck Stretching (R-PAPER-08, removed)
+
+`NETWORK_HEFT` is no longer a planning label. Removed on 2026-11-24 (FGCS-R3): the planner optimized cross-VM point-to-point flows on a shared bottleneck, but it was bound to the SHARED runtime, which has no point-to-point edges, so its planned schedule could not mirror execution; no retained FGCS study or configuration used it. The last implementation is preserved in git history before this removal.
 
 ### EBPSM Budget and Cache Scheduling (R-PAPER-09, 2026-11-06)
 
@@ -320,6 +342,15 @@ acceptance decision. `DvfsSlackRegistry` stores one tier per logical Task;
 each Job, not the zero-based Job ID. The standard runner consumes the selected tier through the
 existing admission-time DVFS mechanism. This is a greedy subset, not a global DVFS optimality or full
 paper-corpus claim.
+
+Plan/runtime consistency (FGCS-R3, 2026-11-24, m6). The runtime rescales the declared work to
+`round(L * vmMips / tierMips)` MI executed at the VM capacity, adds SHARED stage-in MI at the VM capacity
+(so stage-in seconds do not depend on the tier), and charges the selected tier's `P_max − P_idle(default)`
+over the whole Job envelope including stage-in. The planner previously used the exact `L / tierMips`,
+which differs from the runtime's whole-MI rescaling (0.6667 s versus 0.6665 s for 1000 MI at 1500 of
+2000 MIPS); it now uses the runtime rescaling. The stage-in convention was already consistent on both
+sides and is unchanged. The [DVFS mirror test](<../../simulator/src/test/java/org/workflowsim/planning/DvfsSlackRuntimeMirrorIntegrationTest.java>)
+checks VM bindings, selected tiers, compute starts and Job envelopes against the runtime.
 
 ### CRCH Synchronized-Checkpoint Recovery (R-PAPER-11, 2026-11-08)
 
