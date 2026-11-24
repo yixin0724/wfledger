@@ -1,0 +1,20 @@
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 25,125,131
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 301
+simulator/src/main/java/org/workflowsim/ClusteringEngine.java
+  h_adc77830afcf4d 91
+simulator/src/main/java/org/workflowsim/utils/ClusteringParameters.java
+  h_adc77830afcf4d 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3b7267a828ec946cea6d5bf138618063eafb9ddf",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
