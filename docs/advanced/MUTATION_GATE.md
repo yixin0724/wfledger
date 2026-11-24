@@ -78,7 +78,7 @@ closed with dedicated boundary/conservation tests at that time.
 | M62 | NACO double-counts parent-produced input as external disk read | NACO DNC input accounting (R-AUDIT-01) |
 | M63 | EBPSM publishes unsuccessful output as readable cache | EBPSM successful-only publication (R-AUDIT-01) |
 | M64 | CRCH ignores checkpoint overhead when committing progress | CRCH checkpoint commit timing (R-AUDIT-01) |
-| M65 | EDP heuristic double-counts default idle during busy execution | EDP conservation-consistent tier choice (R-AUDIT-01) |
+| M65 | EDP heuristic depends on the dispatch clock | Clock-invariant local EDP (R-AUDIT-01; re-anchored FGCS-R5, 2026-11-24) |
 | M66 | Failed parent releases its child before a successful retry | Successful-parent dependency gate (R-EXP-01, 2026-11-09) |
 | M67 | CRCH retry overwrites remaining work with the original task length | CRCH remaining-work preservation (R-EXP-01) |
 | M68 | Tiered retry restarts from the already scaled length | Declared-work retry restart (FGCS-R4, 2026-11-24) |

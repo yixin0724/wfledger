@@ -364,6 +364,32 @@ public final class SimulationRunner {
         }
     }
 
+    /**
+     * FGCS-R5 (2026-11-24): planners and online policies rank VMs by nominal MIPS while DEFAULT runs
+     * the first tier. A VM-dependent ratio between them silently reorders the fleet; a uniform ratio
+     * (including 1) keeps the compute order. An untiered VM has ratio 1.
+     */
+    private static void validateUniformDefaultTierRatio(PlatformProfile platform) {
+        PlatformProfile.VmSpec first = null;
+        for (PlatformProfile.VmSpec spec : platform.getVms()) {
+            if (first == null) {
+                first = spec;
+                continue;
+            }
+            double left = defaultMips(spec) * first.getMips();
+            double right = defaultMips(first) * spec.getMips();
+            if (Math.abs(left - right) > 1.0e-9 * Math.max(left, right)) {
+                throw new SimulationConfigurationException("Every VM must have the same ratio of default frequency"
+                        + " tier to nominal MIPS: VM " + first.getId() + " and VM " + spec.getId()
+                        + " differ, so decisions based on nominal speed would misrank them (FGCS-R5)");
+            }
+        }
+    }
+
+    private static double defaultMips(PlatformProfile.VmSpec spec) {
+        return spec.hasFrequencyTiers() ? spec.defaultFrequencyTier().getMips() : spec.getMips();
+    }
+
     private static void validateFrequencyDimension(SimulationConfig config, PlatformProfile platform) {
         boolean anyTieredVm = false;
         for (PlatformProfile.VmSpec spec : platform.getVms()) {
@@ -378,6 +404,7 @@ public final class SimulationRunner {
                             + "declared frequencyTiers; on an all-plain platform the policy would be "
                             + "silently inert (BAT-D2)");
         }
+        validateUniformDefaultTierRatio(platform);
         if (anyTieredVm
                 && (config.getSchedulingAlgorithm() == SchedulingAlgorithm.CRCH
                         || config.getFailureModel().getClusteringAlgorithm()

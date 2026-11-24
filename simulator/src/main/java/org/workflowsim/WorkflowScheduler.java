@@ -502,15 +502,13 @@ public class WorkflowScheduler extends DatacenterBroker {
 
     private PlatformProfile.FrequencyTier selectMinEdpTier(Job job, List<PlatformProfile.FrequencyTier> tiers) {
         long workMi = job.getEffectiveExecutionLengthMi();
-        double clock = CloudSim.clock();
-        PlatformProfile.FrequencyTier defaultTier = tiers.get(0);
+        // FGCS-R5 (2026-11-24): root cause - the estimate charged default idle for the whole elapsed
+        // clock, so the same Job moved to faster tiers merely because it was dispatched later.
         PlatformProfile.FrequencyTier best = null;
         double bestEdp = Double.NaN;
         for (PlatformProfile.FrequencyTier tier : tiers) {
             double estimatedSeconds = workMi / tier.getMips();
-            double makespanEstimate = clock + estimatedSeconds;
-            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds
-                    + defaultTier.getIdlePowerWatts() * (makespanEstimate - estimatedSeconds);
+            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds;
             double edp = energyEstimate * estimatedSeconds;
             if (best == null || edp < bestEdp) {
                 best = tier;

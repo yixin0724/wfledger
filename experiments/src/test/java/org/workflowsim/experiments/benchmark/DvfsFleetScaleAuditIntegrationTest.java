@@ -93,10 +93,14 @@ class DvfsFleetScaleAuditIntegrationTest {
             }
         }
 
-        assertTrue(
-                observedTiers.size() >= 2,
-                "an EDP_HEURISTIC run over spread work sizes and clocks must observe at least two"
-                        + " distinct tiers (observed: " + observedTiers + ")");
+        // FGCS-R5 (2026-11-24): local EDP is Pmax * T^2, independent of the dispatch clock and of the
+        // work size (T scales linearly with MI). Hand derivation for this table: 4000 / 2000^2 = 1e-3,
+        // 400 / 1000^2 = 4e-4, 118.75 / 500^2 = 4.75e-4 per MI^2, so every Job takes the 1000 tier.
+        // The former clock-dependent tier mix was an artifact of charging elapsed idle time.
+        assertEquals(
+                java.util.Collections.singleton(Double.valueOf(1000.0)),
+                observedTiers,
+                "clock-invariant local EDP selects the hand-derived 1000 tier for every Job");
 
         for (Map.Entry<Integer, SimulationMetrics.VmMetrics> entry :
                 first.getMetrics().getVmMetrics().entrySet()) {

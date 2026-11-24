@@ -76,6 +76,7 @@ V3 marks the FGCS-R3 corrections (`git log 336844b..` up to the identity bump). 
 - The completion safety margin (tick/10) and the initial processing threshold (tick + safety + safety/10) derive from `cloudSimMinEventIntervalSeconds`; bit-identical at the default 0.1 s, different at other ticks.
 - EBPSM publishes input/container caches on successful Job completion and fails fast when no compatible VM can ever meet a Task's sub-budget (evaluated after the whole round); Jobs no declared VM can host are rejected.
 - Fleets mixing powered and unpowered VMs are rejected instead of booking 0 J for the unpowered VMs.
+- Frequency (FGCS-R5, 2026-11-24, also before any retained V3 evidence): EDP_HEURISTIC minimizes the clock-invariant local `P_max × T²`, and the runner rejects fleets whose default-tier-to-nominal MIPS ratio differs between VMs.
 - Recovery (FGCS-R4, 2026-11-24, added before any V3 study evidence was retained): a tiered NOOP retry restarts from the declared work instead of the already tier-scaled length; CRCH credits only the modeled compute window, filters by PE, and rejects frequency tiers.
 - Planners: IC-PCP latest-arrival critical parent, LFT-checked whole-path placement and SHARED edges; MOHEFT NSGA-II beam refill and exact insertion; GreenHEFT/MOHEFT SHARED envelope with stage-in release; DLS Sih–Lee median static level and delta term; LOCAL average communication = data / mean pair rate with real-input edge bytes (LOCAL_HEFT/CPOP/PEFT); DVFS_SLACK whole-MI tier rescaling; `NETWORK_HEFT` removed.
 

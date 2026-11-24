@@ -149,8 +149,14 @@ idle ≤ max constraint as the v1 power fields.
   v1-degenerate), `MIN_POWER` (every Job runs at the LAST/smallest tier),
   `EDP_HEURISTIC` (each Job selects the tier minimizing EDP = E_tier ×
   estimated_T_tier, computed at dispatch with the Job's declared MI work). Its local energy
-  estimate is `P_max(tier) × T_tier + P_idle(default) × (makespan_est − T_tier)`: default idle is
-  charged only outside the Job's busy rectangle, consistent with the conservation law in §2.3.
+  estimate is the busy rectangle `P_max(tier) × T_tier`, so the choice minimizes
+  `P_max(tier) × T_tier²` and does not depend on the dispatch clock (FGCS-R5, 2026-11-24: the former
+  estimate added `P_idle(default) × elapsed clock`, which moved the same Job to faster tiers merely
+  because it was dispatched later). Fleet idle exposure is accounted exactly by §2.3, not by this
+  per-Job estimate.
+- **Speed basis** (FGCS-R5): planners and online policies rank VMs by nominal MIPS, while DEFAULT runs
+  the first tier. The runner therefore requires one common ratio of default-tier MIPS to nominal MIPS
+  across the fleet (an untiered VM has ratio 1); a VM-dependent ratio would silently reorder the fleet.
 - **Registry-level**: registered DVFS-aware algorithms declare `dvfsAware=true`
   and can assign tiers per-Job through a first-class scheduling-time API
   (the declaration model's powerModelRequired gate extends to require declared

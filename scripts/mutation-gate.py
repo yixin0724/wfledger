@@ -463,11 +463,13 @@ REGISTRY = [
         killers="CrchRegistryTest"),
     dict(
         id="M65",
-        name="EDP heuristic double-counts default idle during busy execution",
+        name="EDP heuristic depends on the dispatch clock",
         file="simulator/src/main/java/org/workflowsim/WorkflowScheduler.java",
-        old="            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds\n                    + defaultTier.getIdlePowerWatts() * (makespanEstimate - estimatedSeconds);",
-        new="            double energyEstimate =\n                    tier.getMaxPowerWatts() * estimatedSeconds + defaultTier.getIdlePowerWatts() * makespanEstimate;",
-        killers="FrequencyTierAssignmentTest"),
+        # FGCS-R5 (2026-11-24): re-anchored to the clock-invariant local EDP; the mutant restores the
+        # dispatch-clock idle term the fix removed.
+        old="            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds;",
+        new="            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds + 50.0 * CloudSim.clock();",
+        killers="FrequencySpeedConsistencyTest"),
     dict(
         id="M66",
         name="Failed parent releases its child before a successful retry",

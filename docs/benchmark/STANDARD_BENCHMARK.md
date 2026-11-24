@@ -259,7 +259,7 @@ LOCAL_DAG cells.
   EDP ×0.369 vs DEFAULT.
 - MIN_POWER's medians show the *austerity trade*: −69.7% energy and carbon but ×5.9
   makespan — its median EDP product is ×2.33 worse than DEFAULT's.
-- The EDP_HEURISTIC tier mix is *clock-dependent* (the greedy's makespan estimate charges
+- (Historical, superseded by FGCS-R5 on 2026-11-24: the local EDP estimate is now clock-invariant, so this mix is no longer produced by current code.) The EDP_HEURISTIC tier mix is *clock-dependent* (the greedy's makespan estimate charges
   each candidate tier's idle exposure at dispatch): early LONG jobs take the 1000 tier,
   late/short jobs stay at 2000 — and on the transfer-dominated LOCAL_DAG cells every
   dispatch clock is late enough that the greedy collapses to all-2000 (the 5 "equal"
