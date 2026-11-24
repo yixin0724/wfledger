@@ -1,0 +1,21 @@
+simulator/src/test/java/org/workflowsim/planning/EnergyPlannerRuntimeMirrorIntegrationTest.java
+  s_d9232ffa62c6d8::t_9852e77df1309e 1-222
+simulator/src/test/java/org/workflowsim/planning/GreenHeftIntegrationTest.java
+  s_d9232ffa62c6d8::t_887ee73c973ed0 70-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5634e23c5a13c729684109d36ffaa45eebf40032",
+  "prompts": {},
+  "sessions": {
+    "s_d9232ffa62c6d8": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "5fd6baa4-e7a0-485b-8122-a31022e7699c",
+        "model": "codefuse_official_channel/Kimi-K3.1-Pro:glink_domestic"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
