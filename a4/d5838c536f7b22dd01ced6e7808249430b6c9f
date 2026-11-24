@@ -1,0 +1,38 @@
+experiments/src/main/java/org/workflowsim/experiments/fgcs/contracts/SemanticContractBenchmarks.java
+  h_adc77830afcf4d 439-442,466-469,479-480,483-486,488,493-497,513-514,516,519-522,524,530,533-534,536,540,599-606,675,892-913
+experiments/src/main/java/org/workflowsim/experiments/fgcs/microbench/ModelMicrobenchmarks.java
+  h_adc77830afcf4d 395-397,430,433-434,437-438,453-456,460-461,466-467,471-472,475,478-479,530-535,543
+experiments/src/main/java/org/workflowsim/experiments/fgcs/recovery/FailureRecoveryStudy.java
+  h_adc77830afcf4d 39-55,63,72,145
+experiments/src/test/java/org/workflowsim/experiments/audit/AlgorithmExperimentAuditTest.java
+  h_adc77830afcf4d 336-338,340,343
+experiments/src/test/java/org/workflowsim/experiments/audit/AlgorithmMetricAuditTest.java
+  h_adc77830afcf4d 148-150,152,155
+experiments/src/test/java/org/workflowsim/experiments/fgcs/contracts/SemanticContractBenchmarksTest.java
+  h_adc77830afcf4d 144-147,149-154,156,163,191
+experiments/src/test/java/org/workflowsim/experiments/fgcs/microbench/ModelMicrobenchmarksTest.java
+  h_adc77830afcf4d 140-150
+experiments/studies/fgcs/contracts/README.md
+  h_adc77830afcf4d 23,25,29
+experiments/studies/fgcs/microbench/README.md
+  h_adc77830afcf4d 12,18
+experiments/studies/fgcs/protocol.json
+  h_adc77830afcf4d 74
+simulator/src/test/java/org/workflowsim/planning/CrchIntegrationTest.java
+  h_adc77830afcf4d 27-28,133
+simulator/src/test/java/org/workflowsim/planning/MidExecutionFailureIntegrationTest.java
+  h_adc77830afcf4d 36-37,43
+simulator/src/test/java/org/workflowsim/planning/RetryWorkAccountingIntegrationTest.java
+  h_adc77830afcf4d 94,105,127,132,135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a4d5838c536f7b22dd01ced6e7808249430b6c9f",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
