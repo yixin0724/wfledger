@@ -1,0 +1,20 @@
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 73-74
+simulator/src/main/java/org/workflowsim/planning/AbstractLocalCommPlanningAlgorithm.java
+  h_adc77830afcf4d 317-327,333,342,347-350,380-389,398-415
+simulator/src/test/java/org/workflowsim/planning/LocalCommPlanningExtensionsTest.java
+  h_adc77830afcf4d 70-143
+simulator/src/test/java/org/workflowsim/planning/LocalCommunicationIntersectionScalabilityAuditTest.java
+  h_adc77830afcf4d 121-125,149-153,155,171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "097db8bf57a6332b0756a710d7209cd133119e4a",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
