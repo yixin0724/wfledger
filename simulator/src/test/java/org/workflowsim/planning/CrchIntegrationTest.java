@@ -24,7 +24,8 @@ import org.workflowsim.utils.SimulationConfig;
  * <p>FGCS-R5 (2026-11-24): the former fixtures drew a VM 3 arrival every ~1 ms and relied on the
  * failure being flagged only at the attempt's completion. With mid-execution failures such a stream
  * ends every VM 3 attempt within a millisecond, before any checkpoint commits, so the arrivals are now
- * a Weibull stream of shape 1e9 whose i-th arrival is {@code i * scale} (1e-8 relative error). Timing:
+ * a Weibull stream of shape 1e300: its inverse CDF {@code scale·(-ln(1-u))^(1e-300)} rounds to exactly
+ * {@code scale}, so the i-th arrival is {@code i * scale}. Timing:
  * SHARED, no input, roots start at 0.21 s; λ = 1 s, γ = 0.1 s, so checkpoint k completes k·1.1 s after
  * compute start; CRCH ties go to the lower VM ID.
  */
@@ -129,6 +130,6 @@ class CrchIntegrationTest {
     }
 
     private static DistributionSpec arrivalsEvery(double seconds) {
-        return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, seconds, 1.0e9);
+        return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, seconds, 1.0e300);
     }
 }

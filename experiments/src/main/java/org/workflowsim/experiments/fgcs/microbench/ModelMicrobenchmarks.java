@@ -392,7 +392,9 @@ public final class ModelMicrobenchmarks {
                         + "<job id=\"parent\" name=\"parent\" runtime=\"2\"/>"
                         + "<child ref=\"child\"><parent ref=\"parent\"/></child>");
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
-        specs.put(3, new DistributionSpec[] {weibull(1.0e9), weibull(0.001), weibull(1.0e9)});
+        // FGCS-R5 (2026-11-24): failures end attempts at the arrival, so the parent stream is deterministic
+        // (Weibull shape 1e300 samples exactly the scale): VM 3 parent-depth arrivals at 1.5, 3.0, ... s.
+        specs.put(3, new DistributionSpec[] {weibull(1.0e9), weibull(1.5), weibull(1.0e9)});
         specs.put(8, new DistributionSpec[] {weibull(1.0e9), weibull(1.0e9), weibull(1.0e9)});
         FailureModelConfig failure = FailureModelConfig.builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_CRCH)
@@ -425,15 +427,15 @@ public final class ModelMicrobenchmarks {
         SimulationReport.TaskOutcome retryParent = task(report, 2, retryJobId);
         require(failedParent.getTaskStatus() == Cloudlet.FAILED, "Wrong failed parent attempt");
         require(retryParent.getTaskStatus() == Cloudlet.SUCCESS, "Retry did not succeed");
-        require(failedParent.getVmId() != retryParent.getVmId(), "CRCH retry reused the failed VM");
+        require(failedParent.getVmId() == 3 && retryParent.getVmId() == 3, "CRCH retry left checkpointing VM 3");
         double elapsed = failedParent.getFinishTime() - failedParent.getStartTime();
         require(
-                elapsed + EPSILON >= 1.1 && elapsed + EPSILON < 2.2,
-                "CRCH fixture no longer has exactly one committed checkpoint: elapsed=" + elapsed);
+                elapsed + EPSILON >= 1.1 && elapsed + EPSILON < 2.1,
+                "CRCH fixture no longer ends between its only checkpoint and completion: elapsed=" + elapsed);
         long expectedSavedMi = 1000L;
         long expectedRemainingMi = 2000L - expectedSavedMi;
-        long expectedRetryMi = expectedRemainingMi + 100L;
-        require(failedParent.getEffectiveExecutionLengthMi() == 2000L, "Initial parent work changed");
+        long expectedRetryMi = expectedRemainingMi;
+        require(failedParent.getEffectiveExecutionLengthMi() == 2100L, "Initial parent attempt MI changed");
         require(retryParent.getEffectiveExecutionLengthMi() == expectedRetryMi, "CRCH remaining-MI contract failed");
 
         SimulationEvent failed = oneMain(report, SimulationEventType.JOB_FAILED, failedJobId, null);
@@ -448,34 +450,33 @@ public final class ModelMicrobenchmarks {
         SimulationReport.TaskOutcome child = successfulTask(report, 1);
         require(child.getStartTime() + EPSILON >= retryParent.getFinishTime(), "Child compute preceded parent success");
 
-        int observedCheckpoints = 0;
-        double observedCheckpointedSeconds = 0.0;
-        while (observedCheckpointedSeconds + 1.0 + 0.1 <= elapsed + EPSILON) {
-            observedCheckpointedSeconds += 1.0;
-            observedCheckpoints++;
-        }
-        long observedSavedMi = Math.min(2000L, (long) Math.floor(observedCheckpointedSeconds * 1000.0 + EPSILON));
-        long observedOverheadMi = (long) Math.ceil(0.1 * 1000.0);
+        // Independent of the production model: a 2 s task takes one checkpoint after 1 s of progress,
+        // completed 1.0 + 0.1 s into compute; each committed checkpoint saves 1000 MI.
+        long observedCheckpoints = Math.min(1L, (long) Math.floor(elapsed / 1.1 + EPSILON));
+        long observedSavedMi = observedCheckpoints * 1000L;
 
         JsonObject expected = new JsonObject();
         expected.addProperty("failedParentAttempts", 1.0);
+        expected.addProperty("failedParentAttemptMi", 2100.0);
+        expected.addProperty("failedParentFinishSeconds", 1.5);
         expected.addProperty("committedCheckpoints", 1.0);
         expected.addProperty("savedWorkMi", expectedSavedMi);
         expected.addProperty("remainingWorkMi", expectedRemainingMi);
-        expected.addProperty("recoveryOverheadMi", 100.0);
         expected.addProperty("retryEffectiveWorkMi", expectedRetryMi);
-        expected.addProperty("retryExecutionSeconds", 1.1);
-        expected.addProperty("retryUsesAlternativeVm", 1.0);
+        expected.addProperty("retryExecutionSeconds", 1.0);
+        expected.addProperty("retryResumesOnCheckpointingVm", 1.0);
         expected.addProperty("childReleaseAfterSuccessfulRetry", 1.0);
         JsonObject observed = new JsonObject();
         observed.addProperty("failedParentAttempts", report.getFailedJobs());
+        observed.addProperty("failedParentAttemptMi", failedParent.getEffectiveExecutionLengthMi());
+        observed.addProperty("failedParentFinishSeconds", failedParent.getFinishTime());
         observed.addProperty("committedCheckpoints", observedCheckpoints);
         observed.addProperty("savedWorkMi", observedSavedMi);
-        observed.addProperty("remainingWorkMi", retryParent.getEffectiveExecutionLengthMi() - observedOverheadMi);
-        observed.addProperty("recoveryOverheadMi", observedOverheadMi);
+        observed.addProperty("remainingWorkMi", 2000L - observedSavedMi);
         observed.addProperty("retryEffectiveWorkMi", retryParent.getEffectiveExecutionLengthMi());
         observed.addProperty("retryExecutionSeconds", retryParent.getFinishTime() - retryParent.getStartTime());
-        observed.addProperty("retryUsesAlternativeVm", failedParent.getVmId() != retryParent.getVmId() ? 1.0 : 0.0);
+        observed.addProperty(
+                "retryResumesOnCheckpointingVm", failedParent.getVmId() == retryParent.getVmId() ? 1.0 : 0.0);
         observed.addProperty(
                 "childReleaseAfterSuccessfulRetry", returned.getSequence() < childReady.getSequence() ? 1.0 : 0.0);
         observed.addProperty("failedAttemptElapsedSeconds", elapsed);
@@ -526,9 +527,12 @@ public final class ModelMicrobenchmarks {
         return caseJson(
                 "deterministic-crch-parent-retry",
                 "CRCH, fixed seed 7, FAILURE_VM_JOB keyed to VMs 3/8 and parent/child depths",
-                "The 2000 MI parent runs at 1000 MI/s. Its envelope permits one checkpoint:"
-                        + " 1.0+0.1<=elapsed<2.2. Saved=1000 MI, remaining=1000 MI, recovery"
-                        + " overhead=ceil(0.1*1000)=100 MI, so retry work is 1100 MI and takes 1.1 s. Only the"
+                "The 2000 MI parent runs at 1000 MI/s from the 0.21 s root release with lambda=1 s and"
+                        + " gamma=0.1 s: one checkpoint after 1 s of progress, so the attempt executes 2100 MI"
+                        + " over [0.21,2.31). Its only checkpoint completes 1.1 s into compute (1.31). The VM 3"
+                        + " arrival at 1.5 ends the attempt after 1.29 s: one checkpoint saves 1000 MI on VM 3."
+                        + " Resuming there costs 1000 MI with no checkpoint (1.0 s) versus a 2100 MI re-execution"
+                        + " (2.1 s) on VM 8, so the retry stays on VM 3; no restore term is charged. Only the"
                         + " successful retry may release the child.",
                 expected,
                 observed,
@@ -536,7 +540,7 @@ public final class ModelMicrobenchmarks {
     }
 
     private static DistributionSpec weibull(double scale) {
-        return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, scale, 1.0);
+        return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, scale, 1.0e300);
     }
 
     private static SimulationConfig coherentConfig(Path input, int vms, DataMovementModel model) {

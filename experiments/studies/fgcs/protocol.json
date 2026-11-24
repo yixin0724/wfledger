@@ -71,6 +71,7 @@
       "modes": ["disabled", "exercised-failure-retry", "enabled-no-injection-control"],
       "scheduler": "CRCH",
       "retryBudget": 20,
+      "injection": "DETERMINISTIC_PERIODIC_5S_FASTEST_VM_ROOT_DEPTH_FGCS_R5",
       "failedAndRetryCountsRequiredForExercisedCases": true,
       "zeroInjectionMustNotBeCalledExercised": true,
       "repeatedInjectionOnFallbackVmPossible": true

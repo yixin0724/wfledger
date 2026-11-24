@@ -436,9 +436,10 @@ public final class SemanticContractBenchmarks {
                         + "<job id=\"child\" name=\"child\" runtime=\"1\"/>"
                         + "<child ref=\"child\"><parent ref=\"parent\"/></child>");
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
-        // A 0.01 s scale covers the declared t=100 start within FailureGenerator's
-        // 50-extension domain; a denser 0.001 s stream exceeds that supported boundary.
-        specs.put(3, new DistributionSpec[] {weibull(1.0e9), weibull(0.01), weibull(1.0e9)});
+        // FGCS-R5 (2026-11-24): a failure now ends the attempt at the arrival, so the root stream is
+        // deterministic (Weibull shape 1e300 samples exactly the scale): VM 3 root-depth arrivals at
+        // 102.5, 205, ... s, the first inside the root's compute window [100, 103.2).
+        specs.put(3, new DistributionSpec[] {weibull(1.0e9), weibull(102.5), weibull(1.0e9)});
         specs.put(8, new DistributionSpec[] {weibull(1.0e9), weibull(1.0e9), weibull(1.0e9)});
         FailureModelConfig failure = FailureModelConfig.builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_CRCH)
@@ -462,7 +463,10 @@ public final class SemanticContractBenchmarks {
         require(report.isWorkflowCompletedSuccessfully(), "Two-checkpoint workflow did not complete");
         require(
                 report.getFailedJobs() == 1 && report.getMetrics().getRetryJobCreatedCount() == 1,
-                "Deterministic injection must fail and retry the parent exactly once");
+                "Deterministic injection must fail and retry the parent exactly once: failed="
+                        + report.getFailedJobs() + " retries="
+                        + report.getMetrics().getRetryJobCreatedCount()
+                        + " tasks=" + describeTasks(report));
 
         SimulationEvent retryCreated = oneMain(report, SimulationEventType.RETRY_JOB_CREATED, null, null);
         int failedJobId = ((Number) retryCreated.getAttributes().get("failedJobId")).intValue();
@@ -472,27 +476,25 @@ public final class SemanticContractBenchmarks {
         require(failedParent.getTaskStatus() == Cloudlet.FAILED, "Wrong failed parent attempt");
         require(retryParent.getTaskStatus() == Cloudlet.SUCCESS, "Parent retry did not succeed");
         require(
-                failedParent.getVmId() == 3 && retryParent.getVmId() == 8,
-                "CRCH did not move the retry from VM 3 to VM 8");
+                failedParent.getVmId() == 3 && retryParent.getVmId() == 3,
+                "CRCH did not resume the retry on checkpointing VM 3");
         double elapsed = failedParent.getFinishTime() - failedParent.getStartTime();
         require(
-                elapsed + EPSILON >= 2.1 && elapsed + EPSILON < 3.1,
-                "Parent envelope no longer proves two checkpoints and rejects the third: " + elapsed);
-        require(failedParent.getEffectiveExecutionLengthMi() == 3000L, "Initial parent work changed");
+                elapsed + EPSILON >= 2.2 && elapsed + EPSILON < 3.2,
+                "Parent compute no longer ends between the second checkpoint (2.2 s) and completion (3.2 s): "
+                        + elapsed);
+        require(failedParent.getEffectiveExecutionLengthMi() == 3200L, "Initial parent attempt MI changed");
         require(
-                retryParent.getEffectiveExecutionLengthMi() == 1100L,
+                retryParent.getEffectiveExecutionLengthMi() == 1000L,
                 "Two-checkpoint remaining MI is wrong: failedJob=" + failedJobId + " retryJob=" + retryJobId
                         + " failedStart=" + failedParent.getStartTime() + " failedFinish="
                         + failedParent.getFinishTime() + " failedWork=" + failedParent.getEffectiveExecutionLengthMi()
                         + " retryWork=" + retryParent.getEffectiveExecutionLengthMi());
-        int observedCheckpoints = 0;
-        double checkpointedSeconds = 0.0;
-        while (checkpointedSeconds + 1.0 + 0.1 <= elapsed + EPSILON) {
-            checkpointedSeconds += 1.0;
-            observedCheckpoints++;
-        }
-        long observedSavedMi = Math.min(3000L, (long) Math.floor(checkpointedSeconds * 1000.0 + EPSILON));
-        long observedOverheadMi = (long) Math.ceil(0.1 * 1000.0);
+        // Independent of the production model: a 3 s task takes a checkpoint after 1 s and 2 s of
+        // progress (none at completion); checkpoint k completes k * (1.0 + 0.1) s into compute.
+        long plannedCheckpoints = 2L;
+        long observedCheckpoints = Math.min(plannedCheckpoints, (long) Math.floor(elapsed / 1.1 + EPSILON));
+        long observedSavedMi = observedCheckpoints * 1000L;
         SimulationEvent failed = oneMain(report, SimulationEventType.JOB_FAILED, failedJobId, null);
         SimulationEvent returned = oneMain(report, SimulationEventType.JOB_RETURNED, retryJobId, null);
         SimulationEvent childReady = oneMain(report, SimulationEventType.JOB_READY, null, 2);
@@ -508,33 +510,34 @@ public final class SemanticContractBenchmarks {
         expected.addProperty("failedParentAttempts", 1);
         expected.addProperty("retryJobsCreated", 1);
         expected.addProperty("failedParentStartSeconds", 100.0);
-        expected.addProperty("failedParentFinishSeconds", 103.0);
+        expected.addProperty("failedParentAttemptMi", 3200);
+        expected.addProperty("failedParentFinishSeconds", 102.5);
         expected.addProperty("committedCheckpoints", 2);
-        expected.addProperty("thirdCheckpointCommitted", 0);
+        expected.addProperty("thirdCheckpointPlanned", 0);
         expected.addProperty("savedWorkMi", 2000);
         expected.addProperty("remainingWorkMi", 1000);
-        expected.addProperty("recoveryOverheadMi", 100);
-        expected.addProperty("retryEffectiveWorkMi", 1100);
-        expected.addProperty("retryExecutionSeconds", 1.1);
-        expected.addProperty("retryFinishSeconds", 104.1);
-        expected.addProperty("retryUsesAlternativeVm", 1);
+        expected.addProperty("retryEffectiveWorkMi", 1000);
+        expected.addProperty("retryExecutionSeconds", 1.0);
+        expected.addProperty("retryFinishSeconds", 103.5);
+        expected.addProperty("retryResumesOnCheckpointingVm", 1);
         expected.addProperty("childReleaseAfterSuccessfulRetry", 1);
-        expected.addProperty("childReadySeconds", 104.1);
+        expected.addProperty("childReadySeconds", 103.5);
 
         JsonObject observed = new JsonObject();
         observed.addProperty("failedParentAttempts", report.getFailedJobs());
         observed.addProperty("retryJobsCreated", report.getMetrics().getRetryJobCreatedCount());
         observed.addProperty("failedParentStartSeconds", failedParent.getStartTime());
+        observed.addProperty("failedParentAttemptMi", failedParent.getEffectiveExecutionLengthMi());
         observed.addProperty("failedParentFinishSeconds", failedParent.getFinishTime());
         observed.addProperty("committedCheckpoints", observedCheckpoints);
-        observed.addProperty("thirdCheckpointCommitted", observedCheckpoints >= 3 ? 1 : 0);
+        observed.addProperty(
+                "thirdCheckpointPlanned", (failedParent.getEffectiveExecutionLengthMi() - 3000L) / 100L >= 3L ? 1 : 0);
         observed.addProperty("savedWorkMi", observedSavedMi);
-        observed.addProperty("remainingWorkMi", retryParent.getEffectiveExecutionLengthMi() - observedOverheadMi);
-        observed.addProperty("recoveryOverheadMi", observedOverheadMi);
+        observed.addProperty("remainingWorkMi", 3000L - observedSavedMi);
         observed.addProperty("retryEffectiveWorkMi", retryParent.getEffectiveExecutionLengthMi());
         observed.addProperty("retryExecutionSeconds", retryParent.getFinishTime() - retryParent.getStartTime());
         observed.addProperty("retryFinishSeconds", retryParent.getFinishTime());
-        observed.addProperty("retryUsesAlternativeVm", failedParent.getVmId() != retryParent.getVmId() ? 1 : 0);
+        observed.addProperty("retryResumesOnCheckpointingVm", failedParent.getVmId() == retryParent.getVmId() ? 1 : 0);
         observed.addProperty(
                 "childReleaseAfterSuccessfulRetry", returned.getSequence() < childReady.getSequence() ? 1 : 0);
         observed.addProperty("childReadySeconds", childReady.getSimulationTime());
@@ -593,12 +596,14 @@ public final class SemanticContractBenchmarks {
         return caseJson(
                 "crch-two-checkpoints-and-third-checkpoint-boundary",
                 "CRCH with fixed seed 7 and VM/depth-keyed deterministic injection",
-                "The root is 3000 MI at 1000 MI/s and starts at the declared t=100 arrival. Its 3.0 s"
-                        + " envelope admits checkpoints at cumulative compute plus one overhead 1.1 and"
-                        + " 2.1 s but rejects the third at 3.1 s. Exactly two checkpoints save 2000 MI,"
-                        + " leaving 1000 MI. Recovery adds ceil(0.1*1000)=100 MI, so retry work is 1100 MI"
-                        + " and takes 1.1 s on alternative VM 8, ending at 104.1. The child cannot be released"
-                        + " by the failed attempt and becomes ready only after the successful return.",
+                "The root is 3000 MI at 1000 MI/s and starts at the declared t=100 arrival. With"
+                        + " lambda=1 s and gamma=0.1 s it takes checkpoints after 1 s and 2 s of progress (none at"
+                        + " completion), so the attempt executes 3000+2*100=3200 MI over [100,103.2). Checkpoint k"
+                        + " completes k*1.1 s into compute. The VM 3 arrival at 102.5 ends the attempt after 2.5 s:"
+                        + " two checkpoints (1.1, 2.2) save 2000 MI on VM 3, leaving 1000 MI. At 102.5 resuming on"
+                        + " VM 3 costs 1000 MI with no checkpoint (1.0 s) while VM 8 would re-execute 3200 MI"
+                        + " (3.2 s), so the retry stays on VM 3 over [102.5,103.5]. No restore term is charged."
+                        + " The child cannot be released by the failed attempt and becomes ready at 103.5.",
                 expected,
                 observed,
                 evidence);
@@ -667,7 +672,7 @@ public final class SemanticContractBenchmarks {
     }
 
     private static DistributionSpec weibull(double scale) {
-        return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, scale, 1.0);
+        return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, scale, 1.0e300);
     }
 
     private static Path writeDax(Path path, String body) throws IOException {
@@ -882,6 +887,28 @@ public final class SemanticContractBenchmarks {
         value.add("evidence", evidence);
         value.addProperty("passed", true);
         return value;
+    }
+
+    private static String describeTasks(SimulationReport report) {
+        StringBuilder text = new StringBuilder();
+        for (SimulationReport.TaskOutcome task : report.getTasks()) {
+            text.append('[')
+                    .append(task.getTaskId())
+                    .append(" job=")
+                    .append(task.getJobId())
+                    .append(" vm=")
+                    .append(task.getVmId())
+                    .append(" status=")
+                    .append(task.getTaskStatus())
+                    .append(' ')
+                    .append(task.getStartTime())
+                    .append("..")
+                    .append(task.getFinishTime())
+                    .append(" mi=")
+                    .append(task.getEffectiveExecutionLengthMi())
+                    .append(']');
+        }
+        return text.toString();
     }
 
     private static void requireExpectations(JsonObject expected, JsonObject observed) {

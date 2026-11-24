@@ -36,6 +36,23 @@ public final class FailureRecoveryStudy {
     private static final int FASTEST_VM_ID = 4;
     private static final double NO_FAILURE_SCALE = 1000000000.0;
 
+    /**
+     * Deterministic injection period of the fastest VM's root-depth stream.
+     *
+     * <p>FGCS-R5 (2026-11-24): a failure now ends its attempt at the arrival instead of flagging it at
+     * completion. The former 0.01 s (and 1.0 s) exponential streams then failed every root attempt on
+     * VM 4 before its first checkpoint, so recovery could never finish within the retry budget. Arrivals
+     * are now periodic (Weibull shape 1e300 samples exactly the scale). The period must exceed the
+     * 1.1 s checkpoint period so that injected failures can commit checkpoints, and the protocol's fixed
+     * retry budget of 20 must hold: a 2 s period exhausted it on the real-DAX rows, whose many roots all
+     * start on VM 4, so the period is 5 s. This is a fixture parameter, not an expected value; every row
+     * is still classified from its actual failed-Job and retry counts.
+     */
+    private static final double INJECTION_PERIOD_SECONDS = 5.0;
+
+    /** Weibull shape whose samples equal the scale exactly in binary64. */
+    private static final double DETERMINISTIC_SHAPE = 1.0e300;
+
     private FailureRecoveryStudy() {}
 
     public static List<FgcStudySupport.Measurement> run(Path generatedInputs) throws SimulationExecutionException {
@@ -43,7 +60,7 @@ public final class FailureRecoveryStudy {
         for (String shape : new String[] {"chain", "fan", "independent"}) {
             try {
                 String workflow = FgcDatasets.smallDag(generatedInputs, shape).toString();
-                addPair(results, shape, workflow, 0.01);
+                addPair(results, shape, workflow, INJECTION_PERIOD_SECONDS);
             } catch (java.io.IOException exception) {
                 throw new IllegalStateException("Cannot generate recovery DAG " + shape, exception);
             }
@@ -52,7 +69,7 @@ public final class FailureRecoveryStudy {
             // Montage/CyberShake have only 8/4 roots, so root-only injection stays
             // below the retry budget. SIPHT has 42 roots and retains its conservative
             // scale; a zero-injection draw is reported only as an explicit control.
-            double scale = FgcDatasets.SIPHT_60.equals(workflow) ? 1000.0 : 1.0;
+            double scale = FgcDatasets.SIPHT_60.equals(workflow) ? 1000.0 : INJECTION_PERIOD_SECONDS;
             addPair(results, workflow.substring(workflow.lastIndexOf('/') + 1), FgcDatasets.real(workflow), scale);
         }
         return results;
@@ -125,7 +142,7 @@ public final class FailureRecoveryStudy {
     }
 
     private static DistributionSpec weibull(double scale) {
-        return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, scale, 1.0);
+        return DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, scale, DETERMINISTIC_SHAPE);
     }
 
     private static void requireNoInjection(FgcStudySupport.Measurement measurement, boolean configured) {

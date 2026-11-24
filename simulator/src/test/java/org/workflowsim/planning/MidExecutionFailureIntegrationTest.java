@@ -33,14 +33,14 @@ import org.workflowsim.utils.SimulationConfig;
  *
  * <p>Common timing (SHARED, no input files, 0.1 s kernel tick): the 110 MI stage-in Job is raised to
  * the 0.11 s completion guard and the roots start at 0.21 s. Failure arrivals come from a Weibull
- * stream of shape 1e9, whose inter-arrival samples equal the scale within 1e-8 relative error, so the
- * i-th arrival is {@code i * scale}; times are compared at 1e-6 s.
+ * stream of shape 1e300, whose inverse CDF {@code scale·(-ln(1-u))^(1e-300)} rounds to exactly the
+ * scale, so the i-th arrival is {@code i * scale}; times are compared at 1e-6 s.
  */
 class MidExecutionFailureIntegrationTest {
 
     private static final double TIME = 1.0e-6;
     private static final double NEVER = 1.0e9;
-    private static final double DETERMINISTIC_SHAPE = 1.0e9;
+    private static final double DETERMINISTIC_SHAPE = 1.0e300;
 
     @TempDir
     Path directory;

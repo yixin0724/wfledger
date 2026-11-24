@@ -333,11 +333,14 @@ class AlgorithmExperimentAuditTest {
 
     private static FailureModelConfig failureModel() {
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
+        // FGCS-R5 (2026-11-24): a failure now ends its attempt mid-execution, so the former ~1 ms VM 3
+        // stream would kill every VM 3 attempt before its first checkpoint. Weibull shape 1e300 samples
+        // exactly the scale: VM 3 fails at 1.5, 3.0, ... s and VM 8 never fails in the run.
         specs.put(3, new DistributionSpec[] {
-            DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 0.001, 1.0)
+            DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 1.5, 1.0e300)
         });
         specs.put(8, new DistributionSpec[] {
-            DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 1000000000.0, 1.0)
+            DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 1000000000.0, 1.0e300)
         });
         return FailureModelConfig.builder()
                 .clusteringAlgorithm(FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_CRCH)

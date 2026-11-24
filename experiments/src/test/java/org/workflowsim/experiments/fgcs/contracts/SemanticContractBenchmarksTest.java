@@ -141,25 +141,26 @@ class SemanticContractBenchmarksTest {
         SimulationReport.TaskOutcome recovered = task(report, 1, retry.getJobId());
         assertEquals(Cloudlet.FAILED, failed.getTaskStatus());
         assertEquals(Cloudlet.SUCCESS, recovered.getTaskStatus());
+        // FGCS-R5 (2026-11-24), hand-derived: 3000 MI at 1000 MI/s with lambda=1, gamma=0.1 takes
+        // checkpoints after 1 s and 2 s of progress, so the attempt executes 3200 MI over [100, 103.2).
+        // The arrival at 102.5 ends it after 2.5 s; checkpoints completed at 1.1 and 2.2 s save 2000 MI on
+        // VM 3. Resuming there costs 1000 MI (1.0 s, no checkpoint) versus 3.2 s on VM 8.
         assertClose(100.0, failed.getStartTime());
-        assertClose(103.0, failed.getFinishTime());
-        assertClose(3.0, failed.getFinishTime() - failed.getStartTime());
-        assertEquals(3000L, failed.getEffectiveExecutionLengthMi());
-
-        // Cumulative compute plus one overhead gives 1.1 and 2.1; 3.1 does not fit.
-        // Saved=2000, remaining=1000, recovery overhead=100 MI.
-        assertEquals(1100L, recovered.getEffectiveExecutionLengthMi());
-        assertClose(1.1, recovered.getFinishTime() - recovered.getStartTime());
-        assertClose(104.1, recovered.getFinishTime());
+        assertClose(102.5, failed.getFinishTime());
+        assertEquals(3200L, failed.getEffectiveExecutionLengthMi());
+        assertEquals(1000L, recovered.getEffectiveExecutionLengthMi());
+        assertClose(102.5, recovered.getStartTime());
+        assertClose(1.0, recovered.getFinishTime() - recovered.getStartTime());
+        assertClose(103.5, recovered.getFinishTime());
         assertEquals(3, failed.getVmId());
-        assertEquals(8, recovered.getVmId());
+        assertEquals(3, recovered.getVmId());
         SimulationEvent failure = oneMain(report, SimulationEventType.JOB_FAILED, failedJob, null);
         SimulationEvent success = oneMain(report, SimulationEventType.JOB_RETURNED, retry.getJobId(), null);
         SimulationEvent childReady = oneMain(report, SimulationEventType.JOB_READY, null, 2);
         assertTrue(failure.getSequence() < retry.getSequence());
         assertTrue(retry.getSequence() < success.getSequence());
         assertTrue(success.getSequence() < childReady.getSequence());
-        assertClose(104.1, childReady.getSimulationTime());
+        assertClose(103.5, childReady.getSimulationTime());
         assertTrue(successfulTask(report, 2).getStartTime() + EPSILON >= recovered.getFinishTime());
     }
 
@@ -187,7 +188,7 @@ class SemanticContractBenchmarksTest {
                 resolve("tiered-energy.events.json#/accounting/totalEnergyJoules")
                         .getAsDouble());
         assertEquals(
-                1100,
+                1000,
                 resolve("crch-two-checkpoints.events.json#/events/retryTaskWindow/attributes/"
                                 + "effectiveExecutionLengthMi")
                         .getAsLong());

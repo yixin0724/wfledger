@@ -91,7 +91,7 @@ class RetryWorkAccountingIntegrationTest {
     /**
      * FGCS-R5 (2026-11-24): the failure instant is fixed inside the compute window at submission, so a
      * post-processing delay cannot extend the credited window. The delay is a deterministic 5 s
-     * (Weibull shape 1e9) on every returned Job: the stage-in returns at 0.21 + 5 = 5.21, so the root
+     * (Weibull shape 1e300) on every returned Job: the stage-in returns at 0.21 + 5 = 5.21, so the root
      * computes 4300 MI over [5.21, 9.51). The VM 3 arrival 4.0 precedes it and is consumed; the arrival
      * 8.0 ends it after 2.79 s, committing floor(2.79 / 1.1) = 2 checkpoints, 2000 MI. The failed attempt
      * returns at 8.0 + 5 = 13.0; at 13.0 the retry costs 2100 MI (2.1 s) on VM 3 versus 4300 MI on VM 8,
@@ -102,7 +102,7 @@ class RetryWorkAccountingIntegrationTest {
     void crchDoesNotCreditThePostProcessingDelay() throws Exception {
         OverheadModelConfig overhead = OverheadModelConfig.builder()
                 .postDelays(Collections.singletonMap(
-                        0, DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 5.0, 1.0e9)))
+                        0, DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 5.0, 1.0e300)))
                 .build();
         SimulationReport report = new SimulationRunner()
                 .run(
@@ -124,15 +124,15 @@ class RetryWorkAccountingIntegrationTest {
         assertThrows(SimulationConfigurationException.class, () -> new SimulationRunner().run(config, platform(true)));
     }
 
-    /** Deterministic VM 3 arrivals every {@code vm3ArrivalSeconds}; Weibull shape 1e9 fixes each sample. */
+    /** Deterministic VM 3 arrivals every {@code vm3ArrivalSeconds}: Weibull shape 1e300 samples exactly the scale. */
     private SimulationConfig.Builder config(String body, boolean crch, double vm3ArrivalSeconds) throws Exception {
         Path workflow = PlanningRegressionFixtures.workflow(directory, "retry.dax", body);
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
         specs.put(3, new DistributionSpec[] {
-            DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, vm3ArrivalSeconds, 1.0e9)
+            DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, vm3ArrivalSeconds, 1.0e300)
         });
         specs.put(8, new DistributionSpec[] {
-            DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 1.0e9, 1.0e9)
+            DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 1.0e9, 1.0e300)
         });
         SimulationConfig.Builder builder = SimulationConfig.builder(workflow.toString(), 2)
                 .runtimeReferenceMips(1000.0)

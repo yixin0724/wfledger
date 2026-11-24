@@ -137,17 +137,17 @@ class ModelMicrobenchmarksTest {
         SimulationReport.TaskOutcome retryParent = task(report, 2, retryJobId);
         assertEquals(Cloudlet.FAILED, failedParent.getTaskStatus());
         assertEquals(Cloudlet.SUCCESS, retryParent.getTaskStatus());
-        assertTrue(failedParent.getVmId() != retryParent.getVmId());
-
-        double elapsed = failedParent.getFinishTime() - failedParent.getStartTime();
-        assertTrue(
-                elapsed + EPSILON >= 1.1 && elapsed + EPSILON < 2.2,
-                "The fixture must contain exactly one 1.0 s checkpoint plus 0.1 s overhead");
-        // One checkpoint saves 1000 MI of the 2000 MI parent. Retry execution is
-        // 1000 remaining MI plus ceil(0.1 * 1000) recovery-overhead MI.
-        assertEquals(2000L, failedParent.getEffectiveExecutionLengthMi());
-        assertEquals(1100L, retryParent.getEffectiveExecutionLengthMi());
-        assertClose(1.1, retryParent.getFinishTime() - retryParent.getStartTime());
+        // FGCS-R5 (2026-11-24), hand-derived: 2000 MI at 1000 MI/s, lambda=1, gamma=0.1 -> one checkpoint,
+        // 2100 MI over [0.21, 2.31). The arrival 1.5 ends it after 1.29 s, past the checkpoint at 1.1 s:
+        // 1000 MI saved on VM 3, where resuming costs 1.0 s versus a 2.1 s re-execution on VM 8.
+        assertEquals(3, failedParent.getVmId());
+        assertEquals(3, retryParent.getVmId());
+        assertClose(0.21, failedParent.getStartTime());
+        assertClose(1.5, failedParent.getFinishTime());
+        assertEquals(2100L, failedParent.getEffectiveExecutionLengthMi());
+        assertEquals(1000L, retryParent.getEffectiveExecutionLengthMi());
+        assertClose(1.5, retryParent.getStartTime());
+        assertClose(2.5, retryParent.getFinishTime());
 
         SimulationEvent failed = oneMain(report, SimulationEventType.JOB_FAILED, failedJobId, null);
         SimulationEvent returned = oneMain(report, SimulationEventType.JOB_RETURNED, retryJobId, null);
