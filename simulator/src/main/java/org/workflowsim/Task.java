@@ -225,10 +225,25 @@ public class Task extends Cloudlet {
         return getCostPerSec() * getActualCPUTime();
     }
 
+    /**
+     * Returns the input bytes this attempt transfers, the base of the bandwidth cost term.
+     *
+     * <p>FGCS-R6 (2026-11-25): root cause - every declared file was billed (each output by its producer and
+     * again by every consumer, plus the stage-in), which charged 2-5x the unique bytes of Pegasus workflows. Only
+     * real input files ({@link FileItem#isRealInputFile}: an input not also declared as an output of the same
+     * Job) are billed, once per transfer, the same set that {@code DATA_STAGE_IN_MODELED.requiredFileBytes}
+     * counts. Outputs are billed by the Jobs that read them; the stage-in Job's list holds exactly the external
+     * inputs. The method name is kept for API and schema stability.
+     *
+     * @return non-negative bytes
+     */
     public double getModeledDeclaredFileBytes() {
         double declaredFileBytes = 0.0;
-        for (FileItem file : getFileList()) {
-            declaredFileBytes += file.getSize();
+        List<FileItem> files = getFileList();
+        for (FileItem file : files) {
+            if (file.isRealInputFile(files)) {
+                declaredFileBytes += file.getSize();
+            }
         }
         return declaredFileBytes;
     }

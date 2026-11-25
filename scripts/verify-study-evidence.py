@@ -646,8 +646,19 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             cpu = number(needed(prices, "cpuPerSecond"), "CPU price", nonnegative=True) * number(job["cpuTime"], nonnegative=True)
             declared_bytes = number(needed(job, "modeledDeclaredFileBytes"), "declared bytes", nonnegative=True)
             if parsed_complete:
-                expected_bytes = ordered_sum(raw_external.values()) if job["classType"] == STAGE_IN else ordered_sum(
-                    size for tid in job["taskIds"] for _, _, size in raw_tasks[tid]["files"])
+                # FGCS-R6 (2026-11-25): mirror Task.getModeledDeclaredFileBytes - only real input files (an input
+                # not also declared as an output of the same Job, FileItem.isRealInputFile) are billed, once per
+                # transfer; the stage-in Job carries exactly the external inputs.
+                # Historical evidence (absent or V2 execution identity) was written under the former rule that
+                # billed every declared file item and is checked against that rule.
+                if job["classType"] == STAGE_IN:
+                    expected_bytes = ordered_sum(raw_external.values())
+                elif old or historical_marker:
+                    expected_bytes = ordered_sum(size for tid in job["taskIds"] for _, _, size in raw_tasks[tid]["files"])
+                else:
+                    job_files = [f for tid in job["taskIds"] for f in raw_tasks[tid]["files"]]
+                    job_outputs = {n for n, k, _ in job_files if k == "output"}
+                    expected_bytes = ordered_sum(size for n, k, size in job_files if k == "input" and n not in job_outputs)
                 audit.ensure(math.isclose(declared_bytes, expected_bytes, rel_tol=0.0, abs_tol=1e-8), "raw-billable-file-bytes", prefix,
                              {"jobId": job["jobId"], "actual": declared_bytes}, expected_bytes)
             bandwidth_cost = number(needed(prices, "bandwidth"), "bandwidth price", nonnegative=True) * declared_bytes / 1_000_000.0

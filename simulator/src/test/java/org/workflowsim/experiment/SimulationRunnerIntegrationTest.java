@@ -95,7 +95,7 @@ class SimulationRunnerIntegrationTest {
         assertTrue(contents.contains("SIMULATION_END_SECONDS"));
         assertTrue(contents.contains("logicalTaskCompletionStatus"));
         assertTrue(contents.contains("terminalLifecycleTailSeconds"));
-        assertTrue(contents.contains("DECLARED_FILE_BYTES_ALL_JOB_FILE_ITEMS"));
+        assertTrue(contents.contains("REAL_INPUT_FILE_BYTES_ONCE_PER_TRANSFER"));
         assertTrue(contents.contains("maxTransferRateMbPerSecond"));
         assertTrue(contents.contains("cpuPerSecond"));
         assertTrue(contents.contains("classType"));

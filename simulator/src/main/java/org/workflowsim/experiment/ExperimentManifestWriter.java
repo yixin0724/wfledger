@@ -267,7 +267,7 @@ public final class ExperimentManifestWriter {
         values.put(
                 "modeledProcessingCostScope",
                 "ABSTRACT_COST_UNITS;CPU_ENVELOPE_MAY_INCLUDE_MODELED_STAGE_IN;"
-                        + "DECLARED_FILE_BYTES_ALL_JOB_FILE_ITEMS;DECIMAL_MB_1_000_000_BYTES;"
+                        + "REAL_INPUT_FILE_BYTES_ONCE_PER_TRANSFER;DECIMAL_MB_1_000_000_BYTES;"
                         + "NO_INTERNAL_BILLING_ROUNDING;"
                         + "MEMORY_AND_STORAGE_PRICES_ARE_DECLARED_BUT_NOT_CHARGED_BY_THIS_MODEL");
         values.put("dataMovementModel", dataMovementModel(config.getDataMovementModel()));

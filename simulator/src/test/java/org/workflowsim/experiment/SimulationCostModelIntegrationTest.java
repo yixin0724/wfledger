@@ -65,7 +65,7 @@ class SimulationCostModelIntegrationTest {
         String contents = new String(Files.readAllBytes(manifest), StandardCharsets.UTF_8);
         assertTrue(contents.contains("modeledProcessingCostScope"));
         assertTrue(contents.contains("ABSTRACT_COST_UNITS"));
-        assertTrue(contents.contains("DECLARED_FILE_BYTES_ALL_JOB_FILE_ITEMS"));
+        assertTrue(contents.contains("REAL_INPUT_FILE_BYTES_ONCE_PER_TRANSFER"));
         assertTrue(contents.contains("DECIMAL_MB_1_000_000_BYTES"));
         assertTrue(contents.contains("NO_INTERNAL_BILLING_ROUNDING"));
         assertTrue(contents.contains("MEMORY_AND_STORAGE_PRICES_ARE_DECLARED_BUT_NOT_CHARGED"));

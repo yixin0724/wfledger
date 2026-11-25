@@ -654,6 +654,35 @@ class IndependentAuditorTests(unittest.TestCase):
         evidence.inspect_manifest(manifest, audit)
         self.assertGreater(audit.counts.get("metric-mismatch", 0), 0, audit.report())
 
+    def test_r6_bandwidth_bills_real_inputs_once_per_transfer(self):
+        # FGCS-R6 (2026-11-25): mirror Task.getModeledDeclaredFileBytes. The fixture Task reads the external x
+        # (0.5 B); add an output o (0.25 B) and an in-place file u declared as both input and output (0.125 B).
+        # Billed bytes = real inputs only = x = 0.5 (o is produced; u is not transferred in). The former
+        # every-declared-file rule (0.5 + 0.25 + 0.125 + 0.125 = 1.0) is a raw-billable mismatch.
+        for name, declared, ok in (("real-input", 0.5, True), ("all-files", 1.0, False)):
+            manifest = make_bundle(self.root / name)
+            doc = json.loads(manifest.read_text())
+            source = Path(doc["inputs"][0]["path"])
+            source.write_text('<adag version="2.1"><job id="root" name="root" runtime="1">'
+                              '<uses file="x" link="input" size="0.5"/><uses file="o" link="output" size="0.25"/>'
+                              '<uses file="u" link="input" size="0.125"/><uses file="u" link="output" size="0.125"/>'
+                              '</job></adag>', encoding="utf-8")
+            doc["inputs"][0]["sha256"], doc["inputs"][0]["sizeBytes"] = fingerprint(source)
+            compute = next(j for j in doc["result"]["jobs"] if j["classType"] == 2)
+            bw = 0.1 * declared / 1_000_000.0
+            compute.update(modeledDeclaredFileBytes=declared, modeledDeclaredFileBandwidthCost=bw,
+                           modeledProcessingCost=compute["modeledCpuEnvelopeCost"] + bw)
+            stage = next(j for j in doc["result"]["jobs"] if j["classType"] == 1)
+            doc["metrics"].update(
+                totalModeledDeclaredFileBytes=0.5 + declared,
+                totalModeledDeclaredFileBandwidthCost=stage["modeledDeclaredFileBandwidthCost"] + bw,
+                totalModeledProcessingCost=stage["modeledProcessingCost"] + compute["modeledProcessingCost"])
+            bind_sidecars(manifest, doc)
+            audit = Audit()
+            evidence.inspect_manifest(manifest, audit)
+            self.assertEqual(0 if ok else 1, audit.counts.get("raw-billable-file-bytes", 0), audit.report())
+            self.assertEqual(0, audit.counts.get("metric-mismatch", 0), audit.report())
+
     def test_healthy_single_manifest_and_matrix_override(self):
         for name, duration, effective, matrix in (("plain", 1.0, 1000, False), ("matrix", 0.5, 500, True)):
             manifest = make_bundle(self.root / name, duration, effective, matrix)

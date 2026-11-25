@@ -63,6 +63,7 @@ public final class SimulationMetrics {
      * measure that includes queueing.
      */
     private final double meanJobResponseTimeSeconds;
+
     private final double meanJobVmLevelSlowdown;
 
     private final int vmLevelSlowdownObservationCount;
@@ -174,6 +175,7 @@ public final class SimulationMetrics {
      * for schema stability.
      */
     private final double controlledSharedStorageScheduleLengthRatio;
+
     private final boolean deadlineObservationEnabled;
     private final String deadlineObservationTimeBasis;
     private final String deadlineObservationOutcome;
