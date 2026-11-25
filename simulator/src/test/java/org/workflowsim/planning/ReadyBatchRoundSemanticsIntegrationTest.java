@@ -60,6 +60,124 @@ class ReadyBatchRoundSemanticsIntegrationTest {
         assertEquals(2.21, start(report, 3), 1.0e-9);
     }
 
+    /**
+     * FGCS-R6 (2026-11-25): Braun et al. (2001) / Maheswaran et al. (1999) Min-Min with machine
+     * ready times. VM 0 has 500 MIPS and VM 1 2000 MIPS; roots 1, 2, 3 have 4000, 1000 and 8000 MI
+     * (runtime 4, 1, 8 s at the 1000-MIPS reference) and no files. The 110-MI stage-in Job runs on
+     * VM 1 (0.055 s, raised by the completion guard to 0.1 + 0.11 = 0.21 s after the 0.1 s VM ACK),
+     * so the round sees {1, 2, 3} at 0.21 s with both VMs idle. ETC on (VM 0, VM 1): task 1 (8, 2),
+     * task 2 (2, 0.5), task 3 (16, 4). Min-Min: 2 to VM 1 (CT 0.5, r1 = 0.5), then 1 to VM 1
+     * (CT 2.5 versus 8, r1 = 2.5), then 3 to VM 1 (CT 6.5 versus 16). Only task 2 is the first plan
+     * on an idle VM, so it alone starts at 0.21; at 0.71 the re-plan starts 1 on VM 1 (to 2.71) and at
+     * 2.71 task 3 on VM 1 (4 s versus 16 s), ending at 6.71. The idle-VM-only V2 rule put task 1 on
+     * VM 0 at 0.21 and ended at 8.21.
+     */
+    @Test
+    void minMinUsesMachineReadyTimesOnTheBraunCase() throws Exception {
+        SimulationReport report = runReadyTimeCase(SchedulingAlgorithm.READY_BATCH_MINMIN, braunCase());
+        assertPlacement(report, 2, 1, 0.21);
+        assertPlacement(report, 1, 1, 0.71);
+        assertPlacement(report, 3, 1, 2.71);
+        assertEquals(6.71, report.getMakespan(), 1.0e-9);
+    }
+
+    /**
+     * FGCS-R6 (2026-11-25): Max-Min on the same case. Minima are 2, 0.5 and 4 (all VM 1); the maximum
+     * assigns 3 to VM 1 (r1 = 4). Then task 1: min(8, 6) = 6 on VM 1, task 2: min(2, 4.5) = 2 on VM 0;
+     * the maximum assigns 1 to VM 1 (r1 = 6) and finally 2 to VM 0 (2 versus 6.5). Tasks 3 (VM 1) and
+     * 2 (VM 0) are first plans on idle VMs and start at 0.21; task 1 waits. At 2.21 task 2 returns:
+     * VM 1 still runs task 3, whose guarded completion is 0.21 + 4 = 4.21, so r1 = 2 and task 1 picks
+     * VM 1 (2 + 2 = 4 versus 8 on VM 0) and stays queued. At 4.21 it starts on VM 1 and ends at 6.21.
+     */
+    @Test
+    void maxMinUsesTheRunningAttemptsReadyTime() throws Exception {
+        SimulationReport report = runReadyTimeCase(SchedulingAlgorithm.READY_BATCH_MAXMIN, braunCase());
+        assertPlacement(report, 3, 1, 0.21);
+        assertPlacement(report, 2, 0, 0.21);
+        assertPlacement(report, 1, 1, 4.21);
+        assertEquals(6.21, report.getMakespan(), 1.0e-9);
+    }
+
+    /**
+     * FGCS-R6 (2026-11-25): Maheswaran et al. (1999) immediate-mode MCT. Roots 1 and 2 have 8000 MI
+     * each (16 s on VM 0, 4 s on VM 1). In queue order task 1 picks VM 1 (CT 4, r1 = 4), task 2 picks
+     * VM 1 (4 + 4 = 8 versus 16) and is not dispatched because VM 1 is already planned. Task 1 runs
+     * [0.21, 4.21]; at 4.21 task 2 picks VM 1 again (4 versus 16) and ends at 8.21. The idle-VM-only V2
+     * rule started task 2 on VM 0 at 0.21 and ended at 16.21.
+     */
+    @Test
+    void mctReservesTheFastVmInsteadOfFallingBackToTheSlowIdleVm() throws Exception {
+        SimulationReport report = runReadyTimeCase(SchedulingAlgorithm.READY_BATCH_MCT, job("a", 8) + job("b", 8));
+        assertPlacement(report, 1, 1, 0.21);
+        assertPlacement(report, 2, 1, 4.21);
+        assertEquals(8.21, report.getMakespan(), 1.0e-9);
+    }
+
+    /**
+     * FGCS-R6 (2026-11-25): a slow idle VM is used when the fast VM's ready time is large. Max-Min at
+     * 0.21 maps root 1 (8000 MI) to VM 1 [0.21, 4.21] and root 2 (1000 MI, 2 s on VM 0 versus
+     * 4 + 0.5 on VM 1) to VM 0 [0.21, 2.21]. At 2.21 the child 3 of 2 (1000 MI) sees r1 = 4.21 - 2.21
+     * = 2: VM 0 gives CT 2, VM 1 gives 2 + 0.5 = 2.5, so 3 starts on the slow idle VM 0 at 2.21.
+     */
+    @Test
+    void slowIdleVmWinsWhenTheFastVmIsBusyLongEnough() throws Exception {
+        SimulationReport report = runReadyTimeCase(
+                SchedulingAlgorithm.READY_BATCH_MAXMIN,
+                job("a", 8) + job("b", 1) + job("c", 1) + "<child ref=\"c\"><parent ref=\"b\"/></child>");
+        assertPlacement(report, 1, 1, 0.21);
+        assertPlacement(report, 2, 0, 0.21);
+        assertPlacement(report, 3, 0, 2.21);
+        assertEquals(4.21, report.getMakespan(), 1.0e-9);
+    }
+
+    /**
+     * FGCS-R6 (2026-11-25): as above but the child 3 has 4000 MI. At 2.21 VM 0 gives CT 8 and VM 1
+     * gives 2 + 2 = 4, so 3 waits for the busy fast VM (giving up work conservation, as the literature
+     * heuristic does) and runs [4.21, 6.21] on VM 1 while VM 0 stays idle.
+     */
+    @Test
+    void aJobWaitsForTheBusyFastVmWhenThatCompletesEarlier() throws Exception {
+        SimulationReport report = runReadyTimeCase(
+                SchedulingAlgorithm.READY_BATCH_MAXMIN,
+                job("a", 8) + job("b", 1) + job("c", 4) + "<child ref=\"c\"><parent ref=\"b\"/></child>");
+        assertPlacement(report, 3, 1, 4.21);
+        assertEquals(6.21, report.getMakespan(), 1.0e-9);
+    }
+
+    private static String braunCase() {
+        return job("a", 4) + job("b", 1) + job("c", 8);
+    }
+
+    private SimulationReport runReadyTimeCase(SchedulingAlgorithm algorithm, String jobs) throws Exception {
+        Path workflow = PlanningRegressionFixtures.workflow(directory, "ready-time.dax", jobs);
+        PlatformProfile.Builder platform = PlatformProfile.builder("ready-time-rounds")
+                .storage(new PlatformProfile.StorageSpec(1_000_000_000L, 20));
+        double[] mips = {500.0, 2000.0};
+        for (int id = 0; id < mips.length; id++) {
+            platform.addHost(new PlatformProfile.HostSpec(id, 1, mips[id], 1024, 1000L, 1_000_000L))
+                    .addVm(new PlatformProfile.VmSpec(
+                            id,
+                            mips[id],
+                            1,
+                            512,
+                            1000L,
+                            10_000L,
+                            "Xen",
+                            PlatformProfile.CloudletSchedulerMode.SPACE_SHARED))
+                    .pinVmToHost(id, id);
+        }
+        SimulationConfig config = SimulationConfig.builder(workflow.toString(), mips.length)
+                .schedulingAlgorithm(algorithm)
+                .build();
+        return new SimulationRunner().run(config, platform.build());
+    }
+
+    private static void assertPlacement(SimulationReport report, int taskId, int vmId, double start) {
+        SimulationReport.JobOutcome job = PlanningRegressionFixtures.computeJob(report, taskId);
+        assertEquals(vmId, job.getVmId(), "VM of task " + taskId);
+        assertEquals(start, job.getStartTime(), 1.0e-9, "start of task " + taskId);
+    }
+
     private SimulationReport runReadFlip(SchedulingAlgorithm algorithm) throws Exception {
         Path workflow = PlanningRegressionFixtures.workflow(
                 directory,

@@ -78,8 +78,13 @@ class SupportedOnlineSchedulingCompatibilityTest {
 
     /**
      * FGCS-R3 (2026-11-24, B2): CONTRACTS head-of-line rule. The 2-PE head Job can use only the
-     * busy VM 9 while the 1-PE Job behind it could use idle VM 2. Arrival-order policies are strict
-     * FIFO and dispatch nothing; selection-based policies are work-conserving and dispatch Job 11.
+     * busy VM 9 while the 1-PE Job behind it could use idle VM 2. Arrival-order idle-VM policies
+     * (FCFS, ROUNDROBIN) are strict FIFO and dispatch nothing.
+     *
+     * <p>FGCS-R6 (2026-11-25): the ready-time policies plan every Job: VM 9 is busy for a bound 5 s,
+     * so the head plans on VM 9 (no dispatch) and Job 11 (1 s on either VM) plans on idle VM 2 with
+     * CT 1 versus 5 + 1 = 6 on VM 9 and is dispatched. Min-Min, Max-Min and MCT therefore all
+     * dispatch Job 11: an unplaceable head no longer blocks MCT.
      */
     @Test
     void headOfLineBlockingFollowsTheDeclaredPolicyFamily() throws Exception {
@@ -92,16 +97,35 @@ class SupportedOnlineSchedulingCompatibilityTest {
             CondorVM busy = vm(9, 1000.0, 2);
             busy.setState(org.workflowsim.WorkflowSimTags.VM_STATUS_BUSY);
             BaseSchedulingAlgorithm scheduler = factory.create();
+            scheduler.setMachineReadyTimeEstimator(vm -> 5.0);
             scheduler.setCloudletList(Arrays.<Cloudlet>asList(head, behind));
             scheduler.setVmList(Arrays.asList(vm(2, 1000.0, 1), busy));
 
             scheduler.run();
 
-            boolean workConserving =
-                    factory.name.equals("READY_BATCH_MINMIN") || factory.name.equals("READY_BATCH_MAXMIN");
+            boolean readyTimePlanning = factory.name.startsWith("READY_BATCH_M");
             List<Cloudlet> expected =
-                    workConserving ? Arrays.<Cloudlet>asList(behind) : java.util.Collections.<Cloudlet>emptyList();
+                    readyTimePlanning ? Arrays.<Cloudlet>asList(behind) : java.util.Collections.<Cloudlet>emptyList();
             assertEquals(expected, scheduler.getScheduledList(), factory.name);
+        }
+    }
+
+    /**
+     * FGCS-R6 (2026-11-25): a busy VM without a bound ready-time estimator fails fast instead of being
+     * treated as ready now.
+     */
+    @Test
+    void readyTimePoliciesRejectABusyVmWithoutAnEstimator() {
+        for (SchedulerFactory factory : supportedSchedulers()) {
+            if (!factory.name.startsWith("READY_BATCH_M")) {
+                continue;
+            }
+            CondorVM busy = vm(9, 1000.0, 1);
+            busy.setState(org.workflowsim.WorkflowSimTags.VM_STATUS_BUSY);
+            BaseSchedulingAlgorithm scheduler = factory.create();
+            scheduler.setCloudletList(Arrays.<Cloudlet>asList(job(10, 1)));
+            scheduler.setVmList(Arrays.asList(busy));
+            assertThrows(IllegalStateException.class, scheduler::run, factory.name);
         }
     }
 

@@ -35,6 +35,8 @@ public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInte
 
     private InputReadEstimator inputReadEstimator;
 
+    private MachineReadyTimeEstimator machineReadyTimeEstimator;
+
     public BaseSchedulingAlgorithm() {
         this.scheduledList = new ArrayList();
     }
@@ -74,6 +76,42 @@ public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInte
      */
     public final void setInputReadEstimator(InputReadEstimator value) {
         this.inputReadEstimator = value;
+    }
+
+    /**
+     * Binds the runtime's machine-ready-time function (FGCS-R6, 2026-11-25); unbound direct use treats
+     * idle VMs as ready now and rejects busy VMs.
+     *
+     * @param value runtime estimator
+     */
+    public final void setMachineReadyTimeEstimator(MachineReadyTimeEstimator value) {
+        this.machineReadyTimeEstimator = value;
+    }
+
+    /**
+     * Returns the machine ready time {@code r_v}: 0 for an idle VM, otherwise the bound runtime estimate.
+     *
+     * <p>FGCS-R6 (2026-11-25): a busy VM without a bound estimator fails fast instead of being treated
+     * as ready now, which would silently re-create the idle-only rule.
+     *
+     * @param vm created VM
+     * @return finite non-negative seconds
+     */
+    protected final double readySeconds(CondorVM vm) {
+        if (vm.getState() == org.workflowsim.WorkflowSimTags.VM_STATUS_IDLE) {
+            return 0.0;
+        }
+        if (machineReadyTimeEstimator == null) {
+            throw new IllegalStateException(
+                    "VM " + vm.getId() + " is busy but no machine-ready-time estimator is bound to "
+                            + getClass().getSimpleName());
+        }
+        double seconds = machineReadyTimeEstimator.readySeconds(vm);
+        if (!Double.isFinite(seconds) || seconds < 0.0) {
+            throw new IllegalStateException(
+                    "Ready time of VM " + vm.getId() + " must be finite and non-negative: " + seconds);
+        }
+        return seconds;
     }
 
     /**

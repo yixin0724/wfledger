@@ -70,6 +70,14 @@ public class WorkflowDatacenter extends Datacenter {
 
     private org.workflowsim.data.v2.CoherentDataflowRuntime coherentDataflow;
     private int coherentEngineId = -1;
+
+    /**
+     * FGCS-R6 (2026-11-25): no-failure guarded completion instant of the attempt each VM is running,
+     * keyed by VM ID and holding {@code {jobId, completionSeconds}}; the online ready-time policies read
+     * it through {@link #noFailureCompletionSeconds(int, int)}.
+     */
+    private final Map<Integer, double[]> runningAttemptCompletions = new LinkedHashMap<Integer, double[]>();
+
     private org.workflowsim.data.v2.DataflowStorageSpec sourceStorage;
 
     public void setSourceStorage(org.workflowsim.data.v2.DataflowStorageSpec storage) {
@@ -682,6 +690,11 @@ public class WorkflowDatacenter extends Datacenter {
         double effectiveStageInSeconds =
                 effectiveCloudletStageInSeconds(job, vm, cloudletLengthBeforeStageIn, fileTransferTime);
         updateTaskExecTime(job, vm, effectiveStageInSeconds, fileTransferTime);
+        runningAttemptCompletions.put(vmId, new double[] {
+            job.getCloudletId(),
+            SimulationTiming.earliestCloudletCompletionTime(
+                    CloudSim.clock(), CloudSim.clock() + estimatedFinishTime, CloudSim.getMinTimeBetweenEvents())
+        });
         if (job.hasFailureInstant()) {
             estimatedFinishTime = truncateAtFailure(job, vm, job.getCloudletLength() - cloudletLengthBeforeStageIn);
         }
@@ -714,6 +727,29 @@ public class WorkflowDatacenter extends Datacenter {
      *
      * @return the new estimated execution seconds of the envelope
      */
+    /**
+     * Returns the no-failure completion instant of the attempt a VM is running.
+     *
+     * <p>FGCS-R6 (2026-11-25): the value is fixed at submission as
+     * {@code max(submit + envelope, submit + tick + tick/10)}, the instant at which this datacenter
+     * schedules the completion event of an attempt that does not fail
+     * ({@link SimulationTiming#earliestCloudletCompletionTime}); {@code envelope} is the space-shared
+     * {@code (L + floor(mips * read)) / mips}. A failing attempt may end earlier (mid-execution failure,
+     * FGCS-R5); the estimate deliberately ignores that unknown future outcome.
+     *
+     * @param vmId running VM
+     * @param jobId Job the scheduler dispatched to that VM
+     * @return completion instant in simulation seconds, or NaN while that Job's submission has not yet
+     *     reached this datacenter
+     */
+    public double noFailureCompletionSeconds(int vmId, int jobId) {
+        double[] record = runningAttemptCompletions.get(vmId);
+        if (record == null || (int) record[0] != jobId) {
+            return Double.NaN;
+        }
+        return record[1];
+    }
+
     private double truncateAtFailure(Job job, CondorVM vm, long stageInMi) {
         if (job.getTaskList().size() != 1) {
             throw new IllegalStateException("A failing attempt must contain exactly one Task under clustering NONE; "

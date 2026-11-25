@@ -84,6 +84,12 @@ public class WorkflowScheduler extends DatacenterBroker {
 
     private Map<Integer, Integer> workflowIndices;
 
+    /**
+     * FGCS-R6 (2026-11-25): the Job dispatched to each busy VM and the instant its submission reaches
+     * the datacenter, for {@link #machineReadySeconds(CondorVM)}.
+     */
+    private final Map<Integer, Object[]> dispatchedAttempts = new LinkedHashMap<Integer, Object[]>();
+
     public WorkflowScheduler(String name) throws Exception {
         super(name);
     }
@@ -362,6 +368,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         scheduler.setCloudletList(getCloudletList());
         scheduler.setVmList(getVmsCreatedList());
         scheduler.setInputReadEstimator(this::chargedInputReadSeconds);
+        scheduler.setMachineReadyTimeEstimator(this::machineReadySeconds);
         int readyJobs = getCloudletList().size();
         int idleVms = 0;
         for (Object item : getVmsCreatedList()) {
@@ -391,13 +398,51 @@ public class WorkflowScheduler extends DatacenterBroker {
     }
 
     private double chargedInputReadSeconds(Job job) {
+        return requireDatacenter().sharedEnvelopeInputReadSeconds(job);
+    }
+
+    /**
+     * Returns the no-failure ready time of a created VM at the current instant.
+     *
+     * <p>FGCS-R6 (2026-11-25): for a busy VM whose attempt the datacenter has started this is the
+     * recorded guarded completion instant minus now ({@link WorkflowDatacenter#noFailureCompletionSeconds}).
+     * While the submission is still in flight (positive queue delay, or a later round at the dispatch
+     * instant) the attempt has not been projected yet, so the estimate is the same guarded rule applied
+     * to the policy's own envelope: {@code max(s + ETC, s + tick + tick/10) - now} with {@code s} the
+     * submission instant. A completion that lies at most 1e-9 s in the past because of the binary64
+     * {@code clock + (t - clock)} round trip counts as ready now; anything earlier fails fast.
+     */
+    private double machineReadySeconds(CondorVM vm) {
+        Object[] attempt = dispatchedAttempts.get(vm.getId());
+        if (attempt == null) {
+            throw new IllegalStateException(getName() + " has no dispatched attempt for busy VM " + vm.getId());
+        }
+        Job job = (Job) attempt[0];
+        double submit = ((Double) attempt[1]).doubleValue();
+        double now = CloudSim.clock();
+        double completion = requireDatacenter().noFailureCompletionSeconds(vm.getId(), job.getCloudletId());
+        if (Double.isNaN(completion)) {
+            double envelope =
+                    (job.getCloudletLength() + (long) (vm.getMips() * chargedInputReadSeconds(job))) / vm.getMips();
+            completion = org.workflowsim.utils.SimulationTiming.earliestCloudletCompletionTime(
+                    submit, submit + envelope, CloudSim.getMinTimeBetweenEvents());
+        }
+        double remaining = completion - now;
+        if (remaining < -1.0e-9) {
+            throw new IllegalStateException("Busy VM " + vm.getId() + " predicted completion " + completion
+                    + " precedes the current instant " + now);
+        }
+        return Math.max(0.0, remaining);
+    }
+
+    private WorkflowDatacenter requireDatacenter() {
         Object datacenter = getDatacenterIdsList().isEmpty()
                 ? null
                 : CloudSim.getEntity(getDatacenterIdsList().get(0));
         if (!(datacenter instanceof WorkflowDatacenter)) {
-            throw new IllegalStateException(getName() + " has no WorkflowDatacenter for input-read estimates");
+            throw new IllegalStateException(getName() + " has no WorkflowDatacenter for runtime estimates");
         }
-        return ((WorkflowDatacenter) datacenter).sharedEnvelopeInputReadSeconds(job);
+        return (WorkflowDatacenter) datacenter;
     }
 
     private void armDeferralWakeUp(BaseSchedulingAlgorithm policy, List<Cloudlet> scheduledList) {
@@ -458,6 +503,7 @@ public class WorkflowScheduler extends DatacenterBroker {
                             delay));
 
             assignFrequencyTier(job);
+            dispatchedAttempts.put(vmId, new Object[] {job, Double.valueOf(CloudSim.clock() + delay)});
             schedule(getVmsToDatacentersMap().get(vmId), delay, CloudSimTags.CLOUDLET_SUBMIT, cloudlet);
             eventRecorder.record(
                     SimulationEventType.JOB_DISPATCHED,

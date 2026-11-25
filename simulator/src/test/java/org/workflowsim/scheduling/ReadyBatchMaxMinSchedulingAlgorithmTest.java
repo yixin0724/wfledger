@@ -30,6 +30,13 @@ class ReadyBatchMaxMinSchedulingAlgorithmTest {
                 id, 0, mips, 1, 512, 1000, 10000, "Xen", new org.cloudbus.cloudsim.CloudletSchedulerTimeShared());
     }
 
+    /**
+     * FGCS-R6 (2026-11-25) re-derivation with machine ready times (Braun et al. 2001). ETC on
+     * (VM 0 500 MIPS, VM 1 1000 MIPS): task 1 (4, 2), task 2 (2, 1), task 3 (6, 3). Step 1 minima 2, 1,
+     * 3: task 3 to VM 1, r1 = 3. Step 2: task 1 min(4, 5) = 4 on VM 0, task 2 min(2, 4) = 2 on VM 0:
+     * task 1 to VM 0, r0 = 4. Step 3: task 2 min(6, 4) on VM 1, planned behind task 3. Dispatched:
+     * task 3 on VM 1 and task 1 on VM 0 (unchanged from the idle-VM rule on this instance).
+     */
     @Test
     void oracleThreeTasksTwoVms() {
         cloudlets.add(new Task(1, 2000));
