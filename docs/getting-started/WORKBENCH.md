@@ -73,6 +73,7 @@ Simply replace the configuration argument of `run` with the chosen file. The pai
 | `simulation.dataMovementModel` | The exact enumeration name from the table below, default `LEGACY_WORKFLOWSIM_V1` |
 | `simulation.runtimeScale` / `runtimeReferenceMips` | Positive finite values, defaults 1 / 1000; conversion parameters from input runtime to model MI |
 | `simulation.minEventIntervalSeconds` | Positive finite value, default 0.1 |
+| `simulation.boundedSlowdownThresholdSeconds` | Positive finite value, default 10; the bounded-slowdown floor `τ` of `max((wait+exec)/max(exec,τ),1)` (FGCS-R6, 2026-11-25), recorded as `configuration.boundedSlowdownThresholdSeconds` |
 | `simulation.eventRecorderCap` | Optional strictly positive integer, default 20000; retention cap of the run's event stream (AUD-F07 follow-up, 2026-11-04) — the run fails fast when the cap is reached, and a non-default value round-trips through the manifest's `configuration.eventRecorderCap` |
 | `simulation.costModel` | Optional `DATACENTER` (default) or `VM`; selects the declared runtime cost caliber |
 | `simulation.deadlineSeconds` | Optional non-negative signed-long integer, 0 means not requested; post-hoc observation only, it changes neither scheduling nor termination |
@@ -175,7 +176,7 @@ output-root/
       result.storage-lifecycle.json # bounded-storage records only; the three sidecars are mutually exclusive
 ```
 
-The manifest, provenance, metrics, and event formats are declared by the artifact contract. `summary.html`, `summary.json`, and `summary.csv` present the same run rows with workflow, algorithm, waiting time, slowdown, makespan, energy, EDP, cost, and completion counts. After the files are written, the evidence is validated, and the report is then generated from that same validation snapshot. A single run failure records its root cause and the other schemes continue; failures do not enter the completion-time ranking; the `run` command exits non-zero when there are failed or unfinished runs.
+The manifest, provenance, metrics, and event formats are declared by the artifact contract. `summary.html`, `summary.json`, and `summary.csv` present the same run rows with workflow, algorithm, waiting time, slowdown together with its floor and clamped fraction, makespan, the input-read share of busy time, energy, EDP, cost, and completion counts. There is no response-time column: under idle-only dispatch submit→finish equals the run time (FGCS-R6, 2026-11-25). After the files are written, the evidence is validated, and the report is then generated from that same validation snapshot. A single run failure records its root cause and the other schemes continue; failures do not enter the completion-time ranking; the `run` command exits non-zero when there are failed or unfinished runs.
 
 A forced interruption can leave a RUNNING state together with completed evidence; check it through the history page and do not treat it as a success. `history` shows corrupted records and does not silently ignore them. When multiple processes write the same output root, you should rebuild the history only after all processes have ended; simulations inside the same JVM are serial.
 

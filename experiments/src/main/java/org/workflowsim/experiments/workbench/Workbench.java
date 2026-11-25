@@ -168,12 +168,21 @@ public final class Workbench {
             org.workflowsim.experiment.SimulationMetrics metrics = report.getMetrics();
             row.put("meanWaitingSeconds", metrics.getMeanComputeTotalWaitingTimeSeconds());
             row.put("meanTrueSlowdown", metrics.getMeanComputeTrueSlowdown());
+            // FGCS-R6 (2026-11-25): the slowdown is meaningless without its floor and the share of samples the
+            // floor clamps; both travel with it.
+            row.put("boundedSlowdownThresholdSeconds", metrics.getBoundedSlowdownThresholdSeconds());
+            row.put("boundedSlowdownFloorClampedFraction", metrics.getBoundedSlowdownFloorClampedFraction());
             row.put("meanReadyToDecisionSeconds", metrics.getMeanComputeReadyToDecisionDelaySeconds());
             row.put("meanDecisionToStartSeconds", metrics.getMeanComputeDecisionToStartDelaySeconds());
+            // FGCS-R6 (2026-11-25): root cause - meanJobResponseTimeSeconds (submit->finish) equals the run time
+            // under the idle-only dispatch invariant (VM-queue wait identically zero), so the former
+            // meanResponseSeconds column duplicated meanRunTimeSeconds. The ready->start wait above is the
+            // queueing measure.
             row.put("meanRunTimeSeconds", metrics.getMeanComputeJobRunTimeSeconds());
-            row.put("meanResponseSeconds", metrics.getMeanJobResponseTimeSeconds());
             row.put("throughputJobsPerSecond", metrics.getComputeJobOutcomeThroughputPerSecond());
             row.put("meanVmUtilization", metrics.getMeanVmModeledIntervalUtilization());
+            // FGCS-R6 (2026-11-25): share of busy (and thus active-power) seconds that is envelope input reading.
+            row.put("inputReadShareOfBusyTime", metrics.getInputReadShareOfBusyTime());
             row.put("energyJoules", report.getEnergyAccounting().getTotalEnergyJoules());
             row.put("energyDelayProduct", report.getEnergyAccounting().getEnergyMakespanProductJouleSeconds());
             row.put("modeledProcessingCost", metrics.getTotalModeledProcessingCost());

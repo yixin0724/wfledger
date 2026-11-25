@@ -162,12 +162,21 @@ class WorkbenchIntegrationTest {
             assertTrue(run.has("energyJoules"));
             assertTrue(run.has("energyDelayProduct"));
             assertTrue(run.has("modeledProcessingCost"));
+            // FGCS-R6 (2026-11-25): under the idle-only dispatch invariant the VM-queue wait is identically
+            // zero, so submit->finish response equals the run time; the duplicate column is not emitted and
+            // the floor and its clamped fraction travel with the slowdown column.
+            assertFalse(run.has("meanResponseSeconds"));
+            assertEquals(10.0, run.get("boundedSlowdownThresholdSeconds").getAsDouble(), 0.0);
+            assertTrue(run.has("boundedSlowdownFloorClampedFraction"));
+            assertTrue(run.has("inputReadShareOfBusyTime"));
             assertEquals(
                     run.get("logicalTasks").getAsInt(),
                     run.get("completedTasks").getAsInt());
         }
         String csv = text(experiment.resolve("summary.csv"));
         assertTrue(csv.startsWith("workflow,algorithm,candidate,seed,status,makespanSeconds"));
+        assertFalse(csv.contains("meanResponseSeconds"));
+        assertTrue(csv.contains("boundedSlowdownThresholdSeconds"));
         assertEquals(5, csv.split("\\n").length);
         String html = text(experiment.resolve("report.html"));
         assertFalse(html.contains("@@TITLE@@"));

@@ -23,12 +23,14 @@ public final class ExperimentSummaryWriter {
         "makespanSeconds",
         "meanWaitingSeconds",
         "meanTrueSlowdown",
+        "boundedSlowdownThresholdSeconds",
+        "boundedSlowdownFloorClampedFraction",
         "meanReadyToDecisionSeconds",
         "meanDecisionToStartSeconds",
         "meanRunTimeSeconds",
-        "meanResponseSeconds",
         "throughputJobsPerSecond",
         "meanVmUtilization",
+        "inputReadShareOfBusyTime",
         "energyJoules",
         "energyDelayProduct",
         "modeledProcessingCost",
@@ -86,7 +88,7 @@ public final class ExperimentSummaryWriter {
                 .append(html(name))
                 .append("</h1><table><tr><th>Workflow</th><th>Algorithm</th><th>Candidate</th>"
                         + "<th>Seed</th><th>Status</th><th>Makespan (s)</th><th>Mean wait (s)</th>"
-                        + "<th>True slowdown</th><th>Energy (J)</th><th>EDP (J·s)</th>"
+                        + "<th>Bounded slowdown (floor s)</th><th>Energy (J)</th><th>EDP (J·s)</th>"
                         + "<th>Cost</th><th>Tasks</th></tr>");
         for (Map<String, Object> row : rows) {
             html.append("<tr><td>")
@@ -107,7 +109,9 @@ public final class ExperimentSummaryWriter {
                     .append(html(row.get("meanWaitingSeconds")))
                     .append("</td><td>")
                     .append(html(row.get("meanTrueSlowdown")))
-                    .append("</td><td>")
+                    .append(" (")
+                    .append(html(row.get("boundedSlowdownThresholdSeconds")))
+                    .append(")</td><td>")
                     .append(html(row.get("energyJoules")))
                     .append("</td><td>")
                     .append(html(row.get("energyDelayProduct")))
