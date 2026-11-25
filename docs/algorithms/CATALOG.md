@@ -20,7 +20,7 @@ execution sequencing, and metric conventions are specified in the
 
 | Question to answer | Decision layer | Output and boundary |
 | --- | --- | --- |
-| Which idle VM receives the currently ready Job | ordinary online scheduling | one dispatch at a time, no reservation of future machine availability |
+| Which idle VM receives the currently ready Job | ordinary online scheduling | dispatches only to idle VMs; `READY_BATCH_MINMIN/MAXMIN/MCT` plan against machine ready times and bind late (FGCS-R6), the other labels ignore future machine availability |
 | How an external policy controls the same ready domain | RL environment | Job→VM list-index actions; the platform trains no policy |
 | How dependency-free tasks share the compute load | static independent-task mapping | Task→VM; any dependency edge is rejected |
 | A DAG baseline that only needs a precomputed mapping | RANDOM / PSO | Task→VM, without a full per-VM order |
@@ -35,9 +35,9 @@ The table below is the complete set of labels accepted at the standard entry poi
 | Label | Actual decision |
 | --- | --- |
 | `FCFS` | strict ready-arrival FIFO; picks the idle compatible VM with the smallest VM ID |
-| `READY_BATCH_MINMIN` | immediate mode: every unassigned Job computes its minimum envelope time over idle VMs, the global minimum is assigned; recomputed over the remaining idle VMs; one Job per idle VM per round |
-| `READY_BATCH_MAXMIN` | as above, but the maximum of the per-Job minima is assigned |
-| `READY_BATCH_MCT` | strict ready-arrival FIFO; among currently idle compatible VMs picks the smallest envelope time |
+| `READY_BATCH_MINMIN` | Braun et al. (2001) Min-Min with machine ready times (FGCS-R6): `CT = r_v + envelope` over all compatible VMs (`r_v` = 0 if idle, else the running attempt's no-failure remaining time); the smallest per-Job minimum is assigned and `r_v := CT`; late binding dispatches only the first planned Job of each idle VM; not work-conserving |
+| `READY_BATCH_MAXMIN` | as above, but the largest of the per-Job minimum completion times is assigned (Braun et al. 2001 Max-Min) |
+| `READY_BATCH_MCT` | Maheswaran et al. (1999) immediate-mode MCT: Jobs in queue order each go to their minimum `r_v + envelope` VM with `r_v` updated; the same late binding as Min-Min |
 | `READY_BATCH_ROUNDROBIN` | a persistent cursor ordered by VM ID rotates, skipping busy or incompatible VMs |
 | `CWS_RANKMIN_RR` | static-DAG CWS descendant-PROCESS rank descending, `isRealInputFile` bytes ascending, then persistent RR over idle compatible VMs |
 | `RESHI_C` | direct-child-count descending with explicit Reshi task-node ranking over idle PE-compatible VMs |

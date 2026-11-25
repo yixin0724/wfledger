@@ -2,6 +2,11 @@
 
 > Recorded before FGCS-R3 (2026-11-24). Online rows use the former read-free estimate and
 > event-order-dependent rounds; they must be rerun before being cited for the current version.
+>
+> FGCS-R6 (2026-11-25): the READY_BATCH_MINMIN / READY_BATCH_MAXMIN / READY_BATCH_MCT rows also predate
+> the machine-ready-time late-binding semantics (Braun et al. 2001; Maheswaran et al. 1999). This
+> heterogeneous fleet (500-2000 MIPS) is exactly where a Job may now wait for a busy faster VM, so those
+> rows do not describe the current heuristics.
 
 ## Experimental setup
 
