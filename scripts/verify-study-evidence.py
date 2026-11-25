@@ -577,6 +577,16 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         def field_values(rows, field):
             return [number(needed(row, field), field, nonnegative=True) for row in rows]
         waits, slow, ready_dec, dec_start, success_waits, success_slow = [], [], [], [], [], []
+        # FGCS-R6 (2026-11-25): the bounded-slowdown floor tau is the declared configuration value
+        # (SimulationConfig.boundedSlowdownThresholdSeconds). Evidence written before R6 carries no declaration
+        # and used the then hard-coded Feitelson (1997) floor of 10 s; current-identity evidence must declare it.
+        if "boundedSlowdownThresholdSeconds" in config or not (old or historical_marker):
+            tau = number(needed(config, "boundedSlowdownThresholdSeconds"), "bounded slowdown threshold", positive=True)
+            if not math.isfinite(tau):
+                raise CheckError("boundedSlowdownThresholdSeconds must be finite")
+        else:
+            tau = 10.0
+        clamped = 0
         # FGCS-R3 (2026-11-24): mirror SimulationMetrics' three independent sample sets exactly.
         # Waiting/bounded slowdown need only JOB_READY with start >= ready; ready->decision needs
         # both events with decision >= ready; decision->start needs the decision with
@@ -596,7 +606,8 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 continue
             waiting = start - ready
             execution = max(0.0, finish - start)
-            slowdown = max(1.0, (waiting + execution) / max(10.0, execution))
+            slowdown = max(1.0, (waiting + execution) / max(tau, execution))
+            clamped += execution < tau
             waits.append(waiting); slow.append(slowdown)
             if job["status"] == SUCCESS:
                 success_waits.append(waiting); success_slow.append(slowdown)
@@ -715,6 +726,37 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                                   ("reportedCpuTimeSeconds", math.fsum(number(j["cpuTime"]) for j in vm_jobs)),
                                   ("reportedCpuTimeOverMakespan", math.fsum(number(j["cpuTime"]) for j in vm_jobs) / end if end > 0 else 0.0)):
                 audit.metric(saved, key, expected, prefix + ":VM:" + str(vmid))
+        # FGCS-R6 (2026-11-25): envelope input-read seconds are the effectiveDataStageSeconds that
+        # JOB_EXECUTION_STARTED declares (and the event contract binds to modeledJobStartSeconds); they are the
+        # part of the busy interval that legacy/fixed-endpoint models charge as CPU-active time.
+        read_by_job = {jid: number(needed(needed(event, "attributes"), "effectiveDataStageSeconds"),
+                                   "effective data stage", nonnegative=True)
+                       for jid, event in started_jobs.items() if jid in jobs_by_id}
+        r6_required = not (old or historical_marker)
+        # A stream without start markers keeps the manifest-authority boundary for the read decomposition,
+        # mirroring ExperimentArtifactValidator.verifyR6MetricsRecompute.
+        read_checked = bool(started_jobs)
+        for vmid in vms if read_checked else ():
+            saved = needed(saved_vms, str(vmid))
+            vm_read = ordered_sum([read_by_job[j["jobId"]] for j in jobs if j["vmId"] == vmid and j["jobId"] in read_by_job])
+            for key, expected in (("inputReadSecondsInEnvelope", vm_read),
+                                  ("computeOnlyBusySeconds", busy_by_vm[vmid] - vm_read)):
+                if r6_required or key in saved:
+                    audit.metric(saved, key, expected, prefix + ":VM:" + str(vmid))
+        total_read = ordered_sum([read_by_job[j["jobId"]] for j in jobs if j["jobId"] in read_by_job])
+        total_busy = math.fsum(busy_values)
+        r6_metrics = dict(boundedSlowdownThresholdSeconds=tau, boundedSlowdownFloorClampedObservationCount=clamped,
+                          boundedSlowdownFloorClampedFraction=clamped / len(slow) if slow else 0.0,
+                          totalInputReadSecondsInEnvelope=total_read, totalComputeOnlyBusySeconds=total_busy - total_read,
+                          inputReadShareOfBusyTime=total_read / total_busy if total_busy > 0 else 0.0,
+                          inputReadInEnvelopeObservationCount=len(read_by_job))
+        if not read_checked:
+            for key in ("totalInputReadSecondsInEnvelope", "totalComputeOnlyBusySeconds", "inputReadShareOfBusyTime",
+                        "inputReadInEnvelopeObservationCount"):
+                del r6_metrics[key]
+        for key, expected in r6_metrics.items():
+            if r6_required or key in metrics:
+                derived[key] = expected
         avg_busy = mean(busy_values)
         cv = math.sqrt(mean([(x - avg_busy) ** 2 for x in busy_values])) / avg_busy if avg_busy > 0 else 0.0
         fairness = math.fsum(busy_values) ** 2 / (len(busy_values) * math.fsum(x*x for x in busy_values)) if any(busy_values) else 1.0

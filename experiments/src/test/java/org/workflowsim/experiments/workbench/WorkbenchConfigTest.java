@@ -121,6 +121,27 @@ class WorkbenchConfigTest {
         assertThrows(IllegalArgumentException.class, () -> WorkbenchConfig.read(fractionalFile));
     }
 
+    /** FGCS-R6 (2026-11-25): the bounded-slowdown floor is Workbench configuration, default 10 s. */
+    @Test
+    void simulationBoundedSlowdownThresholdIsConfiguration() throws Exception {
+        Path workflow = workflow(directory, "slowdown-flow.dax", false);
+        JsonObject declared = configuration(workflow.toString(), 2);
+        declared.getAsJsonObject("simulation").addProperty("boundedSlowdownThresholdSeconds", 0.1);
+        WorkbenchConfig loaded = WorkbenchConfig.read(json(directory.resolve("tau.json"), declared));
+        assertEquals(0.1, loaded.getCandidates().get(0).config.getBoundedSlowdownThresholdSeconds(), 0.0);
+
+        WorkbenchConfig defaults = WorkbenchConfig.read(
+                json(directory.resolve("tau-default.json"), configuration(workflow.toString(), 2)));
+        assertEquals(10.0, defaults.getCandidates().get(0).config.getBoundedSlowdownThresholdSeconds(), 0.0);
+
+        JsonObject zero = configuration(workflow.toString(), 2);
+        zero.getAsJsonObject("simulation").addProperty("boundedSlowdownThresholdSeconds", 0);
+        Path zeroFile = json(directory.resolve("tau-zero.json"), zero);
+        IllegalArgumentException rejection =
+                assertThrows(IllegalArgumentException.class, () -> WorkbenchConfig.read(zeroFile));
+        assertTrue(rejection.getMessage().contains("boundedSlowdownThresholdSeconds"), rejection.getMessage());
+    }
+
     @Test
     void workbenchRejectsTheCarbonDeferralLabelWithAPointer() throws Exception {
         Path workflow = workflow(directory, "defer-flow.dax", false);

@@ -80,6 +80,29 @@ class ManifestConfigRebuilderTest {
         assertEquals(50000, rebuilt.getConfig().getEventRecorderCap());
     }
 
+    /** FGCS-R6 (2026-11-25): a declared non-default slowdown floor round-trips through the manifest. */
+    @Test
+    void rebuildCarriesTheDeclaredBoundedSlowdownThreshold() throws Exception {
+        Path run = Files.createDirectories(tempDir.resolve("slowdown-floor"));
+        String dax = RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax");
+        SimulationConfig config = SimulationConfig.builder(dax, 3)
+                .schedulingAlgorithm(SchedulingAlgorithm.FCFS)
+                .randomSeed(20261125L)
+                .boundedSlowdownThresholdSeconds(0.1)
+                .build();
+        RerunTestSupport.generateEvidence(run, config, PlatformProfiles.homogeneousLocal("slowdown-floor", 3));
+        RerunEvidence evidence = RerunEvidenceReader.read(run);
+        assertEquals(
+                0.1,
+                evidence.getManifest()
+                        .getAsJsonObject("configuration")
+                        .get("boundedSlowdownThresholdSeconds")
+                        .getAsDouble(),
+                0.0);
+        RebuiltConfiguration rebuilt = ManifestConfigRebuilder.rebuild(evidence, RerunInputResolver.resolve(evidence));
+        assertEquals(0.1, rebuilt.getConfig().getBoundedSlowdownThresholdSeconds(), 0.0);
+    }
+
     @Test
     void rebuildsSimpleFixtureFaithfully() throws Exception {
         RerunEvidence evidence = RerunEvidenceReader.read(fixtureRun);
@@ -419,6 +442,7 @@ class ManifestConfigRebuilderTest {
         assertEquals(expected.getRuntimeScale(), actual.getRuntimeScale());
         assertEquals(expected.getRuntimeReferenceMips(), actual.getRuntimeReferenceMips());
         assertEquals(expected.getCloudSimMinEventIntervalSeconds(), actual.getCloudSimMinEventIntervalSeconds());
+        assertEquals(expected.getBoundedSlowdownThresholdSeconds(), actual.getBoundedSlowdownThresholdSeconds());
         assertEquals(expected.getEventRecorderCap(), actual.getEventRecorderCap());
         assertEquals(expected.getCostModel(), actual.getCostModel());
         assertDataMovementEquals(expected.getDataMovementModel(), actual.getDataMovementModel());

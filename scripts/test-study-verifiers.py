@@ -112,10 +112,17 @@ def make_bundle(root, duration=1.0, effective=1000, matrix=False):
         "totalVmModeledBusyIntervalSeconds": busy, "meanVmModeledIntervalUtilization": busy / end,
         "vmModeledBusyTimeCoefficientOfVariation": 0.0, "vmUtilizationJainFairnessIndex": 1.0,
         "exactTaskTimingObservationCount": 1, "modeledApproximateTaskTimingObservationCount": 0,
+        # FGCS-R6 (2026-11-25): the single compute Job runs `duration` <= 10 s, so it is clamped by the
+        # default floor (1 of 1 samples); no JOB_EXECUTION_STARTED event, so no read decomposition sample.
+        "boundedSlowdownThresholdSeconds": 10.0, "boundedSlowdownFloorClampedObservationCount": 1,
+        "boundedSlowdownFloorClampedFraction": 1.0, "totalInputReadSecondsInEnvelope": 0.0,
+        "totalComputeOnlyBusySeconds": busy, "inputReadShareOfBusyTime": 0.0, "inputReadInEnvelopeObservationCount": 0,
     }
+    metrics["vmMetrics"]["0"].update(inputReadSecondsInEnvelope=0.0, computeOnlyBusySeconds=busy)
     config = {"executionSemantics": EXECUTION_SEMANTICS, "vmCount": 1, "rootSeed": 9007199254740993,
               "workflowPaths": [str(source)], "workflowArrivalSeconds": [0.0], "runtimeScale": 1.0, "runtimeReferenceMips": 1000.0,
-              "clustering": {"method": "NONE"}, "costModel": "DATACENTER", "taskCostMatrix": None}
+              "clustering": {"method": "NONE"}, "costModel": "DATACENTER", "taskCostMatrix": None,
+              "boundedSlowdownThresholdSeconds": 10.0}
     if matrix:
         config["taskCostMatrix"] = {"entries": [{"taskId": 1, "vmId": 0, "executionSeconds": duration}]}
     doc = {"schema": "workflowsim-experiment-manifest-v4", "configuration": config,
@@ -171,11 +178,13 @@ def make_large_clock_bundle(root, lost_cpu_seconds=0.0):
              totalModeledCpuEnvelopeCost=stage["modeledCpuEnvelopeCost"] + job["modeledCpuEnvelopeCost"],
              totalModeledProcessingCost=stage["modeledProcessingCost"] + job["modeledProcessingCost"],
              totalVmModeledBusyIntervalSeconds=busy, meanVmModeledIntervalUtilization=busy / honest_end,
+             totalComputeOnlyBusySeconds=busy,
              exactTaskTimingObservationCount=1 if lost_cpu_seconds == 0.0 else 0,
              modeledApproximateTaskTimingObservationCount=0 if lost_cpu_seconds == 0.0 else 1)
     m["vmMetrics"]["0"].update(reportedCpuTimeSeconds=reported_cpu, modeledBusyIntervalSeconds=busy,
                                  modeledIntervalUtilization=busy / honest_end,
-                                 reportedCpuTimeOverMakespan=reported_cpu / honest_end)
+                                 reportedCpuTimeOverMakespan=reported_cpu / honest_end,
+                                 computeOnlyBusySeconds=busy)
     bind_sidecars(manifest, doc)
     return manifest
 
@@ -528,9 +537,122 @@ class IndependentAuditorTests(unittest.TestCase):
             totalWaitingTimeObservationCount=0, trueSlowdownObservationCount=0,
             successOnlyWaitingObservationCount=0, readyToDecisionObservationCount=0,
             meanComputeTrueSlowdown=0.0, successOnlyMeanComputeTrueSlowdown=0.0,
-            medianComputeTrueSlowdown=0.0, p95ComputeTrueSlowdown=0.0, maxComputeTrueSlowdown=0.0)
+            medianComputeTrueSlowdown=0.0, p95ComputeTrueSlowdown=0.0, maxComputeTrueSlowdown=0.0,
+            boundedSlowdownFloorClampedObservationCount=0, boundedSlowdownFloorClampedFraction=0.0)
         self.assertEqual(0, audit.counts.get("metric-mismatch", 0), audit.report())
         self.assertEqual(1, audit.counts.get("ready-decision-start", 0), audit.report())
+
+    def test_r6_bounded_slowdown_uses_the_declared_floor(self):
+        # FGCS-R6 (2026-11-25): the fixture's compute Job has w = 0 and e = 1.0 s. Under tau = 10 the sample
+        # is clamped (e < tau, count 1); under tau = 0.1 it is not (count 0). The slowdown is 1.0 either way;
+        # declaring the other floor's clamp count is a metric mismatch.
+        for name, tau, clamped in (("tau10", 10.0, 1), ("tau01", 0.1, 0)):
+            manifest = make_bundle(self.root / name)
+            doc = json.loads(manifest.read_text())
+            doc["configuration"]["boundedSlowdownThresholdSeconds"] = tau
+            doc["metrics"].update(boundedSlowdownThresholdSeconds=tau,
+                                  boundedSlowdownFloorClampedObservationCount=clamped,
+                                  boundedSlowdownFloorClampedFraction=float(clamped))
+            bind_sidecars(manifest, doc)
+            audit = Audit()
+            evidence.inspect_manifest(manifest, audit)
+            self.assertEqual(0, audit.issue_count, audit.report())
+            doc["metrics"]["boundedSlowdownFloorClampedObservationCount"] = 1 - clamped
+            bind_sidecars(manifest, doc)
+            audit = Audit()
+            evidence.inspect_manifest(manifest, audit)
+            self.assertGreater(audit.counts.get("metric-mismatch", 0), 0, audit.report())
+
+    def test_r6_short_floor_changes_the_slowdown_of_a_waiting_short_job(self):
+        # FGCS-R6 (2026-11-25): hand derivation with a genuine wait. The stage-in finishes at 0.21; the compute
+        # Job is ready at 0.21 but starts at 0.41 (w = 0.2) and runs 1.0 s to 1.41. tau = 10 gives
+        # max(1.2 / 10, 1) = 1.0 (clamped); tau = 0.1 gives 1.2 / 1.0 = 1.2 (not clamped).
+        for name, tau, expected, clamped in (("wait10", 10.0, 1.0, 1), ("wait01", 0.1, 1.2, 0)):
+            manifest = make_bundle(self.root / name)
+            doc = json.loads(manifest.read_text())
+            shift = 0.2
+            for job in doc["result"]["jobs"]:
+                if job["classType"] == 2:
+                    # Idle-only dispatch: the VM submission happens at the dispatch instant, so the
+                    # submission time moves with the start and the VM-queue wait stays 0.
+                    job["submissionTime"] += shift; job["startTime"] += shift; job["finishTime"] += shift
+            task = doc["result"]["tasks"][0]
+            task["startTime"] += shift; task["finishTime"] += shift
+            end = 1.41
+            doc["result"]["simulationEndSeconds"] = end
+            events_path = manifest.parent / "run.events.jsonl"
+            events = [json.loads(line) for line in events_path.read_text().splitlines() if line.strip()]
+            for event in events:
+                if event["jobId"] == 0 and event["type"] in ("DATA_STAGE_IN_MODELED", "TASK_EXECUTION_MODELED", "JOB_RETURNED"):
+                    event["simulationTime"] += shift
+                if event["type"] == "TASK_EXECUTION_MODELED":
+                    event["attributes"]["taskStartTime"] += shift
+                    event["attributes"]["taskFinishTime"] += shift
+                if event["type"] == "SCHEDULING_DECISION" and event["jobId"] == 0:
+                    event["simulationTime"] += shift
+                if event["type"] == "SCHEDULING_CYCLE" and event["simulationTime"] == 0.21:
+                    event["simulationTime"] += shift
+            events.sort(key=lambda e: (e["simulationTime"], e["sequence"]))
+            for index, event in enumerate(events):
+                event["sequence"] = index
+            events_path.write_text(''.join(json.dumps(e) + '\n' for e in events), encoding="utf-8")
+            busy = 0.11 + 1.0
+            doc["configuration"]["boundedSlowdownThresholdSeconds"] = tau
+            doc["metrics"].update(
+                makespanSeconds=end, logicalTaskCompletionSeconds=end, computeJobOutcomeThroughputPerSecond=1.0 / end,
+                meanJobVmQueueWaitingTimeSeconds=0.0, meanJobResponseTimeSeconds=1.0, meanJobVmLevelSlowdown=1.0,
+                meanComputeTotalWaitingTimeSeconds=shift, medianComputeTotalWaitingTimeSeconds=shift,
+                p95ComputeTotalWaitingTimeSeconds=shift, maxComputeTotalWaitingTimeSeconds=shift,
+                successOnlyMeanComputeTotalWaitingTimeSeconds=shift,
+                meanComputeReadyToDecisionDelaySeconds=shift,
+                meanComputeTrueSlowdown=expected, medianComputeTrueSlowdown=expected, p95ComputeTrueSlowdown=expected,
+                maxComputeTrueSlowdown=expected, successOnlyMeanComputeTrueSlowdown=expected,
+                boundedSlowdownThresholdSeconds=tau, boundedSlowdownFloorClampedObservationCount=clamped,
+                boundedSlowdownFloorClampedFraction=float(clamped),
+                meanVmModeledIntervalUtilization=busy / end)
+            doc["metrics"]["vmMetrics"]["0"].update(modeledIntervalUtilization=busy / end,
+                                                     reportedCpuTimeOverMakespan=busy / end)
+            bind_sidecars(manifest, doc)
+            audit = Audit()
+            evidence.inspect_manifest(manifest, audit)
+            self.assertEqual(0, audit.counts.get("metric-mismatch", 0), audit.report())
+
+    def test_r6_current_identity_requires_the_declared_floor(self):
+        # FGCS-R6 (2026-11-25): current-identity evidence must declare the floor; a missing declaration aborts
+        # instead of silently falling back to 10 s.
+        manifest = make_bundle(self.root / "undeclared-floor")
+        doc = json.loads(manifest.read_text())
+        del doc["configuration"]["boundedSlowdownThresholdSeconds"]
+        bind_sidecars(manifest, doc)
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertGreater(audit.counts.get("invalid-or-unsupported-bundle", 0), 0, audit.report())
+
+    def test_r6_envelope_read_decomposition_is_recomputed_from_start_events(self):
+        # FGCS-R6 (2026-11-25): busy = 0.11 (stage-in) + 1.0 (compute) = 1.11 s. A JOB_EXECUTION_STARTED that
+        # declares 0.4 s of effective staging for the compute Job gives read = 0.4, compute-only = 0.71 and an
+        # I/O share of 0.4 / 1.11; a forged read total is a metric mismatch.
+        manifest = inject_contract_events(make_bundle(self.root / "read-share"))
+        doc = json.loads(manifest.read_text())
+        events_path = manifest.parent / "run.events.jsonl"
+        events = [json.loads(line) for line in events_path.read_text().splitlines() if line.strip()]
+        for event in events:
+            if event["type"] == "JOB_EXECUTION_STARTED":
+                event["attributes"].update(effectiveDataStageSeconds=0.4, modeledJobStartSeconds=0.21 + 0.4)
+        events_path.write_text(''.join(json.dumps(e) + '\n' for e in events), encoding="utf-8")
+        busy = 0.11 + 1.0
+        doc["metrics"].update(totalInputReadSecondsInEnvelope=0.4, totalComputeOnlyBusySeconds=busy - 0.4,
+                              inputReadShareOfBusyTime=0.4 / busy)
+        doc["metrics"]["vmMetrics"]["0"].update(inputReadSecondsInEnvelope=0.4, computeOnlyBusySeconds=busy - 0.4)
+        bind_sidecars(manifest, doc)
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertEqual(0, audit.counts.get("metric-mismatch", 0), audit.report())
+        doc["metrics"]["totalInputReadSecondsInEnvelope"] = 0.0
+        bind_sidecars(manifest, doc)
+        audit = Audit()
+        evidence.inspect_manifest(manifest, audit)
+        self.assertGreater(audit.counts.get("metric-mismatch", 0), 0, audit.report())
 
     def test_healthy_single_manifest_and_matrix_override(self):
         for name, duration, effective, matrix in (("plain", 1.0, 1000, False), ("matrix", 0.5, 500, True)):
@@ -661,6 +783,7 @@ def inject_contract_events(manifest, terminal_delta=0.0, start_delta=0.0, duplic
         event["sequence"] = index
     (manifest.parent / "run.events.jsonl").write_text(''.join(json.dumps(e) + '\n' for e in events), encoding="utf-8")
     doc["events"]["eventCount"] = len(events)
+    doc["metrics"]["inputReadInEnvelopeObservationCount"] = 1 + int(duplicate_start)
     bind_sidecars(manifest, doc)
     return manifest
 
@@ -1112,8 +1235,12 @@ class CaWoSchedBudgetAuditTests(unittest.TestCase):
             "vmModeledBusyTimeCoefficientOfVariation": 0.445 / 1.555,
             "vmUtilizationJainFairnessIndex": 3.11**2 / (2.0 * (1.11**2 + 2.0**2)),
             "exactTaskTimingObservationCount": 2,
+            # FGCS-R6 (2026-11-25): both compute Jobs (1 s, 2 s) are shorter than the 10 s floor.
+            "boundedSlowdownFloorClampedObservationCount": 2,
+            "totalComputeOnlyBusySeconds": 3.11,
         })
         doc["metrics"]["vmMetrics"]["0"].update({
+            "computeOnlyBusySeconds": 1.11,
             "reportedCpuTimeSeconds": 1.11,
             "modeledBusyIntervalSeconds": 1.11,
             "modeledIntervalUtilization": 1.11 / end,
@@ -1126,6 +1253,8 @@ class CaWoSchedBudgetAuditTests(unittest.TestCase):
             "modeledBusyIntervalSeconds": 2.0,
             "modeledIntervalUtilization": 2.0 / end,
             "reportedCpuTimeOverMakespan": 2.0 / end,
+            "inputReadSecondsInEnvelope": 0.0,
+            "computeOnlyBusySeconds": 2.0,
         }
         vm0_energy = 10.0 * end + 100.0 * (0.11 + 1.0)
         vm1_energy = 20.0 * end + 200.0 * 2.0

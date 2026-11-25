@@ -254,6 +254,8 @@ public final class ExperimentManifestWriter {
         values.put("runtimeScale", config.getRuntimeScale());
         values.put("runtimeReferenceMips", config.getRuntimeReferenceMips());
         values.put("cloudSimMinEventIntervalSeconds", config.getCloudSimMinEventIntervalSeconds());
+        // FGCS-R6 (2026-11-25): the declared bounded-slowdown floor; the Python auditor reads it from here.
+        values.put("boundedSlowdownThresholdSeconds", config.getBoundedSlowdownThresholdSeconds());
 
         if (config.getEventRecorderCap() != SimulationConfig.DEFAULT_EVENT_RECORDER_CAP) {
             values.put("eventRecorderCap", config.getEventRecorderCap());

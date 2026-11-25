@@ -84,6 +84,7 @@ public final class ExperimentArtifactValidator {
                     "experiment manifest result");
             verifyEventContract(eventSummary, contractAudit, end);
             verifyMetricsRecompute(root, manifestMetrics, end);
+            verifyR6MetricsRecompute(root, manifestMetrics, contractAudit);
         }
         if (networkContext != null) {
             networkContext.finish();
@@ -609,6 +610,51 @@ public final class ExperimentArtifactValidator {
         double expectedQueueWait = computeCount == 0 ? 0.0 : queueWaitSum / computeCount;
         verifyMetricClose(metrics, "makespanSeconds", end);
         verifyMetricClose(metrics, "meanJobVmQueueWaitingTimeSeconds", expectedQueueWait);
+    }
+
+    /**
+     * Recomputes the FGCS-R6 metric additions that the manifest and event stream determine.
+     *
+     * <p>FGCS-R6 (2026-11-25): a metrics document that declares {@code boundedSlowdownThresholdSeconds} must
+     * agree with the declared {@code configuration.boundedSlowdownThresholdSeconds} (finite, positive), and a
+     * declared {@code totalInputReadSecondsInEnvelope} must equal the sum of {@code effectiveDataStageSeconds}
+     * over the {@code JOB_EXECUTION_STARTED} events of result Jobs, with the compute-only remainder and the
+     * share following from the busy total. Pre-R6 documents declare neither field and keep their authority, and
+     * so does a stream that carries no start marker.
+     */
+    private static void verifyR6MetricsRecompute(JsonObject root, JsonObject metrics, EventContractAudit audit)
+            throws IOException {
+        if (metrics.has("boundedSlowdownThresholdSeconds")) {
+            JsonObject config = requireObject(root, "configuration", "experiment manifest");
+            double tau = requireFiniteNonNegativeNumber(
+                    config, "boundedSlowdownThresholdSeconds", "experiment manifest configuration");
+            if (!(tau > 0.0)) {
+                throw new IOException("configuration.boundedSlowdownThresholdSeconds must be positive: " + tau);
+            }
+            verifyMetricClose(metrics, "boundedSlowdownThresholdSeconds", tau);
+        }
+        if (!metrics.has("totalInputReadSecondsInEnvelope") || audit.startedDerivations.isEmpty()) {
+            // A stream without JOB_EXECUTION_STARTED markers keeps the manifest-authority boundary, exactly
+            // as the F-006/F-007 cross-checks do for undeclared marker-less streams.
+            return;
+        }
+        JsonArray jobs = requireArray(
+                requireObject(root, "result", "experiment manifest"), "jobs", "experiment manifest result");
+        double read = 0.0;
+        int observations = 0;
+        for (JsonElement element : jobs) {
+            long jobId = requireLong(element.getAsJsonObject(), "jobId", "experiment manifest result job");
+            double[] derivation = audit.startedDerivations.get(Long.valueOf(jobId));
+            if (derivation != null) {
+                read += derivation[1];
+                observations++;
+            }
+        }
+        double busy = requireFiniteNonNegativeNumber(metrics, "totalVmModeledBusyIntervalSeconds", "metrics");
+        verifyMetricClose(metrics, "totalInputReadSecondsInEnvelope", read);
+        verifyMetricClose(metrics, "totalComputeOnlyBusySeconds", busy - read);
+        verifyMetricClose(metrics, "inputReadShareOfBusyTime", busy > 0.0 ? read / busy : 0.0);
+        verifyMetricClose(metrics, "inputReadInEnvelopeObservationCount", observations);
     }
 
     private static void verifyMetricClose(JsonObject metrics, String field, double expected) throws IOException {

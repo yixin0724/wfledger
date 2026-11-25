@@ -126,6 +126,112 @@ class JobWaitingTimeMetricsTest {
         assertEquals(1, metrics.getTrueSlowdownObservationCount());
     }
 
+    /**
+     * FGCS-R6 (2026-11-25): the bounded-slowdown floor is a declared configuration parameter.
+     *
+     * <p>Hand derivation (Feitelson 1997 bounded slowdown {@code max((w + e) / max(e, tau), 1)}):
+     * Job 10 is ready at 0, starts at 2 and finishes at 3 (w = 2, e = 1); Job 11 is ready at 0, starts
+     * at 1 and finishes at 21 (w = 1, e = 20). At tau = 10: Job 10 gives max(3 / 10, 1) = 1.0 (clamped,
+     * e = 1 &lt; 10) and Job 11 gives 21 / 20 = 1.05, so the mean is 1.025 and the clamped fraction 1/2.
+     * At tau = 0.1: Job 10 gives 3 / 1 = 3.0 and Job 11 still 1.05, so the mean is 2.025 and no sample is
+     * clamped. The ranking-relevant value of the short Job changes threefold with the floor.
+     */
+    @Test
+    void boundedSlowdownThresholdIsDeclaredAndClampedSamplesAreCounted() {
+        java.util.List<SimulationReport.JobOutcome> jobs =
+                java.util.Arrays.asList(job(10, 0.0, 2.0, 3.0), job(11, 0.0, 1.0, 21.0));
+        java.util.List<SimulationEvent> events = java.util.Arrays.asList(
+                event(1, 0.0, SimulationEventType.JOB_READY, 10), event(2, 0.0, SimulationEventType.JOB_READY, 11));
+        java.util.List<SimulationReport.TaskOutcome> tasks =
+                java.util.Arrays.asList(task(1, 10, 2.0, 3.0), task(2, 11, 1.0, 21.0));
+        java.util.List<org.workflowsim.Task> sourceTasks =
+                java.util.Arrays.asList(new org.workflowsim.Task(1, 1000), new org.workflowsim.Task(2, 1000));
+
+        SimulationMetrics defaultFloor =
+                SimulationMetrics.calculate(21.0, jobs, summaries(), events, tasks, sourceTasks, config(), platform());
+        assertEquals(10.0, defaultFloor.getBoundedSlowdownThresholdSeconds(), 0.0);
+        assertEquals(1.025, defaultFloor.getMeanComputeTrueSlowdown(), 1e-12);
+        assertEquals(1, defaultFloor.getBoundedSlowdownFloorClampedObservationCount());
+        assertEquals(0.5, defaultFloor.getBoundedSlowdownFloorClampedFraction(), 0.0);
+
+        org.workflowsim.utils.SimulationConfig tenthSecond = org.workflowsim.utils.SimulationConfig.builder(
+                        "test.dax", 1)
+                .boundedSlowdownThresholdSeconds(0.1)
+                .build();
+        SimulationMetrics shortFloor = SimulationMetrics.calculate(
+                21.0, jobs, summaries(), events, tasks, sourceTasks, tenthSecond, platform());
+        assertEquals(0.1, shortFloor.getBoundedSlowdownThresholdSeconds(), 0.0);
+        assertEquals(2.025, shortFloor.getMeanComputeTrueSlowdown(), 1e-12);
+        assertEquals(3.0, shortFloor.getMaxComputeTrueSlowdown(), 1e-12);
+        assertEquals(0, shortFloor.getBoundedSlowdownFloorClampedObservationCount());
+        assertEquals(0.0, shortFloor.getBoundedSlowdownFloorClampedFraction(), 0.0);
+    }
+
+    @Test
+    void boundedSlowdownThresholdMustBeFiniteAndPositive() {
+        for (double invalid : new double[] {0.0, -1.0, Double.NaN, Double.POSITIVE_INFINITY}) {
+            assertThrows(
+                    IllegalArgumentException.class, () -> org.workflowsim.utils.SimulationConfig.builder("test.dax", 1)
+                            .boundedSlowdownThresholdSeconds(invalid)
+                            .build());
+        }
+        org.workflowsim.utils.SimulationConfig declared = org.workflowsim.utils.SimulationConfig.builder("test.dax", 1)
+                .boundedSlowdownThresholdSeconds(1.0)
+                .build();
+        assertEquals(1.0, declared.withRandomSeed(5L).getBoundedSlowdownThresholdSeconds(), 0.0);
+    }
+
+    /**
+     * FGCS-R6 (2026-11-25): busy time is decomposed into envelope input reading and compute.
+     *
+     * <p>Hand derivation: VM 0 runs Job 10 over [0, 10) whose JOB_EXECUTION_STARTED declares 6 s of
+     * effective data staging, and Job 11 over [10, 14) with 1 s of staging. Busy = 14 s (union), read =
+     * 6 + 1 = 7 s, compute-only = 14 - 7 = 7 s and the I/O share is 7 / 14 = 0.5. Both Jobs are covered by a
+     * start event, so the observation count is 2. The energy law is unchanged: it still charges all 14 s.
+     */
+    @Test
+    void busyTimeExposesTheEnvelopeInputReadDecomposition() {
+        java.util.Map<Integer, SimulationReport.VmSummary> summaries =
+                new java.util.LinkedHashMap<Integer, SimulationReport.VmSummary>();
+        summaries.put(0, new SimulationReport.VmSummary(0, 2, 2, 0, 14.0, 14.0));
+        java.util.List<SimulationReport.JobOutcome> jobs =
+                java.util.Arrays.asList(jobOnVm(10, 0, 0.0, 10.0), jobOnVm(11, 0, 10.0, 14.0));
+        java.util.List<SimulationEvent> events =
+                java.util.Arrays.asList(started(1, 0.0, 10, 6.0), started(2, 10.0, 11, 1.0));
+        java.util.List<SimulationReport.TaskOutcome> tasks =
+                java.util.Arrays.asList(task(1, 10, 6.0, 10.0), task(2, 11, 11.0, 14.0));
+        java.util.List<org.workflowsim.Task> sourceTasks =
+                java.util.Arrays.asList(new org.workflowsim.Task(1, 1000), new org.workflowsim.Task(2, 1000));
+
+        SimulationMetrics metrics =
+                SimulationMetrics.calculate(14.0, jobs, summaries, events, tasks, sourceTasks, config(), platform());
+
+        assertEquals(14.0, metrics.getTotalVmModeledBusyIntervalSeconds(), 1e-12);
+        assertEquals(7.0, metrics.getTotalInputReadSecondsInEnvelope(), 1e-12);
+        assertEquals(7.0, metrics.getTotalComputeOnlyBusySeconds(), 1e-12);
+        assertEquals(0.5, metrics.getInputReadShareOfBusyTime(), 1e-12);
+        assertEquals(2, metrics.getInputReadInEnvelopeObservationCount());
+        assertEquals(7.0, metrics.getVmMetrics().get(0).getInputReadSecondsInEnvelope(), 1e-12);
+        assertEquals(7.0, metrics.getVmMetrics().get(0).getComputeOnlyBusySeconds(), 1e-12);
+    }
+
+    private static SimulationEvent started(int seq, double time, int jobId, double staged) {
+        java.util.Map<String, Object> attributes = new java.util.LinkedHashMap<String, Object>();
+        attributes.put("jobEnvelopeStartSeconds", time);
+        attributes.put("effectiveDataStageSeconds", staged);
+        attributes.put("requestedDataStageSeconds", staged);
+        attributes.put("modeledJobStartSeconds", time + staged);
+        return new SimulationEvent(
+                seq,
+                time,
+                SimulationEventType.JOB_EXECUTION_STARTED,
+                jobId,
+                null,
+                null,
+                Collections.<Integer>emptyList(),
+                attributes);
+    }
+
     @Test
     void trueSlowdownExcludesJobsWithoutReadyEvent() {
 

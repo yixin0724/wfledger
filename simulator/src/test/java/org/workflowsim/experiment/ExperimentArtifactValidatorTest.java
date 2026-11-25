@@ -398,6 +398,47 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the recomputed field: " + exception.getMessage());
     }
 
+    /**
+     * FGCS-R6 (2026-11-25): the envelope input-read total and the declared slowdown floor are bound to the
+     * event stream and the configuration; a value written consistently into manifest and sidecar but
+     * contradicting them is refused, naming the field.
+     */
+    @Test
+    void rejectsR6MetricsThatContradictTheEventStreamOrConfiguration(@TempDir Path output) throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .boundedSlowdownThresholdSeconds(0.5)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal("validator-recompute-r6", 2));
+        assertEquals(0.5, report.getMetrics().getBoundedSlowdownThresholdSeconds(), 0.0);
+        for (String field : new String[] {"totalInputReadSecondsInEnvelope", "boundedSlowdownThresholdSeconds"}) {
+            ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                    ExperimentArtifactWriter.write(report, output.resolve(field), "recompute-r6-run");
+            ExperimentArtifactValidator.validate(artifacts.getManifest());
+            JsonObject manifest = JsonParser.parseString(
+                            new String(Files.readAllBytes(artifacts.getManifest()), StandardCharsets.UTF_8))
+                    .getAsJsonObject();
+            JsonObject metrics = manifest.getAsJsonObject("metrics");
+            metrics.addProperty(field, metrics.get(field).getAsDouble() + 1.0);
+            Files.write(artifacts.getManifest(), JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8));
+            JsonObject sidecar = JsonParser.parseString(
+                            new String(Files.readAllBytes(artifacts.getMetrics()), StandardCharsets.UTF_8))
+                    .getAsJsonObject();
+            sidecar.getAsJsonObject("metrics")
+                    .addProperty(field, metrics.get(field).getAsDouble());
+            rewriteMetricsSidecar(artifacts, sidecar);
+
+            java.io.IOException exception = assertThrows(
+                    java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+            assertTrue(
+                    exception.getMessage().contains(field),
+                    "the refusal must name the recomputed field: " + exception.getMessage());
+        }
+    }
+
     @Test
     void rejectsATerminalClockThatContradictsTheDeclaredEnd(@TempDir Path output) throws Exception {
         Log.disable();

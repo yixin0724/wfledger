@@ -168,6 +168,7 @@ public final class WorkbenchConfig {
                 "runtimeScale",
                 "runtimeReferenceMips",
                 "minEventIntervalSeconds",
+                "boundedSlowdownThresholdSeconds",
                 "eventRecorderCap",
                 "eventRecordingEnabled",
                 "deadlineSeconds",
@@ -312,6 +313,12 @@ public final class WorkbenchConfig {
                         .runtimeScale(decimal(models.sim, "runtimeScale", 1, true))
                         .runtimeReferenceMips(decimal(models.sim, "runtimeReferenceMips", 1000, true))
                         .cloudSimMinEventIntervalSeconds(decimal(models.sim, "minEventIntervalSeconds", 0.1, true))
+                        // FGCS-R6 (2026-11-25): declared bounded-slowdown floor, default 10 s.
+                        .boundedSlowdownThresholdSeconds(decimal(
+                                models.sim,
+                                "boundedSlowdownThresholdSeconds",
+                                SimulationConfig.DEFAULT_BOUNDED_SLOWDOWN_THRESHOLD_SECONDS,
+                                true))
                         .eventRecorderCap(integer(
                                 models.sim,
                                 "eventRecorderCap",

@@ -23,6 +23,15 @@ public final class SimulationConfig {
 
     public static final int DEFAULT_EVENT_RECORDER_CAP = 20000;
 
+    /**
+     * Default bounded-slowdown floor in simulated seconds.
+     *
+     * <p>FGCS-R6 (2026-11-25): the 10-second value is the parallel-job convention of Feitelson et al.
+     * ("Theory and practice in parallel job scheduling", JSSPP 1997). It was a hard-coded constant in
+     * {@code SimulationMetrics}; it is now a declared run parameter whose default keeps earlier results.
+     */
+    public static final double DEFAULT_BOUNDED_SLOWDOWN_THRESHOLD_SECONDS = 10.0;
+
     private final List<String> workflowPaths;
     private final List<Double> workflowArrivalSeconds;
     private final int vmCount;
@@ -37,6 +46,7 @@ public final class SimulationConfig {
     private final double runtimeScale;
     private final double runtimeReferenceMips;
     private final double cloudSimMinEventIntervalSeconds;
+    private final double boundedSlowdownThresholdSeconds;
     private final CostModel costModel;
     private final FailureModelConfig failureModel;
     private final DataMovementModel dataMovementModel;
@@ -67,6 +77,7 @@ public final class SimulationConfig {
         this.runtimeScale = builder.runtimeScale;
         this.runtimeReferenceMips = builder.runtimeReferenceMips;
         this.cloudSimMinEventIntervalSeconds = builder.cloudSimMinEventIntervalSeconds;
+        this.boundedSlowdownThresholdSeconds = builder.boundedSlowdownThresholdSeconds;
         this.costModel = builder.costModel;
         this.failureModel = builder.failureModel;
         this.dataMovementModel = builder.dataMovementModel;
@@ -150,6 +161,18 @@ public final class SimulationConfig {
         return cloudSimMinEventIntervalSeconds;
     }
 
+    /**
+     * Returns the bounded-slowdown floor {@code tau} used by {@code max((wait + exec) / max(exec, tau), 1)}.
+     *
+     * <p>FGCS-R6 (2026-11-25): declared and recorded in the manifest configuration so that the Java metric
+     * and the Python auditor use the same floor; rankings of short-task workflows can change with it.
+     *
+     * @return finite positive seconds
+     */
+    public double getBoundedSlowdownThresholdSeconds() {
+        return boundedSlowdownThresholdSeconds;
+    }
+
     public CostModel getCostModel() {
         return costModel;
     }
@@ -212,6 +235,7 @@ public final class SimulationConfig {
                 .runtimeScale(runtimeScale)
                 .runtimeReferenceMips(runtimeReferenceMips)
                 .cloudSimMinEventIntervalSeconds(cloudSimMinEventIntervalSeconds)
+                .boundedSlowdownThresholdSeconds(boundedSlowdownThresholdSeconds)
                 .costModel(costModel)
                 .failureModel(failureModel)
                 .dataMovementModel(dataMovementModel)
@@ -247,6 +271,7 @@ public final class SimulationConfig {
         private double runtimeScale = 1.0;
         private double runtimeReferenceMips = 1000.0;
         private double cloudSimMinEventIntervalSeconds = 0.1;
+        private double boundedSlowdownThresholdSeconds = DEFAULT_BOUNDED_SLOWDOWN_THRESHOLD_SECONDS;
         private CostModel costModel = CostModel.DATACENTER;
         private FailureModelConfig failureModel = FailureModelConfig.disabled();
         private DataMovementModel dataMovementModel = DataMovementModel.legacyWorkflowsimV1();
@@ -384,6 +409,11 @@ public final class SimulationConfig {
             return this;
         }
 
+        public Builder boundedSlowdownThresholdSeconds(double value) {
+            this.boundedSlowdownThresholdSeconds = value;
+            return this;
+        }
+
         public Builder costModel(CostModel value) {
             this.costModel = value;
             return this;
@@ -497,6 +527,10 @@ public final class SimulationConfig {
                     || !isPositiveFinite(cloudSimMinEventIntervalSeconds)) {
                 throw new IllegalArgumentException("Runtime scale, reference MIPS, and CloudSim minimum "
                         + "event interval must be finite and positive");
+            }
+            if (!isPositiveFinite(boundedSlowdownThresholdSeconds)) {
+                throw new IllegalArgumentException(
+                        "Bounded-slowdown threshold must be finite and positive: " + boundedSlowdownThresholdSeconds);
             }
         }
 

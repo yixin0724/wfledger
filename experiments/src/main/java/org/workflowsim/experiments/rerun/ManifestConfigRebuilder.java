@@ -239,6 +239,8 @@ public final class ManifestConfigRebuilder {
                 .cloudSimMinEventIntervalSeconds(requireDouble(
                         config, "cloudSimMinEventIntervalSeconds", "configuration.cloudSimMinEventIntervalSeconds"))
                 .eventRecorderCap(rebuildEventRecorderCap(config.get("eventRecorderCap")))
+                .boundedSlowdownThresholdSeconds(
+                        rebuildBoundedSlowdownThreshold(config.get("boundedSlowdownThresholdSeconds")))
                 .costModel(enumValue(
                         CostModel.class,
                         requireString(config, "costModel", "configuration.costModel"),
@@ -583,6 +585,29 @@ public final class ManifestConfigRebuilder {
         }
         return enumValue(
                 SimulationConfig.FrequencyPolicy.class, element.getAsString(), "configuration.frequencyPolicy");
+    }
+
+    /**
+     * Rebuilds the declared bounded-slowdown floor.
+     *
+     * <p>FGCS-R6 (2026-11-25): evidence written before the floor became a declared parameter has no field and
+     * was computed with the then hard-coded 10 s, which is the default; a present value must be a finite
+     * positive JSON number and is never replaced.
+     */
+    private static double rebuildBoundedSlowdownThreshold(JsonElement element) {
+        if (element == null) {
+            return SimulationConfig.DEFAULT_BOUNDED_SLOWDOWN_THRESHOLD_SECONDS;
+        }
+        if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isNumber()) {
+            throw new IllegalArgumentException(
+                    "configuration.boundedSlowdownThresholdSeconds must be a JSON number when present");
+        }
+        double value = element.getAsDouble();
+        if (!(value > 0.0) || Double.isInfinite(value)) {
+            throw new IllegalArgumentException(
+                    "configuration.boundedSlowdownThresholdSeconds must be finite and positive: " + value);
+        }
+        return value;
     }
 
     private static int rebuildEventRecorderCap(JsonElement element) {

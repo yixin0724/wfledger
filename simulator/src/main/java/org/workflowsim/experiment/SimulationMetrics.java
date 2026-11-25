@@ -45,7 +45,23 @@ public final class SimulationMetrics {
     private final double retryComputeAttemptModeledProcessingCost;
     private final double computeJobOutcomeThroughputPerSecond;
     private final double meanComputeJobRunTimeSeconds;
+    /**
+     * Mean VM submission-to-start wait of compute Jobs.
+     *
+     * <p>FGCS-R6 (2026-11-25): identically 0.0 under the idle-only dispatch invariant (a Job is submitted only
+     * to an idle VM, and {@code WorkflowDatacenter} fails fast otherwise). A {@code queueDelays} overhead delays
+     * the submit event itself, so it is visible in decision-to-start and ready-to-start, never here. Kept for
+     * schema stability; {@code meanComputeTotalWaitingTimeSeconds} (ready to start) is the queueing measure.
+     */
     private final double meanJobVmQueueWaitingTimeSeconds;
+
+    /**
+     * Mean VM submission-to-finish time of compute Jobs.
+     *
+     * <p>FGCS-R6 (2026-11-25): equals {@code meanComputeJobRunTimeSeconds} under the idle-only dispatch
+     * invariant (see {@code meanJobVmQueueWaitingTimeSeconds}); kept for schema stability, not a response
+     * measure that includes queueing.
+     */
     private final double meanJobResponseTimeSeconds;
     private final double meanJobVmLevelSlowdown;
 
@@ -54,6 +70,24 @@ public final class SimulationMetrics {
     private final double meanComputeTotalWaitingTimeSeconds;
     private final double meanComputeTrueSlowdown;
     private final int trueSlowdownObservationCount;
+
+    /**
+     * Bounded-slowdown floor {@code tau} applied to every {@code meanComputeTrueSlowdown}-family sample.
+     *
+     * <p>FGCS-R6 (2026-11-25): root cause - the floor was a hidden constant of 10 s (Feitelson 1997), while
+     * 48-76% of Pegasus Tasks run shorter than 10 s, so the metric degenerated to {@code wait / 10} for them
+     * and algorithm rankings flipped with the floor. The floor is now the declared configuration value.
+     */
+    private final double boundedSlowdownThresholdSeconds;
+
+    /** FGCS-R6 (2026-11-25): slowdown samples whose execution envelope is shorter than the floor. */
+    private final int boundedSlowdownFloorClampedObservationCount;
+
+    /**
+     * FGCS-R6 (2026-11-25): {@code boundedSlowdownFloorClampedObservationCount / trueSlowdownObservationCount},
+     * 0.0 when there is no sample. A high value means the slowdown family mostly reports {@code wait / tau}.
+     */
+    private final double boundedSlowdownFloorClampedFraction;
 
     private final int totalWaitingTimeObservationCount;
 
@@ -101,6 +135,29 @@ public final class SimulationMetrics {
 
     private final double vmUtilizationJainFairnessIndex;
 
+    /**
+     * FGCS-R6 (2026-11-25): seconds of input reading folded into Job execution envelopes, summed over every
+     * Job outcome that has a {@code JOB_EXECUTION_STARTED} event ({@code effectiveDataStageSeconds}).
+     *
+     * <p>Root cause: legacy/fixed-endpoint models add the input-read seconds to the Job length, so busy
+     * time, utilisation and the linear energy model charge them at {@code P_max} as CPU-active time (about
+     * 89% of the busy time of CyberShake_50 under SHARED storage). The energy formula is unchanged; this
+     * field exposes the I/O part of the busy time so that the share can be reported.
+     */
+    private final double totalInputReadSecondsInEnvelope;
+
+    /** FGCS-R6 (2026-11-25): {@code totalVmModeledBusyIntervalSeconds - totalInputReadSecondsInEnvelope}. */
+    private final double totalComputeOnlyBusySeconds;
+
+    /** FGCS-R6 (2026-11-25): {@code totalInputReadSecondsInEnvelope / totalVmModeledBusyIntervalSeconds}. */
+    private final double inputReadShareOfBusyTime;
+
+    /**
+     * FGCS-R6 (2026-11-25): Job outcomes covered by a {@code JOB_EXECUTION_STARTED} event. When it is below
+     * {@code jobOutcomeCount} (event recording disabled) the read decomposition is unavailable, not zero.
+     */
+    private final int inputReadInEnvelopeObservationCount;
+
     private final transient Map<Integer, Map<Double, Double>> perTierBusySecondsByVm;
 
     private final transient Map<Double, Double> fleetPerTierBusySeconds;
@@ -108,6 +165,14 @@ public final class SimulationMetrics {
     private final boolean controlledSharedStorageCriticalPathReferenceAvailable;
     private final String controlledSharedStorageCriticalPathReferenceScope;
     private final double controlledSharedStorageCriticalPathLowerBoundSeconds;
+    /**
+     * Makespan divided by the I/O-inclusive critical-path lower bound.
+     *
+     * <p>FGCS-R6 (2026-11-25): the denominator includes the model-generated stage-in Job and each Task's
+     * SHARED external-input read seconds (see {@link WorkflowModelReference}), so this is an "I/O-inclusive
+     * CP lower-bound SLR", not the compute-only SLR of Topcuoglu et al. (TPDS 2002). The field name is kept
+     * for schema stability.
+     */
     private final double controlledSharedStorageScheduleLengthRatio;
     private final boolean deadlineObservationEnabled;
     private final String deadlineObservationTimeBasis;
@@ -196,7 +261,8 @@ public final class SimulationMetrics {
             int exactTaskTimingObservationCount,
             int modeledApproximateTaskTimingObservationCount,
             Map<Integer, Map<Double, Double>> perTierBusySecondsByVm,
-            Map<Double, Double> fleetPerTierBusySeconds) {
+            Map<Double, Double> fleetPerTierBusySeconds,
+            R6Observations r6) {
         this.makespanSeconds = makespanSeconds;
         this.logicalTaskCompletionSeconds = logicalTaskCompletionSeconds;
         this.logicalTaskCompletionStatus = logicalTaskCompletionStatus;
@@ -231,6 +297,15 @@ public final class SimulationMetrics {
         this.meanComputeTotalWaitingTimeSeconds = meanComputeTotalWaitingTimeSeconds;
         this.meanComputeTrueSlowdown = meanComputeTrueSlowdown;
         this.trueSlowdownObservationCount = trueSlowdownObservationCount;
+        this.boundedSlowdownThresholdSeconds = r6.boundedSlowdownThresholdSeconds;
+        this.totalInputReadSecondsInEnvelope = r6.totalInputReadSeconds;
+        this.totalComputeOnlyBusySeconds = totalVmModeledBusyIntervalSeconds - r6.totalInputReadSeconds;
+        this.inputReadShareOfBusyTime = totalVmModeledBusyIntervalSeconds > 0.0
+                ? r6.totalInputReadSeconds / totalVmModeledBusyIntervalSeconds
+                : 0.0;
+        this.inputReadInEnvelopeObservationCount = r6.inputReadObservationCount;
+        this.boundedSlowdownFloorClampedObservationCount = r6.clampedSlowdownCount;
+        this.boundedSlowdownFloorClampedFraction = ratio(r6.clampedSlowdownCount, trueSlowdownObservationCount);
         this.totalWaitingTimeObservationCount = totalWaitingTimeObservationCount;
         this.medianComputeTotalWaitingTimeSeconds = medianComputeTotalWaitingTimeSeconds;
         this.p95ComputeTotalWaitingTimeSeconds = p95ComputeTotalWaitingTimeSeconds;
@@ -284,7 +359,16 @@ public final class SimulationMetrics {
                 Collections.unmodifiableMap(new java.util.TreeMap<Double, Double>(fleetPerTierBusySeconds));
     }
 
-    private static final double BOUNDED_SLOWDOWN_THRESHOLD_SECONDS = 10.0;
+    /**
+     * FGCS-R6 (2026-11-25): additive observations introduced by the R6 metric audit, grouped so that the
+     * positional constructor does not grow one argument per field.
+     */
+    private static final class R6Observations {
+        double boundedSlowdownThresholdSeconds;
+        int clampedSlowdownCount;
+        double totalInputReadSeconds;
+        int inputReadObservationCount;
+    }
 
     static SimulationMetrics calculate(
             double makespan,
@@ -323,7 +407,8 @@ public final class SimulationMetrics {
         for (Integer vmId : summaries.keySet()) {
             vm.put(vmId, new MutableVmMetrics(vmId, defaultTierMipsByVm.get(vmId)));
         }
-        JobAccumulators acc = accumulateJobOutcomes(jobs, retryJobIds, timing, vm);
+        JobAccumulators acc =
+                accumulateJobOutcomes(jobs, retryJobIds, timing, vm, config.getBoundedSlowdownThresholdSeconds());
 
         return assembleMetrics(
                 makespan, jobs, taskOutcomes, sourceTasks, config, platform, jobsById, retryJobIds, timing, vm, acc);
@@ -333,8 +418,10 @@ public final class SimulationMetrics {
             List<SimulationReport.JobOutcome> jobs,
             Set<Integer> retryJobIds,
             EventTiming timing,
-            Map<Integer, MutableVmMetrics> vm) {
+            Map<Integer, MutableVmMetrics> vm,
+            double boundedSlowdownThresholdSeconds) {
         JobAccumulators acc = new JobAccumulators();
+        acc.boundedSlowdownThresholdSeconds = boundedSlowdownThresholdSeconds;
         for (SimulationReport.JobOutcome job : jobs) {
             if (job.getStatus() == Cloudlet.SUCCESS) {
                 acc.success++;
@@ -346,8 +433,13 @@ public final class SimulationMetrics {
             acc.declaredFileBandwidthCost += job.getModeledDeclaredFileBandwidthCost();
             acc.declaredFileBytes += job.getModeledDeclaredFileBytes();
             MutableVmMetrics perVm = vm.get(job.getVmId());
+            Double readSeconds = timing.envelopeInputReadSeconds.get(job.getJobId());
+            if (readSeconds != null) {
+                acc.inputReadObservationCount++;
+                acc.totalInputReadSeconds += readSeconds.doubleValue();
+            }
             if (perVm != null) {
-                perVm.add(job);
+                perVm.add(job, readSeconds == null ? 0.0 : readSeconds.doubleValue());
             }
 
             if (job.getClassType() == Parameters.ClassType.COMPUTE.value) {
@@ -399,8 +491,11 @@ public final class SimulationMetrics {
             double trueWait = job.getStartTime() - ready.doubleValue();
             double execTime = nonNegative(job.getFinishTime() - job.getStartTime());
 
-            double boundedExec = Math.max(execTime, BOUNDED_SLOWDOWN_THRESHOLD_SECONDS);
+            double boundedExec = Math.max(execTime, acc.boundedSlowdownThresholdSeconds);
             double trueSlowdown = Math.max((trueWait + execTime) / boundedExec, 1.0);
+            if (execTime < acc.boundedSlowdownThresholdSeconds) {
+                acc.clampedSlowdownCount++;
+            }
 
             acc.totalWaitingTimeSum += trueWait;
             acc.totalWaitingTimeCount++;
@@ -418,6 +513,10 @@ public final class SimulationMetrics {
     }
 
     private static final class JobAccumulators {
+        double boundedSlowdownThresholdSeconds;
+        int clampedSlowdownCount;
+        double totalInputReadSeconds;
+        int inputReadObservationCount;
         int compute;
         int stageIn;
         int success;
@@ -755,7 +854,17 @@ public final class SimulationMetrics {
                 deadline.exactTaskTimingCount,
                 taskOutcomes.size() - deadline.exactTaskTimingCount,
                 frozen.perTierBusySecondsByVm,
-                frozen.fleetPerTierBusySeconds);
+                frozen.fleetPerTierBusySeconds,
+                r6Observations(acc));
+    }
+
+    private static R6Observations r6Observations(JobAccumulators acc) {
+        R6Observations r6 = new R6Observations();
+        r6.boundedSlowdownThresholdSeconds = acc.boundedSlowdownThresholdSeconds;
+        r6.clampedSlowdownCount = acc.clampedSlowdownCount;
+        r6.totalInputReadSeconds = acc.totalInputReadSeconds;
+        r6.inputReadObservationCount = acc.inputReadObservationCount;
+        return r6;
     }
 
     private static EventTiming scanTimingEvents(List<SimulationEvent> events) {
@@ -778,6 +887,12 @@ public final class SimulationMetrics {
                             + event.getJobId() + ": decision time was already recorded at "
                             + previousDecision + " but a second event arrived at "
                             + event.getSimulationTime());
+                }
+            } else if (event.getType() == SimulationEventType.JOB_EXECUTION_STARTED && event.getJobId() != null) {
+                double read = requiredFiniteNonNegativeAttribute(event, "effectiveDataStageSeconds");
+                if (timing.envelopeInputReadSeconds.put(event.getJobId(), Double.valueOf(read)) != null) {
+                    throw new IllegalStateException(
+                            "Duplicate JOB_EXECUTION_STARTED event for job " + event.getJobId());
                 }
             } else if (event.getType() == SimulationEventType.SCHEDULING_CYCLE) {
                 timing.schedulingCycles++;
@@ -802,6 +917,7 @@ public final class SimulationMetrics {
     private static final class EventTiming {
         final Map<Integer, Double> readyTimes = new LinkedHashMap<Integer, Double>();
         final Map<Integer, Double> decisionTimes = new LinkedHashMap<Integer, Double>();
+        final Map<Integer, Double> envelopeInputReadSeconds = new LinkedHashMap<Integer, Double>();
         long totalSchedulingNanos;
         int schedulingCycles;
         long totalPlanningNanos;
@@ -964,6 +1080,18 @@ public final class SimulationMetrics {
         return trueSlowdownObservationCount;
     }
 
+    public double getBoundedSlowdownThresholdSeconds() {
+        return boundedSlowdownThresholdSeconds;
+    }
+
+    public int getBoundedSlowdownFloorClampedObservationCount() {
+        return boundedSlowdownFloorClampedObservationCount;
+    }
+
+    public double getBoundedSlowdownFloorClampedFraction() {
+        return boundedSlowdownFloorClampedFraction;
+    }
+
     public int getTotalWaitingTimeObservationCount() {
         return totalWaitingTimeObservationCount;
     }
@@ -1104,6 +1232,22 @@ public final class SimulationMetrics {
         return vmUtilizationJainFairnessIndex;
     }
 
+    public double getTotalInputReadSecondsInEnvelope() {
+        return totalInputReadSecondsInEnvelope;
+    }
+
+    public double getTotalComputeOnlyBusySeconds() {
+        return totalComputeOnlyBusySeconds;
+    }
+
+    public double getInputReadShareOfBusyTime() {
+        return inputReadShareOfBusyTime;
+    }
+
+    public int getInputReadInEnvelopeObservationCount() {
+        return inputReadInEnvelopeObservationCount;
+    }
+
     public Map<Integer, Map<Double, Double>> getPerTierBusySecondsByVm() {
         return perTierBusySecondsByVm;
     }
@@ -1168,19 +1312,28 @@ public final class SimulationMetrics {
         private final double modeledIntervalUtilization;
         private final double reportedCpuTimeOverMakespan;
 
+        /** FGCS-R6 (2026-11-25): input-read seconds folded into this VM's Job envelopes. */
+        private final double inputReadSecondsInEnvelope;
+
+        /** FGCS-R6 (2026-11-25): {@code modeledBusyIntervalSeconds - inputReadSecondsInEnvelope}. */
+        private final double computeOnlyBusySeconds;
+
         private VmMetrics(
                 int vmId,
                 int jobOutcomeCount,
                 double reportedCpuTimeSeconds,
                 double modeledBusyIntervalSeconds,
                 double modeledIntervalUtilization,
-                double reportedCpuTimeOverMakespan) {
+                double reportedCpuTimeOverMakespan,
+                double inputReadSecondsInEnvelope) {
             this.vmId = vmId;
             this.jobOutcomeCount = jobOutcomeCount;
             this.reportedCpuTimeSeconds = reportedCpuTimeSeconds;
             this.modeledBusyIntervalSeconds = modeledBusyIntervalSeconds;
             this.modeledIntervalUtilization = modeledIntervalUtilization;
             this.reportedCpuTimeOverMakespan = reportedCpuTimeOverMakespan;
+            this.inputReadSecondsInEnvelope = inputReadSecondsInEnvelope;
+            this.computeOnlyBusySeconds = modeledBusyIntervalSeconds - inputReadSecondsInEnvelope;
         }
 
         public int getVmId() {
@@ -1206,6 +1359,14 @@ public final class SimulationMetrics {
         public double getReportedCpuTimeOverMakespan() {
             return reportedCpuTimeOverMakespan;
         }
+
+        public double getInputReadSecondsInEnvelope() {
+            return inputReadSecondsInEnvelope;
+        }
+
+        public double getComputeOnlyBusySeconds() {
+            return computeOnlyBusySeconds;
+        }
     }
 
     private static final class MutableVmMetrics {
@@ -1213,6 +1374,7 @@ public final class SimulationMetrics {
         private final List<Interval> intervals = new ArrayList<Interval>();
         private int jobs;
         private double cpuTime;
+        private double inputReadSeconds;
 
         private final Double defaultTierMips;
 
@@ -1223,8 +1385,9 @@ public final class SimulationMetrics {
             this.defaultTierMips = defaultTierMips;
         }
 
-        private void add(SimulationReport.JobOutcome job) {
+        private void add(SimulationReport.JobOutcome job, double readSeconds) {
             jobs++;
+            inputReadSeconds += readSeconds;
             cpuTime += job.getCpuTime();
             intervals.add(new Interval(job.getStartTime(), job.getFinishTime()));
 
@@ -1243,7 +1406,8 @@ public final class SimulationMetrics {
                     cpuTime,
                     busy,
                     makespan > 0.0 ? busy / makespan : 0.0,
-                    makespan > 0.0 ? cpuTime / makespan : 0.0);
+                    makespan > 0.0 ? cpuTime / makespan : 0.0,
+                    inputReadSeconds);
         }
     }
 
