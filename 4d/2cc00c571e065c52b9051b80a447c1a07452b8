@@ -1,0 +1,18 @@
+simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java
+  h_adc77830afcf4d 740-752,1063-1068
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  h_adc77830afcf4d 621-628
+simulator/src/test/java/org/workflowsim/planning/ReadyBatchRoundSemanticsIntegrationTest.java
+  h_adc77830afcf4d 4,148-195,201-207,224-229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4d2cc00c571e065c52b9051b80a447c1a07452b8",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
