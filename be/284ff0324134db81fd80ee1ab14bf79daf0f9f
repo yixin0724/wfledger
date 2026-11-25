@@ -1,0 +1,21 @@
+experiments/src/main/java/org/workflowsim/experiments/standard/StandardFailureModel.java
+  s_768a25909712fc::t_d350b4798f6033 1-111
+experiments/src/test/java/org/workflowsim/experiments/standard/StandardFailureModelTest.java
+  s_768a25909712fc::t_310cc7f97ec9d8 1-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "be284ff0324134db81fd80ee1ab14bf79daf0f9f",
+  "prompts": {},
+  "sessions": {
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
