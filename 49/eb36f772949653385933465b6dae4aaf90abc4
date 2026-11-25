@@ -1,0 +1,20 @@
+experiments/studies/standard-workloads/README.md
+  h_adc77830afcf4d 1-111
+experiments/studies/standard-workloads/generate_corpus.py
+  h_adc77830afcf4d 1-318
+experiments/studies/standard-workloads/spec.json
+  h_adc77830afcf4d 1-26
+experiments/studies/standard-workloads/test_generate_corpus.py
+  h_adc77830afcf4d 1-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "49eb36f772949653385933465b6dae4aaf90abc4",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
