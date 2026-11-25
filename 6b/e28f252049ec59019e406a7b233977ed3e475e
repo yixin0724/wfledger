@@ -1,0 +1,21 @@
+docs/README.md
+  s_768a25909712fc::t_bd42c082672a7d 82
+experiments/studies/README.md
+  s_768a25909712fc::t_c0b09bd34a7e63 21-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6be28f252049ec59019e406a7b233977ed3e475e",
+  "prompts": {},
+  "sessions": {
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
