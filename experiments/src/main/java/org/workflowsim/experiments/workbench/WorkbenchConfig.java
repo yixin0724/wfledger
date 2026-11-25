@@ -598,8 +598,12 @@ public final class WorkbenchConfig {
         PlatformProfile.CostSpec costs = new PlatformProfile.CostSpec(cpuCostPerSecond, 0, 0, 0);
         PlatformProfile.Builder result = PlatformProfile.builder("workbench-platform")
                 .costs(costs)
+                // STD-V1 (2026-11-25): a finite positive decimal MB/s rate, default 15 (was a positive integer).
                 .storage(new PlatformProfile.StorageSpec(
-                        1000000000L, integer(value, "storageTransferMbPerSecond", 15, 1, Integer.MAX_VALUE)));
+                        1000000000L,
+                        value.has("storageTransferMbPerSecond")
+                                ? number(value.get("storageTransferMbPerSecond"), "storageTransferMbPerSecond", true)
+                                : 15.0));
         for (int id = 0; id < mips.size(); id++) {
             double speed = number(mips.get(id), "vmMips", true);
             if (speed > 1e12) {

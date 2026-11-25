@@ -840,14 +840,33 @@ class WorkbenchConfigTest {
         assertDoesNotThrow(() -> read(finiteZero).validateInputs(), "zero is valid for costs and arrival times");
     }
 
+    /**
+     * STD-V1 (2026-11-25): the shared-storage rate is a finite positive decimal MB/s (it was a positive integer);
+     * a fractional value is carried exactly, while zero, negative, and non-numeric values fail fast.
+     */
+    @Test
+    void storageTransferRateAcceptsFinitePositiveFractionsAndRejectsTheRest() throws Exception {
+        JsonObject fractional = base();
+        fractional.getAsJsonObject("platform").addProperty("storageTransferMbPerSecond", 2.5);
+        assertEquals(2.5, read(fractional).getPlatform().getStorage().getMaxTransferRateMbPerSecond(), 0.0);
+        JsonObject defaulted = base();
+        defaulted.getAsJsonObject("platform").remove("storageTransferMbPerSecond");
+        assertEquals(15.0, read(defaulted).getPlatform().getStorage().getMaxTransferRateMbPerSecond(), 0.0);
+        for (double invalid : new double[] {0.0, -1.0}) {
+            JsonObject root = base();
+            root.getAsJsonObject("platform").addProperty("storageTransferMbPerSecond", invalid);
+            rejectRead(root, "storageTransferMbPerSecond");
+        }
+        JsonObject text = base();
+        text.getAsJsonObject("platform").addProperty("storageTransferMbPerSecond", "fast");
+        rejectRead(text, "storageTransferMbPerSecond");
+    }
+
     @Test
     void rejectsFractionalAndOutOfRangeIntegerSettingsWithoutTruncation() throws Exception {
         JsonObject bandwidth = base();
         bandwidth.getAsJsonObject("platform").addProperty("bandwidthMbPerSecond", 1.5);
         rejectRead(bandwidth, "bandwidthMbPerSecond");
-        JsonObject storage = base();
-        storage.getAsJsonObject("platform").addProperty("storageTransferMbPerSecond", 2.5);
-        rejectRead(storage, "storageTransferMbPerSecond");
         JsonObject deadline = base();
         deadline.getAsJsonObject("simulation").addProperty("deadlineSeconds", 4.5);
         rejectRead(deadline, "deadlineSeconds");

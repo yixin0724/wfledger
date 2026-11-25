@@ -60,7 +60,7 @@ Simply replace the configuration argument of `run` with the chosen file. The pai
 | `platform.vmMips` | 1–64 positive finite values, each not exceeding `1e12`; every VM is pinned to a dedicated Host, 1 PE, SPACE_SHARED |
 | `platform.bandwidthMbPerSecond` | Positive integer endpoint bandwidth, default 1000; decimal MB/s |
 | `platform.cpuCostPerSecond` | Non-negative abstract CPU unit price, default 3; not a calibrated cloud price |
-| `platform.storageTransferMbPerSecond` | Positive integer shared-storage transfer rate, default 15; different data movement models interpret storage differently |
+| `platform.storageTransferMbPerSecond` | Finite positive shared-storage transfer rate in decimal MB/s, default 15; fractional values are allowed (STD-V1, 2026-11-25; it was a positive integer); different data movement models interpret storage differently |
 | `platform.idlePowerWatts` | Optional uniform idle power in watts, default 0 (no power model); `maxPowerWatts` must not be below it; energy metrics appear in the manifest when declared (BAT-E4.2, 2026-10-27) |
 | `platform.maxPowerWatts` | Optional uniform maximum power in watts, default 0 (no power model); with the linear power model the per-VM energy conservation law is `E = P_idle×T_sim + (P_max−P_idle)×T_busy` |
 | `platform.carbonIntensityGramsPerKWh` | Optional uniform carbon intensity in gCO₂/kWh, non-negative and finite (BAT-C3, 2026-10-28); requires the power fields — carbon multiplies the energy chain, so a declaration without `idlePowerWatts`/`maxPowerWatts` is rejected up front; emits the conditional `carbonMetrics` section (intensity family) in every run's manifest; carbon windows are not part of the Workbench surface |

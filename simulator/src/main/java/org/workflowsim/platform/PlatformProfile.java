@@ -711,11 +711,24 @@ public final class PlatformProfile {
     public static final class StorageSpec {
 
         private final long capacityMb;
-        private final int maxTransferRateMbPerSecond;
+        private final double maxTransferRateMbPerSecond;
 
-        public StorageSpec(long capacityMb, int maxTransferRateMbPerSecond) {
-            if (capacityMb <= 0L || maxTransferRateMbPerSecond <= 0) {
-                throw new IllegalArgumentException("Storage capacity and transfer rate must be positive");
+        /**
+         * Declares the legacy SHARED storage.
+         *
+         * <p>STD-V1 (2026-11-25): the transfer rate is a finite positive double in decimal MB/s (it was an
+         * {@code int}). Root cause: an integer rate cannot be calibrated to a target communication-to-computation
+         * ratio, because every CCR above the {@code 1 MB/s} ceiling was unreachable. Every integer is an exact
+         * binary64 value, so integer-rate evidence keeps its meaning bit-identically; the manifest key is
+         * unchanged. NaN, infinite, zero, or negative rates fail fast.
+         *
+         * @param capacityMb positive capacity in MB
+         * @param maxTransferRateMbPerSecond finite positive rate in decimal MB/s
+         */
+        public StorageSpec(long capacityMb, double maxTransferRateMbPerSecond) {
+            if (capacityMb <= 0L || !positiveFinite(maxTransferRateMbPerSecond)) {
+                throw new IllegalArgumentException("Storage capacity must be positive and the transfer rate finite and "
+                        + "positive: capacityMb=" + capacityMb + " rate=" + maxTransferRateMbPerSecond);
             }
             this.capacityMb = capacityMb;
             this.maxTransferRateMbPerSecond = maxTransferRateMbPerSecond;
@@ -725,7 +738,7 @@ public final class PlatformProfile {
             return capacityMb;
         }
 
-        public int getMaxTransferRateMbPerSecond() {
+        public double getMaxTransferRateMbPerSecond() {
             return maxTransferRateMbPerSecond;
         }
     }

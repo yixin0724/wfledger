@@ -23,7 +23,7 @@ public final class NacoAdapter {
         Map<Integer, Double> disk = new LinkedHashMap<Integer, Double>();
         for (CondorVM vm : vms) {
             network.put(vm.getId(), (double) vm.getBw());
-            disk.put(vm.getId(), (double) platform.getStorage().getMaxTransferRateMbPerSecond());
+            disk.put(vm.getId(), platform.getStorage().getMaxTransferRateMbPerSecond());
         }
         List<NacoTask> converted = new ArrayList<NacoTask>();
         for (Task task : tasks) {

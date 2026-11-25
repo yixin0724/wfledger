@@ -408,7 +408,7 @@ public final class P7EvidenceIndexValidator {
         }
         JsonObject storage = requireObject(actual, "storage", subject);
         requireExactLong(storage, "capacityMb", expected.getStorage().getCapacityMb(), subject + " storage");
-        requireExactInt(
+        requireExactNumber(
                 storage,
                 "maxTransferRateMbPerSecond",
                 expected.getStorage().getMaxTransferRateMbPerSecond(),

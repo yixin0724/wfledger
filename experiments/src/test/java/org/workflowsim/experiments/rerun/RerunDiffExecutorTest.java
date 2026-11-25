@@ -279,6 +279,72 @@ class RerunDiffExecutorTest {
         assertFalse(Files.exists(tempDir.resolve("sim-failure-out/rerun")));
     }
 
+    /**
+     * STD-V1 (2026-11-25): the SHARED storage rate widened from int to double. Historical manifests carry the rate
+     * as a JSON integer literal ({@code 15}); current writers emit {@code 15.0}. Contract (rerun difference
+     * contract, exact JSON value equality): both literals denote the same binary64 value, so rebuilding a
+     * historical integer-rate manifest must be bit-identical and the rerun must stay IDENTICAL_CORE without any new
+     * whitelist exemption.
+     */
+    @Test
+    void historicalIntegerStorageRateLiteralRebuildsBitIdenticallyAndStaysIdenticalCore() throws Exception {
+        Path run = copyFixtureTo("integer-rate-literal");
+        JsonObject manifest = readManifest(run);
+        JsonObject storage = manifest.getAsJsonObject("platform").getAsJsonObject("storage");
+        assertEquals(15.0, storage.get("maxTransferRateMbPerSecond").getAsDouble(), 0.0);
+        storage.addProperty("maxTransferRateMbPerSecond", Integer.valueOf(15));
+        writeManifest(run, manifest);
+        assertTrue(read(run.resolve("result.manifest.json")).contains("\"maxTransferRateMbPerSecond\": 15\n"));
+
+        RerunEvidence evidence = RerunEvidenceReader.read(run);
+        ManifestConfigRebuilder.RebuiltConfiguration rebuilt =
+                ManifestConfigRebuilder.rebuild(evidence, RerunInputResolver.resolve(evidence));
+        assertEquals(
+                Double.doubleToLongBits(15.0),
+                Double.doubleToLongBits(rebuilt.getPlatform().getStorage().getMaxTransferRateMbPerSecond()));
+
+        RerunReport report = RerunDiffExecutor.execute(run, tempDir.resolve("integer-rate-literal-out"));
+        assertEquals(RerunVerdict.IDENTICAL_CORE, report.getVerdict(), report.toString());
+    }
+
+    /** STD-V1 (2026-11-25): a fractional rate round-trips through the manifest and reruns to IDENTICAL_CORE. */
+    @Test
+    void fractionalStorageRateEvidenceRerunsToIdenticalCore() throws Exception {
+        Path run = Files.createDirectories(tempDir.resolve("fractional-rate"));
+        org.workflowsim.platform.PlatformProfile base = PlatformProfiles.homogeneousLocal("fractional-rate", 3);
+        org.workflowsim.platform.PlatformProfile.Builder builder =
+                org.workflowsim.platform.PlatformProfile.builder("fractional-rate");
+        for (org.workflowsim.platform.PlatformProfile.HostSpec host : base.getHosts()) {
+            builder.addHost(host);
+        }
+        for (org.workflowsim.platform.PlatformProfile.VmSpec vm : base.getVms()) {
+            builder.addVm(vm);
+        }
+        for (java.util.Map.Entry<Integer, Integer> pin :
+                base.getPinnedVmHostIds().entrySet()) {
+            builder.pinVmToHost(pin.getKey(), pin.getValue());
+        }
+        builder.costs(base.getCosts())
+                .storage(new org.workflowsim.platform.PlatformProfile.StorageSpec(
+                        base.getStorage().getCapacityMb(), 2.5));
+        SimulationConfig config = SimulationConfig.builder(
+                        RerunTestSupport.resourcePath("/dax/reproducibility-workflow.dax"), 3)
+                .schedulingAlgorithm(SchedulingAlgorithm.FCFS)
+                .randomSeed(91L)
+                .build();
+        RerunTestSupport.generateEvidence(run, config, builder.build());
+        assertEquals(
+                2.5,
+                readManifest(run)
+                        .getAsJsonObject("platform")
+                        .getAsJsonObject("storage")
+                        .get("maxTransferRateMbPerSecond")
+                        .getAsDouble(),
+                0.0);
+        RerunReport report = RerunDiffExecutor.execute(run, tempDir.resolve("fractional-rate-out"));
+        assertEquals(RerunVerdict.IDENTICAL_CORE, report.getVerdict(), report.toString());
+    }
+
     private Path copyFixtureTo(String name) throws Exception {
         Path run = Files.createDirectories(tempDir.resolve(name));
         RerunTestSupport.copyEvidenceFiles(fixtureRun, run);

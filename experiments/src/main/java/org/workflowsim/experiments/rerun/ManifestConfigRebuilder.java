@@ -141,7 +141,9 @@ public final class ManifestConfigRebuilder {
         JsonObject storage = requireObject(platform, "storage", "platform.storage");
         builder.storage(new PlatformProfile.StorageSpec(
                 requireLong(storage, "capacityMb", "platform.storage.capacityMb"),
-                requireInt(storage, "maxTransferRateMbPerSecond", "platform.storage.maxTransferRateMbPerSecond")));
+                // STD-V1 (2026-11-25): historical integer literals and current binary64 values both rebuild to
+                // the same double; StorageSpec rejects non-finite or non-positive rates.
+                requireDouble(storage, "maxTransferRateMbPerSecond", "platform.storage.maxTransferRateMbPerSecond")));
         builder.costs(costSpec(requireObject(platform, "costs", "platform.costs"), "platform.costs"));
         if (platform.has("sourceStorage")) {
             JsonObject source = requireObject(platform, "sourceStorage", "platform.sourceStorage");
