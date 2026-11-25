@@ -1,0 +1,82 @@
+docs/README.md
+  h_adc77830afcf4d 83
+docs/experiments/CAMPAIGNS.md
+  h_adc77830afcf4d 65-66
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 85
+docs/experiments/RERUN_DIFF_CONTRACT.md
+  h_adc77830afcf4d 52
+docs/getting-started/WORKBENCH.md
+  h_adc77830afcf4d 63
+experiments/README.md
+  h_adc77830afcf4d 46-47
+experiments/src/main/java/org/workflowsim/experiments/reference/p7/P7EvidenceIndexValidator.java
+  h_adc77830afcf4d 411
+experiments/src/main/java/org/workflowsim/experiments/rerun/ManifestConfigRebuilder.java
+  h_adc77830afcf4d 144-146
+experiments/src/main/java/org/workflowsim/experiments/standard/CcrCalibrator.java
+  h_adc77830afcf4d 1-202
+experiments/src/main/java/org/workflowsim/experiments/standard/DeadlineInterpolation.java
+  h_adc77830afcf4d 1-129
+experiments/src/main/java/org/workflowsim/experiments/standard/PairedEffectSize.java
+  h_adc77830afcf4d 1-132
+experiments/src/main/java/org/workflowsim/experiments/standard/StandardFailureModel.java
+  h_adc77830afcf4d 1-111
+experiments/src/main/java/org/workflowsim/experiments/standard/StandardPlatforms.java
+  h_adc77830afcf4d 1-194
+experiments/src/main/java/org/workflowsim/experiments/standard/StandardStudy.java
+  h_adc77830afcf4d 1-954
+experiments/src/main/java/org/workflowsim/experiments/workbench/WorkbenchConfig.java
+  h_adc77830afcf4d 601,603-606
+experiments/src/test/java/org/workflowsim/experiments/rerun/RerunDiffExecutorTest.java
+  h_adc77830afcf4d 282-347
+experiments/src/test/java/org/workflowsim/experiments/standard/CcrCalibratorTest.java
+  h_adc77830afcf4d 1-81
+experiments/src/test/java/org/workflowsim/experiments/standard/DeadlineInterpolationTest.java
+  h_adc77830afcf4d 1-63
+experiments/src/test/java/org/workflowsim/experiments/standard/PairedEffectSizeTest.java
+  h_adc77830afcf4d 1-46
+experiments/src/test/java/org/workflowsim/experiments/standard/StandardFailureModelTest.java
+  h_adc77830afcf4d 1-58
+experiments/src/test/java/org/workflowsim/experiments/standard/StandardPlatformsTest.java
+  h_adc77830afcf4d 1-75
+experiments/src/test/java/org/workflowsim/experiments/standard/StandardStudySmokeTest.java
+  h_adc77830afcf4d 1-177
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchConfigTest.java
+  h_adc77830afcf4d 843-864
+experiments/studies/README.md
+  h_adc77830afcf4d 28-33
+experiments/studies/standard/PROTOCOL.md
+  h_adc77830afcf4d 1-159
+scripts/test-study-verifiers.py
+  h_adc77830afcf4d 309-323
+scripts/verify-study-evidence.py
+  h_adc77830afcf4d 88-89,91
+simulator/src/main/java/org/cloudbus/cloudsim/HarddriveStorage.java
+  h_adc77830afcf4d 187-202
+simulator/src/main/java/org/workflowsim/experiment/ExperimentManifestWriter.java
+  h_adc77830afcf4d 502-506
+simulator/src/main/java/org/workflowsim/experiment/WorkflowModelReference.java
+  h_adc77830afcf4d 180,211,226
+simulator/src/main/java/org/workflowsim/planning/PlanningContext.java
+  h_adc77830afcf4d 21
+simulator/src/main/java/org/workflowsim/planning/naco/NacoAdapter.java
+  h_adc77830afcf4d 26
+simulator/src/main/java/org/workflowsim/platform/PlatformProfile.java
+  h_adc77830afcf4d 714-731,741
+simulator/src/test/java/org/workflowsim/experiment/ControlledSharedStorageIndependentReferenceTest.java
+  h_adc77830afcf4d 70-99
+simulator/src/test/java/org/workflowsim/platform/PlatformProfileTest.java
+  h_adc77830afcf4d 87-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7bfae09d083292decb7ef4d840578437c79d7123",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
