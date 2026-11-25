@@ -1,0 +1,16 @@
+scripts/test-verify-workload-corpus.py
+  h_adc77830afcf4d 1-237
+scripts/verify-workload-corpus.py
+  h_adc77830afcf4d 1-352
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6055cd735062b545dfe115a175f84ff5e1ea7caf",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
