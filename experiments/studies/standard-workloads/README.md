@@ -1,0 +1,111 @@
+# WfGen Standard-Workloads Corpus
+
+## Purpose and evidence boundary
+
+This directory holds the declarative specification and generator for
+[`datasets/wfgen-standard/`](<../../../datasets/wfgen-standard/INDEX.json>). It is a
+reproducible, statistically usable **WfGen synthetic** workload corpus: 20 independently
+seeded instances for each supported (recipe, size) pair of eight WfCommons 1.6 recipes.
+It replaces the role of the earlier 42-instance WfGen collection, which came from an
+external project and cannot be regenerated here (R7-WORKLOAD, 2026-11-25).
+
+The instances are synthetic. WfCommons recipes sample graph structure, task runtimes, and
+file sizes from distributions learned from historical executions. They are not traces of a
+production execution. They must not be mixed into one workload population with WfInstances
+(derived from real executions) or with the classic DAX inputs; see the
+[dataset rules](<../../../datasets/README.md>).
+
+## Files
+
+| File | Role |
+| --- | --- |
+| [spec.json](<spec.json>) | Corpus specification: recipes, requested sizes, instances per size, base seed, declared exclusions, retained sizes |
+| [generate_corpus.py](<generate_corpus.py>) | The generator. It is the only component that imports WfCommons |
+| [test_generate_corpus.py](<test_generate_corpus.py>) | Generator self-test: canonicalization contract, byte-identical reruns, and a golden regression against the committed index |
+
+The pure-stdlib verifier `scripts/verify-workload-corpus.py` and its self-test check the
+corpus. It needs no WfCommons. The JUnit test `WfgenStandardCorpusParseTest` in the
+experiments module parses every committed instance with `WfCommonsJsonParser`.
+
+## Environment
+
+WfCommons is a generation-time tool only. The simulator and `scripts/` never import it.
+Generation uses a dedicated virtual environment with `wfcommons==1.6`. The recorded
+environment is Python 3.12.10, numpy 2.5.5, scipy 1.18.1, networkx 3.7, and pandas 3.1.1;
+`GENERATION.json` records the versions that were actually used. A different numpy or
+WfCommons version may legitimately produce different samples. In that case the index
+hashes detect the drift, and the result is a new corpus version, not a silent replacement.
+
+```bash
+MPLCONFIGDIR=/tmp/mpl <venv>/bin/python -B \
+  experiments/studies/standard-workloads/generate_corpus.py \
+  --spec experiments/studies/standard-workloads/spec.json \
+  --output datasets/wfgen-standard
+python3 -B scripts/verify-workload-corpus.py datasets/wfgen-standard   # hashes + structure
+python3 -B scripts/check-dataset-indexes.py                            # whole dataset chain
+```
+
+To rebuild the index after a deliberate new corpus version, generate the complete corpus
+and run `python3 -B scripts/verify-workload-corpus.py datasets/wfgen-standard --write-index`.
+Then re-anchor `index_sha256` in `datasets/INDEX.json`.
+
+## Determinism rules
+
+1. **Per-instance seed.** `seed = int.from_bytes(SHA-256("<base_seed>:<recipe>:<requested_tasks>:<index>")[:4], "big")`.
+   `random.seed(seed)` and `numpy.random.seed(seed)` run immediately before
+   `WorkflowGenerator(<Recipe>.from_num_tasks(requested_tasks)).build_workflow()`.
+   The base seed is `20261125`.
+2. **File IDs.** WfCommons names files with `uuid4()`, so the generator renames every
+   declared file to `<task_id>.<in|out><ordinal><extension>`. Here `<task_id>` is the first
+   task, in ascending task-ID order, that references the file; that task's `inputFiles` are
+   scanned before its `outputFiles`. `<ordinal>` is the 0-based position in that list,
+   zero-padded to at least three digits (BLAST concatenation tasks have more than 999
+   inputs). `<extension>` is the recipe's extension key, with a leading dot added when the
+   key is bare (for example Epigenomics `maq` becomes `.maq`, BLAST `None` becomes `.None`).
+   A shared intermediate file therefore carries its producer's name whenever the producer
+   sorts first. The generator fails when a file ID lacks a uuid4 prefix, when declared and
+   referenced file sets differ, or when canonical names collide.
+3. **Host stamps.** `createdAt`, `workflow.execution.executedAt`, and `author` (WfCommons
+   records the login name) are fixed to `1970-01-01T00:00:00+00:00` and a constant author.
+   Everything else is WfCommons output.
+4. **Serialization.** `json.dumps(sort_keys=True, separators=(",", ":"), ensure_ascii=True)`
+   plus a trailing newline.
+
+Generation is independent of `PYTHONHASHSEED`: hashes were identical under 0, 1, and 12345.
+Two complete generations of all 360 instances were byte-identical (`diff -r` empty).
+
+## Scope and exclusions
+
+Requested sizes are 50, 100, and 1000. A WfCommons recipe cannot synthesize a graph smaller
+than its base graph, so the specification declares these exclusions explicitly. The
+generator re-confirms each one and fails if an excluded size turns out to build:
+
+| Recipe | Excluded size | WfCommons 1.6 reason |
+| --- | --- | --- |
+| montage | 50 | base graph has 60 nodes |
+| seismology | 50, 100 | base graph has 103 nodes |
+| 1000genome | 50 | base graph has 54 nodes |
+| cycles | 50 | base graph has 69 nodes |
+| soykb | 50 | base graph has 98 nodes |
+
+WfCommons returns slightly fewer tasks than requested (for example 100 yields 95 to 98 tasks).
+The index records both `requested_tasks` and the actual `num_tasks`. Statistical units should
+use the actual structure, not the requested label.
+
+## Retention
+
+The n50 and n100 instances (200 files, about 13.6 MB) are committed. The n1000 instances
+(160 files, about 134 MB) exceed the repository's size budget for dataset fixtures. They are
+listed in the index with `retained_in_standard_checkout: false` and their SHA-256. The
+generator recreates them byte-identically, and `datasets/wfgen-standard/*/n1000/` is
+gitignored.
+
+## Using the corpus in a study
+
+- Declare the (recipe, size) cells and the instance indexes before running, and keep all 20
+  instances of a cell. Do not select instances after seeing algorithm outcomes.
+- The 20 instances of a cell are independent draws from the recipe's generative model. They
+  are not independent draws from a real application population. Aggregate random
+  simulation seeds within an instance first.
+- Report the corpus identity (`spec_sha256` and the index hash anchored in
+  `datasets/INDEX.json`) together with the instance hashes.

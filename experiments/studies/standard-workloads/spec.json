@@ -1,0 +1,26 @@
+{
+  "corpus": "wfgen-standard-v1",
+  "description": "WfCommons 1.6 WfGen synthetic standard-workloads corpus: eight recipes, 20 instances per (recipe, requested size).",
+  "generator": "experiments/studies/standard-workloads/generate_corpus.py",
+  "wfcommons_version": "1.6",
+  "base_seed": 20261125,
+  "instances_per_size": 20,
+  "retained_sizes": [50, 100],
+  "recipes": [
+    {"recipe": "montage", "sizes": [100, 1000],
+     "excluded_sizes": [{"size": 50, "reason": "WfCommons 1.6 Montage base graph has 60 nodes; smaller graphs cannot be synthesized"}]},
+    {"recipe": "epigenomics", "sizes": [50, 100, 1000]},
+    {"recipe": "seismology", "sizes": [1000],
+     "excluded_sizes": [
+       {"size": 50, "reason": "WfCommons 1.6 Seismology base graph has 103 nodes; smaller graphs cannot be synthesized"},
+       {"size": 100, "reason": "WfCommons 1.6 Seismology base graph has 103 nodes; smaller graphs cannot be synthesized"}]},
+    {"recipe": "blast", "sizes": [50, 100, 1000]},
+    {"recipe": "1000genome", "sizes": [100, 1000],
+     "excluded_sizes": [{"size": 50, "reason": "WfCommons 1.6 1000Genome base graph has 54 nodes; smaller graphs cannot be synthesized"}]},
+    {"recipe": "cycles", "sizes": [100, 1000],
+     "excluded_sizes": [{"size": 50, "reason": "WfCommons 1.6 Cycles base graph has 69 nodes; smaller graphs cannot be synthesized"}]},
+    {"recipe": "soykb", "sizes": [100, 1000],
+     "excluded_sizes": [{"size": 50, "reason": "WfCommons 1.6 SoyKB base graph has 98 nodes; smaller graphs cannot be synthesized"}]},
+    {"recipe": "srasearch", "sizes": [50, 100, 1000]}
+  ]
+}
