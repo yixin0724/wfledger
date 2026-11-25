@@ -1,0 +1,14 @@
+docs/advanced/MUTATION_GATE.md
+  h_adc77830afcf4d 92-95,130,135,141
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f94173cfb675729b09c3d7fba769e80f0252ff30",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
