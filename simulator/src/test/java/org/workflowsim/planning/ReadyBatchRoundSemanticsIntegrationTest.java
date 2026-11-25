@@ -1,6 +1,7 @@
 package org.workflowsim.planning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 
@@ -144,12 +145,66 @@ class ReadyBatchRoundSemanticsIntegrationTest {
         assertEquals(6.21, report.getMakespan(), 1.0e-9);
     }
 
+    /**
+     * FGCS-R6 (2026-11-25): ready time of a VM whose submission is still in flight. Only depth-2 Jobs
+     * carry a queue delay {@code D} (Weibull, scale 10, shape 100, so {@code D} lies near 10 s; it is a
+     * sampled input read back from the JOB_DISPATCHED event). Roots p, r, k, m have 1000, 6000, 1000 and
+     * 1000 MI (ETC on (VM 0, VM 1): p, k, m (2, 0.5), r (12, 3)); a (8000 MI, ETC (16, 4)) is the
+     * depth-2 child of p. Max-Min at 0.21: minima 0.5, 3, 0.5, 0.5, so r to VM 1 (r1 = 3); then p, k, m
+     * all give min(2, 3.5) = 2 on VM 0 and the lower Job ID p is assigned (r0 = 2); k then gives
+     * min(4, 3.5) on VM 1 (r1 = 3.5) and m min(4, 4) ties to VM 0. Dispatched: r on VM 1, p on VM 0.
+     * At 2.21 p returns (r1 = 1): a gives min(16, 5) = 5 and is assigned first (r1 = 5), then k
+     * (lower ID than m) gives min(2, 5.5) on VM 0, then m min(4, 5.5) on VM 0; k starts on VM 0. At
+     * 3.21 r returns (r0 = 1): a gives min(17, 4) = 4 on VM 1 and is dispatched with delay {@code D};
+     * m gives min(3, 4.5) on the busy VM 0. At 4.21 k returns while a has not reached the datacenter
+     * ({@code 3.21 + D > 4.21}): the ready time of VM 1 is the in-flight estimate
+     * {@code (3.21 + D + 4) - 4.21 = D + 3}, so m compares 2 on VM 0 with {@code D + 3.5} and starts
+     * on VM 0 at 4.21 (ending 6.21). Treating VM 1 as ready now would compare 2 with 0.5 and keep m
+     * queued until a returns. a starts at {@code 3.21 + D} and the makespan is {@code 7.21 + D}.
+     */
+    @Test
+    void anInFlightSubmissionContributesItsPredictedReadyTime() throws Exception {
+        Path workflow = PlanningRegressionFixtures.workflow(
+                directory,
+                "in-flight.dax",
+                job("p", 1) + job("r", 6) + job("k", 1) + job("m", 1) + job("a", 8)
+                        + "<child ref=\"a\"><parent ref=\"p\"/></child>");
+        org.workflowsim.utils.OverheadModelConfig overhead = org.workflowsim.utils.OverheadModelConfig.builder()
+                .queueDelays(java.util.Collections.singletonMap(
+                        2,
+                        org.workflowsim.utils.DistributionSpec.of(
+                                org.workflowsim.utils.DistributionGenerator.DistributionFamily.WEIBULL, 10.0, 100.0)))
+                .build();
+        SimulationReport report = runReadyTimeCase(SchedulingAlgorithm.READY_BATCH_MAXMIN, workflow, overhead);
+        double delay = Double.NaN;
+        for (org.workflowsim.experiment.SimulationEvent event : report.getEvents()) {
+            if (event.getType() == org.workflowsim.experiment.SimulationEventType.JOB_DISPATCHED
+                    && event.getTaskIds() != null
+                    && event.getTaskIds().contains(Integer.valueOf(5))) {
+                delay = ((Number) event.getAttributes().get("queueDelaySeconds")).doubleValue();
+            }
+        }
+        assertTrue(delay > 1.0, "the submission of a must still be in flight at 4.21: D = " + delay);
+        assertPlacement(report, 2, 1, 0.21);
+        assertPlacement(report, 1, 0, 0.21);
+        assertPlacement(report, 3, 0, 2.21);
+        assertPlacement(report, 5, 1, 3.21 + delay);
+        assertPlacement(report, 4, 0, 4.21);
+        assertEquals(7.21 + delay, report.getMakespan(), 1.0e-9);
+    }
+
     private static String braunCase() {
         return job("a", 4) + job("b", 1) + job("c", 8);
     }
 
     private SimulationReport runReadyTimeCase(SchedulingAlgorithm algorithm, String jobs) throws Exception {
-        Path workflow = PlanningRegressionFixtures.workflow(directory, "ready-time.dax", jobs);
+        return runReadyTimeCase(
+                algorithm, PlanningRegressionFixtures.workflow(directory, "ready-time.dax", jobs), null);
+    }
+
+    private SimulationReport runReadyTimeCase(
+            SchedulingAlgorithm algorithm, Path workflow, org.workflowsim.utils.OverheadModelConfig overhead)
+            throws Exception {
         PlatformProfile.Builder platform = PlatformProfile.builder("ready-time-rounds")
                 .storage(new PlatformProfile.StorageSpec(1_000_000_000L, 20));
         double[] mips = {500.0, 2000.0};
@@ -166,10 +221,12 @@ class ReadyBatchRoundSemanticsIntegrationTest {
                             PlatformProfile.CloudletSchedulerMode.SPACE_SHARED))
                     .pinVmToHost(id, id);
         }
-        SimulationConfig config = SimulationConfig.builder(workflow.toString(), mips.length)
-                .schedulingAlgorithm(algorithm)
-                .build();
-        return new SimulationRunner().run(config, platform.build());
+        SimulationConfig.Builder config =
+                SimulationConfig.builder(workflow.toString(), mips.length).schedulingAlgorithm(algorithm);
+        if (overhead != null) {
+            config.overheadModel(overhead);
+        }
+        return new SimulationRunner().run(config.build(), platform.build());
     }
 
     private static void assertPlacement(SimulationReport report, int taskId, int vmId, double start) {

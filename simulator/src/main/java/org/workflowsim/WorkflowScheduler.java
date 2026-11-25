@@ -618,6 +618,14 @@ public class WorkflowScheduler extends DatacenterBroker {
         CondorVM vm = findCreatedVm(cloudlet.getVmId());
 
         vm.setState(WorkflowSimTags.VM_STATUS_IDLE);
+        // FGCS-R6 (2026-11-25): the returned attempt (completed or ended at its failure instant) no
+        // longer defines the VM's ready time; an idle VM is ready now.
+        Object[] attempt = dispatchedAttempts.get(vm.getId());
+        if (attempt == null || attempt[0] != job) {
+            throw new IllegalStateException(getName() + " received Job " + job.getCloudletId() + " from VM "
+                    + vm.getId() + " which is not the attempt dispatched to that VM");
+        }
+        dispatchedAttempts.remove(vm.getId());
 
         double delay = 0.0;
         if (Parameters.getOverheadParams().getPostDelay() != null) {

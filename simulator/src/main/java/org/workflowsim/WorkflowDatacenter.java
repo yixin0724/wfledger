@@ -715,19 +715,6 @@ public class WorkflowDatacenter extends Datacenter {
     }
 
     /**
-     * Shortens a failing attempt so that it ends at its failure instant.
-     *
-     * <p>FGCS-R5 (2026-11-24): root cause - the failure model only flagged an attempt after it had run
-     * its whole length, so the VM stayed busy and was charged energy and cost until the modeled finish.
-     * The executable length becomes the stage-in MI plus {@code ceil((f - computeStart) · mips)} compute
-     * MI. The space-shared scheduler then completes and frees the VM at the first whole-MI boundary at or
-     * after {@code f} (at most {@code 1/mips} later, the granularity every cloudlet already has, and never
-     * earlier than the kernel completion guard), and no completion event of the discarded remainder is
-     * left in the future queue.
-     *
-     * @return the new estimated execution seconds of the envelope
-     */
-    /**
      * Returns the no-failure completion instant of the attempt a VM is running.
      *
      * <p>FGCS-R6 (2026-11-25): the value is fixed at submission as
@@ -750,6 +737,19 @@ public class WorkflowDatacenter extends Datacenter {
         return record[1];
     }
 
+    /**
+     * Shortens a failing attempt so that it ends at its failure instant.
+     *
+     * <p>FGCS-R5 (2026-11-24): root cause - the failure model only flagged an attempt after it had run
+     * its whole length, so the VM stayed busy and was charged energy and cost until the modeled finish.
+     * The executable length becomes the stage-in MI plus {@code ceil((f - computeStart) · mips)} compute
+     * MI. The space-shared scheduler then completes and frees the VM at the first whole-MI boundary at or
+     * after {@code f} (at most {@code 1/mips} later, the granularity every cloudlet already has, and never
+     * earlier than the kernel completion guard), and no completion event of the discarded remainder is
+     * left in the future queue.
+     *
+     * @return the new estimated execution seconds of the envelope
+     */
     private double truncateAtFailure(Job job, CondorVM vm, long stageInMi) {
         if (job.getTaskList().size() != 1) {
             throw new IllegalStateException("A failing attempt must contain exactly one Task under clustering NONE; "
@@ -1060,6 +1060,12 @@ public class WorkflowDatacenter extends Datacenter {
                             FailureGenerator.applySubmittedOutcome((Job) cl);
                         }
                         register(cl);
+                        // FGCS-R6 (2026-11-25): a returned attempt (successful or failed at its failure
+                        // instant) no longer occupies its VM, so its no-failure completion must not be read.
+                        double[] running = runningAttemptCompletions.get(vm.getId());
+                        if (running != null && (int) running[0] == cl.getCloudletId()) {
+                            runningAttemptCompletions.remove(vm.getId());
+                        }
                         sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
                     }
                 }
