@@ -20,6 +20,12 @@ They are controlled composite inputs, not new empirical workflow traces.
 
 ## Currently executable protocols
 
+The [standard study protocol](<standard/PROTOCOL.md>) (`standard-study-v1`, STD-V1 2026-11-25) declares the
+standard design for new same-layer comparisons: bounded-spread heterogeneous fleets, calibrated CCR, workflow
+instances as pairing units, paired Wilcoxon with Holm and effect sizes. It is a design and driver; no full
+matrix has been executed under it.
+
+
 [Protocol revisions and certification scope](<PROTOCOL_COMPATIBILITY.md>)
 is the single maintained register of the current protocol IDs, the accepted historical
 identities, and the full/smoke plan-unit counts; this page does not repeat that table.
