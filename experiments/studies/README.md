@@ -18,6 +18,11 @@ The [makespan-scale inputs](<makespan-scale/README.md>) document the exact five-
 the 5000-task Montage, CyberShake, and Inspiral workflows used by the standard scale configuration.
 They are controlled composite inputs, not new empirical workflow traces.
 
+The [WfGen standard-workloads corpus](<standard-workloads/README.md>) documents the declarative
+specification and the byte-reproducible generator behind `datasets/wfgen-standard/`: eight
+WfCommons 1.6 recipes, 20 seeded instances per supported (recipe, size). These are synthetic
+WfGen inputs, not traces.
+
 ## Currently executable protocols
 
 [Protocol revisions and certification scope](<PROTOCOL_COMPATIBILITY.md>)
