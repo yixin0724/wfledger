@@ -89,6 +89,10 @@ closed with dedicated boundary/conservation tests at that time.
 | M73 | A failed attempt runs to its modeled completion instead of ending at the failure | Mid-execution failure (FGCS-R5) |
 | M74 | CRCH placement ignores the saved work on the checkpointing VM | CRCH same- versus different-VM placement (FGCS-R5) |
 | M75 | CRCH resumption charges a restore overhead beyond the lost work | CRCH no restore term (FGCS-R5) |
+| M76 | Online Min-Min/Max-Min/MCT ignore the machine ready time of busy VMs | Machine ready time `r_v` in `CT = r_v + ETC` (FGCS-R6, 2026-11-25) |
+| M77 | Online Min-Min/Max-Min/MCT do not update `r_v` after an assignment | Braun et al. (2001) ready-time update step (FGCS-R6) |
+| M78 | Late binding dispatches a Job that is not the first plan of its idle VM | Late binding: one first plan per idle VM (FGCS-R6) |
+| M79 | Late binding dispatches a Job planned behind a busy VM | Late binding: busy-VM plans stay queued (FGCS-R6) |
 
 The set is deliberately small and **registered**: it is a canary battery over the semantic
 axes that carry research claims, not an exhaustive mutation score for the whole codebase.
@@ -123,18 +127,18 @@ allowlist omission. M31 (2026-11-04, B5) adds the profile semantic-fingerprint a
 admitted-copy count must be rejected by the independent comparator, not hidden by timing. M32
 (2026-11-05, R-PAPER-01) adds the CaWoSched green-window selection axis. M33 (R-PAPER-01B)
 adds the power-weighted slack-score axis. M34/M35 (R-PAPER-01C/D) add missing-link and exact-DP
-axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) and M59 (R-AUDIT-01) were retired with the Network-Aware HEFT removal (FGCS-R3, 2026-11-24). M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms. M66/M67 (R-EXP-01) add retry dependency and remaining-work axes. M71 (FGCS-R5, 2026-11-24) adds the EBPSM Algorithm 3 budget-update axis. M72–M75 (FGCS-R5, 2026-11-24) add the per-attempt checkpoint-overhead, mid-execution-failure, VM-local placement and no-restore-term axes; M50 was re-derived from failed-VM avoidance to VM-local credit by lead adjudication, and M49/M64/M67/M69 were re-anchored to the new code.
+axes. M36 (R-PAPER-02) adds the CWS DAG-rank axis. M37/M38 (R-PAPER-03) add DNC and GPX axes. M39 (R-PAPER-04) adds the Reshi prediction-error axis. M40 (R-PAPER-05) adds the GreenHEFT energy-selection axis. M41/M42 (R-PAPER-06) add MOHEFT dominance and balanced-choice axes. M43/M44 (R-PAPER-07) add IC-PCP deadline and cost axes. M45 (R-PAPER-08) and M59 (R-AUDIT-01) were retired with the Network-Aware HEFT removal (FGCS-R3, 2026-11-24). M46/M47 (R-PAPER-09) add EBPSM cache and budget axes. M48 (R-PAPER-10) adds the DVFS energy/deadline gate. M49/M50 (R-PAPER-11) add CRCH recovery axes. M51/M52 (R-PAPER-12) add DHEFT bandwidth and parent-finish axes. M53 (R-COMPARE-02) guards direct planner-cost attachment. M54–M65 (R-AUDIT-01) add the corrected algorithm and metric mechanisms. M66/M67 (R-EXP-01) add retry dependency and remaining-work axes. M71 (FGCS-R5, 2026-11-24) adds the EBPSM Algorithm 3 budget-update axis. M72–M75 (FGCS-R5, 2026-11-24) add the per-attempt checkpoint-overhead, mid-execution-failure, VM-local placement and no-restore-term axes; M50 was re-derived from failed-VM avoidance to VM-local credit by lead adjudication, and M49/M64/M67/M69 were re-anchored to the new code. M76–M79 (FGCS-R6, 2026-11-25) add the machine-ready-time, ready-time-update, first-plan-only and no-busy-dispatch axes of the online Min-Min/Max-Min/MCT late binding; verified 4/4 KILLED at the killers stage.
 
 ## Usage
 
 ```bash
-# Simulator family (~5–10 min for the 69 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
+# Simulator family (~5–10 min for the 73 registered canaries; requires a clean Git tree and exclusive run — no parallel builds)
 python3 -B scripts/mutation-gate.py --output <new-report.json>
 
 # Experiments family (one Workbench canary, same clean/exclusive requirement)
 python3 -B scripts/mutation-gate.py --module experiments --output <new-experiments-report.json>
 
-# Both families sequentially (71 canaries total)
+# Both families sequentially (75 canaries total)
 python3 -B scripts/mutation-gate.py --all-modules --output <new-report.json>
 
 # Ledger + anchor liveness only (no mutation, no Maven; cheap periodic preflight)
