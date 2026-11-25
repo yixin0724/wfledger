@@ -1,6 +1,7 @@
 package org.workflowsim.experiment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -156,13 +157,19 @@ class AlgorithmCatalogTest {
      * FGCS-R3 (2026-11-24): every algorithm whose decision semantics changed in the FGCS-R3 corrections declares
      * a new machine-readable implementationRevision, so manifests written before the change cannot impersonate the
      * corrected algorithm. Tags follow the existing CPOP/PEFT pattern (rule summary plus revision suffix).
+     *
+     * <p>FGCS-R6 (2026-11-25): the ready-batch Min-Min/Max-Min/MCT tags advance to V3 for machine-ready-time
+     * late binding, and their decision rules and limitations must name the ready time rather than idle-VM-only
+     * candidates.
      */
     @Test
     void fgcsR3CorrectedSchedulersDeclareRevisedImplementationTags() {
         Object[][] expected = {
-            {Parameters.SchedulingAlgorithm.READY_BATCH_MINMIN, "READY_BATCH_MINMIN_CHARGED_SHARED_READ_ENVELOPE_V2"},
-            {Parameters.SchedulingAlgorithm.READY_BATCH_MAXMIN, "READY_BATCH_MAXMIN_CHARGED_SHARED_READ_ENVELOPE_V2"},
-            {Parameters.SchedulingAlgorithm.READY_BATCH_MCT, "READY_BATCH_MCT_CHARGED_SHARED_READ_ENVELOPE_V2"},
+            {Parameters.SchedulingAlgorithm.READY_BATCH_MINMIN, "READY_BATCH_MINMIN_MACHINE_READY_TIME_LATE_BINDING_V3"
+            },
+            {Parameters.SchedulingAlgorithm.READY_BATCH_MAXMIN, "READY_BATCH_MAXMIN_MACHINE_READY_TIME_LATE_BINDING_V3"
+            },
+            {Parameters.SchedulingAlgorithm.READY_BATCH_MCT, "READY_BATCH_MCT_MACHINE_READY_TIME_LATE_BINDING_V3"},
             {Parameters.SchedulingAlgorithm.EBPSM, "EBPSM_WORKFLOW_BUDGET_ALGORITHM3_UPDATE_V3"},
             {Parameters.SchedulingAlgorithm.CRCH, "CRCH_MID_EXECUTION_FAILURE_VM_LOCAL_CHECKPOINT_V3"}
         };
@@ -172,6 +179,12 @@ class AlgorithmCatalogTest {
                     .build();
             Map<String, Object> scheduler = nested(AlgorithmCatalog.forConfiguration(config), "scheduler");
             assertEquals(row[1], scheduler.get("implementationRevision"), String.valueOf(row[0]));
+            if (String.valueOf(row[0]).startsWith("READY_BATCH_M")) {
+                String rule = String.valueOf(scheduler.get("decisionRule"));
+                assertTrue(rule.contains("machine ready time"), rule);
+                assertFalse(rule.contains("idle-VM"), rule);
+                assertFalse(String.valueOf(scheduler.get("limitations")).contains("busy VMs are not candidates"));
+            }
         }
     }
 

@@ -216,28 +216,28 @@ public final class AlgorithmCatalog {
                 values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
                 values.put(
                         "decisionRule",
-                        "Immediate-mode idle-VM Min-Min: one Job per idle VM per round, minimum envelope time"
-                                + " (compute plus charged SHARED read), recomputed after each assignment");
+                        "Braun 2001 Min-Min with machine ready time: completion time r_v + envelope (compute plus"
+                                + " charged SHARED read) over all compatible VMs, smallest per-Job minimum assigned,"
+                                + " r_v updated; only the first planned Job of each idle VM is dispatched");
                 // FGCS-R3 (2026-11-24) B1: V2 adds the runtime-charged SHARED input read to the envelope.
-                values.put("implementationRevision", "READY_BATCH_MINMIN_CHARGED_SHARED_READ_ENVELOPE_V2");
+                // FGCS-R6 (2026-11-25): V3 ranks r_v + envelope with late binding.
+                values.put("implementationRevision", "READY_BATCH_MINMIN_MACHINE_READY_TIME_LATE_BINDING_V3");
                 values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
-                values.put(
-                        "limitations",
-                        limitations("Not the Braun 2001 batch Min-Min heuristic: busy VMs are not candidates."));
+                values.put("limitations", readyTimeLimitations());
                 break;
             case READY_BATCH_MAXMIN:
                 values.put("decisionLayer", "ONLINE_READY_JOB");
                 values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
                 values.put(
                         "decisionRule",
-                        "Immediate-mode idle-VM Max-Min: one Job per idle VM per round, maximum of minimum envelope"
-                                + " times (compute plus charged SHARED read), recomputed after each assignment");
+                        "Braun 2001 Max-Min with machine ready time: completion time r_v + envelope (compute plus"
+                                + " charged SHARED read) over all compatible VMs, largest per-Job minimum assigned,"
+                                + " r_v updated; only the first planned Job of each idle VM is dispatched");
                 // FGCS-R3 (2026-11-24) B1: V2 adds the runtime-charged SHARED input read to the envelope.
-                values.put("implementationRevision", "READY_BATCH_MAXMIN_CHARGED_SHARED_READ_ENVELOPE_V2");
+                // FGCS-R6 (2026-11-25): V3 ranks r_v + envelope with late binding.
+                values.put("implementationRevision", "READY_BATCH_MAXMIN_MACHINE_READY_TIME_LATE_BINDING_V3");
                 values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
-                values.put(
-                        "limitations",
-                        limitations("Not the Braun 2001 batch Max-Min heuristic: busy VMs are not candidates."));
+                values.put("limitations", readyTimeLimitations());
                 break;
             case DATA:
                 dataScheduler(values);
@@ -269,18 +269,27 @@ public final class AlgorithmCatalog {
         values.put("inputDomain", "VALID_DAG_AFTER_ENGINE_DEPENDENCY_RELEASE");
         values.put(
                 "decisionRule",
-                "Immediate-mode idle-VM MCT: strict ready-arrival FIFO, minimum envelope time (compute plus"
-                        + " charged SHARED read); blocks at the first unplaceable Job");
+                "Maheswaran 1999 immediate-mode MCT with machine ready time: Jobs in queue order each take the"
+                        + " compatible VM minimizing r_v + envelope (compute plus charged SHARED read), r_v updated;"
+                        + " only the first planned Job of each idle VM is dispatched");
         // FGCS-R3 (2026-11-24) B1: V2 adds the runtime-charged SHARED input read to the envelope.
-        values.put("implementationRevision", "READY_BATCH_MCT_CHARGED_SHARED_READ_ENVELOPE_V2");
+        // FGCS-R6 (2026-11-25): V3 ranks r_v + envelope with late binding.
+        values.put("implementationRevision", "READY_BATCH_MCT_MACHINE_READY_TIME_LATE_BINDING_V3");
         values.put("verification", "CONTROLLED_MODEL_REGRESSION_COVERED");
-        values.put(
-                "limitations",
-                limitations(
-                        "Not the offline independent-task MCT heuristic; "
-                                + "it does not reserve future VM availability.",
-                        "For a fixed positive Job length and the same idle compatible candidates, "
-                                + "minimizing envelope time normally selects the maximum MIPS."));
+        values.put("limitations", readyTimeLimitations());
+    }
+
+    /**
+     * Limitations shared by the machine-ready-time online heuristics (FGCS-R6, 2026-11-25).
+     *
+     * @return limitation list
+     */
+    private static List<String> readyTimeLimitations() {
+        return limitations(
+                "Machine ready time is the no-failure remaining envelope of the running attempt; a future failure"
+                        + " is ignored and frequency-tier scaling applied after the decision is not estimated.",
+                "Not work-conserving: a Job may wait for a busy faster VM while a slower VM idles, as in the"
+                        + " literature heuristics; unplanned Jobs are re-planned at the next round.");
     }
 
     private static void dataScheduler(Map<String, Object> values) {
