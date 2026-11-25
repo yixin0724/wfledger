@@ -1,0 +1,26 @@
+docs/README.md
+  h_adc77830afcf4d 82
+docs/experiments/CAMPAIGNS.md
+  h_adc77830afcf4d 65-66
+experiments/README.md
+  h_adc77830afcf4d 46-47
+experiments/src/main/java/org/workflowsim/experiments/standard/StandardStudy.java
+  h_adc77830afcf4d 1-954
+experiments/src/test/java/org/workflowsim/experiments/standard/StandardStudySmokeTest.java
+  h_adc77830afcf4d 1-177
+experiments/studies/README.md
+  h_adc77830afcf4d 23-28
+experiments/studies/standard/PROTOCOL.md
+  h_adc77830afcf4d 1-159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "182c144fc961a7f50403e003252b9415490f4b01",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
