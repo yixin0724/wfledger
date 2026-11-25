@@ -1,0 +1,24 @@
+docs/algorithms/METRICS_CARD.md
+  h_adc77830afcf4d 16-17,23-25,36,50,53,92
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 83
+docs/getting-started/WORKBENCH.md
+  h_adc77830afcf4d 76,179
+experiments/src/main/java/org/workflowsim/experiments/workbench/ExperimentSummaryWriter.java
+  h_adc77830afcf4d 26-27,33,91,112-114
+experiments/src/main/java/org/workflowsim/experiments/workbench/Workbench.java
+  h_adc77830afcf4d 171-174,177-180,184-185
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchIntegrationTest.java
+  h_adc77830afcf4d 165-171,178-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b7cd4b339f120bf5c6ed05c265db22da1f5a5535",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
