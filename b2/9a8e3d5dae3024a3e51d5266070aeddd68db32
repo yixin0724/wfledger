@@ -1,0 +1,22 @@
+docs/algorithms/CATALOG.md
+  h_adc77830afcf4d 23,38-40
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 43,45-47,51
+docs/experiments/MAKESPAN_BASELINE_COMPARISON.md
+  h_adc77830afcf4d 5-9
+docs/experiments/MAKESPAN_SCALE_COMPARISON.md
+  h_adc77830afcf4d 5-9
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b29a8e3d5dae3024a3e51d5266070aeddd68db32",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java
+  h_adc77830afcf4d 219-221,223-224,226,233-235,237-238,240,272-274,276-277,279-292
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmCatalogTest.java
+  h_adc77830afcf4d 4,160-163,168-172,182-187
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d9762eefd4e6d8f69aca03fcf0ac643d2ffdaece",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}

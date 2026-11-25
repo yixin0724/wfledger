@@ -1,0 +1,38 @@
+simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java
+  h_adc77830afcf4d 73-80,693-697,730-752
+simulator/src/main/java/org/workflowsim/WorkflowScheduler.java
+  h_adc77830afcf4d 87-92,371,401-438,443,445,506
+simulator/src/main/java/org/workflowsim/scheduling/BaseSchedulingAlgorithm.java
+  h_adc77830afcf4d 38-39,81-116
+simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeEstimator.java
+  h_adc77830afcf4d 1-24
+simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java
+  h_adc77830afcf4d 1-141
+simulator/src/main/java/org/workflowsim/scheduling/ReadyBatchMCTSchedulingAlgorithm.java
+  h_adc77830afcf4d 3-10,14
+simulator/src/main/java/org/workflowsim/scheduling/ReadyBatchMaxMinSchedulingAlgorithm.java
+  h_adc77830afcf4d 3-9,13
+simulator/src/main/java/org/workflowsim/scheduling/ReadyBatchMinMinSchedulingAlgorithm.java
+  h_adc77830afcf4d 3-9,13
+simulator/src/test/java/org/workflowsim/planning/ReadyBatchRoundSemanticsIntegrationTest.java
+  h_adc77830afcf4d 63-180
+simulator/src/test/java/org/workflowsim/scheduling/ReadyBatchMCTSchedulingAlgorithmTest.java
+  h_adc77830afcf4d 28-73,111-115,117,129-130
+simulator/src/test/java/org/workflowsim/scheduling/ReadyBatchMaxMinSchedulingAlgorithmTest.java
+  h_adc77830afcf4d 33-39
+simulator/src/test/java/org/workflowsim/scheduling/ReadyBatchMinMinSchedulingAlgorithmTest.java
+  h_adc77830afcf4d 33-39,53,58,62-65,80
+simulator/src/test/java/org/workflowsim/scheduling/SupportedOnlineSchedulingCompatibilityTest.java
+  h_adc77830afcf4d 81-87,100,106,108,113-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f53dfe0294cc2e5ae3366ceb6a2673c120fc09b2",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
