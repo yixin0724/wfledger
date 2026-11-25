@@ -43,7 +43,8 @@ conditions, and an output retention policy; see the
 [study directory conventions](<studies/README.md>). The current
 [FGCS study protocol](<studies/fgcs/README.md>) defines the differential, sensitivity,
 energy, ablation, and independent-JVM evidence-overhead matrices, including their
-input-population and derived-input boundaries.
+input-population and derived-input boundaries. New same-layer comparisons use the
+[standard study protocol](<studies/standard/PROTOCOL.md>) (`standard-study-v1`).
 
 ```bash
 mvn -Pjavadoc clean verify

@@ -18,7 +18,7 @@ public final class PlanningContext {
         this.platform = platform;
     }
 
-    public int getSharedStorageTransferRateMbPerSecond() {
+    public double getSharedStorageTransferRateMbPerSecond() {
         return platform.getStorage().getMaxTransferRateMbPerSecond();
     }
 

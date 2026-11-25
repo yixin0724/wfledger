@@ -84,6 +84,27 @@ class PlatformProfileTest {
         assertEquals(Integer.valueOf(1), profile.getVmHostAssignments().get(1));
     }
 
+    /**
+     * STD-V1 (2026-11-25): the SHARED storage rate is a finite positive double (decimal MB/s). Root cause: an
+     * {@code int} rate made every CCR above the {@code R = 1 MB/s} ceiling unreachable for the standard study.
+     * Expectations come from the contract (finite positive, fail fast otherwise) and from the identity that an
+     * integer is a valid double: 15 must be carried bit-identically as 15.0.
+     */
+    @Test
+    void storageRateIsAFinitePositiveDoubleAndFailsFastOtherwise() throws Exception {
+        assertEquals(2.5, new PlatformProfile.StorageSpec(1000L, 2.5).getMaxTransferRateMbPerSecond(), 0.0);
+        assertEquals(
+                Double.doubleToLongBits(15.0),
+                Double.doubleToLongBits(new PlatformProfile.StorageSpec(1000L, 15).getMaxTransferRateMbPerSecond()));
+        for (double invalid : new double[] {0.0, -1.0, Double.NaN, Double.POSITIVE_INFINITY}) {
+            assertThrows(IllegalArgumentException.class, () -> new PlatformProfile.StorageSpec(1000L, invalid));
+        }
+        org.cloudbus.cloudsim.HarddriveStorage disk = new org.cloudbus.cloudsim.HarddriveStorage("fractional", 1000.0);
+        disk.setMaxTransferRate(2.5);
+        assertEquals(2.5, disk.getMaxTransferRate(), 0.0);
+        assertThrows(IllegalArgumentException.class, () -> disk.setMaxTransferRate(Double.NaN));
+    }
+
     @Test
     void factoryPreservesTheRawTimeSharedVmSchedulerSelection() {
         PlatformProfile profile = PlatformProfile.builder("time-shared-factory")

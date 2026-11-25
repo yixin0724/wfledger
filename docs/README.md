@@ -80,6 +80,7 @@ and superseded audit drafts are not long-term entry points.
 - [Independent study-audit tooling](<../scripts/STUDY_AUDIT.md>): the actual scope of general evidence/statistics checks, distinguished from dataflow-specific certificates.
 - [FGCS study protocol](<../experiments/studies/fgcs/README.md>): external differential, sensitivity, energy, communication/storage ablation, and independent-JVM evidence-overhead matrices.
 - [WfGen standard-workloads corpus](<../experiments/studies/standard-workloads/README.md>): the reproducible 360-instance WfCommons 1.6 synthetic corpus — seed rule, canonicalization, exclusions, retention, and regeneration.
+- [Standard study protocol](<../experiments/studies/standard/PROTOCOL.md>): `standard-study-v1` design — bounded-spread fleets, calibrated CCR, instance-paired Wilcoxon + Holm with effect sizes, Weibull failures, interpolated deadlines.
 
 ## Standard benchmark
 

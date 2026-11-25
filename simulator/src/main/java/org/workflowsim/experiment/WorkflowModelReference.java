@@ -177,7 +177,7 @@ final class WorkflowModelReference {
     }
 
     private static double fastestCompatibleDuration(
-            Task task, List<PlatformProfile.VmSpec> vms, int transferRateMbPerSecond) {
+            Task task, List<PlatformProfile.VmSpec> vms, double transferRateMbPerSecond) {
         double best = Double.POSITIVE_INFINITY;
 
         double transferSeconds = transferSeconds(task, transferRateMbPerSecond);
@@ -208,7 +208,7 @@ final class WorkflowModelReference {
         return best;
     }
 
-    private static double transferSeconds(Task task, int transferRateMbPerSecond) {
+    private static double transferSeconds(Task task, double transferRateMbPerSecond) {
         double result = 0.0;
         for (FileItem file : task.getFileList()) {
             if (file.isRealInputFile(task.getFileList())) {
@@ -223,7 +223,7 @@ final class WorkflowModelReference {
                 || config.getClusteringParameters().getClusteringMethod() != ClusteringMethod.NONE
                 || config.getFailureModel().isEnabled()
                 || !isNoOverhead(config)
-                || platform.getStorage().getMaxTransferRateMbPerSecond() <= 0) {
+                || !(platform.getStorage().getMaxTransferRateMbPerSecond() > 0.0)) {
             return false;
         }
         DataMovementModel.Kind movement = config.getDataMovementModel().getKind();

@@ -306,6 +306,21 @@ class IndependentAuditorTests(unittest.TestCase):
         self.assertEqual("2a7a23bed50abc515523036ea220f292be0a8196a554e8dafeb2e8aba2407ee6", hashlib.sha256(layered_xml(8).encode()).hexdigest())
         self.assertEqual("342347cfb5cb139b52d903a611cb84ff205078250d3bdb754152cfb239af97e2", hashlib.sha256(layered_xml(32).encode()).hexdigest())
 
+    def test_std_v1_fractional_shared_rate_reference_matches_hand_derivation(self):
+        # STD-V1 (2026-11-25): the SHARED rate is a finite positive double. Hand derivation mirrors the Java test:
+        # 25e6 B / 1e6 / 2.5 MB/s = 10 s; (2000 + floor(1000 * 10)) / 1000 = 12 s; stage-in release
+        # max(0.11, 0.1 + 0.01) + 0.1 = 0.21 s; lower bound 12.21 s. An integer rate (historical evidence) keeps working.
+        config = {"dataMovementModel": {"kind": "LEGACY_WORKFLOWSIM_V1"}, "clustering": {"method": "NONE"},
+                  "failureModel": {"generatorMode": "FAILURE_NONE"}, "fileSystem": "SHARED",
+                  "overheadModel": {"workflowEngineDelayInterval": 0, "bandwidth": 0.0}, "cloudSimMinEventIntervalSeconds": 0.1}
+        tasks = {1: {"parents": [], "children": [], "lengthMi": 2000, "files": [("external", "input", 25000000.0)]}}
+        for rate, expected in ((2.5, 12.21), (25, 3.21)):  # 25 MB/s: 1 s read, (2000 + 1000) / 1000 = 3 s
+            platform = {"storage": {"maxTransferRateMbPerSecond": rate},
+                        "vms": [{"id": 0, "mips": 1000.0, "schedulerMode": "SPACE_SHARED"}]}
+            reference = evidence.critical_path_reference(config, platform, tasks)
+            self.assertTrue(reference["available"], rate)
+            self.assertAlmostEqual(expected, reference["lowerBound"], places=9)
+
     def test_exact_sign_and_holm(self):
         self.assertEqual(Fraction(1, 32), statistics.exact_sign_test(6, 0))
         self.assertEqual(Fraction(1), statistics.exact_sign_test(3, 3))

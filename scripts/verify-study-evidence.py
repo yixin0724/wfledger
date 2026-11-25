@@ -85,8 +85,10 @@ def critical_path_reference(config, platform, raw_tasks):
             or bool(overhead.get("clusteringDelays"))):
         return unavailable(CS_OUTSIDE)
     storage = platform.get("storage")
+    # STD-V1 (2026-11-25): the rate is a finite positive binary64 (historical evidence carries integer literals,
+    # which denote the same values); number() rejects non-numbers and non-finite values fail fast.
     transfer_rate = storage.get("maxTransferRateMbPerSecond") if isinstance(storage, dict) else None
-    if not transfer_rate or number(transfer_rate, "storage rate") <= 0:
+    if transfer_rate is None or number(transfer_rate, "storage rate") <= 0:
         return unavailable(CS_OUTSIDE)
     vms = platform.get("vms")
     if not isinstance(vms, list) or not vms:

@@ -499,7 +499,11 @@ public final class ExperimentManifestWriter {
         values.put("vms", vms);
         Map<String, Object> storage = new LinkedHashMap<>();
         storage.put("capacityMb", profile.getStorage().getCapacityMb());
-        storage.put("maxTransferRateMbPerSecond", profile.getStorage().getMaxTransferRateMbPerSecond());
+        // STD-V1 (2026-11-25): the rate is a binary64 value; an integer rate is written as e.g. 15.0, which
+        // denotes the same number as the historical literal 15 under exact JSON value comparison.
+        storage.put(
+                "maxTransferRateMbPerSecond",
+                Double.valueOf(profile.getStorage().getMaxTransferRateMbPerSecond()));
         values.put("storage", storage);
         values.put("costs", costs(profile.getCosts()));
 
