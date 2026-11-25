@@ -148,6 +148,64 @@ class ConsistentTreeTests(CheckerTestCase):
             self.assertEqual(0, CHECKER.main(["--root", str(self.tree.root)]))
         self.assertIn("0 issues", captured.getvalue())
 
+class AdditionalFamilyTests(CheckerTestCase):
+    """R7-WORKLOAD (2026-11-25): a new family such as wfgen-standard joins the chain.
+
+    Its shape: instances keyed by ``wfformat_json`` (some not retained), plus one
+    auxiliary generation manifest; the top-level index anchors the family index hash.
+    """
+
+    def add_family(self):
+        inst_sha = self.tree.write("wfgen-standard/blast/n50/blast-50-000.json", "{}\n")
+        gen_sha = self.tree.write("wfgen-standard/GENERATION.json", "{\"n\": 2}\n")
+        index = {
+            "n_instances": 2,
+            "n_auxiliary_files": 1,
+            "instances": [
+                {"recipe": "blast", "wfformat_json": "blast/n50/blast-50-000.json",
+                 "sha256": inst_sha, "retained_in_standard_checkout": True},
+                {"recipe": "blast", "wfformat_json": "blast/n1000/blast-1000-000.json",
+                 "sha256": "4" * 64, "retained_in_standard_checkout": False},
+            ],
+            "auxiliary_files": [{"file": "GENERATION.json", "sha256": gen_sha,
+                                 "role": "generation manifest"}],
+        }
+        self.tree.write("wfgen-standard/INDEX.json", json.dumps(index))
+        top = json.loads((self.tree.datasets / "INDEX.json").read_text(encoding="utf-8"))
+        top["families"].append({
+            "family": "wfgen-standard",
+            "index": "wfgen-standard/INDEX.json",
+            "index_sha256": self.tree.file_sha("wfgen-standard/INDEX.json"),
+            "n_instances": 2,
+        })
+        self.tree.write("INDEX.json", json.dumps(top))
+
+    def test_additional_family_passes(self):
+        self.add_family()
+        issues, counts = self.check()
+        self.assertEqual([], issues)
+        self.assertEqual(3, counts["families"])
+        # 4 base entries + 2 instances + 1 auxiliary.
+        self.assertEqual(7, counts["entries"])
+        self.assertEqual(2, counts["absent_not_retained"])
+
+    def test_additional_family_stray_file_is_an_issue(self):
+        self.add_family()
+        self.tree.write("wfgen-standard/blast/n50/blast-50-001.json", "{}\n")
+        issues, _ = self.check()
+        self.assertEqual(1, len(issues))
+        self.assertIn("wfgen-standard/blast/n50/blast-50-001.json", issues[0])
+
+    def test_additional_family_unanchored_edit_is_an_issue(self):
+        self.add_family()
+        index_path = self.tree.datasets / "wfgen-standard/INDEX.json"
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+        index["note"] = "edited after anchoring"
+        index_path.write_text(json.dumps(index), encoding="utf-8")
+        issues, _ = self.check()
+        self.assertEqual(1, len(issues))
+        self.assertIn("family index hash mismatch", issues[0])
+
 class TamperingTests(CheckerTestCase):
 
     def test_tampered_file_hash_mismatch(self):
