@@ -1,0 +1,32 @@
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 511-512
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 50,83
+scripts/test-study-verifiers.py
+  h_adc77830afcf4d 657-685
+scripts/verify-study-evidence.py
+  h_adc77830afcf4d 649-661
+simulator/src/main/java/org/workflowsim/Task.java
+  h_adc77830afcf4d 228-239,242-246
+simulator/src/main/java/org/workflowsim/experiment/ExperimentManifestWriter.java
+  h_adc77830afcf4d 270
+simulator/src/main/java/org/workflowsim/experiment/SimulationMetrics.java
+  h_adc77830afcf4d 66,178
+simulator/src/test/java/org/workflowsim/TaskProcessingCostTest.java
+  h_adc77830afcf4d 11-17,19,26-67
+simulator/src/test/java/org/workflowsim/experiment/SimulationCostModelIntegrationTest.java
+  h_adc77830afcf4d 68
+simulator/src/test/java/org/workflowsim/experiment/SimulationRunnerIntegrationTest.java
+  h_adc77830afcf4d 98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1f2fa8ca8e4553996defcfcb013a53f0bcfeaf6d",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
