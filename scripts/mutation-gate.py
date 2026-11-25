@@ -552,6 +552,42 @@ REGISTRY = [
         old="                workMi = recovery.getRemainingWorkMi();",
         new="                workMi = recovery.getRemainingWorkMi() + 100L;",
         killers="CrchIntegrationTest,MidExecutionFailureIntegrationTest"),
+    dict(
+        id="M76",
+        name="Online Min-Min/Max-Min/MCT ignore the machine ready time of busy VMs",
+        # FGCS-R6 (2026-11-25): CT(j,v) = r_v + ETC(j,v) (Braun et al. 2001); the mutant sets every r_v to 0.
+        file="simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java",
+        old="            ready[v] = readySeconds(vms.get(v));",
+        new="            ready[v] = 0.0 * readySeconds(vms.get(v));",
+        killers="ReadyBatchMCTSchedulingAlgorithmTest,ReadyBatchRoundSemanticsIntegrationTest"),
+    dict(
+        id="M77",
+        name="Online Min-Min/Max-Min/MCT do not update r_v after an assignment",
+        # FGCS-R6 (2026-11-25): the Braun et al. (2001) update step r_v := CT after each assignment.
+        file="simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java",
+        old="            ready[bestVm] = bestKey;",
+        new="            ready[bestVm] = ready[bestVm] + 0.0 * bestKey;",
+        killers="ReadyBatchMinMinSchedulingAlgorithmTest,ReadyBatchMaxMinSchedulingAlgorithmTest,"
+                "ReadyBatchMCTSchedulingAlgorithmTest,ReadyBatchRoundSemanticsIntegrationTest"),
+    dict(
+        id="M78",
+        name="Late binding dispatches a Job that is not the first plan of its idle VM",
+        # FGCS-R6 (2026-11-25): only the first planned Job of each idle VM is bound; later plans stay queued.
+        file="simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java",
+        old="            if (!planned[bestVm] && target.getState() == WorkflowSimTags.VM_STATUS_IDLE) {",
+        new="            if (target.getState() == WorkflowSimTags.VM_STATUS_IDLE) {",
+        killers="ReadyBatchMinMinSchedulingAlgorithmTest,ReadyBatchMCTSchedulingAlgorithmTest,"
+                "ReadyBatchRoundSemanticsIntegrationTest"),
+    dict(
+        id="M79",
+        name="Late binding dispatches a Job planned behind a busy VM",
+        # FGCS-R6 (2026-11-25): a Job planned on a busy VM waits for the next round instead of being submitted.
+        file="simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java",
+        old="                bound.add(cloudlet);",
+        new="                bound.add(cloudlet);\n            } else if (!planned[bestVm]) {\n"
+            "                Cloudlet cloudlet = (Cloudlet) getCloudletList().get(bestJob);\n"
+            "                cloudlet.setVmId(target.getId());\n                bound.add(cloudlet);",
+        killers="ReadyBatchMCTSchedulingAlgorithmTest,SupportedOnlineSchedulingCompatibilityTest"),
 ]
 
 EXPERIMENTS_REGISTRY = [
