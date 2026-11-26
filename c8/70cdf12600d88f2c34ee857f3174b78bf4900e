@@ -1,0 +1,27 @@
+experiments/studies/standard-workloads/test_generate_corpus.py
+  s_1bd856a819664d::t_d650ec0b05fb2e 2,161
+scripts/test-package-fgcs-artifact.py
+  s_1bd856a819664d::t_0b93cfc0f7adbd 132
+scripts/test-study-verifiers.py
+  s_1bd856a819664d::t_0e56998c1993c6 309
+scripts/test-verify-workload-corpus.py
+  s_1bd856a819664d::t_de728febb9d5df 2
+scripts/verify-study-evidence.py
+  s_1bd856a819664d::t_546ae2baef425f 381,394,399,433,443,779
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c870cdf12600d88f2c34ee857f3174b78bf4900e",
+  "prompts": {},
+  "sessions": {
+    "s_1bd856a819664d": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "d43c7717-460b-4c9b-8587-78aceaf49dd9",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
