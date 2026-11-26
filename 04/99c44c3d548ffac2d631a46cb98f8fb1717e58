@@ -1,0 +1,79 @@
+docs/experiments/REPRODUCIBILITY.md
+  s_1bd856a819664d::t_1c287b59872ba1 66,78-84
+experiments/src/main/java/org/workflowsim/experiments/benchmark/BenchmarkExecutor.java
+  s_f3e6329934107d::t_eec6caa93a8b77 417,696
+experiments/src/main/java/org/workflowsim/experiments/network/NetworkStudyExecutor.java
+  s_f3e6329934107d::t_7f9731decce611 63
+experiments/src/main/java/org/workflowsim/experiments/reference/p7/P7ReferenceIdentity.java
+  s_768a25909712fc::t_4b5e391084e095 26
+experiments/src/main/java/org/workflowsim/experiments/standard/StandardStudy.java
+  s_524c56e137e3f3::t_eca20685456cc1 24,389-392
+experiments/src/main/java/org/workflowsim/experiments/workbench/Workbench.java
+  s_f3e6329934107d::t_c21b9797a959a0 118
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchIntegrationTest.java
+  s_524c56e137e3f3::t_bfc574ceb56ec7 114
+simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactValidator.java
+  s_524c56e137e3f3::t_0a95df792265cd 136,292-296,298,307,311-324,327-341,343,364,369-372,783-792
+simulator/src/main/java/org/workflowsim/experiment/ExperimentEvidenceContext.java
+  s_524c56e137e3f3::t_ea2c5fae370dc0 37,74
+simulator/src/main/java/org/workflowsim/experiment/ExperimentProvenance.java
+  s_524c56e137e3f3::t_30261436d08eff 12,17-18,20-21,24,28-29,39-40,46-48,53,65-211
+simulator/src/test/java/org/workflowsim/experiment/ExperimentArtifactValidatorTest.java
+  s_1bd856a819664d::t_2d7977bec6c6c7 156,213-282
+simulator/src/test/java/org/workflowsim/experiment/ExperimentEvidenceContextTest.java
+  s_768a25909712fc::t_603452a87f73ee 26,38,47,55,75
+simulator/src/test/java/org/workflowsim/experiment/ExperimentProvenanceTest.java
+  s_497ff5c32a758f::t_2f100be594ec78 4,6,8-9,12,14,20-22,26,43-147
+simulator/src/test/java/org/workflowsim/experiment/SimulationEvidenceIntegrationTest.java
+  s_1bd856a819664d::t_53c6b0136fcab1 100,103-110
+simulator/src/test/java/org/workflowsim/experiment/SimulationRunnerIntegrationTest.java
+  s_524c56e137e3f3::t_95910bd2d3a37d 103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0499c44c3d548ffac2d631a46cb98f8fb1717e58",
+  "prompts": {},
+  "sessions": {
+    "s_1bd856a819664d": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "d43c7717-460b-4c9b-8587-78aceaf49dd9",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_497ff5c32a758f": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "e4470756-7aea-4a83-99ef-071aaeb9dc3d",
+        "model": "codefuse_official_channel/Kimi-K3.1-Pro:glink_domestic"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_524c56e137e3f3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cda8-da74-71b0-b519-a137a3ce4b85",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_f3e6329934107d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f1a0-351c-7643-a3d0-36ad18902594",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}

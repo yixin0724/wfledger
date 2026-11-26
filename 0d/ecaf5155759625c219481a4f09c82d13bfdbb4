@@ -1,0 +1,29 @@
+docs/experiments/RERUN_DIFF_CONTRACT.md
+  s_1bd856a819664d::t_8ad73c5fb4bf08 115
+experiments/src/test/java/org/workflowsim/experiments/network/NetworkStudyValidatorTest.java
+  s_1bd856a819664d::t_c02cbbe72238b4 174,176-178
+experiments/src/test/java/org/workflowsim/experiments/rerun/EvidenceCoreDifferTest.java
+  s_1bd856a819664d::t_1dfc3c33341bc4 5,26-28,42-43,50-51,55-102,131,148,385-392
+experiments/src/test/java/org/workflowsim/experiments/rerun/NetworkRerunIntegrationTest.java
+  s_1bd856a819664d::t_886be5c70416a8 282-285
+experiments/src/test/java/org/workflowsim/experiments/rerun/RerunDiffExecutorIntegrationTest.java
+  s_1bd856a819664d::t_3e793421e3e552 66
+experiments/src/test/java/org/workflowsim/experiments/rerun/RerunDiffExecutorTest.java
+  s_1bd856a819664d::t_493cc2fa67c1a5 101-105,224-225
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0decaf5155759625c219481a4f09c82d13bfdbb4",
+  "prompts": {},
+  "sessions": {
+    "s_1bd856a819664d": {
+      "agent_id": {
+        "tool": "codefuse",
+        "id": "d43c7717-460b-4c9b-8587-78aceaf49dd9",
+        "model": "codefuse_official_channel/DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
