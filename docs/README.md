@@ -40,35 +40,35 @@ and superseded audit drafts are not long-term entry points.
 | Bounded SOURCE, post-commit reads, and required output write-back | [Storage dataflow](<advanced/STORAGE_DATAFLOW_CONTRACT.md>) |
 | VM selection at control-ready, nominal scores, and action certification scope | [Online target assignment](<advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) |
 | Exact fields and validation rules of the per-file sidecar | [File lifecycle format](<advanced/FILE_LIFECYCLE_FORMAT.md>) |
-| Format, roles, and strict reading of the group network ledger | [Network ledger format](<advanced/NETWORK_LEDGER_FORMAT.md>) |
-| Stable-allocation certificates, exact accounting, and truncated prefixes | [Ledger validation and metrics](<advanced/NETWORK_LEDGER_VALIDATION.md>) |
-| Java-independent evidence verification and online check entry points | [Shared-core Python evidence verification](<advanced/NETWORK_LEDGER_PYTHON.md>) |
-| Same verified snapshot, exact text, and bounded previews | [Offline network and action reports](<advanced/NETWORK_REPORT_DISPLAY.md>) |
+| Format, roles, and strict reading of the group network ledger | [Network ledger format](<advanced/NETWORK_LEDGER.md>) |
+| Stable-allocation certificates, exact accounting, and truncated prefixes | [Ledger validation and metrics](<advanced/NETWORK_LEDGER.md>) |
+| Java-independent evidence verification and online check entry points | [Shared-core Python evidence verification](<advanced/NETWORK_LEDGER.md#8-python-checker>) |
+| Same verified snapshot, exact text, and bounded previews | [Offline network and action reports](<advanced/NETWORK_LEDGER.md#9-offline-report-display>) |
 
 ## Experiments, replay, and statistics
 
 - [Reproducibility contract](<experiments/REPRODUCIBILITY.md>): randomness, time/work, cost, reference values, and deadline semantics.
 - [Campaign experiments and network studies](<experiments/CAMPAIGNS.md>): scenario matrices, seeds, parameter control, execution, and statistical methods.
-- [Audit coverage ledger](<experiments/AUDIT_COVERAGE.md>): what has been verified per evidence
+- [Audit coverage ledger](<experiments/VERIFICATION.md>): what has been verified per evidence
   dimension, which tampering yields which rerun verdict, mutation results, and the deliberate
   boundaries.
-- [V&V case and golden-evidence ledger](<experiments/VV_CASE_LEDGER.md>): intended use, legal oracle
+- [V&V case and golden-evidence ledger](<experiments/VERIFICATION.md>): intended use, legal oracle
   classes, validation points, assessment states, residual risk, and the current baseline cases.
 - [Fixed-commit reference implementation](<experiments/REFERENCE_IMPLEMENTATION.md>): the narrow
   CloudSim/WorkflowSim verification intersection, independent arithmetic, and explicit non-goals.
-- [Workflow application structural benchmarks](<experiments/APPLICATION_BENCHMARKS.md>): classic DAX and
+- [Workflow application structural benchmarks](<experiments/VERIFICATION.md#6-application-input-verification>): classic DAX and
   Montage WfInstances verification, input populations, units, and validation boundaries.
-- [Golden and reference-evidence registry](<experiments/GOLDEN_EVIDENCE_REGISTRY.md>): legal oracle classes,
+- [Golden and reference-evidence registry](<experiments/VERIFICATION.md#3-verified-anchors>): legal oracle classes,
   current anchors, golden change discipline, and performance evidence boundaries.
 - [Experiment index](<experiments/README.md>): makespan, scale, energy, algorithm audits,
   result artifacts, reproduction commands, and evidence boundaries.
 - [Paper algorithm reproductions](<experiments/PAPER_REPRODUCTIONS.md>): implemented literature algorithms,
   official artifacts, verification cases, and adaptation boundaries.
-- [Cross-paper comparison scenes](<experiments/CROSS_PAPER_COMPARISON.md>): compatible SHARED/LOCAL scenes,
+- [Cross-paper comparison scenes](<experiments/VERIFICATION.md#cross-paper-comparison-scenes>): compatible SHARED/LOCAL scenes,
   real runner results, metric calibers, and comparison boundaries.
-- [Algorithm and metric audit](<experiments/ALGORITHM_METRIC_AUDIT.md>): all reproduced algorithm families,
+- [Algorithm and metric audit](<experiments/VERIFICATION.md#5-algorithm-and-metric-audits>): all reproduced algorithm families,
   corrected semantics, independent runtime-metric recomputation, and mutation coverage.
-- [Algorithm experiment audit](<experiments/ALGORITHM_EXPERIMENT_AUDIT.md>): real DAG/resource/failure/seed
+- [Algorithm experiment audit](<experiments/VERIFICATION.md#5-algorithm-and-metric-audits>): real DAG/resource/failure/seed
   matrix, invariants, metamorphic checks, and experiment-only defect fixes.
 - [Traditional makespan baseline comparison](<experiments/MAKESPAN_BASELINE_COMPARISON.md>): HEFT,
   Min-Min, Max-Min, MCT, FCFS and Round-Robin on real scientific DAX workflows.
@@ -101,5 +101,5 @@ and superseded audit drafts are not long-term entry points.
 - [Security and data handling](<../SECURITY.md>): private vulnerability reporting, artifact metadata, and local-output precautions.
 - [Documentation and source-comment conventions](<advanced/CODE_STYLE.md>): content layering, link/example requirements, source protection, and the document check command.
 - [Mutation gate](<advanced/MUTATION_GATE.md>): registered-mutant zero-survival gate, killer-test ledger, and growth rules.
-- [Dataflow state and performance measurement](<advanced/DATAFLOW_STATE_COPY_PERFORMANCE.md>): immutable history/active working set, measurement conventions, and repeatable comparisons.
+- [Dataflow state and performance measurement](<advanced/COHERENT_DATAFLOW_CONTRACT.md#state-structure-and-performance-measurement>): immutable history/active working set, measurement conventions, and repeatable comparisons.
 - [Experiment module notes](<../experiments/README.md>): module responsibilities and maintenance entry point.

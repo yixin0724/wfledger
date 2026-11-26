@@ -297,4 +297,4 @@ static ready-DAG subset of the official algorithm, not a claim of full dynamic w
 production-cluster semantics.
 
 See [algorithm contracts](<../algorithms/CONTRACTS.md>), the [mutation gate](<../advanced/MUTATION_GATE.md>),
-and the [V&V case ledger](<VV_CASE_LEDGER.md>).
+and the [V&V case ledger](<VERIFICATION.md>).

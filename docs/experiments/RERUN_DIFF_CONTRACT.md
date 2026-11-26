@@ -74,7 +74,7 @@ The online-assignment configuration, the `dataflowComputeRequests`, the `DATAFLO
 
 When the V1 ledger on either side is TRUNCATED, the report adds `networkEvidenceCoverageNote`: even an `IDENTICAL_CORE` only says that the retained records and the aggregated observations agree; an unknown suffix cannot be attested. When both sides are OFF or the capture is complete, this placeholder field is not added. The complete V2/V3 lifecycle is likewise not a per-interval fluid service-area certificate.
 
-Format and certification scope are in the [V1 ledger](<../advanced/NETWORK_LEDGER_FORMAT.md>), [V2 lifecycle](<../advanced/FILE_LIFECYCLE_FORMAT.md>), [V3 storage](<../advanced/STORAGE_DATAFLOW_CONTRACT.md>), and [online assignment](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) documents.
+Format and certification scope are in the [V1 ledger](<../advanced/NETWORK_LEDGER.md>), [V2 lifecycle](<../advanced/FILE_LIFECYCLE_FORMAT.md>), [V3 storage](<../advanced/STORAGE_DATAFLOW_CONTRACT.md>), and [online assignment](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) documents.
 
 ## Comparison Rules
 

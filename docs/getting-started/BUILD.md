@@ -127,7 +127,7 @@ The repository is maintained in professional technical English, including commen
 ignored optional corpora. After preparing the full local snapshot and checking its index, run the
 17-instance Montage suite explicitly with `make extended-corpus`. The target invokes Maven with
 `-Pextended-corpus -pl :workflowsim-workbench -am` and never substitutes a skipped test for the
-required inputs; a missing file fails the suite. See [application benchmarks](<../experiments/APPLICATION_BENCHMARKS.md>).
+required inputs; a missing file fails the suite. See [application benchmarks](<../experiments/VERIFICATION.md#6-application-input-verification>).
 
 ## Offline report browser acceptance
 

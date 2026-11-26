@@ -152,7 +152,7 @@ The budget must be an exact numeric integer in the range 1–2147483647. Omittin
 
 Budget exhaustion does not truncate the simulation. The three sidecar roles are mutually exclusive; a coherent-file or bounded-storage sidecar must not be treated as the group network ledger. Even when OFF, the manifest of a coherent model still retains the core `dataflowPlan`, and the bounded-storage model additionally retains the storage configuration. These are lifecycle certificates, not per-interval service areas, link utilization, or TCP protocol attestations.
 
-For the formats and independent validation see the [group network ledger](<../advanced/NETWORK_LEDGER_FORMAT.md>), the [file lifecycle format](<../advanced/FILE_LIFECYCLE_FORMAT.md>), the [bounded storage contract](<../advanced/STORAGE_DATAFLOW_CONTRACT.md>), and the [Python checker](<../../scripts/verify-network-ledger.py>). The rerun includes `/fileLifecycle/...`, `/storageLifecycle/...`, and the online-action-related core quantities in the comparison; see the [rerun difference contract](<../experiments/RERUN_DIFF_CONTRACT.md>).
+For the formats and independent validation see the [group network ledger](<../advanced/NETWORK_LEDGER.md>), the [file lifecycle format](<../advanced/FILE_LIFECYCLE_FORMAT.md>), the [bounded storage contract](<../advanced/STORAGE_DATAFLOW_CONTRACT.md>), and the [Python checker](<../../scripts/verify-network-ledger.py>). The rerun includes `/fileLifecycle/...`, `/storageLifecycle/...`, and the online-action-related core quantities in the comparison; see the [rerun difference contract](<../experiments/RERUN_DIFF_CONTRACT.md>).
 
 ## Output, Failures, and Recovery
 
@@ -192,4 +192,4 @@ The energy panel appears when the platform declares a power model and shows the 
 
 Multi-seed results of deterministic algorithms serve only as repeatability observations and are not treated as independent statistical samples. Metrics are not measurements of a real platform; the models contain no TCP, loss/ECN, packet-level queuing, or adaptive routing.
 
-Browser acceptance is covered uniformly in the [build guide](<BUILD.md#offline-report-browser-acceptance>); for network display boundaries see the [offline network report notes](<../advanced/NETWORK_REPORT_DISPLAY.md>).
+Browser acceptance is covered uniformly in the [build guide](<BUILD.md#offline-report-browser-acceptance>); for network display boundaries see the [offline network report notes](<../advanced/NETWORK_LEDGER.md#9-offline-report-display>).

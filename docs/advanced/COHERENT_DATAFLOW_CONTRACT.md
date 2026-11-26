@@ -65,3 +65,74 @@ The Fat-tree structure, deterministic routing, and sharing mechanics are describ
 V2 uses the standalone `FILE_LIFECYCLE_V2` sidecar. It checks per-file identity, provenance, requests, copies, visibility, and CPU causality, and it **does not certify unrecorded per-interval fluid service accounting**. A V1 group-level ledger cannot be relabeled into per-file proof.
 
 Complete artifact export requires a complete capture; an insufficient budget is rejected before artifact I/O but does not change the physical execution. With recording OFF in the default non-online assignment mode, the core file plan is still retained, which does not mean zero network. See the [lifecycle format](<FILE_LIFECYCLE_FORMAT.md>), the [rerun difference contract](<../experiments/RERUN_DIFF_CONTRACT.md>), and the [capability matrix](<DATAFLOW_CAPABILITY_MATRIX.md>) for details.
+
+## State Structure and Performance Measurement
+
+The coherent runners separate immutable history from the active working set. This structure
+changes no physical model, source or route choice, allocator, VM assignment, floating-point
+summation order, or recording budget.
+
+- The [history index](<../../simulator/src/main/java/org/workflowsim/data/v2/PersistentHistoryMap.java>)
+  stores records in immutable binary merge blocks; newer levels are consulted first and a new
+  write overrides the old value. A lookup inspects O(log W) blocks; an update copies O(log W)
+  entries amortized over one history, but a single large merge is O(W) and repeated forks do not
+  share the amortization.
+- [Replica state](<../../simulator/src/main/java/org/workflowsim/data/v2/DataReplicaState.java>)
+  copies only the position rows of files that gained a new replica. A fork still copies the active
+  index, so branch clocks, sequence numbers, and ticket identities stay independent.
+- The [runtime coordinator](<../../simulator/src/main/java/org/workflowsim/data/v2/CoherentDataflowRuntime.java>)
+  forks the active Job map shallowly: a transaction shares `JobState` instances and copies one only
+  when a write path requests a mutable handle. A terminal summary is archived only after all
+  outputs are processed; the duplicate-Job-ID check covers active and terminal Jobs.
+- Observation and quiescence decisions do not iterate terminated Jobs.
+- The [contention engine](<../../simulator/src/main/java/org/workflowsim/data/TransferContentionEngine.java>)
+  shares its immutable retained trace prefix across forks; a fork deep-copies only the active
+  transfer table and endpoint capacities.
+
+Many simultaneously active wide tasks can still incur near-quadratic copy cost.
+
+[DataflowStateProfile](<../../simulator/src/test/java/org/workflowsim/data/v2/DataflowStateProfile.java>)
+is a controller-layer probe, not an algorithm benchmark or a CI time threshold.
+
+| Scenario | Workload |
+|---|---|
+| `FILELESS` | Fileless chains with repeated quiescence and empty file-scope observations |
+| `FILES_V2` | Chains with per-task external inputs and outputs and a growing cache set |
+| `STORE_V3` | File chains with bounded reads/writes and required outputs committed to the store |
+| `ONLINE_V3` | Storage chains with control-ready assignment, observation, and reservation scoring |
+| `WIDE_V2` | Many simultaneously active fileless tasks |
+
+Capture is `OFF`, `TRUNCATED` (budget 1), or `FULL`. Each group warms up with three 100-task runs;
+the last argument is the sample count.
+
+- `elapsedNanos` covers only coordinator state transitions, not the whole run.
+- `threadAllocatedBytes` is cumulative allocation of the measuring thread, not resident memory;
+  it is null when unavailable.
+- `heapPoolPeakSumBytes` sums per-pool peaks; it is not a process peak at one instant.
+- Fingerprints of state, capture, and online actions compare semantics bit by bit; timing never
+  substitutes for them.
+
+To compare two builds, compile the probe once and run it against each core JAR (`BASELINE_CP` and
+`CANDIDATE_CP` include the Gson, JDOM, and Commons Math dependencies):
+
+```bash
+javac --release 8 -cp "$BASELINE_CP" -d "$PROFILE_CLASSES" \
+  simulator/src/test/java/org/workflowsim/data/v2/DataflowStateProfile.java
+
+java -Xms512m -Xmx512m -cp "$PROFILE_CLASSES:$BASELINE_CP" \
+  org.workflowsim.data.v2.DataflowStateProfile ONLINE_V3 250,500,1000,2000 OFF 3 \
+  > "$PROFILE_DIR/before-ONLINE_V3-OFF.jsonl"
+
+java -Xms512m -Xmx512m -cp "$PROFILE_CLASSES:$CANDIDATE_CP" \
+  org.workflowsim.data.v2.DataflowStateProfile ONLINE_V3 250,500,1000,2000 OFF 3 \
+  > "$PROFILE_DIR/after-ONLINE_V3-OFF.jsonl"
+
+python3 -B scripts/compare-dataflow-profile.py "$PROFILE_DIR" \
+  "$PROFILE_DIR/comparison.json" "$PROFILE_DIR/comparison.md"
+```
+
+The [comparison tool](<../../scripts/compare-dataflow-profile.py>) checks scenario, trials, JVM and
+heap, copy counts, and every fingerprint before emitting statistics, and fails on missing data,
+fingerprint drift, or an existing output path. It sets no speed-up threshold. A change to the state
+structure must also verify branch isolation, old snapshots, ticket identity, rollback on partial
+failure, terminal-state queries, waiter order, and every capture mode.

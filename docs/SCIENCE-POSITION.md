@@ -97,7 +97,7 @@ Two declarations that differ from common misunderstandings:
 ## 6. Declared boundaries
 
 - The current verification scope, case dispositions, and retained-evidence boundaries are recorded in
-  [audit coverage](<experiments/AUDIT_COVERAGE.md>) and the [V&V case ledger](<experiments/VV_CASE_LEDGER.md>).
+  [audit coverage](<experiments/VERIFICATION.md>) and the [V&V case ledger](<experiments/VERIFICATION.md>).
   Retained artifacts support their declared contracts; they are not current capability or regeneration claims.
 - Independent Python recomputation covers the declared scalar and event families, including deadline,
   controlled shared storage, terminal-clock identity, job execution start, and derived cross-checks.

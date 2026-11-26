@@ -41,7 +41,7 @@
 | Metric | Our conventions | Difference from the closest conventions in the literature | Writing advice |
 |---|---|---|---|
 | DATA_STAGE_IN_MODELED family | Nominal estimates (contention-free isolated seconds, referenced bytes, real external inputs) | The literature often loosely calls this "traffic" | Distinguish nominal estimates from actual contended wall-clock; state that these are referenced bytes, not transferred bytes |
-| Contended FCT / utilization | Precise accounting from the sidecar ledger | See the NETWORK_LEDGER_VALIDATION contract for details | Cite the conventions of that contract |
+| Contended FCT / utilization | Precise accounting from the sidecar ledger | See the [network ledger contract](<../advanced/NETWORK_LEDGER.md#5-exact-derived-metrics>) | Cite the conventions of that contract |
 
 ## Energy Family
 

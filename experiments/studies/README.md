@@ -5,13 +5,6 @@ module and not a platform capability list. Research drivers and tests live in th
 experiment module's standard source directories; general run operations are described in
 [Workbench](<../../docs/getting-started/WORKBENCH.md>).
 
-## Internal verification records
-
-The [review protocol](<verification/VV_REVIEW_PROTOCOL.md>) and
-[review record](<verification/VV_REVIEW.md>) are retained for evidence traceability. They are not
-user setup instructions or a current capability matrix; the public entry point remains the
-[documentation center](<../../docs/README.md>).
-
 ## Derived research inputs
 
 The [makespan-scale inputs](<makespan-scale/README.md>) document the exact five-copy construction of
