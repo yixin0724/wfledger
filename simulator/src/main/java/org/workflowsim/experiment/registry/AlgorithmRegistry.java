@@ -184,13 +184,13 @@ public final class AlgorithmRegistry {
             throw new IllegalArgumentException("Algorithm '" + label + "' declares powerModelRequired, "
                     + "but the platform profile declares neither per-VM power fields "
                     + "(idlePowerWatts/maxPowerWatts on PlatformProfile.VmSpec) nor a frequencyTier "
-                    + "table (BAT-D2 powered predicate: either face counts as powered)");
+                    + "table");
         }
 
         if (declaration.isFrequencyTiersRequired() && !input.isPlatformFrequencyTiersDeclared()) {
             throw new IllegalArgumentException("Algorithm '" + label + "' declares frequencyTiersRequired, "
                     + "but the platform profile does not declare any VM frequencyTiers "
-                    + "(PlatformProfile.VmSpec.frequencyTiers, BAT-D4)");
+                    + "(PlatformProfile.VmSpec.frequencyTiers)");
         }
         if (input.isTaskCostMatrixDeclared() && !declaration.acceptsTaskCostMatrix()) {
             throw new IllegalArgumentException("Registered scheduling algorithm '" + label

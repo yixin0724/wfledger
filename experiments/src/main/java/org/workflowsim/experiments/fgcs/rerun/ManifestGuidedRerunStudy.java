@@ -215,7 +215,7 @@ public final class ManifestGuidedRerunStudy {
                                     + " expected",
                             expect(
                                             RerunVerdict.EVIDENCE_INVALID,
-                                            "Report and Exit Codes (AUD-F05): v4 validation recomputes makespanSeconds"
+                                            "Report and Exit Codes: v4 validation recomputes makespanSeconds"
                                                     + " from the manifest's own result records. A stale metric"
                                                     + " must be rejected before re-simulation; rehashing the corrupted"
                                                     + " artifacts cannot convert it to DIVERGED.")

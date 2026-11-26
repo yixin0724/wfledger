@@ -96,8 +96,6 @@ def verify(output):
             issues.append("missing " + name)
         elif len(json.loads(path.read_text())) != expected:
             issues.append("wrong row count for " + name)
-    # FGCS-R3 (2026-11-24): generated rerun/adversarial evidence must carry the protocol's current execution
-    # identity; retained V2-era bundles cannot satisfy a new round-two verification.
     expected = declared_execution_semantics()
     for name in ("rerun/evidence", "verification/evidence"):
         _, failures = check_manifest_semantics(output / name, expected)

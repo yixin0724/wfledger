@@ -42,7 +42,7 @@ scripts/__pycache__/
 # WfCommonsCliSmokeIntegrationTest no longer skip in a standard build (including a fresh CI
 # checkout). A directory-level ignore cannot re-include inner files, hence the /* + ! ladder.
 datasets/wfinstances/*
-# AUD-F13: the family integrity indexes ship with the repository even though the
+# The family integrity indexes ship with the repository even though the
 # corpora behind them do not.
 !datasets/wfinstances/INDEX.json
 !datasets/wfinstances/v1.5/
@@ -71,7 +71,7 @@ datasets/wfformat/montage/*
 datasets/wfformat/montage/n100/*
 !datasets/wfformat/montage/n100/montage-100-000.json
 datasets/wfinstances/.v1.5-git-metadata/
-# R7-WORKLOAD: the wfgen-standard n1000 instances (160 files, ~134 MB) are regenerated
+# The wfgen-standard n1000 instances (160 files, ~134 MB) are regenerated
 # byte-identically by experiments/studies/standard-workloads/generate_corpus.py; their
 # hashes stay in datasets/wfgen-standard/INDEX.json. n50/n100 instances are committed.
 datasets/wfgen-standard/*/n1000/
@@ -80,11 +80,9 @@ datasets/wfgen-standard/*/n1000/
 output/network-study-r10*/
 # S5 PEFT comparison study local evidence; protocol/results docs live in experiments/studies/peft-comparison-r12/.
 output/peft-comparison-r12/
-# R13 sensitivity response surface local evidence; docs live in experiments/studies/sensitivity-r13/.
 output/sensitivity-r13/
 output/workbench*/
 output/*.tar.gz
-# R13-v2 recertified local evidence; docs live in experiments/studies/sensitivity-r13-v2/.
 output/sensitivity-r13-v2/
 # Independent Python audit reports for the retained R13-v2 evidence.
 output/r13-v2-audit-evidence
@@ -110,8 +108,6 @@ output/makespan-baseline/
 output/makespan-scale/
 output/energy-baseline/
 
-# BAT-D3 DVFS tier-audit smoke bundle (one real 2-tier run; regenerable via a temporary
-# SimulationRunner driver — the smoke path is documented in DVFS_DIMENSION_DESIGN.md §2.4).
 output/dvfs-tier-audit-smoke/
 
 paper/

@@ -42,13 +42,6 @@ CS_SCOPE = "SHARED_STORAGE_NO_CLUSTERING_NO_FAILURE_NO_OVERHEAD_SPACE_SHARED"
 CS_OUTSIDE = "UNAVAILABLE_OUTSIDE_CONTROLLED_SHARED_STORAGE_SCOPE"
 
 def task_window_verdict(failed, start, finish, planned_seconds, tol):
-    """Checks one Task attempt window against its planned compute seconds.
-
-    FGCS-R5 (2026-11-24): mirrors WorkflowDatacenter. A successful attempt computes exactly its planned
-    seconds. A failure ends the attempt at the first failure arrival in the half-open compute window
-    [start, start + planned), so a failed window is the executed portion: non-negative and strictly
-    shorter than planned. Returns (ok, seconds the envelope must cover).
-    """
     executed = finish - start
     if not failed:
         return abs(executed - planned_seconds) <= tol, planned_seconds
@@ -85,8 +78,6 @@ def critical_path_reference(config, platform, raw_tasks):
             or bool(overhead.get("clusteringDelays"))):
         return unavailable(CS_OUTSIDE)
     storage = platform.get("storage")
-    # STD-V1 (2026-11-25): the rate is a finite positive binary64 (historical evidence carries integer literals,
-    # which denote the same values); number() rejects non-numbers and non-finite values fail fast.
     transfer_rate = storage.get("maxTransferRateMbPerSecond") if isinstance(storage, dict) else None
     if transfer_rate is None or number(transfer_rate, "storage rate") <= 0:
         return unavailable(CS_OUTSIDE)
@@ -105,7 +96,6 @@ def critical_path_reference(config, platform, raw_tasks):
     min_interval = number(config.get("cloudSimMinEventIntervalSeconds", 0.1), "min interval")
 
     stage_raw = 110.0 / fastest_mips
-    # FGCS-R3 (2026-11-24, A4): the completion safety margin is tick / 10 (SimulationTiming).
     stage_secs = max(stage_raw, min_interval + min_interval / 10.0) + min_interval
 
     matrix = {}
@@ -196,8 +186,6 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         result, metrics = needed(doc, "result"), needed(doc, "metrics")
         marker = config.get("executionSemantics")
         old = marker is None
-        # FGCS-R3 (2026-11-24): a V2 declaration is a recognized historical identity; like an absent marker it
-        # is accepted only under --historical and is never relabelled as the current V3 execution.
         historical_marker = marker in HISTORICAL_EXECUTION_SEMANTICS
         audit.ensure(not (old or historical_marker) or historical, "historical-mode-required", prefix, marker)
         audit.ensure(old or historical_marker or marker == EXECUTION_SEMANTICS, "execution-model-identity", prefix,
@@ -390,7 +378,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             if raw_tiers is None:
                 continue
             if not isinstance(raw_tiers, list) or not raw_tiers:
-                raise CheckError("VM frequencyTiers must be a non-empty list when declared (BAT-D3)")
+                raise CheckError("VM frequencyTiers must be a non-empty list when declared")
             tiers = []
             for item in raw_tiers:
                 if not isinstance(item, dict):
@@ -403,16 +391,14 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 if tiers and tier_mips >= tiers[-1][0]:
                     raise CheckError(
                         "frequencyTiers must be strictly descending by mips on VM " + str(vmid)
-                        + " (BAT-D1 tier-order contract)")
+                        + "")
                 tiers.append((tier_mips, tier_idle, tier_max))
             if vm_power[vmid][0] > 0.0 or vm_power[vmid][1] > 0.0:
                 raise CheckError("VM " + str(vmid)
                                  + " declares BOTH frequencyTiers and plain power fields — one source of"
-                                 + " truth required (BAT-D1)")
+                                 + " truth required")
             vm_tiers[vmid] = tiers
             tier_max_by_vm[vmid] = {t[0]: t[2] for t in tiers}
-        # FGCS-R3 (2026-11-24, A5): mirror EnergyAccounting.requireAllOrNonePowered. A fleet in
-        # which only part of the VMs declares power would book the rest at 0 J.
         powered_vms = sorted(vmid for vmid, p in vm_power.items() if p[0] > 0.0 or p[1] > 0.0 or vmid in vm_tiers)
         if powered_vms and len(powered_vms) != len(vm_power):
             raise CheckError("energy accounting requires a power model on every VM or on none; powered VMs "
@@ -444,7 +430,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 if raw is not None:
                     raise CheckError("job " + str(jid) + " on non-tiered VM " + str(vmid)
                                      + " carries tierMips: the per-Job tier evidence chain is"
-                                     " broken (BAT-D3)")
+                                     " broken")
             else:
                 if raw is None:
                     tier_mips = tiers[0][0]
@@ -454,7 +440,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                         raise CheckError(
                             "job " + str(jid) + " carries tier mips " + str(raw)
                             + " which matches no declared frequency tier of VM " + str(vmid)
-                            + ": the per-Job tier evidence chain is broken (BAT-D2)")
+                            + ": the per-Job tier evidence chain is broken")
                 tier_of_job[jid] = tier_mips
                 buckets = tier_intervals_by_vm.setdefault(vmid, {})
                 buckets.setdefault(tier_mips, []).append((start, finish))
@@ -518,10 +504,6 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                 continue
             effective = java_round(costs[(tid, vmid)] * mips) if matrix is not None else raw_mi
             if crch_attempts:
-                # FGCS-R5 (2026-11-24): a CRCH attempt executes its work plus ceil(n*gamma*mips) checkpoint MI,
-                # and a resumption on the checkpointing VM computes only the work after the latest checkpoint.
-                # The checkpoint interval and overhead are not manifest fields, so the declared executed MI is
-                # taken as given (bounded by the raw work plus overhead) and the window is checked against it.
                 declared = integer(needed(task, "effectiveExecutionLengthMi"), "effective MI", True)
                 audit.ensure(0 < declared, "crch-effective-mi-positive", prefix, [tid, declared])
                 effective = declared
@@ -579,9 +561,6 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         def field_values(rows, field):
             return [number(needed(row, field), field, nonnegative=True) for row in rows]
         waits, slow, ready_dec, dec_start, success_waits, success_slow = [], [], [], [], [], []
-        # FGCS-R6 (2026-11-25): the bounded-slowdown floor tau is the declared configuration value
-        # (SimulationConfig.boundedSlowdownThresholdSeconds). Evidence written before R6 carries no declaration
-        # and used the then hard-coded Feitelson (1997) floor of 10 s; current-identity evidence must declare it.
         if "boundedSlowdownThresholdSeconds" in config or not (old or historical_marker):
             tau = number(needed(config, "boundedSlowdownThresholdSeconds"), "bounded slowdown threshold", positive=True)
             if not math.isfinite(tau):
@@ -589,11 +568,6 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
         else:
             tau = 10.0
         clamped = 0
-        # FGCS-R3 (2026-11-24): mirror SimulationMetrics' three independent sample sets exactly.
-        # Waiting/bounded slowdown need only JOB_READY with start >= ready; ready->decision needs
-        # both events with decision >= ready; decision->start needs the decision with
-        # start >= decision. Missing or out-of-order observations are excluded, never clamped to
-        # a zero sample (METRICS_CARD / CONTRACTS "Waiting, Slowdown, and Missing Observations").
         for job in computes:
             jid = job["jobId"]
             ready = number(by_type["JOB_READY"][jid]["simulationTime"]) if jid in by_type["JOB_READY"] else None
@@ -648,11 +622,6 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
             cpu = number(needed(prices, "cpuPerSecond"), "CPU price", nonnegative=True) * number(job["cpuTime"], nonnegative=True)
             declared_bytes = number(needed(job, "modeledDeclaredFileBytes"), "declared bytes", nonnegative=True)
             if parsed_complete:
-                # FGCS-R6 (2026-11-25): mirror Task.getModeledDeclaredFileBytes - only real input files (an input
-                # not also declared as an output of the same Job, FileItem.isRealInputFile) are billed, once per
-                # transfer; the stage-in Job carries exactly the external inputs.
-                # Historical evidence (absent or V2 execution identity) was written under the former rule that
-                # billed every declared file item and is checked against that rule.
                 if job["classType"] == STAGE_IN:
                     expected_bytes = ordered_sum(raw_external.values())
                 elif old or historical_marker:
@@ -739,15 +708,10 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                                   ("reportedCpuTimeSeconds", math.fsum(number(j["cpuTime"]) for j in vm_jobs)),
                                   ("reportedCpuTimeOverMakespan", math.fsum(number(j["cpuTime"]) for j in vm_jobs) / end if end > 0 else 0.0)):
                 audit.metric(saved, key, expected, prefix + ":VM:" + str(vmid))
-        # FGCS-R6 (2026-11-25): envelope input-read seconds are the effectiveDataStageSeconds that
-        # JOB_EXECUTION_STARTED declares (and the event contract binds to modeledJobStartSeconds); they are the
-        # part of the busy interval that legacy/fixed-endpoint models charge as CPU-active time.
         read_by_job = {jid: number(needed(needed(event, "attributes"), "effectiveDataStageSeconds"),
                                    "effective data stage", nonnegative=True)
                        for jid, event in started_jobs.items() if jid in jobs_by_id}
         r6_required = not (old or historical_marker)
-        # A stream without start markers keeps the manifest-authority boundary for the read decomposition,
-        # mirroring ExperimentArtifactValidator.verifyR6MetricsRecompute.
         read_checked = bool(started_jobs)
         for vmid in vms if read_checked else ():
             saved = needed(saved_vms, str(vmid))
@@ -812,7 +776,7 @@ def inspect_manifest(path, audit, historical=False, input_roots=(), cache=None):
                             "per-tier busy seconds of VM " + str(vmid) + " (sum=" + str(attributed)
                             + ") do not equal its total modeled busy interval ("
                             + str(busy_by_vm[vmid]) + "): the per-tier conservation evidence chain"
-                            + " is broken (BAT-D2)")
+                            + " is broken")
                     e = default_idle * end
                     for tier_mips, tier_busy in ordered_tiers:
                         e += (tier_max_by_vm[vmid][tier_mips] - default_idle) * tier_busy

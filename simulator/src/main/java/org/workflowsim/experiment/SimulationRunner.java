@@ -376,7 +376,7 @@ public final class SimulationRunner {
             if (Math.abs(left - right) > 1.0e-9 * Math.max(left, right)) {
                 throw new SimulationConfigurationException("Every VM must have the same ratio of default frequency"
                         + " tier to nominal MIPS: VM " + first.getId() + " and VM " + spec.getId()
-                        + " differ, so decisions based on nominal speed would misrank them (FGCS-R5)");
+                        + " differ, so decisions based on nominal speed would misrank them");
             }
         }
     }
@@ -397,7 +397,7 @@ public final class SimulationRunner {
             throw new SimulationConfigurationException(
                     "FrequencyPolicy " + config.getFrequencyPolicy() + " requires at least one VM with "
                             + "declared frequencyTiers; on an all-plain platform the policy would be "
-                            + "silently inert (BAT-D2)");
+                            + "silently inert");
         }
         validateUniformDefaultTierRatio(platform);
         if (anyTieredVm
@@ -406,13 +406,13 @@ public final class SimulationRunner {
                                 == FailureParameters.FTCluteringAlgorithm.FTCLUSTERING_CRCH)) {
             throw new SimulationConfigurationException("CRCH recovery cannot be combined with frequency tiers: saved"
                     + " work, checkpoint overhead and retry placement use nominal VM MIPS, so the tier speed would be"
-                    + " silently ignored (FGCS-R4)");
+                    + " silently ignored");
         }
         if (config.getTaskCostMatrix() != null && anyTieredVm) {
             throw new SimulationConfigurationException("A task cost matrix cannot be combined with frequency"
                     + " tiers: the STATIC dispatch path re-derives Job MI from matrix seconds at datacenter"
                     + " submission (projectComputeExecutionLength) and would silently discard the "
-                    + "tier-scaled length (BAT-D2)");
+                    + "tier-scaled length");
         }
     }
 }

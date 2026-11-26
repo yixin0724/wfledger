@@ -61,7 +61,6 @@ class RevisionVerifierTest(unittest.TestCase):
                 MODULE.verify(root)
 
     def test_retained_v2_evidence_cannot_satisfy_a_new_revision_run(self):
-        # FGCS-R3 (2026-11-24): the protocol declares V3 for new runs; V2-era bundles are historical only.
         for name in ("rerun/evidence/old", "verification/evidence/old"):
             with tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)

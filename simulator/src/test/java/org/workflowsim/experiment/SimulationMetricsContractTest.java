@@ -92,7 +92,7 @@ class SimulationMetricsContractTest {
         for (String name : names) {
             assertTrue(
                     metrics.has(name),
-                    "REQUIRED_METRIC_FIELDS entry \"" + name + "\" is not a real serialized metrics field (AUD-F14)");
+                    "REQUIRED_METRIC_FIELDS entry \"" + name + "\" is not a real serialized metrics field");
         }
     }
 

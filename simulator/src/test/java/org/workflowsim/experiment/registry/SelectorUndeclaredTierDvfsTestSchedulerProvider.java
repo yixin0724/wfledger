@@ -27,7 +27,7 @@ public final class SelectorUndeclaredTierDvfsTestSchedulerProvider implements Sc
         return new AlgorithmDeclaration.Builder()
                 .dvfsAware(true)
                 .frequencyTiersRequired(true)
-                .description("BAT-D6 negative-face provider: selector returns an undeclared"
+                .description("negative-face provider: selector returns an undeclared"
                         + " tier; must be rejected citing the per-Job tier evidence chain")
                 .build();
     }

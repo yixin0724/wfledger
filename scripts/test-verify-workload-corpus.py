@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Self-test for verify-workload-corpus.py (R7-WORKLOAD, 2026-11-25).
+"""Self-test for verify-workload-corpus.py.
 
 Expectations are hand-derived from small hand-built DAGs (levels, widths, edge counts,
 byte totals) and from the documented canonical file-ID contract; no expected value is
@@ -58,9 +58,6 @@ def diamond():
     }
 
 
-# Hand derivation for diamond(): 4 edges (a-b, a-c, b-d, c-d); depth 3; widest level 2;
-# runtime 1.5+2+0.25+4 = 7.75; input references a(10) + b(20) + c(20) + d(0+5) = 55;
-# distinct file bytes 10+20+0+5 = 35; one zero-size file.
 DIAMOND_STATS = {"tasks": 4, "edges": 4, "depth": 3, "max_level_width": 2,
                  "total_runtime_s": 7.75, "total_input_bytes": 55, "files": 4,
                  "zero_size_files": 1, "total_file_bytes": 35}
@@ -133,7 +130,6 @@ class AnalyzeTests(unittest.TestCase):
         self.assertNotEqual(old, new)
 
     def test_file_named_after_a_later_task_is_rejected(self):
-        # The first referencing task in ascending ID order is a_1, not b_2.
         document = diamond()
         spec = document["workflow"]["specification"]
         spec["files"][1]["id"] = "b_2.in000.dat"

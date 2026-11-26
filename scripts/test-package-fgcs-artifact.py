@@ -129,7 +129,7 @@ class ArtifactPackageTest(unittest.TestCase):
                 {"caseId": "input-v3-unresolved", "actualVerdict": "INPUT_UNRESOLVED"},
             ]}))
             original = b"aaaa"
-            declared_hash = MODULE.sha256(root / "results/rerun/results.json")  # different from candidate
+            declared_hash = MODULE.sha256(root / "results/rerun/results.json")
             manifest = root / "results/rerun/evidence/cases/input-hash-mismatch/result.manifest.json"
             manifest.parent.mkdir(parents=True)
             candidate = root / "results/rerun/inputs/hash.dax"

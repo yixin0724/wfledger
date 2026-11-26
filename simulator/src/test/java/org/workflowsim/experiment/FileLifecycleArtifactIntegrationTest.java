@@ -372,11 +372,9 @@ class FileLifecycleArtifactIntegrationTest {
         assertThrows(
                 IllegalStateException.class,
                 () -> validator.acceptEvent(replay),
-                "A finished validator must reject further event feeding (AUD-F15)");
+                "A finished validator must reject further event feeding");
         assertThrows(
-                IllegalStateException.class,
-                () -> validator.finish(),
-                "A finished validator must reject re-finishing (AUD-F15)");
+                IllegalStateException.class, () -> validator.finish(), "A finished validator must reject re-finishing");
     }
 
     @Test

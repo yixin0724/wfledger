@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Self-test for generate_corpus.py (R7-WORKLOAD, 2026-11-25).
+"""Self-test for generate_corpus.py.
 
 Run with the WfCommons generation environment, from the repository root::
 
@@ -82,11 +82,8 @@ class CanonicalizationTests(unittest.TestCase):
         document = GEN.canonicalize(toy_document())
         spec = document["workflow"]["specification"]
         by_id = {task["id"]: task for task in spec["tasks"]}
-        # a_00000001 sorts first: its input ordinal 0 (no extension) and output ordinal 0.
         self.assertEqual(["a_00000001.in000"], by_id["a_00000001"]["inputFiles"])
         self.assertEqual(["a_00000001.out000.dat"], by_id["a_00000001"]["outputFiles"])
-        # b reuses a's output under a's name; its own new input gets b's ordinal 1 and a
-        # dot is inserted before the bare recipe key "maq".
         self.assertEqual(["a_00000001.out000.dat", "b_00000002.in001.maq"],
                          by_id["b_00000002"]["inputFiles"])
         self.assertEqual({"a_00000001.in000": 5, "a_00000001.out000.dat": 7,
@@ -161,7 +158,7 @@ class ReproducibilityTests(unittest.TestCase):
         files_a = sorted(p.relative_to(self.temp / "a") for p in (self.temp / "a").rglob("*.json"))
         files_b = sorted(p.relative_to(self.temp / "b") for p in (self.temp / "b").rglob("*.json"))
         self.assertEqual(files_a, files_b)
-        self.assertEqual(5, len(files_a))  # 4 instances + GENERATION.json
+        self.assertEqual(5, len(files_a))
         for rel in files_a:
             self.assertEqual((self.temp / "a" / rel).read_bytes(),
                              (self.temp / "b" / rel).read_bytes(), str(rel))

@@ -108,9 +108,7 @@ class FrequencyTierAssignmentTest {
                 1e-6,
                 "all jobs at the DEFAULT tier: per-tier and all-at-default accountings agree");
         assertNotEquals(
-                0.0,
-                report.getEnergyAccounting().getTotalEnergyJoules(),
-                "tiered platform must be" + " powered (BAT-D2 fixes the D1 dead gate that zeroed tiered platforms)");
+                0.0, report.getEnergyAccounting().getTotalEnergyJoules(), "tiered platform must be" + " powered");
     }
 
     @Test

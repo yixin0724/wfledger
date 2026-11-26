@@ -119,7 +119,7 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 | `datasets/` | Workflow inputs (three families, with .gitignore negation) | No new full corpora; check `datasets/INDEX.json` first |
 | `docs/` | Contract-document system | Every new document must be indexed in `docs/README.md`; `check-docs.py` 0 issues |
 | `scripts/` | Python auditors (pure stdlib) | No Node dependencies; self-tests come in pairs |
-| `config/` | Code tool-chain ledger (checkstyle tier rules, etc.) | Rules only grow; revise in step with CODE_STYLE.md |
+| `config/` | Code tool-chain ledger (checkstyle tier rules, etc.) | Rules only grow; revise in step with CONTRIBUTING.md |
 | `output/` | Run artifacts (gitignored) | Keep only tar originals plus currently active experiments; old heaps must be cleaned |
 | `AGENTS.md` | Coding-agent handbook | Changes require human review |
 | `LICENSE` | Official GPL-3.0 full text | Must not be replaced with a permissive license: upstream CloudSim 3 carries copyleft notices (`simulator/src/main/java/org/cloudbus/`) |
@@ -127,7 +127,7 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 | `THIRD_PARTY.md` | Third-party provenance and licensing ledger | Update whenever upstream code or dependency scope changes |
 | `licenses/` | License texts and source hashes | Keep upstream notices, texts, and `provenance.json` synchronized |
 | `CITATION.cff` | Software citation metadata (read by GitHub "Cite this repository") | Version, date, and author changes must match an actual release; the license field is fixed to `GPL-3.0-or-later` |
-| `.editorconfig` | Editor encoding, line-ending, indentation, and trailing-whitespace defaults | Keep in step with Spotless and CODE_STYLE.md; no formatter is driven by this file alone |
+| `.editorconfig` | Editor encoding, line-ending, indentation, and trailing-whitespace defaults | Keep in step with Spotless and CONTRIBUTING.md; no formatter is driven by this file alone |
 | `Makefile` | Convenience commands | Maintained in step with the pom.xml targets |
 
 **Discipline for adding a top-level directory or file**: first ask "why can this not live

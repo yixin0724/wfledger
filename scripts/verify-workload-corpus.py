@@ -9,8 +9,7 @@ Usage (from the repository root)::
     # build INDEX.json from a complete generation (every instance present)
     python3 -B scripts/verify-workload-corpus.py /tmp/wfgen-standard --write-index
 
-The corpus is produced by ``experiments/studies/standard-workloads/generate_corpus.py``
-(R7-WORKLOAD, 2026-11-25). This verifier is pure standard library and never imports
+The corpus is produced by ``experiments/studies/standard-workloads/generate_corpus.py``. This verifier is pure standard library and never imports
 WfCommons. For every instance file present on disk it checks:
 
 * the SHA-256 recorded in the index;

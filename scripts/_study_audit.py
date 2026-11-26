@@ -10,13 +10,10 @@ from fractions import Fraction
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-# FGCS-R3 (2026-11-24): the current execution identity is V3; V2 is a historical read-only identity that only
-# --historical audits accept (mirrors TaskExecutionModel and NetworkStudyPlan).
 EXECUTION_SEMANTICS = "WORK_CONSERVING_TASK_EXECUTION_V3"
 HISTORICAL_EXECUTION_SEMANTICS_V2 = "WORK_CONSERVING_TASK_EXECUTION_V2"
 HISTORICAL_EXECUTION_SEMANTICS = (HISTORICAL_EXECUTION_SEMANTICS_V2,)
 LONG_MAX = (1 << 63) - 1
-# protocol -> (variant, historical, declared executionSemantics or None when the field must be absent)
 PROTOCOLS = {
     "network-limited-r10-v4": ("r10", False, EXECUTION_SEMANTICS),
     "network-limited-r10-v3": ("r10", True, HISTORICAL_EXECUTION_SEMANTICS_V2),

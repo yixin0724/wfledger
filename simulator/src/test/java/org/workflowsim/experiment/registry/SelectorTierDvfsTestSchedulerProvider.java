@@ -27,7 +27,7 @@ public final class SelectorTierDvfsTestSchedulerProvider implements SchedulingAl
         return new AlgorithmDeclaration.Builder()
                 .dvfsAware(true)
                 .frequencyTiersRequired(true)
-                .description("BAT-D6 test provider: per-Job selector always picking the last"
+                .description("test provider: per-Job selector always picking the last"
                         + " (lowest-mips) tier; exercises the scheduling-time tier API")
                 .build();
     }

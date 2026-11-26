@@ -123,8 +123,6 @@ def relocate_manifest(path, results_root, source_results=None, original_checkout
     source_results = Path(source_results).resolve() if source_results is not None else original_root / "paper/tmp/fgcs-revision"
     results_root = Path(results_root).resolve()
     if not source_results.is_relative_to(original_root):
-        # Results may be synchronized from a detached checkout into another root. Input identity
-        # is still verified below; this root is used only to derive the package-relative location.
         result_prefix = Path("paper/tmp/fgcs-round2")
     else:
         result_prefix = source_results.relative_to(original_root)
@@ -186,7 +184,6 @@ def collect_results(source, destination, source_root=None):
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             if path.name == "result.manifest.json":
-                # Relocation needs the original absolute workingDirectory and input paths.
                 shutil.copyfile(path, target)
             else:
                 copy_sanitized(path, target, source_root)

@@ -588,7 +588,7 @@ public final class PlatformProfile {
                 if (idlePowerWatts > 0.0 || maxPowerWatts > 0.0) {
                     throw new IllegalArgumentException(
                             "VM " + id + " declares BOTH frequencyTiers and plain idlePowerWatts/"
-                                    + "maxPowerWatts — one source of truth required (BAT-D1)");
+                                    + "maxPowerWatts — one source of truth required");
                 }
                 for (int t = 1; t < frequencyTiers.size(); t++) {
                     if (frequencyTiers.get(t).getMips()

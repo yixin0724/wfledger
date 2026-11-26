@@ -112,8 +112,6 @@ def make_bundle(root, duration=1.0, effective=1000, matrix=False):
         "totalVmModeledBusyIntervalSeconds": busy, "meanVmModeledIntervalUtilization": busy / end,
         "vmModeledBusyTimeCoefficientOfVariation": 0.0, "vmUtilizationJainFairnessIndex": 1.0,
         "exactTaskTimingObservationCount": 1, "modeledApproximateTaskTimingObservationCount": 0,
-        # FGCS-R6 (2026-11-25): the single compute Job runs `duration` <= 10 s, so it is clamped by the
-        # default floor (1 of 1 samples); no JOB_EXECUTION_STARTED event, so no read decomposition sample.
         "boundedSlowdownThresholdSeconds": 10.0, "boundedSlowdownFloorClampedObservationCount": 1,
         "boundedSlowdownFloorClampedFraction": 1.0, "totalInputReadSecondsInEnvelope": 0.0,
         "totalComputeOnlyBusySeconds": busy, "inputReadShareOfBusyTime": 0.0, "inputReadInEnvelopeObservationCount": 0,
@@ -267,8 +265,6 @@ class IndependentAuditorTests(unittest.TestCase):
         return subprocess.run([sys.executable, str(HERE / script), str(source), "--output", str(output)], capture_output=True, text=True)
 
     def test_failed_attempt_window_is_the_executed_compute_portion(self):
-        # FGCS-R5 (2026-11-24): hand-derived from the mid-execution failure contract. A 2 s compute window
-        # [0.21, 2.21) failed by the arrival 2.1 executes 1.89 s; the envelope must cover only those 1.89 s.
         verdict = evidence.task_window_verdict
         self.assertEqual((True, 2.0), verdict(False, 0.21, 2.21, 2.0, 1e-9))
         ok, covered = verdict(True, 0.21, 2.1, 2.0, 1e-9)
@@ -286,7 +282,6 @@ class IndependentAuditorTests(unittest.TestCase):
         self.assertEqual(2**52 + 1, java_round(float(2**52 + 1)))
 
     def test_independent_registration_counts_and_frozen_synthetic_hashes(self):
-        # FGCS-R3 (2026-11-24): current V3 identities, V2-era historical identities, and the oldest identities.
         registry = (("network-limited-r10-v4", False, "WORK_CONSERVING_TASK_EXECUTION_V3", (504, 36)),
                     ("network-limited-r10-v3", True, "WORK_CONSERVING_TASK_EXECUTION_V2", (504, 36)),
                     ("network-limited-r10-v2", True, None, (504, 36)),
@@ -307,14 +302,11 @@ class IndependentAuditorTests(unittest.TestCase):
         self.assertEqual("342347cfb5cb139b52d903a611cb84ff205078250d3bdb754152cfb239af97e2", hashlib.sha256(layered_xml(32).encode()).hexdigest())
 
     def test_std_v1_fractional_shared_rate_reference_matches_hand_derivation(self):
-        # STD-V1 (2026-11-25): the SHARED rate is a finite positive double. Hand derivation mirrors the Java test:
-        # 25e6 B / 1e6 / 2.5 MB/s = 10 s; (2000 + floor(1000 * 10)) / 1000 = 12 s; stage-in release
-        # max(0.11, 0.1 + 0.01) + 0.1 = 0.21 s; lower bound 12.21 s. An integer rate (historical evidence) keeps working.
         config = {"dataMovementModel": {"kind": "LEGACY_WORKFLOWSIM_V1"}, "clustering": {"method": "NONE"},
                   "failureModel": {"generatorMode": "FAILURE_NONE"}, "fileSystem": "SHARED",
                   "overheadModel": {"workflowEngineDelayInterval": 0, "bandwidth": 0.0}, "cloudSimMinEventIntervalSeconds": 0.1}
         tasks = {1: {"parents": [], "children": [], "lengthMi": 2000, "files": [("external", "input", 25000000.0)]}}
-        for rate, expected in ((2.5, 12.21), (25, 3.21)):  # 25 MB/s: 1 s read, (2000 + 1000) / 1000 = 3 s
+        for rate, expected in ((2.5, 12.21), (25, 3.21)):
             platform = {"storage": {"maxTransferRateMbPerSecond": rate},
                         "vms": [{"id": 0, "mips": 1000.0, "schedulerMode": "SPACE_SHARED"}]}
             reference = evidence.critical_path_reference(config, platform, tasks)
@@ -428,9 +420,6 @@ class IndependentAuditorTests(unittest.TestCase):
                             "corrupted total energy must be caught: " + json.dumps(bad["issues"][:2]))
 
     def test_mixed_powered_and_unpowered_fleet_is_rejected(self):
-        # FGCS-R3 (2026-11-24, A5): all-or-none power declaration, mirrored from
-        # EnergyAccounting.requireAllOrNonePowered; a second unpowered VM next to a powered one
-        # must fail instead of contributing a silent 0 J.
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "mixed"
             make_bundle(root)
@@ -520,26 +509,14 @@ class IndependentAuditorTests(unittest.TestCase):
         return audit
 
     def test_waiting_sample_does_not_require_a_scheduling_decision(self):
-        # FGCS-R3 (2026-11-24): METRICS_CARD/CONTRACTS define the waiting and bounded-slowdown
-        # sample by JOB_READY plus start >= ready only; SimulationMetrics does not require
-        # SCHEDULING_DECISION or JOB_RETURNED. Dropping the compute Job's decision keeps one
-        # waiting/slowdown observation (wait = 0.21 - 0.21 = 0) and removes both decision
-        # split samples, so their counts become 0 by the same contract.
         audit = self.rewrite_compute_events(
             "no-decision",
             lambda events: [e for e in events if not (e["type"] == "SCHEDULING_DECISION" and e["jobId"] == 0)],
             readyToDecisionObservationCount=0, decisionToStartObservationCount=0)
-        # The stream-completeness layer still reports the missing decision; only the metric
-        # recomputation must agree with SimulationMetrics.
         self.assertEqual(0, audit.counts.get("metric-mismatch", 0), audit.report())
         self.assertEqual(1, audit.counts.get("missing-SCHEDULING_DECISION", 0), audit.report())
 
     def test_out_of_order_ready_is_excluded_not_clamped_to_zero(self):
-        # FGCS-R3 (2026-11-24): a compute Job whose JOB_READY (0.5) follows its start (0.21) is
-        # an out-of-order observation; the contract excludes it instead of substituting a zero
-        # wait. The waiting/slowdown/success samples are therefore empty (count 0, API mean 0.0),
-        # ready->decision is excluded (decision 0.21 < ready 0.5), and decision->start keeps
-        # its one sample (0.21 - 0.21 = 0).
         def late_ready(events):
             ready = next(e for e in events if e["type"] == "JOB_READY" and e["jobId"] == 0)
             events.remove(ready)
@@ -558,9 +535,6 @@ class IndependentAuditorTests(unittest.TestCase):
         self.assertEqual(1, audit.counts.get("ready-decision-start", 0), audit.report())
 
     def test_r6_bounded_slowdown_uses_the_declared_floor(self):
-        # FGCS-R6 (2026-11-25): the fixture's compute Job has w = 0 and e = 1.0 s. Under tau = 10 the sample
-        # is clamped (e < tau, count 1); under tau = 0.1 it is not (count 0). The slowdown is 1.0 either way;
-        # declaring the other floor's clamp count is a metric mismatch.
         for name, tau, clamped in (("tau10", 10.0, 1), ("tau01", 0.1, 0)):
             manifest = make_bundle(self.root / name)
             doc = json.loads(manifest.read_text())
@@ -579,17 +553,12 @@ class IndependentAuditorTests(unittest.TestCase):
             self.assertGreater(audit.counts.get("metric-mismatch", 0), 0, audit.report())
 
     def test_r6_short_floor_changes_the_slowdown_of_a_waiting_short_job(self):
-        # FGCS-R6 (2026-11-25): hand derivation with a genuine wait. The stage-in finishes at 0.21; the compute
-        # Job is ready at 0.21 but starts at 0.41 (w = 0.2) and runs 1.0 s to 1.41. tau = 10 gives
-        # max(1.2 / 10, 1) = 1.0 (clamped); tau = 0.1 gives 1.2 / 1.0 = 1.2 (not clamped).
         for name, tau, expected, clamped in (("wait10", 10.0, 1.0, 1), ("wait01", 0.1, 1.2, 0)):
             manifest = make_bundle(self.root / name)
             doc = json.loads(manifest.read_text())
             shift = 0.2
             for job in doc["result"]["jobs"]:
                 if job["classType"] == 2:
-                    # Idle-only dispatch: the VM submission happens at the dispatch instant, so the
-                    # submission time moves with the start and the VM-queue wait stays 0.
                     job["submissionTime"] += shift; job["startTime"] += shift; job["finishTime"] += shift
             task = doc["result"]["tasks"][0]
             task["startTime"] += shift; task["finishTime"] += shift
@@ -633,8 +602,6 @@ class IndependentAuditorTests(unittest.TestCase):
             self.assertEqual(0, audit.counts.get("metric-mismatch", 0), audit.report())
 
     def test_r6_current_identity_requires_the_declared_floor(self):
-        # FGCS-R6 (2026-11-25): current-identity evidence must declare the floor; a missing declaration aborts
-        # instead of silently falling back to 10 s.
         manifest = make_bundle(self.root / "undeclared-floor")
         doc = json.loads(manifest.read_text())
         del doc["configuration"]["boundedSlowdownThresholdSeconds"]
@@ -644,9 +611,6 @@ class IndependentAuditorTests(unittest.TestCase):
         self.assertGreater(audit.counts.get("invalid-or-unsupported-bundle", 0), 0, audit.report())
 
     def test_r6_envelope_read_decomposition_is_recomputed_from_start_events(self):
-        # FGCS-R6 (2026-11-25): busy = 0.11 (stage-in) + 1.0 (compute) = 1.11 s. A JOB_EXECUTION_STARTED that
-        # declares 0.4 s of effective staging for the compute Job gives read = 0.4, compute-only = 0.71 and an
-        # I/O share of 0.4 / 1.11; a forged read total is a metric mismatch.
         manifest = inject_contract_events(make_bundle(self.root / "read-share"))
         doc = json.loads(manifest.read_text())
         events_path = manifest.parent / "run.events.jsonl"
@@ -670,10 +634,6 @@ class IndependentAuditorTests(unittest.TestCase):
         self.assertGreater(audit.counts.get("metric-mismatch", 0), 0, audit.report())
 
     def test_r6_bandwidth_bills_real_inputs_once_per_transfer(self):
-        # FGCS-R6 (2026-11-25): mirror Task.getModeledDeclaredFileBytes. The fixture Task reads the external x
-        # (0.5 B); add an output o (0.25 B) and an in-place file u declared as both input and output (0.125 B).
-        # Billed bytes = real inputs only = x = 0.5 (o is produced; u is not transferred in). The former
-        # every-declared-file rule (0.5 + 0.25 + 0.125 + 0.125 = 1.0) is a raw-billable mismatch.
         for name, declared, ok in (("real-input", 0.5, True), ("all-files", 1.0, False)):
             manifest = make_bundle(self.root / name)
             doc = json.loads(manifest.read_text())
@@ -772,7 +732,6 @@ class IndependentAuditorTests(unittest.TestCase):
         write_json(manifest, original)
 
     def test_statistics_bind_v2_era_protocol_only_in_historical_mode(self):
-        # FGCS-R3 (2026-11-24): a retained V2-era study stays auditable read-only, but never as current evidence.
         source = make_statistics_study(self.root / "v2-era", "peft-comparison-r12-v2")
         audit = Audit()
         statistics.inspect_index(source, audit)
@@ -850,7 +809,6 @@ class ContractEventAuditTests(unittest.TestCase):
         self.assertEqual(0, revision_report.issue_count, revision_report.report())
 
     def test_v2_execution_identity_requires_historical_mode_and_unknown_identity_is_rejected(self):
-        # FGCS-R3 (2026-11-24): V2 is historical read-only; an unregistered identity is never accepted.
         manifest = make_bundle(self.root / "v2-identity")
         doc = json.loads(manifest.read_text())
         doc["configuration"]["executionSemantics"] = "WORK_CONSERVING_TASK_EXECUTION_V2"
@@ -1279,7 +1237,6 @@ class CaWoSchedBudgetAuditTests(unittest.TestCase):
             "vmModeledBusyTimeCoefficientOfVariation": 0.445 / 1.555,
             "vmUtilizationJainFairnessIndex": 3.11**2 / (2.0 * (1.11**2 + 2.0**2)),
             "exactTaskTimingObservationCount": 2,
-            # FGCS-R6 (2026-11-25): both compute Jobs (1 s, 2 s) are shorter than the 10 s floor.
             "boundedSlowdownFloorClampedObservationCount": 2,
             "totalComputeOnlyBusySeconds": 3.11,
         })

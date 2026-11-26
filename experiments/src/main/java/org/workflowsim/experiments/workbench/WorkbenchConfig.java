@@ -572,7 +572,7 @@ public final class WorkbenchConfig {
             throw new IllegalArgumentException(
                     "platform.frequencyTiers and platform.idlePowerWatts/maxPowerWatts are mutually exclusive:"
                             + " the tier table REPLACES the flat fields — one source of truth"
-                            + " (BAT-D4, DVFS_DIMENSION_DESIGN.md §2.5)");
+                            + "");
         }
         double cpuCostPerSecond = decimal(value, "cpuCostPerSecond", 3, false);
         Map<Integer, VmProfile> vmProfiles =
@@ -748,8 +748,8 @@ public final class WorkbenchConfig {
         JsonArray declared = array(value, "frequencyTiers");
         if (declared.size() == 0) {
             throw new IllegalArgumentException(subject
-                    + ".frequencyTiers must be a non-empty array when declared (BAT-D4;"
-                    + " omit the field for the v1 single-tier platform)");
+                    + ".frequencyTiers must be a non-empty array when declared;"
+                    + " omit the field for a single-tier platform");
         }
         List<PlatformProfile.FrequencyTier> tiers = new ArrayList<PlatformProfile.FrequencyTier>();
         for (JsonElement item : declared) {
@@ -773,14 +773,14 @@ public final class WorkbenchConfig {
             policy = SimulationConfig.FrequencyPolicy.valueOf(policyText);
         } catch (IllegalArgumentException unknownPolicy) {
             throw new IllegalArgumentException(
-                    "platform.frequencyPolicy must be one of DEFAULT, MIN_POWER," + " EDP_HEURISTIC (BAT-D4), got: "
+                    "platform.frequencyPolicy must be one of DEFAULT, MIN_POWER," + " EDP_HEURISTIC, got: "
                             + policyText,
                     unknownPolicy);
         }
         if (policy != SimulationConfig.FrequencyPolicy.DEFAULT && !anyVmHasFrequencyTiers(platform)) {
             throw new IllegalArgumentException("platform.frequencyPolicy (" + policy
                     + ") requires platform.frequencyTiers or platform.vmProfiles[].frequencyTiers: on an all-plain"
-                    + " platform the policy would be silently inert (BAT-D4)");
+                    + " platform the policy would be silently inert");
         }
         return policy;
     }

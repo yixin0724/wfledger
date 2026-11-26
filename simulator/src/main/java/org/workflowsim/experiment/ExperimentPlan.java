@@ -102,7 +102,7 @@ public final class ExperimentPlan {
                                 + " cost caliber with the " + describeCostCaliber(caliber, cell)
                                 + " cost caliber: a same-named algorithm carries two different "
                                 + "mapping-cost semantics across the two calibers, so keep one "
-                                + "comparison group within one cost caliber (AUD-F09).");
+                                + "comparison group within one cost caliber.");
                     }
                     if (existingCaliber == null) {
                         caliberByGroup.put(cell.getComparisonGroup(), caliber);

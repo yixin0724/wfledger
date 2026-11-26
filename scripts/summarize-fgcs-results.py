@@ -198,7 +198,6 @@ def sensitivity(rows):
             raise ValueError("incomplete sensitivity pair " + base)
         heft, minmin = pair["STATIC"], pair["READY_BATCH_MINMIN"]
         raw_relation = signed_relation(heft, minmin)
-        # Keep the comparison tolerance aligned with compare-fgcs-results.py; raw signs remain diagnostic only.
         relation = ("tie" if math.isclose(float(heft), float(minmin), rel_tol=1.0e-12, abs_tol=1.0e-9)
                     else raw_relation)
         cells.append({"case": base, "heftMakespanSeconds": heft, "minMinMakespanSeconds": minmin,
@@ -241,8 +240,6 @@ def main():
     environment = json.loads(environment_path.read_text(encoding="utf-8")) if environment_path.is_file() else None
     summary = {
         "protocol": "FGCS_MATRIX_V2",
-        # FGCS-R3 (2026-11-24): report the identity the run metadata recorded, never the current declaration;
-        # a summary of V2-era results therefore shows null or V2 rather than impersonating V3.
         "executionSemantics": environment.get("executionSemantics") if environment else None,
         "overheadProtocol": "FGCS_OVERHEAD_ROUND2_V2",
         "counts": {name: len(items) for name, items in rows.items()},

@@ -54,7 +54,7 @@ class FrequencyTierSelectorTest {
         List<Double> computeTiers = new ArrayList<Double>();
         for (SimulationReport.JobOutcome job : report.getJobs()) {
             if (job.getClassType() == ClassType.COMPUTE.value) {
-                assertNotNull(job.getTierMips(), "every compute job gets a tier at admission (BAT-D6)");
+                assertNotNull(job.getTierMips(), "every compute job gets a tier at admission");
                 computeTiers.add(job.getTierMips());
             }
         }
@@ -104,7 +104,7 @@ class FrequencyTierSelectorTest {
     private void expectRunFailureContaining(String label, String expectedClause) throws Exception {
         try {
             new SimulationRunner().run(registeredConfig(label), threeTierPlatform());
-            fail("Provider " + label + " must fail fail-fast (BAT-D6), but the run completed");
+            fail("Provider " + label + " must fail fail-fast, but the run completed");
         } catch (Throwable failure) {
             assertCauseChainContains(failure, expectedClause);
         }
@@ -120,8 +120,7 @@ class FrequencyTierSelectorTest {
             current = current.getCause();
             depth++;
         }
-        throw new AssertionError(
-                "Expected an exception chain containing \"" + clause + "\" (BAT-D6), got: " + failure, failure);
+        throw new AssertionError("Expected an exception chain containing \"" + clause + "\", got: " + failure, failure);
     }
 
     private SimulationConfig registeredConfig(String label) throws Exception {

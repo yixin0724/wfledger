@@ -364,7 +364,6 @@ REGISTRY = [
     dict(
         id="M49",
         name="CRCH recovery ignores completed checkpoint work",
-        # FGCS-R5 (2026-11-24): re-anchored; the remaining work is now derived in CrchRecovery.
         file="simulator/src/main/java/org/workflowsim/utils/CrchRecovery.java",
         old="        return workMi - savedWorkMi;",
         new="        return workMi;",
@@ -372,8 +371,6 @@ REGISTRY = [
     dict(
         id="M50",
         name="CRCH credits saved work on a VM that did not take the checkpoints",
-        # FGCS-R5 (2026-11-24): re-derived by lead adjudication. Checkpoints are VM-local (arXiv:1810.06361v2
-        # Sec. 3.1.3, Eq. 20/21); the former "avoid the failed VM" axis no longer exists.
         file="simulator/src/main/java/org/workflowsim/utils/CrchRecovery.java",
         old="        return vmId == failedVmId ? savedWorkMi : 0L;",
         new="        return savedWorkMi;",
@@ -453,14 +450,11 @@ REGISTRY = [
         name="EBPSM publishes unsuccessful output as readable cache",
         file="simulator/src/main/java/org/workflowsim/scheduling/EbpsmSchedulingAlgorithm.java",
         old="            if (task.getCloudletStatus() != Cloudlet.SUCCESS) {",
-        # FGCS-R4 (2026-11-24): keep the Cloudlet reference; a bare `false` left an unused import, so
-        # Checkstyle failed the build before any killer test ran (INFRA_FAILURE, not a kill).
         new="            if (task.getCloudletStatus() != Cloudlet.SUCCESS && false) {",
         killers="EbpsmSchedulingAlgorithmTest"),
     dict(
         id="M64",
         name="CRCH ignores checkpoint overhead when committing progress",
-        # FGCS-R5 (2026-11-24): re-anchored to the checkpoint period k*(lambda+gamma) in CrchCheckpointModel.
         file="simulator/src/main/java/org/workflowsim/utils/CrchCheckpointModel.java",
         old="        double period = config.getCheckpointIntervalSeconds() + config.getCheckpointOverheadSeconds();",
         new="        double period = config.getCheckpointIntervalSeconds();",
@@ -469,8 +463,6 @@ REGISTRY = [
         id="M65",
         name="EDP heuristic depends on the dispatch clock",
         file="simulator/src/main/java/org/workflowsim/WorkflowScheduler.java",
-        # FGCS-R5 (2026-11-24): re-anchored to the clock-invariant local EDP; the mutant restores the
-        # dispatch-clock idle term the fix removed.
         old="            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds;",
         new="            double energyEstimate = tier.getMaxPowerWatts() * estimatedSeconds + 50.0 * CloudSim.clock();",
         killers="FrequencySpeedConsistencyTest"),
@@ -484,7 +476,6 @@ REGISTRY = [
     dict(
         id="M67",
         name="CRCH retry overwrites remaining work with the original task length",
-        # FGCS-R5 (2026-11-24): re-anchored to the VM-local resumption in projectCrchAttemptLength.
         file="simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java",
         old="            if (credited > 0L) {",
         new="            if (false) {",
@@ -500,7 +491,6 @@ REGISTRY = [
         id="M69",
         name="CRCH credits the input read as checkpointed compute",
         file="simulator/src/main/java/org/workflowsim/reclustering/ReclusteringEngine.java",
-        # FGCS-R5 (2026-11-24): re-anchored to the failure-instant elapsed time.
         old="                        job.getFailureInstantSeconds() - attempt.getExecStartTime(),",
         new="                        job.getFailureInstantSeconds() - job.getExecStartTime(),",
         killers="RetryWorkAccountingIntegrationTest"),
@@ -515,15 +505,12 @@ REGISTRY = [
         id="M71",
         name="EBPSM budget update ignores the completed task's spare budget and debt",
         file="simulator/src/main/java/org/workflowsim/scheduling/ebpsm/EbpsmBudgetLedger.java",
-        # FGCS-R5 (2026-11-24): Algorithm 3 must redistribute beta_u = unscheduled + (tf.budget + sb - C); the
-        # mutant redistributes only the unscheduled sub-budgets, so no spare can upgrade and no debt is charged.
         old="        redistribute(state, betaU);",
         new="        redistribute(state, unscheduled + 0.0 * betaU);",
         killers="EbpsmBudgetLedgerTest,EbpsmSchedulingAlgorithmTest"),
     dict(
         id="M72",
         name="CRCH checkpointing is free on a successful attempt",
-        # FGCS-R5 (2026-11-24): CO = TET x gamma/lambda is paid by every execution (Eq. 10-11).
         file="simulator/src/main/java/org/workflowsim/utils/CrchCheckpointModel.java",
         old="        return Math.addExact(workMi, overheadMi(checkpoints, mips, config));",
         new="        return Math.addExact(workMi, 0L * overheadMi(checkpoints, mips, config));",
@@ -531,7 +518,6 @@ REGISTRY = [
     dict(
         id="M73",
         name="A failed attempt runs to its modeled completion instead of ending at the failure",
-        # FGCS-R5 (2026-11-24): failures end attempts mid-execution for every failure-enabled run.
         file="simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java",
         old="        job.setCloudletLength(length);\n        return length / vm.getMips();",
         new="        job.setCloudletLength(job.getCloudletLength());\n        return job.getCloudletLength() / vm.getMips();",
@@ -539,7 +525,6 @@ REGISTRY = [
     dict(
         id="M74",
         name="CRCH placement ignores the saved work on the checkpointing VM",
-        # FGCS-R5 (2026-11-24): placement compares resumption (Eq. 20) with re-execution (Eq. 21).
         file="simulator/src/main/java/org/workflowsim/scheduling/CrchSchedulingAlgorithm.java",
         old="        if (recovery != null && recovery.creditOn(vm.getId()) > 0L) {",
         new="        if (recovery != null && recovery.creditOn(vm.getId()) < 0L) {",
@@ -547,7 +532,6 @@ REGISTRY = [
     dict(
         id="M75",
         name="CRCH resumption charges a restore overhead beyond the lost work",
-        # FGCS-R5 (2026-11-24): Eq. 20 has no restore term; the former ceil(gamma*mips) retry MI is removed.
         file="simulator/src/main/java/org/workflowsim/WorkflowDatacenter.java",
         old="                workMi = recovery.getRemainingWorkMi();",
         new="                workMi = recovery.getRemainingWorkMi() + 100L;",
@@ -555,7 +539,6 @@ REGISTRY = [
     dict(
         id="M76",
         name="Online Min-Min/Max-Min/MCT ignore the machine ready time of busy VMs",
-        # FGCS-R6 (2026-11-25): CT(j,v) = r_v + ETC(j,v) (Braun et al. 2001); the mutant sets every r_v to 0.
         file="simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java",
         old="            ready[v] = readySeconds(vms.get(v));",
         new="            ready[v] = 0.0 * readySeconds(vms.get(v));",
@@ -563,7 +546,6 @@ REGISTRY = [
     dict(
         id="M77",
         name="Online Min-Min/Max-Min/MCT do not update r_v after an assignment",
-        # FGCS-R6 (2026-11-25): the Braun et al. (2001) update step r_v := CT after each assignment.
         file="simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java",
         old="            ready[bestVm] = bestKey;",
         new="            ready[bestVm] = ready[bestVm] + 0.0 * bestKey;",
@@ -572,7 +554,6 @@ REGISTRY = [
     dict(
         id="M78",
         name="Late binding dispatches a Job that is not the first plan of its idle VM",
-        # FGCS-R6 (2026-11-25): only the first planned Job of each idle VM is bound; later plans stay queued.
         file="simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java",
         old="            if (!planned[bestVm] && target.getState() == WorkflowSimTags.VM_STATUS_IDLE) {",
         new="            if (target.getState() == WorkflowSimTags.VM_STATUS_IDLE) {",
@@ -581,7 +562,6 @@ REGISTRY = [
     dict(
         id="M79",
         name="Late binding dispatches a Job planned behind a busy VM",
-        # FGCS-R6 (2026-11-25): a Job planned on a busy VM waits for the next round instead of being submitted.
         file="simulator/src/main/java/org/workflowsim/scheduling/MachineReadyTimeSchedulingAlgorithm.java",
         old="                bound.add(cloudlet);",
         new="                bound.add(cloudlet);\n            } else if (!planned[bestVm]) {\n"

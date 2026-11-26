@@ -135,7 +135,7 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm
         }
         throw new IllegalStateException("EBPSM tasks " + unaffordable + " fit no idle VM within their sub-budgets"
                 + " while the whole pool is idle, so no running attempt can change a VM or cache state; the"
-                + " fixed declared pool cannot provision the paper's fallback VM (FGCS-R3 A2)");
+                + " fixed declared pool cannot provision the paper's fallback VM");
     }
 
     @Override

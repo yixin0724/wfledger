@@ -3,7 +3,7 @@
 
 This generator is the only component that imports WfCommons. It runs in a dedicated
 virtual environment that has ``wfcommons==1.6`` installed; neither the simulator nor
-``scripts/`` import WfCommons (R7-WORKLOAD, 2026-11-25).
+``scripts/`` import WfCommons.
 
 Usage (from the repository root)::
 

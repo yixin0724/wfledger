@@ -73,7 +73,7 @@ class EdpGreedyRegistryIntegrationTest {
                 provider.declaration().isFrequencyTiersRequired()
                                 == provider.declaration().isDvfsAware()
                         && provider.declaration().isFrequencyTiersRequired(),
-                "frequencyTiersRequired ⇒ dvfsAware lattice (BAT-D4)");
+                "frequencyTiersRequired ⇒ dvfsAware lattice");
         assertTrue(provider.declaration().isEnergyAware(), "powerModelRequired ⇒ energyAware lattice (BAT-E3)");
 
         IllegalArgumentException unpowered = assertThrows(

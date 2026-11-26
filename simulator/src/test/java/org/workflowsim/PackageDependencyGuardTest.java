@@ -69,7 +69,7 @@ class PackageDependencyGuardTest {
         assertEquals(
                 expected,
                 actual,
-                "The bidirectional package-pair inventory changed (AUD-F16): a new pair means"
+                "The bidirectional package-pair inventory changed: a new pair means"
                         + " a new dependency cycle -- decouple it instead; a removed pair means"
                         + " progress -- update AUDITED_PAIRS to lock the new inventory.");
     }
@@ -85,7 +85,7 @@ class PackageDependencyGuardTest {
                     new TreeSet<String>(entry.getValue()),
                     actual,
                     "Outgoing package edges of hotspot " + entry.getKey()
-                            + " changed (AUD-F16): new outgoing dependencies from a cycle"
+                            + " changed: new outgoing dependencies from a cycle"
                             + " hotspot are rejected; removed edges are progress -- update the"
                             + " allowlist.");
         }

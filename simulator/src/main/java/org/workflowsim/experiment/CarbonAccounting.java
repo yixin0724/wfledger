@@ -307,7 +307,7 @@ public final class CarbonAccounting {
         }
         if (tierMips != null) {
             throw new IllegalArgumentException("Job " + jobId + " on non-tiered VM " + spec.getId()
-                    + " carries tierMips " + tierMips + ": the per-Job tier evidence chain is broken (BAT-D3)");
+                    + " carries tierMips " + tierMips + ": the per-Job tier evidence chain is broken");
         }
         return spec.getMaxPowerWatts() - spec.getIdlePowerWatts();
     }
@@ -319,7 +319,7 @@ public final class CarbonAccounting {
             }
         }
         throw new IllegalArgumentException("Job tier mips " + tierMips + " matches no declared tier of VM "
-                + spec.getId() + ": the per-Job tier evidence chain is broken (BAT-D2)");
+                + spec.getId() + ": the per-Job tier evidence chain is broken");
     }
 
     private static PlatformProfile.VmSpec vmSpec(PlatformProfile profile, int vmId) {

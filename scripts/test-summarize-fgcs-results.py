@@ -26,7 +26,6 @@ class OverheadSummaryTest(unittest.TestCase):
                 }
                 for field in MODULE.FIELDS:
                     row[field] = base + repetition + 1
-                # Hand-derived samples 1,2,3,4,5 for simulation make the quartiles unambiguous.
                 row["simulationNanos"] = repetition + 1
                 row["pythonValidationNanos"] = None if selected == "events" else repetition + 11
                 row["pythonValidationStatus"] = "NA" if selected == "events" else "VALID_COMPLETE"
@@ -88,7 +87,6 @@ class OverheadSummaryTest(unittest.TestCase):
 
 class SensitivitySummaryTest(unittest.TestCase):
     def test_tolerant_counts_and_raw_signed_counts_are_both_retained(self):
-        # The 5e-10 differences are ties at abs=1e-9; 2e-9 differences remain signed.
         pairs = ((10.0, 10.0), (10.0, 10.0000000005), (10.0, 9.9999999995),
                  (10.0, 10.000000002), (10.0, 9.999999998))
         rows = []

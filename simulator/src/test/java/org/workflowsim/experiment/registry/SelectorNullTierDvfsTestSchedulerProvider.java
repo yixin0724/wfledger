@@ -27,7 +27,7 @@ public final class SelectorNullTierDvfsTestSchedulerProvider implements Scheduli
         return new AlgorithmDeclaration.Builder()
                 .dvfsAware(true)
                 .frequencyTiersRequired(true)
-                .description("BAT-D6 negative-face provider: selector returns null; must be"
+                .description("negative-face provider: selector returns null; must be"
                         + " rejected fail-fast, never silently fallen back to the default tier")
                 .build();
     }

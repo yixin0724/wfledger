@@ -1,10 +1,3 @@
-"""Execution-identity guard shared by the FGCS drivers (run-fgcs-matrix.py, run-fgcs-revision.py).
-
-FGCS-R3 (2026-11-24): the FGCS protocol (experiments/studies/fgcs/protocol.json) declares the execution identity
-that every newly generated manifest must carry. Without this guard, retained V2-era evidence under
-paper/tmp/fgcs-round2 would satisfy the row-count verifiers and impersonate results of the corrected V3 code.
-The declared value mirrors TaskExecutionModel.EXECUTION_SEMANTICS and _study_audit.EXECUTION_SEMANTICS.
-"""
 
 from __future__ import annotations
 

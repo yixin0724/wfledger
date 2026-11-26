@@ -233,7 +233,7 @@ public class WorkflowScheduler extends DatacenterBroker {
             default:
                 throw new IllegalStateException("SchedulingAlgorithm." + name + " has no policy "
                         + "binding in WorkflowScheduler; add an explicit case when the enum grows "
-                        + "(AUD-F21).");
+                        + ".");
         }
         return algorithm;
     }
@@ -526,7 +526,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         if (selected == null) {
             throw new IllegalStateException("DVFS frequency-tier selector "
                     + policyLabel() + " returned no tier for Job " + job.getCloudletId()
-                    + " (BAT-D6): assignment at admission requires exactly one declared tier");
+                    + ": assignment at admission requires exactly one declared tier");
         }
         for (PlatformProfile.FrequencyTier tier : tiers) {
             if (Double.compare(tier.getMips(), selected.getMips()) == 0) {
@@ -535,7 +535,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         }
         throw new IllegalStateException("DVFS frequency-tier selector " + policyLabel() + " returned tier mips "
                 + selected.getMips() + " which matches no declared frequency tier of the target VM (Job "
-                + job.getCloudletId() + ", BAT-D6): the per-Job tier evidence chain would be broken");
+                + job.getCloudletId() + "): the per-Job tier evidence chain would be broken");
     }
 
     private String policyLabel() {

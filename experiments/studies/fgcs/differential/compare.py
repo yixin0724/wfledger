@@ -217,8 +217,6 @@ def inspect_side(raw_tasks, expected_ids, parents, upstream, label, issues):
                 raise CheckError(location + " has invalid start/jobFinish timing")
             if upstream:
                 finish = _number(task.get("finish"), location + ".finish")
-                # Upstream Task and Job finish timestamps have separate update paths. A small
-                # Task-finish/Job-finish discrepancy is not interpreted as incomplete work.
                 if finish < start - EPSILON:
                     raise CheckError(location + " has a task finish before its start")
         except CheckError as error:
@@ -375,7 +373,6 @@ def inspect_observations(observations_path):
 def _seconds(value):
     if value is None:
         return "n/a"
-    # The table has six decimal places; do not display a negative zero for floating residue.
     if abs(value) < Decimal("0.0000005"):
         value = Decimal(0)
     return format(value, ".6f")

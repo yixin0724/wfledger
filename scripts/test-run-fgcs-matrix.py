@@ -219,7 +219,6 @@ class FgcsMatrixVerifierTest(unittest.TestCase):
             self.assert_rejected(root, "ambiguous peakHeapBytes")
 
     def test_protocol_declares_current_v3_execution_identity(self):
-        # FGCS-R3 (2026-11-24): new FGCS runs are V3; V2 is historical only.
         self.assertEqual("WORK_CONSERVING_TASK_EXECUTION_V3", MODULE.declared_execution_semantics())
 
     def test_v2_or_undeclared_manifest_cannot_impersonate_a_new_run(self):

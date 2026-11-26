@@ -79,7 +79,7 @@ public final class EnergyAccounting {
                         throw new IllegalStateException("Per-tier busy seconds of VM " + vmId + " (sum="
                                 + attributed + ") do not equal its total modeled busy interval ("
                                 + m.getModeledBusyIntervalSeconds() + "): the per-tier conservation "
-                                + "evidence chain is broken (BAT-D2)");
+                                + "evidence chain is broken");
                     }
                 }
                 double nameplateMax = 0.0;
@@ -114,7 +114,7 @@ public final class EnergyAccounting {
         if (powered != null && unpowered != null) {
             throw new IllegalStateException("Energy accounting requires a power model on every VM or on none:"
                     + " VM " + powered + " declares one but VM " + unpowered + " does not; booking the"
-                    + " unpowered VM at 0 J would silently understate fleet energy (FGCS-R3 A5)");
+                    + " unpowered VM at 0 J would silently understate fleet energy");
         }
     }
 
@@ -126,7 +126,7 @@ public final class EnergyAccounting {
         }
         throw new IllegalStateException("Job outcome carries tier mips " + mips
                 + " which matches no declared frequency tier of VM " + spec.getId()
-                + ": the per-Job tier evidence chain is broken (BAT-D2)");
+                + ": the per-Job tier evidence chain is broken");
     }
 
     private static PlatformProfile.VmSpec findSpec(PlatformProfile platform, int vmId) {

@@ -456,7 +456,7 @@ public final class BenchmarkExecutor {
         plan.put(
                 "fleet",
                 "tri-dimensional: 5-tier DVFS P-state table + per-VM power-free flat fields"
-                        + " (tier table replaces them, BAT-D1) + uniform carbon intensity 380 g/kWh riding"
+                        + " (tier table replaces them) + uniform carbon intensity 380 g/kWh riding"
                         + " the per-tier conserved energy");
         List<Map<String, Object>> tiers = new ArrayList<Map<String, Object>>();
         for (PlatformProfile.FrequencyTier tier : DVFS_TIERS) {

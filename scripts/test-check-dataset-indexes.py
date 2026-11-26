@@ -149,11 +149,6 @@ class ConsistentTreeTests(CheckerTestCase):
         self.assertIn("0 issues", captured.getvalue())
 
 class AdditionalFamilyTests(CheckerTestCase):
-    """R7-WORKLOAD (2026-11-25): a new family such as wfgen-standard joins the chain.
-
-    Its shape: instances keyed by ``wfformat_json`` (some not retained), plus one
-    auxiliary generation manifest; the top-level index anchors the family index hash.
-    """
 
     def add_family(self):
         inst_sha = self.tree.write("wfgen-standard/blast/n50/blast-50-000.json", "{}\n")
@@ -185,7 +180,6 @@ class AdditionalFamilyTests(CheckerTestCase):
         issues, counts = self.check()
         self.assertEqual([], issues)
         self.assertEqual(3, counts["families"])
-        # 4 base entries + 2 instances + 1 auxiliary.
         self.assertEqual(7, counts["entries"])
         self.assertEqual(2, counts["absent_not_retained"])
 

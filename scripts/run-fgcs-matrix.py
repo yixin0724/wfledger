@@ -112,7 +112,6 @@ def run_overhead(output, repetitions):
     for workflow_index, workflow, repetition, selected, position, order in overhead_schedule(repetitions):
         scenario = f"{Path(workflow).stem}-{selected}-r{repetition}"
         result = output / "overhead/runs" / (scenario + ".json")
-        # The Java entry performs exactly one unreported warmup and one measured run in this fresh JVM.
         evidence = output / "overhead/evidence"
         run([
             java, "-Xmx4g", "-cp", classpath,
@@ -315,7 +314,6 @@ def verify_standard(output):
 
 
 def verify_execution_semantics(output, expected=None):
-    """FGCS-R3 (2026-11-24): every overhead manifest must declare the protocol's current execution identity."""
     expected = expected or declared_execution_semantics()
     count, failures = check_manifest_semantics(output / "overhead/evidence", expected)
     if failures:

@@ -65,7 +65,6 @@ def check_run_binding(index_path, plan, row, historical, protocol_sha, audit):
     if declared is None:
         audit.ensure("executionSemantics" not in config, "historical-model-not-retagged", location)
     else:
-        # FGCS-R3 (2026-11-24): each run binds the plan's own registered identity (V3 current, V2 historical).
         require_exact_fields(config, {"executionSemantics": declared}, audit, location)
     require_exact_fields(needed(config, "dataMovementModel"), {"kind": kind, "accessLinkBandwidthMbPerSecond": 0,
                          "accessLinkLatencySeconds": 0, "sourceEndpointBandwidthMbPerSecond": 0,
