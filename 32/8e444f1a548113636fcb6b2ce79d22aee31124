@@ -1,0 +1,36 @@
+datasets/README.md
+  h_adc77830afcf4d 7,13,45,72,75,119,162,173,187
+docs/advanced/FILE_LIFECYCLE_FORMAT.md
+  h_adc77830afcf4d 70
+docs/algorithms/CATALOG.md
+  h_adc77830afcf4d 23,38,50,54,63,163,191,195
+docs/algorithms/METRICS_CARD.md
+  h_adc77830afcf4d 15-16,23-24,35,49,52,63,70,80,83,85
+docs/experiments/CAMPAIGNS.md
+  h_adc77830afcf4d 35,37
+docs/experiments/PAPER_REPRODUCTIONS.md
+  h_adc77830afcf4d 191-192,195-196,214,217,224,260
+docs/experiments/reference-baselines/P7_PROTOCOL.md
+  h_adc77830afcf4d 3,8,10-13,69,71,75,77
+docs/getting-started/BUILD.md
+  h_adc77830afcf4d 53,88,160
+docs/getting-started/WORKBENCH.md
+  h_adc77830afcf4d 63-64,66-68,76-77,179
+experiments/studies/standard-workloads/README.md
+  h_adc77830afcf4d 9-10,36-37,44,49-50,74-75,99,110
+experiments/studies/standard/PROTOCOL.md
+  h_adc77830afcf4d 3,7-8,10,12-16,64,122,125
+scripts/STUDY_AUDIT.md
+  h_adc77830afcf4d 60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "328e444f1a548113636fcb6b2ce79d22aee31124",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
