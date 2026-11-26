@@ -288,7 +288,7 @@ configuration, and context; an unreferenced sidecar cannot turn OFF into ON.
 | Online target assignment | Bindings with full lifecycle, PE/MI, CPU reservations, nominal input bounds, logged scores | Exact in-flight balances, future contention, optimality |
 
 Online checks always report `liveProgressReplayed=false`. The plain OFF path for legacy modes
-checks only manifest version, artifact path and size, and the switch/role relation, and reports
+checks only manifest version, artifact path, digest, and size, and the switch/role relation, and reports
 `contextualRunChecked=false`; use the Java validator for full configuration validation.
 
 | Status | Meaning |

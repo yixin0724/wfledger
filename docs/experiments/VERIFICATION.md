@@ -128,7 +128,7 @@ Measured against a real bundle with `RerunDiffExecutor`; the verdicts are define
 
 | Tampering | Verdict | Exit |
 |---|---|---|
-| `configuration.vmCount`, `schema`, artifact size, missing artifact, `workflowProfile.taskCount`, consistently tampered `metrics.makespanSeconds` | `EVIDENCE_INVALID` | 5 |
+| `configuration.vmCount`, `schema`, artifact digest or size, missing artifact, `workflowProfile.taskCount`, consistently tampered `metrics.makespanSeconds` | `EVIDENCE_INVALID` | 5 |
 | Input identity | `INPUT_HASH_MISMATCH` | 3 |
 | `platform.vms[].mips`, `energyMetrics`, scheduling label, `rootSeed` on a stochastic workload | `DIVERGED` | 1 |
 | Malformed tier table, unknown `frequencyPolicy`, windowless deferral label | `RECONSTRUCTION_REJECTED` | 4 |
