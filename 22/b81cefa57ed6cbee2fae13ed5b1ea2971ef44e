@@ -1,0 +1,19 @@
+docs/advanced/DVFS_DIMENSION_DESIGN.md
+  s_768a25909712fc::t_a3c99c769c8b56 1-7,42-43,53,59,61,78,90,93-94,96-97,114-115,117,123,134,139,143,145,148-153,158,160-163,169-195,213-219,231-240,244-245,248,251
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "22b81cefa57ed6cbee2fae13ed5b1ea2971ef44e",
+  "prompts": {},
+  "sessions": {
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
