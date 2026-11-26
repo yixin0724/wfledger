@@ -1,0 +1,42 @@
+README.md
+  h_adc77830afcf4d 96,98
+docs/README.md
+  h_adc77830afcf4d 1,3-4,12,14,16,20-28,30,32-38,40,42-55,57,59-64
+docs/advanced/FAT_TREE_DESIGN.md
+  h_adc77830afcf4d 77
+docs/advanced/NETWORK_LEDGER.md
+  h_adc77830afcf4d 33,261,280
+docs/algorithms/CONTRACTS.md
+  h_adc77830afcf4d 27
+docs/algorithms/METRICS_CARD.md
+  h_adc77830afcf4d 98-100
+docs/benchmark/STANDARD_BENCHMARK.md
+  h_adc77830afcf4d 1,3-6,8,10-17,19-21,23,25-28,30-31,33,35-39,41-43,45-47,49,51,54-61,64,66,68-70,73-75,77-78,81-83,85-90,92,94-95,98-100,103-127
+docs/experiments/BASELINE_STUDIES.md
+  h_adc77830afcf4d 1,3-6,8,10-14,16,18-25,27-29,31,36-38,41-44,46,48-99
+docs/experiments/CAMPAIGNS.md
+  h_adc77830afcf4d 61,63,65,69,92,94,112-136,166
+docs/experiments/README.md
+  h_adc77830afcf4d 1-18,22-26,28,30-33,35,37-39
+docs/experiments/REPRODUCIBILITY.md
+  h_adc77830afcf4d 16,24,28,40,44,46,50,66,68,70,72,74,76,78,82-83,85,89
+docs/experiments/RERUN_DIFF_CONTRACT.md
+  h_adc77830afcf4d 52,58,60,107,115,141,147-167
+experiments/README.md
+  h_adc77830afcf4d 19-20,40
+experiments/studies/README.md
+  h_adc77830afcf4d 1-35
+experiments/studies/fgcs/README.md
+  h_adc77830afcf4d 3-9,11-12,16,18-30,32-33,35,41-44,46,48-51,53,55-59,61-65,67,69-71,73-79,81,83-86,88-92,94-152,154,156-163,165-169,171-175,177-213,215-264,266,268-271
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "98a03cec755c6dce79f4ee6185f49479da18c53d",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
