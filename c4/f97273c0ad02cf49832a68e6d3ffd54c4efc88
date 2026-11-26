@@ -1,0 +1,14 @@
+experiments/studies/standard/PROTOCOL.md
+  h_adc77830afcf4d 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c4f97273c0ad02cf49832a68e6d3ffd54c4efc88",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
