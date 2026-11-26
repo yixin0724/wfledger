@@ -95,9 +95,6 @@ an independent measurement.
 
 ## Experiment Reading Map
 
-For applied examples of these conventions, use the [experiment index](<../experiments/README.md>).
-The [traditional makespan report](<../experiments/MAKESPAN_BASELINE_COMPARISON.md>) demonstrates why
-waiting time and makespan can rank algorithms differently. The [scale report](<../experiments/MAKESPAN_SCALE_COMPARISON.md>)
-shows how high parallelism can compress those differences. The [energy report](<../experiments/ENERGY_BASELINE_COMPARISON.md>)
-shows why MIN_POWER and DVFS slack trade energy against makespan, and why a planner's compute-energy
-objective can differ from total fleet energy. These are controlled observations, not additional metric definitions.
+The [baseline studies](<../experiments/BASELINE_STUDIES.md>) provide configurations in which
+waiting time and makespan can rank algorithms differently, and in which energy-oriented policies
+trade energy against makespan. A planner's compute-energy objective is not total fleet energy.

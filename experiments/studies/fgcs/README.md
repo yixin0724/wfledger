@@ -1,77 +1,271 @@
 # FGCS Study Protocol
 
-## Scope
+This study supports the manuscript *WfLedger: An Auditable Discrete-Event Simulator for
+Scientific Workflow Scheduling* (Future Generation Computer Systems). Java drivers live under
+`experiments/src/main/java/org/workflowsim/experiments/fgcs/` with tests in the matching test
+tree; this directory holds the protocol ([protocol.json](<protocol.json>),
+[overhead/protocol.json](<overhead/protocol.json>)) and the upstream differential
+([differential/](<differential/compare.py>)). Generated results go to the ignored `paper/tmp/`
+workspace.
 
-This study supports the manuscript **WfLedger: An Auditable Discrete-Event Simulator for Scientific Workflow Scheduling**, prepared for Future Generation Computer Systems. It separates experiment drivers from manuscript sources: Java drivers and tests belong to the Maven `experiments` module, this directory retains the protocol, and generated results remain under the ignored `paper/tmp/` workspace.
-
-The study measures controlled simulator behavior and evidence-production costs. It does not claim production-cluster calibration, universal algorithm optimality, or equivalence between different data-movement and planner semantics.
+The study measures controlled simulator behavior and evidence-production cost. It makes no
+production-cluster, universal-ranking, or cross-model equivalence claim.
 
 ## Matrix
 
-| Study | Design | Required rows |
+| Study | Design | Rows |
 |---|---|---:|
-| External differential | 3 hand-derived DAG shapes and 3 real DAX families, static HEFT and online Min-Min, two current seeds | 24 current runs; 12 paired reference cases |
-| Sensitivity | Montage 50, CyberShake 50, Inspiral 50; VM count 1/2/4/8; speed ratio 1/2/4; storage rate 1/15/100 MB/s; static HEFT and ready-batch Min-Min | 216 |
-| Energy | Five real DAX families; GreenHEFT, MOHEFT, default HEFT, MIN_POWER, EDP_HEURISTIC, DVFS slack, and non-monotonic-tier counterexamples | 36 |
-| Communication/storage ablation | Pre-execution transfer without contention, endpoint contention, Fat-tree, coherent-file V2, bounded-storage V3, topology and file-system switches | 18 |
-| Failure recovery | Three hand-derived DAGs and three real DAX families; disabled controls, actual failure/retry cases, and explicitly labeled enabled-no-injection controls | 12 |
-| Evidence overhead | Montage 50/1000/5000; common manifest/metrics/event stream in every mode, optional lifecycle sidecar, serialized Java/Python validation; balanced order and five fresh-JVM measurements per scenario | 45 |
-| Fixed-capacity sensitivity | Three workflows; fixed total 500 MIPS per VM count; three static planners and three online schedulers; duplicate one-VM ratios removed | 540 |
-| Common-deadline energy | Five workflows × five deadline factors × three policies, plus five default references; identical deadline and feasibility rules per cell | 80 |
-| Manifest-guided reconstruction | Genuine V2/V3, volatile metadata, semantic divergence, invalid evidence, input failures, and reconstruction refusal | 9 verdict cases |
-| New semantic contracts | Control-ready candidate scoring/data gating, absolute tiered energy with unused VM/drain, and two-checkpoint CRCH boundary | 3 simulations |
-| Same-layer static planners | Seven classic DAX instances; HEFT, CPOP, PEFT under the original baseline platform | 21 |
-| Adversarial evidence | Two genuine V2/V3 bundles and nine semantic corruptions with valid recomputed hashes | 11 bundles / 18 corruption observations |
-| Model microbenchmarks | Progressive filling, replica visibility, output drain, and deterministic CRCH retry | 6 simulations / 4 contracts |
+| External differential | 3 hand-derived DAG shapes and 3 real DAX families; static HEFT and online Min-Min; two seeds | 24 runs, 12 paired cases |
+| Sensitivity | Montage 50, CyberShake 50, Inspiral 50; VM count 1/2/4/8; speed ratio 1/2/4; storage 1/15/100 MB/s; static HEFT and ready-batch Min-Min | 216 |
+| Energy | Five DAX families; GreenHEFT, MOHEFT, default HEFT, MIN_POWER, EDP_HEURISTIC, DVFS slack, non-monotonic-tier counterexamples | 36 |
+| Communication/storage ablation | Pre-execution transfer, endpoint contention, Fat-tree, coherent-file V2, bounded-storage V3, topology and file-system switches | 18 |
+| Failure recovery | Three hand-derived DAGs and three DAX families; disabled controls, failure/retry cases, enabled-no-injection controls | 12 |
+| Evidence overhead | Montage 50/1000/5000; manifest, metrics, events in every mode, optional lifecycle sidecar, Java/Python validation; five fresh-JVM measurements per scenario | 45 |
+| Fixed-capacity sensitivity | Three workflows; 500 MIPS total per VM count; three static planners and three online schedulers | 540 |
+| Common-deadline energy | Five workflows × five deadline factors × three policies, plus five default references | 80 |
+| Manifest-guided reconstruction | Genuine V2/V3, volatile metadata, semantic divergence, invalid evidence, input failures, reconstruction refusal | 9 cases |
+| Semantic contracts | Control-ready scoring and data gating, tiered energy with unused VM and drain, two-checkpoint CRCH | 3 runs |
+| Same-layer static planners | Seven DAX instances; HEFT, CPOP, PEFT on the baseline platform | 21 |
+| Adversarial evidence | Two genuine V2/V3 bundles and nine semantic corruptions with recomputed integrity fields | 11 bundles |
+| Model microbenchmarks | Progressive filling, replica visibility, output drain, CRCH retry | 6 runs |
 
-Static planning and online ready-job scheduling are separate decision layers. Rows from different physical models or power groups are not pooled as a single algorithm ranking.
+Static planning and online scheduling are separate decision layers; rows from different physical
+models or power groups are not pooled.
 
 ## Execution
-
-From the repository root with JDK 17+ and Maven 3.6.3+:
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/run-fgcs-matrix.py --repetitions 5 --output paper/tmp/fgcs-round2
 ```
 
-Use `--standard-only` for the 306 non-overhead rows or `--overhead-only` for the 45 overhead rows. Use `--verify-only` to check retained results without rerunning them. Every overhead scenario runs in its own JVM, with one unreported warm-up and five measured repetitions. Simulations are serial within each JVM.
+`--standard-only` runs the 306 non-overhead rows, `--overhead-only` the 45 overhead rows, and
+`--verify-only` checks retained results. Each overhead scenario runs in its own JVM with one
+unreported warm-up and five measured repetitions. `scripts/run-fgcs-revision.py` executes and
+verifies the second-round studies under `paper/tmp/fgcs-round2/`.
 
-The standard drivers are under `experiments/src/main/java/org/workflowsim/experiments/fgcs/`; their tests are under the corresponding test tree. The Workbench JSON option `simulation.eventRecordingEnabled` defaults to `true` and must not be `false` together with lifecycle/network evidence capture.
+Clean-checkout acceptance runs the Maven gate, the matrix, and every driver in a detached worktree:
 
-For the final clean-checkout acceptance, use `PYTHONDONTWRITEBYTECODE=1 python3 scripts/reproduce-fgcs-clean.py --worktree /private/tmp/fgcs-clean-reproduction-round2 --reference paper/tmp/fgcs-round2`. It runs the full Maven gate, the matrix, and every second-round driver in a detached worktree. Comparisons cover the current matrix, static and fixed-capacity sensitivity, common-deadline energy, all 78 original baseline/scale rows, adversarial bundles, analytic contracts, and manifest-guided reconstruction verdicts. Timing, heap, and evidence-byte fields are environment observations, not cross-directory identity requirements. Logs belong to `paper/tmp/clean-reproduction-round2/`; older reports remain historical records.
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/reproduce-fgcs-clean.py \
+  --worktree /private/tmp/fgcs-clean-reproduction-round2 --reference paper/tmp/fgcs-round2
+```
 
-## Revision evidence and controlled overhead
+Timing, heap, and evidence-byte fields are environment observations, not identity requirements.
 
-Execution identity (FGCS-R3, 2026-11-24): [protocol.json](<protocol.json>) (`FGCS_ROUND2_MATRIX_V4`) declares `executionSemantics = WORK_CONSERVING_TASK_EXECUTION_V3` for new runs. `scripts/run-fgcs-matrix.py` and `scripts/run-fgcs-revision.py` read that declaration and reject any generated `result.manifest.json` that declares another identity (including the historical V2) or none, and record it in `run-metadata.json` / `revision-metadata.json` (`FGCS_MATRIX_V2`, `FGCS_ROUND2_V4`). Results retained from `FGCS_ROUND2_MATRIX_V3` runs were produced under V2 and are historical; they must be regenerated, not relabelled. The "V2/V3" labels in the reconstruction and adversarial rows refer to the coherent dataflow models, not to the execution identity.
+[protocol.json](<protocol.json>) (`FGCS_ROUND2_MATRIX_V4`) declares
+`executionSemantics = WORK_CONSERVING_TASK_EXECUTION_V3`. The runners reject any
+`result.manifest.json` that declares another identity or none, and record it in
+`run-metadata.json` / `revision-metadata.json`. The "V2/V3" labels of the reconstruction and
+adversarial rows refer to coherent dataflow models, not to the execution identity.
 
-The second-round protocol adds fixed-capacity and common-deadline studies, manifest-guided reconstruction, and new control-ready/energy/recovery contracts. `scripts/run-fgcs-revision.py` executes and verifies every study under `paper/tmp/fgcs-round2/`. The adversarial results distinguish expected rejection, genuine acceptance, and explicit coverage-boundary acceptance; they are not summarized as universal validator coverage. Reconstruction is re-simulation plus exact core diff, not event replay.
-
-`scripts/package-fgcs-artifact.py --validate` creates a versioned local package. It records original manifest hashes, relocates declared input paths into the archive namespace without changing input bytes, and resolves every packaged input from the extracted root with explicit size/SHA-256 checks. Source/derived/sidecar mappings are revalidated to reject stale derivation files. Java/Python bundle validators, a normalized full differential comparison, and actual portable V2/V3 `RerunDiffExecutor` cases run before packaging. `validation/portable-rerun/` retains those reports. Inside the package, `python3 verify-artifact.py --semantic` repeats integrity, input-identity, derivation, lifecycle, and differential checks.
-
-The revised overhead matrix uses the same derived unique-producer input, LOCAL coherent-storage V3, RANDOM planner, STATIC dispatch, and storage platform for OFF, ordinary events, and full lifecycle modes. Every mode writes a common manifest, metrics sidecar, and events JSONL; OFF has a zero-byte event stream, events adds ordinary events, and lifecycle adds the V3 sidecar. Serialized Java validation runs in every mode, while Python validation is measured for OFF and lifecycle and explicitly NA for event-only bundles. The earlier matrix that changed inputs, file systems, planners, and physical models is not used as recording-cost evidence.
-
-The older 18-row communication/storage matrix is smoke coverage, not a quantitative ablation of execution effects. The model microbenchmarks provide the discriminating evidence: progressive-filling service times, per-file visibility/CPU barriers, required-output terminal drain, and deterministic CRCH retry semantics.
-
-## Differential evidence
-
-The upstream adapter, lock file, comparison table, and mutation tests are retained in `experiments/studies/fgcs/differential/`. The upstream implementation is not bundled into the project. `scripts/prepare-fgcs-differential.py` is a required pipeline step before packaging: it regenerates `upstream-observations.json` and `comparison.json` from the pinned upstream archive and the current exporter. The comparison normalizes the reference's zero-based VM IDs to the current one-based IDs and checks task completion and successful parent/child Job envelopes independently of algorithm mapping.
-
-Upstream HEFT uses classic point-to-point communication estimates. The current `SHARED_STORAGE_HEFT` planner uses shared-storage semantics. Therefore different mappings or runtimes on real workflows are semantic/planning observations, not proof of a defect. The small hand-derived HEFT cases and online Min-Min cases provide the narrowest comparison; no upstream result is an unconditional oracle.
+`scripts/package-fgcs-artifact.py --validate` builds a versioned local package: it relocates
+declared input paths into the archive namespace without changing input bytes, revalidates
+source/derived/sidecar mappings, runs the Java and Python validators, the differential comparison,
+and portable V2/V3 `RerunDiffExecutor` cases. Inside the package, `python3 verify-artifact.py
+--semantic` repeats those checks.
 
 ## Input populations
 
-The sensitivity, energy, and legacy differential runs use classic Pegasus characterization DAX instances, not production execution traces. Small chain/fan/independent DAGs are hand-derived controlled fixtures. The 5000-task overhead input is the existing five-copy scale fixture, not a newly collected real trace.
+Sensitivity, energy, and differential runs use classic Pegasus DAX instances, not production
+traces; small chain/fan/independent DAGs are hand-derived fixtures; the 5000-task overhead input is
+the five-copy scale composite (see [baseline studies](<../../../docs/experiments/BASELINE_STUDIES.md#5000-task-composite-inputs>)).
 
-`smallDag` preserves the original bytes as `raw-<kind>.dax` before producing the normalized input, so the derivation sidecar always refers to distinct raw and derived identities; the output is never normalized in place. The bounded-storage V3 runtime requires an unambiguous producer identity. Several original DAX files contain repeated file names or inconsistent declarations. For lifecycle overhead only, `FgcDatasets.normalizeForStorage` creates a **derived unique-producer input**: each producer output receives a unique name, matching parent inputs are rewritten, and multiple matching parent outputs are explicitly expanded into separate input declarations. Runtime values, DAG edges, and producer output sizes are retained; file identity and the input population are adapted. A sidecar `*.derivation.json` records source and derived SHA-256 hashes, counts, and the rule. These derived inputs are not interchangeable with the raw DAX population and must not be used for direct legacy-versus-V3 performance rankings.
+Bounded-storage V3 needs an unambiguous producer per file, and several DAX files repeat file names.
+For lifecycle overhead only, `FgcDatasets.normalizeForStorage` creates a **derived unique-producer
+input**: each producer output gets a unique name, matching parent inputs are rewritten, and
+multiple matching parent outputs become separate input declarations. Runtimes, edges, and output
+sizes are preserved. A `*.derivation.json` sidecar records source and derived identities, counts,
+and the rule. Derived inputs are not interchangeable with raw DAX inputs. `smallDag` keeps the
+original bytes as `raw-<kind>.dax` and never normalizes in place.
 
-## Measurements and stopping conditions
+## Overhead measurement
 
-Every reported row must have a successfully completed workflow, equal logical and successful task counts, and independent recomputation residuals within the driver tolerance. OFF runs must retain zero events; enabled ordinary-event and lifecycle runs must retain nonempty event streams. Lifecycle runs must produce nonempty evidence artifacts. Any configuration error, incomplete run, validator failure, or event-cap truncation stops the affected matrix rather than silently dropping a case.
+All overhead modes use the same derived input, LOCAL coherent-storage V3, RANDOM planning, STATIC
+dispatch, and storage platform. OFF writes a zero-byte event stream, events mode adds ordinary
+events, lifecycle mode adds the V3 sidecar. Java validation runs in every mode; Python validation
+runs for OFF and lifecycle and is reported as NA for event-only bundles.
 
-The overhead record distinguishes simulation, serialization and size accounting, in-memory metric audit, serialized Java validation, and serialized Python validation where applicable. Artifact bytes are split into manifest, metrics, event stream, and lifecycle sidecar. A sampled total-heap-used approximation is reported separately from the non-simultaneous heap-pool peak sum; neither is a minimum-memory requirement. Timing distributions include median, range, quartiles, IQR, and paired mode deltas. OFF event-dependent waiting and slowdown values are null with an availability reason rather than numeric zero.
+The record separates simulation, serialization, in-memory metric audit, and serialized Java and
+Python validation; artifact bytes are split into manifest, metrics, events, and sidecar. Sampled
+total heap use is reported separately from the non-simultaneous heap-pool peak sum. Timing reports
+median, range, quartiles, IQR, and paired mode deltas. In OFF mode, event-dependent waiting and
+slowdown are null with a reason, not zero.
 
-## Retention and non-claims
+Every reported row needs a completed workflow, equal logical and successful task counts, and
+recomputation residuals within tolerance. A configuration error, incomplete run, validator failure,
+or event-cap truncation stops the affected matrix.
 
-Generated results, evidence sidecars, logs, normalized inputs, and compilation artifacts are retained locally under `paper/tmp/fgcs-round2/`; older directories are historical references. Only protocols, compact differential comparisons, source adapters, and verifier tests are source-controlled. A clean reproduction must regenerate the reports and validate the retained evidence; an old result file is not itself proof of correctness.
+## Sub-studies
 
-The study does not claim exhaustive model coverage, a complete paper-corpus reproduction, real-network packet fidelity, a universal energy policy ranking, or equivalence between raw and unique-producer-derived inputs.
+### Upstream differential
+
+`differential/` compares 12 paired cases of the current exporter with WorkflowSim 1.0 at the commit
+pinned in [upstream-lock.json](<differential/upstream-lock.json>). It is a narrow differential
+observation, not a correctness oracle.
+
+| Condition | Current | Upstream |
+|---|---|---|
+| Cases | chain, fan, independent, Montage 50, CyberShake 50, SIPHT 60 × two scheduler labels | Same DAX bytes |
+| Online scheduler | `READY_BATCH_MINMIN` or `STATIC` | legacy `MINMIN`; `STATIC` direct |
+| STATIC planner | `SHARED_STORAGE_HEFT` | classic `HEFT` with point-to-point communication |
+| Data | `SHARED`, `legacyWorkflowsimV1()` | original `SHARED` |
+| Platform | four SPACE_SHARED VMs at 500/1000/2000/4000 MIPS, IDs 1–4 | same MIPS, IDs 0–3 (normalized +1) |
+| Other | NONE clustering, zero overhead, seed label `s7` | NONE clustering, zero overhead |
+
+[compare.py](<differential/compare.py>) derives its expectations from the registered matrix and the
+DAX graphs: exact task coverage, success status on both sides, valid VM IDs and times, and no child
+starting before its parent Job finishes (tolerance `1e-7` s). Makespans, mappings, and emission
+orders are reported, not required to match: the HEFT rows compare different planner semantics, so a
+difference there is a semantic observation, not a defect. Makespan is the maximum compute-Job
+`jobFinish`.
+
+```bash
+# verify retained observations (no network, Maven, or Java)
+PYTHONDONTWRITEBYTECODE=1 python3 experiments/studies/fgcs/differential/compare.py \
+  --observations paper/tmp/experiments/differential/upstream-observations.json \
+  --output experiments/studies/fgcs/differential/comparison.json
+PYTHONDONTWRITEBYTECODE=1 python3 experiments/studies/fgcs/differential/test_compare.py -v
+
+# full reproduction into a new or empty work directory (network and build)
+PYTHONDONTWRITEBYTECODE=1 python3 experiments/studies/fgcs/differential/compare.py \
+  --reproduce --work-dir paper/tmp/fgcs-differential-reproduction
+```
+
+Reproduction downloads the pinned archive (or uses `FGCS_UPSTREAM_ARCHIVE`), checks its size and
+digest against the lock file, compiles upstream sources with
+[UpstreamRunner.java.txt](<differential/UpstreamRunner.java.txt>), runs
+`UpstreamDifferentialExporter`, and invokes each upstream case in a fresh JVM.
+`scripts/prepare-fgcs-differential.py` is the packaging step that regenerates the observations and
+`comparison.json`.
+
+### Same-layer static planners
+
+`StaticPlannerBaselineStudy` runs `SHARED_STORAGE_HEFT`, `_CPOP`, and `_PEFT` on Montage 50/100,
+CyberShake 50/100, SIPHT 60, Inspiral 50, and Epigenomics 46 with the platform of
+`MakespanBaselineComparison.platform()` (four VMs at 500–2000 MIPS, prices 1/2/4/8 per second,
+15 MB/s storage, seed 7): 21 runs, reported with mapping, makespan, waiting, slowdown, energy,
+cost, and audit residuals.
+
+```bash
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.fgcs.baseline.StaticPlannerBaselineStudy
+```
+
+### Semantic contracts
+
+`SemanticContractBenchmarks` (test `SemanticContractBenchmarksTest`) runs three real simulations
+whose expected values are hand-derived from the
+[online assignment](<../../../docs/advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>),
+[coherent dataflow](<../../../docs/advanced/COHERENT_DATAFLOW_CONTRACT.md>),
+[storage dataflow](<../../../docs/advanced/STORAGE_DATAFLOW_CONTRACT.md>), and
+[energy](<../../../docs/advanced/ENERGY_DIMENSION_DESIGN.md>) contracts and the
+[CRCH contract](<../../../docs/algorithms/CONTRACTS.md#crch-synchronized-checkpoint-recovery-r-paper-11-2026-11-08>).
+All workflows arrive at 100 s.
+
+| Case | Hand-derived expectation |
+|---|---|
+| `control-ready-target-score-binding-and-data-gate` | At t=100 the 10 s parent selects fast VM 9 (score 110) over slow VM 3 (120); the 20 s filler also selects VM 9 (130 vs 140). At t=110 the child scores fast `max(110,130)+1=131`, slow `max(110+1,110)+2=113`, binds VM 3, transfers 1 MB at 1 MB/s during [110,111], and executes during [111,113]. Task and Job bindings agree |
+| `two-tier-default-idle-unused-vm-and-terminal-drain` | The 2000 MI task runs on the 500 MI/s low tier during [100,104]; the unused 1 MB output drains at 0.5 MB/s during [104,106], so simulation end is 106 and terminal drain 2 s. The 110 MI stage-in Job takes 0.11 s on the 1000 MI/s default tier. Default-tier idle 10 W over [0,106] on both VMs; used VM adds `(30−10)·4=80 J` and `(100−10)·0.11=9.9 J`: used 1149.9 J, unused 1060 J, total 2209.9 J, mean 1104.95 J, fleet peak 200 W, EDP 234249.4 J·s. The low tier's 1 W idle discriminates selected-tier idle from default-tier idle |
+| `crch-two-checkpoints-and-third-checkpoint-boundary` | The 3000 MI root runs at 1000 MI/s from t=100 with `λ=1 s`, `γ=0.1 s`: checkpoints after 1 s and 2 s of progress, so the attempt executes `3000+2·100=3200 MI`; no third checkpoint. A deterministic failure at 102.5 (Weibull shape 1e300, scale 102.5) ends the attempt after both checkpoints (at 1.1 s and 2.2 s): 2000 MI saved on VM 3, 1000 MI remain. Resuming on VM 3 costs 1.0 s versus 3.2 s on VM 8, so the retry runs on VM 3 over [102.5,103.5]; no restore term; the child becomes ready at 103.5 |
+
+`FailureRecoveryStudy` (test `FailureRecoveryStudyTest`) classifies every row from its report:
+`EXERCISED_FAILURE_RETRY` (at least one failed Job and one retry, workflow complete),
+`ENABLED_NO_INJECTION_CONTROL` (model enabled, zero failures), or `FAILURE_DISABLED_CONTROL`.
+Failures target depth 1 on the fastest initial VM with a periodic stream (Weibull shape 1e300,
+period 5 s; SIPHT 1000 s), recorded in `protocol.json` as `recovery.injection`.
+
+```bash
+mvn -q -pl :workflowsim-workbench -am \
+  -Dtest=SemanticContractBenchmarksTest,FailureRecoveryStudyTest \
+  -Dsurefire.failIfNoSpecifiedTests=false test
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.fgcs.contracts.SemanticContractBenchmarks
+```
+
+### Model microbenchmarks
+
+`ModelMicrobenchmarks` (test `ModelMicrobenchmarksTest`) runs six simulations with hand-derived
+expectations:
+
+| Case | Expectation |
+|---|---|
+| Two-flow bottleneck | 2 MB and 6 MB flows share a 1 MB/s store read at 0.5 MB/s each; the small flow ends at 4 s, the large is refilled to 1 MB/s and ends at 8 s. Independent paths end at 2 s and 6 s. A fixed capacity/n model would predict 4 s and 12 s |
+| Replica visibility / CPU barrier | A child needs 1 MB and 4 MB inputs on independent 1 MB/s paths; one data-ready release occurs at the slower settlement (4 s) and CPU start cannot precede it |
+| Required output write-back | An unused 1 MB output takes 2 s at a 0.5 MB/s store write; CPU return does not wait, simulation end does. The V2 control has no output copy and zero drain |
+| CRCH retry | The 2000 MI parent with one checkpoint executes 2100 MI over [0.21, 2.31); a deterministic failure at 1.5 saves 1000 MI on VM 3; the retry runs 1000 MI on VM 3 over [1.5, 2.5); the child is released only after the successful return |
+
+Network expectations use `COPY_ADMITTED.observedTime` and `COPY_SETTLED.payload.effectiveTime`.
+The driver removes a stale `results.json` before running and fails on any invalid fixture or
+mismatch.
+
+```bash
+mvn -q -pl :workflowsim-workbench -am \
+  -Dtest=ModelMicrobenchmarksTest -Dsurefire.failIfNoSpecifiedTests=false test
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.fgcs.microbench.ModelMicrobenchmarks
+```
+
+### Manifest-guided reconstruction
+
+`ManifestGuidedRerunStudy` (test `ManifestGuidedRerunStudyTest`) calls the real
+`RerunDiffExecutor.execute(Path, Path)` on genuine manifest-v4 bundles from a four-task chain
+(runtimes 10/20/30/40 s, two VMs, LOCAL, RANDOM + STATIC). It is re-simulation plus exact core diff
+under the [rerun contract](<../../../docs/experiments/RERUN_DIFF_CONTRACT.md>), not event replay.
+
+| Case | Expected |
+|---|---|
+| `genuine-v2-control`, `genuine-v3-control` | `IDENTICAL_CORE` |
+| `relocated-v2-input-path` (byte-identical input under `<study>/inputs/`) | `IDENTICAL_CORE` with three volatile path notes |
+| `volatile-v3-manifest-metadata` (`runtime.osName`, `provenance.core.codeSource`) | `IDENTICAL_CORE` with two volatile notes |
+| `semantic-v2-runtime-scale` (`runtimeScale` 1.0 → 2.0; a 10 s Task goes from 10000 to 20000 MI) | `DIVERGED` at `/result/tasks/0/effectiveExecutionLengthMi` |
+| `evidence-invalid-v2-makespan` (end advanced 0.5 s, stale metric, integrity fields repaired) | `EVIDENCE_INVALID` naming `makespanSeconds` |
+| `input-v2-hash-mismatch` (last byte flipped) | `INPUT_HASH_MISMATCH` |
+| `input-v3-unresolved` | `INPUT_UNRESOLVED` |
+| `reconstruction-v3-unsupported-vm-scheduler` | `RECONSTRUCTION_REJECTED` |
+
+```bash
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.fgcs.rerun.ManifestGuidedRerunStudy \
+  '-Dexec.args="paper/tmp/fgcs-round2/rerun"'
+```
+
+The output must be empty or absent; `results.json` (schema
+`fgcs-manifest-guided-rerun-results-v1`) records expected and actual verdicts per case, and `main`
+fails when `summary.unexpectedOutcomes` is non-zero.
+
+### Adversarial evidence
+
+`AdversarialEvidenceStudy` (test `AdversarialEvidenceStudyTest`) corrupts genuine V2/V3 bundles
+semantically, then repairs every artifact integrity field, event sequence, and counter, and runs the
+Java `ExperimentArtifactValidator` and `scripts/verify-network-ledger.py`. Expected verdicts are
+fixed from the [file lifecycle](<../../../docs/advanced/FILE_LIFECYCLE_FORMAT.md>) and
+[storage](<../../../docs/advanced/STORAGE_DATAFLOW_CONTRACT.md>) contracts.
+
+| Case | Java | Python |
+|---|---|---|
+| `v2-parent-before-child-request` | reject | reject |
+| `v2-task-identity-mismatch` | reject | reject |
+| `v2-source-provenance-mismatch` | reject | reject |
+| `v2-reordered-decision-dispatch` | accept | reject |
+| `v2-missing-simulation-terminal` | reject | accept |
+| `v2-makespan-metric-mismatch` | reject | accept |
+| `v2-energy-metric-out-of-scope` | accept | accept |
+| `v3-output-settlement-missing` | reject | reject |
+| `v3-source-provenance-mismatch` | reject | reject |
+
+Accept entries are declared coverage boundaries: the Java path does not check equal-time
+decision/dispatch order, the Python lifecycle path does not enforce the terminal marker or recompute
+makespan, and neither path recomputes energy (that is `verify-study-evidence.py`'s job). They do not
+make corrupted evidence valid.
+
+```bash
+mvn -q -pl :workflowsim-workbench -am compile exec:java \
+  -Dexec.mainClass=org.workflowsim.experiments.fgcs.verification.AdversarialEvidenceStudy
+```
+
+## Non-claims
+
+No exhaustive model coverage, complete paper-corpus reproduction, packet-level network fidelity,
+universal energy-policy ranking, or equivalence between raw and derived inputs is claimed. Only
+protocols, the compact differential comparison, adapters, and verifier tests are source-controlled;
+a clean reproduction must regenerate the results.

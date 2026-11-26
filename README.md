@@ -93,11 +93,9 @@ workflow + SimulationConfig + PlatformProfile
 
 | Topic | Report |
 |---|---|
-| HEFT, Min-Min, Max-Min, MCT, FCFS, and Round-Robin | [Traditional makespan comparison](<docs/experiments/MAKESPAN_BASELINE_COMPARISON.md>) |
-| 1000 and 5000 task workflows | [Scale comparison](<docs/experiments/MAKESPAN_SCALE_COMPARISON.md>) |
-| HEFT, GreenHEFT, MOHEFT, MIN_POWER, EDP selection, and DVFS slack | [Energy and EDP comparison](<docs/experiments/ENERGY_BASELINE_COMPARISON.md>) |
+| Makespan, scale, and energy baselines on classic DAX workflows | [Baseline studies](<docs/experiments/BASELINE_STUDIES.md>) |
 | Implemented literature algorithms and verification scope | [Paper reproductions](<docs/experiments/PAPER_REPRODUCTIONS.md>) |
-| All reports, result files, reproduction commands, and evidence boundaries | [Experiment index](<docs/experiments/README.md>) |
+| Experiment guides, verification, and rerun contracts | [Experiment index](<docs/experiments/README.md>) |
 
 These reports describe specific simulation scenes, not universal algorithm rankings. Always compare the workflow, VM platform, storage model, power model, and metric definitions before interpreting a result.
 

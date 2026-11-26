@@ -30,7 +30,7 @@ ExperimentArtifactValidator.ValidationResult result =
 Path ledger = result.getNetworkLedger(); // null when OFF; unreferenced files are never guessed at
 ```
 
-ON writes the usual metrics and events plus `run.network-ledger.json`, registers its role and
+ON writes the usual metrics and events plus `run.network-ledger.json`, registers its role, digest, and
 size in the manifest, and writes the manifest last. OFF writes the usual three files with no
 `networkEvidence` field and no network role. Readers trust only manifest roles; unreferenced
 ledgers left in a reused directory are ignored, not deleted.
@@ -258,7 +258,7 @@ non-local references; each Job attempt has at most one V1 external-input group. 
 are checked against the double grouping quantities within explicit accumulation bounds; the
 permitted ±1 grouping-rounding difference is not evidence of locality.
 
-Legacy v4 tools may check only the extra role's size. ON evidence must use the current
+Legacy v4 tools may check only the extra role's digest and size. ON evidence must use the current
 validation and rerun chain, which compares the sidecar field by field under `/networkLedger/...`
 (see the [rerun contract](<../experiments/RERUN_DIFF_CONTRACT.md>)).
 
@@ -277,7 +277,7 @@ python3 -B scripts/verify-network-ledger.py path/to/result.file-lifecycle.json -
 python3 -B scripts/verify-network-ledger.py path/to/result.storage-lifecycle.json --json
 ```
 
-Manifest mode recognizes only registered artifact roles and checks relative paths, sizes,
+Manifest mode recognizes only registered artifact roles and checks relative paths, digests, sizes,
 configuration, and context; an unreferenced sidecar cannot turn OFF into ON.
 
 | Input contract | Checked | Not claimed |
