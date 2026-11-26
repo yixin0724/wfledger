@@ -22,10 +22,9 @@ The GPLv3 path avoids presenting the combined work as GPL-2.0-only. Project-owne
 
 - Repository: https://github.com/WorkflowSim/WorkflowSim-1.0
 - Commit: `d3ea21afd8ce6479bd292d3bd7469045d7a36089`
-- Immutable archive SHA-256: `fcf4c1b2cb8fe55e0949e08f434821f0c1fe9c4ed46d3b2fd09bd76ce6e9cae5`
 - Source archive URL: https://codeload.github.com/WorkflowSim/WorkflowSim-1.0/zip/d3ea21afd8ce6479bd292d3bd7469045d7a36089
 
-The upstream archive is used for provenance and differential research. It is not bundled as a third-party source tree in the WfLedger repository.
+The archive size and digest are pinned in [upstream-lock.json](<experiments/studies/fgcs/differential/upstream-lock.json>). The upstream archive is used for provenance and differential research. It is not bundled as a third-party source tree in the WfLedger repository.
 
 ## Audit findings
 
