@@ -12,7 +12,7 @@ drivers under `org.workflowsim.experiments.fgcs` are separate.
 The design avoids the weaknesses of single-instance, single-run comparisons: it pairs over many
 workflow instances, keeps the speed spread of the fleet bounded, sizes fleets against DAG width,
 uses realistic idle-to-peak power ratios and a uniform price law, calibrates CCR explicitly,
-derives deadlines from bounds rather than from one algorithm's makespan, and uses a stochastic
+interpolates deadlines between fastest-tier and slowest-tier makespans, and uses a stochastic
 failure process. Each section below states the corresponding rule.
 
 ## Research question and statistical unit
