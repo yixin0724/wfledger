@@ -145,7 +145,7 @@ Regular Workbench and standalone reports use only the same verified snapshot. Th
   a mismatch renders `MISMATCH` instead of numbers.
 - Rerun surface: `ManifestConfigRebuilder` round-trips
   `platform.vms[].frequencyTiers` and `configuration.frequencyPolicy`, so tiered and
-  tri-dimensional bundles rebuild to the recorded platform and rerun `IDENTICAL_CORE`;
+  tiered-plus-carbon bundles rebuild to the recorded platform and rerun `IDENTICAL_CORE`;
   a malformed recorded table (non-descending, flat power alongside tiers, missing
   `mips`, unknown policy) is refused as `RECONSTRUCTION_REJECTED`.
   Budget carbon under tiers: `CarbonAccounting.budgetModel` uses the per-tier fleet-power curve
