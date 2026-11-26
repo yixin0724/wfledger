@@ -26,6 +26,11 @@ Determinism rules (documented in README.md next to this file):
 
 A declared exclusion (recipe, size) must actually fail in WfCommons; an exclusion that
 builds successfully is reported as an error instead of being skipped silently.
+
+``GENERATION.json`` always describes the complete corpus. A partial run (``--only-sizes``)
+never writes it: when the output directory already holds a complete ``GENERATION.json``,
+every regenerated record must equal the recorded one and the file is left untouched;
+otherwise no generation record is written.
 """
 
 import argparse
@@ -269,6 +274,8 @@ def generate(spec_path, output, only_sizes=None):
             "sizeBytes": len(data),
             "retained_in_standard_checkout": size in retained,
         })
+    if only_sizes is not None:
+        return check_partial(output, instances)
     manifest = {
         "corpus": spec["corpus"],
         "base_seed": spec["base_seed"],
@@ -290,14 +297,34 @@ def generate(spec_path, output, only_sizes=None):
     return manifest
 
 
+def check_partial(output, instances):
+    """Compare a partial run with the complete GENERATION.json in ``output``, if any."""
+    manifest_path = output / MANIFEST_NAME
+    if not manifest_path.is_file():
+        return {"n_instances": len(instances), "instances": instances, "manifest": None}
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    recorded = {entry["wfformat_json"]: entry for entry in manifest.get("instances", [])}
+    if manifest.get("n_instances") != len(recorded):
+        raise CorpusError(str(manifest_path) + " is not a complete generation record")
+    for entry in instances:
+        previous = recorded.get(entry["wfformat_json"])
+        if previous != entry:
+            raise CorpusError("partial regeneration of {} disagrees with {}: recorded {},"
+                              " regenerated {}".format(entry["wfformat_json"], manifest_path,
+                                                       previous, entry))
+    return {"n_instances": len(instances), "instances": instances,
+            "manifest": str(manifest_path)}
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--spec", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--only-sizes", type=int, nargs="*",
-                        help="generate only these requested sizes (the manifest then lists"
-                             " only them; use for partial regeneration checks)")
+                        help="generate only these requested sizes; GENERATION.json is never"
+                             " written, and an existing complete one must agree with every"
+                             " regenerated record")
     args = parser.parse_args(argv)
     try:
         manifest = generate(args.spec, args.output,
@@ -306,6 +333,11 @@ def main(argv=None):
         print("generate_corpus: " + str(error), file=sys.stderr)
         return 1
     print("generated {} instances into {}".format(manifest["n_instances"], args.output))
+    if args.only_sizes:
+        if manifest["manifest"] is None:
+            print("partial run: no generation record written")
+        else:
+            print("partial run: every record agrees with " + manifest["manifest"])
     return 0
 
 

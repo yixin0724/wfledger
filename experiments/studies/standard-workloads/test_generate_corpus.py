@@ -164,6 +164,39 @@ class ReproducibilityTests(unittest.TestCase):
             self.assertEqual((self.temp / "a" / rel).read_bytes(),
                              (self.temp / "b" / rel).read_bytes(), str(rel))
 
+    def test_partial_run_preserves_the_complete_generation_record(self):
+        spec = self.write_spec({
+            "corpus": "test", "base_seed": 3, "instances_per_size": 1, "retained_sizes": [50],
+            "recipes": [{"recipe": "blast", "sizes": [50, 100]}]})
+        full = GEN.generate(spec, self.temp / "a")
+        self.assertEqual(2, full["n_instances"])
+        record = (self.temp / "a" / "GENERATION.json").read_bytes()
+        partial = GEN.generate(spec, self.temp / "a", only_sizes={100})
+        self.assertEqual(1, partial["n_instances"])
+        self.assertEqual(record, (self.temp / "a" / "GENERATION.json").read_bytes())
+
+    def test_partial_run_disagreeing_with_the_record_fails(self):
+        spec = self.write_spec({
+            "corpus": "test", "base_seed": 3, "instances_per_size": 1,
+            "recipes": [{"recipe": "blast", "sizes": [50, 100]}]})
+        GEN.generate(spec, self.temp / "a")
+        path = self.temp / "a" / "GENERATION.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest["instances"][1]["sizeBytes"] += 1
+        tampered = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("ascii")
+        path.write_bytes(tampered)
+        with self.assertRaises(GEN.CorpusError):
+            GEN.generate(spec, self.temp / "a", only_sizes={100})
+        self.assertEqual(tampered, path.read_bytes())
+
+    def test_partial_run_without_a_record_writes_none(self):
+        spec = self.write_spec({
+            "corpus": "test", "base_seed": 3, "instances_per_size": 1,
+            "recipes": [{"recipe": "blast", "sizes": [50, 100]}]})
+        GEN.generate(spec, self.temp / "b", only_sizes={50})
+        self.assertTrue((self.temp / "b" / "blast/n50/blast-50-000.json").is_file())
+        self.assertFalse((self.temp / "b" / "GENERATION.json").exists())
+
     def test_generation_record_carries_sizes_not_hashes(self):
         spec = self.write_spec({
             "corpus": "test", "base_seed": 3, "instances_per_size": 1,
