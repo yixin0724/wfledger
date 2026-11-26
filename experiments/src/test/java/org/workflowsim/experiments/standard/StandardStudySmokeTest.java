@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,18 @@ class StandardStudySmokeTest {
         assertEquals("WORK_CONSERVING_TASK_EXECUTION_V3", header.get("executionSemantics"));
         assertEquals("SHARED_STORAGE_HEFT", header.get("baseline"));
         assertNotNull(header.get("gitCommit"));
-        assertEquals(64, ((String) header.get("corpusIndexSha256")).length());
+        assertFalse(header.containsKey("corpusIndexSha256"));
+        Map<String, Long> sizes = new HashMap<String, Long>();
+        for (Path input : instances) {
+            sizes.put(input.toAbsolutePath().normalize().toString(), Files.size(input));
+        }
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> corpus = (List<Map<String, Object>>) header.get("corpus");
+        assertEquals(2, corpus.size());
+        for (Map<String, Object> entry : corpus) {
+            assertEquals(sizes.get((String) entry.get("path")), entry.get("sizeBytes"));
+            assertFalse(entry.containsKey("sha256"));
+        }
 
         assertEquals(4, result.getRows().size());
         Set<String> cells = new HashSet<String>();
@@ -86,7 +98,7 @@ class StandardStudySmokeTest {
         assertEquals(4, document.getAsJsonArray("rows").size());
         List<String> csv = Files.readAllLines(result.getRowsCsv(), StandardCharsets.UTF_8);
         assertEquals("# protocolId=standard-study-v1", csv.get(0));
-        assertEquals(6 + 1 + 4, csv.size(), "6 header lines, 1 column line, 4 rows");
+        assertEquals(5 + 1 + 4, csv.size(), "5 header lines, 1 column line, 4 rows");
         assertTrue(Files.isRegularFile(directory.resolve("out/campaign/experiment-campaign-index.json")));
     }
 

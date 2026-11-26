@@ -8,7 +8,6 @@ copied from verifier output.
 
 import contextlib
 import copy
-import hashlib
 import importlib.util
 import io
 import json
@@ -156,10 +155,10 @@ class CorpusTests(unittest.TestCase):
         (self.root / "toy/n4/toy-4-000.json").write_bytes(data)
         self.entry = {"recipe": "toy", "requested_tasks": 4, "num_tasks": 4,
                       "wfformat_json": "toy/n4/toy-4-000.json",
-                      "sha256": hashlib.sha256(data).hexdigest(),
+                      "sizeBytes": len(data),
                       "retained_in_standard_checkout": True, "stats": dict(DIAMOND_STATS)}
         self.absent = {"recipe": "toy", "requested_tasks": 40, "num_tasks": 40,
-                       "wfformat_json": "toy/n40/toy-40-000.json", "sha256": "0" * 64,
+                       "wfformat_json": "toy/n40/toy-40-000.json", "sizeBytes": 400,
                        "retained_in_standard_checkout": False, "stats": {}}
         self.write_index([self.entry, self.absent])
 
@@ -177,12 +176,20 @@ class CorpusTests(unittest.TestCase):
             self.assertEqual(0, VERIFIER.main([str(self.root)]))
         self.assertIn("0 issues", out.getvalue())
 
-    def test_hash_mismatch_is_an_issue(self):
+    def test_size_mismatch_is_an_issue(self):
         path = self.root / "toy/n4/toy-4-000.json"
         path.write_bytes(path.read_bytes() + b" ")
         issues, _ = VERIFIER.verify_corpus(self.root)
         self.assertEqual(1, len(issues))
-        self.assertIn("sha256 mismatch", issues[0])
+        self.assertIn("size mismatch", issues[0])
+
+    def test_missing_size_is_an_issue(self):
+        legacy = {k: v for k, v in self.entry.items() if k != "sizeBytes"}
+        legacy["sha256"] = "0" * 64
+        self.write_index([legacy])
+        issues, _ = VERIFIER.verify_corpus(self.root)
+        self.assertEqual(1, len(issues))
+        self.assertIn("size mismatch (recorded None", issues[0])
 
     def test_missing_retained_instance_is_an_issue(self):
         retained = copy.deepcopy(self.absent)
@@ -216,7 +223,7 @@ class CorpusTests(unittest.TestCase):
             self.assertEqual(2, VERIFIER.main([str(self.root)]))
 
     def test_write_index_round_trip(self):
-        manifest = {"corpus": "toy", "spec_sha256": "1" * 64, "environment": {},
+        manifest = {"corpus": "toy", "environment": {},
                     "seed_rule": "rule", "exclusions": [], "instances": [
                         {k: v for k, v in self.entry.items() if k != "stats"}]}
         (self.root / "GENERATION.json").write_text(json.dumps(manifest), encoding="utf-8")
@@ -225,6 +232,11 @@ class CorpusTests(unittest.TestCase):
         index = json.loads((self.root / "INDEX.json").read_text(encoding="utf-8"))
         self.assertEqual(DIAMOND_STATS, index["instances"][0]["stats"])
         self.assertEqual("GENERATION.json", index["auxiliary_files"][0]["file"])
+        self.assertEqual((self.root / "GENERATION.json").stat().st_size,
+                         index["auxiliary_files"][0]["sizeBytes"])
+        self.assertEqual(self.entry["sizeBytes"], index["instances"][0]["sizeBytes"])
+        self.assertNotIn("spec_sha256", index)
+        self.assertNotIn("sha256", index["instances"][0])
         issues, _ = VERIFIER.verify_corpus(self.root)
         self.assertEqual([], issues)
 

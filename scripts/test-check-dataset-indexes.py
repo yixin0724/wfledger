@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import contextlib
-import hashlib
 import importlib.util
 import io
 import json
@@ -18,8 +17,8 @@ SPEC = importlib.util.spec_from_file_location("check_dataset_indexes", SCRIPT)
 CHECKER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECKER)
 
-def digest(text):
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+def size(text):
+    return len(text.encode("utf-8"))
 
 class Tree:
 
@@ -32,10 +31,10 @@ class Tree:
         path = self.datasets / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
-        return digest(text)
+        return size(text)
 
-    def file_sha(self, rel):
-        return CHECKER.sha256_file(self.datasets / rel)
+    def file_size(self, rel):
+        return (self.datasets / rel).stat().st_size
 
     def write_index(self, family, payload):
 
@@ -50,26 +49,26 @@ class Tree:
             families.append({
                 "family": name,
                 "index": index_rel,
-                "index_sha256": self.file_sha(index_rel),
+                "indexSizeBytes": self.file_size(index_rel),
                 "n_instances": index["n_instances"],
             })
         self.write("INDEX.json", json.dumps({"families": families}))
 
 def build_consistent_tree(root):
     tree = Tree(root)
-    dax_sha = tree.write("dax/cybershake/n30/CyberShake_30.dax", "<adag/>")
-    aux_sha = tree.write("dax/heft/heft-paper-example.dax", "<paper/>")
-    wf_sha = tree.write("wfformat/montage/n100/montage-100-000.json", "{}")
-    wf_manifest_sha = tree.write("wfformat/montage/n100/montage-100-000.manifest.json", "{}")
+    dax_size = tree.write("dax/cybershake/n30/CyberShake_30.dax", "<adag/>")
+    aux_size = tree.write("dax/heft/heft-paper-example.dax", "<paper/>")
+    wf_size = tree.write("wfformat/montage/n100/montage-100-000.json", "{}")
+    wf_manifest_size = tree.write("wfformat/montage/n100/montage-100-000.manifest.json", "{}")
     dax_index = {
         "n_instances": 1,
         "n_auxiliary_files": 1,
         "instances": [
             {"family": "cybershake", "dax_xml": "cybershake/n30/CyberShake_30.dax",
-             "sha256": dax_sha},
+             "sizeBytes": dax_size},
         ],
         "auxiliary_files": [
-            {"file": "heft/heft-paper-example.dax", "sha256": aux_sha,
+            {"file": "heft/heft-paper-example.dax", "sizeBytes": aux_size,
              "role": "paper example"},
         ],
     }
@@ -78,17 +77,17 @@ def build_consistent_tree(root):
         "instances": [
             {"recipe": "montage",
              "wfformat_json": "montage/n100/montage-100-000.json",
-             "sha256": wf_sha,
+             "sizeBytes": wf_size,
              "dax_xml": None,
              "manifest": "montage/n100/montage-100-000.manifest.json",
-             "manifest_sha256": wf_manifest_sha,
+             "manifestSizeBytes": wf_manifest_size,
              "retained_in_standard_checkout": True},
             {"recipe": "montage",
              "wfformat_json": "montage/n400/montage-400-000.json",
-             "sha256": "0" * 64,
+             "sizeBytes": 1000,
              "dax_xml": None,
              "manifest": "montage/n400/montage-400-000.manifest.json",
-             "manifest_sha256": "1" * 64,
+             "manifestSizeBytes": 10,
              "retained_in_standard_checkout": False},
         ],
     }
@@ -134,7 +133,7 @@ class ConsistentTreeTests(CheckerTestCase):
     def test_absent_auxiliary_not_retained_passes(self):
         dax_index = self.load_index("dax")
         dax_index["auxiliary_files"].append({
-            "file": "upstream/README.md", "sha256": "2" * 64,
+            "file": "upstream/README.md", "sizeBytes": 20,
             "role": "upstream documentation", "retained_in_standard_checkout": False,
         })
         dax_index["n_auxiliary_files"] = 2
@@ -151,18 +150,18 @@ class ConsistentTreeTests(CheckerTestCase):
 class AdditionalFamilyTests(CheckerTestCase):
 
     def add_family(self):
-        inst_sha = self.tree.write("wfgen-standard/blast/n50/blast-50-000.json", "{}\n")
-        gen_sha = self.tree.write("wfgen-standard/GENERATION.json", "{\"n\": 2}\n")
+        inst_size = self.tree.write("wfgen-standard/blast/n50/blast-50-000.json", "{}\n")
+        gen_size = self.tree.write("wfgen-standard/GENERATION.json", "{\"n\": 2}\n")
         index = {
             "n_instances": 2,
             "n_auxiliary_files": 1,
             "instances": [
                 {"recipe": "blast", "wfformat_json": "blast/n50/blast-50-000.json",
-                 "sha256": inst_sha, "retained_in_standard_checkout": True},
+                 "sizeBytes": inst_size, "retained_in_standard_checkout": True},
                 {"recipe": "blast", "wfformat_json": "blast/n1000/blast-1000-000.json",
-                 "sha256": "4" * 64, "retained_in_standard_checkout": False},
+                 "sizeBytes": 40, "retained_in_standard_checkout": False},
             ],
-            "auxiliary_files": [{"file": "GENERATION.json", "sha256": gen_sha,
+            "auxiliary_files": [{"file": "GENERATION.json", "sizeBytes": gen_size,
                                  "role": "generation manifest"}],
         }
         self.tree.write("wfgen-standard/INDEX.json", json.dumps(index))
@@ -170,7 +169,7 @@ class AdditionalFamilyTests(CheckerTestCase):
         top["families"].append({
             "family": "wfgen-standard",
             "index": "wfgen-standard/INDEX.json",
-            "index_sha256": self.tree.file_sha("wfgen-standard/INDEX.json"),
+            "indexSizeBytes": self.tree.file_size("wfgen-standard/INDEX.json"),
             "n_instances": 2,
         })
         self.tree.write("INDEX.json", json.dumps(top))
@@ -198,15 +197,15 @@ class AdditionalFamilyTests(CheckerTestCase):
         index_path.write_text(json.dumps(index), encoding="utf-8")
         issues, _ = self.check()
         self.assertEqual(1, len(issues))
-        self.assertIn("family index hash mismatch", issues[0])
+        self.assertIn("family index size mismatch", issues[0])
 
 class TamperingTests(CheckerTestCase):
 
-    def test_tampered_file_hash_mismatch(self):
+    def test_resized_file_is_a_size_mismatch(self):
         self.tree.write("dax/cybershake/n30/CyberShake_30.dax", "<adag tampered/>")
         issues, _ = self.check()
         self.assertEqual(1, len(issues))
-        self.assertIn("recorded hash mismatch", issues[0])
+        self.assertIn("recorded size mismatch (recorded 7 bytes, actual 16 bytes)", issues[0])
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(1, CHECKER.main(["--root", str(self.tree.root)]))
 
@@ -223,20 +222,42 @@ class TamperingTests(CheckerTestCase):
         self.assertEqual(1, len(issues))
         self.assertIn("missing but the entry claims", issues[0])
 
-    def test_manifest_hash_mismatch_is_an_issue(self):
+    def test_same_size_edit_is_not_detected(self):
+        self.tree.write("dax/cybershake/n30/CyberShake_30.dax", "<bdag/>")
+        issues, _ = self.check()
+        self.assertEqual([], issues)
+
+    def test_manifest_size_mismatch_is_an_issue(self):
         self.tree.write("wfformat/montage/n100/montage-100-000.manifest.json",
                         '{"seed": 43}')
         issues, _ = self.check()
         self.assertEqual(1, len(issues))
-        self.assertIn("manifest hash mismatch", issues[0])
+        self.assertIn("manifest size mismatch", issues[0])
 
-    def test_broken_index_chain_is_an_issue(self):
+    def test_missing_size_field_is_an_issue(self):
         dax_index = self.load_index("dax")
-        dax_index["note"] = "edited without re-chaining the top-level index"
+        del dax_index["instances"][0]["sizeBytes"]
+        dax_index["instances"][0]["sha256"] = "0" * 64
+        self.tree.write_index("dax", dax_index)
+        issues, _ = self.check()
+        self.assertEqual(1, len(issues))
+        self.assertIn("missing or malformed sizeBytes", issues[0])
+
+    def test_boolean_size_is_malformed(self):
+        dax_index = self.load_index("dax")
+        dax_index["instances"][0]["sizeBytes"] = True
+        self.tree.write_index("dax", dax_index)
+        issues, _ = self.check()
+        self.assertEqual(1, len(issues))
+        self.assertIn("missing or malformed sizeBytes", issues[0])
+
+    def test_stale_family_index_size_is_an_issue(self):
+        dax_index = self.load_index("dax")
+        dax_index["note"] = "edited without updating the top-level index"
         self.tree.write("dax/INDEX.json", json.dumps(dax_index))
         issues, _ = self.check()
         self.assertEqual(1, len(issues))
-        self.assertIn("family index hash mismatch", issues[0])
+        self.assertIn("family index size mismatch", issues[0])
 
     def test_wrong_n_instances_is_an_issue(self):
         dax_index = self.load_index("dax")
@@ -269,7 +290,7 @@ class TamperingTests(CheckerTestCase):
         (self.tree.datasets / "dax/heft/bundle.dax").mkdir()
         dax_index = self.load_index("dax")
         dax_index["auxiliary_files"].append({"file": "heft/bundle.dax",
-                                             "sha256": "3" * 64, "role": "not a file"})
+                                             "sizeBytes": 30, "role": "not a file"})
         dax_index["n_auxiliary_files"] = 2
         self.tree.write_index("dax", dax_index)
         issues, _ = self.check()

@@ -126,7 +126,7 @@ The full generated corpus may carry indexes and same-named `.manifest.json` file
 
 ### WfInstances 1.5
 
-Structure-validation records for the full snapshot on hand cover 180 JSON inputs, 118637 tasks, and 244573 edges: 30 Makeflow, 15 Nextflow, and 135 Pegasus. They only show that the corresponding snapshot parses and converts into DAGs; they do not show that every input passes the standard simulation pipeline. The [WfInstances index](<wfinstances/INDEX.json>) lists all 180 inputs and the 25 auxiliary files with their digests and the upstream commit the snapshot was captured from.
+Structure-validation records for the full snapshot on hand cover 180 JSON inputs, 118637 tasks, and 244573 edges: 30 Makeflow, 15 Nextflow, and 135 Pegasus. They only show that the corresponding snapshot parses and converts into DAGs; they do not show that every input passes the standard simulation pipeline. The [WfInstances index](<wfinstances/INDEX.json>) lists all 180 inputs and the 25 auxiliary files with their sizes and the upstream commit the snapshot was captured from.
 
 ```text
 datasets/wfinstances/v1.5/<runtime-system>/<application>/<instance>.json

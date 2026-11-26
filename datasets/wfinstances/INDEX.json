@@ -19,1411 +19,1411 @@
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-large-001.json",
-      "sha256": "17768651498f012a75e04f2d5ffe362529e73b6459d5fbfce909f29e56b26778",
+      "sizeBytes": 253551,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-large-002.json",
-      "sha256": "8dc6c1e3aa64e06756f2cfc71183e16840b6f698ec5ac4208df31ce33770401d",
+      "sizeBytes": 253541,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-large-003.json",
-      "sha256": "e6c68e9137a6be3255c62bd9cbc6d7583edc397d9e03f1854e05c24ee90d8022",
+      "sizeBytes": 253543,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-large-004.json",
-      "sha256": "c49a51434cfb5d709dac03a7591bb0936ffae7dca5f523ff000cefa3c13558f5",
+      "sizeBytes": 253544,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-large-005.json",
-      "sha256": "0d12833f95a3acb76be942defd8567a0e283495a57d360271c48510577e6dd63",
+      "sizeBytes": 253531,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-medium-001.json",
-      "sha256": "49379ed0edde3a5aabbb3903a1ac73655aeb0c13464bcc32d61b5036a4d4ee09",
+      "sizeBytes": 754982,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-medium-002.json",
-      "sha256": "5f0578e68587626c94211944a17f494080a9f661cc7eb691048ee40dc5b3751d",
+      "sizeBytes": 754961,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-medium-003.json",
-      "sha256": "415b6c8acd7f520fcd8a837d23e0ee110a62e4ea20199c1b3dcd49c076cf6b03",
+      "sizeBytes": 755021,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-medium-004.json",
-      "sha256": "852e9cbbd050bc554f2ed0c561c63a27f10f5c48cce051c4609983d4a1da2264",
+      "sizeBytes": 754968,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-medium-005.json",
-      "sha256": "445037cb6a42e1aa5e00bd866c1a87771833af3f7e2fbf8c27348e8f46d925e5",
+      "sizeBytes": 754974,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-small-001.json",
-      "sha256": "5e132ac7f63096dec62173da1c7512554f9ddb08dc420f2005af277a04b8e845",
+      "sizeBytes": 103750,
       "retained_in_standard_checkout": true
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-small-002.json",
-      "sha256": "3d55eba2245d6bc4c794c52b6ba1f55c870cf6d4929f0573c579c9d3206459b0",
+      "sizeBytes": 103746,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-small-003.json",
-      "sha256": "833439912d75c93e8df71f1956e45386b19c01afea90602771185746a6a4764f",
+      "sizeBytes": 103925,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-small-004.json",
-      "sha256": "40c3e784e151e9f70ee94188ff18f06b5018af517552c3d1bdb0790fac635aa5",
+      "sizeBytes": 103746,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "blast",
       "file": "v1.5/makeflow/blast/blast-chameleon-small-005.json",
-      "sha256": "21370362797d2c7138f51584043e1e8e3c43c735ce6666e8be18e43f3c43ef8d",
+      "sizeBytes": 103738,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-large-001.json",
-      "sha256": "0ec408307c343c544a3a4f14fed2558ec814c2eea440b2bb1e231c1bebd6ab07",
+      "sizeBytes": 2614834,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-large-002.json",
-      "sha256": "b82c096fc0e73a0afc39a3c5c0c6192863a8a0abe9c5188069f519843cf27364",
+      "sizeBytes": 2614880,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-large-003.json",
-      "sha256": "ce18e7b2cd53787a06ba6632ada6641937d63d8662b29e72c41bac8b4b19ba1a",
+      "sizeBytes": 2614896,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-large-004.json",
-      "sha256": "565c1796c908092eeb2b25cb7c112c621a1953b64953d3f159a21b9a39fc7c00",
+      "sizeBytes": 2614791,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-large-005.json",
-      "sha256": "e7e0cf895c403eb7e10763c09f2ed167c473f6ef6d515b1b32dfd0cbe8675c21",
+      "sizeBytes": 2614918,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-medium-001.json",
-      "sha256": "b7808cf517ba6d3f5bed6b72ad92521595e254f1f46b7a4de0e92577eb881bbc",
+      "sizeBytes": 2610744,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-medium-002.json",
-      "sha256": "77da8a009a42633041b04ca8968a4ce73c3c33ffca1de6f366e4d7448998676c",
+      "sizeBytes": 2610654,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-medium-003.json",
-      "sha256": "d84fc40fbca9194048bfc80ea58931f6493413c0280193409e58f98bfb49f364",
+      "sizeBytes": 2610603,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-medium-004.json",
-      "sha256": "1832cb4882f8c8ffb4216f0a892ad09d31a11e9bf235d789c7b75ffebee32593",
+      "sizeBytes": 2610755,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-medium-005.json",
-      "sha256": "880ae0eb818f21f14451935497584cde7f2fa2659f6c229a0a98a733b35efb4c",
+      "sizeBytes": 2610734,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-small-001.json",
-      "sha256": "ef7e46be7d2770ecf82a59677a3fd49a5f8d72890ff05318051afe14edff9080",
+      "sizeBytes": 266353,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-small-002.json",
-      "sha256": "4b41586f0f3a32d72a06eba82ba84c571c0066fd93248f16e685db3837172031",
+      "sizeBytes": 266359,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-small-003.json",
-      "sha256": "231b7fa1208b6aba0edeb5683c6ad93da238ec9c87b91a16590e4cc6beb03d50",
+      "sizeBytes": 266361,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-small-004.json",
-      "sha256": "c2c6136fc87e9a81f49267b5bf9f8770f000d37ed814cc597e9c9a8e8ee9ae74",
+      "sizeBytes": 266369,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "makeflow",
       "application": "bwa",
       "file": "v1.5/makeflow/bwa/bwa-chameleon-small-005.json",
-      "sha256": "e1578d3fc747f616e31182c49468832487a646c155de322ea8012cb569df986e",
+      "sizeBytes": 266354,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "airrflow-dirt02-001.json",
       "file": "v1.5/nextflow/airrflow-dirt02-001.json",
-      "sha256": "1a971400872670f2e4e1bddbe121b53114b5b2e9054e5870052606120b827f37",
+      "sizeBytes": 655964,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "atacseq-dirt02-001.json",
       "file": "v1.5/nextflow/atacseq-dirt02-001.json",
-      "sha256": "99af5f58b707cd7d2323eb10201a02260511e056f8f7244cdbc95312f6c3daf7",
+      "sizeBytes": 815591,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "bacass-dirt02-001.json",
       "file": "v1.5/nextflow/bacass-dirt02-001.json",
-      "sha256": "4cbab2c46e2d7c6094701d5a9d03bc4675d59bbb96effc2ae3c255c5a4fb2999",
+      "sizeBytes": 33954,
       "retained_in_standard_checkout": true
     },
     {
       "runtime": "nextflow",
       "application": "chipseq-dirt02-001.json",
       "file": "v1.5/nextflow/chipseq-dirt02-001.json",
-      "sha256": "734bff0981e242db5f641181d4487a75ad72cbd2944a0440f9bc4088d9106573",
+      "sizeBytes": 599938,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "cutandrun-dirt02-001.json",
       "file": "v1.5/nextflow/cutandrun-dirt02-001.json",
-      "sha256": "f19d8f6e51763edef3bfa0c1f7e42b3c74a700459fe0b762ad4954c70f2f312f",
+      "sizeBytes": 308357,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "fetchngs-dirt02-001.json",
       "file": "v1.5/nextflow/fetchngs-dirt02-001.json",
-      "sha256": "7c910190bbaaab253ea7127d85be6140692c41d06b17de5bd31556dd66d9de5f",
+      "sizeBytes": 83920,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "hic-dirt02-001.json",
       "file": "v1.5/nextflow/hic-dirt02-001.json",
-      "sha256": "e619c25b4cf2866123c8b18de6a4af142428954ed736671063f1bd1592e99f35",
+      "sizeBytes": 93872,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "mag-dirt02-001.json",
       "file": "v1.5/nextflow/mag-dirt02-001.json",
-      "sha256": "233a80ca62cb19c94edb656350206f1a1b45d3d7516fef4feefc72baca305e41",
+      "sizeBytes": 752881,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "methylseq-dirt02-001.json",
       "file": "v1.5/nextflow/methylseq-dirt02-001.json",
-      "sha256": "62b1383fa93f0d00d65eaee0dae0f4052e8358d4798b6de5377acc488000fc6d",
+      "sizeBytes": 103139,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "rnaseq-dirt02-001.json",
       "file": "v1.5/nextflow/rnaseq-dirt02-001.json",
-      "sha256": "a1a4797f888f69378dd4b1bc3130b62ccd5db8ce5b9e6c679ca41df8d648956e",
+      "sizeBytes": 569391,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "sarek-dirt02-001.json",
       "file": "v1.5/nextflow/sarek-dirt02-001.json",
-      "sha256": "0c80654c4ddbd2c4316ee20fd8140fc5282f22e7cebdfd64363e33b689814563",
+      "sizeBytes": 70123,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "scrnaseq-dirt02-001.json",
       "file": "v1.5/nextflow/scrnaseq-dirt02-001.json",
-      "sha256": "34c75549fcd4ff84ca399727718915940666fcd0f6ad2538ed347543578f3574",
+      "sizeBytes": 43676,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "smrnaseq-dirt02-001.json",
       "file": "v1.5/nextflow/smrnaseq-dirt02-001.json",
-      "sha256": "2fdf23909e7b5bc65e22fa363a6fd1052127c376e4045c5c6ba3bc5cfaf9f9e1",
+      "sizeBytes": 567129,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "taxprofiler-dirt02-001.json",
       "file": "v1.5/nextflow/taxprofiler-dirt02-001.json",
-      "sha256": "16442583de2db6e46dfe4aba025d18e8652a912000c817990b28ce800f71899b",
+      "sizeBytes": 345901,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "nextflow",
       "application": "viralrecon-dirt02-001.json",
       "file": "v1.5/nextflow/viralrecon-dirt02-001.json",
-      "sha256": "22be6ae9d40e79c8894c9833d9460c18e8c402916c7b9e6f83da9718efd2b079",
+      "sizeBytes": 620356,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-10ch-100k-001.json",
-      "sha256": "d189d9d14c3956025a020deadd1385c1f47d329e2bd74f91c6d5e4a2a282d4f0",
+      "sizeBytes": 388293,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-10ch-250k-001.json",
-      "sha256": "bbfd77dfc2da6553952de763ac06cbcea5daa3d5b0403ab1f921fe315551875b",
+      "sizeBytes": 613549,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-12ch-100k-001.json",
-      "sha256": "9785444ed03c7c68cc39e2aab1069e16c78091e253aa0deeea311601d5fb9521",
+      "sizeBytes": 465128,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-12ch-250k-001.json",
-      "sha256": "3a6714a1af5fbd8ba235b990c75570366ff9380a918daae125320898cb413686",
+      "sizeBytes": 735387,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-14ch-100k-001.json",
-      "sha256": "b48c2c9a3dc7b28aadcf4c68366b95c8008ab2691548152b83b325e4427008a9",
+      "sizeBytes": 542199,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-14ch-250k-001.json",
-      "sha256": "f501633c93c09cb0ff5785d19608d6e984ed32b67b032dd1d2bb696427373e0d",
+      "sizeBytes": 857444,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-16ch-100k-001.json",
-      "sha256": "6aad494e55c1b5f28bdbb5343b99ca6523d04dd024305fdeb3a559b62791438a",
+      "sizeBytes": 619325,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-16ch-250k-001.json",
-      "sha256": "dfe9cd9fe5ea603e6dac736b63a34a5268188b025ccae721318c5b6b8b0b9501",
+      "sizeBytes": 979771,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-18ch-100k-001.json",
-      "sha256": "5c6d36632633d388e4676896ced0a3492046c17a75492748e1800ee6044c973e",
+      "sizeBytes": 696453,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-18ch-250k-001.json",
-      "sha256": "3ea2779c5c20b99150ec0634c81b5287ad11e1491f5347e8b074ff79019db8ad",
+      "sizeBytes": 1102069,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-20ch-100k-001.json",
-      "sha256": "f1617d162982c502f38201ed5dea8ed30ef43ed053c3c07737fd456044035b9c",
+      "sizeBytes": 773650,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-20ch-250k-001.json",
-      "sha256": "4fdb5dfedb58ae8c3c7461a8a3f30c7fd04f63e6cf49b926fa34826dec7893e2",
+      "sizeBytes": 1224382,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-22ch-100k-001.json",
-      "sha256": "d2645362ad8a7e15d9ff7fd08ff6a5ba5539159e907050b4d1d14700a91c409b",
+      "sizeBytes": 850780,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-22ch-250k-001.json",
-      "sha256": "90830792e0d7266ab63e9e6b927d549909661031c3d7dd021875995de464e70c",
+      "sizeBytes": 1346741,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-2ch-100k-001.json",
-      "sha256": "dfbaa266f7902cf92595a1d87b4947676a1281f85f994dea1ba0d9db34ae5f3d",
+      "sizeBytes": 79277,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-2ch-250k-001.json",
-      "sha256": "f03dc9299a1ce61c2e487659b32e3f311d9816248e0b5bbc0e9cd8528e5b9f66",
+      "sizeBytes": 125342,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-4ch-100k-001.json",
-      "sha256": "8d8beed3d95a9c44d638cbac988b447fadc9515bbae057a5934c291bec25801e",
+      "sizeBytes": 156875,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-4ch-250k-001.json",
-      "sha256": "c11866bc3ccb0866d33dc839a481ac50e94f7456a633dec33e3c35c97d1312bc",
+      "sizeBytes": 247664,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-6ch-100k-001.json",
-      "sha256": "da39f6eb5ae94e3c41f0f4b226fcc22dcbdcd689243e638c10d9cb9b087dfe56",
+      "sizeBytes": 233701,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-6ch-250k-001.json",
-      "sha256": "f492723de0591704a29c58a11a42b783d1b15d19588a149515f277998f06aee8",
+      "sizeBytes": 369924,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-8ch-100k-001.json",
-      "sha256": "7f30d4676bb5dda364ab6eba429c6af84a29276a072485cdedaaee9b5accd2c1",
+      "sizeBytes": 310572,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "1000genome",
       "file": "v1.5/pegasus/1000genome/1000genome-chameleon-8ch-250k-001.json",
-      "sha256": "13b42874db9af98cd72e8947d5cbdbfe65df45614fd95ed5be275a60fb8fa437",
+      "sizeBytes": 491751,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-10l-1c-12p-001.json",
-      "sha256": "754926164208a40485c71f8fc8fa7542fcdeccc9b06ed29ffdf57a3c1e10eae3",
+      "sizeBytes": 10529173,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-10l-1c-9p-001.json",
-      "sha256": "963147ee97d4c17bf2f807ddca2abf305419c45a72b67215f7f1681eff8fe0cf",
+      "sizeBytes": 3142840,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-10l-2c-12p-001.json",
-      "sha256": "36d90a0321254b1e2df81cf1ee73758b57c5cac9a50a2d069be28e143fc64a01",
+      "sizeBytes": 21058095,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-10l-2c-9p-001.json",
-      "sha256": "1c8f3cef39a184bc645293bc7992f9ed91fab8368864062f7f262882db8ebfe1",
+      "sizeBytes": 6282307,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-10l-3c-12p-001.json",
-      "sha256": "3e70cdf57769422ecde78468bcfb04d89f592569f4ef1857928e43d919bb7e37",
+      "sizeBytes": 31584868,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-10l-3c-9p-001.json",
-      "sha256": "c0d94cb1a4035547f6e182f48388a79a029dd4fdfdabfb587e43bac8e0b5a9a8",
+      "sizeBytes": 9420596,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-1l-1c-12p-001.json",
-      "sha256": "932045beba539dca1a1a7c59124a5a8f60ac710f3b5ec0f6c503c97b07656074",
+      "sizeBytes": 1055847,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-1l-1c-9p-001.json",
-      "sha256": "fcd1ad8f0969db329e1899fd6c357a9205b13a64742699467b0ce7048b844cc6",
+      "sizeBytes": 316856,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-1l-2c-12p-001.json",
-      "sha256": "ea953a52006d8f80336bc7b5feb091d2696c562a604ad3a84d2ead4e072ac7e9",
+      "sizeBytes": 2109876,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-1l-2c-9p-001.json",
-      "sha256": "a6347c64c2f227c3ed8e39d56b318b69049aabc5fbc2c73140e697f9ae5a2632",
+      "sizeBytes": 632208,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-1l-3c-12p-001.json",
-      "sha256": "1953d575201080fd222ce026865a279ffdf16e52e2c0e4d63160d8f0a072143e",
+      "sizeBytes": 3163953,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-1l-3c-9p-001.json",
-      "sha256": "4c43c0c4f323535575f72d1cff379ee2ace11091de9688620aa4a989947b5a75",
+      "sizeBytes": 946977,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-2l-1c-12p-001.json",
-      "sha256": "c6c8e422f7b392608da44ca6260a3a5d5b11da041a9b98d8184ed6535dda9d8c",
+      "sizeBytes": 2110713,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-2l-1c-9p-001.json",
-      "sha256": "2851b54ab7025b563c9144b246fccae66a8953289a63e8aa6a7cdea83fe37225",
+      "sizeBytes": 631164,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-2l-2c-12p-001.json",
-      "sha256": "eaf1b0224d7827ed2a2807d4a35c842e9851a9d0f43ebe6fcde773d4066d8681",
+      "sizeBytes": 4216067,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-2l-2c-9p-001.json",
-      "sha256": "50fd7155ce97f19bd4c946c5d35e663c34b9aa2d8ce446d73d2c4edaa56adc67",
+      "sizeBytes": 1259894,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-2l-3c-12p-001.json",
-      "sha256": "22bb057a23e785399e74f2a784557fcfdfdfeff5fe553b7f60a9218137059731",
+      "sizeBytes": 6323431,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-2l-3c-9p-001.json",
-      "sha256": "67fe9ac66f8039b18604dc996a5f6513a4c0a586b328edfcbdf18ca748b6c723",
+      "sizeBytes": 1889355,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-5l-1c-12p-001.json",
-      "sha256": "4043d4b0940b651f99bf99f7333e73393ab48560ad34e15fb5d47908227a1651",
+      "sizeBytes": 5268136,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-5l-1c-9p-001.json",
-      "sha256": "d47822519cc6c1f47b070c9b24b7afe7e670f89c0eda7457a642c19e4703d87a",
+      "sizeBytes": 1573132,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-5l-2c-12p-001.json",
-      "sha256": "27a62b37f0f47ea5abfa8a35386ac62f9a2745b6652668d313962b9de3bf2aa6",
+      "sizeBytes": 10532531,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-5l-2c-9p-001.json",
-      "sha256": "f0e2bdfc46368280c69d39111daf2b6a43c30b0b7c18aeada428ee978495eaaa",
+      "sizeBytes": 3143862,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-5l-3c-12p-001.json",
-      "sha256": "79503e26fd5f3d3764bfba05b94aace7b04978d02d06305cb8dbbfa79c31450f",
+      "sizeBytes": 15795921,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "cycles",
       "file": "v1.5/pegasus/cycles/cycles-chameleon-5l-3c-9p-001.json",
-      "sha256": "51b3220aa3ba364d9e16d6994f10c49939dfb8ec994534b347aab5641a0360d3",
+      "sizeBytes": 4714059,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-1seq-100k-001.json",
-      "sha256": "51c22cd98a078adc4303fe19dfcf7b7186f6d3e0c0cadddb10bb901cee01fa5d",
+      "sizeBytes": 74483,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-1seq-50k-001.json",
-      "sha256": "8a64ae6acab57415972207de056d66d4cdea973b4a8f8fdf8200268cf269273e",
+      "sizeBytes": 133522,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-2seq-100k-001.json",
-      "sha256": "bba7105d83afc7197571fc128ec4d348f981b56187c8d0b47a00a5539d5068b1",
+      "sizeBytes": 216707,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-2seq-50k-001.json",
-      "sha256": "787cdc35bb649c1e4702fe2a4a330ec94bcaa9117b1a1db91674748e13a367e7",
+      "sizeBytes": 407026,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-3seq-100k-001.json",
-      "sha256": "970b71af3cdee9f78f819ed3930b684b53e52ee6c8f35f0b6c09ff910e6cf64c",
+      "sizeBytes": 424396,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-3seq-50k-001.json",
-      "sha256": "e10731e3cc1e116327a5a127cd528981b5ca71e1a0d5681fa8e3a6bf545c0850",
+      "sizeBytes": 812947,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-4seq-100k-001.json",
-      "sha256": "a95af627e11a19db0b8d04ff861f9ea17ffa368401c4a9778aa8604423409ee1",
+      "sizeBytes": 632074,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-4seq-50k-001.json",
-      "sha256": "3cf813e07f21e66918096f376272320c6ffcbd729a2289002a31414b5aee58b5",
+      "sizeBytes": 1226100,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-5seq-100k-001.json",
-      "sha256": "92429862e561ad49e103690054636bfb53605ad1ad68548f14c05a903a9281b7",
+      "sizeBytes": 766970,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-5seq-50k-001.json",
-      "sha256": "f011301e43068cd7970e81502562676a3f6d4cb99eb528236e2b818649a33df8",
+      "sizeBytes": 1492706,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-6seq-100k-001.json",
-      "sha256": "99af6916d09049d80dcf56dab58704cdcfb955744b77362e1a453e5a19d7dc68",
+      "sizeBytes": 922865,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-6seq-50k-001.json",
-      "sha256": "59b7dcb876bdf42499234a85b263cfd0022def61037b3e7f77902b462ed3b15c",
+      "sizeBytes": 1795614,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-7seq-100k-001.json",
-      "sha256": "3fdd46a3d3e36892ceed895d8b46854c17942a61bb4adf18d7721056ca39b0ac",
+      "sizeBytes": 1050458,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-hep-7seq-50k-001.json",
-      "sha256": "e184c3bb986b1c9bd3b58ff5478bf9a46862a9b179ea728f90ac060f4f61f6f8",
+      "sizeBytes": 2047153,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-1seq-100k-001.json",
-      "sha256": "792136df141379e2e2b01c247cd0ffe63978bd3dfce9685727fd8087e741fe41",
+      "sizeBytes": 256049,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-1seq-50k-001.json",
-      "sha256": "104469ebb7a3cddf9b97146ce360c8ebd14cd9ed9321241155fc1fe2947e7e52",
+      "sizeBytes": 494989,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-2seq-100k-001.json",
-      "sha256": "d14fc79545fed513dbdb3b96fb0fb685c7f72d74773f07d4fed35cea1db52704",
+      "sizeBytes": 539097,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-2seq-50k-001.json",
-      "sha256": "b9dd778935731faaecbd9840dbbd7940b2330f871ef42d2cf9e7544106ef9d8f",
+      "sizeBytes": 1057584,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-3seq-100k-001.json",
-      "sha256": "1397c9be574569a3a9954f1d22b143de0080967a757cfbcf8f4bb1cb750af558",
+      "sizeBytes": 830359,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-3seq-50k-001.json",
-      "sha256": "fd163172c9e3fee085588f53eb6157011dda30b5bc91e3fd89356859bf053c51",
+      "sizeBytes": 1628941,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-4seq-100k-001.json",
-      "sha256": "91654cdf44aeae2b0c22d31834487162d3fbf3c0e28b94b2f97821057fe429b0",
+      "sizeBytes": 1145939,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-4seq-50k-001.json",
-      "sha256": "d4ef2ae07f168f190a407ee69b5da684369acda413e610cca463780bf281c134",
+      "sizeBytes": 2248682,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-5seq-100k-001.json",
-      "sha256": "2eef41eb5927ec02d4405447e92dc0f31f5a3986d85eccef708c64f0c78ac98a",
+      "sizeBytes": 1461962,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-5seq-50k-001.json",
-      "sha256": "45f923bb08b09ba9cf886c25886d67863c0851d13555afb2a1dd80103dcd9af5",
+      "sizeBytes": 2868447,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-6seq-100k-001.json",
-      "sha256": "1f356148d5638d7b00990500ec683654012f79b3302f9c17fc108d13674a558e",
+      "sizeBytes": 1769538,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "epigenomics",
       "file": "v1.5/pegasus/epigenomics/epigenomics-chameleon-ilmn-6seq-50k-001.json",
-      "sha256": "d320f525c2c93cfcf616d3a45470afc270311cc502bc0c531d0a6edb814f5a09",
+      "sizeBytes": 3479834,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-005d-001.json",
-      "sha256": "5795e0ab9e13bb7d50d046796bcbc8ec0a884eba0512a95222bbd557bc6d0b65",
+      "sizeBytes": 111414,
       "retained_in_standard_checkout": true
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-015d-001.json",
-      "sha256": "d48ebd2e26e34a2c086cb4284b2fccc28a8708c4fcb5e323cce6e2280a336889",
+      "sizeBytes": 626820,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-01d-001.json",
-      "sha256": "0a1073feab3bedfa1727db0e11cb464da65e4fa5349d97c6a5e516c72516c21c",
+      "sizeBytes": 203448,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-025d-001.json",
-      "sha256": "c9f16e420651a96907ba71910ebdec73afc0e5f55ab6363a91732e85155f2da4",
+      "sizeBytes": 1265911,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-02d-001.json",
-      "sha256": "84cf2cd5da23c0288aac225bbc28cb0fec9ca5376352eda33bd2e1d7b287c84e",
+      "sizeBytes": 1255600,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-03d-001.json",
-      "sha256": "8b9f7a4b67d5622066b17e33eb5b687ad2e74a5cc5693a239a3036fe1118372c",
+      "sizeBytes": 1531042,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-04d-001.json",
-      "sha256": "99fea6c3f7dba97b5dc5672da25a897e838b4f10f90bd281331412c3a8b564ed",
+      "sizeBytes": 2690276,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-05d-001.json",
-      "sha256": "b067a94343fbef4c07cdfbffa740d3f623bb88cc424bf385d3a6446a3009da7e",
+      "sizeBytes": 3479410,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-10d-001.json",
-      "sha256": "959e5ddc6dbb57ed0c364957d3849d7d4ae4810718f1ad72fc4a69c9c455af5b",
+      "sizeBytes": 9622579,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-15d-001.json",
-      "sha256": "710a4978854ee7197f4a280ca9221926d670ec6469ea34fd54b02fdd69e76ff5",
+      "sizeBytes": 13883403,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-2mass-20d-001.json",
-      "sha256": "64a565c67454284400ed569be6412d24970374cf8e6b673ec5f861190ee1937e",
+      "sizeBytes": 18954346,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-dss-05d-001.json",
-      "sha256": "91c6f58feea7a62f7b40a19c8e851ceb09ce57e2ccc8fb48697b60877ddb208b",
+      "sizeBytes": 107178,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-dss-075d-001.json",
-      "sha256": "428aaa3a8da47abb5a771f44b9f9bf981db9a8b68647e276782bf35db0843864",
+      "sizeBytes": 351904,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-dss-10d-001.json",
-      "sha256": "f84da9f02c1799ee9121ecf19600afa8b7ed2b7e9426c6e514eaabc29712e15f",
+      "sizeBytes": 922324,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-dss-125d-001.json",
-      "sha256": "786d0db39dc9690f4faf8c6060626ba78547155f51d2034448c6c62949a742e6",
+      "sizeBytes": 2144872,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-dss-15d-001.json",
-      "sha256": "dabf559ac31dac633122ab2f7908c21b1b5beca644423fbdb37a012a15f001e2",
+      "sizeBytes": 4168797,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "montage",
       "file": "v1.5/pegasus/montage/montage-chameleon-dss-20d-001.json",
-      "sha256": "89e67c57f8129f35a4ea17710dd0d751dc124e900aee6dd649ae1633208e32fa",
+      "sizeBytes": 12681866,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-1000p-001.json",
-      "sha256": "1489ee0321c9d2f069de967f39e4056096aa85cf85e19238577dfcc5d6a94d9a",
+      "sizeBytes": 1721168,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-100p-001.json",
-      "sha256": "99c0426009e1e2a0316c53da45ce9247ffaeee7d2e0fad6b4de96e796b5aaad4",
+      "sizeBytes": 175096,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-1100p-001.json",
-      "sha256": "d87ec8445a3bfba95df2dfd68680d60484bd7d34b0b645585c26474ea814f7ae",
+      "sizeBytes": 1893103,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-200p-001.json",
-      "sha256": "91ce08abe3d980184a1f000967ed264eeba0475b175a9052334e63038d2bd549",
+      "sizeBytes": 347517,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-300p-001.json",
-      "sha256": "92bceaaa97e4b30728dbb4b2580dbbcf0b2cdf106d3cab7e5fd84c526ff6d22a",
+      "sizeBytes": 519495,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-400p-001.json",
-      "sha256": "17efc8ba804b2d8be37a8ab305cd8dd32b8c4e324bafed65dcd120642299104a",
+      "sizeBytes": 691097,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-500p-001.json",
-      "sha256": "7fab7a26a05cfaae8f919619c5861d8c2e983cb700f448a179c768d5ccaea952",
+      "sizeBytes": 862615,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-600p-001.json",
-      "sha256": "272024684c0cf560359b3e726fd9ea593323f77971fe74801f2dd0c70024f498",
+      "sizeBytes": 1034082,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-700p-001.json",
-      "sha256": "2fa9c3df4050c6e92b0572ecbaebc1dc32d16fbc27989c6aa69aa91ae271be40",
+      "sizeBytes": 1205178,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-800p-001.json",
-      "sha256": "6230b9ebe44db07974de08621b0999aee20dfa820394da03311fe9e91247a5f2",
+      "sizeBytes": 1376874,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "seismology",
       "file": "v1.5/pegasus/seismology/seismology-chameleon-900p-001.json",
-      "sha256": "18592187a0e619d907e02acb964f9733f67a98af8adc1777c6d945c6dd9da684",
+      "sizeBytes": 1548592,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-10fastq-10ch-001.json",
-      "sha256": "7cc1c222b78d44e124a2d19eab12a3dc032e4379254cf00b329da403ae405330",
+      "sizeBytes": 269573,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-10fastq-20ch-001.json",
-      "sha256": "f08ca55cae70eb37a19e7a211b36d9fa4e8173bad5a704127dd4e99787b89d7f",
+      "sizeBytes": 456899,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-20fastq-10ch-001.json",
-      "sha256": "38f69b88a6b63cfb2b241d544e9a857e13e91db2705d08f718b584c104847ef5",
+      "sizeBytes": 499274,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-20fastq-20ch-001.json",
-      "sha256": "f14058d87c023e624349a405e12cfe5e2c43365e2e7b40c35b6cb2f6a575dbd6",
+      "sizeBytes": 850136,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-30fastq-10ch-001.json",
-      "sha256": "a9703ddb7bff53de7b9138ec078c91622f04558588a4dc211ff701a47e3bfa6b",
+      "sizeBytes": 728955,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-30fastq-20ch-001.json",
-      "sha256": "c6d2310521d762f3f5eb3dfd60120751519f18591b29ae0c9f0328b41cd178c2",
+      "sizeBytes": 1242472,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-40fastq-10ch-001.json",
-      "sha256": "a218ced65e8cdf6fb81f203e9049247beea52b48f25bc925c72a3f68f3aef50b",
+      "sizeBytes": 958611,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-40fastq-20ch-001.json",
-      "sha256": "3fe63974fcb95288eaab09e2aad9fd6fbdf2e4cd00cb1e278a4d1f80910678c7",
+      "sizeBytes": 1634770,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-50fastq-10ch-001.json",
-      "sha256": "ffb2caa0250cc698e00009a07325ce463a63dc900463e3145655d8882f1b1373",
+      "sizeBytes": 1187411,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "soykb",
       "file": "v1.5/pegasus/soykb/soykb-chameleon-50fastq-20ch-001.json",
-      "sha256": "e742b1622571105659a61e61dbb1c9b6ebd6e4179dbc894e7d28b14d352629c3",
+      "sizeBytes": 2027129,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-10a-001.json",
-      "sha256": "c2b5d73841750b5af68e5ff65f5f2d04b51a4b6b18086e7a5b1dfb72317fd4b6",
+      "sizeBytes": 37935,
       "retained_in_standard_checkout": true
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-10a-002.json",
-      "sha256": "a37645664242a42ca481ae43d890c9f35b133f13d48d1a3ad62f9ef0c38d9cf0",
+      "sizeBytes": 37960,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-10a-003.json",
-      "sha256": "f3d3c97828f917b5a6502d7c417a053e7807f1f778b880974c054d275ce2158e",
+      "sizeBytes": 37962,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-10a-004.json",
-      "sha256": "30cc93096616e455421291bd263e5a1412a8d60dc35fefe52f901ae586ca24b1",
+      "sizeBytes": 37940,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-10a-005.json",
-      "sha256": "55fc77882b9f8a5eb5966671adacf64bcac3139f14654ed9fdb856042961565c",
+      "sizeBytes": 37951,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-20a-001.json",
-      "sha256": "222dbf48d7a06f205e757abfa8cd3d45d887b335b86e0c8abc02fde3d5698f0b",
+      "sizeBytes": 71987,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-20a-002.json",
-      "sha256": "98d2cad7e094d4d02227c08ccd4ad9fbe3fd9b323f7dd8b3d06ad130726523d5",
+      "sizeBytes": 72000,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-20a-003.json",
-      "sha256": "6fcb80375f544ecfcce865d4f3694effc071a079c961959489ef1cb0ae3bec42",
+      "sizeBytes": 71980,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-20a-004.json",
-      "sha256": "608bb992f5d4eacb4ec57986e17743fe1c27c48501c61413acd25386f8c0849c",
+      "sizeBytes": 71523,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-20a-005.json",
-      "sha256": "9446b7de9c1505db889b9ed2a580badabf9c73db6c7232c4b7b76a0e8f691b61",
+      "sizeBytes": 71989,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-30a-001.json",
-      "sha256": "39ce2e5d9a54aaf27309a4265a884b590f6f0137776596717ae6a1efd810e10d",
+      "sizeBytes": 108092,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-30a-002.json",
-      "sha256": "40d1dd5784712fab2916b6bebce0648b6648c7043016459addcee510936b7ee0",
+      "sizeBytes": 108128,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-30a-003.json",
-      "sha256": "4f9a2665b26a35547029f3413b2e9de31dac8e0379df369827506540435e2a73",
+      "sizeBytes": 108574,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-30a-004.json",
-      "sha256": "9050f74112027fbd114b64d3d03547192d029e764e6254b82e6a04e529346dab",
+      "sizeBytes": 108100,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-30a-005.json",
-      "sha256": "b2ffc3b6235ecc3ea194bd6d2c8e92cb36107000ec45baf96e4c3e62737570a0",
+      "sizeBytes": 108115,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-40a-001.json",
-      "sha256": "fc993c4ea47e3a256f825a4015c4a9b6bbf923ecce03acb0da54675c945246c2",
+      "sizeBytes": 141681,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-40a-002.json",
-      "sha256": "39b0774f96702fc4b907737c7fdaa5681211c77d809f19f71f3333ebd65b26ba",
+      "sizeBytes": 141670,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-40a-003.json",
-      "sha256": "857ddbf17662026eb6b03fee6cde914666f39872843f15ca20f1f689b89c5aee",
+      "sizeBytes": 141671,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-40a-004.json",
-      "sha256": "914778f5fd50aabfd59f0d9e122ac514442171a3d39c4f3fb48f1f5ca8deaeee",
+      "sizeBytes": 141688,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-40a-005.json",
-      "sha256": "c89852c207c70aad09a0ac2939d402ce1884eb258f3bcc38ea0c97977ad9e6f1",
+      "sizeBytes": 141710,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-50a-001.json",
-      "sha256": "ab94948378ede0ff877b2bdcfc29aa7676e66da73af44d12b7fc8ce78798dbe5",
+      "sizeBytes": 175250,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-50a-002.json",
-      "sha256": "6d0c2413bd192c77c4ab459f37724f15502c8ae95f2351c3ff958918d6c8d513",
+      "sizeBytes": 175698,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-50a-003.json",
-      "sha256": "b468b7d28e0a13d5ceb04143e1588fae340d32d0449b6e963c3ff600f2403122",
+      "sizeBytes": 175714,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-50a-004.json",
-      "sha256": "360511ea0f50180e5d7c880e03a2ec35a3e667e2fcac3ebb68c205460b0221e3",
+      "sizeBytes": 175245,
       "retained_in_standard_checkout": false
     },
     {
       "runtime": "pegasus",
       "application": "srasearch",
       "file": "v1.5/pegasus/srasearch/srasearch-chameleon-50a-005.json",
-      "sha256": "2025a3a5d2042809d3e7026e17fc962179160d759a9b638c2642769bdfb1e50d",
+      "sizeBytes": 175726,
       "retained_in_standard_checkout": false
     }
   ],
   "auxiliary_files": [
     {
       "file": "v1.5/.github/workflows/main.yml",
-      "sha256": "58a417970c7f8a94eec4ee1338f927b5aacc75dee2aa8e103beea025ec954f3a",
+      "sizeBytes": 991,
       "role": "upstream CI workflow",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/.gitignore",
-      "sha256": "cf237c7aff44efbe6e502e645c3e06da03a69d7bdeb43392108ef3348143417e",
+      "sizeBytes": 10,
       "role": "upstream ignore rules",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/LICENSE",
-      "sha256": "7f378a4367be6ccff61ea0f5408ebf73b35f2a1635573d1129239afb83c819bd",
+      "sizeBytes": 7641,
       "role": "upstream license",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/README.md",
-      "sha256": "31ecf5dd7ec7b8f8dad80ef4bead28ac670cfee574d9666025961e9f0f24ec64",
+      "sizeBytes": 487,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/makeflow/README.md",
-      "sha256": "183a402c9fd29de61b4b7f148b2b19e48826f802692b9cdb3dc84afe9737d164",
+      "sizeBytes": 1338,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/makeflow/blast/README.md",
-      "sha256": "7e06f8105ab278e3c9dd2096fdf08763d617efb7692748b6958f69292578964a",
+      "sizeBytes": 2268,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/makeflow/blast/docs/images/blast.png",
-      "sha256": "75b2b65ab0269784b5b7ca3d874b6a7c10551d28cd26111a3f4ec3c89f68b983",
+      "sizeBytes": 47034,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/makeflow/bwa/README.md",
-      "sha256": "c4faa26dffaac6c60f6f1f8e67aec52504c6c7715d1da6764776791a520ee04f",
+      "sizeBytes": 2247,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/makeflow/bwa/docs/images/bwa.png",
-      "sha256": "73113fb4744429f96cde4a98b02e3db0d617fd6e7e83a682efcf4ea6eec56d5e",
+      "sizeBytes": 55824,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/nextflow/README.md",
-      "sha256": "5b97ce6f0dc129a6fa8cfce3ad675b4e5cc0f08d7a852dd7c45c7b2c4a45568e",
+      "sizeBytes": 1458,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/1000genome/README.md",
-      "sha256": "1e7b1964eccfa113bfee4804217379551facf461fa44e6e8719203b690e4214c",
+      "sizeBytes": 3723,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/1000genome/docs/images/1000genome.png",
-      "sha256": "2c17fea880687daff6e8e77161f2baab96f7458493b9488097cef98ec4772824",
+      "sizeBytes": 120477,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/README.md",
-      "sha256": "1d0f5b5ed9690d347d1d76e0e808303b9def201a5253d716f886f348ea7c2bca",
+      "sizeBytes": 1633,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/cycles/README.md",
-      "sha256": "ee173013391071d1adaf62559aab6bf0d883efe2eb5e911a27afda1b53babcf6",
+      "sizeBytes": 3872,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/cycles/docs/images/cycles.png",
-      "sha256": "19e6b1cd26f07be117cb135af86fe6f5794384b8913ae035bd899037c65c50e2",
+      "sizeBytes": 88863,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/epigenomics/README.md",
-      "sha256": "d7f5970493c8185ae774a694b04a5d11bc81762df0c91e043deb4f094b8a9ac4",
+      "sizeBytes": 3447,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/epigenomics/docs/images/epigenomics.png",
-      "sha256": "54a15fbea4d2cf91658405d964e9831b79ae29571e1fbfa0626066529403b4d4",
+      "sizeBytes": 73759,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/montage/README.md",
-      "sha256": "b18b7735f235c07ab0016febb3c1c81e518115fb7aca7f44ddaf35969398a323",
+      "sizeBytes": 3828,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/montage/docs/images/montage.png",
-      "sha256": "56d09f265d17fcc7fe62564e0a7f74b6c9798141faec41e170571c2f4c4f2542",
+      "sizeBytes": 123221,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/seismology/README.md",
-      "sha256": "107e7bbada44bf94f63b3aae2dbc2e50ed9d9022145e70bc95fa569eb8454130",
+      "sizeBytes": 2656,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/seismology/docs/images/seismology.png",
-      "sha256": "3ab8f158b1252cdcbfb476cc4c7a686864981d5462902c93fee068c7119e24d6",
+      "sizeBytes": 18428,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/soykb/README.md",
-      "sha256": "f0af50c973497598e0b73870483f8ce1f33962e74fd2e345d112c31de20fe5ee",
+      "sizeBytes": 3629,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/soykb/docs/images/soykb.png",
-      "sha256": "0e56b0e7e710f80e480a2a14a251971ff80cd02462c064a3896d3392e6c1bd22",
+      "sizeBytes": 181144,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/srasearch/README.md",
-      "sha256": "a85bd9e144282eebc7033fbef30cf026986e8e602dbe2bea085d42e9fe8750a7",
+      "sizeBytes": 2488,
       "role": "upstream documentation",
       "retained_in_standard_checkout": false
     },
     {
       "file": "v1.5/pegasus/srasearch/docs/images/srasearch.png",
-      "sha256": "0e4d38460b8a090d1b60ecea5235ee6b08f5389854001e884b6cd01861dd76e8",
+      "sizeBytes": 54446,
       "role": "upstream illustration",
       "retained_in_standard_checkout": false
     }

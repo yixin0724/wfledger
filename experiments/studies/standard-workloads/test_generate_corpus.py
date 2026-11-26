@@ -12,7 +12,8 @@ exists to prove byte-identical regeneration.
 
 Expectations come from the documented canonicalization contract in README.md (file-ID rule,
 fixed timestamps, serialization) and from invariants (reference consistency, idempotence),
-plus the committed corpus index, whose hashes are the frozen identity of the corpus.
+plus the committed corpus: its files are the frozen bytes of the corpus and its index
+records each file's byte size.
 """
 
 import copy
@@ -163,6 +164,17 @@ class ReproducibilityTests(unittest.TestCase):
             self.assertEqual((self.temp / "a" / rel).read_bytes(),
                              (self.temp / "b" / rel).read_bytes(), str(rel))
 
+    def test_generation_record_carries_sizes_not_hashes(self):
+        spec = self.write_spec({
+            "corpus": "test", "base_seed": 3, "instances_per_size": 1,
+            "recipes": [{"recipe": "blast", "sizes": [50]}]})
+        manifest = GEN.generate(spec, self.temp / "a")
+        entry = manifest["instances"][0]
+        data = (self.temp / "a" / entry["wfformat_json"]).read_bytes()
+        self.assertEqual(len(data), entry["sizeBytes"])
+        self.assertNotIn("sha256", entry)
+        self.assertNotIn("spec_sha256", manifest)
+
     def test_false_exclusion_is_rejected(self):
         spec = self.write_spec({
             "corpus": "test", "base_seed": 3, "instances_per_size": 1,
@@ -172,15 +184,18 @@ class ReproducibilityTests(unittest.TestCase):
             GEN.generate(spec, self.temp / "a")
 
     def test_committed_instances_regenerate_identically(self):
-        """Golden regression: the committed index hashes are the corpus identity."""
-        index = json.loads((ROOT / "datasets/wfgen-standard/INDEX.json").read_text("utf-8"))
+        """Golden regression: committed bytes and indexed sizes are the corpus identity."""
+        corpus = ROOT / "datasets/wfgen-standard"
+        index = json.loads((corpus / "INDEX.json").read_text("utf-8"))
         chosen = {}
         for entry in index["instances"]:
             chosen.setdefault((entry["recipe"], entry["requested_tasks"]), entry)
         for (recipe, size), entry in sorted(chosen.items()):
             data = GEN.serialize(GEN.canonicalize(GEN.build_document(recipe, size, entry["seed"])))
-            self.assertEqual(entry["sha256"], hashlib.sha256(data).hexdigest(),
-                             entry["wfformat_json"])
+            self.assertEqual(entry["sizeBytes"], len(data), entry["wfformat_json"])
+            committed = corpus / entry["wfformat_json"]
+            if entry["retained_in_standard_checkout"]:
+                self.assertEqual(committed.read_bytes(), data, entry["wfformat_json"])
 
 
 if __name__ == "__main__":

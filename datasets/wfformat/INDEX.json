@@ -12,10 +12,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "1000genome/n100/1000genome-100-000.json",
-      "sha256": "51d8366fffc99dc10441c0ad3169fa736777fe0b2961133b2ea97bc626989bc2",
+      "sizeBytes": 217563,
       "dax_xml": null,
       "manifest": "1000genome/n100/1000genome-100-000.manifest.json",
-      "manifest_sha256": "7fe3365476dfd7031b15b5124b83e0a9b56c9f499efdf4cb05c71afea373bb7c",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -24,10 +24,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "1000genome/n100/1000genome-100-001.json",
-      "sha256": "0b4aa60b746fa73d406b28ef3b9bfac39cd62a0a14c2243f9829692cb38b9787",
+      "sizeBytes": 217529,
       "dax_xml": null,
       "manifest": "1000genome/n100/1000genome-100-001.manifest.json",
-      "manifest_sha256": "d55be633d9e866200a33657f8dba2214e877b426fd20a5da33c8967cdeb692ad",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -36,10 +36,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "1000genome/n100/1000genome-100-002.json",
-      "sha256": "d60545459776c38488155d8f08377a309571b80ea541ead6a2ad141a09a29a3b",
+      "sizeBytes": 218198,
       "dax_xml": null,
       "manifest": "1000genome/n100/1000genome-100-002.manifest.json",
-      "manifest_sha256": "5ada7ddddeb133c8b00560244fc3a372a1d974c84d15ce44a47565d8f6540887",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -48,10 +48,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "1000genome/n400/1000genome-400-000.json",
-      "sha256": "88de5836d6406d15f3b8abea84934cb8934cf2b69f0b81098760fbbfe9e6898f",
+      "sizeBytes": 783978,
       "dax_xml": null,
       "manifest": "1000genome/n400/1000genome-400-000.manifest.json",
-      "manifest_sha256": "4e1bda10c3e1466fd482f5693199d04817cdd07b4b22c2863121029d0a790d58",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -60,10 +60,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "1000genome/n400/1000genome-400-001.json",
-      "sha256": "1448074179d4513b7c5799f6e1edf920e625400723e24601cb00cafca454955d",
+      "sizeBytes": 779819,
       "dax_xml": null,
       "manifest": "1000genome/n400/1000genome-400-001.manifest.json",
-      "manifest_sha256": "51fcdfe093a40fb9763e119f7dfced95e39d24eb70af79da7ce4a5a55e2853ea",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -72,10 +72,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "1000genome/n400/1000genome-400-002.json",
-      "sha256": "e6fdc6c6940cd1e370f01bf49e1e035aa526a938280395728cf3b1fbb2c07054",
+      "sizeBytes": 782270,
       "dax_xml": null,
       "manifest": "1000genome/n400/1000genome-400-002.manifest.json",
-      "manifest_sha256": "ab1c490fa2a42c5711d538fa7d1eaf595b8359732255546db663f301f7be6d89",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -84,10 +84,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "1000genome/n1000/1000genome-1000-000.json",
-      "sha256": "6e42f759a775af2efc47861ef2524cc4126c4ce0eee559cc6636938a0d59df2c",
+      "sizeBytes": 1938919,
       "dax_xml": null,
       "manifest": "1000genome/n1000/1000genome-1000-000.manifest.json",
-      "manifest_sha256": "5c84f3c51079c5304d44b548bdc1cc56ca62106ff0a2b0aa0722688a8986255b",
+      "manifestSizeBytes": 515,
       "retained_in_standard_checkout": false
     },
     {
@@ -96,10 +96,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "1000genome/n1000/1000genome-1000-001.json",
-      "sha256": "9b99feb47725a92cd848c8f6c2d6cc48c4875edb3f92bd32de1275d08ce0e1ad",
+      "sizeBytes": 1959587,
       "dax_xml": null,
       "manifest": "1000genome/n1000/1000genome-1000-001.manifest.json",
-      "manifest_sha256": "12632c671120a0b040452fbea18fb18f9d70b5132644b850f3df11e6310b78d2",
+      "manifestSizeBytes": 515,
       "retained_in_standard_checkout": false
     },
     {
@@ -108,10 +108,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "1000genome/n1000/1000genome-1000-002.json",
-      "sha256": "0b041dc9e595ea8413c7e93298f5c08b4e67da63de27367df2722b85a7bb51a2",
+      "sizeBytes": 1951094,
       "dax_xml": null,
       "manifest": "1000genome/n1000/1000genome-1000-002.manifest.json",
-      "manifest_sha256": "ec95160700de5c0f1d55a56c98caa5d50cc78a24768b13515b0c396f54020d55",
+      "manifestSizeBytes": 515,
       "retained_in_standard_checkout": false
     },
     {
@@ -120,10 +120,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "blast/n100/blast-100-000.json",
-      "sha256": "c6a763caa8b00a0d4c2cf6adada9cac1f8520d61a73ba8a9f5f62f0214e7dae1",
+      "sizeBytes": 214209,
       "dax_xml": null,
       "manifest": "blast/n100/blast-100-000.manifest.json",
-      "manifest_sha256": "f3574f879deffc246207560d7a4768e4718129e866d3a1f9588b59c2454375a0",
+      "manifestSizeBytes": 491,
       "retained_in_standard_checkout": false
     },
     {
@@ -132,10 +132,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "blast/n100/blast-100-001.json",
-      "sha256": "f30d65f250b7ad1f176848f33f9bd557a204aae11c44c4dadd39b62ede84e163",
+      "sizeBytes": 214190,
       "dax_xml": null,
       "manifest": "blast/n100/blast-100-001.manifest.json",
-      "manifest_sha256": "132b71091edb8cc12998a502b7bef05830aa1187e35f97f7e2b57a4eaf630638",
+      "manifestSizeBytes": 491,
       "retained_in_standard_checkout": false
     },
     {
@@ -144,10 +144,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "blast/n100/blast-100-002.json",
-      "sha256": "c994bfad4faf59b34c458917cefdfdf5e3047fdd73cb79fabc92cbd590641263",
+      "sizeBytes": 214217,
       "dax_xml": null,
       "manifest": "blast/n100/blast-100-002.manifest.json",
-      "manifest_sha256": "8ab49fc93f2810020319223a7710a5e7bc45c516da6a1664be4c682f24eb023e",
+      "manifestSizeBytes": 491,
       "retained_in_standard_checkout": false
     },
     {
@@ -156,10 +156,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "blast/n400/blast-400-000.json",
-      "sha256": "06b2feaf326d6cd8ebb97c35b7bac00ff2067bb40b97c6d9930a3abdf5a484e3",
+      "sizeBytes": 877444,
       "dax_xml": null,
       "manifest": "blast/n400/blast-400-000.manifest.json",
-      "manifest_sha256": "5d4f043caff37723df59d802ca05e6819ec9b15d8f7d9d821eeb8cdcf1e825f6",
+      "manifestSizeBytes": 491,
       "retained_in_standard_checkout": false
     },
     {
@@ -168,10 +168,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "blast/n400/blast-400-001.json",
-      "sha256": "75cd4ff8448da5e45b1219a07053fe59a2acf67579267f74e3b4913385166627",
+      "sizeBytes": 877479,
       "dax_xml": null,
       "manifest": "blast/n400/blast-400-001.manifest.json",
-      "manifest_sha256": "631b3bae97d4d1aaa5caa3b2e06cb4e1f9a5dc2c1024a923d217ff8c517956ef",
+      "manifestSizeBytes": 491,
       "retained_in_standard_checkout": false
     },
     {
@@ -180,10 +180,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "blast/n400/blast-400-002.json",
-      "sha256": "cf01b55aa2e400c6724d27cd6bf2b52c64c33b3771c21c303572f52b5f4af636",
+      "sizeBytes": 877457,
       "dax_xml": null,
       "manifest": "blast/n400/blast-400-002.manifest.json",
-      "manifest_sha256": "7819781e8f40f636eb108aeda26463120faaa52403a129dd00757c0d8adfe8c7",
+      "manifestSizeBytes": 491,
       "retained_in_standard_checkout": false
     },
     {
@@ -192,10 +192,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "blast/n1000/blast-1000-000.json",
-      "sha256": "c9947d85da1781db4a2f223e136a630cf3df7ccc2c496b862cc7c7438048b3f2",
+      "sizeBytes": 2203962,
       "dax_xml": null,
       "manifest": "blast/n1000/blast-1000-000.manifest.json",
-      "manifest_sha256": "a0954d48e85568e10334a5048cf2ce7fbe1699ffaddc740d4449e09a305bed7d",
+      "manifestSizeBytes": 494,
       "retained_in_standard_checkout": false
     },
     {
@@ -204,10 +204,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "blast/n1000/blast-1000-001.json",
-      "sha256": "27b6da39c723a842d9514671e0ed2f8bb424653d1fdc403539993a06e0cb46c9",
+      "sizeBytes": 2203993,
       "dax_xml": null,
       "manifest": "blast/n1000/blast-1000-001.manifest.json",
-      "manifest_sha256": "4e98215f5f6b11b91c3eef3441c0e5baeecd5db31cfd5e62e0a5ae078ed4f4af",
+      "manifestSizeBytes": 494,
       "retained_in_standard_checkout": false
     },
     {
@@ -216,10 +216,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "blast/n1000/blast-1000-002.json",
-      "sha256": "8ad89a6ae5ef99ace5df156bb5073c004c73818d9e0034ca1ace5149a28491e3",
+      "sizeBytes": 2203923,
       "dax_xml": null,
       "manifest": "blast/n1000/blast-1000-002.manifest.json",
-      "manifest_sha256": "09a014deda53631624812ad0056f349ac3396df9f8c9d81915bd37cb6d7ac0c6",
+      "manifestSizeBytes": 494,
       "retained_in_standard_checkout": false
     },
     {
@@ -228,10 +228,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "epigenomics/n100/epigenomics-100-000.json",
-      "sha256": "04a95db027e5a008c0636046b90ab00a961dc6726bb71020c60c3f89e3aa604a",
+      "sizeBytes": 149181,
       "dax_xml": null,
       "manifest": "epigenomics/n100/epigenomics-100-000.manifest.json",
-      "manifest_sha256": "90e6115ba9cdb36a74e4863f01bb16142d7dfbfacbd7fd31c951fba3b301b88e",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -240,10 +240,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "epigenomics/n100/epigenomics-100-001.json",
-      "sha256": "c130e3fc90919ec0f3b949e7a21fc95dbeff266fd7d72a0503504991a719fa63",
+      "sizeBytes": 149177,
       "dax_xml": null,
       "manifest": "epigenomics/n100/epigenomics-100-001.manifest.json",
-      "manifest_sha256": "8bd48cd5d4728a8d1c26e11781a6a72deb7b50b0e291fb5073d2d87d0d9eaace",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -252,10 +252,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "epigenomics/n100/epigenomics-100-002.json",
-      "sha256": "cad5f6e96e7b082d8315e204eaa62610c87d28a0718eee29593f5373585bd308",
+      "sizeBytes": 149175,
       "dax_xml": null,
       "manifest": "epigenomics/n100/epigenomics-100-002.manifest.json",
-      "manifest_sha256": "cbfb5e73d94720a5fc678994983914d17269548dbc15f7c731ee85e9efb147e9",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -264,10 +264,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "epigenomics/n400/epigenomics-400-000.json",
-      "sha256": "559770d4fd5f7683f75e7202e00380766d6e92695c4781ce3c33bc422aa00a4d",
+      "sizeBytes": 604302,
       "dax_xml": null,
       "manifest": "epigenomics/n400/epigenomics-400-000.manifest.json",
-      "manifest_sha256": "53145de54c5605e47b73266b40608affae9790b74fbc3b90bda6d92c18cb773b",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -276,10 +276,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "epigenomics/n400/epigenomics-400-001.json",
-      "sha256": "75480e8da96270bdf6a54c8a0bea5272ba55f0993902d5884f3e43492227ab67",
+      "sizeBytes": 608600,
       "dax_xml": null,
       "manifest": "epigenomics/n400/epigenomics-400-001.manifest.json",
-      "manifest_sha256": "0e2ef5c52b975c9c538fda560a1f1f6be6da35b17d3e2ea7e2fabf205da869bd",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -288,10 +288,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "epigenomics/n400/epigenomics-400-002.json",
-      "sha256": "8e716076fea181064c6bd8faa48175b9c3730b957436c8c963029fc1c8651f9e",
+      "sizeBytes": 608270,
       "dax_xml": null,
       "manifest": "epigenomics/n400/epigenomics-400-002.manifest.json",
-      "manifest_sha256": "1a274ab06f34ecc44c1b9782ffcfccccd7b479e091d6bf020dbdccc72dab312f",
+      "manifestSizeBytes": 512,
       "retained_in_standard_checkout": false
     },
     {
@@ -300,10 +300,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "epigenomics/n1000/epigenomics-1000-000.json",
-      "sha256": "2c556c43c822c2632f138c59d9d7f254fb17609661365eda2d59eba7e646825b",
+      "sizeBytes": 1526968,
       "dax_xml": null,
       "manifest": "epigenomics/n1000/epigenomics-1000-000.manifest.json",
-      "manifest_sha256": "9e3c7b6f6c45a3f2c5cad90a1c68fffaa0e19e62fe9effc115f9c4cd5dad3746",
+      "manifestSizeBytes": 515,
       "retained_in_standard_checkout": false
     },
     {
@@ -312,10 +312,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "epigenomics/n1000/epigenomics-1000-001.json",
-      "sha256": "0a7283f2a78038a016b6d5ec3a283ba52da79413f0ea1a6bcdf8caf54f68c283",
+      "sizeBytes": 1526966,
       "dax_xml": null,
       "manifest": "epigenomics/n1000/epigenomics-1000-001.manifest.json",
-      "manifest_sha256": "826b9474d24ee1cf2d693eca656dd0b6c62400996f588c8d2c5b8b43e307172b",
+      "manifestSizeBytes": 515,
       "retained_in_standard_checkout": false
     },
     {
@@ -324,10 +324,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "epigenomics/n1000/epigenomics-1000-002.json",
-      "sha256": "240029843eb303a36e9f00adb8b0149f2411b769b12de70cb3c96ae9b244e40f",
+      "sizeBytes": 1524293,
       "dax_xml": null,
       "manifest": "epigenomics/n1000/epigenomics-1000-002.manifest.json",
-      "manifest_sha256": "342e3ce4627aa0910d5204b40f721dc33f7aefa180b579e8337d5b611dee81dc",
+      "manifestSizeBytes": 515,
       "retained_in_standard_checkout": false
     },
     {
@@ -336,10 +336,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "montage/n100/montage-100-000.json",
-      "sha256": "0631aadf206ae66131df466afa0012450f9c1d29d3c20b9536ce4482be9ca0b4",
+      "sizeBytes": 145730,
       "dax_xml": null,
       "manifest": "montage/n100/montage-100-000.manifest.json",
-      "manifest_sha256": "04ec67bde47ee5e9f6de3dc0518cbb6464ec5a8de7c075da01a9bfd60c0f05b2",
+      "manifestSizeBytes": 489,
       "retained_in_standard_checkout": true
     },
     {
@@ -348,10 +348,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "montage/n100/montage-100-001.json",
-      "sha256": "7f56d8fa9caaae7d48194768c5ba43adb41a4badb2f43cb1df72aedf97c1eb45",
+      "sizeBytes": 145885,
       "dax_xml": null,
       "manifest": "montage/n100/montage-100-001.manifest.json",
-      "manifest_sha256": "09603d8f468e4e267f9fbe46921f5a7b47dcfa3b6154b002f0a364fc8564fb8b",
+      "manifestSizeBytes": 489,
       "retained_in_standard_checkout": false
     },
     {
@@ -360,10 +360,10 @@
       "num_tasks": 100,
       "seed": 42,
       "wfformat_json": "montage/n100/montage-100-002.json",
-      "sha256": "9b9ac8aa32e3fef4ec220965395a75f0fa0ad0a3472558bda6a2b35593370664",
+      "sizeBytes": 141439,
       "dax_xml": null,
       "manifest": "montage/n100/montage-100-002.manifest.json",
-      "manifest_sha256": "77fa5a6cfbda230a7c2b646be2c1a7ea22004666bcc6f91e20730ade55b10b47",
+      "manifestSizeBytes": 489,
       "retained_in_standard_checkout": false
     },
     {
@@ -372,10 +372,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "montage/n400/montage-400-000.json",
-      "sha256": "155105f3b97516f43b793321a019a4267e06477dc168703f173a5a304917b4c2",
+      "sizeBytes": 636504,
       "dax_xml": null,
       "manifest": "montage/n400/montage-400-000.manifest.json",
-      "manifest_sha256": "e1b14421c3f94b0666f9abb0ae2f1b6dca4d4bc2ba8c0989784c63e7e3b3fb55",
+      "manifestSizeBytes": 489,
       "retained_in_standard_checkout": false
     },
     {
@@ -384,10 +384,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "montage/n400/montage-400-001.json",
-      "sha256": "f37e70a2bed27ff583e6151e60b03c331b051adcc254a452d941cb722a7718c4",
+      "sizeBytes": 620377,
       "dax_xml": null,
       "manifest": "montage/n400/montage-400-001.manifest.json",
-      "manifest_sha256": "33eb047898f5b56ee00b5c1a843e1767a58be00769048fc03461b53aec906a3d",
+      "manifestSizeBytes": 489,
       "retained_in_standard_checkout": false
     },
     {
@@ -396,10 +396,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "montage/n400/montage-400-002.json",
-      "sha256": "06bd4bc6f3a679c6ada2fa0b1c6f94a0c468109cb6053c12763002217b0cb833",
+      "sizeBytes": 627427,
       "dax_xml": null,
       "manifest": "montage/n400/montage-400-002.manifest.json",
-      "manifest_sha256": "575091a07da9cdf7a5e33cab4cb560c46849ce5f2d28f6f701ca3b55ce24bf56",
+      "manifestSizeBytes": 489,
       "retained_in_standard_checkout": false
     },
     {
@@ -408,10 +408,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "montage/n1000/montage-1000-000.json",
-      "sha256": "718400e8df9ff353086c28a62bfcdee76ebf377c413a524eb83345a3107f2017",
+      "sizeBytes": 1581789,
       "dax_xml": null,
       "manifest": "montage/n1000/montage-1000-000.manifest.json",
-      "manifest_sha256": "f31f37f9cfa5c7e149efa78a80ff0558e5788c27d8b6f6486f35a0b27607aec4",
+      "manifestSizeBytes": 492,
       "retained_in_standard_checkout": false
     },
     {
@@ -420,10 +420,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "montage/n1000/montage-1000-001.json",
-      "sha256": "df19728a9ea56c7c026bb030e72098651e3c614dd8ec7ba4a0475c7de1a6e115",
+      "sizeBytes": 1586568,
       "dax_xml": null,
       "manifest": "montage/n1000/montage-1000-001.manifest.json",
-      "manifest_sha256": "a1859b77e89ff934aff70e26ae47eeee9361f07de088ec54c9928b7369f7fe43",
+      "manifestSizeBytes": 492,
       "retained_in_standard_checkout": false
     },
     {
@@ -432,10 +432,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "montage/n1000/montage-1000-002.json",
-      "sha256": "afa60bbbda610aaee94776f98a1edfd97243a8e45d99ba21f2b30c89a4b4bd10",
+      "sizeBytes": 1586393,
       "dax_xml": null,
       "manifest": "montage/n1000/montage-1000-002.manifest.json",
-      "manifest_sha256": "0abdd198ce78055d4637535b3be64f7ce6fdf3f13575a450848bf36e7ddb7b4b",
+      "manifestSizeBytes": 492,
       "retained_in_standard_checkout": false
     },
     {
@@ -444,10 +444,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "seismology/n400/seismology-400-000.json",
-      "sha256": "4c4f8759cd83992abe5c2a62ef186880376afc50c3307cbaaa6628ad573a443b",
+      "sizeBytes": 531708,
       "dax_xml": null,
       "manifest": "seismology/n400/seismology-400-000.manifest.json",
-      "manifest_sha256": "ee3c550dbdfa17f20d94636034fe0d6a10529a5d6e1bf72d4cdbee6a970d8c7f",
+      "manifestSizeBytes": 501,
       "retained_in_standard_checkout": false
     },
     {
@@ -456,10 +456,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "seismology/n400/seismology-400-001.json",
-      "sha256": "07edc6fb9240eb8701153d6151fbea8cfc3e6f5a2993fc4d8b93175497d3a1a8",
+      "sizeBytes": 531710,
       "dax_xml": null,
       "manifest": "seismology/n400/seismology-400-001.manifest.json",
-      "manifest_sha256": "5b3555cca2b56cde10a4c0711b4c3a3c31859cb68e744fac8daee3c03fd7a9bd",
+      "manifestSizeBytes": 501,
       "retained_in_standard_checkout": false
     },
     {
@@ -468,10 +468,10 @@
       "num_tasks": 400,
       "seed": 42,
       "wfformat_json": "seismology/n400/seismology-400-002.json",
-      "sha256": "6208d9bd2da6bbc15c7a1c8a715452666830a6f0676d3b4a746eb06c45557e25",
+      "sizeBytes": 531705,
       "dax_xml": null,
       "manifest": "seismology/n400/seismology-400-002.manifest.json",
-      "manifest_sha256": "6b2078f3acd022d41d61eea4569db7fd4f538f73ec7c36de0673c9d014de222f",
+      "manifestSizeBytes": 501,
       "retained_in_standard_checkout": false
     },
     {
@@ -480,10 +480,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "seismology/n1000/seismology-1000-000.json",
-      "sha256": "d4c490475f612aeadb5ce6515979026311b7cbf15515c37941d5a730b04bb72d",
+      "sizeBytes": 1332024,
       "dax_xml": null,
       "manifest": "seismology/n1000/seismology-1000-000.manifest.json",
-      "manifest_sha256": "045a91980b05769fd018af6c4e9b064eeaad16347eb3fac203376c8c222c54b1",
+      "manifestSizeBytes": 504,
       "retained_in_standard_checkout": false
     },
     {
@@ -492,10 +492,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "seismology/n1000/seismology-1000-001.json",
-      "sha256": "b4f9e047b051ac7a764fbf699a6713f6e2cd37c60fca7f5fb3171ff29158ee1a",
+      "sizeBytes": 1332034,
       "dax_xml": null,
       "manifest": "seismology/n1000/seismology-1000-001.manifest.json",
-      "manifest_sha256": "dec02a6084a0294b130f369820082d5f9a3e2cd870019ae603f5d792517a60ab",
+      "manifestSizeBytes": 504,
       "retained_in_standard_checkout": false
     },
     {
@@ -504,10 +504,10 @@
       "num_tasks": 1000,
       "seed": 42,
       "wfformat_json": "seismology/n1000/seismology-1000-002.json",
-      "sha256": "52b2e76746e586b85ce4e959b5670d4001aace6476046ab581e39159a7cd0164",
+      "sizeBytes": 1332034,
       "dax_xml": null,
       "manifest": "seismology/n1000/seismology-1000-002.manifest.json",
-      "manifest_sha256": "5de627bca8d7f40e80623b9988153a13e6c5f208c28b9f781fc1c3f4383eed91",
+      "manifestSizeBytes": 504,
       "retained_in_standard_checkout": false
     }
   ]

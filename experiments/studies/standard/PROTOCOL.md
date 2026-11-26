@@ -118,11 +118,12 @@ two-sided exact test cannot reach 0.05; the corpus size must be fixed before exe
 ## Outputs
 
 A new or empty directory receives `standard-study.json` (header, rows, comparisons),
-`standard-study-rows.csv` and `standard-study-comparisons.csv` (six `#` header lines: protocol ID, execution
-semantics, git commit, corpus index identity, layer and evidence class, constants), and `campaign/` with the
+`standard-study-rows.csv` and `standard-study-comparisons.csv` (five `#` header lines: protocol ID, execution
+semantics, git commit, layer and evidence class, constants), and `campaign/` with the
 per-run manifest/metrics/events evidence and the validated campaign index. The header records the protocol ID,
-`WORK_CONSERVING_TASK_EXECUTION_V3`, the git commit and dirty flag, every constant, the corpus list with
-the identity of each instance, and the identity of the corpus index. Any failed run, incomplete workflow, or pairing violation aborts the study.
+`WORK_CONSERVING_TASK_EXECUTION_V3`, the git commit and dirty flag, every constant, and the corpus list with
+the index, file name, absolute path, byte size (`sizeBytes`), and task count of each instance; each row carries
+`instanceSizeBytes`. The corpus identity is the git commit plus this instance list; no content hash is recorded. Any failed run, incomplete workflow, or pairing violation aborts the study.
 
 Command (smoke only; a full matrix is a separate, declared execution):
 

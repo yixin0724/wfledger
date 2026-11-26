@@ -6,14 +6,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.cloudbus.cloudsim.Consts;
@@ -257,7 +254,7 @@ public final class StandardStudy {
             row.put("mtbfToTaskRatio", context.mtbfRatio);
             row.put("instanceIndex", context.instance.index);
             row.put("instance", context.instance.fileName);
-            row.put("instanceSha256", context.instance.sha256);
+            row.put("instanceSizeBytes", context.instance.sizeBytes);
             row.put("candidate", context.candidate);
             row.put("baseline", context.candidate.equals(design.layer.getBaseline()));
             row.put("storageRateMbPerSecond", context.calibration.getStorageRateMbPerSecond());
@@ -427,21 +424,16 @@ public final class StandardStudy {
         constants.put("fileSystem", "SHARED");
         header.put("constants", constants);
         List<Map<String, Object>> corpus = new ArrayList<Map<String, Object>>();
-        StringBuilder index = new StringBuilder();
         for (Instance instance : instances) {
             Map<String, Object> entry = new LinkedHashMap<String, Object>();
             entry.put("index", instance.index);
             entry.put("file", instance.fileName);
             entry.put("path", instance.path);
-            entry.put("sha256", instance.sha256);
+            entry.put("sizeBytes", instance.sizeBytes);
             entry.put("taskCount", instance.tasks.size());
             corpus.add(entry);
-            index.append(instance.sha256).append("  ").append(instance.fileName).append('\n');
         }
         header.put("corpus", corpus);
-        header.put("corpusIndexSha256", sha256(index.toString().getBytes(StandardCharsets.UTF_8)));
-        header.put(
-                "corpusIndexDefinition", "SHA-256 of UTF-8 lines '<sha256>  <file name>\\n' in ascending path order");
         return header;
     }
 
@@ -468,7 +460,7 @@ public final class StandardStudy {
                         + "; evidence classes must not be mixed (datasets/README.md)");
             }
             List<Task> tasks = CcrCalibrator.parse(file.toString(), conversion);
-            instances.add(new Instance(i, file.toString(), file.getFileName().toString(), sha256(file), tasks));
+            instances.add(new Instance(i, file.toString(), file.getFileName().toString(), Files.size(file), tasks));
         }
         return instances;
     }
@@ -505,9 +497,6 @@ public final class StandardStudy {
                 .append(header.get("executionSemantics"))
                 .append('\n');
         text.append("# gitCommit=").append(header.get("gitCommit")).append('\n');
-        text.append("# corpusIndexSha256=")
-                .append(header.get("corpusIndexSha256"))
-                .append('\n');
         text.append("# layer=")
                 .append(header.get("layer"))
                 .append(" evidenceClass=")
@@ -600,23 +589,6 @@ public final class StandardStudy {
         return buffer.toByteArray();
     }
 
-    static String sha256(Path file) throws IOException {
-        return sha256(Files.readAllBytes(file));
-    }
-
-    static String sha256(byte[] bytes) {
-        try {
-            byte[] hash = MessageDigest.getInstance("SHA-256").digest(bytes);
-            StringBuilder hex = new StringBuilder();
-            for (byte b : hash) {
-                hex.append(String.format(Locale.ROOT, "%02x", b));
-            }
-            return hex.toString();
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is unavailable", exception);
-        }
-    }
-
     public static void main(String[] args) throws Exception {
         if (args.length < 6) {
             throw new IllegalArgumentException("usage: <output-dir> <STATIC|ONLINE> <evidence-class> <vm-counts> "
@@ -652,14 +624,14 @@ public final class StandardStudy {
         private final int index;
         private final String path;
         private final String fileName;
-        private final String sha256;
+        private final long sizeBytes;
         private final List<Task> tasks;
 
-        Instance(int index, String path, String fileName, String sha256, List<Task> tasks) {
+        Instance(int index, String path, String fileName, long sizeBytes, List<Task> tasks) {
             this.index = index;
             this.path = path;
             this.fileName = fileName;
-            this.sha256 = sha256;
+            this.sizeBytes = sizeBytes;
             this.tasks = tasks;
         }
     }

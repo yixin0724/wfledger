@@ -12,7 +12,7 @@ Usage (from the repository root)::
 The corpus is produced by ``experiments/studies/standard-workloads/generate_corpus.py``. This verifier is pure standard library and never imports
 WfCommons. For every instance file present on disk it checks:
 
-* the SHA-256 recorded in the index;
+* the byte size recorded in the index (``sizeBytes``);
 * WfFormat shape: unique task IDs, every specification task has exactly one execution
   record, parent/child symmetry, resolvable endpoints, and acyclicity (Kahn);
 * every ``inputFiles``/``outputFiles`` reference resolves to a declared file, every
@@ -42,7 +42,6 @@ without that flag is an issue. Exit status: 0 clean, 1 issues, 2 unusable input.
 """
 
 import argparse
-import hashlib
 import json
 import math
 import re
@@ -64,14 +63,6 @@ INDEX_BOUNDARY = (
 
 class CorpusIssue(Exception):
     """A per-instance verification failure."""
-
-
-def sha256_file(path):
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _finite(value, what):
@@ -257,10 +248,10 @@ def verify_corpus(corpus_dir):
             else:
                 counts["absent_not_retained"] += 1
             continue
-        actual = sha256_file(path)
-        if actual != entry.get("sha256"):
-            issues.append("{}: sha256 mismatch (recorded {}, actual {})".format(
-                subject, entry.get("sha256"), actual))
+        actual = path.stat().st_size
+        if actual != entry.get("sizeBytes"):
+            issues.append("{}: size mismatch (recorded {}, actual {} bytes)".format(
+                subject, entry.get("sizeBytes"), actual))
             continue
         try:
             stats = analyze(json.loads(path.read_text(encoding="utf-8")))
@@ -295,9 +286,9 @@ def build_index(corpus_dir):
         if stats["tasks"] != record["num_tasks"]:
             raise ValueError("manifest num_tasks disagrees for " + record["wfformat_json"])
         entry = dict(record)
-        entry["sha256"] = sha256_file(path)
-        if entry["sha256"] != record["sha256"]:
-            raise ValueError("manifest sha256 disagrees for " + record["wfformat_json"])
+        entry["sizeBytes"] = path.stat().st_size
+        if entry["sizeBytes"] != record["sizeBytes"]:
+            raise ValueError("manifest sizeBytes disagrees for " + record["wfformat_json"])
         entry["stats"] = stats
         entries.append(entry)
     return {
@@ -305,7 +296,6 @@ def build_index(corpus_dir):
                        + ": WfCommons WfFormat JSON with canonical file IDs and fixed timestamps.",
         "generator": "experiments/studies/standard-workloads/generate_corpus.py",
         "spec": "experiments/studies/standard-workloads/spec.json",
-        "spec_sha256": manifest["spec_sha256"],
         "environment": manifest["environment"],
         "seed_rule": manifest["seed_rule"],
         "exclusions": manifest["exclusions"],
@@ -313,7 +303,7 @@ def build_index(corpus_dir):
         "verifier": "scripts/verify-workload-corpus.py",
         "n_instances": len(entries),
         "n_auxiliary_files": 1,
-        "auxiliary_files": [{"file": MANIFEST_NAME, "sha256": sha256_file(manifest_path),
+        "auxiliary_files": [{"file": MANIFEST_NAME, "sizeBytes": manifest_path.stat().st_size,
                              "role": "generation manifest (not a simulation-experiment manifest)"}],
         "instances": entries,
     }

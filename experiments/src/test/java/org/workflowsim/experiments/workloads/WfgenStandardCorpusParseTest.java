@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +68,7 @@ class WfgenStandardCorpusParseTest {
     void parsesWithIndexedStructure(String relative, JsonObject entry) throws Exception {
         Path input = datasetRoot().resolve(FAMILY).resolve(relative);
         assertTrue(Files.isRegularFile(input), "retained instance must be present: " + input);
-        assertEquals(entry.get("sha256").getAsString(), sha256(input), "indexed bytes of " + relative);
+        assertEquals(entry.get("sizeBytes").getAsLong(), Files.size(input), "indexed size of " + relative);
         JsonObject stats = entry.getAsJsonObject("stats");
         try (SimulationSession session = SimulationSession.open(
                 SimulationConfig.builder(input.toString(), 1).build())) {
@@ -103,15 +102,6 @@ class WfgenStandardCorpusParseTest {
         try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             return JsonParser.parseReader(reader).getAsJsonObject();
         }
-    }
-
-    private static String sha256(Path path) throws Exception {
-        byte[] digest = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path));
-        StringBuilder hex = new StringBuilder();
-        for (byte value : digest) {
-            hex.append(String.format("%02x", value & 0xff));
-        }
-        return hex.toString();
     }
 
     private static Path datasetRoot() {

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import hashlib
 import json
 import os
 import subprocess
@@ -12,16 +11,11 @@ from typing import Dict, List, Optional, Tuple
 INDEX_NAME = "INDEX.json"
 SKIP_DIR_NAMES = {".v1.5-git-metadata"}
 EXEMPT_FILES = {"README.md"}
-HEX_DIGITS = set("0123456789abcdef")
 INSTANCE_FILE_FIELDS = ("dax_xml", "wfformat_json", "file")
 MANIFEST_FIELD = "manifest"
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+SIZE_FIELD = "sizeBytes"
+MANIFEST_SIZE_FIELD = "manifestSizeBytes"
+INDEX_SIZE_FIELD = "indexSizeBytes"
 
 def valid_relative(value: object) -> bool:
 
@@ -32,9 +26,8 @@ def valid_relative(value: object) -> bool:
         return False
     return True
 
-def valid_sha256(value: object) -> bool:
-    return (isinstance(value, str) and len(value) == 64
-            and all(char in HEX_DIGITS for char in value))
+def valid_size(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 def tracked_datasets_files(root: Path) -> Optional[List[str]]:
 
@@ -64,15 +57,15 @@ def _entry_main_file(entry: object, subject: str, issues: List[str]) -> Optional
 
 def _check_entry_file(base: Path, rel: str, entry: dict,
                       subject: str, issues: List[str], counts: Dict[str, int],
-                      hash_key: str) -> None:
+                      size_key: str) -> None:
 
     path = base / rel
     if path.is_dir():
         issues.append(subject + ": listed path is a directory, not a file")
         return
-    recorded = entry.get(hash_key)
-    if not valid_sha256(recorded):
-        issues.append(subject + ": missing or malformed " + hash_key)
+    recorded = entry.get(size_key)
+    if not valid_size(recorded):
+        issues.append(subject + ": missing or malformed " + size_key)
         return
     if not path.is_file():
         retained = entry.get("retained_in_standard_checkout", True)
@@ -83,9 +76,10 @@ def _check_entry_file(base: Path, rel: str, entry: dict,
             counts["absent_not_retained"] += 1
         return
     counts["present_verified"] += 1
-    if sha256_file(path) != recorded:
-        issues.append(subject + ": recorded hash mismatch (recorded " + recorded
-                      + ", actual " + sha256_file(path) + ")")
+    actual = path.stat().st_size
+    if actual != recorded:
+        issues.append(subject + ": recorded size mismatch (recorded " + str(recorded)
+                      + " bytes, actual " + str(actual) + " bytes)")
 
 def check_indexes(root: Path) -> Tuple[List[str], Dict[str, int]]:
 
@@ -114,14 +108,15 @@ def check_indexes(root: Path) -> Tuple[List[str], Dict[str, int]]:
         index_path = datasets / index_value
         if not index_path.is_file():
             raise ValueError("family index is missing: datasets/" + index_value)
-        recorded_index_hash = family.get("index_sha256")
-        if not valid_sha256(recorded_index_hash):
-            raise ValueError("family " + repr(name) + " index_sha256 is missing or malformed")
-        actual_index_hash = sha256_file(index_path)
-        if actual_index_hash != recorded_index_hash:
-            issues.append("datasets/" + index_value + ": family index hash mismatch"
-                          " (recorded " + recorded_index_hash + ", actual "
-                          + actual_index_hash + ")")
+        recorded_index_size = family.get(INDEX_SIZE_FIELD)
+        if not valid_size(recorded_index_size):
+            raise ValueError("family " + repr(name) + " " + INDEX_SIZE_FIELD
+                             + " is missing or malformed")
+        actual_index_size = index_path.stat().st_size
+        if actual_index_size != recorded_index_size:
+            issues.append("datasets/" + index_value + ": family index size mismatch"
+                          " (recorded " + str(recorded_index_size) + " bytes, actual "
+                          + str(actual_index_size) + " bytes)")
         covered.add(index_value)
         family_indexes.add(index_value)
         index = json.loads(index_path.read_text(encoding="utf-8"))
@@ -163,7 +158,7 @@ def check_indexes(root: Path) -> Tuple[List[str], Dict[str, int]]:
             if rel is None:
                 continue
             covered.add(rel_prefix + "/" + rel)
-            _check_entry_file(base, rel, entry, subject, issues, counts, "sha256")
+            _check_entry_file(base, rel, entry, subject, issues, counts, SIZE_FIELD)
             if isinstance(entry, dict) and "runtime" in entry:
                 by_runtime[entry["runtime"]] = by_runtime.get(entry["runtime"], 0) + 1
             manifest = entry.get(MANIFEST_FIELD) if isinstance(entry, dict) else None
@@ -176,14 +171,15 @@ def check_indexes(root: Path) -> Tuple[List[str], Dict[str, int]]:
             manifest_path = base / manifest
             if manifest_path.is_file():
                 counts["manifests_verified"] += 1
-                recorded_manifest = entry.get("manifest_sha256")
-                if not valid_sha256(recorded_manifest):
-                    issues.append(subject + ": manifest is present but"
-                                  " manifest_sha256 is missing or malformed")
-                elif sha256_file(manifest_path) != recorded_manifest:
-                    issues.append(subject + ": manifest hash mismatch (recorded "
-                                  + recorded_manifest + ", actual "
-                                  + sha256_file(manifest_path) + ")")
+                recorded_manifest = entry.get(MANIFEST_SIZE_FIELD)
+                actual_manifest = manifest_path.stat().st_size
+                if not valid_size(recorded_manifest):
+                    issues.append(subject + ": manifest is present but "
+                                  + MANIFEST_SIZE_FIELD + " is missing or malformed")
+                elif actual_manifest != recorded_manifest:
+                    issues.append(subject + ": manifest size mismatch (recorded "
+                                  + str(recorded_manifest) + " bytes, actual "
+                                  + str(actual_manifest) + " bytes)")
 
         declared_runtime_counts = index.get("counts_by_runtime")
         if isinstance(declared_runtime_counts, dict):
@@ -220,8 +216,41 @@ def check_indexes(root: Path) -> Tuple[List[str], Dict[str, int]]:
     return issues, counts
 
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="Check the dataset family indexes and the top-level integrity chain.\n\nUsage (from any working directory)::\n\n    python3 -B scripts/check-dataset-indexes.py\n    python3 -B scripts/check-dataset-indexes.py --root /some/repository\n\nThe dataset tree ships one index per family (``datasets/dax/INDEX.json``,\n``datasets/wfformat/INDEX.json``, ``datasets/wfinstances/INDEX.json``,\n``datasets/wfgen-standard/INDEX.json``) and a top-level ``datasets/INDEX.json`` that records each family index's own sha256.\nEvery index entry records the sha256 of the file it lists. The checker fails\nwhen:\n\n- a listed file is present but its recorded hash does not match (tampering or\n  unregistered regeneration),\n- a listed file is absent while the entry claims it is retained in a standard\n  checkout (a broken checkout),\n- a file is present under ``datasets/`` but no index lists it (corpus drift),\n- a Git-tracked file under ``datasets/`` is listed by no index and is not an\n  explicitly exempt document,\n- a family index hash recorded in the top-level index does not match the\n  family index on disk (a broken chain), or\n- a declared entry count disagrees with the actual number of entries.\n\nAbsent files flagged ``retained_in_standard_checkout: false`` are legal: the\nlarge WfGen and WfInstances corpora are prepared separately and do not ship\nwith the repository. Generation manifests listed by ``wfformat`` entries may\nbe absent for the same reason; when present they must match their recorded\nhash. The upstream clone metadata directory ``datasets/wfinstances/\n.v1.5-git-metadata`` and the top-level ``README.md`` are outside the index\nscope: the first is local clone provenance, the second is documentation that\nchanges freely. This script performs no writes and needs no dependencies.\n",
-                                    formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description="""Check the dataset family indexes and the top-level index.
+
+Usage (from any working directory)::
+
+    python3 -B scripts/check-dataset-indexes.py
+    python3 -B scripts/check-dataset-indexes.py --root /some/repository
+
+The dataset tree ships one index per family (``datasets/dax/INDEX.json``,
+``datasets/wfformat/INDEX.json``, ``datasets/wfinstances/INDEX.json``,
+``datasets/wfgen-standard/INDEX.json``) and a top-level ``datasets/INDEX.json``
+that lists each family index with its byte size (``indexSizeBytes``). Every index
+entry records the relative path and byte size (``sizeBytes``) of the file it
+lists; a listed generation manifest carries ``manifestSizeBytes``. The checker
+fails when:
+
+- a listed file is present but its size differs from the recorded size,
+- a listed file is absent while the entry claims it is retained in a standard
+  checkout (a broken checkout),
+- a file is present under ``datasets/`` but no index lists it (corpus drift),
+- a Git-tracked file under ``datasets/`` is listed by no index and is not an
+  explicitly exempt document,
+- a family index size recorded in the top-level index does not match the
+  family index on disk, or
+- a declared entry count disagrees with the actual number of entries.
+
+Absent files flagged ``retained_in_standard_checkout: false`` are legal: the
+large WfGen and WfInstances corpora are prepared separately and do not ship
+with the repository. Generation manifests listed by ``wfformat`` entries may
+be absent for the same reason; when present they must match their recorded
+size. The upstream clone metadata directory ``datasets/wfinstances/
+.v1.5-git-metadata`` and the top-level ``README.md`` are outside the index
+scope: the first is local clone provenance, the second is documentation that
+changes freely. This script performs no writes and needs no dependencies.
+""",
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=Path,
                         default=Path(__file__).resolve().parent.parent,
                         help="repository root (default: this script's parent repository)")

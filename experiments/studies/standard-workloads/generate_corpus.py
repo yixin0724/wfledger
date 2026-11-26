@@ -53,6 +53,7 @@ RECIPE_CLASSES = {
 }
 PINNED_DISTRIBUTIONS = ("wfcommons", "numpy", "scipy", "networkx", "pandas")
 KINDS = (("inputFiles", "in"), ("outputFiles", "out"))
+MANIFEST_NAME = "GENERATION.json"
 
 
 class CorpusError(Exception):
@@ -177,13 +178,8 @@ def serialize(document):
     return (text + "\n").encode("ascii")
 
 
-def sha256_bytes(data):
-    return hashlib.sha256(data).hexdigest()
-
-
 def load_spec(path):
-    raw = Path(path).read_bytes()
-    spec = json.loads(raw.decode("utf-8"))
+    spec = json.loads(Path(path).read_text(encoding="utf-8"))
     for key in ("corpus", "base_seed", "instances_per_size", "recipes"):
         if key not in spec:
             raise CorpusError("spec is missing " + repr(key))
@@ -198,7 +194,7 @@ def load_spec(path):
         excluded = [entry["size"] for entry in recipe.get("excluded_sizes", [])]
         if set(sizes) & set(excluded):
             raise CorpusError("size both requested and excluded for " + recipe["recipe"])
-    return spec, raw
+    return spec
 
 
 def plan(spec):
@@ -249,7 +245,7 @@ def confirm_exclusions(spec):
 
 
 def generate(spec_path, output, only_sizes=None):
-    spec, raw = load_spec(spec_path)
+    spec = load_spec(spec_path)
     output = Path(output)
     retained = set(spec.get("retained_sizes", []))
     instances = []
@@ -270,12 +266,11 @@ def generate(spec_path, output, only_sizes=None):
             "instance_index": index,
             "seed": seed,
             "wfformat_json": rel,
-            "sha256": sha256_bytes(data),
+            "sizeBytes": len(data),
             "retained_in_standard_checkout": size in retained,
         })
     manifest = {
         "corpus": spec["corpus"],
-        "spec_sha256": sha256_bytes(raw),
         "base_seed": spec["base_seed"],
         "seed_rule": "int.from_bytes(sha256('<base_seed>:<recipe>:<requested_tasks>:<index>')[:4], 'big')",
         "canonicalization": {
@@ -290,7 +285,7 @@ def generate(spec_path, output, only_sizes=None):
         "instances": instances,
     }
     manifest_bytes = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("ascii")
-    with open(output / "GENERATION.json", "wb") as handle:
+    with open(output / MANIFEST_NAME, "wb") as handle:
         handle.write(manifest_bytes)
     return manifest
 

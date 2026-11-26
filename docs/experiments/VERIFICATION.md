@@ -119,7 +119,7 @@ Each dimension has a positive case that must pass and tamper cases that must be 
 | Storage lifecycle V3 | Fixture verification through `_storage_lifecycle_audit` | `test-storage-lifecycle.py` negative cases |
 | Event stream | Ordering, sequence, and count checks plus the declared `events.revisionContract` | Out-of-order time, duplicate sequence, blank line, wrong `eventCount` or sequence bounds, unknown contract; with the contract declared, a stream missing `SIMULATION_TERMINATED` or execution markers |
 | Simulation metrics v4 | Java validator recomputation and `verify-study-evidence.py` derived metrics | Consistently tampered `makespanSeconds` or `meanJobVmQueueWaitingTimeSeconds`, shifted terminal clock, broken start derivation, uncovered executed Job |
-| Dataset indexes | `check-dataset-indexes.py` on the standard checkout | Wrong recorded path or size, missing retained file, broken index chain, unindexed file, count drift |
+| Dataset indexes | `check-dataset-indexes.py` on the standard checkout | Wrong recorded path or size, missing retained file, family index size disagreeing with the top-level index, unindexed file, count drift |
 
 ### Rerun verdicts under tampering
 
@@ -243,7 +243,7 @@ inferred from file sizes. The three input families stay separate (see
 mvn -Pjavadoc clean verify                                          # unit, integration, coverage, javadoc
 make quality-gate                                                   # Maven + Python + docs + language + datasets
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py   # auditor self-tests
-python3 -B scripts/check-dataset-indexes.py                         # dataset index chain
+python3 -B scripts/check-dataset-indexes.py                         # dataset indexes (paths and sizes)
 python3 -B scripts/mutation-gate.py --all-modules --output <new>.json   # registered mutants
 ```
 
