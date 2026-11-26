@@ -98,7 +98,7 @@ python3 -B scripts/check-docs.py
 python3 -B scripts/check-docs.py --json
 ```
 
-The checker discovers existing project Markdown through Git metadata, excluding dependencies, build outputs, and local experiment results; it validates local targets, Markdown anchors, and source-text line numbers, and it does not access the network. Missing targets, wrong anchors, or unsupported reference forms produce diagnostics with file/line positions and a non-zero exit. Semantics and commands must still be checked against the source code; the rules are in [documentation and source-comment requirements](<../advanced/CODE_STYLE.md>).
+The checker discovers existing project Markdown through Git metadata, excluding dependencies, build outputs, and local experiment results; it validates local targets, Markdown anchors, and source-text line numbers, and it does not access the network. Missing targets, wrong anchors, or unsupported reference forms produce diagnostics with file/line positions and a non-zero exit. Semantics and commands must still be checked against the source code; the rules are in [contributing guide](<../../CONTRIBUTING.md#documentation-and-code-style>).
 
 ## Upload-safety check
 
