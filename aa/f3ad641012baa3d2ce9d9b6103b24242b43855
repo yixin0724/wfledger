@@ -1,0 +1,18 @@
+docs/SCIENCE-POSITION.md
+  h_adc77830afcf4d 99
+docs/advanced/DATAFLOW_CAPABILITY_MATRIX.md
+  h_adc77830afcf4d 148
+docs/experiments/PAPER_REPRODUCTIONS.md
+  h_adc77830afcf4d 292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "aaf3ad641012baa3d2ce9d9b6103b24242b43855",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
