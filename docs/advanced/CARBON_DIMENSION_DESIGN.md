@@ -1,13 +1,14 @@
-# Carbon Dimension: Requirements Analysis and Architecture Design (v1)
+# Carbon Dimension
 
-This document designs the carbon-dimension extension following the platform's proven
-literature-grounded arc. No code has been written yet — this is the contract-first design.
-It builds directly on the audited energy dimension (conservation-locked per-VM joules).
+This document specifies the two carbon accounting models (intensity multiplier and green-budget
+excess), their metrics, audit, Workbench surface, and the `CARBON_WINDOW_DEFER` scheduler. Both
+models are computed from the conserved per-VM energy of the
+[energy dimension](<ENERGY_DIMENSION_DESIGN.md>).
 
 ## 1. Primary-source survey: the two carbon accounting models in the literature
 
 The carbon-aware scheduling field does **not** agree on one carbon model — it uses two
-structurally different accountings, and our design must choose explicitly.
+structurally different accountings, and the platform implements both explicitly.
 
 ### 1.1 The intensity-multiplier model (CASPER family)
 
@@ -52,13 +53,13 @@ Key algorithmic semantics from the paper we adopt as design constraints:
 ### 1.3 Metrics conventions
 
 Grid-data tools express intensity in gCO₂/kWh (location-based; marginal exists but is
-an accounting-policy choice — out of v1 scope). The two models are **not** interchangeable:
+an accounting-policy choice and is not modeled). The two models are **not** interchangeable:
 a low-intensity grid and a renewable-budgeted platform can disagree about which schedule
 is "greener" (e.g., a huge always-on fleet under a generous budget is zero-carbon in CWM
-terms yet large in CASPER grams). Our platform will implement **both, explicitly named**,
+terms yet large in CASPER grams). The platform implements **both, explicitly named**,
 because conflating them would be a modeling error.
 
-## 2. Architecture v1
+## 2. Architecture
 
 ### 2.1 The core decision: two named carbon models, both auditable
 
@@ -90,9 +91,7 @@ recomputes. This is the **CWM-family accounting**; window arrays are the researc
 declared renewable-availability scenario (like CaWoSched's `G_j` intervals). Windows must
 be sorted and non-overlapping. They define the accounting horizon rather than a promise to
 cover the entire simulation: outside the declared windows is not included in the excess
-integral. In particular, time after the last window contributes no excess; this is the
-implemented and independently audited boundary, not a license to describe the windows as
-whole-run coverage.
+integral; time after the last window contributes no excess.
 
 The report has one deliberately label-specific compatibility rule. For `CAWOSCHED_SLACK` and
 `CAWOSCHED_PRESSURE` on flat-power fleets, the budget integral uses the full configured deadline
@@ -102,7 +101,7 @@ report convention: the simulation-end/makespan horizon and the first VM's dynami
 active VM. The tiered per-tier budget branch is unchanged. Consequently, a CaWoSched plan and its
 report use the same horizon and power law without changing historical non-CaWoSched evidence.
 
-### 2.2 Manifest + auditor (all three parties, energy-discipline style)
+### 2.2 Manifest and audit
 
 - `energyMetrics` unchanged; new sibling `carbonMetrics` section emitted when either
   carbon model is declared (else absent — legal)
@@ -122,74 +121,47 @@ report use the same horizon and power law without changing historical non-CaWoSc
 Validation: both together rejected (one model per run — the contract is the analysis);
 budget windows well-formed; intensity ≥ 0 finite.
 
-### 2.4 Interplay with energy (the honest decision)
+### 2.4 Power-model requirement
 
 - **Intensity model requires a powered profile**: carbon multiplies *energy*; an
-  unpowered profile makes it vacuous. Fail-fast with the power-model message (mirrors
-  E3's registry gate).
+  unpowered profile makes it vacuous. Fail-fast with the power-model message.
 - **Budget model also requires powered**: the fleet-power curve needs P_idle/P_work.
 - Algorithm declarations: `carbonAware`/`carbonModelRequired`/`carbonObjectiveWeight`
-  fields mirroring the E3 triple with the same implication lattice.
+  fields mirroring the energy declarations with the same implication lattice.
 
-### 2.5 Registry + first carbon-aware scheduling comparison (E5-style end)
+### 2.5 Carbon-aware scheduling
 
-A registered `CARBON_DEFER_FIRST` demonstrator: among ready jobs, defer non-critical-tail
-work into declared cheap windows (budget model) — the CWM temporal-shift spirit in an
-online label. First result: carbon grams/excess vs carbon-agnostic baseline, statistical
-signs per layering discipline.
+The registered `CARBON_DEFER_FIRST` demonstrator exercises the carbon-aware registry path. The
+core scheduler label `CARBON_WINDOW_DEFER` reads the declared `carbonWindows`, finds the next
+window whose green power is *strictly* higher than the current one, and holds the entire ready
+batch until that window starts, each Job at most once. The bound is **per Job, not per
+workflow**: a Job that becomes ready after an earlier wave was deferred may hop once itself, so a
+dependency chain can shift once per wave until no cleaner window remains. The scheduler arms a
+wake-up event for the window start; a deferral-aware policy that leaves ready Jobs unscheduled
+with no future wake time fails explicitly.
 
-**As-built (C1, 2026-11-02): the real deferral engine replaced the demonstrator.** The
-standard scheduler label `CARBON_WINDOW_DEFER` now ships in the core: it reads the
-declared `carbonWindows`, finds the next window whose green power is *strictly* higher
-than the current one, and holds the entire ready batch until that window starts — each Job
-at most once. Note the bound is **per Job, not per workflow**: a Job that becomes ready after
-an earlier wave was deferred is a new Job and may hop once itself, so a dependency chain can
-shift once per wave until the ladder of cleaner windows runs out (measured on a
-three-window ladder: the stage-in envelope hops to 100 s, then the compute Jobs hop to 200 s
-and the chain stops there because no cleaner window remains). Deferral is therefore bounded
-by the window count, not by a single global hop. The
-scheduler arms a wake-up event for the window start; a deferral-aware policy that leaves
-ready Jobs unscheduled with no future wake time fails loudly rather than hanging.
+The rule is driven by the declared window table, not by a load forecast, and trades completion
+time for lower excess. A platform without `carbonWindows` is rejected rather than degraded to
+plain FCFS. Deferral cannot go below the **idle floor**: a fleet whose parked power exceeds a
+window's green budget pays `Σ P_idle − green` for the whole window regardless of what runs
+(`deferralCannotGoBelowTheIdleFloorOfADirtyWindow`: two 100 W idle VMs against a 120 W window
+leave 80 W × 100 s). In `CarbonWindowDeferSchedulingIntegrationTest`, with a dirty `[0,100)`
+window (120 W green) and a clean `[100,400)` window (400 W green) on a 300 W active platform,
+FCFS incurs positive excess while the deferral skips the dirty window, leaving zero excess at a
+longer makespan; without a window table the label is rejected.
 
-Honest scope: the rule is driven by the declared window table, not by a live fleet-load
-forecast, and it trades completion time for lower excess — the engine claims no
-superiority. Because the whole decision comes from that table, a platform without
-`carbonWindows` is **rejected** rather than degraded to plain FCFS: a label that says
-"carbon-aware" while deferring nothing is the same silently-inert-policy defect the
-frequency dimension refuses (BAT-D2). It also cannot go below the **idle floor**: deferral removes the active
-(dynamic) share from a dirty window, but a fleet whose parked power already exceeds that
-window's green budget keeps paying `Σ P_idle − green` for the whole window no matter what
-runs (pinned by `deferralCannotGoBelowTheIdleFloorOfADirtyWindow`, where two 100 W idle VMs
-against a 120 W green window leave 80 W × 100 s of unavoidable excess). Hand-checked fixture (`CarbonWindowDeferSchedulingIntegrationTest`): with a
-dirty `[0,100)` window (120 W green) and a clean `[100,400)` window (400 W green) on a
-300 W active platform, plain FCFS incurs positive excess while the engine skips the dirty
-window entirely and leaves zero excess at a longer makespan; without a window table the
-label reproduces plain FCFS exactly.
-
-## 3. Honest scoping (v1 deliberate omissions)
+## 3. Deliberate omissions
 
 | Omitted | Reason |
 |---|---|
 | Grid datasets / forecasts (Electricity Maps feeds) | External-data dependency (unauditable provenance); researchers declare windows/intensities — same candor as CWM's synthetic power profiles |
-| Marginal vs location-based accounting | Accounting-policy dispute; v1 is location-based only, stated in the metric contract |
+| Marginal vs location-based accounting | Accounting-policy dispute; the platform is location-based only, stated in the metric contract |
 | Spatial multi-region execution | Our platform is single-fleet; per-VM intensity captures heterogeneity, not geo-routing (CASPER systems work, different layer) |
-| CWM-class DP mapping algorithm | v1 ships the accounting + registry hooks + a demonstrator label; the NP-hard joint mapping is the algorithm-research follow-up |
-| Carbon in grouped-workflows module | Module removed 2026-11-02 (user-directed: dormant second-paper code, zero platform references; snapshot archived at git 6db21f1 — no carbon semantics ever shipped there) |
+| CWM-class DP mapping algorithm | The platform provides the accounting, registry hooks, and the deferral label; the NP-hard joint mapping is out of scope |
 
 ## 4. Competitive positioning
 
 No surveyed simulator implements carbon accounting with an independent recompute chain.
 CWM/CaWoSched evaluate algorithms on their own accounting; CASPER measures with live
 data — neither publishes a conservation-law-style invariant a third party can verify from
-the artifacts alone. Our carbon metrics will inherit the energy chain's discipline:
-**every gram (and every excess watt-second) recomputable by a Python command.**
-
-## 5. Effort estimate
-
-| Batch | Content | Est. |
-|---|---|---|
-| C1 | Model fields + both accountings + metrics + conservation/identity tests red→green | 1.5 d |
-| C2 | Manifest export + Python recompute (both models) + deferred-window recompute + self-tests | 1 d |
-| C3 | Registry carbon fields + workbench JSON + validation | 0.5 d |
-| C4 | Docs + frozen carbon benchmark variant (workflow-aware intensity-window scenarios) | 1 d |
-| C5 | CARBON_DEFER_FIRST demonstrator + first audited carbon result | 1–2 d |
+the artifacts alone. Every gram and every excess watt-second here is recomputable from the manifest by the Python auditor.

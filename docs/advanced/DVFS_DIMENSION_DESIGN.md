@@ -1,15 +1,10 @@
-# DVFS Dimension: Requirements Analysis and Architecture Design (v2)
+# DVFS Dimension
 
-This document designs the DVFS (Dynamic Voltage and Frequency Scaling) extension —
-the third and final axis of the platform's energy trilogy (measure → price → control).
-**AS BUILT (D1–D6, 2026-10-29):** the batches D1–D6 have all landed (D1 data model and
-conservation law; D2 per-Job assignment + per-tier ledger; D3 Python per-tier auditor;
-D4 Workbench JSON + registry surface + carbon ride-through; D5 the frozen tri-dimensional
-benchmark `benchmark-standard-dvfs-v1`; D6 the registered `EDP_GREEDY` demonstrator and
-the first DVFS-aware scheduling comparison). The original contract text is kept verbatim
-below, with the as-built notes inline (§2.3/§2.4/§2.6) recording where the build pinned,
-extended, or honestly bounded the contract — following the proven energy/carbon arc:
-survey → design → implementation batches → adversarial rounds.
+This document specifies the DVFS (dynamic voltage and frequency scaling) dimension: per-VM
+frequency-tier tables, per-Job tier assignment at admission, the extended energy conservation
+law, the frequency policies, and the audit and rerun surfaces. Energy accounting is specified in
+the [energy dimension](<ENERGY_DIMENSION_DESIGN.md>) and carbon in the
+[carbon dimension](<CARBON_DIMENSION_DESIGN.md>).
 
 ## 1. Primary-source survey: how the field models frequency control
 
@@ -44,12 +39,8 @@ costs are added; validated on real Intel Core 2 Quad Q6700 measurements and
 Montage/Inspiral/Sipht traces at 25–1000 Jobs. Their published savings range is
 **5–30%** vs the Performance governor baseline.
 
-**What they lack — our differentiation surface**: independent energy audit
-(no Python recompute), no conservation-law invariant test (no identity that a
-third party can verify), no carbon dimension ride-through, no evidence-chain
-manifests with per-Job frequency assignments, no frozen benchmark with per-tier
-EDP accounting. This is the SAME dark-void the energy and carbon dimensions
-exploited: audit and conservation are our unique moat.
+It has no independent energy audit, no conservation-law invariant, no carbon accounting,
+and no per-Job frequency assignments in its evidence.
 
 ### 1.3 The broader DVFS-workflow literature
 
@@ -59,15 +50,15 @@ exploited: audit and conservation are our unique moat.
 | Cao et al. (referenced in Cotes-Ruiz) | DVFS DAG optimum-frequency | No governor disclosure, no source available |
 | Guérout et al. | CloudSim-DVFS | DVFS into CloudSim with DAG support — but no failure model, no reconfiguration cost, no network cost |
 | DEFT (arXiv 2608.02122, 2025/26) | Multi-GPU runtimes | Joint task placement and DVFS — GPU-specific, but the frequency-tier table is the same structure |
-| Liu et al. (PMC 2025) | Heterogeneous multicore edge | Frequency tiers as per-core P-states; the multi-core aspect beyond v1 scope |
+| Liu et al. (PMC 2025) | Heterogeneous multicore edge | Frequency tiers as per-core P-states; multi-core DVFS is outside the current scope |
 
 The **P-state table** (frequency, voltage → MIPS, static-idle power, dynamic-max power)
 is the universal schema across all these works. Typical tier counts in practice:
 3–5 discrete frequencies per processor (Intel SpeedStep, AMD PowerNow\!).
 
-### 1.4 The PE-semantic decision (the v1→v2 architectural crux)
+### 1.4 Execution semantics
 
-Our v1 platform runs SPACE_SHARED one-Job-at-a-time per VM with a binary
+The platform runs SPACE_SHARED one-Job-at-a-time per VM with a binary
 utilization bit (u∈{0,1}). DVFS means each Job gets an **assigned frequency tier**
 that slows it (work_work/f_i takes longer) while drawing less dynamic power.
 The time-power duality:
@@ -84,7 +75,7 @@ The time-power duality:
   working) — the stretched Job lands in the slack pocket and only the dynamic
   savings count.
 
-**Our v2 semantic contract**, made explicit:
+The contract:
 
 1. **Assignment at Admission**: each compute Job receives exactly ONE frequency
    tier at the moment it is dispatched to a VM — the tier is fixed for the Job's
@@ -96,14 +87,14 @@ The time-power duality:
    Jobs run at the declared default). We do NOT silently "pick the fastest."
 3. **The extended conservation law**:
    ```
-   E_vm = Σ_tiers [ P_idle(t) × T_idle(t) + (P_max(t) − P_idle(t)) × T_busy(t) ]
+   E_vm = P_idle(default) × T_sim + Σ_tiers [ (P_max(t) − P_idle(default)) × T_busy(t) ]
    ```
    where T_busy(t) is the total time VM spent executing at tier t (each busy
-   interval is attributed to its assigned tier). When the platform has a single
-   tier (v1 compatibility mode) this degenerates identically to the existing law.
+   interval is attributed to its assigned tier); §2.3 gives the exact form. With a
+   single tier it reduces to the flat law.
 4. **Idle power at the default tier**: when the VM is NOT executing, it draws
-   the DEFAULT tier's idle power (not a mixed-frequency average). This is honest:
-   idle power is measured at the parked frequency.
+   the DEFAULT tier's idle power (not a mixed-frequency average), because idle
+   power is drawn at the parked frequency.
 
 ### 1.5 The carbon interplay
 
@@ -120,16 +111,16 @@ necessarily — this is exactly the break-even ruling above, now with two
 multipliers (energy AND carbon) both following the same conserved energy.
 If stretching extends the makespan, the carbon budget model may see MORE total
 excess if the longer timeline crosses into browner windows. The published
-savings range (5–30%) is for AVERAGE workloads with slack; always-positive
-DVFS savings is NOT a law of nature and our design will not pretend it is.
+savings range (5–30%) is for average workloads with slack; DVFS savings are not
+guaranteed.
 
-## 2. Architecture v2
+## 2. Architecture
 
 ### 2.1 Data model
 
 ```java
 PlatformProfile.VmSpec:
-    + List<FrequencyTier> frequencyTiers    // default empty = v1 single-tier mode
+    + List<FrequencyTier> frequencyTiers    // default empty = single-tier mode
 
 FrequencyTier:
     + double mips              // speed at this frequency (MIPS, must be > 0)
@@ -140,122 +131,68 @@ FrequencyTier:
 The tier list is the P-state table. Its FIRST entry is the default.
 Validation: tiers MUST be sorted by descending mips (fastest first — the
 workstation-native convention); power values must satisfy the same
-idle ≤ max constraint as the v1 power fields.
+idle ≤ max constraint as the flat power fields.
 
 ### 2.2 Assignment model
 
 - **Config-level**: SimulationConfig gains an optional `frequencyPolicy` —
-  the built-in policies are `DEFAULT` (every Job runs at the first tier —
-  v1-degenerate), `MIN_POWER` (every Job runs at the LAST/smallest tier),
+  the built-in policies are `DEFAULT` (every Job runs at the first tier), `MIN_POWER` (every Job runs at the LAST/smallest tier),
   `EDP_HEURISTIC` (each Job selects the tier minimizing EDP = E_tier ×
   estimated_T_tier, computed at dispatch with the Job's declared MI work). Its local energy
   estimate is the busy rectangle `P_max(tier) × T_tier`, so the choice minimizes
-  `P_max(tier) × T_tier²` and does not depend on the dispatch clock (FGCS-R5, 2026-11-24: the former
-  estimate added `P_idle(default) × elapsed clock`, which moved the same Job to faster tiers merely
-  because it was dispatched later). Fleet idle exposure is accounted exactly by §2.3, not by this
+  `P_max(tier) × T_tier²` and does not depend on the dispatch clock. Fleet idle exposure is accounted exactly by §2.3, not by this
   per-Job estimate.
-- **Speed basis** (FGCS-R5): planners and online policies rank VMs by nominal MIPS, while DEFAULT runs
+- **Speed basis**: planners and online policies rank VMs by nominal MIPS, while DEFAULT runs
   the first tier. The runner therefore requires one common ratio of default-tier MIPS to nominal MIPS
   across the fleet (an untiered VM has ratio 1); a VM-dependent ratio would silently reorder the fleet.
-- **Registry-level**: registered DVFS-aware algorithms declare `dvfsAware=true`
-  and can assign tiers per-Job through a first-class scheduling-time API
-  (the declaration model's powerModelRequired gate extends to require declared
-  frequency territories).
-- **Manifest-level**: each JobOutcome records its assigned tier mips + the tier's
-  power pair per Job — the evidence chain carries the full per-Job assignment.
+- **Scheduling-time API**: the active scheduling policy can elect a per-Job tier at
+  dispatch through `org.workflowsim.scheduling.FrequencyTierSelector`; the session
+  policy is the fallback. The selector's output is validated against the declared table
+  by mips identity, and a null or undeclared tier fails fast.
+- **Manifest-level**: each JobOutcome records its assigned `tierMips`, and the platform
+  section serializes the tier table, so the evidence carries the full per-Job assignment.
 
 ### 2.3 Extended conservation law (the invariant)
 
 ```
-E_vm = Σ_tiers [ P_idle(tier) × T_sim + (P_max(tier) − P_idle(tier)) × T_busy(tier) ]
-
-Wait — CORRECTION from the literature semantics (§1.4 point 4): idle power is
-NOT uniform across tiers when the VM parks at the default. The correct form:
-E_vm = P_idle(default) × T_idle
-     + Σ_tiers [ P_max(tier) × T_busy(tier) ]   // busy = full draw at assigned tier
+E_vm = P_idle(default) × T_sim + Σ_tiers [ (P_max(tier) − P_idle(default)) × T_busy(tier) ]
 ```
-When there is only one tier (list size 1 or empty), every busy second draws
-P_max(delta) exactly as in v1. When tiers exist, the VM's idle seconds draw the
-default tier's idle power and each busy interval draws the FULL max power of
-its assigned tier (idle+dynamic are already combined in P_max). This maintains
-the rectangle-per-Job auditability and degenerates to v1 exactly.
+Idle power is charged at the default tier over the whole simulation, and each busy
+interval adds its assigned tier's dynamic draw above that idle floor, so a busy second
+draws `P_max(tier)` in total. Without tiers this is the flat law
+`P_idle × T_sim + (P_max − P_idle) × T_busy`.
 
 `peakPowerWatts` is a declared nameplate constant, not the parked-tier power or an observed
 time-series maximum. Each tiered VM contributes `max_tier P_max(tier)`, so the fleet value remains
 an upper bound even when a lower-MIPS tier declares a higher maximum power than the default tier.
 
-### 2.4 Audit chain recompute
+### 2.4 Audit recompute
 
-The Python auditor extends the energy conservation block: reconstruct per-tier
-busy time from the manifest's per-Job tier assignments (the JobOutcome carries
-tierMips; the identity of tiers is derivable from the platform's
-frequencyTiers by mips match — tiers are unique by mips), verify per-VM and
-total energy. The carbon models follow with NO additional recompute logic
-(their multipliers operate on the already-verified energy).
+The manifest platform section serializes per-VM `frequencyTiers` as
+`{mips, idlePowerWatts, maxPowerWatts}` triples in declared (descending) order; the key is
+omitted when the table is empty. A tiered VM keeps its flat `idlePowerWatts`/`maxPowerWatts`
+at `0.0`, and tiered platforms count as *powered* both in Java
+(`hasPowerModel() || hasFrequencyTiers()`) and in the Python `powered` predicate.
 
-**As-built (D3, 2026-10-29).** The prerequisite export landed with it: the
-manifest platform section serializes per-VM `frequencyTiers` as
-`{mips, idlePowerWatts, maxPowerWatts}` triples in declared (descending)
-order, the key omitted when the table is empty — v1 manifests stay
-byte-identical (same omit-when-undeclared contract as `carbonWindows`).
-Two consequences pinned by tests:
+The Python auditor groups each Job's `[start, finish)` interval by its `tierMips` (union per
+tier); Jobs without `tierMips`, including the stage-in envelope, run at the default tier. It
+verifies per-VM and total energy under the per-tier law, and recomputes task windows at the
+assigned tier speed (`WorkflowDatacenter.updateTaskExecTime` uses the same rule). When every
+busy second is at the default tier, the per-tier law and the all-at-default formula coincide;
+otherwise the auditor records both values and a `nonDefaultTierBusyObserved` flag in `notes`
+(`dvfs-tier-accounting-observation`) and asserts only the per-tier law.
 
-- A tiered VM keeps its flat `idlePowerWatts`/`maxPowerWatts` at `0.0`
-  (single source of truth, BAT-D1), and tiered platforms count as *powered*
-  on both sides — the Java power gate (`hasPowerModel() || hasFrequencyTiers()`,
-  BAT-D2) and the Python `powered` predicate — so tiered runs can never again
-  present themselves to the auditor as unpowered.
-- The audit recompute confirms the attribution documented in §2.2: per-Job
-  `tierMips` groups the audit's own [start, finish) intervals per tier (union
-  per tier), jobs without a `tierMips` key run at the VM's default (first)
-  tier. This includes the stage-in bookkeeping envelope — the same
-  bookkeeping-counts-as-busy envelope that computed jobs partition, mirrored
-  from the Java per-tier ledger.
+Carbon follows with no additional recompute: intensity grams multiply the per-tier conserved
+energy, and the budget model's fleet power is Σ parked VMs at default-tier idle plus each active
+compute Job at `P_max(its tier) − P_idle(default)`, with flat VMs keeping their `max − idle`
+contribution in a mixed fleet (`CarbonAccounting.budgetModel`). The tiered branch engages only
+when at least one VM declares a table.
 
-Honest boundaries recorded with the batch:
-
-- **Observation, not assertion**: when any busy second lands on a non-default
-  tier, the per-tier law and D1's all-at-default formula differ; when the run
-  is all-at-default (DEFAULT policy or unassigned), the two laws coincide
-  exactly. The auditor records both numbers plus a `nonDefaultTierBusyObserved`
-  flag in `notes` (`dvfs-tier-accounting-observation`) and asserts only the
-  per-tier law — the discriminator pair (a split-tier fixture passing at the
-  per-tier value while an all-at-default forgery is killed) is pinned in the
-  Python self-tests.
-- **Budget carbon under tiers (closed 2026-11-02, A2)**: the Java
-  `CarbonAccounting.budgetModel` now mirrors the Python tiered branch —
-  per-instant fleet power = Σ parked VMs at their default-tier idle + each
-  active compute Job at `(P_max(its tier) − P_idle(default))`, with flat VMs
-  keeping their v1 `max−idle` contribution in a mixed fleet. The tiered branch
-  only engages when at least one VM declares a table, so the v1 budget path
-  stays bit-identical for the frozen carbon benchmark. Cross-language proof:
-  a Java-generated tiered+windows bundle audits clean under
-  `verify-study-evidence.py` (378 checks, 0 issues), and the Java-side
-  expectation is recomputed independently from the documented law in
-  `CarbonAccountingTest`. (D4 follow-up, 2026-10-29 closed the intensity half;
-  A2 closes the budget half.)
-- **Tiered manifests are rerunnable (closed 2026-11-02, A1)**: `ManifestConfigRebuilder`
-  now round-trips `platform.vms[].frequencyTiers` and `configuration.frequencyPolicy`,
-  so tiered and tri-dimensional bundles rebuild to the same platform and rerun
-  `IDENTICAL_CORE`; a malformed recorded table (non-descending mips, or flat power
-  fields alongside a table) is still refused loudly as `RECONSTRUCTION_REJECTED`.
-  The historical failure forms below are retained as the record of the V4 round
-  (2026-10-29, adversarial) that motivated the rebuild:
-  a tiered bundle *without* carbon degrades to an unpowered v1 replay whose
-  diff goes red on the evidence face (`/platform/vms/N/frequencyTiers`,
-  per-job `tierMips`, and `/energyMetrics` are not whitelisted);
-  a *tri-dimensional* bundle (the frozen `benchmark-standard-dvfs-v1` shape,
-  whose per-VM carbon intensities survive the rebuild) cannot even start —
-  the run-phase half-declaration law rejects the rebuilt platform, and
-  `RerunDiffExecutor` maps that rejection to `RECONSTRUCTION_REJECTED`
-  (report files written, exit 4) instead of crashing out as a usage-class
-  exit with no report (BAT-V4.1 fix; contract text in
-  `docs/experiments/RERUN_DIFF_CONTRACT.md`). v1 tierless evidence keeps
-  the `IDENTICAL_CORE` identity: the manifest now emits the
-  `configuration.frequencyPolicy` key only when the policy is live (tiered
-  platform or non-DEFAULT declaration), restoring the pre-D4 key-absent
-  shape for tierless runs whose unconditional emission had fabricated a
-  core divergence against every frozen v1 bundle (BAT-V4.2 fix).
+`ManifestConfigRebuilder` round-trips `platform.vms[].frequencyTiers` and
+`configuration.frequencyPolicy`, so tiered bundles rebuild to the recorded platform and rerun
+`IDENTICAL_CORE`; a malformed recorded table (non-descending mips, flat power alongside a
+table, missing `mips`, unknown policy) is `RECONSTRUCTION_REJECTED`. `configuration.frequencyPolicy`
+is written only when the platform declares tiers or the policy is not `DEFAULT`.
 
 ### 2.5 Workbench JSON surface
 
@@ -273,6 +210,13 @@ Validation: mips strictly descending; power pairs valid; when frequencyTiers
 declared, the plain idlePowerWatts/maxPowerWatts fields MUST NOT also be
 declared (the first tier REPLACES them — one source of truth).
 
+`frequencyTiers` is one uniform table applied to every VM; each entry is validated by
+`PlatformProfile.FrequencyTier` and the order by `VmSpec`. A declared but empty array is
+rejected; `null` and absence mean no tiers. `frequencyPolicy` resolves to
+`SimulationConfig.FrequencyPolicy` (absent means `DEFAULT`; unknown labels are rejected), and a
+non-`DEFAULT` policy without tiers is rejected, mirroring the runner. `carbonWindows` are outside
+the Workbench surface.
+
 ### 2.6 Registry declaration surface
 
 ```java
@@ -284,135 +228,27 @@ Implication lattice: frequencyTiersRequired ⇒ dvfsAware (same as the energy
 and carbon lattices). Registry gate: a frequencyTiersRequired declaration
 on a platform with no declared frequencyTiers → fail-fast citing the clause.
 
-**As-built (D4, 2026-10-29).** Both §2.5/§2.6 surfaces landed as this section
-specifies, with the following pins and one forward contract closed:
+`frequencyTiersRequired` pulls `dvfsAware` up in the builder, as `powerModelRequired` pulls
+`energyAware`. The registry track's power fact uses the same powered predicate (flat fields or a
+tier table). The test-registry demonstrator `EDP_GREEDY` declares
+`dvfsAware + frequencyTiersRequired + powerModelRequired` and assigns long Jobs to the last tier
+and short Jobs to the default tier on FCFS placement; it is a demonstrator, not an optimizer.
 
-- **Workbench platform surface**: `frequencyTiers` is one uniform table applied
-  to every VM (`vmMips`-style uniformity, "at most one declaration per config"
-  enforced by the strict single-key reader); absent = v1 single-tier platform.
-  Domain validation is REUSED, not duplicated: each entry constructs a
-  `PlatformProfile.FrequencyTier` (mips>0 finite, idle≥0, max≥idle) and the
-  strict-descending order is rejected by the `VmSpec` BAT-D1 constructor —
-  the workbench surfaces the same contracts, it does not re-implement them.
-  A declared-but-empty tier array is rejected (mirroring the Python BAT-D3
-  "non-empty when declared" face; `null` JSON and absence are the v1 spelling).
-  The one-source-of-truth rejection (tiers + flat power) and the
-  policy-without-tiers rejection both cite both field faces up front.
-  `frequencyPolicy` resolves to the `SimulationConfig.FrequencyPolicy` enum
-  (DEFAULT absent-default; unknown labels rejected with the legal set) and
-  flows to every candidate's SimulationConfig; the non-DEFAULT-requires-tiers
-  rule is the read-time mirror of the runner's BAT-D2 gate.
-- **Registry surface**: builder implication lattice
-  (`frequencyTiersRequired ⇒ dvfsAware`, setter pulls the aware flag up like
-  `powerModelRequired ⇒ energyAware`), registry validate clause citing the
-  clause + platform field, `ValidationInput` 7-arg master carrying
-  `platformFrequencyTiersDeclared` with the 6-arg/5-arg legacy delegates
-  preserved (tiers default false), and `SimulationRunner` passing
-  `anyVmHasFrequencyTiers(platform)` on the registry track.
-- **Intensity carbon ride-through closed (the forward gap inverted)**: the
-  D3 as-built recorded that a tiered platform "cannot yet reach a real
-  `carbonMetrics` bundle" because both Java carbon models required flat
-  power fields. `CarbonAccounting.intensityModel` now multiplies the frozen
-  per-VM conserved energy (`EnergyAccounting` output — flat law for flat
-  platforms, per-tier law for tiered ones) exactly as the Python auditor
-  does (`grams = audited E / 3.6e6 × I`); a tiered profile counts as
-  powered. Flat-platform results are bit-identical to the previous inline
-  formula (same expression, same summation order — pinned by the existing
-  unit-law test); the tiered branch is pinned by a §2.3-law red→green test.
-- **Superseded by A1 (2026-11-02)**: the following D4 statement is retained only as
-  history. At that time `ManifestConfigRebuilder` did not restore `frequencyTiers`
-  or `frequencyPolicy`, so tiered manifests could not rerun. A1 subsequently closed
-  that boundary: both fields now round-trip, tiered and tri-dimensional bundles rerun
-  `IDENTICAL_CORE`, and malformed recorded tables fail as `RECONSTRUCTION_REJECTED`.
-  The registered DVFS-aware demonstrator and the first DVFS-vs-DEFAULT comparison
-  belong to D5/D6; `carbonWindows` stay outside the v1 workbench surface.
+The [standard benchmark](<../benchmark/STANDARD_BENCHMARK.md>) DVFS variant is the dimension's
+comparison matrix.
 
-**As-built (D5+D6, 2026-10-29).** Both closing batches landed; the contract sections
-above held, with the following pins, one seam closed, and one honest demonstrator
-ledger:
-
-- **D5 — the frozen tri-dimensional benchmark `benchmark-standard-dvfs-v1`**
-  (index `benchmark-dvfs.json`; see the
-  [benchmark doc](<../benchmark/STANDARD_BENCHMARK.md>) for the full tables and
-  how-to-verify). 90/90 cells completed in ~20 s wall clock (the honest sizing
-  disclosure — the 480-cell full grid would miss the minutes budget — is recorded in
-  the plan JSON and the doc); the Python auditor passed all 90 bundles with zero
-  issues (per-tier conservation law, tier-speed windows, intensity grams riding the
-  per-tier joules). The 5-tier fleet table is frozen in `BenchmarkExecutor.DVFS_TIERS`
-  (turbo 2000 = the declared overvolted state; nominal 1000 = the power-v1 envelope
-  anchor; the deep tiers follow the exact cubic dynamic and the 0.2 W/MIPS leakage
-  idle). Break-even honesty, observed not asserted: MIN_POWER is *worse* in energy on
-  6/30 cells (up to ×1.32, the idle-exposure side) and saves up to −99.3% on the one
-  ≥98%-utilization cell (the slack side); EDP_HEURISTIC places the per-cell energy
-  trade at 25 better / 5 equal / 0 worse, but its *EDP product* loses on 1/30 cells
-  (×1.006) — the greedy's dispatch-local blindness, exactly §3's deliberate omission.
-- **D6 — the scheduling-time per-Job tier API and the EDP_GREEDY demonstrator.** The
-  registry face of §2.2 is realized as
-  `org.workflowsim.scheduling.FrequencyTierSelector`: the active scheduling policy
-  instance elects a per-Job tier at dispatch, the session policy stays the fallback
-  (selector output is validated against the declared table by mips identity; null or
-  undeclared tiers fail fast citing the admission/evidence-chain clauses).
-  `EDP_GREEDY` (experiments test registry, SPI-registered) declares the full
-  implication chain `dvfsAware + frequencyTiersRequired + powerModelRequired` — which
-  surfaced and closed one real seam: the registry track's power fact now follows the
-  energy chain's BAT-D2 "powered" predicate (`flat fields OR a tier table`), so a
-  tiered fleet can no longer be misread as unpowered at the registry gate. The
-  demonstrator's heuristic is the documented length-based tier split (long jobs to the
-  last tier, short jobs to the default tier) on inherited FCFS placement — a
-  demonstrator, not an optimizer: its honest ledger on the 3-tier tri-dimensional
-  fixture trades **energy −32.4% (406,768 J → 274,955 J) for makespan ×3.27
-  (62.71 s → 205.21 s), losing the EDP product ×2.21** — the first DVFS-aware
-  scheduling result, tier mix 3×2000+1×500 against FCFS's all-2000, with the manifest
-  evidence audited clean by the Python auditor inside the integration test.
-- **One Java/Python seam closed under D5/D6 discipline (BAT-D6)**: the task-level
-  model windows were still computed at VM base speed while Jobs execute at assigned
-  tier speed (task windows landing *outside* their job envelope under any tier ≠
-  base). Both sides now use the tier speed —
-  `WorkflowDatacenter.updateTaskExecTime` and the auditor's
-  `effective-task-window`/`cpu-lower-bound` recompute — pinned by a paired Python
-  self-test (the v1-speed forgery next to a slow-tier claim is killed).
-- **Manifest face**: every new manifest serializes `configuration.frequencyPolicy`
-  (following the registered-label pattern); the tier table and per-Job `tierMips`
-  serialize as specified in §2.4. Tiered bundles rerun `IDENTICAL_CORE` after A1;
-  malformed recorded tier tables still fail loudly rather than being silently repaired.
-
-## 3. Honest scoping (v2 deliberate omissions)
+## 3. Deliberate omissions
 
 | Omitted | Reason |
 |---|---|
-| **Dynamic mid-Job frequency switching** | Breaks the one-rectangle-per-Job auditability; the literature's intra-Job P-states are a hardware reality but our evidence-chain discipline can't see mid-Job power transitions — we choose assignment-at-admission |
-| **Heterogeneous per-VM non-uniform voltage tables** | Real per-VM voltages add a dimension without changing the per-Job rectangle; deferred to v3 |
+| **Dynamic mid-Job frequency switching** | Breaks the one-rectangle-per-Job auditability; the literature's intra-Job P-states are a hardware reality but the evidence cannot represent mid-Job power transitions, so a tier is assigned at admission |
+| **Heterogeneous per-VM non-uniform voltage tables** | Real per-VM voltages add a dimension without changing the per-Job rectangle; not modeled |
 | **Multi-core DVFS** | Our SPACE_SHARED discipline is one-Job-per-VM single-PE; multi-core DVFS is a different execution model |
 | **Thermal / green scheduling beyond carbon** | Thermal simulation is a separate physics; carbon IS our environmental dimension |
-| **Reconfiguration cost** (Cotes-Ruiz's transition energy) | An honest v2 simplification — transition energy (\~50μJ level) is 6+ orders of magnitude below the per-Job energy scale and below our simulator's time granularity; documented as excluded with the magnitude justifying it |
+| **Reconfiguration cost** (Cotes-Ruiz's transition energy) | Transition energy (\~50μJ level) is 6+ orders of magnitude below the per-Job energy scale and below our simulator's time granularity; documented as excluded with the magnitude justifying it |
 | **Exact EDP optimization** | The EDP_HEURISTIC policy is per-Job greedy (each Job independently picks its minimum-EDP tier at dispatch); the global-optimal EDP is an NP-hard cross-Job optimization — delegated to registered DVFS-aware algorithms |
 
-## 4. Effort estimate and batch plan
-
-| Batch | Content | Est. |
-|---|---|---|
-| D1 | FrequencyTier value class + VmSpec tier list + PlatformProfile builder surface + tier validation + extended energy conservation law + red→green unit-law tests | 1.5 d |
-| D2 | Per-Job assignment storage (JobOutcome tierMips) + config-level frequencyPolicy + manifest per-Job tier identity + ledger metrics (per-tier busy seconds, per-VM energy at each tier) + conservation identity at multi-tier fixtures | 1 d |
-| D3 | Python auditor: per-tier busy reconstruction + conservation recompute + carbon both models under per-tier fleet + self-tests | 1 d |
-| D4 | Workbench JSON tiers surface + validation + policy selection + registry dvfsAware/frequencyTiersRequired fields + rejection tests | 0.5–1 d |
-| D5 | Frozen DVFS benchmark variant (multi-tier grid under DEFAULT/MIN_POWER/EDP policies) + tar + audit + docs + comparison table honestly framed | 1.5 d |
-| D6 | Registered DVFS-aware demonstrator label (EDP_HEURISTIC through the registry track) + first DVFS vs DEFAULT energy/EDP result + carbon comparison | 1 d |
-
-## 5. Competitive positioning
-
-| Simulator/Extension | DVFS | Energy chain | Carbon chain | Independent audit |
-|---|---|---|---|---|
-| WorkflowSim-DVFS 2017 | 5 governors | per-Job computing + reconfig + network | No | No |
-| CloudSim-DVFS (Guérout) | DVFS into CloudSim | computing only | No | No |
-| DEFT 2025/26 | Joint placement + DVFS | multi-GPU runtimes | No | No |
-| **This platform (v2 target)** | **tier table + admission-assignment + 3 policies** | **per-tier conservation law** | **both models ride the chain** | **Python per-tier recompute** |
-
-No surveyed DVFS extension of ANY workflow simulator carries a conservation-law
-invariant or an independent recompute chain. The v2 target: the first DVFS
-extension where every per-tier joule — and therefore every gram of carbon — is
-independently verifiable by a third party with one Python command.
-
-## 6. R-PAPER-10: DVFS Slack Allocation (2026-11-08)
+## 4. DVFS Slack Allocation
 
 `DVFS_SLACK` adds a planner/scheduler pair on top of the existing tier contract. The planner starts
 from HEFT mapping and accepts a lower tier only when the complete schedule meets the deadline and
