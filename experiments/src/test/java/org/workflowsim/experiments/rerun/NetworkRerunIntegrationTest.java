@@ -279,8 +279,10 @@ class NetworkRerunIntegrationTest {
                         "coreDivergences",
                         "volatileFieldsNoted",
                         "codeIdentityNote",
-                        "originalSourceTreeSha256",
-                        "rerunSourceTreeSha256",
+                        "originalGitCommit",
+                        "rerunGitCommit",
+                        "originalGitDirty",
+                        "rerunGitDirty",
                         "originalAlgorithmContract",
                         "rerunAlgorithmContract")),
                 JsonParser.parseString(report.toJson()).getAsJsonObject().keySet());

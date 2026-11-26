@@ -74,7 +74,7 @@ class ManifestGuidedRerunStudyTest {
     void rootRuntimeAndProvenanceChangesAreVolatileButV3SidecarsRemainCore() {
         JsonObject testCase = assertCase("volatile-v3-manifest-metadata", RerunVerdict.IDENTICAL_CORE);
         assertPointer(testCase.getAsJsonArray("volatileFieldsNoted"), "/runtime/osName");
-        assertPointer(testCase.getAsJsonArray("volatileFieldsNoted"), "/provenance/core/codeSource");
+        assertPointer(testCase.getAsJsonArray("volatileFieldsNoted"), "/provenance/execution/gitCommit");
         assertEquals(0, testCase.getAsJsonArray("coreDivergences").size());
         assertTrue(testCase.get("applicableScope").getAsString().contains("FILE_STORAGE_LIFECYCLE_V3"));
     }

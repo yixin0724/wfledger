@@ -116,8 +116,10 @@ public final class EvidenceCoreDiffer {
         return new DiffResult(
                 deduplicate(core),
                 volatileNoted,
-                sourceTreeSha256(original.getManifest()),
-                sourceTreeSha256(rerun.getManifest()),
+                gitCommit(original.getManifest()),
+                gitCommit(rerun.getManifest()),
+                gitDirty(original.getManifest()),
+                gitDirty(rerun.getManifest()),
                 algorithmContract(original.getManifest()),
                 algorithmContract(rerun.getManifest()));
     }
@@ -315,15 +317,27 @@ public final class EvidenceCoreDiffer {
         return false;
     }
 
-    public static String sourceTreeSha256(JsonObject manifest) {
+    /** Returns {@code provenance.execution.gitCommit}, or {@code null} when absent (including provenance v3). */
+    public static String gitCommit(JsonObject manifest) {
+        JsonElement value = executionField(manifest, "gitCommit");
+        return value == null || value.isJsonNull() ? null : value.getAsString();
+    }
+
+    /** Returns {@code provenance.execution.gitDirty}, or {@code null} when absent or unknown. */
+    public static Boolean gitDirty(JsonObject manifest) {
+        JsonElement value = executionField(manifest, "gitDirty");
+        return value == null || value.isJsonNull() ? null : Boolean.valueOf(value.getAsBoolean());
+    }
+
+    private static JsonElement executionField(JsonObject manifest, String field) {
         JsonElement value = manifest;
-        for (String key : Arrays.asList("provenance", "core", "sourceTreeSha256")) {
+        for (String key : Arrays.asList("provenance", "execution", field)) {
             if (!(value instanceof JsonObject) || !((JsonObject) value).has(key)) {
                 return null;
             }
             value = ((JsonObject) value).get(key);
         }
-        return value == null || value.isJsonNull() ? null : value.getAsString();
+        return value;
     }
 
     public static String algorithmContract(JsonObject manifest) {
@@ -401,22 +415,28 @@ public final class EvidenceCoreDiffer {
 
         private final List<Divergence> coreDivergences;
         private final List<Divergence> volatileNoted;
-        private final String originalSourceTreeSha256;
-        private final String rerunSourceTreeSha256;
+        private final String originalGitCommit;
+        private final String rerunGitCommit;
+        private final Boolean originalGitDirty;
+        private final Boolean rerunGitDirty;
         private final String originalAlgorithmContract;
         private final String rerunAlgorithmContract;
 
         DiffResult(
                 List<Divergence> coreDivergences,
                 List<Divergence> volatileNoted,
-                String originalSourceTreeSha256,
-                String rerunSourceTreeSha256,
+                String originalGitCommit,
+                String rerunGitCommit,
+                Boolean originalGitDirty,
+                Boolean rerunGitDirty,
                 String originalAlgorithmContract,
                 String rerunAlgorithmContract) {
             this.coreDivergences = Collections.unmodifiableList(new ArrayList<Divergence>(coreDivergences));
             this.volatileNoted = Collections.unmodifiableList(new ArrayList<Divergence>(volatileNoted));
-            this.originalSourceTreeSha256 = originalSourceTreeSha256;
-            this.rerunSourceTreeSha256 = rerunSourceTreeSha256;
+            this.originalGitCommit = originalGitCommit;
+            this.rerunGitCommit = rerunGitCommit;
+            this.originalGitDirty = originalGitDirty;
+            this.rerunGitDirty = rerunGitDirty;
             this.originalAlgorithmContract = originalAlgorithmContract;
             this.rerunAlgorithmContract = rerunAlgorithmContract;
         }
@@ -433,16 +453,25 @@ public final class EvidenceCoreDiffer {
             return volatileNoted;
         }
 
-        public String getOriginalSourceTreeSha256() {
-            return originalSourceTreeSha256;
+        public String getOriginalGitCommit() {
+            return originalGitCommit;
         }
 
-        public String getRerunSourceTreeSha256() {
-            return rerunSourceTreeSha256;
+        public String getRerunGitCommit() {
+            return rerunGitCommit;
         }
 
+        public Boolean getOriginalGitDirty() {
+            return originalGitDirty;
+        }
+
+        public Boolean getRerunGitDirty() {
+            return rerunGitDirty;
+        }
+
+        /** True when both sides record the same known Git commit; dirtiness is reported separately. */
         public boolean isCodeIdentityMatching() {
-            return originalSourceTreeSha256 != null && originalSourceTreeSha256.equals(rerunSourceTreeSha256);
+            return originalGitCommit != null && originalGitCommit.equals(rerunGitCommit);
         }
 
         public String getOriginalAlgorithmContract() {

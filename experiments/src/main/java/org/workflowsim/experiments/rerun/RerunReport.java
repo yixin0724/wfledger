@@ -26,8 +26,10 @@ public final class RerunReport {
     private final List<DivergenceEntry> coreDivergences;
     private final List<DivergenceEntry> volatileFieldsNoted;
     private final String codeIdentityNote;
-    private final String originalSourceTreeSha256;
-    private final String rerunSourceTreeSha256;
+    private final String originalGitCommit;
+    private final String rerunGitCommit;
+    private final Boolean originalGitDirty;
+    private final Boolean rerunGitDirty;
     private final String originalAlgorithmContract;
     private final String rerunAlgorithmContract;
 
@@ -44,8 +46,10 @@ public final class RerunReport {
         this.coreDivergences = immutable(builder.coreDivergences);
         this.volatileFieldsNoted = immutable(builder.volatileFieldsNoted);
         this.codeIdentityNote = builder.codeIdentityNote;
-        this.originalSourceTreeSha256 = builder.originalSourceTreeSha256;
-        this.rerunSourceTreeSha256 = builder.rerunSourceTreeSha256;
+        this.originalGitCommit = builder.originalGitCommit;
+        this.rerunGitCommit = builder.rerunGitCommit;
+        this.originalGitDirty = builder.originalGitDirty;
+        this.rerunGitDirty = builder.rerunGitDirty;
         this.originalAlgorithmContract = builder.originalAlgorithmContract;
         this.rerunAlgorithmContract = builder.rerunAlgorithmContract;
         this.networkEvidenceCoverageNote = builder.networkEvidenceCoverageNote;
@@ -91,12 +95,20 @@ public final class RerunReport {
         return codeIdentityNote;
     }
 
-    public String getOriginalSourceTreeSha256() {
-        return originalSourceTreeSha256;
+    public String getOriginalGitCommit() {
+        return originalGitCommit;
     }
 
-    public String getRerunSourceTreeSha256() {
-        return rerunSourceTreeSha256;
+    public String getRerunGitCommit() {
+        return rerunGitCommit;
+    }
+
+    public Boolean getOriginalGitDirty() {
+        return originalGitDirty;
+    }
+
+    public Boolean getRerunGitDirty() {
+        return rerunGitDirty;
     }
 
     public String getOriginalAlgorithmContract() {
@@ -140,15 +152,19 @@ public final class RerunReport {
         }
         md.append("## Code Identity\n\n");
         if (codeIdentityNote == null) {
-            md.append("(source-tree hashes are unavailable on both sides; comparison not possible)\n\n");
+            md.append("(no code identity was compared)\n\n");
         } else {
             md.append(codeIdentityNote).append("\n\n");
-            md.append("- Original sourceTreeSha256: `")
-                    .append(originalSourceTreeSha256)
-                    .append("`\n");
-            md.append("- Current sourceTreeSha256: `")
-                    .append(rerunSourceTreeSha256)
-                    .append("`\n\n");
+            md.append("- Original gitCommit: `")
+                    .append(originalGitCommit)
+                    .append("` (gitDirty: `")
+                    .append(originalGitDirty)
+                    .append("`)\n");
+            md.append("- Current gitCommit: `")
+                    .append(rerunGitCommit)
+                    .append("` (gitDirty: `")
+                    .append(rerunGitDirty)
+                    .append("`)\n\n");
         }
         if (originalAlgorithmContract != null || rerunAlgorithmContract != null) {
             boolean same =
@@ -307,8 +323,10 @@ public final class RerunReport {
         private List<DivergenceEntry> coreDivergences;
         private List<DivergenceEntry> volatileFieldsNoted;
         private String codeIdentityNote;
-        private String originalSourceTreeSha256;
-        private String rerunSourceTreeSha256;
+        private String originalGitCommit;
+        private String rerunGitCommit;
+        private Boolean originalGitDirty;
+        private Boolean rerunGitDirty;
         private String originalAlgorithmContract;
         private String rerunAlgorithmContract;
         private String networkEvidenceCoverageNote;
@@ -342,8 +360,10 @@ public final class RerunReport {
         Builder divergences(EvidenceCoreDiffer.DiffResult diff) {
             this.coreDivergences = entriesOf(diff.getCoreDivergences());
             this.volatileFieldsNoted = entriesOf(diff.getVolatileNoted());
-            this.originalSourceTreeSha256 = diff.getOriginalSourceTreeSha256();
-            this.rerunSourceTreeSha256 = diff.getRerunSourceTreeSha256();
+            this.originalGitCommit = diff.getOriginalGitCommit();
+            this.rerunGitCommit = diff.getRerunGitCommit();
+            this.originalGitDirty = diff.getOriginalGitDirty();
+            this.rerunGitDirty = diff.getRerunGitDirty();
             this.originalAlgorithmContract = diff.getOriginalAlgorithmContract();
             this.rerunAlgorithmContract = diff.getRerunAlgorithmContract();
             return this;
@@ -366,8 +386,9 @@ public final class RerunReport {
             return this;
         }
 
-        Builder originalIdentity(String sourceTreeSha256, String algorithmContract) {
-            this.originalSourceTreeSha256 = sourceTreeSha256;
+        Builder originalIdentity(String gitCommit, Boolean gitDirty, String algorithmContract) {
+            this.originalGitCommit = gitCommit;
+            this.originalGitDirty = gitDirty;
             this.originalAlgorithmContract = algorithmContract;
             return this;
         }

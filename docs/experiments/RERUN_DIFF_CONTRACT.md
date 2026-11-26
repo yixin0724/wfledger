@@ -112,7 +112,7 @@ The reader may accept an original bundle not named `result`, but the new rerun a
 
 ### Identity Information Reported Separately
 
-The report retains both sides' code identity (Git commit) and `algorithmContract`. When the code identities are known to differ, a notice flags the change, but this does not substitute for the input/configuration/result comparison. An identical core only says that this piece of evidence is consistent within the scope of this comparison; it does not prove that other inputs, platforms, or future versions agree as well, and consistency must not be presumed when identity is unavailable.
+The report retains both sides' code identity (`originalGitCommit`/`rerunGitCommit` and `originalGitDirty`/`rerunGitDirty`, read from `provenance.execution`) and `algorithmContract`. `codeIdentityNote` states that the versions match only when both commits are known, equal, and both working trees are clean; it flags a differing commit, a dirty or unknown working tree, and a side without a recorded commit (such as historical provenance v3, whose source-tree fingerprints are not compared across versions). These fields lie under the root `/provenance` exemption, so their diffs are noted, never core. When the code identities are known to differ, a notice flags the change, but this does not substitute for the input/configuration/result comparison. An identical core only says that this piece of evidence is consistent within the scope of this comparison; it does not prove that other inputs, platforms, or future versions agree as well, and consistency must not be presumed when identity is unavailable.
 
 ## Report and Exit Codes
 

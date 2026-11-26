@@ -69,7 +69,7 @@ public final class RerunDiffExecutor {
                     .divergences(diff)
                     .networkEvidenceCoverage(
                             evidence.getNetworkCaptureStatus(), rerunEvidence.getNetworkCaptureStatus())
-                    .codeIdentityNote(identityNote(diff.getOriginalSourceTreeSha256(), diff.getRerunSourceTreeSha256()))
+                    .codeIdentityNote(identityNote(diff))
                     .build();
         } catch (RerunFailureException e) {
             report = failureReport(builder, evidence, e.getVerdict(), e.getMessage(), e.getDetails());
@@ -107,21 +107,30 @@ public final class RerunDiffExecutor {
             List<String> details) {
         if (evidence != null) {
             builder.originalIdentity(
-                    EvidenceCoreDiffer.sourceTreeSha256(evidence.getManifest()),
+                    EvidenceCoreDiffer.gitCommit(evidence.getManifest()),
+                    EvidenceCoreDiffer.gitDirty(evidence.getManifest()),
                     EvidenceCoreDiffer.algorithmContract(evidence.getManifest()));
         }
         return builder.verdict(verdict).failure(reason, details).build();
     }
 
-    private static String identityNote(String original, String rerun) {
+    static String identityNote(EvidenceCoreDiffer.DiffResult diff) {
+        String original = diff.getOriginalGitCommit();
+        String rerun = diff.getRerunGitCommit();
         if (original == null || rerun == null) {
-            return null;
+            return "Code identity unknown: " + (original == null ? "the original run" : "the current run")
+                    + " records no gitCommit, so code-version agreement cannot be established.";
         }
-        if (original.equals(rerun)) {
-            return "Code version matches the original run (identical sourceTreeSha256).";
+        if (!original.equals(rerun)) {
+            return "⚠ Code version differs from the original run: if core quantities diverge, inspect code"
+                    + " changes first; if they agree, the evidence is robust to that code evolution.";
         }
-        return "⚠ Code version differs from the original run: if core quantities diverge, inspect code"
-                + " changes first; if they agree, the evidence is robust to that code evolution.";
+        if (Boolean.FALSE.equals(diff.getOriginalGitDirty()) && Boolean.FALSE.equals(diff.getRerunGitDirty())) {
+            return "Code version matches the original run (identical gitCommit, clean working trees).";
+        }
+        return "⚠ Both runs record the same gitCommit, but a working tree was dirty or its state is unknown"
+                + " (original gitDirty=" + diff.getOriginalGitDirty() + ", current gitDirty="
+                + diff.getRerunGitDirty() + "); uncommitted changes may differ.";
     }
 
     private static void requireEmptyOrNonexistent(Path output) throws IOException {

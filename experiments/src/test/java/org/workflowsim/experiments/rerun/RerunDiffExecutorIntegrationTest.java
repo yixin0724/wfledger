@@ -1,7 +1,6 @@
 package org.workflowsim.experiments.rerun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -64,8 +63,7 @@ class RerunDiffExecutorIntegrationTest {
         assertTrue(Files.exists(output.resolve("rerun/result.manifest.json")));
         assertTrue(Files.exists(output.resolve(RerunDiffExecutor.REPORT_JSON_NAME)));
         assertTrue(Files.exists(output.resolve(RerunDiffExecutor.REPORT_MARKDOWN_NAME)));
-        assertNotNull(report.getOriginalSourceTreeSha256());
-        assertEquals(report.getOriginalSourceTreeSha256(), report.getRerunSourceTreeSha256());
+        assertEquals(report.getOriginalGitCommit(), report.getRerunGitCommit());
         assertEquals(2, report.getInputResolution().get(0).getTier());
         assertTrue(report.getInputResolution().get(0).isVerified());
         assertEquals(

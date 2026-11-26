@@ -216,7 +216,7 @@ under the [rerun contract](<../../../docs/experiments/RERUN_DIFF_CONTRACT.md>), 
 |---|---|
 | `genuine-v2-control`, `genuine-v3-control` | `IDENTICAL_CORE` |
 | `relocated-v2-input-path` (byte-identical input under `<study>/inputs/`) | `IDENTICAL_CORE` with three volatile path notes |
-| `volatile-v3-manifest-metadata` (`runtime.osName`, `provenance.core.codeSource`) | `IDENTICAL_CORE` with two volatile notes |
+| `volatile-v3-manifest-metadata` (`runtime.osName`, `provenance.execution.gitCommit`) | `IDENTICAL_CORE` with two volatile notes |
 | `semantic-v2-runtime-scale` (`runtimeScale` 1.0 → 2.0; a 10 s Task goes from 10000 to 20000 MI) | `DIVERGED` at `/result/tasks/0/effectiveExecutionLengthMi` |
 | `evidence-invalid-v2-makespan` (end advanced 0.5 s, stale metric, integrity fields repaired) | `EVIDENCE_INVALID` naming `makespanSeconds` |
 | `input-v2-hash-mismatch` (last byte flipped) | `INPUT_HASH_MISMATCH` |

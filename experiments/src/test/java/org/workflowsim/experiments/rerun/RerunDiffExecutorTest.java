@@ -98,12 +98,11 @@ class RerunDiffExecutorTest {
                 entry.get("recordedPath").getAsString(),
                 entry.get("resolvedPath").getAsString());
 
-        String originalHash = json.get("originalSourceTreeSha256").getAsString();
-        String rerunHash = json.get("rerunSourceTreeSha256").getAsString();
-        assertFalse(originalHash.isEmpty());
-        assertEquals(originalHash, rerunHash);
-        assertTrue(json.get("codeIdentityNote").getAsString().contains("matches the original run"));
-        assertEquals(originalHash, report.getOriginalSourceTreeSha256());
+        assertTrue(json.has("originalGitCommit") && json.has("rerunGitCommit"));
+        assertTrue(json.has("originalGitDirty") && json.has("rerunGitDirty"));
+        assertFalse(json.has("originalSourceTreeSha256"));
+        assertEquals(report.getOriginalGitCommit(), report.getRerunGitCommit());
+        assertNotNull(json.get("codeIdentityNote").getAsString());
         assertTrue(report.getInputResolution().get(0).isVerified());
 
         String md = read(mdPath);
@@ -222,8 +221,8 @@ class RerunDiffExecutorTest {
         assertTrue(report.getFailureReason().contains("NOT_AN_ALGORITHM"));
         assertFalse(Files.exists(tempDir.resolve("bad-enum-out/rerun")));
 
-        assertNotNull(report.getOriginalSourceTreeSha256());
-        assertNull(report.getRerunSourceTreeSha256());
+        assertEquals(EvidenceCoreDiffer.gitCommit(readManifest(run)), report.getOriginalGitCommit());
+        assertNull(report.getRerunGitCommit());
         assertNull(report.getCodeIdentityNote());
         assertTrue(report.getInputResolution().isEmpty());
     }

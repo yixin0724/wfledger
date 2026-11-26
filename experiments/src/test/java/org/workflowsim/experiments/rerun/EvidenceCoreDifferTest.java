@@ -2,6 +2,7 @@ package org.workflowsim.experiments.rerun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -22,6 +23,9 @@ import com.google.gson.JsonParser;
 
 class EvidenceCoreDifferTest {
 
+    private static final String COMMIT_A = "0123456789abcdef0123456789abcdef01234567";
+    private static final String COMMIT_B = "89abcdef0123456789abcdef0123456789abcdef";
+
     private static Path fixtureRun;
 
     @TempDir
@@ -35,15 +39,65 @@ class EvidenceCoreDifferTest {
 
     @Test
     void identicalEvidenceReportsNoCoreDivergence() throws Exception {
-        RerunEvidence first = RerunEvidenceReader.read(fixtureRun);
-        RerunEvidence second = RerunEvidenceReader.read(fixtureRun);
+        RerunEvidence first = withGitIdentity(COMMIT_A, Boolean.FALSE);
+        RerunEvidence second = withGitIdentity(COMMIT_A, Boolean.FALSE);
 
         DiffResult result = EvidenceCoreDiffer.compare(first, second);
         assertTrue(result.isIdenticalCore());
         assertTrue(result.getCoreDivergences().isEmpty());
         assertTrue(result.getVolatileNoted().isEmpty());
         assertTrue(result.isCodeIdentityMatching());
+        assertEquals(COMMIT_A, result.getOriginalGitCommit());
+        assertEquals(Boolean.FALSE, result.getRerunGitDirty());
         assertEquals(result.getOriginalAlgorithmContract(), result.getRerunAlgorithmContract());
+    }
+
+    @Test
+    void gitIdentityIsReportedButNeverACoreDivergence() throws Exception {
+        DiffResult differentCommit =
+                EvidenceCoreDiffer.compare(withGitIdentity(COMMIT_A, Boolean.FALSE), withGitIdentity(COMMIT_B, null));
+        assertTrue(
+                differentCommit.isIdenticalCore(),
+                differentCommit.getCoreDivergences().toString());
+        assertFalse(differentCommit.isCodeIdentityMatching());
+        List<String> noted = pointersOf(differentCommit.getVolatileNoted());
+        assertTrue(noted.contains("/provenance/execution/gitCommit"), noted.toString());
+        assertTrue(noted.contains("/provenance/execution/gitDirty"), noted.toString());
+        assertTrue(RerunDiffExecutor.identityNote(differentCommit).contains("differs"));
+
+        DiffResult dirty =
+                EvidenceCoreDiffer.compare(withGitIdentity(COMMIT_A, Boolean.TRUE), withGitIdentity(COMMIT_A, false));
+        assertTrue(dirty.isCodeIdentityMatching());
+        assertTrue(RerunDiffExecutor.identityNote(dirty).contains("dirty"), RerunDiffExecutor.identityNote(dirty));
+
+        DiffResult clean =
+                EvidenceCoreDiffer.compare(withGitIdentity(COMMIT_A, false), withGitIdentity(COMMIT_A, false));
+        assertTrue(RerunDiffExecutor.identityNote(clean).contains("matches the original run"));
+
+        DiffResult unknown = EvidenceCoreDiffer.compare(withGitIdentity(null, null), withGitIdentity(COMMIT_A, false));
+        assertFalse(unknown.isCodeIdentityMatching());
+        assertNull(unknown.getOriginalGitCommit());
+        assertTrue(RerunDiffExecutor.identityNote(unknown).contains("unknown"));
+    }
+
+    @Test
+    void historicalProvenanceV3CodeHashesStayExemptAndYieldNoGitIdentity() throws Exception {
+        JsonObject historical = readManifest(fixtureRun);
+        JsonObject provenance = historical.getAsJsonObject("provenance");
+        provenance.addProperty("schema", "workflowsim-provenance-v3");
+        provenance.getAsJsonObject("core").addProperty("sourceTreeSha256", "aaaa");
+        provenance.getAsJsonObject("execution").remove("gitCommit");
+        provenance.getAsJsonObject("execution").remove("gitDirty");
+        provenance.getAsJsonObject("execution").addProperty("javaClassPathSha256", "bbbb");
+
+        DiffResult result =
+                EvidenceCoreDiffer.compare(inMemoryManifest(fixtureRun, historical), withGitIdentity(COMMIT_A, false));
+        assertTrue(result.isIdenticalCore(), result.getCoreDivergences().toString());
+        List<String> noted = pointersOf(result.getVolatileNoted());
+        assertTrue(noted.contains("/provenance/core/sourceTreeSha256"), noted.toString());
+        assertTrue(noted.contains("/provenance/execution/javaClassPathSha256"), noted.toString());
+        assertNull(result.getOriginalGitCommit());
+        assertFalse(result.isCodeIdentityMatching());
     }
 
     @Test
@@ -74,7 +128,7 @@ class EvidenceCoreDifferTest {
     void exemptsVolatileWhitelistFieldsAndNotesThem() throws Exception {
         RerunEvidence clean = RerunEvidenceReader.read(fixtureRun);
         JsonObject manifest = readManifest(fixtureRun);
-        manifest.getAsJsonObject("provenance").getAsJsonObject("core").addProperty("sourceTreeSha256", "aaaa");
+        manifest.getAsJsonObject("provenance").getAsJsonObject("execution").addProperty("gitCommit", COMMIT_B);
         manifest.getAsJsonObject("provenance")
                 .getAsJsonObject("execution")
                 .addProperty("workingDirectory", "/elsewhere");
@@ -91,7 +145,7 @@ class EvidenceCoreDifferTest {
         DiffResult result = EvidenceCoreDiffer.compare(tampered, clean);
         assertTrue(result.isIdenticalCore(), result.getCoreDivergences().toString());
         List<String> noted = pointersOf(result.getVolatileNoted());
-        assertTrue(noted.contains("/provenance/core/sourceTreeSha256"), noted.toString());
+        assertTrue(noted.contains("/provenance/execution/gitCommit"), noted.toString());
         assertTrue(noted.contains("/runtime/osName"), noted.toString());
         assertTrue(noted.contains("/artifacts/0/sha256"), noted.toString());
         assertTrue(noted.contains("/inputs/0/path"), noted.toString());
@@ -326,6 +380,14 @@ class EvidenceCoreDifferTest {
                 "/configuration/algorithmContract",
                 result.getVolatileNoted().get(0).getPointer());
         assertFalse(result.getOriginalAlgorithmContract().equals(result.getRerunAlgorithmContract()));
+    }
+
+    private static RerunEvidence withGitIdentity(String commit, Boolean dirty) throws Exception {
+        JsonObject manifest = readManifest(fixtureRun);
+        JsonObject execution = manifest.getAsJsonObject("provenance").getAsJsonObject("execution");
+        execution.addProperty("gitCommit", commit);
+        execution.addProperty("gitDirty", dirty);
+        return inMemoryManifest(fixtureRun, manifest);
     }
 
     private static JsonObject readManifest(Path run) throws Exception {

@@ -171,12 +171,11 @@ class NetworkStudyValidatorTest {
     }
 
     @Test
-    void sourceTreeEvolutionAloneDoesNotInvalidateHistoricalIntegrity() throws Exception {
+    void codeVersionEvolutionAloneDoesNotInvalidateHistoricalIntegrity() throws Exception {
         Path root = copySmoke("different-source");
-        mutateFirstManifest(root, manifest -> {
-            manifest.getAsJsonObject("provenance").getAsJsonObject("core").addProperty("sourceTreeSha256", ZERO_SHA);
-            study(manifest).getAsJsonObject("component").addProperty("sourceTreeSha256", ZERO_SHA);
-        });
+        mutateFirstManifest(root, manifest -> manifest.getAsJsonObject("provenance")
+                .getAsJsonObject("execution")
+                .addProperty("gitCommit", ZERO_SHA.substring(0, 40)));
         assertEquals(
                 18,
                 NetworkStudyValidator.validate(root.resolve(NetworkStudyExecutor.INDEX)),

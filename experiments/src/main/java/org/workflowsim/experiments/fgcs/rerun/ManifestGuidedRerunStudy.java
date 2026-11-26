@@ -37,6 +37,7 @@ public final class ManifestGuidedRerunStudy {
     public static final String RESULTS_SCHEMA = "fgcs-manifest-guided-rerun-results-v1";
     public static final String RESULTS_NAME = "results.json";
 
+    private static final String VOLATILE_GIT_COMMIT = "0000000000000000000000000000000000000000";
     private static final String CONTRACT = "docs/experiments/RERUN_DIFF_CONTRACT.md";
     private static final String V2_SCOPE = "manifest v4; one four-task Pegasus DAX; two pinned SPACE_SHARED VMs; "
             + "COHERENT_FILE_DATAFLOW_V2; complete FILE_LIFECYCLE_V2; exact non-exempt JSON core";
@@ -144,8 +145,8 @@ public final class ManifestGuidedRerunStudy {
             volatileMetadata
                     .manifest()
                     .getAsJsonObject("provenance")
-                    .getAsJsonObject("core")
-                    .addProperty("codeSource", "file:/volatile-only/code/");
+                    .getAsJsonObject("execution")
+                    .addProperty("gitCommit", VOLATILE_GIT_COMMIT);
             volatileMetadata.writeManifest();
             cases.add(executeCase(
                     new StudyCase(
@@ -153,7 +154,7 @@ public final class ManifestGuidedRerunStudy {
                             false,
                             "V3",
                             volatileMetadata.directory(),
-                            "Change only runtime.osName and provenance.core.codeSource in the original manifest.",
+                            "Change only runtime.osName and provenance.execution.gitCommit in the original manifest.",
                             "Manifest-only metadata mutation; no referenced artifact or input identity changes.",
                             V3_SCOPE + "; root runtime/provenance volatility only",
                             expect(
@@ -163,7 +164,7 @@ public final class ManifestGuidedRerunStudy {
                                                     + " into sidecar runtime/provenance namespaces, which stay exact"
                                                     + " and exactly compared here.")
                                     .requireInputTier(2)
-                                    .requireVolatilePointers("/runtime/osName", "/provenance/core/codeSource")),
+                                    .requireVolatilePointers("/runtime/osName", "/provenance/execution/gitCommit")),
                     output));
 
             RerunStudyBundle scaled = RerunStudyBundle.copy(v2, evidence.resolve("cases/semantic-runtime-scale"));
@@ -452,8 +453,10 @@ public final class ManifestGuidedRerunStudy {
         value.add("coreDivergences", divergences(report.getCoreDivergences()));
         value.add("volatileFieldsNoted", divergences(report.getVolatileFieldsNoted()));
         value.addProperty("codeIdentityNote", report.getCodeIdentityNote());
-        value.addProperty("originalSourceTreeSha256", report.getOriginalSourceTreeSha256());
-        value.addProperty("rerunSourceTreeSha256", report.getRerunSourceTreeSha256());
+        value.addProperty("originalGitCommit", report.getOriginalGitCommit());
+        value.addProperty("rerunGitCommit", report.getRerunGitCommit());
+        value.addProperty("originalGitDirty", report.getOriginalGitDirty());
+        value.addProperty("rerunGitDirty", report.getRerunGitDirty());
         value.addProperty("originalAlgorithmContract", report.getOriginalAlgorithmContract());
         value.addProperty("rerunAlgorithmContract", report.getRerunAlgorithmContract());
         value.addProperty("networkEvidenceCoverageNote", report.getNetworkEvidenceCoverageNote());
