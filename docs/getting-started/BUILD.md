@@ -85,7 +85,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-mutation-gate.py
 
 Exit codes: 0, all mutants killed; 1, survivors or a build failure; 2, anchor drift (the ledger must be fixed first). Dry-run mode and the self-test do not invoke Maven.
 
-CI runs both registered families on every push and pull request as a dedicated `mutation-gate` job (experiments scope added in B4); the clean checkout satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run rule, and both JSON reports are uploaded as artifacts. Local runs remain the entry point for ledger work and the `--dry-run` anchor preflight.
+CI runs both registered families on every push and pull request as a dedicated `mutation-gate` job; the clean checkout satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run rule, and both JSON reports are uploaded as artifacts. Local runs remain the entry point for ledger work and the `--dry-run` anchor preflight.
 
 After any real mutation run, perform **final clean verification after mutation** before quoting test counts or publishing reports. A mutant's failing tests overwrite Surefire/Failsafe XML even though the source is restored byte-for-byte. `make audit` refreshes those reports on the restored tree; `make quality-gate` additionally repeats the independent Python, documentation, language, and dataset checks.
 
