@@ -16,8 +16,8 @@ mvn -pl :workflowsim-workbench -am compile exec:java \
 ```
 
 Every experiment uses a dedicated output directory, and the console prints the offline
-report location. The [experiment index](<../docs/experiments/README.md>) links the maintained
-makespan and energy reports, result artifacts, and reproduction commands. For a first run, see the [Quick start](<../docs/getting-started/QUICK_START.md>);
+report location. The [experiment index](<../docs/experiments/README.md>) lists the baseline studies,
+verification, and rerun contracts. For a first run, see the [Quick start](<../docs/getting-started/QUICK_START.md>);
 configuration, preflight, report regeneration, and failure handling are covered in the
 [Workbench guide](<../docs/getting-started/WORKBENCH.md>).
 
@@ -37,7 +37,7 @@ described in the [Java API guide](<../docs/getting-started/CODE_CONFIG_EXPERIMEN
 
 ## Research and verification
 
-A new study first declares input hashes, platform and model, same-decision-layer
+A new study first declares input identities, platform and model, same-decision-layer
 comparison algorithms, randomization design, metrics, statistical methods, stopping
 conditions, and an output retention policy; see the
 [study directory conventions](<studies/README.md>). The current

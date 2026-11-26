@@ -20,7 +20,7 @@ execution sequencing, and metric conventions are specified in the
 
 | Question to answer | Decision layer | Output and boundary |
 | --- | --- | --- |
-| Which idle VM receives the currently ready Job | ordinary online scheduling | dispatches only to idle VMs; `READY_BATCH_MINMIN/MAXMIN/MCT` plan against machine ready times and bind late (FGCS-R6), the other labels ignore future machine availability |
+| Which idle VM receives the currently ready Job | ordinary online scheduling | dispatches only to idle VMs; `READY_BATCH_MINMIN/MAXMIN/MCT` plan against machine ready times and bind late, the other labels ignore future machine availability |
 | How an external policy controls the same ready domain | RL environment | Job→VM list-index actions; the platform trains no policy |
 | How dependency-free tasks share the compute load | static independent-task mapping | Task→VM; any dependency edge is rejected |
 | A DAG baseline that only needs a precomputed mapping | RANDOM / PSO | Task→VM, without a full per-VM order |
@@ -35,7 +35,7 @@ The table below is the complete set of labels accepted at the standard entry poi
 | Label | Actual decision |
 | --- | --- |
 | `FCFS` | strict ready-arrival FIFO; picks the idle compatible VM with the smallest VM ID |
-| `READY_BATCH_MINMIN` | Braun et al. (2001) Min-Min with machine ready times (FGCS-R6): `CT = r_v + envelope` over all compatible VMs (`r_v` = 0 if idle, else the running attempt's no-failure remaining time); the smallest per-Job minimum is assigned and `r_v := CT`; late binding dispatches only the first planned Job of each idle VM; not work-conserving |
+| `READY_BATCH_MINMIN` | Braun et al. (2001) Min-Min with machine ready times: `CT = r_v + envelope` over all compatible VMs (`r_v` = 0 if idle, else the running attempt's no-failure remaining time); the smallest per-Job minimum is assigned and `r_v := CT`; late binding dispatches only the first planned Job of each idle VM; not work-conserving |
 | `READY_BATCH_MAXMIN` | as above, but the largest of the per-Job minimum completion times is assigned (Braun et al. 2001 Max-Min) |
 | `READY_BATCH_MCT` | Maheswaran et al. (1999) immediate-mode MCT: Jobs in queue order each go to their minimum `r_v + envelope` VM with `r_v` updated; the same late binding as Min-Min |
 | `READY_BATCH_ROUNDROBIN` | a persistent cursor ordered by VM ID rotates, skipping busy or incompatible VMs |
@@ -47,11 +47,11 @@ The table below is the complete set of labels accepted at the standard entry poi
 | `CRCH` | synchronized checkpoints charged on every attempt; VM-local saved work; earliest-checkpointed-finish placement |
 | `DATA` | chooses the idle compatible VM with the fewest non-local real input bytes; requires LOCAL |
 | `STATIC` | executes an existing mapping/binding; with a full static plan it additionally enforces the per-VM order — it is not an independent optimization algorithm |
-| `CARBON_WINDOW_DEFER` | defers the whole ready batch to the next declared carbon window whose green power is strictly higher (each Job at most once — a per-Job bound, so a later ready wave may hop once more), then dispatches FCFS to the smallest idle compatible VM; needs `carbonWindows`; a windowless platform is rejected rather than silently degraded (C1, 2026-11-02) |
+| `CARBON_WINDOW_DEFER` | defers the whole ready batch to the next declared carbon window whose green power is strictly higher (each Job at most once — a per-Job bound, so a later ready wave may hop once more), then dispatches FCFS to the smallest idle compatible VM; needs `carbonWindows`; a windowless platform is rejected rather than silently degraded |
 
 The ready-batch comparison quantity is the envelope time `(length + floor(MIPS * readSeconds)) / MIPS`,
 where `readSeconds` is the SHARED input read the runtime charges inside the envelope and 0 for other
-file systems and pre-execution/coherent models (FGCS-R3, 2026-11-24). It excludes busy VMs, future
+file systems and pre-execution/coherent models. It excludes busy VMs, future
 availability, and contention, so these labels are not Braun et al.'s batch heuristics. For one Job and
 identical candidates the minimum normally selects the maximum MIPS; different labels alone do not
 imply different mappings. `DATA` compares bytes, not transfer seconds.
@@ -60,7 +60,7 @@ The same-named static planning labels compare [TaskExecutionModel](<../../simula
 matrix seconds instead of this raw-length envelope quantity, so a campaign comparison group
 must not place the two cost calibers side by side; [ExperimentPlan](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentPlan.java>)
 rejects the mixed group at construction, and [AlgorithmCatalog](<../../simulator/src/main/java/org/workflowsim/experiment/AlgorithmCatalog.java>)
-owns the classification (AUD-F09).
+owns the classification.
 
 A deferral-aware label is the one exception to "ready Jobs are dispatched immediately":
 `CARBON_WINDOW_DEFER` may leave the whole batch in the ready queue and asks the scheduler to
@@ -160,7 +160,7 @@ provide absolute-start dispatch through the deferral-aware scheduler. `planExact
 provides a small-instance exact DP. See [paper algorithm reproductions](<../experiments/PAPER_REPRODUCTIONS.md>)
 for the official artifact, verified example, and current adaptation boundaries.
 
-## Registered external algorithms (extension surface, 2026-10-26)
+## Registered external algorithms (extension surface)
 
 The standard runner additionally accepts algorithms provided by third-party code through the
 Java ServiceLoader SPI, with **zero modifications to the repository's core tree**:
@@ -188,13 +188,11 @@ Scope and boundaries:
 
 | Legacy label | Current status and retained behavior | Maintenance entry |
 | --- | --- | --- |
-| `MINMIN` / `MAXMIN` / `MCT` / `ROUNDROBIN` | removed from the scheduling enum on 2026-11-24 together with their historical SPT/LJF/fastest-VM/first-fit-idle bindings; configurations naming them fail at parse time | online: the matching `READY_BATCH_*` label; independent-task mapping: `STATIC_MINMIN` / `STATIC_MAXMIN` / `STATIC_MCT` / `STATIC_ROUND_ROBIN` |
+| `MINMIN` / `MAXMIN` / `MCT` / `ROUNDROBIN` | not in the scheduling enum; configurations naming them fail at parse time | online: the matching `READY_BATCH_*` label; independent-task mapping: `STATIC_MINMIN` / `STATIC_MAXMIN` / `STATIC_MCT` / `STATIC_ROUND_ROBIN` |
 | `HEFT` / `DHEFT` | not in the current planning enum; legacy code does not compile unchanged | choose the SHARED_STORAGE or LOCAL family by model — not an unconditional synonym |
 | `SchedulingAlgorithm.INVALID` | not runnable | choose an explicit online label or a legal STATIC combination |
 
-`SPT`, `LJF`, `FASTEST_VM`, and `FIRST_FIT_IDLE` are not scheduling enum names, and their
-historical implementation classes no longer exist; the pre-removal code (including the
-AUD-F10 explicit alias declaration) is available in git history before 2026-11-24.
+`SPT`, `LJF`, `FASTEST_VM`, and `FIRST_FIT_IDLE` are not scheduling enum names either.
 Migration must declare the decision layer and model; do not relabel old results as
 evidence about another algorithm.
 

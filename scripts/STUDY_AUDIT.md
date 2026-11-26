@@ -45,7 +45,7 @@ Exit codes of the first two tools:
 | 1 | The checks found problems or could not complete the requested coverage; the report keeps the diagnostics |
 | 2 | Usage, output-protection, or report-writing failure |
 
-Check the exit code, `status`, `issueCount`, and the coverage statement together; do not treat "the report file was generated" as success. `--max-issues` defaults to 200 and only caps the saved diagnostic details; it does not reduce the issue count or change the failure status. For the network checker's statuses and the full interpretation of what it captures, see the [shared-core network verification notes](<../docs/advanced/NETWORK_LEDGER_PYTHON.md>).
+Check the exit code, `status`, `issueCount`, and the coverage statement together; do not treat "the report file was generated" as success. `--max-issues` defaults to 200 and only caps the saved diagnostic details; it does not reduce the issue count or change the failure status. For the network checker's statuses and the full interpretation of what it captures, see the [shared-core network verification notes](<../docs/advanced/NETWORK_LEDGER.md#8-python-checker>).
 
 ## Registered Study Identities and Compatibility Modes
 
@@ -57,7 +57,7 @@ The statistics checker supports only explicitly registered `protocol` and `full/
 | Planner comparison | `peft-comparison-r12-v3` | `peft-comparison-r12-v2` (V2 execution), `peft-comparison-r12-v1` |
 | Sensitivity comparison | `sensitivity-response-r13-v3` | `sensitivity-response-r13-v2` (V2 execution), `sensitivity-response-r13-v1` |
 
-These strings are protocol identifiers in the [executable registry](<_study_audit.py>); retained evidence cannot be renamed just to tidy the documentation. The basic evidence checker requires manifest v4; older v4 evidence that lacks the current execution-semantics declaration, or that declares the historical `WORK_CONSERVING_TASK_EXECUTION_V2` (current is V3 since FGCS-R3, 2026-11-24), must also explicitly enable the compatibility mode, and `--historical` does not upgrade v2/v3 manifests into v4.
+These strings are protocol identifiers in the [executable registry](<_study_audit.py>); retained evidence cannot be renamed just to tidy the documentation. The basic evidence checker requires manifest v4; older v4 evidence that lacks the current execution-semantics declaration, or that declares the historical `WORK_CONSERVING_TASK_EXECUTION_V2` (current is V3), must also explicitly enable the compatibility mode, and `--historical` does not upgrade v2/v3 manifests into v4.
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify-study-evidence.py \

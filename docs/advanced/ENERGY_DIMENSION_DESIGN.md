@@ -1,12 +1,11 @@
-# Energy Dimension: Requirements Analysis and Architecture Design (v2)
+# Energy Dimension
 
-This document presents the enriched design for the energy-dimension extension, grounded in
-a primary-source literature survey. It supersedes v1 entirely. **AS BUILT (2026-11-04):** the
-energy model, manifest export, independent Python recomputation, Workbench surface, and frozen
-power benchmark are implemented and audited; this is a current contract with historical design
-rationale, not an unimplemented proposal.
+This document specifies the energy dimension: the linear power model, the energy conservation
+law, the energy metrics, the registry declarations, and the scope. Frequency tiers are specified
+in the [DVFS dimension](<DVFS_DIMENSION_DESIGN.md>) and carbon accounting in the
+[carbon dimension](<CARBON_DIMENSION_DESIGN.md>).
 
-## 1. What the field actually does — survey findings from primary sources
+## 1. Literature survey
 
 ### 1.1 The canonical power model (Beloglazov et al.)
 
@@ -70,7 +69,7 @@ multiplier the researcher controls. Our declared-multipplier design is literatur
 | WRENCH / SimGrid | pstates (per-freq V, f) + link power | Yes | per-host, per-link | No | No |
 | CloudSim 3 | PowerModel hierarchy, avg per Host | No | Datacenter-level | No | No |
 | WorkflowSim-DVFS (2017) | Eq(2) linear, per-frequency | Yes (5 governors) | Per-VM | No | No |
-| **This platform (target)** | Eq(2) linear (Beloglazov anchor) | **v2 reserved** | Per-VM + total + EDP | **Python verifier** | **Declared multiplier** |
+| **This platform** | Eq(2) linear (Beloglazov anchor) | Tier tables | Per-VM + total + EDP | **Python verifier** | **Declared intensity or budget** |
 
 ---
 
@@ -78,13 +77,13 @@ multiplier the researcher controls. Our declared-multipplier design is literatur
 
 ### 2.1 The auditable energy extension
 
-**Data model** (new VmSpec fields)
+**Data model** (`VmSpec` fields)
 ```java
 + double idlePowerWatts;
 + double maxPowerWatts;
 ```
 
-**Energy conservation law** (this platform's unique enforced invariant)
+**Energy conservation law**
 ```
 E_vm = P_idle × T_idle + P_max × T_active
 E_total = Σ E_vm = Σ P_idle × T_sim + (P_max − P_idle) × T_active
@@ -93,11 +92,8 @@ where `T_sim` = `makespanSeconds` and `T_active` per VM is already `vmIntervals`
 the metrics — all existing fields. The Python verifier recomputes this identity from the
 manifest's own data.
 
-**Metrics** (as built, BAT-R6 note 2026-10-27: the four energy values ship as the
-manifest `energyMetrics` section, computed by the standalone `EnergyAccounting`
-class — `SimulationMetrics` and its constructor are deliberately untouched;
-this deviates from the original plan line "new SimulationMetrics fields",
-recorded here per the doc-follows-behavior discipline)
+**Metrics** (the manifest `energyMetrics` section, computed by `EnergyAccounting`, not by
+`SimulationMetrics`)
 | Metric | Formula |
 |---|---|
 | `totalEnergyJoules` | conservation-law result |
@@ -117,8 +113,8 @@ AlgorithmDeclaration:
 ```
 
 **Combination matrix**: if power fields are declared, energy metrics are computed;
-if not, `totalEnergyJoules=0` is a legally declared run (backward-compatible). The
-declaration is **all-or-none** (FGCS-R3, 2026-11-24): every VM declares a power source
+if not, `totalEnergyJoules=0` is a legally declared run. The
+declaration is **all-or-none**: every VM declares a power source
 (plain idle/max fields or frequency tiers) or none does. A mixed fleet is rejected by
 `SimulationRunner` preflight, by `EnergyAccounting.requireAllOrNonePowered`, and by the
 Python auditor, because booking the unpowered VMs at 0 J would silently understate fleet
@@ -127,53 +123,17 @@ energy.
 **Python auditor**: recomputes `totalEnergyJoules` from vmIntervals + power fields;
 or verifies `=0` when no power model is present.
 
-### 2.3 v2 reserved schema (DVFS and carbon, not in v1)
-
-**DVFS**: per-VM frequency tier table `(f_i, MIPS_i, P_idle_i, P_max_i)` — changes the
-one-Job-per-VM PE discipline; deferred. v1 profile schema should include a `List<PowerTier>`
-(default empty = one tier) so v2 code is additive.
-
-**Carbon**: `PlatformProfile` gains `double carbonIntensityGramsPerKWh`.
-`totalCarbonGrams = energy_at_each_VM × carbon_intensity`. Researchers who need
-time-varying intensity use the registry's `energyObjectiveWeight`. We don't ship grid
-datasets (external-data dependency; the researcher controls and declares their own,
-consistent with CaWoSched/CWM's approach).
-
-## 3. Honest scoping
+## 3. Scope
 
 | Exclusion | Reason |
 |---|---|
 | Thermal model | Adds thermodynamic simulation, not a declared model |
 | Hardware calibration | Internal-validity tradition |
 | Real carbon-intensity datasets | External-data dependency, can't be audited |
-| Multi-frequency in v1 | Changes one-PE-one-Job semantic contract |
 | Network/switch power | The platform simulates workflow execution, not infrastructure |
 | VM migration energy | Platform placement discipline is preflight-pinned |
 
-## 4. Effort estimation and batch plan
-
-| Batch | Content | Est. |
-|---|---|---|
-| E1 | VmSpec power fields + engine energy integral + 4 metrics + conservation-law R→G test | 1-2 days |
-| E2 | Manifest export + Python recompute + self-test | 1 day |
-| E3 | AlgorithmDeclaration energy fields + registry validation | 0.5 day |
-| E4 | Capability matrix + METRICS_CARD + benchmark rerun with power profiles | 1 day |
-| E5 | (Optional) first carbon-aware result: a declared-carbon benchmark | 2-3 days |
-
-## 5. Competitive positioning
-
-After surveying WRENCH/SimGrid pstates, CloudSim 3 PowerModel classes, and Cotes-Ruiz's
-WorkflowSim-DVFS: **no published energy-aware simulator makes energy metrics independently
-recomputable by a third party with one command.** All either (a) compute energy and report
-it without a conservation-law test, (b) have no energy dimension at all, or (c) rely on
-external-data carbon intensity without making the energy integral itself auditable.
-
-This platform will be the **first energy-aware workflow simulator with an evidence chain**:
-every joule in the benchmark is backed by a conservation invariant recomputable from the
-manifest alone. The fact that `totalVmModeledBusyIntervalSeconds` already exists means the
-conservation law is testable from Day 1, not retrofitted.
-
-## 6. First energy-aware result (E5, 2026-10-27)
+## 4. Energy-aware scheduling example
 
 The registry-based comparison `FCFS` vs the registered `ENERGY_LPT_FIRST` provider
 (longest-job-first, declares `powerModelRequired`) on a two-VM powered platform
@@ -189,11 +149,10 @@ The conservation law closes the gap exactly: the energy difference (10,000 J) eq
 the 20-second makespan difference times the fleet idle power (2 × 250 W). The
 expectation is provable, not a hope: on a pure bag with uniform VMs LPT cannot lose to
 submission order (Graham), and with the linear power model total energy is strictly
-monotone in makespan when total busy work is workload-fixed (true bit-exactly on
-this designed bag; across the full corpus busy drifts up to ~0.2% between policies —
-see the Energy Portrait's departure analysis for the six conditions where that drift,
-not makespan, decides the energy ordering). Behavior anchor:
+monotone in makespan when total busy work is workload-fixed (exactly true on this bag;
+across other workloads busy time can drift slightly between policies, and that drift can
+decide the energy ordering). Behavior anchor:
 [EnergyAwareSchedulingComparisonIntegrationTest](<../../experiments/src/test/java/org/workflowsim/experiments/registry/EnergyAwareSchedulingComparisonIntegrationTest.java>).
-Honest scope: this is a two-VM, one-bag demonstrator of the end-to-end energy-aware
+This is a two-VM, one-bag demonstrator of the end-to-end energy-aware
 path (registry gate → powered run → audited evidence) — not a general performance
 claim about LPT on arbitrary DAGs.

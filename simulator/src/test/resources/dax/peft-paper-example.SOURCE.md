@@ -11,7 +11,6 @@ Optimistic Cost Table*, IEEE TPDS 25(3), 682–694, 2014,
 - [University of Porto thesis record](https://repositorio-aberto.up.pt/handle/10216/92290), marked **openAccess**.
 - [Author's thesis PDF](https://repositorio-aberto.up.pt/bitstream/10216/92290/2/129782.pdf),
   *QoS based workflow scheduling on heterogeneous resources*, Hamid Arabnejad, 2016.
-- PDF SHA256: `70b7a903793c7bc46855f07aa2e3dea29a141615571cdc694fd46a03ea711041`.
 - Printed p4 explains that chapters 2–9 reproduce the author's eight research articles.
   Chapter 3's title page, printed p61 / PDF physical p73, explicitly identifies this title,
   both authors, journal volume/issue/pages and DOI.

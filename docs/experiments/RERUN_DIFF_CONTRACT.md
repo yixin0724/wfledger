@@ -49,15 +49,15 @@ Input order, hashes, sizes, formats, versions, and normalization information sti
 
 ## Configuration Rebuilding Rules
 
-[ManifestConfigRebuilder](<../../experiments/src/main/java/org/workflowsim/experiments/rerun/ManifestConfigRebuilder.java>) translates the preserved configuration and platform: algorithms, file systems, seeds, runtime conversion, the kernel tick, the arrival table, deadline, matrices, failures/overheads, Host/VM/prices, topology, and storage. Input paths switch to the identity-verified resolution result; nulls and optional fields follow the schema/compatibility rules, and no new study parameters are guessed from the current user environment. The SHARED storage rate `platform.storage.maxTransferRateMbPerSecond` is read as a finite positive binary64 (STD-V1, 2026-11-25): a historical integer literal such as `15` and a current `15.0` rebuild to the same double and compare equal under the exact JSON value rule, so the type widening needs no whitelist exemption.
+[ManifestConfigRebuilder](<../../experiments/src/main/java/org/workflowsim/experiments/rerun/ManifestConfigRebuilder.java>) translates the preserved configuration and platform: algorithms, file systems, seeds, runtime conversion, the kernel tick, the arrival table, deadline, matrices, failures/overheads, Host/VM/prices, topology, and storage. Input paths switch to the identity-verified resolution result; nulls and optional fields follow the schema/compatibility rules, and no new study parameters are guessed from the current user environment. The SHARED storage rate `platform.storage.maxTransferRateMbPerSecond` is read as a finite positive binary64; an integer literal such as `15` and `15.0` rebuild to the same double and compare equal.
 
 - The nine physical models are rebuilt from their recorded kind and parameters; V2/V3 must not be rewritten as V1, and an unrecorded run must not replace an enabled capture.
 - Absent `networkEvidence` explicitly means OFF; when present, its mode and budget are restored. A present `dataflowAssignment` is likewise restored in full, not ignored on the grounds that the algorithm contract declares it identity information.
 - The V3 `sourceStorage` must be present and match the model; a coherent topology must additionally satisfy the numeric domain. The rebuilt VM→Host pre-check mapping must equal the recorded values.
 - When a parameter, enum, or combination is no longer accepted by the current code, the report is `RECONSTRUCTION_REJECTED`; algorithms, models, or capacities are never swapped in silently. Unrecorded external-policy processes or arbitrary Java objects are not restored from the manifest.
-- The current execution generates the current `executionSemantics` (`WORK_CONSERVING_TASK_EXECUTION_V3` since FGCS-R3, 2026-11-24). An old v4 that lacks this identifier, or that declares the historical `WORK_CONSERVING_TASK_EXECUTION_V2`, may still enter rebuilding, but this is not restoring an old engine; differing old/new declarations are reported as core divergences even when some numeric values happen to coincide. V2 → V3 changed online READY_BATCH envelope costs (charged SHARED read), same-instant round coalescing, tick-derived completion safety/threshold, EBPSM cache publishing and fail-fast budgets, mixed-power rejection, and the IC-PCP/MOHEFT/GreenHEFT/DLS/LOCAL-communication/DVFS planners; the full list is in [Reproducibility](<REPRODUCIBILITY.md#execution-identity-v2--v3-fgcs-r3-2026-11-24>). No whitelist entry was added: the identity difference stays a core divergence.
+- The current execution writes `executionSemantics = WORK_CONSERVING_TASK_EXECUTION_V3`. Evidence that lacks the field or declares the historical `WORK_CONSERVING_TASK_EXECUTION_V2` may still be rebuilt, but this does not restore an old engine: the identity difference is reported as a core divergence even if some values coincide (see [execution identity](<REPRODUCIBILITY.md#execution-identity>)). No whitelist entry covers it.
 
-Input, rebuilding, or run failures must not be treated as consistency success. Classified simulation-execution exceptions and exhausted retry budgets also map to `RECONSTRUCTION_REJECTED`, with the cause noting the execution phase; this is an incompatible result that needs to be exposed. Run-phase law rejections follow the same mapping (BAT-V4.1, 2026-10-29): when the rebuilt platform violates a current construction-time law — for example a tiered-and-carbon evidence bundle rebuilt as a power-stripped platform with surviving per-VM carbon intensities, which the report constructor rejects as a half declaration — `IllegalArgumentException`, `IllegalStateException`, and `SimulationConfigurationException` raised from the execution phase are reported as `RECONSTRUCTION_REJECTED` with both report files written, never as an uncaught usage-class exit that writes no report at all.
+Input, rebuilding, or run failures must not be treated as consistency success. Classified simulation-execution exceptions and exhausted retry budgets also map to `RECONSTRUCTION_REJECTED`, with the cause noting the execution phase; this is an incompatible result that needs to be exposed. When the rebuilt platform violates a construction-time law (for example per-VM carbon intensities without a power model), the `IllegalArgumentException`, `IllegalStateException`, or `SimulationConfigurationException` raised during execution is reported as `RECONSTRUCTION_REJECTED` with both report files written.
 
 ## Network, Lifecycle, and Online Actions
 
@@ -74,7 +74,7 @@ The online-assignment configuration, the `dataflowComputeRequests`, the `DATAFLO
 
 When the V1 ledger on either side is TRUNCATED, the report adds `networkEvidenceCoverageNote`: even an `IDENTICAL_CORE` only says that the retained records and the aggregated observations agree; an unknown suffix cannot be attested. When both sides are OFF or the capture is complete, this placeholder field is not added. The complete V2/V3 lifecycle is likewise not a per-interval fluid service-area certificate.
 
-Format and certification scope are in the [V1 ledger](<../advanced/NETWORK_LEDGER_FORMAT.md>), [V2 lifecycle](<../advanced/FILE_LIFECYCLE_FORMAT.md>), [V3 storage](<../advanced/STORAGE_DATAFLOW_CONTRACT.md>), and [online assignment](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) documents.
+Format and certification scope are in the [V1 ledger](<../advanced/NETWORK_LEDGER.md>), [V2 lifecycle](<../advanced/FILE_LIFECYCLE_FORMAT.md>), [V3 storage](<../advanced/STORAGE_DATAFLOW_CONTRACT.md>), and [online assignment](<../advanced/ONLINE_DATAFLOW_ASSIGNMENT_CONTRACT.md>) documents.
 
 ## Comparison Rules
 
@@ -104,7 +104,7 @@ Only the following actual paths are exempted and have their diffs recorded; `<i>
 
 The lengths of core arrays such as inputs and results, the input identity, the `schedulingAlgorithm` / `planningAlgorithm` in the configuration, `executionSemantics`, the physical parameters, and the recorded budgets are not whitelisted. Sidecar namespaces do not inherit the root `/runtime` and `/provenance` exemptions; the artifact hash/size exemption does not let sidecar contents escape comparison either. New fields are core by default and cannot be added to the volatile rules casually.
 
-The bit-exact comparison defined by this contract takes the manifest/metrics artifacts as its domain; exact equality of fields such as makespan within that domain already constitutes rerun consistency. The coverage boundary of event-level independent recomputation has been closed by the additive 2026-10-23 revision of events v1 (`SIMULATION_TERMINATED` and `JOB_EXECUTION_STARTED`; see the [reproducibility contract](<REPRODUCIBILITY.md>)), and this must not be used to introduce new exemptions in any direction. The new event types are core data: a rerun on the same code tree carries the new events on both sides and the equality verdict is unaffected; a **rerun across the revision boundary** (pre-revision evidence × post-revision code) legitimately differs in the event array — event counts, order, and fields all report diffs under the core comparison. The correct disposition is to regenerate the evidence under the new tree, not to add a whitelist for the old event shapes.
+The bit-exact comparison defined by this contract takes the manifest/metrics artifacts as its domain; exact equality of fields such as makespan within that domain already constitutes rerun consistency. The marker events `SIMULATION_TERMINATED` and `JOB_EXECUTION_STARTED` (see the [reproducibility contract](<REPRODUCIBILITY.md>)) are core data. Evidence written without them differs from a current rerun in the event array; regenerate such evidence instead of exempting the old event shapes.
 
 Object member names are first encoded per RFC 6901 (`~`→`~0`, `/`→`~1`); the pointers are then assembled and classified against the whitelist. The literal key `configuration/algorithmContract` has the path `/configuration~1algorithmContract`, not a nested identity object; `provenance/extra` works the same way — names must not be used to sneak past the classification.
 
@@ -112,7 +112,7 @@ The reader may accept an original bundle not named `result`, but the new rerun a
 
 ### Identity Information Reported Separately
 
-The report retains both sides' `sourceTreeSha256` and `algorithmContract`. When the source-tree hashes are known to differ, a prominent notice flags the code-identity change, but this does not substitute for the input/configuration/result comparison. An identical core only says that this piece of evidence is consistent within the scope of this comparison; it does not prove that other inputs, platforms, or future versions agree as well, and consistency must not be presumed when identity is unavailable.
+The report retains both sides' code identity (Git commit) and `algorithmContract`. When the code identities are known to differ, a notice flags the change, but this does not substitute for the input/configuration/result comparison. An identical core only says that this piece of evidence is consistent within the scope of this comparison; it does not prove that other inputs, platforms, or future versions agree as well, and consistency must not be presumed when identity is unavailable.
 
 ## Report and Exit Codes
 
@@ -131,27 +131,6 @@ The report contains the `verdict`, the input resolution, JSON pointers and both-
 
 | verdict | CLI exit code | Meaning |
 | --- | ---: | --- |
-### Registered-algorithm evidence (BAT-R7, 2026-10-27)
-
-Rerunning evidence produced by a registry-labeled algorithm resolves
-`configuration.registeredSchedulingAlgorithm` through the SPI registry and fails fast when the
-label is not registered on the rerunning classpath: the algorithm must be present where you
-rerun it — an honest diagnostic, not a silent skip. Behavior anchors: the
-[registered powered rerun chain](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/RegisteredPoweredRerunIntegrationTest.java>)
-and the [axis-reject locks](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/RegisteredAxesRejectIntegrationTest.java>).
-A registered run with a failure model or task-cost matrix the provider's declaration rejects is
-refused at the registry gate before any simulation happens.
-
-### Energy-dimension leaves (BAT-E4.1, 2026-10-27)
-
-The energy extension added per-VM power leaves (`/platform/vms/N/idlePowerWatts`, `/platform/vms/N/maxPowerWatts`) and the `/energyMetrics` section to every fresh manifest. Retained pre-energy evidence has neither. A rerun of pre-energy evidence therefore compares an *absent* key on the original side against a **canonical zero** on the rerun side. These two states are declared **semantically equal**:
-
-- the equivalence applies only to the two pointers above and the whole `/energyMetrics` section, only when one side is absent — **an explicit JSON `null` token reads as absent** (BAT-R3, 2026-10-27: absent, JSON-null, and canonical `0.0` are the three unified "undeclared" forms; the rebuilder already read null as absent, and the differ now agrees) — and only when every number on the present side is exactly `0.0` (verified recursively, including the `vmEnergyJoules` map);
-- **nonzero energy is never exempt**: powered originals that lose energy on rerun stay `DIVERGED`, and any nonzero-vs-nonzero mismatch stays a core divergence (the conservation-law defense is not weakened);
-- this is deliberately *not* a volatility-whitelist expansion — the values remain core quantities; only the absent-vs-zero state pair was unified.
-
-Configuration rebuilding forwards both power fields from the manifest into the rebuilt `VmSpec` (missing keys read as 0.0; negative or non-numeric values are rejected explicitly). Reruns of powered evidence therefore reproduce the energy metrics bit-exactly: same engine, same seed, identical busy intervals, identical joules. Behavior anchors: [energy rerun compatibility tests](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/EnergyRerunCompatibilityIntegrationTest.java>) and the rebuilder round-trip test.
-
 | `IDENTICAL_CORE` | 0 | All non-exempt JSON core quantities are exactly identical, still subject to capture/model scope limits |
 | `DIVERGED` | 1 | At least one core diff; the divergence list is non-empty |
 | `INPUT_UNRESOLVED` | 2 | The input cannot be resolved |
@@ -159,10 +138,30 @@ Configuration rebuilding forwards both power fields from the manifest into the r
 | `RECONSTRUCTION_REJECTED` | 4 | The current code rejects the rebuilding or a classified simulation execution |
 | `EVIDENCE_INVALID` | 5 | The original bundle is invalid, a declared sidecar is invalid, or it is not v4 |
 
-Since 2026-11-03 (AUD-F05) the shared artifact validator recomputes the registered metric families from the manifest's own result records for v4 evidence, so a metrics value that contradicts the bundle's result section — for example a consistently rewritten `makespanSeconds` (manifest and sidecar in step) — is `EVIDENCE_INVALID` at validation, before any rerun; it previously reached the diff stage and reported `DIVERGED`. The rerun remains the ultimate check for a fully consistent forgery and for condition tampering that legitimately changes the rerun's computed metrics.
+The artifact validator recomputes the registered metric families from the manifest's own result records for v4 evidence, so a metrics value that contradicts the result section (for example a consistently rewritten `makespanSeconds`) is `EVIDENCE_INVALID` before any rerun. The rerun remains the check for fully consistent forgeries and for condition tampering that changes the recomputed metrics.
 
 Usage/output-directory errors are 64, unexpected exceptions are 70. Classified failures still write a diagnostic report but yield no successful new-run evidence; usage errors or unexpected I/O failures do not guarantee a complete report, and any files left behind must not be taken as a valid bundle. A failure of the Maven compile phase means this CLI verdict was never reached.
 
 Validation coverage of the current chain is in the [core comparison tests](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/EvidenceCoreDifferTest.java>), the [rerun integration tests](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/RerunDiffExecutorIntegrationTest.java>), and the [online-action rerun tests](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/DataflowAssignmentRerunIntegrationTest.java>). They verify behavior with explicit fixtures and do not take optional local historical outputs as proof that the current run succeeded.
 
-Study-protocol integrity and the actual rerun are different checks; see the [protocol identity notes](<../../experiments/studies/PROTOCOL_COMPATIBILITY.md>). Retain the original evidence, the new run, and the diff report; old fields, protocol identity, or golden values must not be modified to erase a genuine divergence.
+Study-protocol integrity and the actual rerun are different checks; see [protocol identities](<CAMPAIGNS.md#protocol-identities>). Retain the original evidence, the new run, and the diff report; old fields, protocol identity, or golden values must not be modified to erase a genuine divergence.
+
+### Registered-algorithm evidence
+
+Rerunning evidence produced by a registry-labeled algorithm resolves
+`configuration.registeredSchedulingAlgorithm` through the SPI registry and fails fast when the
+label is not registered on the rerunning classpath. Behavior anchors: the
+[registered powered rerun chain](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/RegisteredPoweredRerunIntegrationTest.java>)
+and the [axis-reject locks](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/RegisteredAxesRejectIntegrationTest.java>).
+A registered run with a failure model or task-cost matrix the provider's declaration rejects is
+refused at the registry gate before any simulation happens.
+
+### Absent versus zero energy fields
+
+Current manifests always carry the per-VM power leaves (`/platform/vms/N/idlePowerWatts`, `/platform/vms/N/maxPowerWatts`) and the `/energyMetrics` section. Evidence without them compares an *absent* key against a **canonical zero** on the rerun side, and these two states are **semantically equal**:
+
+- the equivalence applies only to the two pointers above and the whole `/energyMetrics` section, only when one side is absent — **an explicit JSON `null` reads as absent** (absent, JSON null, and canonical `0.0` are the three "undeclared" forms) — and only when every number on the present side is exactly `0.0` (verified recursively, including the `vmEnergyJoules` map);
+- **nonzero energy is never exempt**: powered originals that lose energy on rerun stay `DIVERGED`, and any nonzero-vs-nonzero mismatch stays a core divergence;
+- this is not a whitelist entry: the values remain core quantities.
+
+Configuration rebuilding forwards both power fields from the manifest into the rebuilt `VmSpec` (missing keys read as 0.0; negative or non-numeric values are rejected explicitly). Reruns of powered evidence therefore reproduce the energy metrics bit-exactly: same engine, same seed, identical busy intervals, identical joules. Behavior anchors: [energy rerun compatibility tests](<../../experiments/src/test/java/org/workflowsim/experiments/rerun/EnergyRerunCompatibilityIntegrationTest.java>) and the rebuilder round-trip test.

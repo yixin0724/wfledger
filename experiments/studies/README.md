@@ -1,132 +1,35 @@
-# Study Protocols and Retained Evidence
+# Study Protocols
 
-This directory holds study-specific protocols and provenance notes; it is not another Maven
-module and not a platform capability list. Research drivers and tests live in the
-experiment module's standard source directories; general run operations are described in
-[Workbench](<../../docs/getting-started/WORKBENCH.md>).
+This directory holds study protocols and protocol data. Drivers and tests live in the experiments
+module's standard source directories; general run operations are described in the
+[Workbench guide](<../../docs/getting-started/WORKBENCH.md>) and the
+[campaign guide](<../../docs/experiments/CAMPAIGNS.md>).
 
-## Internal verification records
+| Entry | Content |
+|---|---|
+| [standard/PROTOCOL.md](<standard/PROTOCOL.md>) | `standard-study-v1`: the standard design for new same-layer comparisons |
+| [standard-workloads/](<standard-workloads/README.md>) | Specification and generator of the WfGen synthetic corpus in `datasets/wfgen-standard/` |
+| [fgcs/](<fgcs/README.md>) | FGCS manuscript study: protocol JSON, upstream differential, and sub-study descriptions |
+| `makespan-scale/inputs/` | 5000-task composite DAX inputs (see [baseline studies](<../../docs/experiments/BASELINE_STUDIES.md#5000-task-composite-inputs>)) |
+| `fattree-scheduling-campaign/campaign-results.json` | Retained result summary of the fat-tree scheduling campaign (schema `workflowsim-fattree-campaign-v1`, 360 cells, seed 91), produced by `FatTreeSchedulingCampaignExecutor` under an earlier execution model |
 
-The [review protocol](<verification/VV_REVIEW_PROTOCOL.md>) and
-[review record](<verification/VV_REVIEW.md>) are retained for evidence traceability. They are not
-user setup instructions or a current capability matrix; the public entry point remains the
-[documentation center](<../../docs/README.md>).
+Network-study protocol identities (`network-limited-r10-*`, `peft-comparison-r12-*`,
+`sensitivity-response-r13-*`) are registered in code by `NetworkStudyPlan` and described in the
+[campaign guide](<../../docs/experiments/CAMPAIGNS.md#protocol-identities>). Their retained
+evidence lives only in local `output/*.tar.gz` archives.
 
-## Derived research inputs
+## Requirements for new studies
 
-The [makespan-scale inputs](<makespan-scale/README.md>) document the exact five-copy construction of
-the 5000-task Montage, CyberShake, and Inspiral workflows used by the standard scale configuration.
-They are controlled composite inputs, not new empirical workflow traces.
-
-The [WfGen standard-workloads corpus](<standard-workloads/README.md>) documents the declarative
-specification and the byte-reproducible generator behind `datasets/wfgen-standard/`: eight
-WfCommons 1.6 recipes, 20 seeded instances per supported (recipe, size). These are synthetic
-WfGen inputs, not traces.
-
-## Currently executable protocols
-
-The [standard study protocol](<standard/PROTOCOL.md>) (`standard-study-v1`, STD-V1 2026-11-25) declares the
-standard design for new same-layer comparisons: bounded-spread heterogeneous fleets, calibrated CCR, workflow
-instances as pairing units, paired Wilcoxon with Holm and effect sizes. It is a design and driver; no full
-matrix has been executed under it.
-
-
-[Protocol revisions and certification scope](<PROTOCOL_COMPATIBILITY.md>)
-is the single maintained register of the current protocol IDs, the accepted historical
-identities, and the full/smoke plan-unit counts; this page does not repeat that table.
-[NetworkStudyPlan](<../src/main/java/org/workflowsim/experiments/network/NetworkStudyPlan.java>)
-registers distinct identities for the three CLI variants (`r10`, `peft-comparison`,
-`sensitivity-r13`); an identical parameter matrix does not mean an identical execution
-model.
-
-Current execution uses `WORK_CONSERVING_TASK_EXECUTION_V3` (FGCS-R3, 2026-11-24; every retained study
-below was produced under V2 or earlier and is historical); the two PEFT studies use the
-standard recurrence with successor costs and a zero exit OCT. A complete study must be
-executed explicitly into a new directory — renaming a smoke run is not a study; old
-protocol identities serve only read-only historical integrity checks. The retained
-post-correction studies and impact analysis are documented in the
-[correctness-repair results](<correctness-repair/RESULTS.md>) and are not a
-re-certification of every later code change.
-
-> **Archived layer.** The rows below describe frozen historical studies (including the
-> over-numbered protocol identities such as `r13-v1`); the current executable protocols are
-> registered in the protocol-revision document above. Archived studies are never renamed or
-> deleted — their version suffixes are the mechanism that keeps old numbers honestly bound
-> to old identities.
-
-## Historical material and optional evidence locations
-
-The records below describe their respective implementations at the time. **Passing an
-integrity check does not mean the current model produces the same numbers, and it is not a
-proof of algorithmic correctness or of real-platform calibration.** The `output/...` entries
-are original workspace retention locations relative to the project root; they are not
-provided with a normal checkout, are not guaranteed to exist on the current machine, and
-must never be overwritten by new runs.
-
-| Historical record | Identity and scope | Retained material / optional location |
-|---|---|---|
-| Fat-tree campaign | R8 recalibrated version; 360 cells, seed 91 | [sources and parameters](<fattree-scheduling-campaign/RETENTION.md>); the repository retains the [JSON](<fattree-scheduling-campaign/campaign-results.json>) and the [numeric tables](<fattree-scheduling-campaign/campaign-results.md>) |
-| R10 first pilot | 576 cells; 12 incompatible runs failed, not certified as a complete comparison | `output/network-study-r10-pilot.tar.gz` (compressed tar original); [exclusion notes](<network-limited-r10/PROTOCOL.md>) |
-| R10 qualified matrix | `network-limited-r10-v2`; 504 cells | [historical provenance](<network-limited-r10/PROTOCOL.md>); `output/network-study-r10-final/`; `output/network-study-r10-evidence.tar.gz` |
-| R12 / S5 PEFT comparison | `peft-comparison-r12-v1`; 126 cells; legacy PEFT non-standard | `output/peft-comparison-r12/`; `output/peft-comparison-r12-evidence.tar.gz`; corrected V2-era identity is `peft-comparison-r12-v2`; current is `peft-comparison-r12-v3` |
-| R13 sensitivity response surface | `sensitivity-response-r13-v1`; 546 cells; legacy PEFT non-standard | original [preregistered protocol](<sensitivity-r13/PROTOCOL.md>) and [assessment record](<sensitivity-r13/RESULTS.md>) archived in place; `output/sensitivity-r13/`; `output/sensitivity-r13-evidence.tar.gz` |
-| Post-correctness-repair recheck | frozen-implementation study of the current three protocols at Java commit `8681f9c` | [sources, numeric changes, and retention notes](<correctness-repair/RESULTS.md>); `output/workbench-correctness-repair-97c66a0/studies/` |
-| R13 v2 recertification (historical since FGCS-R3) | `sensitivity-response-r13-v2`, `WORK_CONSERVING_TASK_EXECUTION_V2`; 546 cells; executed at HEAD `f00ff69` (2026-10-23), bit-identical to the `8681f9c` impact layer | [protocol](<sensitivity-r13-v2/PROTOCOL.md>) and [results](<sensitivity-r13-v2/RESULTS.md>) (English); `output/sensitivity-r13-v2/`; `output/sensitivity-r13-v2-evidence.tar.gz` |
-
-### R12 provenance and comparison boundary
-
-Legacy R12 used the same seven qualified inputs as R10 (five classic DAXs, two synthetic
-DAGs), 4/16 homogeneous 1000-MIPS VMs, and three networks — endpoint contention plus
-0.125/1.25 MB/s Fat-tree — with the three list planners `LOCAL_HEFT`, `LOCAL_CPOP`, and
-`LOCAL_PEFT` once per condition, seed 11: `7 × 2 × 3 × 3 = 126`. It applies the same
-planner-uniform Inspiral1000 exclusion rule, LOCAL/STATIC/SPACE_SHARED, no
-failure/overhead, one VM per Host; R10's RANDOM/PSO were rerun separately and never mixed
-in.
-
-Legacy R12/R13's `LOCAL_PEFT` incorrectly counted the task's own compute cost inside OCT
-and set the exit to the average compute cost; the ready-list fix did not correct that
-formula. The legacy numbers, the "homogeneous degeneration / heterogeneous activation"
-narratives, and the correctness account of the time record only that non-standard
-implementation and cannot directly evaluate standard PEFT. How the current protocol relates
-to these records is defined in the
-[protocol revisions](<PROTOCOL_COMPATIBILITY.md>); the
-primary-source fixture note for the standard algorithm is
-[here](<../../simulator/src/test/resources/dax/peft-paper-example.SOURCE.md>).
-
-The three historical network studies' original output directories each preserve
-`protocol.json`, `network-study.json`, the automated result tables, generated inputs, and
-per-run manifest/metrics/events. R12's legacy result table is at the optional path
-`output/peft-comparison-r12/results.md` and is not the current numeric baseline. The
-retained tars and original protocol bytes stay as-is; deleting duplicate explanatory
-documents must not delete or relabel this evidence.
-
-**Language policy (revised 2026-11-02):** the archive documents under
-`network-limited-r10/`, `sensitivity-r13/`, `fattree-scheduling-campaign/`,
-`correctness-repair/`, and `peft-comparison` results were originally written in Chinese as
-period-accurate records. Every document in this repository is now maintained in English;
-the archive translations are wording-only and change no number, table, identity, ordering,
-or conclusion. The numbers, the protocol bytes, and the retention locations remain the
-authoritative record — when a translation and a retained artifact disagree, the artifact
-wins. Retention semantics and integrity checks are language-independent.
-
-## Requirements for new studies and handover
-
-- Before execution, declare the research question, the same-decision-layer algorithm set,
-  input hashes, platform/model, seed design, metrics, statistical unit, stopping
-  conditions, and retention rules; one protocol document suffices — no mechanical
-  splitting into duplicated files.
-- Input locations must be explicit, and outputs must use a new directory. Retain failures
-  and exclusion reasons; do not select inputs after observing algorithm outcomes; sharing
-  a root seed does not automatically constitute event-keyed common random numbers.
-- Hand over the complete protocol bytes, the index, every referenced bundle, and the
-  generated inputs — a summary table alone is not a handover. Original experiment data,
-  archives, fixtures, and golden values are not disposable files to clean up with
-  documentation passes.
-- Aggregate random seeds within a DAG first, then compare across declared sources and
-  conditions; repeated conditions are not independent samples, and non-significance does
-  not imply equivalence. General statistical conventions are in the
-  [campaign guide](<../../docs/experiments/CAMPAIGNS.md>); independent checking tools are
-  described in the [audit tooling notes](<../../scripts/STUDY_AUDIT.md>).
-
-Historical material is traceable only from the local study directory and is not part of
-current onboarding navigation.
+- Declare, before execution, the research question, the same-decision-layer algorithm set, input
+  identities, platform and model, seed design, metrics, statistical unit, stopping conditions, and
+  retention rules in one protocol document.
+- Inputs are explicit and outputs go to a new directory. Retain failures and exclusion reasons; do
+  not select inputs after observing outcomes. A shared root seed is not event-keyed common random
+  numbers.
+- Hand over the protocol, the index, every referenced bundle, and the generated inputs; a summary
+  table alone is not a handover. Retained evidence, archives, fixtures, and golden values are never
+  edited or deleted by documentation work.
+- Aggregate random seeds within a DAG first, then compare across declared sources and conditions;
+  repeated conditions are not independent samples, and non-significance does not imply
+  equivalence. Independent checking tools are described in the
+  [study audit notes](<../../scripts/STUDY_AUDIT.md>).

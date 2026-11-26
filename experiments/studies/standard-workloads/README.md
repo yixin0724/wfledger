@@ -6,8 +6,8 @@ This directory holds the declarative specification and generator for
 [`datasets/wfgen-standard/`](<../../../datasets/wfgen-standard/INDEX.json>). It is a
 reproducible, statistically usable **WfGen synthetic** workload corpus: 20 independently
 seeded instances for each supported (recipe, size) pair of eight WfCommons 1.6 recipes.
-It replaces the role of the earlier 42-instance WfGen collection, which came from an
-external project and cannot be regenerated here (R7-WORKLOAD, 2026-11-25).
+It is used instead of the 42-instance WfGen collection in `datasets/wfformat/`, which came
+from an external project and cannot be regenerated here.
 
 The instances are synthetic. WfCommons recipes sample graph structure, task runtimes, and
 file sizes from distributions learned from historical executions. They are not traces of a
@@ -33,21 +33,21 @@ WfCommons is a generation-time tool only. The simulator and `scripts/` never imp
 Generation uses a dedicated virtual environment with `wfcommons==1.6`. The recorded
 environment is Python 3.12.10, numpy 2.5.5, scipy 1.18.1, networkx 3.7, and pandas 3.1.1;
 `GENERATION.json` records the versions that were actually used. A different numpy or
-WfCommons version may legitimately produce different samples. In that case the index
-hashes detect the drift, and the result is a new corpus version, not a silent replacement.
+WfCommons version may legitimately produce different samples. In that case the result is a
+new corpus version, not a silent replacement.
 
 ```bash
 MPLCONFIGDIR=/tmp/mpl <venv>/bin/python -B \
   experiments/studies/standard-workloads/generate_corpus.py \
   --spec experiments/studies/standard-workloads/spec.json \
   --output datasets/wfgen-standard
-python3 -B scripts/verify-workload-corpus.py datasets/wfgen-standard   # hashes + structure
+python3 -B scripts/verify-workload-corpus.py datasets/wfgen-standard   # sizes + structure
 python3 -B scripts/check-dataset-indexes.py                            # whole dataset chain
 ```
 
 To rebuild the index after a deliberate new corpus version, generate the complete corpus
-and run `python3 -B scripts/verify-workload-corpus.py datasets/wfgen-standard --write-index`.
-Then re-anchor `index_sha256` in `datasets/INDEX.json`.
+and run `python3 -B scripts/verify-workload-corpus.py datasets/wfgen-standard --write-index`,
+then update the family entry in `datasets/INDEX.json`.
 
 ## Determinism rules
 
@@ -71,8 +71,8 @@ Then re-anchor `index_sha256` in `datasets/INDEX.json`.
 4. **Serialization.** `json.dumps(sort_keys=True, separators=(",", ":"), ensure_ascii=True)`
    plus a trailing newline.
 
-Generation is independent of `PYTHONHASHSEED`: hashes were identical under 0, 1, and 12345.
-Two complete generations of all 360 instances were byte-identical (`diff -r` empty).
+Generation is independent of `PYTHONHASHSEED`, and repeated complete generations are
+byte-identical.
 
 ## Scope and exclusions
 
@@ -96,7 +96,7 @@ use the actual structure, not the requested label.
 
 The n50 and n100 instances (200 files, about 13.6 MB) are committed. The n1000 instances
 (160 files, about 134 MB) exceed the repository's size budget for dataset fixtures. They are
-listed in the index with `retained_in_standard_checkout: false` and their SHA-256. The
+listed in the index with `retained_in_standard_checkout: false`. The
 generator recreates them byte-identically, and `datasets/wfgen-standard/*/n1000/` is
 gitignored.
 
@@ -107,5 +107,4 @@ gitignored.
 - The 20 instances of a cell are independent draws from the recipe's generative model. They
   are not independent draws from a real application population. Aggregate random
   simulation seeds within an instance first.
-- Report the corpus identity (`spec_sha256` and the index hash anchored in
-  `datasets/INDEX.json`) together with the instance hashes.
+- Report the corpus identity (the specification, the Git commit, and the instance list).
