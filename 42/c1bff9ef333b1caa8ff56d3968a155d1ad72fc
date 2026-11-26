@@ -1,0 +1,16 @@
+docs/algorithms/METRICS_CARD.md
+  h_adc77830afcf4d 23
+docs/experiments/CAMPAIGNS.md
+  h_adc77830afcf4d 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "42c1bff9ef333b1caa8ff56d3968a155d1ad72fc",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
