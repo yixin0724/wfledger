@@ -50,7 +50,7 @@ mvn -pl :workflowsim -Dit.test=SimulationEvidenceIntegrationTest verify
 
 The last command still runs the core unit tests and the `verify` gate; it only restricts the integration test selection. Targeted tests are not a substitute for full verification.
 
-Reports are located in each module's `target/surefire-reports/`, `target/failsafe-reports/`, `target/site/jacoco/`, and `target/site/jacoco-it/`. Judge success by the actual exit status and the reports, not by a fixed test count. The JaCoCo thresholds are maintained in the [core POM](<../../simulator/pom.xml>) and the [experiments POM](<../../experiments/pom.xml>). `mvn verify` enforces bundle-level and package-level floors on unit coverage plus bundle-level floors on integration coverage (AUD-F03, 2026-11-03), so a package with zero coverage cannot hide behind the bundle aggregate and the failsafe battery stays inside the gate.
+Reports are located in each module's `target/surefire-reports/`, `target/failsafe-reports/`, `target/site/jacoco/`, and `target/site/jacoco-it/`. Judge success by the actual exit status and the reports, not by a fixed test count. The JaCoCo thresholds are maintained in the [core POM](<../../simulator/pom.xml>) and the [experiments POM](<../../experiments/pom.xml>). `mvn verify` enforces bundle-level and package-level floors on unit coverage plus bundle-level floors on integration coverage, so a package with zero coverage cannot hide behind the bundle aggregate and the failsafe battery stays inside the gate.
 
 A standard checkout contains the small inputs the gates require; tests fail when they are missing. The full large corpora are not a default prerequisite — see the [dataset notes](<../../datasets/README.md>). `mvn clean` removes only build directories; it does not remove custom experiment outputs or retained evidence.
 
@@ -85,7 +85,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-mutation-gate.py
 
 Exit codes: 0, all mutants killed; 1, survivors or a build failure; 2, anchor drift (the ledger must be fixed first). Dry-run mode and the self-test do not invoke Maven.
 
-CI runs both registered families on every push and pull request as a dedicated `mutation-gate` job (AUD-F02, 2026-11-03; experiments scope added in B4); the clean checkout satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run rule, and both JSON reports are uploaded as artifacts. Local runs remain the entry point for ledger work and the `--dry-run` anchor preflight.
+CI runs both registered families on every push and pull request as a dedicated `mutation-gate` job (experiments scope added in B4); the clean checkout satisfies the clean-tree precondition, the dedicated runner satisfies the exclusive-run rule, and both JSON reports are uploaded as artifacts. Local runs remain the entry point for ledger work and the `--dry-run` anchor preflight.
 
 After any real mutation run, perform **final clean verification after mutation** before quoting test counts or publishing reports. A mutant's failing tests overwrite Surefire/Failsafe XML even though the source is restored byte-for-byte. `make audit` refreshes those reports on the restored tree; `make quality-gate` additionally repeats the independent Python, documentation, language, and dataset checks.
 
@@ -157,7 +157,7 @@ On macOS, an installed Google Chrome is preferred; otherwise Playwright Chromium
 ```bash
 On macOS an installed Google Chrome is preferred; otherwise Playwright Chromium is used.
 
-**CI parity note (BAT-R11, 2026-10-28)**: headed Chrome and headless Playwright
+**CI parity note**: headed Chrome and headless Playwright
 Chromium can make different things observable (headless rejects some `file://`
 fetches at the Fetch API level before any network event is emitted). Before
 trusting a local browser verification, run it through the SAME runtime CI uses:

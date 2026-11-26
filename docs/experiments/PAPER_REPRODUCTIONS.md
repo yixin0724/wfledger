@@ -188,22 +188,16 @@ semantics were inspected independently; no third-party code was copied without a
 
 The planner selects the critical parent as the unassigned parent with the latest data arrival
 `EFT(p) + TT(p,t)`, the definition of the paper (and of its PCP predecessor). The reference artifact
-instead selects the minimum `lft - est`; that variant was the source of the pre-2026-11-24 behavior and
-is deliberately not followed (FGCS-R3 M1). Each whole path is tried at every position of every
-PE-compatible VM's task sequence and accepted only if every assigned task still meets its LFT (FGCS-R3
-M2); the minimum incremental cost wins. The virtual END node participates, so an infeasible deadline
+instead selects the minimum `lft - est`; that variant is deliberately not followed. Each whole path is tried at every position of every
+PE-compatible VM's task sequence and accepted only if every assigned task still meets its LFT; the minimum incremental cost wins. The virtual END node participates, so an infeasible deadline
 fails explicitly rather than falling back to an arbitrary VM. The SHARED adapter uses raw MI plus the
 same integer-MI storage-input envelope as the SHARED baseline, starts after the model-generated stage-in
-and root-release interval, and charges no point-to-point edge time because the SHARED runtime has none
-(FGCS-R3 M3). VM rates are cost per second and the generalized billing-period formula charges each
+and root-release interval, and charges no point-to-point edge time because the SHARED runtime has none.
+VM rates are cost per second and the generalized billing-period formula charges each
 rounded period's full seconds; the current adapter uses a one-second period. The fixed pool cannot launch
 new instances (see the IC-PCP contract for the exact remaining deviation). This is not IC-PCPD2,
 dynamic VM provisioning, a full event replay, or a full paper-corpus reproduction. The paper's worked
 example data were not obtainable for this revision; the golden case in `IcpcpPlannerTest` is hand-derived.
-
-## Network-Aware HEFT — The Scientific World Journal 2014 (removed)
-
-The adaptation of Yousaf and Welzl ([DOI](https://doi.org/10.1155/2014/317284)) is no longer part of the platform. Removed on 2026-11-24 (FGCS-R3): the planner optimized cross-VM point-to-point flows on a shared bottleneck, but it was bound to the SHARED runtime, which has no point-to-point edges, so its planned schedule could not mirror execution; no retained FGCS study or configuration used it. The last implementation is preserved in git history before this removal.
 
 ## EBPSM — Multi-tenant WaaS Resource Sharing (2020)
 
@@ -217,19 +211,17 @@ The adaptation of Yousaf and Welzl ([DOI](https://doi.org/10.1155/2014/317284)) 
 
 EBPSM distributes each workflow's user budget with Algorithm 1 (DTL/EFT order, cheapest-type allocation while
 the budget lasts, then slowest-first upgrades) over VM types derived from the declared pool, and redistributes the
-unscheduled tasks' budget with Algorithm 3 after every returned attempt (FGCS-R5, 2026-11-24; before, budgets
-were static per-task declarations and Algorithm 3 was not wired). It then dispatches ready
+unscheduled tasks' budget with Algorithm 3 after every returned attempt. It then dispatches ready
 Jobs by input-data cache, container-image cache, and other idle VMs in that order. Each candidate
 must fit the task's sub-budget. Successful Tasks publish their container image and input/output files
-into the executing VM's cache on completion (FGCS-R3, 2026-11-24; previously publication was attempted
-only at dispatch and never took effect). A task that fits no idle VM stays queued while any
+into the executing VM's cache on completion; nothing is published at dispatch. A task that fits no idle VM stays queued while any
 VM is busy; an idle pool with an unaffordable task fails explicitly, replacing the paper's elastic-provisioning
 fallback that the fixed pool cannot model. Two workflows with staggered arrivals and a parent→child
 cache-locality chain complete through the standard runner. The current subset uses a fixed declared VM pool and
 explicit cache declarations, not Docker deployment, elastic VM provisioning, or a full WaaS corpus.
 The closed MCPA alternative was not reproduced or mislabeled.
 
-Remaining deviations (FGCS-R5): (1) no elastic provisioning: VM types are the classes of the fixed pool with
+Remaining deviations: (1) no elastic provisioning: VM types are the classes of the fixed pool with
 provisioning delay 0, and an unaffordable task on an entirely idle pool fails instead of leasing a new VM;
 (2) local storage is unbounded (no FIFO eviction), because the platform declares no per-VM cache capacity;
 (3) the actual cost of an attempt is its billed runtime envelope (stage-in included, SHARED output writes are not
@@ -265,7 +257,7 @@ optimality, or a reproduction of its synthetic workload corpus.
 | Verification | `CrchRegistryTest`, `CrchSchedulingAlgorithmTest`, `MidExecutionFailureIntegrationTest`, `CrchIntegrationTest`, `RetryWorkAccountingIntegrationTest`; M49/M50/M64, M72–M75 |
 | Status | `VERIFIED_RECOVERY_CORE` for synchronized checkpoints charged on every attempt, mid-execution failure, VM-local saved work and earliest-checkpointed-finish placement |
 
-Revision `CRCH_MID_EXECUTION_FAILURE_VM_LOCAL_CHECKPOINT_V3` (FGCS-R5, 2026-11-24) follows Sec. 3.1.3 and
+Revision `CRCH_MID_EXECUTION_FAILURE_VM_LOCAL_CHECKPOINT_V3` follows Sec. 3.1.3 and
 Algorithm 3: a resource fails during execution, `α` checkpoints completed before the failure are kept on that
 VM's stable storage, every attempt pays `γ` per checkpoint (`CO = TET × γ/λ`, Eq. 10), a resubmission on the
 same VM resumes from the latest checkpoint and one on a different VM re-executes the completed checkpoints

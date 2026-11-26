@@ -2,7 +2,6 @@
 
 > This statement tells researchers, reviewers, and developers the research identity, the
 > validity standard, and the evidence system of WfLedger.
-> Basis: literature survey and two review-engineering rounds (2026-10-19/20).
 
 ## 1. Research object and methodological identity (Who we are)
 

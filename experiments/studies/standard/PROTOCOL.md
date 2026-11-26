@@ -1,21 +1,19 @@
 # Standard Study Protocol (`standard-study-v1`)
 
-STD-V1 (2026-11-25). This protocol declares the standard experiment design of the platform: a heterogeneous
+This protocol declares the standard experiment design of the platform: a heterogeneous
 fleet with bounded spread, a controlled communication-to-computation ratio (CCR), workflow instances as matched
 pairing units, paired non-parametric tests with multiplicity control and effect sizes, and a fully declared
 output header. It is a **design and a driver**; no full matrix has been executed under it. The driver is
-[StandardStudy](<../../src/main/java/org/workflowsim/experiments/standard/StandardStudy.java>); the historical FGCS
-drivers under `org.workflowsim.experiments.fgcs` are unchanged and remain historical.
+[StandardStudy](<../../src/main/java/org/workflowsim/experiments/standard/StandardStudy.java>); the FGCS
+drivers under `org.workflowsim.experiments.fgcs` are separate.
 
-## Why a new design
+## Design goals
 
-An independent audit of the historical FGCS drivers found: one deterministic run per cell on one instance per
-family (no statistical unit); speeds `500 * ratio^i` (up to 16384x spread, fixed-capacity variants down to
-0.18 MIPS); four VMs against DAG widths of 12-3310 (bin-packing dominated); energy on near-homogeneous fleets
-with idle/max power 0.1 (contemporary servers draw about 0.6-0.7 of peak when idle); price super-linear in one
-platform and sub-linear in another; uncontrolled CCR (CyberShake about 9, the other families at most 0.13);
-deadline factors `{1.0 .. 2.0} x HEFT` (degenerate); and a periodic failure fixture. Each item below answers one
-of these findings.
+The design avoids the weaknesses of single-instance, single-run comparisons: it pairs over many
+workflow instances, keeps the speed spread of the fleet bounded, sizes fleets against DAG width,
+uses realistic idle-to-peak power ratios and a uniform price law, calibrates CCR explicitly,
+derives deadlines from bounds rather than from one algorithm's makespan, and uses a stochastic
+failure process. Each section below states the corresponding rule.
 
 ## Research question and statistical unit
 
@@ -63,7 +61,7 @@ baseline on makespan, energy, or cost, for a declared factor cell, across a popu
   `{1.30, 1.25, 1.20, 1.15, 1.10, 1.05}` at GHz `{2.6, 2.4, 2.2, 2.0, 1.8, 1.0}`. Tier `j` runs at
   `mips * f_j / f_0`; busy power `P_idle + (P_max - P_idle) * (V_j/V_0)^2 * (f_j/f_0)` (dynamic power
   proportional to `V^2 f`); idle power stays at the default tier. The default tier equals the nominal MIPS, so
-  the uniform default-tier rule (FGCS-R5) holds. The table was confirmed against its reproduction as Table 3 of
+  the uniform default-tier rule holds. The table was confirmed against its reproduction as Table 3 of
   Xing et al., Mathematics 11(9):2126, 2023, which cites Lee and Zomaya.
 
 ## Factors
@@ -121,11 +119,10 @@ two-sided exact test cannot reach 0.05; the corpus size must be fixed before exe
 
 A new or empty directory receives `standard-study.json` (header, rows, comparisons),
 `standard-study-rows.csv` and `standard-study-comparisons.csv` (six `#` header lines: protocol ID, execution
-semantics, git commit, corpus index hash, layer and evidence class, constants), and `campaign/` with the
+semantics, git commit, corpus index identity, layer and evidence class, constants), and `campaign/` with the
 per-run manifest/metrics/events evidence and the validated campaign index. The header records the protocol ID,
 `WORK_CONSERVING_TASK_EXECUTION_V3`, the git commit and dirty flag, every constant, the corpus list with
-SHA-256 per instance, and the corpus index hash (SHA-256 of `<sha256>  <file name>\n` lines in ascending path
-order). Any failed run, incomplete workflow, or pairing violation aborts the study.
+the identity of each instance, and the identity of the corpus index. Any failed run, incomplete workflow, or pairing violation aborts the study.
 
 Command (smoke only; a full matrix is a separate, declared execution):
 
