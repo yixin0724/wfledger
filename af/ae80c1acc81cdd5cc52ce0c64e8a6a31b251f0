@@ -1,0 +1,18 @@
+CONTRIBUTING.md
+  h_adc77830afcf4d 36-80
+docs/README.md
+  h_adc77830afcf4d 102
+docs/getting-started/BUILD.md
+  h_adc77830afcf4d 101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "afae80c1acc81cdd5cc52ce0c64e8a6a31b251f0",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
