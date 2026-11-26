@@ -1,7 +1,6 @@
 package org.workflowsim.experiments.standard;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -22,6 +21,7 @@ import org.workflowsim.experiment.ExperimentCampaignArtifactWriter;
 import org.workflowsim.experiment.ExperimentCampaignExecutor;
 import org.workflowsim.experiment.ExperimentCampaignResult;
 import org.workflowsim.experiment.ExperimentPlan;
+import org.workflowsim.experiment.ExperimentProvenance;
 import org.workflowsim.experiment.HolmStepDownCorrection;
 import org.workflowsim.experiment.PairedWilcoxonSignificance;
 import org.workflowsim.experiment.RandomizationDesign;
@@ -386,8 +386,10 @@ public final class StandardStudy {
         Map<String, Object> header = new LinkedHashMap<String, Object>();
         header.put("protocolId", PROTOCOL_ID);
         header.put("executionSemantics", TaskExecutionModel.EXECUTION_SEMANTICS);
-        header.put("gitCommit", git("rev-parse", "HEAD"));
-        header.put("gitWorkingTreeDirty", gitDirty());
+        Path moduleRoot = ExperimentProvenance.moduleRoot(StandardStudy.class);
+        String commit = ExperimentProvenance.gitCommit(moduleRoot);
+        header.put("gitCommit", commit);
+        header.put("gitWorkingTreeDirty", commit == null ? null : ExperimentProvenance.gitDirty(moduleRoot));
         header.put("evidenceClass", design.evidenceClass.name());
         header.put("layer", design.layer.name());
         header.put("baseline", design.layer.getBaseline());
@@ -546,47 +548,6 @@ public final class StandardStudy {
             Files.createDirectories(normalized);
         }
         return normalized;
-    }
-
-    private static String git(String... arguments) {
-        List<String> command = new ArrayList<String>();
-        command.add("git");
-        command.addAll(Arrays.asList(arguments));
-        try {
-            Process process =
-                    new ProcessBuilder(command).redirectErrorStream(true).start();
-            byte[] bytes;
-            try (InputStream stream = process.getInputStream()) {
-                bytes = readAll(stream);
-            }
-            if (process.waitFor() != 0) {
-                return "UNAVAILABLE_GIT_EXIT_" + process.exitValue();
-            }
-            return new String(bytes, StandardCharsets.UTF_8).trim();
-        } catch (IOException exception) {
-            return "UNAVAILABLE_GIT_NOT_EXECUTABLE";
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while reading the git commit", exception);
-        }
-    }
-
-    private static Boolean gitDirty() {
-        String status = git("status", "--porcelain");
-        if (status.startsWith("UNAVAILABLE_")) {
-            return null;
-        }
-        return Boolean.valueOf(!status.isEmpty());
-    }
-
-    private static byte[] readAll(InputStream stream) throws IOException {
-        java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
-        byte[] chunk = new byte[8192];
-        int read;
-        while ((read = stream.read(chunk)) >= 0) {
-            buffer.write(chunk, 0, read);
-        }
-        return buffer.toByteArray();
     }
 
     public static void main(String[] args) throws Exception {

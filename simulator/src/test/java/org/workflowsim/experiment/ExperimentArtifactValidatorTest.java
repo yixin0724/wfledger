@@ -153,7 +153,7 @@ class ExperimentArtifactValidatorTest {
         Path datasetRoot = Files.createDirectory(output.resolve("datasets"));
         ExperimentEvidenceContext context = ExperimentEvidenceContext.builder("validator-study")
                 .artifact("org.workflowsim", "validator-study", "1.0")
-                .driver(ExperimentArtifactValidatorTest.class, "org/workflowsim/experiment")
+                .driver(ExperimentArtifactValidatorTest.class)
                 .protocol("validator-study-protocol", null)
                 .datasetRoot(datasetRoot)
                 .build();
@@ -208,6 +208,76 @@ class ExperimentArtifactValidatorTest {
         java.io.IOException exception = assertThrows(
                 java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
         assertTrue(exception.getMessage().contains("explicit study field"));
+    }
+
+    @Test
+    void readsHistoricalProvenanceV3CodeHashesAndRejectsMixedShapes(@TempDir Path output) throws Exception {
+        Log.disable();
+        SimulationReport report = new SimulationRunner()
+                .run(
+                        SimulationConfig.builder(resourcePath("/dax/reproducibility-workflow.dax"), 2)
+                                .schedulingAlgorithm(Parameters.SchedulingAlgorithm.FCFS)
+                                .build(),
+                        PlatformProfiles.homogeneousLocal("validator-provenance-shape", 2));
+        ExperimentArtifactWriter.ExperimentArtifacts artifacts =
+                ExperimentArtifactWriter.write(report, output, "provenance-shape-run");
+        JsonObject current = JsonParser.parseString(
+                        new String(Files.readAllBytes(artifacts.getManifest()), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        assertEquals(
+                "workflowsim-provenance-v4",
+                current.getAsJsonObject("provenance").get("schema").getAsString());
+
+        String sha = "0000000000000000000000000000000000000000000000000000000000000000";
+        JsonObject historical = current.deepCopy();
+        JsonObject provenance = historical.getAsJsonObject("provenance");
+        provenance.addProperty("schema", "workflowsim-provenance-v3");
+        JsonObject core = provenance.getAsJsonObject("core");
+        core.addProperty("codeSource", "file:/historical/classes/");
+        core.addProperty("binarySha256", (String) null);
+        core.addProperty("modulePomSha256", sha);
+        core.addProperty("sourceTreeSha256", sha);
+        core.addProperty("sourceFileCount", 1);
+        core.addProperty("sourceTreeScope", "src/main/java/**/*.java");
+        JsonObject execution = provenance.getAsJsonObject("execution");
+        execution.remove("gitCommit");
+        execution.remove("gitDirty");
+        execution.addProperty("javaClassPathSha256", sha);
+        execution.addProperty("reactorPomSha256", sha);
+        Files.write(artifacts.getManifest(), JSON.toJson(historical).getBytes(StandardCharsets.UTF_8));
+        ExperimentArtifactValidator.validate(artifacts.getManifest());
+
+        execution.remove("javaClassPathSha256");
+        Files.write(artifacts.getManifest(), JSON.toJson(historical).getBytes(StandardCharsets.UTF_8));
+        assertThrows(java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+
+        JsonObject mixed = current.deepCopy();
+        mixed.getAsJsonObject("provenance").getAsJsonObject("core").addProperty("sourceTreeSha256", sha);
+        Files.write(artifacts.getManifest(), JSON.toJson(mixed).getBytes(StandardCharsets.UTF_8));
+        java.io.IOException legacyField = assertThrows(
+                java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+        assertTrue(legacyField.getMessage().contains("sourceTreeSha256"), legacyField.getMessage());
+
+        JsonObject unknownCommit = current.deepCopy();
+        JsonObject unknownExecution =
+                unknownCommit.getAsJsonObject("provenance").getAsJsonObject("execution");
+        unknownExecution.add("gitCommit", com.google.gson.JsonNull.INSTANCE);
+        unknownExecution.add("gitDirty", com.google.gson.JsonNull.INSTANCE);
+        Files.write(artifacts.getManifest(), JSON.toJson(unknownCommit).getBytes(StandardCharsets.UTF_8));
+        ExperimentArtifactValidator.validate(artifacts.getManifest());
+
+        unknownExecution.addProperty("gitDirty", true);
+        Files.write(artifacts.getManifest(), JSON.toJson(unknownCommit).getBytes(StandardCharsets.UTF_8));
+        assertThrows(java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+
+        unknownExecution.addProperty("gitCommit", "abc123");
+        Files.write(artifacts.getManifest(), JSON.toJson(unknownCommit).getBytes(StandardCharsets.UTF_8));
+        assertThrows(java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
+
+        unknownExecution.remove("gitCommit");
+        unknownExecution.add("gitDirty", com.google.gson.JsonNull.INSTANCE);
+        Files.write(artifacts.getManifest(), JSON.toJson(unknownCommit).getBytes(StandardCharsets.UTF_8));
+        assertThrows(java.io.IOException.class, () -> ExperimentArtifactValidator.validate(artifacts.getManifest()));
     }
 
     @Test

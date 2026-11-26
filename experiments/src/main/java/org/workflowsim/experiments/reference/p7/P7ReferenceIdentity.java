@@ -16,7 +16,6 @@ final class P7ReferenceIdentity {
     static final String VERSION = "1.0";
     static final String PROTOCOL_FILE_NAME = "P7_PROTOCOL.md";
     static final String PROTOCOL_ID = "docs/experiments/reference-baselines/" + PROTOCOL_FILE_NAME;
-    static final String SOURCE_SUBPATH = "org/workflowsim/experiments/reference/p7";
 
     private P7ReferenceIdentity() {}
 
@@ -24,7 +23,7 @@ final class P7ReferenceIdentity {
         Path normalizedRoot = ReferenceDatasetRoot.require(datasetRoot);
         return ExperimentEvidenceContext.builder(STUDY_ID)
                 .artifact(GROUP_ID, ARTIFACT_ID, VERSION)
-                .driver(P7BaselineExecutor.class, SOURCE_SUBPATH)
+                .driver(P7BaselineExecutor.class)
                 .protocol(PROTOCOL_ID, protocolFile())
                 .datasetRoot(normalizedRoot)
                 .build();

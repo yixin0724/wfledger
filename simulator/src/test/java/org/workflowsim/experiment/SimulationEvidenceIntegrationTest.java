@@ -97,16 +97,17 @@ class SimulationEvidenceIntegrationTest {
         assertTrue(manifest.contains("workflowsim-experiment-manifest-v4"));
         assertTrue(manifest.contains("fixture-fcfs.metrics.json"));
         assertTrue(manifest.contains("fixture-fcfs.events.jsonl"));
-        assertTrue(manifest.contains("sourceTreeSha256"));
+        assertTrue(manifest.contains("workflowsim-provenance-v4"));
         assertTrue(manifest.contains("\"study\": null"));
         assertTrue(metrics.contains("workflowsim-simulation-metrics-v2"));
-        JsonObject core = JsonParser.parseString(manifest)
-                .getAsJsonObject()
-                .getAsJsonObject("provenance")
-                .getAsJsonObject("core");
-        assertTrue(core.get("sourceTreeSha256").getAsString().matches("[0-9a-f]{64}"));
-        assertTrue(core.get("sourceFileCount").getAsInt() > 0);
-        assertEquals("src/main/java/**/*.java", core.get("sourceTreeScope").getAsString());
+        JsonObject provenance =
+                JsonParser.parseString(manifest).getAsJsonObject().getAsJsonObject("provenance");
+        assertEquals(
+                SimulationRunner.class.getName(),
+                provenance.getAsJsonObject("core").get("anchorClass").getAsString());
+        JsonObject execution = provenance.getAsJsonObject("execution");
+        assertTrue(execution.has("gitCommit") && execution.has("gitDirty"));
+        assertFalse(execution.has("javaClassPathSha256"));
         assertEquals(
                 report.getEvents().size(),
                 ExperimentArtifactValidator.validate(artifacts.getManifest()).getEventCount());

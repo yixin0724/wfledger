@@ -115,7 +115,7 @@ public final class Workbench {
             Path datasetRoot = configPath.toAbsolutePath().getParent();
             ExperimentEvidenceContext context = ExperimentEvidenceContext.builder("workbench-experiment")
                     .artifact("org.workflowsim", "workbench", "1.0")
-                    .driver(Workbench.class, "org/workflowsim/experiments/workbench")
+                    .driver(Workbench.class)
                     .protocol("workbench-configuration-v1", directory.resolve("configuration.json"))
                     .datasetRoot(datasetRoot)
                     .build();

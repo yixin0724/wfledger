@@ -12,7 +12,6 @@ public final class ExperimentEvidenceContext {
     private final String artifactId;
     private final String version;
     private final Class<?> driverClass;
-    private final String sourceSubpath;
     private final String protocolId;
     private final Path protocolFile;
     private final Path datasetRoot;
@@ -23,7 +22,6 @@ public final class ExperimentEvidenceContext {
         this.artifactId = builder.artifactId;
         this.version = builder.version;
         this.driverClass = builder.driverClass;
-        this.sourceSubpath = builder.sourceSubpath;
         this.protocolId = builder.protocolId;
         this.protocolFile = builder.protocolFile;
         this.datasetRoot = builder.datasetRoot;
@@ -36,9 +34,7 @@ public final class ExperimentEvidenceContext {
     public Map<String, Object> asMap() {
         Map<String, Object> values = new LinkedHashMap<String, Object>();
         values.put("id", studyId);
-        values.put(
-                "component",
-                ExperimentProvenance.componentIdentity(driverClass, groupId, artifactId, version, sourceSubpath));
+        values.put("component", ExperimentProvenance.componentIdentity(driverClass, groupId, artifactId, version));
 
         boolean protocolAvailable = protocolFile != null && Files.isRegularFile(protocolFile);
         Map<String, Object> protocol = new LinkedHashMap<String, Object>();
@@ -60,7 +56,6 @@ public final class ExperimentEvidenceContext {
         private String artifactId;
         private String version;
         private Class<?> driverClass;
-        private String sourceSubpath;
         private String protocolId;
         private Path protocolFile;
         private Path datasetRoot;
@@ -76,12 +71,11 @@ public final class ExperimentEvidenceContext {
             return this;
         }
 
-        public Builder driver(Class<?> driverClass, String sourceSubpath) {
+        public Builder driver(Class<?> driverClass) {
             if (driverClass == null) {
                 throw new IllegalArgumentException("Study driver class is required");
             }
             this.driverClass = driverClass;
-            this.sourceSubpath = requireText(sourceSubpath, "Study source subpath");
             return this;
         }
 
@@ -112,7 +106,6 @@ public final class ExperimentEvidenceContext {
                     || artifactId == null
                     || version == null
                     || driverClass == null
-                    || sourceSubpath == null
                     || protocolId == null
                     || datasetRoot == null) {
                 throw new IllegalStateException("Study artifact, driver, protocol, and dataset root are required");

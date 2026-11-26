@@ -9,19 +9,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
-final class ExperimentProvenance {
+/** Code and execution provenance recorded in every experiment manifest. */
+public final class ExperimentProvenance {
 
     static final String SCHEMA_V3 = "workflowsim-provenance-v3";
+    static final String SCHEMA_V4 = "workflowsim-provenance-v4";
     private static final String CORE_GROUP_ID = "org.workflowsim";
     private static final String CORE_ARTIFACT_ID = "workflowsim";
     private static final String CORE_VERSION = "1.0";
+    private static final Pattern COMMIT = Pattern.compile("[0-9a-f]{40}");
+    private static final long GIT_STATUS_TIMEOUT_SECONDS = 30L;
 
     private ExperimentProvenance() {}
 
@@ -31,24 +36,21 @@ final class ExperimentProvenance {
 
     static Map<String, Object> capture(ExperimentEvidenceContext context) {
         Map<String, Object> values = new LinkedHashMap<String, Object>();
-        values.put("schema", SCHEMA_V3);
-        values.put(
-                "core", componentIdentity(SimulationRunner.class, CORE_GROUP_ID, CORE_ARTIFACT_ID, CORE_VERSION, null));
+        values.put("schema", SCHEMA_V4);
+        values.put("core", componentIdentity(SimulationRunner.class, CORE_GROUP_ID, CORE_ARTIFACT_ID, CORE_VERSION));
         values.put("study", context == null ? null : context.asMap());
 
         Map<String, Object> execution = new LinkedHashMap<String, Object>();
-        String classPath = System.getProperty("java.class.path", "");
-        execution.put("javaClassPathSha256", sha256(classPath.getBytes(StandardCharsets.UTF_8)));
         execution.put("workingDirectory", System.getProperty("user.dir"));
         Path moduleRoot = moduleRoot(SimulationRunner.class);
-        Path reactorPom = moduleRoot == null ? null : moduleRoot.getParent().resolve("pom.xml");
-        execution.put("reactorPomSha256", fingerprintOrNull(reactorPom));
+        String commit = gitCommit(moduleRoot);
+        execution.put("gitCommit", commit);
+        execution.put("gitDirty", commit == null ? null : gitDirty(moduleRoot));
         values.put("execution", execution);
         return values;
     }
 
-    static Map<String, Object> componentIdentity(
-            Class<?> anchor, String groupId, String artifactId, String version, String sourceSubpath) {
+    static Map<String, Object> componentIdentity(Class<?> anchor, String groupId, String artifactId, String version) {
         if (anchor == null || isBlank(groupId) || isBlank(artifactId) || isBlank(version)) {
             throw new IllegalArgumentException("Component anchor and Maven coordinates are required");
         }
@@ -57,28 +59,156 @@ final class ExperimentProvenance {
         values.put("artifactId", artifactId);
         values.put("version", version);
         values.put("anchorClass", anchor.getName());
-
-        Path codeSourcePath = codeSourcePath(anchor);
-        values.put("codeSource", codeSource(anchor));
-        values.put(
-                "binarySha256",
-                codeSourcePath != null && Files.isRegularFile(codeSourcePath) ? fingerprint(codeSourcePath) : null);
-
-        Path moduleRoot = moduleRoot(anchor);
-        values.put("modulePomSha256", moduleRoot == null ? null : fingerprintOrNull(moduleRoot.resolve("pom.xml")));
-        Path sourceRoot = moduleRoot == null ? null : moduleRoot.resolve("src/main/java");
-        String normalizedSubpath = normalizeSourceSubpath(sourceSubpath);
-        if (sourceRoot != null && normalizedSubpath != null) {
-            sourceRoot = sourceRoot.resolve(normalizedSubpath).normalize();
-        }
-        Map<String, Object> sourceTree = sourceTree(sourceRoot);
-        values.put("sourceTreeSha256", sourceTree.get("sha256"));
-        values.put("sourceFileCount", sourceTree.get("fileCount"));
-        values.put("sourceTreeScope", sourceTreeScope(normalizedSubpath, sourceRoot));
         return values;
     }
 
-    static Path moduleRoot(Class<?> anchor) {
+    /**
+     * Returns the 40-hex commit checked out in the Git repository or worktree enclosing {@code start}, read
+     * directly from the Git metadata; {@code null} when there is no enclosing checkout or HEAD cannot be resolved.
+     */
+    public static String gitCommit(Path start) {
+        Path checkout = checkoutRoot(start);
+        if (checkout == null) {
+            return null;
+        }
+        try {
+            Path gitDir = gitDirectory(checkout.resolve(".git"));
+            if (gitDir == null) {
+                return null;
+            }
+            Path commonDir = commonDirectory(gitDir);
+            String head = firstLine(gitDir.resolve("HEAD"));
+            for (int depth = 0; head != null && depth < 8; depth++) {
+                if (COMMIT.matcher(head).matches()) {
+                    return head;
+                }
+                if (!head.startsWith("ref:")) {
+                    return null;
+                }
+                head = resolveRef(gitDir, commonDir, head.substring(4).trim());
+            }
+            return null;
+        } catch (IOException exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns whether {@code git status --porcelain} reports changes in the checkout enclosing {@code start};
+     * {@code null} when there is no checkout or Git cannot answer within the timeout.
+     */
+    public static Boolean gitDirty(Path start) {
+        Path checkout = checkoutRoot(start);
+        if (checkout == null) {
+            return null;
+        }
+        Path stdout = null;
+        Path stderr = null;
+        try {
+            stdout = Files.createTempFile("wfledger-git-status", ".out");
+            stderr = Files.createTempFile("wfledger-git-status", ".err");
+            ProcessBuilder builder = new ProcessBuilder("git", "status", "--porcelain")
+                    .directory(checkout.toFile())
+                    .redirectOutput(stdout.toFile())
+                    .redirectError(stderr.toFile());
+            builder.environment().put("GIT_OPTIONAL_LOCKS", "0");
+            Process process = builder.start();
+            if (!process.waitFor(GIT_STATUS_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return null;
+            }
+            if (process.exitValue() != 0) {
+                return null;
+            }
+            return Boolean.valueOf(Files.size(stdout) > 0L);
+        } catch (IOException exception) {
+            return null;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while reading the Git working-tree status", exception);
+        } finally {
+            deleteQuietly(stdout);
+            deleteQuietly(stderr);
+        }
+    }
+
+    private static Path checkoutRoot(Path start) {
+        if (start == null) {
+            return null;
+        }
+        for (Path directory = start.toAbsolutePath().normalize();
+                directory != null;
+                directory = directory.getParent()) {
+            if (Files.exists(directory.resolve(".git"))) {
+                return directory;
+            }
+        }
+        return null;
+    }
+
+    private static Path gitDirectory(Path dotGit) throws IOException {
+        if (Files.isDirectory(dotGit)) {
+            return dotGit;
+        }
+        String pointer = firstLine(dotGit);
+        if (pointer == null || !pointer.startsWith("gitdir:")) {
+            return null;
+        }
+        Path target = dotGit.getParent().resolve(pointer.substring(7).trim()).normalize();
+        return Files.isDirectory(target) ? target : null;
+    }
+
+    private static Path commonDirectory(Path gitDir) throws IOException {
+        String common = firstLine(gitDir.resolve("commondir"));
+        return common == null ? gitDir : gitDir.resolve(common).normalize();
+    }
+
+    private static String resolveRef(Path gitDir, Path commonDir, String ref) throws IOException {
+        if (ref.isEmpty() || ref.contains("..")) {
+            return null;
+        }
+        for (Path base : Arrays.asList(gitDir, commonDir)) {
+            String loose = firstLine(base.resolve(ref));
+            if (loose != null) {
+                return loose;
+            }
+        }
+        Path packed = commonDir.resolve("packed-refs");
+        if (!Files.isRegularFile(packed)) {
+            return null;
+        }
+        for (String line : Files.readAllLines(packed, StandardCharsets.UTF_8)) {
+            String[] fields = line.trim().split(" ");
+            if (fields.length == 2
+                    && fields[1].equals(ref)
+                    && COMMIT.matcher(fields[0]).matches()) {
+                return fields[0];
+            }
+        }
+        return null;
+    }
+
+    private static String firstLine(Path file) throws IOException {
+        if (!Files.isRegularFile(file)) {
+            return null;
+        }
+        List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+        return lines.isEmpty() ? null : lines.get(0).trim();
+    }
+
+    private static void deleteQuietly(Path file) {
+        if (file == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException ignored) {
+            file.toFile().deleteOnExit();
+        }
+    }
+
+    /** Returns the Maven module directory whose {@code target} holds the anchor class, or {@code null}. */
+    public static Path moduleRoot(Class<?> anchor) {
         return moduleRootForCodeSource(codeSourcePath(anchor));
     }
 
@@ -123,66 +253,6 @@ final class ExperimentProvenance {
         }
     }
 
-    static String sha256(byte[] content) {
-        return hex(digest().digest(content));
-    }
-
-    private static String fingerprintOrNull(Path path) {
-        return path != null && Files.isRegularFile(path) ? fingerprint(path) : null;
-    }
-
-    private static Map<String, Object> sourceTree(Path root) {
-        if (root == null || !Files.isDirectory(root)) {
-            Map<String, Object> unavailable = new LinkedHashMap<String, Object>();
-            unavailable.put("sha256", null);
-            unavailable.put("fileCount", Integer.valueOf(0));
-            return unavailable;
-        }
-        List<Path> files = new ArrayList<Path>();
-        collectJavaFiles(root, files);
-        Collections.sort(files);
-        MessageDigest digest = digest();
-        for (Path file : files) {
-            String relative = root.relativize(file).toString().replace('\\', '/');
-            digest.update(relative.getBytes(StandardCharsets.UTF_8));
-            digest.update((byte) 0);
-            digest.update(fingerprint(file).getBytes(StandardCharsets.UTF_8));
-            digest.update((byte) '\n');
-        }
-        Map<String, Object> values = new LinkedHashMap<String, Object>();
-        values.put("sha256", hex(digest.digest()));
-        values.put("fileCount", Integer.valueOf(files.size()));
-        return values;
-    }
-
-    private static void collectJavaFiles(Path directory, List<Path> results) {
-        try (java.util.stream.Stream<Path> stream = Files.walk(directory)) {
-            stream.filter(path -> Files.isRegularFile(path)
-                            && path.getFileName().toString().endsWith(".java"))
-                    .forEach(results::add);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Unable to fingerprint source tree " + directory, exception);
-        }
-    }
-
-    private static String sourceTreeScope(String sourceSubpath, Path sourceRoot) {
-        if (sourceRoot == null || !Files.isDirectory(sourceRoot)) {
-            return "unavailable: class code source is not a Maven target/classes directory";
-        }
-        return sourceSubpath == null ? "src/main/java/**/*.java" : "src/main/java/" + sourceSubpath + "/**/*.java";
-    }
-
-    private static String normalizeSourceSubpath(String sourceSubpath) {
-        if (sourceSubpath == null) {
-            return null;
-        }
-        String normalized = sourceSubpath.replace('\\', '/').replaceAll("^/+|/+$", "");
-        if (normalized.isEmpty() || normalized.contains("..") || normalized.startsWith("/")) {
-            throw new IllegalArgumentException("Source subpath must be a non-empty relative path");
-        }
-        return normalized;
-    }
-
     private static Path codeSourcePath(Class<?> anchor) {
         try {
             URL url = anchor.getProtectionDomain().getCodeSource().getLocation();
@@ -190,15 +260,6 @@ final class ExperimentProvenance {
                     ? null
                     : java.nio.file.Paths.get(url.toURI()).toAbsolutePath().normalize();
         } catch (SecurityException | URISyntaxException | IllegalArgumentException exception) {
-            return null;
-        }
-    }
-
-    private static String codeSource(Class<?> anchor) {
-        try {
-            URL url = anchor.getProtectionDomain().getCodeSource().getLocation();
-            return url == null ? null : url.toExternalForm();
-        } catch (SecurityException exception) {
             return null;
         }
     }

@@ -131,7 +131,6 @@ public final class P7EvidenceIndexValidator {
         if (!P7_DRIVER_CLASS.equals(requireString(component, "anchorClass", "P7 reference component"))) {
             throw new IOException("P7 reference identity has an unexpected driver class");
         }
-        requireString(component, "sourceTreeScope", "P7 reference component");
 
         JsonObject protocol = requireObject(identity, "protocol", "P7 reference identity");
         if (!isAcceptedProtocolId(requireString(protocol, "logicalId", "P7 reference protocol"))) {

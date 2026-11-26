@@ -100,7 +100,7 @@ class SimulationRunnerIntegrationTest {
         assertTrue(contents.contains("cpuPerSecond"));
         assertTrue(contents.contains("classType"));
         assertTrue(contents.contains("taskIds"));
-        assertTrue(contents.contains("sourceTreeSha256"));
+        assertTrue(contents.contains("gitCommit"));
         assertTrue(contents.contains("metrics"));
         assertTrue(contents.contains("workflowProfile"));
         assertEquals(1, report.getInputReports().size());

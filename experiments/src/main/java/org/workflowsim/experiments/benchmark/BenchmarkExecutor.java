@@ -414,7 +414,7 @@ public final class BenchmarkExecutor {
                 }
                 ExperimentEvidenceContext context = ExperimentEvidenceContext.builder(DVFS_PROTOCOL)
                         .artifact("org.workflowsim", "benchmark", "1.0")
-                        .driver(BenchmarkExecutor.class, "org/workflowsim/experiments/benchmark")
+                        .driver(BenchmarkExecutor.class)
                         .protocol(DVFS_PROTOCOL, root.resolve("benchmark-dvfs-plan.json"))
                         .datasetRoot(inputPath.getParent())
                         .build();
@@ -693,7 +693,7 @@ public final class BenchmarkExecutor {
             }
             ExperimentEvidenceContext context = ExperimentEvidenceContext.builder(PROTOCOL)
                     .artifact("org.workflowsim", "benchmark", "1.0")
-                    .driver(BenchmarkExecutor.class, "org/workflowsim/experiments/benchmark")
+                    .driver(BenchmarkExecutor.class)
                     .protocol(PROTOCOL, root.resolve("benchmark-plan.json"))
                     .datasetRoot(inputPath.getParent())
                     .build();

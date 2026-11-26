@@ -111,7 +111,7 @@ class WorkbenchIntegrationTest {
             assertEquals(
                     "workflowsim-experiment-manifest-v4", manifest.get("schema").getAsString());
             assertEquals(
-                    "workflowsim-provenance-v3",
+                    "workflowsim-provenance-v4",
                     manifest.getAsJsonObject("provenance").get("schema").getAsString());
             assertEquals(
                     "workbench-experiment",

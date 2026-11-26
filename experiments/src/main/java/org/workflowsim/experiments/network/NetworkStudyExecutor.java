@@ -60,7 +60,7 @@ public final class NetworkStudyExecutor {
         ExperimentArtifactWriter.writeJson(protocol, plan.asMap());
         ExperimentEvidenceContext context = ExperimentEvidenceContext.builder(plan.getProtocol())
                 .artifact("org.workflowsim", "network-study", "1.0")
-                .driver(NetworkStudyExecutor.class, "org/workflowsim/experiments/network")
+                .driver(NetworkStudyExecutor.class)
                 .protocol(plan.getProtocol(), protocol)
                 .datasetRoot(datasets.toAbsolutePath().normalize())
                 .build();

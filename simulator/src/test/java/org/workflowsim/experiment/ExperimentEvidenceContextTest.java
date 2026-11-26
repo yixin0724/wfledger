@@ -23,7 +23,7 @@ class ExperimentEvidenceContextTest {
     private ExperimentEvidenceContext.Builder fullBuilder() {
         return ExperimentEvidenceContext.builder("study-x")
                 .artifact("org.workflowsim", "driver", "1.0")
-                .driver(ExperimentEvidenceContextTest.class, "src/test/java")
+                .driver(ExperimentEvidenceContextTest.class)
                 .protocol("protocol-1", null)
                 .datasetRoot(datasetRoot);
     }
@@ -35,8 +35,7 @@ class ExperimentEvidenceContextTest {
         assertThrows(IllegalArgumentException.class, () -> fullBuilder().artifact(null, "a", "1.0"));
         assertThrows(IllegalArgumentException.class, () -> fullBuilder().artifact("g", "", "1.0"));
         assertThrows(IllegalArgumentException.class, () -> fullBuilder().artifact("g", "a", " "));
-        assertThrows(IllegalArgumentException.class, () -> fullBuilder().driver(null, "src"));
-        assertThrows(IllegalArgumentException.class, () -> fullBuilder().driver(String.class, ""));
+        assertThrows(IllegalArgumentException.class, () -> fullBuilder().driver(null));
         assertThrows(IllegalArgumentException.class, () -> fullBuilder().protocol(null, null));
     }
 
@@ -45,7 +44,7 @@ class ExperimentEvidenceContextTest {
 
         IllegalStateException noArtifact =
                 assertThrows(IllegalStateException.class, () -> ExperimentEvidenceContext.builder("study-x")
-                        .driver(ExperimentEvidenceContextTest.class, "src")
+                        .driver(ExperimentEvidenceContextTest.class)
                         .protocol("p", null)
                         .datasetRoot(datasetRoot)
                         .build());
@@ -53,7 +52,7 @@ class ExperimentEvidenceContextTest {
 
         assertThrows(IllegalStateException.class, () -> ExperimentEvidenceContext.builder("study-x")
                 .artifact("g", "a", "1.0")
-                .driver(ExperimentEvidenceContextTest.class, "src")
+                .driver(ExperimentEvidenceContextTest.class)
                 .protocol("p", null)
                 .build());
     }
@@ -73,7 +72,7 @@ class ExperimentEvidenceContextTest {
     void identityFieldsAreTrimmedAndNormalized() {
         ExperimentEvidenceContext context = ExperimentEvidenceContext.builder("  study-x  ")
                 .artifact(" g ", " a ", " 1.0 ")
-                .driver(ExperimentEvidenceContextTest.class, " src ")
+                .driver(ExperimentEvidenceContextTest.class)
                 .protocol(" proto ", null)
                 .datasetRoot(datasetRoot)
                 .build();

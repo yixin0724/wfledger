@@ -133,7 +133,7 @@ public final class ExperimentArtifactValidator {
         requireV4ForCoherentFeatures(root, schema);
         validateManifestTopLevelShape(root);
         if (MANIFEST_SCHEMA_V3.equals(schema) || MANIFEST_SCHEMA_V4.equals(schema)) {
-            validateV3Provenance(requireObject(root, "provenance", "experiment manifest"));
+            validateProvenance(requireObject(root, "provenance", "experiment manifest"));
         }
         if (MANIFEST_SCHEMA_V4.equals(schema)) {
             ManifestV4Validator.validate(root);
@@ -289,11 +289,13 @@ public final class ExperimentArtifactValidator {
                 + result.getEventCount());
     }
 
-    private static void validateV3Provenance(JsonObject provenance) throws IOException {
-        if (!ExperimentProvenance.SCHEMA_V3.equals(requireString(provenance, "schema", "provenance"))) {
-            throw new IOException("Unsupported provenance schema");
+    private static void validateProvenance(JsonObject provenance) throws IOException {
+        String schema = requireString(provenance, "schema", "provenance");
+        boolean legacy = ExperimentProvenance.SCHEMA_V3.equals(schema);
+        if (!legacy && !ExperimentProvenance.SCHEMA_V4.equals(schema)) {
+            throw new IOException("Unsupported provenance schema: " + schema);
         }
-        validateComponent(requireObject(provenance, "core", "provenance"), "provenance core");
+        validateComponent(requireObject(provenance, "core", "provenance"), "provenance core", legacy);
         if (!provenance.has("study")) {
             throw new IOException("provenance is missing explicit study field");
         }
@@ -302,17 +304,43 @@ public final class ExperimentArtifactValidator {
             if (!study.isJsonObject()) {
                 throw new IOException("provenance study must be an object or null");
             }
-            validateStudy(study.getAsJsonObject());
+            validateStudy(study.getAsJsonObject(), legacy);
         }
         JsonObject execution = requireObject(provenance, "execution", "provenance");
-        requireSha256(execution, "javaClassPathSha256", "provenance execution");
         requireString(execution, "workingDirectory", "provenance execution");
-        requireNullableSha256(execution, "reactorPomSha256", "provenance execution");
+        if (legacy) {
+            requireSha256(execution, "javaClassPathSha256", "provenance execution");
+            requireNullableSha256(execution, "reactorPomSha256", "provenance execution");
+            return;
+        }
+        rejectLegacyKeys(execution, "provenance execution", LEGACY_EXECUTION_KEYS);
+        String commit = requireNullableString(execution, "gitCommit", "provenance execution");
+        if (commit != null && !commit.matches("[0-9a-f]{40}")) {
+            throw new IOException("provenance execution has invalid gitCommit");
+        }
+        Boolean dirty = requireNullableBoolean(execution, "gitDirty", "provenance execution");
+        if (commit == null && dirty != null) {
+            throw new IOException("provenance execution records gitDirty without a gitCommit");
+        }
     }
 
-    private static void validateStudy(JsonObject study) throws IOException {
+    private static final String[] LEGACY_COMPONENT_KEYS = {
+        "codeSource", "binarySha256", "modulePomSha256", "sourceTreeSha256", "sourceFileCount", "sourceTreeScope"
+    };
+
+    private static final String[] LEGACY_EXECUTION_KEYS = {"javaClassPathSha256", "reactorPomSha256"};
+
+    private static void rejectLegacyKeys(JsonObject object, String subject, String[] keys) throws IOException {
+        for (String key : keys) {
+            if (object.has(key)) {
+                throw new IOException(subject + " carries provenance-v3 field " + key + " under provenance-v4");
+            }
+        }
+    }
+
+    private static void validateStudy(JsonObject study, boolean legacy) throws IOException {
         requireString(study, "id", "provenance study");
-        validateComponent(requireObject(study, "component", "provenance study"), "provenance study component");
+        validateComponent(requireObject(study, "component", "provenance study"), "provenance study component", legacy);
 
         JsonObject protocol = requireObject(study, "protocol", "provenance study");
         requireString(protocol, "logicalId", "provenance study protocol");
@@ -333,11 +361,15 @@ public final class ExperimentArtifactValidator {
         }
     }
 
-    private static void validateComponent(JsonObject component, String subject) throws IOException {
+    private static void validateComponent(JsonObject component, String subject, boolean legacy) throws IOException {
         requireString(component, "groupId", subject);
         requireString(component, "artifactId", subject);
         requireString(component, "version", subject);
         requireString(component, "anchorClass", subject);
+        if (!legacy) {
+            rejectLegacyKeys(component, subject, LEGACY_COMPONENT_KEYS);
+            return;
+        }
         requireNullableString(component, "codeSource", subject);
         requireNullableSha256(component, "binarySha256", subject);
         requireNullableSha256(component, "modulePomSha256", subject);
@@ -746,6 +778,16 @@ public final class ExperimentArtifactValidator {
             throw new IOException(subject + " has invalid boolean " + key);
         }
         return object.get(key).getAsBoolean();
+    }
+
+    private static Boolean requireNullableBoolean(JsonObject object, String key, String subject) throws IOException {
+        if (!object.has(key)) {
+            throw new IOException(subject + " is missing nullable boolean " + key);
+        }
+        if (object.get(key).isJsonNull()) {
+            return null;
+        }
+        return Boolean.valueOf(requireBoolean(object, key, subject));
     }
 
     private static int requireNonNegativeInt(JsonObject object, String key, String subject) throws IOException {

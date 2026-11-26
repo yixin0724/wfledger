@@ -63,7 +63,7 @@ The raw Java OFF run, the complete lifecycle certificates, the online-action bou
 
 ## Evidence Bundles and Component Identity
 
-[ExperimentArtifactWriter](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactWriter.java>) writes manifest v4, metrics v2, and events v1, with provenance at v3; when recording is enabled, matching `network-ledger`, `file-lifecycle`, or `storage-lifecycle` sidecars are written as well. A manifest alone is not a complete bundle. The event stream itself is bounded: [SimulationEventRecorder](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationEventRecorder.java>) fails fast when its retention cap is reached (default 20000, sized from the largest measured benchmark-standard-v1 stream of 9008 events) instead of keeping an unbounded resident list. The cap is run configuration: raise `eventRecorderCap` (the `SimulationConfig` builder option or the Workbench `simulation.eventRecorderCap` field; a non-default value is recorded as `configuration.eventRecorderCap`) or explicitly use the disabled recorder.
+[ExperimentArtifactWriter](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentArtifactWriter.java>) writes manifest v4, metrics v2, and events v1, with provenance at v4; when recording is enabled, matching `network-ledger`, `file-lifecycle`, or `storage-lifecycle` sidecars are written as well. A manifest alone is not a complete bundle. The event stream itself is bounded: [SimulationEventRecorder](<../../simulator/src/main/java/org/workflowsim/experiment/SimulationEventRecorder.java>) fails fast when its retention cap is reached (default 20000, sized from the largest measured benchmark-standard-v1 stream of 9008 events) instead of keeping an unbounded resident list. The cap is run configuration: raise `eventRecorderCap` (the `SimulationConfig` builder option or the Workbench `simulation.eventRecorderCap` field; a non-default value is recorded as `configuration.eventRecorderCap`) or explicitly use the disabled recorder.
 
 The [manifest writer](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentManifestWriter.java>) records input order and identities, the arrival table, matrices, algorithm tags and contracts, data movement, failures/overheads, platform topology/storage, actual placement, Job/Task results, and the observation scope.
 
@@ -75,7 +75,13 @@ The legacy SHARED storage rate `platform.storage.maxTransferRateMbPerSecond` is 
 
 ### Provenance
 
-[Provenance](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentProvenance.java>) records the Git commit of the source checkout that produced the run and the working directory; JVM and OS information is kept in the manifest's `runtime` object. Together with the recorded input identities and the complete configuration, the commit identifies the run. When the commit is unavailable, the missing state is recorded explicitly. A research handover must also retain build-dependency versions and any external policies or resource inputs. A study protocol is bound by its logical ID and its original bytes.
+[Provenance](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentProvenance.java>) (`workflowsim-provenance-v4`) records the code version and the execution location:
+
+- `execution.gitCommit`: the 40-hex `HEAD` commit of the Git checkout (repository or linked worktree) enclosing the simulator module, read from the Git metadata; `null` when the module does not run from a checkout.
+- `execution.gitDirty`: whether `git status --porcelain` reports uncommitted changes; `null` when the commit is unknown or Git cannot answer. A missing Git installation never fails a run.
+- `execution.workingDirectory`, and per component (`core`, `study.component`) only the Maven coordinates `groupId`/`artifactId`/`version` and the `anchorClass`.
+
+JVM and OS information is kept in the manifest's `runtime` object. Together with the recorded input identities (`inputs[].sha256`, verified by a rerun) and the complete configuration, the commit identifies the run; a dirty or unknown state is recorded explicitly rather than presumed clean. Validators still read historical `workflowsim-provenance-v3` manifests, whose code identity is a set of SHA-256 fingerprints (`execution.javaClassPathSha256`, `reactorPomSha256`, per component `binarySha256`, `modulePomSha256`, `sourceTreeSha256`, `sourceFileCount`, `sourceTreeScope`, `codeSource`); current code never writes that shape, and a v4 provenance carrying those fields is rejected. A research handover must also retain build-dependency versions and any external policies or resource inputs. A study protocol is bound by its logical ID and its original bytes.
 
 ## Validation, Rerun, and Retention
 
