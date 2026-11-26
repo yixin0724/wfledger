@@ -364,11 +364,6 @@ public final class SimulationRunner {
         }
     }
 
-    /**
-     * FGCS-R5 (2026-11-24): planners and online policies rank VMs by nominal MIPS while DEFAULT runs
-     * the first tier. A VM-dependent ratio between them silently reorders the fleet; a uniform ratio
-     * (including 1) keeps the compute order. An untiered VM has ratio 1.
-     */
     private static void validateUniformDefaultTierRatio(PlatformProfile platform) {
         PlatformProfile.VmSpec first = null;
         for (PlatformProfile.VmSpec spec : platform.getVms()) {

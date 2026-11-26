@@ -314,17 +314,6 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         return total / perVm.size();
     }
 
-    /**
-     * Average communication cost {@code c̄(parent, child)} used by the upward and downward ranks.
-     *
-     * <p>FGCS-R3 (2026-11-24) m2 root cause: this method previously averaged the per-pair transfer
-     * times. Topcuoglu, Hariri and Wu (IEEE TPDS 13(3), 2002, Section 3) define
-     * {@code c̄(i,k) = L̄ + data(i,k) / B̄}, where {@code B̄} is the average transfer rate among the
-     * processors and {@code L̄} the average startup time. This model has no communication startup term
-     * ({@code L̄ = 0}); {@code B̄} is the mean of the slower-endpoint rate over every ordered pair of
-     * distinct VMs compatible with the parent and child respectively. For uniform bandwidth both
-     * conventions coincide, so the paper fixtures (HEFT 80, CPOP 86, PEFT 122/133) are unchanged.
-     */
     final double meanCommunicationSeconds(Task parent, Task child) {
         double bytes = communicationBytes(parent, child);
         if (!(bytes > 0.0)) {
@@ -377,16 +366,6 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         return bytes / 1.0e6 / Math.min(from.getBw(), to.getBw());
     }
 
-    /**
-     * Bytes carried by the parent-to-child edge.
-     *
-     * <p>FGCS-R3 (2026-11-24) m4 root cause: the edge previously counted a child INPUT that the child
-     * also declares as OUTPUT, although {@link #dataArrivalOn} and the runtime pre-execution estimate
-     * ({@code WorkflowEngine.aggregatePreExecutionTransfer}) skip it via
-     * {@link FileItem#isRealInputFile}. Both of those charge every real INPUT declaration (a repeated
-     * declaration is charged again), so this estimate deliberately keeps per-declaration counting to
-     * stay consistent with them rather than de-duplicating only here.
-     */
     private double communicationBytes(Task parent, Task child) {
         double bytes = 0.0;
         LinkedHashSet<String> parentOutputs = new LinkedHashSet<String>();
@@ -411,7 +390,7 @@ abstract class AbstractLocalCommPlanningAlgorithm extends BasePlanningAlgorithm 
         }
         for (FileItem file : candidates) {
             String name = file.getName();
-            // Equivalent to FileItem.isRealInputFile(childFiles) in one linear pass.
+
             if (!childOutputs.contains(name) && parentOutputs.contains(name)) {
                 bytes += file.getSize();
             }

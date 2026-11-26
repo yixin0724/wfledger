@@ -491,7 +491,6 @@ public final class NetworkLedgerCodec {
             int start = at;
             take('-');
             if (take('0')) {
-
             } else if (peek() >= '1' && peek() <= '9') {
                 digits(start);
             } else {

@@ -146,7 +146,6 @@ class FrequencyTierInputFuzzTest {
             org.junit.jupiter.api.Assertions.fail(
                     "tierless VmSpec.defaultFrequencyTier() must fail loudly, not fabricate a tier");
         } catch (IndexOutOfBoundsException | IllegalStateException expected) {
-
         }
     }
 

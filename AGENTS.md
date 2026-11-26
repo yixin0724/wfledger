@@ -76,8 +76,7 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
    an evidence-contract revision and must state its rationale in
    `docs/experiments/RERUN_DIFF_CONTRACT.md`.
 4. **The events v1 event schema must not be changed unilaterally**: new event types or key
-   fields require user adjudication (the pending F-006/F-007 proposals are exactly this
-   case).
+   fields require user adjudication.
 5. Task clustering is **NONE only**: the legacy clustering family (Horizontal/Vertical/
    Block/Balanced) and the DC/SR/DR/BLOCK/VERTICAL reclustering modes were removed on
    2026-11-24 by user adjudication (recoverable from git history). `ReclusteringEngine`
@@ -87,8 +86,7 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
    track (`RL_POLICY`, `org.workflowsim.rl`) were removed on 2026-11-24; use the maintained
    `READY_BATCH_*` labels or the `SchedulingAlgorithmProvider` SPI instead.
 7. Every mutable global static (`Parameters`/`FailureMonitor`/`ReplicaCatalog`/
-   `NetworkTopology` and 68 fields in total (re-verified 2026-11-24 after removing
-   `RlPolicyRegistry` and `Parameters.legacySchedulingAliasesEnabled`), with the ledger frozen in
+   `NetworkTopology` and the rest, with the ledger frozen in
    `SessionResetMatrixTest.AUDIT_CLASSES`) must be accessed within a `SimulationSession`
    lifetime; before adding a global static, ask yourself why session injection is not used.
 8. Randomness must go through the `SimulationRandom` named streams; bare `new Random()` and
@@ -103,14 +101,14 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 
 ## Style and language
 
-- All javadoc, comments, and documentation on the maintained track are written in
-  **professional technical English**, keeping the existing "root-cause annotation" style
-  (F-xxx / PLAT-x / R-round markers plus the fix date). Language policy revised on
-  2026-11-02 by user decision: the whole repository is English.
+- Code carries **no explanatory comments**. Public types and members keep a short javadoc
+  only where the API contract is not obvious from the name and signature. Root causes,
+  fix rationale, and history belong in commit messages and the contract documents, not
+  in source (revised 2026-11-26 by user decision; the former F-xxx / R-round marker style
+  is retired). The whole repository is English.
 - Alias and mixed-language names already present inside dataset files keep their current
-  form; new file names use ASCII. Dataset fixtures are frozen bytes: translating text
-  inside a `.dax` file changes its SHA-256, which protocol identities record, so it must
-  never be done.
+  form; new file names use ASCII. Dataset fixtures are frozen bytes: never edit text
+  inside a `.dax` file, because recorded input identities would no longer match.
 
 ## Repository structure conventions (added by the 2026-10-20 review engineering)
 
@@ -139,8 +137,7 @@ documentation is involved), and the `check-docs.py` result in the same change.
 ## Definition of done
 
 - New logic: **write the failing test first** (with an expectation from one of the three
-  legal sources) → fix → all green; the regression test and its root-cause javadoc land as
-  a pair.
+  legal sources) → fix → all green; the root cause goes into the commit message.
 - Behavior change: the matching contract document is updated in the same change and
   `check-docs.py` reports 0 issues.
 - Close-out: `mvn -Pjavadoc clean verify` is green; when the Python audit domain is
@@ -150,9 +147,9 @@ documentation is involved), and the `check-docs.py` result in the same change.
 
 ## When you meet a "counter-intuitive" implementation
 
-Assume first that it is **deliberate**: read the root-cause annotation (F-xxx) in that
-javadoc and the matching contract document; if it still cannot be resolved, ask the user or
-file an issue. **Do not "fix" it in passing** — much of what looks odd in this repository
+Assume first that it is **deliberate**: read the matching contract document and the git
+history of that code (`git log -p`); if it still cannot be resolved, ask the user or file an
+issue. **Do not "fix" it in passing** — much of what looks odd in this repository
 is the scientific design itself (for example: whitelist regexes derived from constants,
 comparators using `Long.compare`, the parser's two-phase commit).
 

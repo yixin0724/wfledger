@@ -19,7 +19,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** File-level support for real manifest-v4 bundles; it never derives an expected verdict from an executor. */
 final class RerunStudyBundle {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
 
@@ -92,7 +91,6 @@ final class RerunStudyBundle {
         }
     }
 
-    /** Repairs integrity declarations only after the semantic mutation; it does not make invalid semantics valid. */
     void commitArtifactDigests() throws IOException {
         for (JsonElement element : manifest.getAsJsonArray("artifacts")) {
             JsonObject artifact = element.getAsJsonObject();

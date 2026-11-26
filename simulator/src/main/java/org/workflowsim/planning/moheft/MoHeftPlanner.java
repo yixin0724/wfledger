@@ -47,17 +47,6 @@ public final class MoHeftPlanner {
         return new MoHeftResult(front, balanced(finalFront).toSchedule());
     }
 
-    /**
-     * Keeps the {@code limit} best candidates by non-dominated sorting and crowding distance.
-     *
-     * <p>FGCS-R3 (2026-11-24) M5 root cause: the beam was {@code selectDiverse(nonDominated(expanded))},
-     * so it shrank below {@code K} whenever the first front had fewer than {@code K} members, and the
-     * discarded dominated partial schedules could no longer grow into non-dominated complete schedules.
-     * Durillo, Nae and Prodan (FGCS 36, 2014) keep the K best partial schedules ranked by non-dominated
-     * sorting with crowding distance (NSGA-II environmental selection): whole fronts are taken in rank
-     * order while they fit, and the front that overflows is truncated by descending crowding distance
-     * (ties by ascending candidate ID, for determinism).
-     */
     private static List<Candidate> selectBest(List<Candidate> candidates, int limit) {
         List<Candidate> remaining = new ArrayList<Candidate>(candidates);
         List<Candidate> selected = new ArrayList<Candidate>();
@@ -218,7 +207,7 @@ public final class MoHeftPlanner {
             List<MoHeftSchedule.Entry> vmReservations = nextReservations.get(vmId);
             if (vmReservations != null) {
                 for (MoHeftSchedule.Entry reservation : vmReservations) {
-                    // FGCS-R3 (2026-11-24) m7: exact gap test, as in the SHARED planners.
+
                     if (start + task.getComputeSecondsByVm().get(vmId) <= reservation.getStartSeconds()) {
                         break;
                     }

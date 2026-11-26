@@ -32,22 +32,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Parses every committed instance of the {@code datasets/wfgen-standard} corpus with
- * {@link WfCommonsJsonParser} (R7-WORKLOAD, 2026-11-25).
- *
- * <p>The expectations come from the corpus index {@code datasets/wfgen-standard/INDEX.json},
- * the contract source for this family: its statistics are recomputed independently by the
- * pure-stdlib {@code scripts/verify-workload-corpus.py} (sources at level 1, a task one
- * level below its deepest parent, which is the {@code WorkflowDagValidator} convention).
- * The simulator's parse result must agree on task count, edge count, depth, and widest
- * level, and the bytes parsed must be the bytes the index identifies (SHA-256).
- */
 class WfgenStandardCorpusParseTest {
 
     private static final String FAMILY = "wfgen-standard";
 
-    /** spec.json retains sizes 50 and 100: 10 (recipe, size) pairs times 20 instances. */
     private static final int EXPECTED_RETAINED = 200;
 
     @BeforeEach

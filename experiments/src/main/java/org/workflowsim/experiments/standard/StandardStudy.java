@@ -42,45 +42,21 @@ import org.workflowsim.utils.TaskExecutionModel;
 
 import com.google.gson.GsonBuilder;
 
-/**
- * Driver of the standard workflow-scheduling study ({@value #PROTOCOL_ID}).
- *
- * <p>STD-V1 (2026-11-25). Root cause: the historical FGCS drivers ran one deterministic run per cell on one
- * instance per family, so no statistical variation existed to test. The standard study treats every workflow
- * instance of <em>one</em> evidence class as a matched pairing unit: every candidate of <em>one</em> decision layer
- * runs on every instance under the same factor cell (VM count x CCR, optionally MTBF ratio), and candidates are
- * compared with the layer's declared baseline by a paired Wilcoxon signed-rank test over instances
- * ({@link PairedWilcoxonSignificance}), Holm-corrected within the family of non-baseline candidates of one factor
- * cell and metric ({@link HolmStepDownCorrection}), with the effect sizes of {@link PairedEffectSize}. The design,
- * every constant, and what the study does and does not support are declared in
- * {@code experiments/studies/standard/PROTOCOL.md}.
- *
- * <p>Execution goes through {@link ExperimentCampaignExecutor} (serial, one {@code SimulationSession} per run).
- * Each comparison group of the generated {@link ExperimentPlan} is one (factor cell, instance) unit with exactly
- * one baseline cell, so the core plan validation (unique IDs, one baseline per group, one cost caliber per group)
- * applies unchanged.
- */
+/** Driver of the standard workflow-scheduling study ({@value #PROTOCOL_ID}). */
 public final class StandardStudy {
 
-    /** Protocol identity written into every output. */
     public static final String PROTOCOL_ID = "standard-study-v1";
 
-    /** Kernel tick of the standard study, seconds (default kernel tick is 0.1 s). */
     public static final double TICK_SECONDS = 0.001;
 
-    /** Bounded-slowdown floor of the standard study, seconds. */
     public static final double BOUNDED_SLOWDOWN_TAU_SECONDS = 1.0;
 
-    /** Runtime reference speed converting WfFormat seconds into MI. */
     public static final double RUNTIME_REFERENCE_MIPS = 1000.0;
 
-    /** Event-retention cap of every run (fail fast if exceeded). */
     public static final int EVENT_RECORDER_CAP = 2_000_000;
 
-    /** Deterministic root seed (no random component without failures). */
     public static final long ROOT_SEED = 20261125L;
 
-    /** Metrics tested over instances. */
     public static final List<String> TESTED_METRICS =
             Collections.unmodifiableList(Arrays.asList("makespanSeconds", "energyJoules", "costUnits"));
 
@@ -97,12 +73,10 @@ public final class StandardStudy {
             this.members = Collections.unmodifiableList(Arrays.asList(members));
         }
 
-        /** @return the declared baseline label */
         public String getBaseline() {
             return baseline;
         }
 
-        /** @return the admissible candidate labels */
         public List<String> getMembers() {
             return members;
         }
@@ -134,14 +108,6 @@ public final class StandardStudy {
 
     private StandardStudy() {}
 
-    /**
-     * Runs the declared study and writes its outputs.
-     *
-     * @param design study declaration
-     * @param outputDirectory new or empty directory
-     * @return the written result
-     * @throws Exception when any run, check, or write fails (no partial result is reported as complete)
-     */
     public static Result run(Design design, Path outputDirectory) throws Exception {
         Path output = prepareEmptyDirectory(outputDirectory);
         Log.disable();
@@ -227,16 +193,6 @@ public final class StandardStudy {
         return new Result(json, rowsCsv, comparisonsCsv, header, rows, comparisons);
     }
 
-    /**
-     * Serial execution of every compute task on the fastest VM, including its SHARED input read under the runtime
-     * envelope rule: {@code S = sum_t (L_t + floor(mips_max * in_t / R)) / mips_max}. Stage-in, kernel ticks, and
-     * dependency releases are excluded; {@code speedup = S / makespan}.
-     *
-     * @param tasks parsed tasks
-     * @param storageRateMbPerSecond SHARED rate
-     * @param fastestMips fastest VM speed
-     * @return seconds
-     */
     public static double serialOnFastestSeconds(List<Task> tasks, double storageRateMbPerSecond, double fastestMips) {
         List<Task> ordered = new ArrayList<Task>(tasks);
         Collections.sort(ordered, (a, b) -> Integer.compare(a.getCloudletId(), b.getCloudletId()));
@@ -661,13 +617,6 @@ public final class StandardStudy {
         }
     }
 
-    /**
-     * Command-line entry: {@code <output-dir> <STATIC|ONLINE> <WFGEN_SYNTHETIC|WFINSTANCES_REAL_DERIVED>
-     * <vmCounts csv> <ccr csv> <instance.json>...}. All declared candidates of the layer are run.
-     *
-     * @param args arguments
-     * @throws Exception on any failure
-     */
     public static void main(String[] args) throws Exception {
         if (args.length < 6) {
             throw new IllegalArgumentException("usage: <output-dir> <STATIC|ONLINE> <evidence-class> <vm-counts> "
@@ -771,13 +720,6 @@ public final class StandardStudy {
             this.writeEvidence = builder.writeEvidence;
         }
 
-        /**
-         * Starts a design.
-         *
-         * @param layer decision layer
-         * @param evidenceClass evidence class of every instance
-         * @return builder with all layer members as candidates, VM counts {8, 16, 32}, all standard CCR targets
-         */
         public static Builder builder(Layer layer, EvidenceClass evidenceClass) {
             return new Builder(layer, evidenceClass);
         }
@@ -830,13 +772,6 @@ public final class StandardStudy {
                 return this;
             }
 
-            /**
-             * Enables the Weibull failure factor (online layer only).
-             *
-             * @param ratios MTBF / mean-task levels
-             * @param replicationCount seeds per (cell, instance), averaged before pairing
-             * @return this builder
-             */
             public Builder failures(List<Double> ratios, int replicationCount) {
                 mtbfRatios = new ArrayList<Double>(ratios);
                 replications = replicationCount;
@@ -853,11 +788,6 @@ public final class StandardStudy {
                 return this;
             }
 
-            /**
-             * Validates and builds the design.
-             *
-             * @return design
-             */
             public Design build() {
                 if (candidates.isEmpty() || !candidates.contains(layer.getBaseline())) {
                     throw new IllegalArgumentException(

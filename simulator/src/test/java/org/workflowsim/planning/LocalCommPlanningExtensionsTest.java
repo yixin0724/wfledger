@@ -67,16 +67,6 @@ class LocalCommPlanningExtensionsTest {
                 "the per-pair convention must match the cross-pair mean convention (equal for uniform pairs)");
     }
 
-    /**
-     * FGCS-R3 (2026-11-24) m2 regression. Topcuoglu, Hariri and Wu (IEEE TPDS 13(3), 2002, Section 3)
-     * define the average communication cost of an edge as {@code c̄(i,k) = L̄ + data(i,k) / B̄}, where
-     * {@code B̄} is the average transfer rate among the processors; it is not the mean of the per-pair
-     * transfer times. Hand derivation (no startup term in this model, so {@code L̄ = 0}): an 8 MB edge
-     * over three VMs with endpoint bandwidths 1, 2 and 4 MB/s; each ordered distinct pair transfers at
-     * the slower endpoint rate: (1,2)=1, (1,4)=1, (2,1)=1, (2,4)=2, (4,1)=1, (4,2)=2, so
-     * {@code B̄ = 8/6 = 4/3} MB/s and {@code c̄ = 8 / (4/3) = 6.0} s. The superseded mean-of-times
-     * convention gives (8+8+8+4+8+4)/6 = 6.667 s and is rejected.
-     */
     @Test
     void meanCommunicationUsesDataOverAverageTransferRatePerTopcuoglu2002() {
         Task entry = new Task(1, 2);
@@ -88,13 +78,6 @@ class LocalCommPlanningExtensionsTest {
         assertEquals(6.0, planner.meanCommunicationSeconds(entry, exit), EPSILON);
     }
 
-    /**
-     * FGCS-R3 (2026-11-24) m4 regression. A child that declares a file both as INPUT and as OUTPUT does
-     * not read it ({@link FileItem#isRealInputFile}); the runtime stage-in estimate and the planner's
-     * own data-arrival estimate both skip it, so the communication-cost estimate used by the ranks must
-     * skip it too. Expected value by contract: 0 bytes cross the edge, so both the pairwise and the
-     * average communication seconds are 0.
-     */
     @Test
     void communicationIgnoresAChildInputThatTheChildAlsoProduces() {
         Task entry = new Task(1, 2);
@@ -118,12 +101,6 @@ class LocalCommPlanningExtensionsTest {
         assertEquals(0.0, planner.meanCommunicationSeconds(entry, exit), EPSILON);
     }
 
-    /**
-     * FGCS-R3 (2026-11-24) m4 companion. The runtime pre-execution estimate and the planner's
-     * data-arrival estimate charge every real INPUT declaration, so a repeated declaration is charged
-     * twice; the rank communication estimate must use the same convention. Derivation: a 2 MB file
-     * declared twice as child INPUT over 1 MB/s endpoints gives (2 + 2) / 1 = 4 s.
-     */
     @Test
     void repeatedRealInputDeclarationsAreChargedLikeTheRuntimeEstimate() {
         Task entry = new Task(1, 2);

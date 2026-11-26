@@ -113,11 +113,6 @@ class RerunDiffExecutorIntegrationTest {
                         .getAsString());
     }
 
-    /**
-     * FGCS-R3 (2026-11-24): evidence declaring the historical WORK_CONSERVING_TASK_EXECUTION_V2 identity remains
-     * readable and rebuildable, but the current V3 re-simulation must report the identity change as a core
-     * divergence rather than an identical core (docs/experiments/RERUN_DIFF_CONTRACT.md).
-     */
     @Test
     void historicalV2ExecutionIdentityIsReadableButDivergesFromCurrentV3() throws Exception {
         Path run = Files.createDirectories(temporary.resolve("historical-v2-identity"));

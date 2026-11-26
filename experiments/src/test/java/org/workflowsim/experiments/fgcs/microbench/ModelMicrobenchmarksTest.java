@@ -67,8 +67,6 @@ class ModelMicrobenchmarksTest {
         assertTrue(payload(sharedSmall).getAsJsonArray("resources").toString().contains("STORE:source:READ"));
         assertTrue(payload(sharedLarge).getAsJsonArray("resources").toString().contains("STORE:source:READ"));
 
-        // Max-min gives each flow 0.5 MB/s. The 2 MB flow ends at 4 s, releasing
-        // capacity; the 6 MB flow then needs four more seconds at 1 MB/s.
         assertClose(4.0, effective(shared, sharedSmall) - start);
         assertClose(8.0, effective(shared, sharedLarge) - start);
 
@@ -137,9 +135,7 @@ class ModelMicrobenchmarksTest {
         SimulationReport.TaskOutcome retryParent = task(report, 2, retryJobId);
         assertEquals(Cloudlet.FAILED, failedParent.getTaskStatus());
         assertEquals(Cloudlet.SUCCESS, retryParent.getTaskStatus());
-        // FGCS-R5 (2026-11-24), hand-derived: 2000 MI at 1000 MI/s, lambda=1, gamma=0.1 -> one checkpoint,
-        // 2100 MI over [0.21, 2.31). The arrival 1.5 ends it after 1.29 s, past the checkpoint at 1.1 s:
-        // 1000 MI saved on VM 3, where resuming costs 1.0 s versus a 2.1 s re-execution on VM 8.
+
         assertEquals(3, failedParent.getVmId());
         assertEquals(3, retryParent.getVmId());
         assertClose(0.21, failedParent.getStartTime());
@@ -276,9 +272,6 @@ class ModelMicrobenchmarksTest {
                     || (jobId != null && !jobId.equals(event.getJobId()))
                     || (taskId != null && !event.getTaskIds().contains(taskId))) {
                 continue;
-            }
-            if (type == SimulationEventType.JOB_RETURNED && jobId != null) {
-                // The job ID already identifies the required terminal attempt.
             }
             assertTrue(match == null, "Duplicate main event " + type);
             match = event;

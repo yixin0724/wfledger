@@ -45,23 +45,9 @@ public final class SimulationMetrics {
     private final double retryComputeAttemptModeledProcessingCost;
     private final double computeJobOutcomeThroughputPerSecond;
     private final double meanComputeJobRunTimeSeconds;
-    /**
-     * Mean VM submission-to-start wait of compute Jobs.
-     *
-     * <p>FGCS-R6 (2026-11-25): identically 0.0 under the idle-only dispatch invariant (a Job is submitted only
-     * to an idle VM, and {@code WorkflowDatacenter} fails fast otherwise). A {@code queueDelays} overhead delays
-     * the submit event itself, so it is visible in decision-to-start and ready-to-start, never here. Kept for
-     * schema stability; {@code meanComputeTotalWaitingTimeSeconds} (ready to start) is the queueing measure.
-     */
+
     private final double meanJobVmQueueWaitingTimeSeconds;
 
-    /**
-     * Mean VM submission-to-finish time of compute Jobs.
-     *
-     * <p>FGCS-R6 (2026-11-25): equals {@code meanComputeJobRunTimeSeconds} under the idle-only dispatch
-     * invariant (see {@code meanJobVmQueueWaitingTimeSeconds}); kept for schema stability, not a response
-     * measure that includes queueing.
-     */
     private final double meanJobResponseTimeSeconds;
 
     private final double meanJobVmLevelSlowdown;
@@ -72,22 +58,10 @@ public final class SimulationMetrics {
     private final double meanComputeTrueSlowdown;
     private final int trueSlowdownObservationCount;
 
-    /**
-     * Bounded-slowdown floor {@code tau} applied to every {@code meanComputeTrueSlowdown}-family sample.
-     *
-     * <p>FGCS-R6 (2026-11-25): root cause - the floor was a hidden constant of 10 s (Feitelson 1997), while
-     * 48-76% of Pegasus Tasks run shorter than 10 s, so the metric degenerated to {@code wait / 10} for them
-     * and algorithm rankings flipped with the floor. The floor is now the declared configuration value.
-     */
     private final double boundedSlowdownThresholdSeconds;
 
-    /** FGCS-R6 (2026-11-25): slowdown samples whose execution envelope is shorter than the floor. */
     private final int boundedSlowdownFloorClampedObservationCount;
 
-    /**
-     * FGCS-R6 (2026-11-25): {@code boundedSlowdownFloorClampedObservationCount / trueSlowdownObservationCount},
-     * 0.0 when there is no sample. A high value means the slowdown family mostly reports {@code wait / tau}.
-     */
     private final double boundedSlowdownFloorClampedFraction;
 
     private final int totalWaitingTimeObservationCount;
@@ -136,27 +110,12 @@ public final class SimulationMetrics {
 
     private final double vmUtilizationJainFairnessIndex;
 
-    /**
-     * FGCS-R6 (2026-11-25): seconds of input reading folded into Job execution envelopes, summed over every
-     * Job outcome that has a {@code JOB_EXECUTION_STARTED} event ({@code effectiveDataStageSeconds}).
-     *
-     * <p>Root cause: legacy/fixed-endpoint models add the input-read seconds to the Job length, so busy
-     * time, utilisation and the linear energy model charge them at {@code P_max} as CPU-active time (about
-     * 89% of the busy time of CyberShake_50 under SHARED storage). The energy formula is unchanged; this
-     * field exposes the I/O part of the busy time so that the share can be reported.
-     */
     private final double totalInputReadSecondsInEnvelope;
 
-    /** FGCS-R6 (2026-11-25): {@code totalVmModeledBusyIntervalSeconds - totalInputReadSecondsInEnvelope}. */
     private final double totalComputeOnlyBusySeconds;
 
-    /** FGCS-R6 (2026-11-25): {@code totalInputReadSecondsInEnvelope / totalVmModeledBusyIntervalSeconds}. */
     private final double inputReadShareOfBusyTime;
 
-    /**
-     * FGCS-R6 (2026-11-25): Job outcomes covered by a {@code JOB_EXECUTION_STARTED} event. When it is below
-     * {@code jobOutcomeCount} (event recording disabled) the read decomposition is unavailable, not zero.
-     */
     private final int inputReadInEnvelopeObservationCount;
 
     private final transient Map<Integer, Map<Double, Double>> perTierBusySecondsByVm;
@@ -166,14 +125,7 @@ public final class SimulationMetrics {
     private final boolean controlledSharedStorageCriticalPathReferenceAvailable;
     private final String controlledSharedStorageCriticalPathReferenceScope;
     private final double controlledSharedStorageCriticalPathLowerBoundSeconds;
-    /**
-     * Makespan divided by the I/O-inclusive critical-path lower bound.
-     *
-     * <p>FGCS-R6 (2026-11-25): the denominator includes the model-generated stage-in Job and each Task's
-     * SHARED external-input read seconds (see {@link WorkflowModelReference}), so this is an "I/O-inclusive
-     * CP lower-bound SLR", not the compute-only SLR of Topcuoglu et al. (TPDS 2002). The field name is kept
-     * for schema stability.
-     */
+
     private final double controlledSharedStorageScheduleLengthRatio;
 
     private final boolean deadlineObservationEnabled;
@@ -361,10 +313,6 @@ public final class SimulationMetrics {
                 Collections.unmodifiableMap(new java.util.TreeMap<Double, Double>(fleetPerTierBusySeconds));
     }
 
-    /**
-     * FGCS-R6 (2026-11-25): additive observations introduced by the R6 metric audit, grouped so that the
-     * positional constructor does not grow one argument per field.
-     */
     private static final class R6Observations {
         double boundedSlowdownThresholdSeconds;
         int clampedSlowdownCount;
@@ -1314,10 +1262,8 @@ public final class SimulationMetrics {
         private final double modeledIntervalUtilization;
         private final double reportedCpuTimeOverMakespan;
 
-        /** FGCS-R6 (2026-11-25): input-read seconds folded into this VM's Job envelopes. */
         private final double inputReadSecondsInEnvelope;
 
-        /** FGCS-R6 (2026-11-25): {@code modeledBusyIntervalSeconds - inputReadSecondsInEnvelope}. */
         private final double computeOnlyBusySeconds;
 
         private VmMetrics(

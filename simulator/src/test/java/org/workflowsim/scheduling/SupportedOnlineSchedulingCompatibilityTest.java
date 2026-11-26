@@ -76,16 +76,6 @@ class SupportedOnlineSchedulingCompatibilityTest {
         }
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, B2): CONTRACTS head-of-line rule. The 2-PE head Job can use only the
-     * busy VM 9 while the 1-PE Job behind it could use idle VM 2. Arrival-order idle-VM policies
-     * (FCFS, ROUNDROBIN) are strict FIFO and dispatch nothing.
-     *
-     * <p>FGCS-R6 (2026-11-25): the ready-time policies plan every Job: VM 9 is busy for a bound 5 s,
-     * so the head plans on VM 9 (no dispatch) and Job 11 (1 s on either VM) plans on idle VM 2 with
-     * CT 1 versus 5 + 1 = 6 on VM 9 and is dispatched. Min-Min, Max-Min and MCT therefore all
-     * dispatch Job 11: an unplaceable head no longer blocks MCT.
-     */
     @Test
     void headOfLineBlockingFollowsTheDeclaredPolicyFamily() throws Exception {
         for (SchedulerFactory factory : supportedSchedulers()) {
@@ -110,10 +100,6 @@ class SupportedOnlineSchedulingCompatibilityTest {
         }
     }
 
-    /**
-     * FGCS-R6 (2026-11-25): a busy VM without a bound ready-time estimator fails fast instead of being
-     * treated as ready now.
-     */
     @Test
     void readyTimePoliciesRejectABusyVmWithoutAnEstimator() {
         for (SchedulerFactory factory : supportedSchedulers()) {

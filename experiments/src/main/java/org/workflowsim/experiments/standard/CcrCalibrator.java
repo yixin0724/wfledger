@@ -11,47 +11,13 @@ import org.workflowsim.WorkflowParser;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationSession;
 
-/**
- * Communication-to-computation ratio (CCR) control for the legacy SHARED storage model.
- *
- * <p>STD-V1 (2026-11-25). Root cause: in the historical FGCS matrices the CCR was an uncontrolled by-product of
- * each workflow's file sizes (CyberShake about 9, the other families at most 0.13), so the I/O regime was
- * confounded with the application. The standard study declares CCR as a factor and solves the storage rate.
- *
- * <p>Definition (declared; it mirrors the runtime read rule of {@code WorkflowDatacenter} and
- * {@code SharedStorageDagPlanner}, docs/algorithms/CONTRACTS.md "The Compute Envelope Model of SHARED"):
- *
- * <pre>
- *   B           = sum over compute tasks t, over real input files f of t, of bytes(f) / 1e6     [decimal MB]
- *   read(R)     = B / R                                                                         [s]
- *   compute     = sum over compute tasks t of L(t) / meanMips                                   [s]
- *   CCR(R)      = read(R) / compute
- *   R(target)   = B / (target * compute)                                                         (closed form)
- * </pre>
- *
- * <p>A real input file is {@link FileItem#isRealInputFile}: an input not also declared as an output of the same
- * task. {@code L(t)} is the parsed integer MI ({@code runtime * runtimeReferenceMips * runtimeScale}, floored at
- * the parser minimum). The model-generated stage-in Job is excluded, exactly as the runtime charges no envelope
- * read to it. The per-VM integer-MI truncation {@code floor(mips * inputSeconds)} of the runtime envelope is
- * deliberately not part of the definition: it depends on the VM, it is below one MI per task, and including it
- * would make CCR a property of the mapping. The rate is a finite positive double (STD-V1 storage widening), so
- * the achieved CCR equals the target up to binary64 rounding; {@link Calibration#getAchievedCcr()} recomputes it
- * from the solved rate.
- */
+/** Communication-to-computation ratio (CCR) control for the legacy SHARED storage model. */
 public final class CcrCalibrator {
 
-    /** Declared target levels of the standard study. */
     public static final double[] STANDARD_CCR_TARGETS = {0.1, 0.5, 1.0, 2.0, 5.0, 10.0};
 
     private CcrCalibrator() {}
 
-    /**
-     * Parses a workflow under the given configuration's runtime conversion and returns its compute tasks.
-     *
-     * @param workflowPath input path
-     * @param conversion configuration whose runtime reference MIPS and scale define {@code L(t)}
-     * @return parsed tasks in parser order
-     */
     public static List<Task> parse(String workflowPath, SimulationConfig conversion) {
         SimulationConfig config = SimulationConfig.builder(workflowPath, 1)
                 .runtimeReferenceMips(conversion.getRuntimeReferenceMips())
@@ -65,12 +31,6 @@ public final class CcrCalibrator {
         }
     }
 
-    /**
-     * Sums the real-input megabytes {@code B} in ascending task order.
-     *
-     * @param tasks parsed tasks
-     * @return decimal MB
-     */
     public static double realInputMegabytes(List<Task> tasks) {
         double megabytes = 0.0;
         for (Task task : ordered(tasks)) {
@@ -83,13 +43,6 @@ public final class CcrCalibrator {
         return megabytes;
     }
 
-    /**
-     * Sums the compute seconds at the given speed in ascending task order.
-     *
-     * @param tasks parsed tasks
-     * @param mips speed, finite positive
-     * @return seconds
-     */
     public static double computeSeconds(List<Task> tasks, double mips) {
         requirePositiveFinite(mips, "mips");
         double seconds = 0.0;
@@ -99,29 +52,11 @@ public final class CcrCalibrator {
         return seconds;
     }
 
-    /**
-     * Computes {@code CCR(R)}.
-     *
-     * @param tasks parsed tasks
-     * @param storageRateMbPerSecond SHARED rate
-     * @param meanMips mean fleet speed
-     * @return CCR
-     */
     public static double ccr(List<Task> tasks, double storageRateMbPerSecond, double meanMips) {
         requirePositiveFinite(storageRateMbPerSecond, "storage rate");
         return realInputMegabytes(tasks) / storageRateMbPerSecond / computeSeconds(tasks, meanMips);
     }
 
-    /**
-     * Solves the storage rate for a target CCR.
-     *
-     * @param tasks parsed tasks
-     * @param targetCcr finite positive target
-     * @param meanMips mean fleet speed
-     * @return calibration
-     * @throws IllegalArgumentException when the workflow reads no real input bytes (CCR is identically zero and
-     *     no positive target is reachable) or a value is not finite and positive
-     */
     public static Calibration calibrate(List<Task> tasks, double targetCcr, double meanMips) {
         requirePositiveFinite(targetCcr, "target CCR");
         if (tasks == null || tasks.isEmpty()) {

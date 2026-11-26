@@ -398,11 +398,6 @@ class ExperimentArtifactValidatorTest {
                 "the refusal must name the recomputed field: " + exception.getMessage());
     }
 
-    /**
-     * FGCS-R6 (2026-11-25): the envelope input-read total and the declared slowdown floor are bound to the
-     * event stream and the configuration; a value written consistently into manifest and sidecar but
-     * contradicting them is refused, naming the field.
-     */
     @Test
     void rejectsR6MetricsThatContradictTheEventStreamOrConfiguration(@TempDir Path output) throws Exception {
         Log.disable();

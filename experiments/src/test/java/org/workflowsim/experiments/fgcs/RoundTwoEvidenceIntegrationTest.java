@@ -17,7 +17,6 @@ import org.workflowsim.experiments.fgcs.scalability.EvidenceOverheadStudy;
 
 import com.google.gson.JsonObject;
 
-/** Real-runner integration coverage for the second-round FGCS evidence protocols. */
 class RoundTwoEvidenceIntegrationTest {
 
     @TempDir

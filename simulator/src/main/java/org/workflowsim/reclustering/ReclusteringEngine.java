@@ -82,12 +82,6 @@ public class ReclusteringEngine {
                 break;
 
             case FTCLUSTERING_CRCH:
-                // FGCS-R4 (2026-11-24): root cause - the window ran from the envelope start to the engine
-                // clock, so the input read and post-processing delay were credited as checkpointed compute.
-                // FGCS-R5 (2026-11-24): root cause - the attempt always ran to its modeled finish and the
-                // retry added an ad-hoc ceil(gamma*mips) MI. The attempt now ends at its failure instant;
-                // the paper charges no restore term beyond the lost work (arXiv:1810.06361v2 Eq. 20), and
-                // the retry's executed length is projected per VM at submission.
                 Task attempt = job.getTaskList().get(0);
                 if (!job.hasFailureInstant()) {
                     throw new IllegalStateException("Failed CRCH Job " + job.getCloudletId()

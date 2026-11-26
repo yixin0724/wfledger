@@ -67,8 +67,7 @@ class GreenHeftIntegrationTest {
             assertEquals(8, planner.getLastSchedule().getTaskPlan(1).getVmId());
             assertEquals(8, planner.getLastSchedule().getTaskPlan(2).getVmId());
             assertEquals(0.3, planner.getLastSchedule().getTotalEnergyJoules(), 1.0e-9);
-            // FGCS-R3 (2026-11-24) M6: roots wait for the 110 MI stage-in on VM3 (0.11 s) plus the 0.1 s
-            // root release; both 4 MI and 2 MI tasks then run serially on VM8 for 0.006 s: 0.216 s.
+
             assertEquals(0.216, planner.getLastSchedule().getMakespanSeconds(), 1.0e-9);
         }
     }

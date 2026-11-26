@@ -42,17 +42,6 @@ class SimulationTickSensitivityTest {
                 1.0e-12);
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, A4): the completion safety margin scales with the configured kernel
-     * tick ({@code safety = tick / 10}, exactly 0.01 s at the 0.1 s default) instead of a fixed
-     * 0.01 s. Hand derivation for tick 0.001 s on one 20,000-MIPS VM, chain a -> b, each task
-     * 100 MI (0.1 s x 1000 reference MIPS), i.e. 0.005 s of compute; the 110-MI stage-in takes
-     * 0.0055 s. Per the CONTRACTS stage-in rule, roots start at
-     * {@code max(0.0055, 0 + tick + safety) + tick = 0.0055 + 0.001 = 0.0065}; each task then
-     * completes after {@code max(0.005, tick + safety) = max(0.005, 0.0011) = 0.005}. Makespan
-     * = 0.0065 + 0.005 + 0.005 = 0.0165 s. The former fixed margin forced every completion to
-     * at least 0.011 s and gave 0.012 + 0.011 + 0.011 = 0.034 s.
-     */
     @org.junit.jupiter.api.Test
     void completionSafetyMarginScalesWithTheConfiguredTick() throws Exception {
         Path input = directory.resolve("tiny-chain.dax");
@@ -76,7 +65,6 @@ class SimulationTickSensitivityTest {
         assertEquals(0.0165, report.getMetrics().getControlledSharedStorageCriticalPathLowerBoundSeconds(), 1.0e-12);
     }
 
-    /** FGCS-R3 (2026-11-24, A4): the derived defaults are bit-identical to the former literals. */
     @org.junit.jupiter.api.Test
     void derivedTimingConstantsAreBitIdenticalAtTheDefaultTick() {
         assertEquals(0, Double.compare(0.01, org.workflowsim.utils.SimulationTiming.completionSafetySeconds(0.1)));

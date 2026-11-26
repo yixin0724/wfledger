@@ -26,22 +26,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * FGCS-R3 (2026-11-24) m6: end-to-end DVFS_SLACK plan/runtime mirror.
- *
- * <p>Runtime law being mirrored (WorkflowScheduler.assignFrequencyTier, CloudletSchedulerSpaceShared and
- * WorkflowDatacenter.updateTaskExecTime): the declared work is scaled to {@code round(L * vmMips / tierMips)}
- * MI and executed at the VM capacity, while SHARED stage-in MI are added at the VM capacity
- * ({@code floor(vmMips * inputSeconds)}), so stage-in seconds do not depend on the tier. The task window starts
- * after the effective stage-in and lasts {@code L / tierMips}; the per-tier energy charges the selected tier's
- * {@code P_max - P_idle(default)} over the whole Job envelope, stage-in included. The planner uses the same
- * convention (stage-in seconds fixed across tiers, envelope charged at the tier power), so this test checks the
- * bindings, the selected tiers, the planned compute starts and the task finishes against the runtime.
- *
- * <p>Workload: chain a -> b plus independent c, each 1000 MI and reading a 4 MB external input at 20 MB/s
- * (0.2 s), on one 2000-MIPS VM with tiers 2000/1500/500 MIPS and a 3 s deadline, which forces a mixed tier
- * choice. Tiers 1500 MIPS make {@code L / tier} non-terminating, exercising the rounding of the scaled MI.
- */
 class DvfsSlackRuntimeMirrorIntegrationTest {
 
     @TempDir

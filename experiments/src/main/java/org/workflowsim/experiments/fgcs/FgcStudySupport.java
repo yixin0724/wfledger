@@ -86,7 +86,7 @@ public final class FgcStudySupport {
             } catch (IOException exception) {
                 throw new IllegalStateException("Cannot write FGCS evidence for " + label, exception);
             }
-            // R-round2: size accounting ends before memory instrumentation is read.
+
             long artifactWriteNanos = System.nanoTime() - writeStart;
             long heapPoolPeakSumBytes = 0L;
             for (java.lang.management.MemoryPoolMXBean pool : heapPools) {
@@ -148,7 +148,6 @@ public final class FgcStudySupport {
         }
     }
 
-    /** Samples total heap used at one instant; this deliberately does not aggregate asynchronous pool peaks. */
     private static final class HeapSampler implements AutoCloseable {
         private static final long REQUESTED_INTERVAL_NANOS = 1000000L;
         private final java.lang.management.MemoryMXBean memory;
@@ -298,7 +297,6 @@ public final class FgcStudySupport {
             return label;
         }
 
-        /** Adds overhead-only measurements without changing the existing callers' simulation or audit path. */
         public void addProtocolMetadata(JsonObject metadata) {
             for (java.util.Map.Entry<String, JsonElement> entry : metadata.entrySet()) {
                 protocolMetadata.add(entry.getKey(), entry.getValue());
@@ -312,8 +310,7 @@ public final class FgcStudySupport {
             value.addProperty("makespanSeconds", report.getMakespan());
             boolean eventDependentMetricsAvailable =
                     report.getConfig().isEventRecordingEnabled() && metrics.getTrueSlowdownObservationCount() > 0;
-            // R-round2: VM submission is not dependency-ready time. Disabled event recording therefore
-            // makes these event-derived observations unavailable rather than numeric zero measurements.
+
             value.addProperty(
                     "meanWaitingSeconds",
                     eventDependentMetricsAvailable
@@ -343,7 +340,7 @@ public final class FgcStudySupport {
             value.addProperty("completedTasks", metrics.getSuccessfullyCompletedLogicalTaskCount());
             value.addProperty("simulationNanos", simulationNanos);
             value.addProperty("serializationAndSizeAccountingNanos", artifactWriteNanos);
-            // Retained as a compatibility alias for older FGCS callers; both values have the same timed scope.
+
             value.addProperty("artifactWriteNanos", artifactWriteNanos);
             value.addProperty("auditNanos", auditNanos);
             value.addProperty("eventCount", report.getEvents().size());

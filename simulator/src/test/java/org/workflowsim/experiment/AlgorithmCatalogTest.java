@@ -153,15 +153,6 @@ class AlgorithmCatalogTest {
         }
     }
 
-    /**
-     * FGCS-R3 (2026-11-24): every algorithm whose decision semantics changed in the FGCS-R3 corrections declares
-     * a new machine-readable implementationRevision, so manifests written before the change cannot impersonate the
-     * corrected algorithm. Tags follow the existing CPOP/PEFT pattern (rule summary plus revision suffix).
-     *
-     * <p>FGCS-R6 (2026-11-25): the ready-batch Min-Min/Max-Min/MCT tags advance to V3 for machine-ready-time
-     * late binding, and their decision rules and limitations must name the ready time rather than idle-VM-only
-     * candidates.
-     */
     @Test
     void fgcsR3CorrectedSchedulersDeclareRevisedImplementationTags() {
         Object[][] expected = {

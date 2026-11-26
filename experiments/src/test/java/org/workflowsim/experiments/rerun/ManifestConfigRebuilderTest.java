@@ -80,7 +80,6 @@ class ManifestConfigRebuilderTest {
         assertEquals(50000, rebuilt.getConfig().getEventRecorderCap());
     }
 
-    /** FGCS-R6 (2026-11-25): a declared non-default slowdown floor round-trips through the manifest. */
     @Test
     void rebuildCarriesTheDeclaredBoundedSlowdownThreshold() throws Exception {
         Path run = Files.createDirectories(tempDir.resolve("slowdown-floor"));

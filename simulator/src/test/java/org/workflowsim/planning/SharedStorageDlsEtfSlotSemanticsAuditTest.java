@@ -245,8 +245,7 @@ class SharedStorageDlsEtfSlotSemanticsAuditTest {
             result.median[task] = compatible % 2 == 1
                     ? durations[compatible / 2]
                     : (durations[compatible / 2 - 1] + durations[compatible / 2]) / 2.0;
-            // FGCS-R3 (2026-11-24, m1): DLS static level uses the median (Sih and Lee 1993); ETF keeps
-            // the mean b-level.
+
             result.rank[task] = strategy == Strategy.DLS ? result.median[task] : total / compatible;
         }
 

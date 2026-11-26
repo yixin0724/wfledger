@@ -31,14 +31,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/**
- * FGCS RQ1 protocol for manifest-guided reconstruction, re-simulation, and exact core diffing.
- *
- * <p>This is deliberately not event replay. Each case enters the real {@link RerunDiffExecutor}; successful
- * reconstruction invokes the standard {@link SimulationRunner} on the configuration and platform recovered from a
- * validated manifest-v4 bundle. Expected verdicts and diagnostic anchors below are fixed from
- * {@code docs/experiments/RERUN_DIFF_CONTRACT.md} and from hand-derived runtime scaling, never from observed output.
- */
+/** FGCS RQ1 protocol for manifest-guided reconstruction, re-simulation, and exact core diffing. */
 public final class ManifestGuidedRerunStudy {
     public static final String PROTOCOL = "FGCS_MANIFEST_GUIDED_RERUN_V1";
     public static final String RESULTS_SCHEMA = "fgcs-manifest-guided-rerun-results-v1";
@@ -69,7 +62,6 @@ public final class ManifestGuidedRerunStudy {
         }
     }
 
-    /** Generates small real V2/V3 baselines, executes every case serially, and persists the complete result matrix. */
     public static JsonObject run(Path outputDirectory) throws Exception {
         Path output = outputDirectory.toAbsolutePath().normalize();
         requireEmptyOrNonexistent(output);

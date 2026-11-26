@@ -118,9 +118,6 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         f.addEdgeFile("edge", 12_000_000.0);
         f.planner.prepare();
 
-        // FGCS-R3 (2026-11-24, m2): c̄ = data / B̄ (Topcuoglu 2002). Compatible ordered pairs
-        // (17,41)=2, (17,89)=2, (41,89)=4, (89,41)=4 MB/s give B̄ = 3 MB/s, so c̄ = 12 / 3 = 4.0 s
-        // (the superseded mean of per-pair times was 4.5 s).
         assertExact(4.0, f.planner.meanCommunicationSeconds(f.parent, f.child), "data over mean pair rate");
         assertExact(9.0, f.planner.upwardRankOf(f.parent), "2 + 4 + 3");
         assertExact(5.0, f.planner.priorityOf(f.parent), "(9 + 3 + 3) / 3");
@@ -146,11 +143,6 @@ class LocalCommunicationIntersectionScalabilityAuditTest {
         assertExact(115.1, f.planner.plannedFinishOf(f.child).doubleValue(), "child finish");
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, m4): the child also declares {@code f} as OUTPUT, so by
-     * {@link FileItem#isRealInputFile} it does not read {@code f} (runtime and data-arrival agree);
-     * only {@code g} (0.5 bytes) crosses the edge: 0.5 / 1e6 / min(2, 4).
-     */
     @Test
     void duplicateOutputsAreMembershipAndSelfProducedChildInputsAreNotRead() {
         Fixture f = new Fixture(Arrays.asList(vm(3, 1, 2L), vm(17, 1, 4L)));

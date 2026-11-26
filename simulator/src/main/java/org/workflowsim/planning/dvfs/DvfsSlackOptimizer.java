@@ -8,23 +8,9 @@ import java.util.Map;
 
 import org.workflowsim.platform.PlatformProfile;
 
-/**
- * Greedy deadline-constrained DVFS slack allocation over a fixed SHARED HEFT mapping and order.
- *
- * <p>Runtime law mirrored (FGCS-R3, 2026-11-24, m6, verified against {@code WorkflowScheduler.assignFrequencyTier},
- * {@code CloudletSchedulerSpaceShared.cloudletSubmit} and {@code WorkflowDatacenter.updateTaskExecTime}): the
- * declared work is rescaled to {@code round(L * (vmMips / tierMips))} MI and executed at the VM capacity, and
- * the SHARED stage-in MI are added at the VM capacity, so stage-in seconds are tier-independent; the per-tier
- * energy charges the selected tier's {@code P_max - P_idle(default)} over the whole Job envelope, stage-in
- * included. Root cause fixed: the planner used the exact {@code L / tierMips}, which differs from the
- * runtime's whole-MI rescaling (e.g. 0.6667 s versus 0.6665 s for 1000 MI at 1500 of 2000 MIPS), so DVFS
- * plans did not mirror execution. The stage-in convention was already consistent and is unchanged.
- */
+/** Greedy deadline-constrained DVFS slack allocation over a fixed SHARED HEFT mapping and order. */
 public final class DvfsSlackOptimizer {
 
-    /**
-     * Legacy entry point: each VM's capacity is taken to be its default (first) tier speed.
-     */
     public DvfsSlackSchedule optimize(
             List<DvfsSlackTask> tasks,
             Map<Integer, List<PlatformProfile.FrequencyTier>> tiersByVm,

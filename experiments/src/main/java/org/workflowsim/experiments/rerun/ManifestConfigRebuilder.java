@@ -141,8 +141,6 @@ public final class ManifestConfigRebuilder {
         JsonObject storage = requireObject(platform, "storage", "platform.storage");
         builder.storage(new PlatformProfile.StorageSpec(
                 requireLong(storage, "capacityMb", "platform.storage.capacityMb"),
-                // STD-V1 (2026-11-25): historical integer literals and current binary64 values both rebuild to
-                // the same double; StorageSpec rejects non-finite or non-positive rates.
                 requireDouble(storage, "maxTransferRateMbPerSecond", "platform.storage.maxTransferRateMbPerSecond")));
         builder.costs(costSpec(requireObject(platform, "costs", "platform.costs"), "platform.costs"));
         if (platform.has("sourceStorage")) {
@@ -589,13 +587,6 @@ public final class ManifestConfigRebuilder {
                 SimulationConfig.FrequencyPolicy.class, element.getAsString(), "configuration.frequencyPolicy");
     }
 
-    /**
-     * Rebuilds the declared bounded-slowdown floor.
-     *
-     * <p>FGCS-R6 (2026-11-25): evidence written before the floor became a declared parameter has no field and
-     * was computed with the then hard-coded 10 s, which is the default; a present value must be a finite
-     * positive JSON number and is never replaced.
-     */
     private static double rebuildBoundedSlowdownThreshold(JsonElement element) {
         if (element == null) {
             return SimulationConfig.DEFAULT_BOUNDED_SLOWDOWN_THRESHOLD_SECONDS;

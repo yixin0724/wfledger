@@ -92,11 +92,6 @@ class EnergyConservationLawTest {
         assertEquals(0.0, ea.getPeakPowerWatts(), 0.0);
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, A5): a fleet where VM 0 declares a power model and VM 1 does not
-     * used to report VM 1 as 0 J, silently understating fleet energy. The contract is
-     * all-or-none (ENERGY_DIMENSION_DESIGN.md §2.2): the accounting layer must refuse it.
-     */
     @Test
     void mixedPoweredAndUnpoweredFleetIsRejectedByAccounting() throws Exception {
         SimulationReport report = runScenario(0.0, 0.0);
@@ -107,7 +102,6 @@ class EnergyConservationLawTest {
         assertTrue(failure.getMessage().contains("VM 1"), failure.getMessage());
     }
 
-    /** FGCS-R3 (2026-11-24, A5): the standard runner preflights the same all-or-none rule. */
     @Test
     void mixedPoweredAndUnpoweredFleetIsRejectedBeforeSimulation() throws Exception {
         SimulationConfig config = SimulationConfig.builder(dax().toString(), 2)

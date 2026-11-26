@@ -184,15 +184,6 @@ public class HarddriveStorage implements Storage {
         return true;
     }
 
-    /**
-     * Sets a fractional maximum transfer rate.
-     *
-     * <p>WfLedger STD-V1 (2026-11-25): the platform's SHARED storage rate is a finite positive double so the
-     * standard study can calibrate a target communication-to-computation ratio; the backing field was already a
-     * double. Unlike the legacy int setter, an invalid rate fails fast instead of returning {@code false}.
-     *
-     * @param rate finite positive rate in decimal MB/s
-     */
     public void setMaxTransferRate(double rate) {
         if (!(rate > 0.0) || Double.isInfinite(rate)) {
             throw new IllegalArgumentException("Storage transfer rate must be finite and positive: " + rate);

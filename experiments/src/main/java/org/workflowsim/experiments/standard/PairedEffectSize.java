@@ -6,37 +6,11 @@ import java.util.List;
 
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 
-/**
- * Paired effect sizes reported next to the Wilcoxon test of the standard study.
- *
- * <p>STD-V1 (2026-11-25). Root cause: the platform reported p values and median differences only, so a study could
- * not state how large an effect is in scale-free terms. Three declared effect sizes, all over matched instances:
- *
- * <ul>
- *   <li><b>Median ratio</b>: median over instances of {@code candidate_i / baseline_i} (scale-free; below 1 means
- *       the candidate is smaller, i.e. better for a minimised metric). Even counts average the two middle
- *       values.</li>
- *   <li><b>Matched-pairs rank-biserial correlation</b> (Kerby, "The simple difference formula", Comprehensive
- *       Psychology 3, 2014): with {@code d_i = candidate_i - baseline_i}, zero differences dropped (the same rule
- *       as {@code PairedWilcoxonSignificance}), average ranks of {@code |d_i|}, {@code W+} and {@code W-} the rank
- *       sums of positive and negative differences: {@code r = (W+ - W-) / (W+ + W-)} in {@code [-1, 1]}; negative
- *       means the candidate is mostly smaller. It is the effect size that matches the signed-rank test.</li>
- *   <li><b>Cliff's delta</b> (Cliff, Psychological Bulletin 114(3), 1993), the unpaired dominance statistic
- *       {@code (#(c_i > b_j) - #(c_i < b_j)) / (n * n)} over all candidate/baseline pairs, reported for
- *       comparability with studies that use it; it ignores the pairing.</li>
- * </ul>
- */
+/** Paired effect sizes reported next to the Wilcoxon test of the standard study. */
 public final class PairedEffectSize {
 
     private PairedEffectSize() {}
 
-    /**
-     * Returns the median of the per-instance ratios.
-     *
-     * @param baseline baseline values, positive
-     * @param candidate candidate values, same length
-     * @return median ratio
-     */
     public static double medianRatio(List<Double> baseline, List<Double> candidate) {
         validate(baseline, candidate);
         List<Double> ratios = new ArrayList<Double>();
@@ -55,13 +29,6 @@ public final class PairedEffectSize {
                 : (ratios.get(n / 2 - 1).doubleValue() + ratios.get(n / 2).doubleValue()) / 2.0;
     }
 
-    /**
-     * Returns the matched-pairs rank-biserial correlation, or {@code null} when every difference is zero.
-     *
-     * @param baseline baseline values
-     * @param candidate candidate values, same length
-     * @return {@code r} or null
-     */
     public static Double matchedPairsRankBiserial(List<Double> baseline, List<Double> candidate) {
         validate(baseline, candidate);
         List<Double> differences = new ArrayList<Double>();
@@ -91,13 +58,6 @@ public final class PairedEffectSize {
         return Double.valueOf((positive - negative) / (positive + negative));
     }
 
-    /**
-     * Returns Cliff's delta of candidate versus baseline.
-     *
-     * @param baseline baseline values
-     * @param candidate candidate values, same length
-     * @return delta in {@code [-1, 1]}
-     */
     public static double cliffsDelta(List<Double> baseline, List<Double> candidate) {
         validate(baseline, candidate);
         long greater = 0L;

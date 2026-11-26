@@ -121,7 +121,6 @@ class WorkbenchConfigTest {
         assertThrows(IllegalArgumentException.class, () -> WorkbenchConfig.read(fractionalFile));
     }
 
-    /** FGCS-R6 (2026-11-25): the bounded-slowdown floor is Workbench configuration, default 10 s. */
     @Test
     void simulationBoundedSlowdownThresholdIsConfiguration() throws Exception {
         Path workflow = workflow(directory, "slowdown-flow.dax", false);
@@ -840,10 +839,6 @@ class WorkbenchConfigTest {
         assertDoesNotThrow(() -> read(finiteZero).validateInputs(), "zero is valid for costs and arrival times");
     }
 
-    /**
-     * STD-V1 (2026-11-25): the shared-storage rate is a finite positive decimal MB/s (it was a positive integer);
-     * a fractional value is carried exactly, while zero, negative, and non-numeric values fail fast.
-     */
     @Test
     void storageTransferRateAcceptsFinitePositiveFractionsAndRejectsTheRest() throws Exception {
         JsonObject fractional = base();

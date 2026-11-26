@@ -18,16 +18,11 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.SimulationConfig;
 import org.workflowsim.utils.SimulationConfig.FrequencyPolicy;
 
-/** FGCS-R5 (2026-11-24): planner speed basis and clock-invariant local EDP. */
 class FrequencySpeedConsistencyTest {
 
     @TempDir
     Path directory;
 
-    /**
-     * Nominal MIPS rank VM 1 first (2000 versus 500) but the default tiers rank VM 0 first (2000
-     * versus 500), so every nominal-speed decision would pick the 4x slower VM.
-     */
     @Test
     void defaultTiersThatReorderTheFleetAreRejected() throws Exception {
         PlatformProfile platform = platform(new double[] {500.0, 2000.0}, new double[][] {{2000.0}, {500.0}});
@@ -36,18 +31,12 @@ class FrequencySpeedConsistencyTest {
         assertTrue(rejection.getMessage().contains("same ratio"), rejection.getMessage());
     }
 
-    /** A uniform turbo factor (2x on every VM) keeps the nominal order and stays legal. */
     @Test
     void uniformTurboRatioIsAccepted() throws Exception {
         PlatformProfile platform = platform(new double[] {500.0, 1000.0}, new double[][] {{1000.0}, {2000.0}});
         assertTrue(run(platform, FrequencyPolicy.DEFAULT, oneJob()).getMetrics().isWorkflowCompletedSuccessfully());
     }
 
-    /**
-     * Forty identical 1000 MI tasks in a chain on one VM. Local EDP is {@code Pmax * T^2}: 2000 MIPS
-     * at 1000 W gives 1000 * 0.25 = 250, 1000 MIPS at 200 W gives 200 * 1 = 200, so every task takes
-     * 1000 MIPS no matter when it is dispatched.
-     */
     @Test
     void localEdpChoiceDoesNotDependOnTheDispatchClock() throws Exception {
         StringBuilder chain = new StringBuilder();

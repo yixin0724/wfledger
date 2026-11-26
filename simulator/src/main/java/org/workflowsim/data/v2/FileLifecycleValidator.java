@@ -482,7 +482,6 @@ final class FileLifecycleValidator {
             JsonArray assignments = array(raw.get("vmHostAssignments"), "vmHostAssignments");
             if (isNull(raw.get("topology"))) {
                 require(storage || assignments.size() == 0, "V2 endpoint-only fabric cannot carry host assignments");
-
             } else {
                 parseTopology(object(raw.get("topology"), "topology"), expected);
             }

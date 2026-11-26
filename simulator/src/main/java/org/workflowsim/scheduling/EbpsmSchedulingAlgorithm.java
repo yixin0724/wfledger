@@ -24,43 +24,6 @@ import org.workflowsim.utils.EbpsmRegistry;
 import org.workflowsim.utils.Parameters.FileType;
 import org.workflowsim.utils.TaskExecutionModel;
 
-/**
- * Fixed-pool subset of EBPSM (Hilman, Rodriguez and Buyya, "Resource-sharing Policy in
- * Multi-tenant Scientific Workflow-as-a-Service Cloud Platform", Algorithm 2).
- *
- * <p>FGCS-R3 (2026-11-24) root causes fixed here:
- *
- * <ul>
- *   <li>A1: outputs and container images were "published" only at dispatch, where no Task is
- *       {@code SUCCESS}, so the cache never grew. Publication now happens in
- *       {@link #onJobReturned(Job)}: a successful Task leaves its container image and its input and
- *       output files in the executing VM's local storage (paper Sec. 3.2); a failed attempt
- *       publishes nothing. Local storage is unbounded (no FIFO eviction in this subset).
- *   <li>A2: a task that fit no idle VM's sub-budget was silently skipped and could starve until
- *       the event queue drained. Algorithm 2's last resort is provisioning a new VM of the fastest
- *       type within budget, which this fixed declared pool does not model. The task is therefore
- *       deferred while any VM is busy after the round (a return is what frees a VM or grows a
- *       cache). A round that leaves such a task and an entirely idle pool fails explicitly (the
- *       former best-case pre-check against a static sub-budget was removed in FGCS-R5).
- *   <li>A2: the prediction uses the effective execution length on the candidate VM
- *       ({@link TaskExecutionModel}) and counts only real input files, matching the runtime's
- *       compute envelope; read/write/container terms follow paper Eqs. 1–2 with the declared
- *       {@link EbpsmConfig} rates. They are the policy's estimate only: the platform runtime does not
- *       model EBPSM's VM-local cache and still charges its own data-movement model (for SHARED, the
- *       storage read on every attempt), so cache locality changes decisions, not simulated read time.
- * </ul>
- *
- * <p>FGCS-R5 (2026-11-24) root cause fixed here: sub-budgets were static per-task declarations, so Algorithms 1
- * and 3 never ran. The policy now receives the parsed workflows by injection ({@link WorkflowContextAware}),
- * derives VM types from the declared pool (one type per distinct (MIPS, price, PEs, bandwidth) class, provisioning
- * delay 0 because the fixed VMs are already leased), distributes every workflow's {@code beta_w} with Algorithm 1,
- * and applies Algorithm 3 through {@link EbpsmBudgetLedger} on every returned attempt. The actual cost of an attempt
- * is {@code ceil(envelope + prov_c if the container was not deployed at dispatch) * price}, where the envelope runs
- * from the Job's execution start (stage-in included) to its Task's modeled finish; failed attempts are charged too.
- * Because budgets now change at run time, the former start-time rejection of a sub-budget that no VM can meet is
- * replaced by the idle-pool rule alone, and a workflow whose budget is below the cheapest-type cost of all its
- * Tasks is rejected at start (the paper rejects jobs with insufficient budgets, Sec. 5).
- */
 public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm
         implements JobReturnListener, WorkflowContextAware {
 
@@ -92,11 +55,6 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm
         this.taskWorkflowIndices = new TreeMap<Integer, Integer>(workflowIndices);
     }
 
-    /**
-     * Returns the budget ledger after the first scheduling round.
-     *
-     * @return ledger
-     */
     public EbpsmBudgetLedger getBudgetLedger() {
         if (ledger == null) {
             throw new IllegalStateException("EBPSM budgets are distributed at the first scheduling round");
@@ -180,12 +138,6 @@ public final class EbpsmSchedulingAlgorithm extends BaseSchedulingAlgorithm
                 + " fixed declared pool cannot provision the paper's fallback VM (FGCS-R3 A2)");
     }
 
-    /**
-     * Applies Algorithm 3 to the returned attempt's workflow, then publishes the container image and the
-     * input/output files of every successful Task into the executing VM's local storage.
-     *
-     * @param job returned attempt with final Task statuses
-     */
     @Override
     public void onJobReturned(Job job) {
         if (job.getTaskList().isEmpty()) {

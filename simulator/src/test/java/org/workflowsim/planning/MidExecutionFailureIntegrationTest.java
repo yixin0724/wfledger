@@ -23,19 +23,6 @@ import org.workflowsim.utils.DistributionSpec;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * FGCS-R5 (2026-11-24): hand-derived mid-execution failures and CRCH checkpoint overhead.
- *
- * <p>Root causes: (D1) a successful CRCH attempt ran the bare work, so checkpointing was free unless
- * the attempt failed; (D2) the failure model was evaluated only when an attempt completed, so a
- * failed attempt always ran its full length. A failure now ends the attempt at the first failure
- * arrival inside its compute window {@code [start, finish)}.
- *
- * <p>Common timing (SHARED, no input files, 0.1 s kernel tick): the 110 MI stage-in Job is raised to
- * the 0.11 s completion guard and the roots start at 0.21 s. Failure arrivals come from a Weibull
- * stream of shape 1e300, whose inverse CDF {@code scale·(-ln(1-u))^(1e-300)} rounds to exactly the
- * scale, so the i-th arrival is {@code i * scale}; times are compared at 1e-6 s.
- */
 class MidExecutionFailureIntegrationTest {
 
     private static final double TIME = 1.0e-6;
@@ -45,11 +32,6 @@ class MidExecutionFailureIntegrationTest {
     @TempDir
     Path directory;
 
-    /**
-     * (a) 3000 MI at 1000 MIPS, λ = 1 s, γ = 0.1 s, no failure: 3 s of work take checkpoints after 1 s
-     * and 2 s of progress (none at completion), so the attempt runs 3000 + 2·100 = 3200 MI, 3.2 s, and
-     * the workflow ends at 0.21 + 3.2 = 3.41 s. The former model ran 3.0 s and ended at 3.21 s.
-     */
     @Test
     void aSuccessfulCrchAttemptPaysItsCheckpointOverhead() throws Exception {
         SimulationReport report = run(
@@ -64,14 +46,6 @@ class MidExecutionFailureIntegrationTest {
         assertEquals(3.41, report.getMakespan(), TIME);
     }
 
-    /**
-     * (b) Parent 4000 MI (child 1000 MI) on two 1000 MIPS VMs; VM 3 depth-1 arrivals at 3.0, 6.0, ...
-     * The fresh parent costs 4000 + 3·100 MI = 4.3 s on either VM; the tie goes to VM 3, compute
-     * [0.21, 4.51). The arrival 3.0 ends it there: 2.79 s elapsed, checkpoints complete every 1.1 s,
-     * so floor(2.79 / 1.1) = 2 commit and save 2000 MI. At 3.0 the retry costs 2000 MI with one
-     * checkpoint (2100 MI, 2.1 s) on VM 3 but 4.3 s on VM 8, so it resumes on VM 3 over [3.0, 5.1).
-     * The child is released only by the successful retry: [5.1, 6.1), makespan 6.1.
-     */
     @Test
     void aFailureEndsTheAttemptAndTheRetryResumesFromItsCheckpoints() throws Exception {
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
@@ -104,13 +78,6 @@ class MidExecutionFailureIntegrationTest {
         assertEquals(1, report.getFailedJobs());
     }
 
-    /**
-     * (b2) Checkpoints are VM-local. VM 3 runs 1000 MIPS (arrivals every 3.0 s), VM 8 5000 MIPS.
-     * Task 1 (5000 MI) costs 1.0 s on VM 8 versus 5.4 s on VM 3 and takes VM 8 over [0.21, 1.21);
-     * task 2 (4000 MI) then gets VM 3 at 4.3 s, fails at 3.0 and saves 2000 MI there. At 3.0 a
-     * resumption on VM 3 costs 2.1 s while a full re-execution on VM 8 costs 4000 / 5000 = 0.8 s with
-     * no checkpoint, so the retry moves to VM 8 and executes the full 4000 MI over [3.0, 3.8).
-     */
     @Test
     void aRetryOnAnotherVmReexecutesTheSavedWork() throws Exception {
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
@@ -137,14 +104,6 @@ class MidExecutionFailureIntegrationTest {
         assertEquals(3.8, report.getMakespan(), TIME);
     }
 
-    /**
-     * (c) NOOP retry under FCFS, one 2000 MI task, 1000 MIPS VMs drawing 100 W idle / 200 W busy, VM 3
-     * arrivals every 2.1 s. The attempt computes [0.21, 2.21) and the arrival 2.1 ends it: the failed
-     * Job is busy 2.1 - 0.21 = 1.89 s. FCFS restarts the full 2000 MI on VM 3 over [2.1, 4.1); the
-     * next arrival 4.2 lies outside it. VM 3 is busy 0.11 (stage-in) + 1.89 + 2.0 = 4.0 s of the 4.1 s
-     * makespan, so it draws 100·4.1 + (200 - 100)·4.0 = 810 J; idle VM 8 draws 410 J. The former model ran the
-     * failed attempt to 2.21, the retry to 4.21, and booked 4.21 s of VM 3 busy time.
-     */
     @Test
     void aNoopFailedAttemptIsChargedOnlyUntilTheFailure() throws Exception {
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
@@ -169,7 +128,6 @@ class MidExecutionFailureIntegrationTest {
         assertEquals(410.0, report.getEnergyAccounting().getVmEnergyJoules().get(8), 1.0e-3);
     }
 
-    /** (d) An arrival at 2.5 s lies after the compute window [0.21, 2.21): the attempt succeeds. */
     @Test
     void anArrivalAfterTheComputeWindowIsNotAFailure() throws Exception {
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();

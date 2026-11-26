@@ -10,32 +10,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/**
- * One-phase IC-PCP (Abrishami, Naghibzadeh and Epema, FGCS 29(1), 2013) over a fixed, declared VM pool.
- *
- * <p>FGCS-R3 (2026-11-24) root causes fixed here:
- *
- * <ul>
- *   <li>M1: the critical parent was the unassigned parent with the smallest slack. The paper defines it as
- *       the unassigned parent with the latest data arrival time, {@code max EFT(p) + TT(p,t)}; ties use the
- *       lower Task ID.
- *   <li>M2: path feasibility used one global minimum-slack test over a rank-ordered serialization of every
- *       VM, so the path was never checked against a concrete instance slot. The paper's AssignPath places a
- *       whole partial critical path on one instance and requires each task to finish by its LFT. Here every
- *       VM is one instance; the path is placed consecutively at one position of that VM's task sequence,
- *       start times are recomputed by a forward EST pass over the DAG plus the per-VM sequences, and the
- *       candidate is applicable only if every assigned task (the path and the tasks already on any VM)
- *       still finishes by its LFT. Among applicable candidates the minimum incremental billed cost wins,
- *       then the lower VM ID, then the earlier sequence position.
- * </ul>
- *
- * <p>Remaining deviation from the paper (fixed-pool adaptation): no new instance can be launched. A VM
- * without tasks plays the role of a new instance of its type at its own declared rate; when no VM is
- * applicable the planner fails explicitly instead of launching one. Already placed tasks may be delayed
- * (never reordered or remapped) when a path is inserted before them, but only within their LFT. EST/LFT of
- * unassigned tasks use the minimum execution time over compatible VMs (the paper's MET) and count the edge
- * transfer time, because their VM is unknown.
- */
+/** One-phase IC-PCP (Abrishami, Naghibzadeh and Epema, FGCS 29(1), 2013) over a fixed, declared VM pool. */
 public final class IcpcpPlanner {
 
     private static final int START_ID = -1;
@@ -102,7 +77,6 @@ public final class IcpcpPlanner {
         }
     }
 
-    /** Latest data arrival time {@code max EFT(p) + TT(p,t)} over unassigned parents (FGCS-R3 M1). */
     private int criticalParent(int taskId) {
         int best = -1;
         double bestArrival = Double.NEGATIVE_INFINITY;
@@ -153,11 +127,6 @@ public final class IcpcpPlanner {
         return best;
     }
 
-    /**
-     * Paper applicability test: every assigned task finishes by its LFT. Exit LFTs equal the deadline and
-     * EST/LFT use the same runtimes, so this also bounds the virtual END node by the deadline; a separate
-     * END test would be redundant.
-     */
     private boolean meetsLatestFinishTimes(Map<Integer, Integer> assigned, Timing timing) {
         for (Integer taskId : assigned.keySet()) {
             if (timing.finish.get(taskId) > timing.latestFinish.get(taskId) + TOLERANCE) {
@@ -185,10 +154,6 @@ public final class IcpcpPlanner {
         return false;
     }
 
-    /**
-     * Forward EST and backward LFT over the DAG plus the per-VM sequence edges. Returns {@code null} when
-     * the sequences contradict the DAG (a cycle), which makes that insertion position inapplicable.
-     */
     private Timing evaluate(Map<Integer, Integer> assigned, Map<Integer, List<Integer>> sequences) {
         Map<Integer, Integer> previousOnVm = new HashMap<Integer, Integer>();
         Map<Integer, Integer> nextOnVm = new HashMap<Integer, Integer>();
@@ -290,7 +255,6 @@ public final class IcpcpPlanner {
                 : problem.getTask(taskId).getComputeSecondsByVm().get(vmId);
     }
 
-    /** Edge transfer time; zero only when both endpoints are assigned to the same VM. */
     private double transfer(int parent, int child, Map<Integer, Integer> assigned) {
         if (parent == START_ID || child == END_ID) {
             return 0.0;
@@ -340,7 +304,6 @@ public final class IcpcpPlanner {
         return total;
     }
 
-    /** Minimum of {@code LFT - EFT} over every task and of {@code deadline - makespan} (virtual END). */
     private double minimumSlack(State current) {
         double minimum = Double.POSITIVE_INFINITY;
         for (IcpcpTask task : problem.getTasks()) {

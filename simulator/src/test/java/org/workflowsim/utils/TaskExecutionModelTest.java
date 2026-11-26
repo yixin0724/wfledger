@@ -10,11 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.workflowsim.Task;
 
 class TaskExecutionModelTest {
-    /**
-     * FGCS-R3 (2026-11-24): the corrections merged under FGCS-R3 change scheduling, completion and planning
-     * semantics, so the execution identity advances to V3 and V2 becomes a historical read-only identity.
-     * Expectations come from the contract in docs/experiments/REPRODUCIBILITY.md, not from implementation output.
-     */
+
     @Test
     void currentExecutionIdentityIsV3AndV2IsOnlyHistorical() {
         assertEquals("WORK_CONSERVING_TASK_EXECUTION_V3", TaskExecutionModel.EXECUTION_SEMANTICS);

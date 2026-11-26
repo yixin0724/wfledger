@@ -30,14 +30,6 @@ import org.workflowsim.utils.Parameters.SchedulingAlgorithm;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * FGCS-R3 (2026-11-24) M6 planning-to-execution mirror for GREEN_HEFT and MO_HEFT, in the style of
- * {@link SharedStoragePlannerRuntimeMirrorIntegrationTest}. Contract (CONTRACTS.md, SHARED compute envelope):
- * a SHARED planner's planned Job window {@code [start, start + (L_raw + floor(mips * inputSeconds)) / mips]}
- * after the stage-in root release is the runtime Job envelope; the runtime task window starts after the
- * effective stage-in seconds. Before the fix both planners used raw MI durations and roots at 0, so every
- * planned window was off by the 0.21 s root release and the input-read seconds.
- */
 class EnergyPlannerRuntimeMirrorIntegrationTest {
 
     @TempDir
@@ -115,8 +107,7 @@ class EnergyPlannerRuntimeMirrorIntegrationTest {
             String subject = algorithm + " task " + outcome.getTaskId();
             assertEquals(vmId, outcome.getVmId(), subject + " VM");
             assertEquals(window[1] + effectiveStageIn, outcome.getStartTime(), 0.0, subject + " compute start");
-            // The runtime sums (start + stageIn) + L/mips while the plan sums start + (L + MI)/mips; the two
-            // association orders may differ in the last ulp, so finish uses a reassociation tolerance.
+
             assertEquals(window[2], outcome.getFinishTime(), 1.0e-9, subject + " envelope finish");
         }
     }
@@ -188,7 +179,6 @@ class EnergyPlannerRuntimeMirrorIntegrationTest {
         return path;
     }
 
-    /** Two VMs with distinct speed and power so the energy objective and makespan genuinely conflict. */
     private static PlatformProfile platform() {
         PlatformProfile.Builder builder = PlatformProfile.builder("energy-mirror-platform");
         builder.addHost(new PlatformProfile.HostSpec(0, 2, 2000.0, 2048, 10_000L, 1_000_000L));

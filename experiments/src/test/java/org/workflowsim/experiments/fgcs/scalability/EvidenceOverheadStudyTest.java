@@ -25,11 +25,6 @@ class EvidenceOverheadStudyTest {
     @TempDir
     Path directory;
 
-    /**
-     * R-round2 regression: OFF must export the same bundle roles with an empty event stream. Serialized
-     * validation, in-memory auditing, and serialization are distinct measured operations; pool peaks are not
-     * presented as a simultaneous heap measurement. Event-dependent OFF metrics are unavailable, not zero.
-     */
     @Test
     void allModesWriteBundlesAndSeparateSerializedValidationCosts() throws Exception {
         List<FgcStudySupport.Measurement> results = EvidenceOverheadStudy.run(directory, 1);
@@ -128,7 +123,6 @@ class EvidenceOverheadStudyTest {
         }
     }
 
-    /** The Latin-square rotation balances every mode position over three workflows and five repetitions. */
     @Test
     void modeOrderIsDeterministicAndGloballyBalanced() {
         assertEquals(

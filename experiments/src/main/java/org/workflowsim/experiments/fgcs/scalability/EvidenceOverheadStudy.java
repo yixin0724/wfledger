@@ -50,7 +50,6 @@ public final class EvidenceOverheadStudy {
         return MODES;
     }
 
-    /** A cyclic Latin-square rotation balances each mode position over the full 3-by-5 protocol. */
     public static List<String> modeOrder(String workflow, int repetition) {
         if (repetition < 0) {
             throw new IllegalArgumentException("Measured repetition must be nonnegative");
@@ -274,10 +273,6 @@ public final class EvidenceOverheadStudy {
         throw new IllegalStateException("Cannot locate scripts/verify-network-ledger.py from the working directory");
     }
 
-    /**
-     * Functional in-process regression helper, not the official performance protocol. The Python matrix runner
-     * invokes the five-argument main entry in a fresh JVM for every measured row.
-     */
     public static List<FgcStudySupport.Measurement> run(Path evidenceRoot, int repetitions)
             throws SimulationExecutionException {
         if (repetitions < 1) {
@@ -304,7 +299,7 @@ public final class EvidenceOverheadStudy {
                 throw new IllegalArgumentException("Measured repetition must be nonnegative");
             }
             Path evidenceRoot = Paths.get(args[4]);
-            // Exactly one full-pipeline warmup occurs in this invoking JVM and is never included in results.json.
+
             runScenario(workflow, mode, -1, evidenceRoot.resolve("warmup"), false);
             FgcStudySupport.Measurement measured =
                     runScenario(workflow, mode, repetition, evidenceRoot.resolve("measured"), true);

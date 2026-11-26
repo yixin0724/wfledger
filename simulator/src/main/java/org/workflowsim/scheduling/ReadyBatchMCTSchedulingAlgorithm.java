@@ -1,12 +1,6 @@
 package org.workflowsim.scheduling;
 
-/**
- * Online ready-batch MCT (Maheswaran et al. 1999 immediate mode): assigns Jobs in queue order to
- * their minimum completion time.
- *
- * <p>FGCS-R6 (2026-11-25): late binding with machine ready times; see
- * {@link MachineReadyTimeSchedulingAlgorithm} for the round semantics.
- */
+/** Online ready-batch MCT (Maheswaran et al. */
 public class ReadyBatchMCTSchedulingAlgorithm extends MachineReadyTimeSchedulingAlgorithm {
 
     @Override

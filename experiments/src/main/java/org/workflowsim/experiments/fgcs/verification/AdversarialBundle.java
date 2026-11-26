@@ -20,7 +20,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** File-level mutation support; it never invokes a validator to construct an expected outcome. */
 final class AdversarialBundle {
     private static final Gson JSON = new GsonBuilder().serializeNulls().create();
 
@@ -109,7 +108,6 @@ final class AdversarialBundle {
         writeJson(rolePath(lifecycleRole()), lifecycle);
     }
 
-    /** Recomputes all references, including unchanged sidecars, after the semantic mutation is complete. */
     void commit() throws IOException {
         for (JsonElement element : manifest.getAsJsonArray("artifacts")) {
             JsonObject artifact = element.getAsJsonObject();

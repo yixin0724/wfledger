@@ -14,10 +14,6 @@ import org.workflowsim.utils.CrchConfig;
 import org.workflowsim.utils.CrchRecovery;
 import org.workflowsim.utils.CrchRegistry;
 
-/**
- * FGCS-R5 (2026-11-24): CRCH retry placement follows the paper's same/different-resource comparison
- * (arXiv:1810.06361v2 Eq. 20/21): saved checkpoints shorten the retry only on the checkpointing VM.
- */
 class CrchSchedulingAlgorithmTest {
 
     @AfterEach
@@ -25,11 +21,6 @@ class CrchSchedulingAlgorithmTest {
         CrchRegistry.clear();
     }
 
-    /**
-     * 4000 MI failed 3.5 s into compute on VM 3 with λ = 1, γ = 0.1: 3000 MI saved on VM 3. On VM 3
-     * the retry is 1000 MI with no checkpoint, 1.0 s; on VM 8 it is 4000 MI with 3 checkpoints,
-     * 4300 MI, 4.3 s. The retry stays on VM 3.
-     */
     @Test
     void retryResumesOnTheCheckpointingVmWhenThatFinishesFirst() {
         CrchRegistry.configure(new CrchConfig(1.0, 0.1));
@@ -42,11 +33,6 @@ class CrchSchedulingAlgorithmTest {
         assertEquals(3, job.getVmId());
     }
 
-    /**
-     * Same failure; VM 8 is four times faster. VM 3: 1000 MI / 1000 MIPS = 1.0 s. VM 8: 4000 MI at
-     * 4000 MIPS is 1 s of work, no checkpoint, 1.0 s: a tie, which goes to the lower ID, VM 3. At
-     * 5000 MIPS VM 8 needs 0.8 s and wins although it must re-execute the saved work.
-     */
     @Test
     void aFasterVmWinsOnlyWhenItsFullReexecutionFinishesFirst() {
         CrchRegistry.configure(new CrchConfig(1.0, 0.1));
@@ -60,10 +46,6 @@ class CrchSchedulingAlgorithmTest {
         assertEquals(8, faster.getVmId());
     }
 
-    /**
-     * A fresh 3000 MI Job pays two checkpoints (0.2 s) everywhere, so the faster VM wins: 3.2 s on
-     * VM 3 at 1000 MIPS versus 3000 MI at 2000 MIPS = 1.5 s with one checkpoint, 1.6 s, on VM 8.
-     */
     @Test
     void aFreshJobGoesToTheEarliestFinishingVm() {
         CrchRegistry.configure(new CrchConfig(1.0, 0.1));
@@ -74,7 +56,6 @@ class CrchSchedulingAlgorithmTest {
         assertEquals(8, job.getVmId());
     }
 
-    /** FGCS-R4 (2026-11-24): a two-PE Job must skip the faster one-PE VM 3. */
     @Test
     void neverSelectsAPeIncompatibleVm() {
         CrchRegistry.configure(new CrchConfig(1.0, 0.1));

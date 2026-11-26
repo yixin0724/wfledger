@@ -84,10 +84,6 @@ public class WorkflowScheduler extends DatacenterBroker {
 
     private Map<Integer, Integer> workflowIndices;
 
-    /**
-     * FGCS-R6 (2026-11-25): the Job dispatched to each busy VM and the instant its submission reaches
-     * the datacenter, for {@link #machineReadySeconds(CondorVM)}.
-     */
     private final Map<Integer, Object[]> dispatchedAttempts = new LinkedHashMap<Integer, Object[]>();
 
     public WorkflowScheduler(String name) throws Exception {
@@ -113,13 +109,6 @@ public class WorkflowScheduler extends DatacenterBroker {
         this.eventRecorder = value;
     }
 
-    /**
-     * Stores the parsed workflow structure and binds it to the active policy when that policy is
-     * {@link WorkflowContextAware} (FGCS-R5, 2026-11-24).
-     *
-     * @param tasks parsed Tasks
-     * @param taskWorkflowIndices workflow index of every Task ID
-     */
     public void setWorkflowContext(List<Task> tasks, Map<Integer, Integer> taskWorkflowIndices) {
         if (tasks == null || taskWorkflowIndices == null) {
             throw new IllegalArgumentException("Workflow context requires Tasks and workflow indices");
@@ -328,13 +317,6 @@ public class WorkflowScheduler extends DatacenterBroker {
         }
     }
 
-    /**
-     * Requests one coalesced round at the current instant.
-     *
-     * <p>FGCS-R3 (2026-11-24, B2): root cause — a Job return ran a round before the engine
-     * released that return's same-instant children, so a "batch" depended on event order. The
-     * round is now re-posted at zero delay until no other event remains at this instant.
-     */
     private void requestSchedulingRound() {
         if (!roundPending) {
             roundPending = true;
@@ -401,17 +383,6 @@ public class WorkflowScheduler extends DatacenterBroker {
         return requireDatacenter().sharedEnvelopeInputReadSeconds(job);
     }
 
-    /**
-     * Returns the no-failure ready time of a created VM at the current instant.
-     *
-     * <p>FGCS-R6 (2026-11-25): for a busy VM whose attempt the datacenter has started this is the
-     * recorded guarded completion instant minus now ({@link WorkflowDatacenter#noFailureCompletionSeconds}).
-     * While the submission is still in flight (positive queue delay, or a later round at the dispatch
-     * instant) the attempt has not been projected yet, so the estimate is the same guarded rule applied
-     * to the policy's own envelope: {@code max(s + ETC, s + tick + tick/10) - now} with {@code s} the
-     * submission instant. A completion that lies at most 1e-9 s in the past because of the binary64
-     * {@code clock + (t - clock)} round trip counts as ready now; anything earlier fails fast.
-     */
     private double machineReadySeconds(CondorVM vm) {
         Object[] attempt = dispatchedAttempts.get(vm.getId());
         if (attempt == null) {
@@ -579,8 +550,7 @@ public class WorkflowScheduler extends DatacenterBroker {
 
     private PlatformProfile.FrequencyTier selectMinEdpTier(Job job, List<PlatformProfile.FrequencyTier> tiers) {
         long workMi = job.getEffectiveExecutionLengthMi();
-        // FGCS-R5 (2026-11-24): root cause - the estimate charged default idle for the whole elapsed
-        // clock, so the same Job moved to faster tiers merely because it was dispatched later.
+
         PlatformProfile.FrequencyTier best = null;
         double bestEdp = Double.NaN;
         for (PlatformProfile.FrequencyTier tier : tiers) {
@@ -618,8 +588,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         CondorVM vm = findCreatedVm(cloudlet.getVmId());
 
         vm.setState(WorkflowSimTags.VM_STATUS_IDLE);
-        // FGCS-R6 (2026-11-25): the returned attempt (completed or ended at its failure instant) no
-        // longer defines the VM's ready time; an idle VM is ready now.
+
         Object[] attempt = dispatchedAttempts.get(vm.getId());
         if (attempt == null || attempt[0] != job) {
             throw new IllegalStateException(getName() + " received Job " + job.getCloudletId() + " from VM "

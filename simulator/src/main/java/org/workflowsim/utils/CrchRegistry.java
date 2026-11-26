@@ -4,15 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Session state of the CRCH synchronized-checkpoint model.
- *
- * <p>FGCS-R5 (2026-11-24): root cause - a checkpoint committed when {@code interval + overhead} fit
- * after the previous interval, but the overhead was never part of the attempt's executed length, and
- * the saved work was credited on whichever VM the retry used. Checkpoint arithmetic now lives in
- * {@link CrchCheckpointModel}, the overhead is charged to every CRCH attempt by the datacenter, and a
- * recovery keeps the checkpointing VM so that only a resumption on that VM skips the saved work.
- */
+/** Session state of the CRCH synchronized-checkpoint model. */
 public final class CrchRegistry {
     private static CrchConfig config;
     private static final Map<Integer, CrchRecovery> RECOVERIES = new TreeMap<Integer, CrchRecovery>();
@@ -38,7 +30,6 @@ public final class CrchRegistry {
         return config;
     }
 
-    /** @return whether this session runs the CRCH checkpoint model */
     public static synchronized boolean isConfigured() {
         return config != null;
     }
@@ -58,18 +49,6 @@ public final class CrchRegistry {
         return value;
     }
 
-    /**
-     * Records the checkpoints a failed attempt committed and returns the resulting recovery state.
-     *
-     * @param taskId logical task of the failed attempt
-     * @param failedVmId VM that ran the attempt and holds its checkpoints
-     * @param creditedWorkMi saved work the attempt had already skipped on this VM
-     * @param attemptWorkMi work the attempt itself had to compute, excluding checkpoint overhead
-     * @param plannedCheckpoints checkpoints the attempt would have taken without a failure
-     * @param elapsedComputeSeconds seconds between the attempt's compute start and the failure
-     * @param vmMips execution speed of the failed VM
-     * @return the recovery; its saved work is {@code credited + committed·λ·mips}
-     */
     public static synchronized CrchRecovery recordFailure(
             int taskId,
             int failedVmId,

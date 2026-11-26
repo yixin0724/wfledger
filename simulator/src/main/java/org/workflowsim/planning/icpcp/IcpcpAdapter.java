@@ -12,15 +12,7 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConstants;
 import org.workflowsim.utils.SimulationTiming;
 
-/**
- * Converts WorkflowSim tasks into an IC-PCP problem under the SHARED compute-envelope model.
- *
- * <p>FGCS-R3 (2026-11-24) M3 root cause: the adapter added a point-to-point edge transfer
- * ({@code bytes / mean VM bandwidth}) on top of task durations that already include the shared-storage
- * read of every real input, so cross-VM edges were charged twice relative to the runtime, which has no
- * point-to-point edges in SHARED. Edge transfer times are now zero; every input read stays in the
- * consumer's {@code (L_raw + floor(mips * inputSeconds)) / mips} envelope.
- */
+/** Converts WorkflowSim tasks into an IC-PCP problem under the SHARED compute-envelope model. */
 public final class IcpcpAdapter {
 
     private IcpcpAdapter() {}
@@ -75,8 +67,7 @@ public final class IcpcpAdapter {
                 throw new IllegalArgumentException(
                         "IC-PCP cannot map task " + task.getCloudletId() + "; no PE-compatible VM");
             }
-            // FGCS-R3 (2026-11-24) M3: SHARED has no point-to-point edges; the child's read of this
-            // task's output is already part of the child's envelope duration above.
+
             Map<Integer, Double> children = new LinkedHashMap<Integer, Double>();
             for (Task child : task.getChildList()) {
                 children.put(child.getCloudletId(), 0.0);

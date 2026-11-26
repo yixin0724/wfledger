@@ -100,16 +100,6 @@ public final class EnergyAccounting {
                 total, mean, peak, total * makespanSeconds, java.util.Collections.unmodifiableMap(perVm));
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, A5): energy accounting is all-or-none. Root cause: a fleet mixing
-     * powered VMs (plain power fields or frequency tiers) with unpowered VMs used to book the
-     * unpowered VMs at 0 J, so {@code totalEnergyJoules} silently understated fleet energy and
-     * looked like a legal measurement. A platform must declare a power source on every VM or
-     * on none (ENERGY_DIMENSION_DESIGN.md §2.2).
-     *
-     * @param platform declared platform
-     * @throws IllegalStateException when only part of the fleet declares a power model
-     */
     public static void requireAllOrNonePowered(PlatformProfile platform) {
         Integer powered = null;
         Integer unpowered = null;

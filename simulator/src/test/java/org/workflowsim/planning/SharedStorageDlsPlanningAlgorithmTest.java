@@ -16,18 +16,6 @@ import org.workflowsim.utils.SimulationConfig;
 
 class SharedStorageDlsPlanningAlgorithmTest {
 
-    /**
-     * FGCS-R3 (2026-11-24) m1 regression: Sih and Lee (IEEE TPDS 4(2), 1993) define the heterogeneous
-     * dynamic level as {@code DL(n,p) = SL*(n) - max(DA(n,p), TF(p)) + Δ(n,p)} with
-     * {@code Δ(n,p) = E*(n) - E(n,p)}, where {@code E*} is the median execution time over the processors
-     * and {@code SL*} the static level built from {@code E*}. Hand derivation: 1000 MI tasks on VM0
-     * (1000 MIPS, 1.0 s) and VM1 (2000 MIPS, 0.5 s); {@code E* = 0.75}; {@code SL*(1) = 1.5},
-     * {@code SL*(2) = SL*(3) = 0.75}; {@code Δ(VM0) = -0.25}, {@code Δ(VM1) = +0.25}; roots are released
-     * at 0.21 s. Step 1: (1,VM1) = 1.5 - 0.21 + 0.25 = 1.54 is the maximum (the pre-fix rule without Δ
-     * picked (1,VM0) with 1.29). Task 1 runs on VM1 in [0.21, 0.71]. Step 2: (2,VM0) = 0.75 - 0.21 - 0.25
-     * = 0.29, (2,VM1) = 0.75 - 0.71 + 0.25 = 0.29, (3,VM0) = -0.21, (3,VM1) = 0.29; the tie resolves to
-     * Task 2 then VM0. Step 3: (3,VM0) = 0.75 - 1.21 - 0.25 = -0.71, (3,VM1) = 0.29, so VM1.
-     */
     @Test
     void choosesTheMaximumDynamicLevelTaskVmPairAtEachSelection() {
         Task root = new Task(1, 1000);
@@ -58,12 +46,6 @@ class SharedStorageDlsPlanningAlgorithmTest {
         assertNull(trace.getTaskPlan(1).getCpopPrioritySeconds());
     }
 
-    /**
-     * FGCS-R3 (2026-11-24) m1 regression: the static level uses the median, not the mean, execution
-     * time. Hand derivation: one 1000 MI task on VMs of 1000, 1000 and 250 MIPS (1, 1 and 4 s); the
-     * median is 1 s (the mean, 2 s, is rejected), so {@code SL* = 1}; on VM0 {@code Δ = 0} and the
-     * selected dynamic level is {@code 1 - 0.21 + 0 = 0.79}.
-     */
     @Test
     void staticLevelAndDeltaUseTheMedianExecutionTime() {
         Task only = new Task(4, 1000);

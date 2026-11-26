@@ -25,15 +25,6 @@ class EbpsmIntegrationTest {
     @TempDir
     Path directory;
 
-    /**
-     * FGCS-R3 (2026-11-24, A1), re-derived for FGCS-R5 per-workflow budgets: end-to-end proof that WorkflowScheduler
-     * forwards job completions to EBPSM. Chain a -> b on two 1000-MIPS VMs (bw 1 MB/s, price 1, one VM type); a
-     * reads y (1e6 B, initially cached only on VM 8) and writes x (1e6 B), b reads x. a uses image ia, b uses ib
-     * (deployed only on VM 3). Eq. 5 costs on the uncached type: a 2 s read + 1 s compute + 2 s write = 5; b 2 s
-     * read + 1 s compute = 3; budget 10 covers both. The input tier sends a to VM 8. If a's output is published on
-     * completion, b's input tier selects VM 8; without publication no VM holds x and b's container tier selects
-     * VM 3.
-     */
     @Test
     void successfulOutputIsPublishedOnCompletionAndSteersTheChild() throws Exception {
         Path chain = PlanningRegressionFixtures.workflow(
@@ -77,17 +68,6 @@ class EbpsmIntegrationTest {
         assertEquals(8, child.getVmId());
     }
 
-    /**
-     * FGCS-R5 (2026-11-24), test (b) end to end. VM 3: 1000 MIPS, price 1; VM 8: 2000 MIPS, price 3; bw 1 MB/s;
-     * GS rates 1e6 B/s; {@code prov_c = 0}; every image deployed. a: 1000 MI writing x (1e6 B); b: 2000 MI, no files.
-     * Eq. 5 (Eq. 4 includes the Eq. 2 write of 1 + 1 = 2 s): a slow 1 + 2 = 3 s, cost 3; a fast 0.5 + 2 = 2.5 s,
-     * cost 3 * 3 = 9; b slow 2 s, cost 2; b fast 1 s, cost 3. Budget 5.5: cheapest 3 + 2, residual 0.5; neither
-     * upgrade (+6, +1) fits, so b's static sub-budget 2 admits only VM 3. a runs on VM 3 (VM 8 costs 9 > 3). The
-     * SHARED runtime does not charge the output write inside the envelope (contract: CONTRACTS.md "The Compute
-     * Envelope Model of SHARED"), so a's actual envelope is 1 s, cost 1. Algorithm 3: pool 3 + 0.5 covers 1, spare
-     * 2.5, {@code beta_u = 2 + 2.5 = 4.5}; Algorithm 1 over {b}: 2, residual 2.5, the +1 upgrade fits, so b's
-     * sub-budget is 3 and b runs on the faster VM 8.
-     */
     @Test
     void spareBudgetFromTheParentUpgradesTheChildToTheFasterVm() throws Exception {
         Path chain = PlanningRegressionFixtures.workflow(

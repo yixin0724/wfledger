@@ -11,7 +11,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/** Compact, deterministic result projection; generated evidence stays outside the source tree. */
 final class AdversarialResultsWriter {
 
     private AdversarialResultsWriter() {}

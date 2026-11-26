@@ -7,42 +7,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Algorithm 1 (Budget Distribution) of Hilman, Rodriguez and Buyya, "Resource-sharing Policy in Multi-tenant
- * Scientific Workflow-as-a-Service Cloud Platform" (arXiv:1903.01113).
- *
- * <p>FGCS-R5 (2026-11-24) root causes fixed here:
- *
- * <ul>
- *   <li>The estimated execution order used the processing time on the lowest-MIPS type and assumed that parents
- *       carry smaller IDs. Levels (Eq. 7) and EFTs (Eq. 8) are now computed in topological order (Kahn, ascending
- *       ID), and the EFT of a task uses its processing time on the VM type Algorithm 1 first chooses for it (its
- *       cheapest type), so the order estimates the initial allocation it ranks.
- *   <li>The first phase charged every task its lowest-MIPS type even when the budget was exhausted and when a
- *       different type was cheaper. It now follows Algorithm 1 lines 12–17 literally: while {@code beta > 0} the
- *       next task of the order receives the Eq. 5 cost of its cheapest compatible type and {@code beta} drops by
- *       that cost; tasks not reached keep the initiated budget 0 (line 5).
- *   <li>The SFTD upgrade only accepted strictly more expensive types. Faster means a shorter processing time; a
- *       faster type that happens to cost less after per-second rounding is an upgrade too. Each task, in order,
- *       moves once to the fastest compatible type whose cost difference fits the remaining budget.
- *   <li>Eq. 5 includes the provisioning delays: the cost of a type is
- *       {@code ceil(prov_vmt + prov_c + PT) * c_vmt} with a one-second billing period.
- * </ul>
- *
- * <p>{@code pred(t)} is restricted to the distributed task set {@code T}, so on a budget update
- * ({@code distributeBudget(beta_u, T_u)}) a task whose parents already ran is a level-0 task of the residual DAG.
- */
 public final class EbpsmBudgetDistributor {
 
     private static final double TOLERANCE = 1.0e-9;
 
     private final double containerProvisioningDelaySeconds;
 
-    /**
-     * Creates a distributor.
-     *
-     * @param containerProvisioningDelaySeconds {@code prov_c} of Eq. 5
-     */
     public EbpsmBudgetDistributor(double containerProvisioningDelaySeconds) {
         if (!(containerProvisioningDelaySeconds >= 0.0) || !Double.isFinite(containerProvisioningDelaySeconds)) {
             throw new IllegalArgumentException("EBPSM container provisioning delay must be finite and non-negative");
@@ -50,14 +20,6 @@ public final class EbpsmBudgetDistributor {
         this.containerProvisioningDelaySeconds = containerProvisioningDelaySeconds;
     }
 
-    /**
-     * Distributes a budget over a task set (Algorithm 1).
-     *
-     * @param tasks distributed task set {@code T}; may be empty
-     * @param vmTypes VM types of the platform
-     * @param budget budget {@code beta}; may be zero or negative after a debt
-     * @return sub-budgets in estimated execution order plus the undistributed residual
-     */
     public Allocation distribute(List<EbpsmTask> tasks, List<EbpsmVmType> vmTypes, double budget) {
         if (tasks == null || vmTypes == null || vmTypes.isEmpty() || !Double.isFinite(budget)) {
             throw new IllegalArgumentException("EBPSM requires a task set, VM types, and a finite budget");
@@ -127,13 +89,6 @@ public final class EbpsmBudgetDistributor {
         return new Allocation(budgets, chosen, remaining, allocated == order.size());
     }
 
-    /**
-     * Returns the Eq. 5 cost of a task on a VM type.
-     *
-     * @param task task
-     * @param type compatible VM type
-     * @return {@code ceil(prov_vmt + prov_c + PT) * c_vmt}
-     */
     public double cost(EbpsmTask task, EbpsmVmType type) {
         Double seconds = task.getProcessingSecondsByVmType().get(type.getVmTypeId());
         if (seconds == null) {
@@ -144,13 +99,6 @@ public final class EbpsmBudgetDistributor {
                 * type.getCostPerSecond();
     }
 
-    /**
-     * Rounds a duration up to whole one-second billing periods, absorbing floating-point noise below 1e-9 s so
-     * that an exactly two-second envelope computed as {@code 2.1 - 0.1} is billed two periods.
-     *
-     * @param seconds non-negative duration
-     * @return whole billed seconds
-     */
     public static double billedSeconds(double seconds) {
         if (!(seconds >= 0.0) || !Double.isFinite(seconds)) {
             throw new IllegalArgumentException("EBPSM billed duration must be finite and non-negative: " + seconds);
@@ -265,22 +213,18 @@ public final class EbpsmBudgetDistributor {
             this.everyTaskReached = reached;
         }
 
-        /** @return sub-budget per task, in the estimated execution order {@code S} */
         public Map<Integer, Double> getBudgets() {
             return budgets;
         }
 
-        /** @return VM type each reached task's sub-budget was sized for */
         public Map<Integer, Integer> getVmTypes() {
             return vmTypes;
         }
 
-        /** @return budget left undistributed; negative when the last allocated task overshot {@code beta} */
         public double getResidual() {
             return residual;
         }
 
-        /** @return whether the {@code while beta > 0} loop reached every task before the budget ran out */
         public boolean isEveryTaskReached() {
             return everyTaskReached;
         }

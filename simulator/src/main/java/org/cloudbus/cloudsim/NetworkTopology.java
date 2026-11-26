@@ -147,7 +147,6 @@ public class NetworkTopology {
 
                 return delay;
             } catch (Exception e) {
-
             }
         }
         return 0.0;

@@ -242,8 +242,7 @@ final class SharedStorageDagPlanner {
                     continue;
                 }
                 double earliestStart = earliestStartForReadyPair(vm, readyTime, duration);
-                // FGCS-R3 (2026-11-24) m1: Sih and Lee 1993 heterogeneous dynamic level
-                // DL(n,p) = SL*(n) - max(DA, TF) + Δ(n,p), Δ(n,p) = E*(n) - E(n,p).
+
                 double delta = medianExecutionTime(task) - duration;
                 DlsCandidate candidate =
                         new DlsCandidate(task, vm, upwardRanks.get(task).doubleValue() - earliestStart + delta);
@@ -461,15 +460,6 @@ final class SharedStorageDagPlanner {
         return total / count;
     }
 
-    /**
-     * Median execution time {@code E*(n)} over the compatible VMs, the node weight of the DLS static
-     * level and the reference of its {@code Δ(n,p)} term.
-     *
-     * <p>FGCS-R3 (2026-11-24) m1 root cause: SHARED_STORAGE_DLS used the HEFT mean node weight and
-     * omitted {@code Δ(n,p)}. Sih and Lee (IEEE TPDS 4(2), 1993, Section V) define the heterogeneous
-     * static level from the median execution time and add {@code Δ(n,p) = E*(n) - E(n,p)} to the
-     * dynamic level. For an even count the median is the mean of the two middle values.
-     */
     private double medianExecutionTime(Task task) {
         List<Double> durations = new ArrayList<Double>();
         for (Double duration : executionTimes.get(task).values()) {

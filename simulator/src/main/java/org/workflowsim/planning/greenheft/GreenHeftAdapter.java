@@ -12,17 +12,7 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConstants;
 import org.workflowsim.utils.SimulationTiming;
 
-/**
- * Converts WorkflowSim tasks into a GreenHEFT/MOHEFT problem under the SHARED compute-envelope model.
- *
- * <p>FGCS-R3 (2026-11-24) M6 root cause: durations were raw {@code MI / MIPS} and roots started at 0, while
- * the SHARED runtime executes {@code (L_raw + floor(mips * inputSeconds)) / mips} after the 110-MI stage-in
- * Job and the root-release interval. Planned windows therefore diverged from execution, unlike
- * HEFT/CPOP/DLS/ETF/PEFT, IC-PCP and DVFS. Durations, stage-in and root release now follow
- * {@code SharedStorageDagPlanner} exactly; task energy is {@code P_max} times the envelope duration, because
- * the runtime energy law charges the VM busy interval of the whole Job envelope at the dynamic power.
- * Edges carry no point-to-point transfer: the SHARED runtime has none.
- */
+/** Converts WorkflowSim tasks into a GreenHEFT/MOHEFT problem under the SHARED compute-envelope model. */
 public final class GreenHeftAdapter {
 
     private GreenHeftAdapter() {}
@@ -88,7 +78,6 @@ public final class GreenHeftAdapter {
         return new GreenHeftProblem(converted, rootRelease(vms, minimumEventIntervalSeconds));
     }
 
-    /** Finish of the 110-MI stage-in Job on the lowest-ID VM plus the root-release interval. */
     private static double rootRelease(List<CondorVM> vms, double minimumEventIntervalSeconds) {
         CondorVM first = null;
         for (CondorVM vm : vms) {

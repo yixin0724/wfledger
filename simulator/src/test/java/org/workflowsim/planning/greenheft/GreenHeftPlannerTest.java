@@ -77,11 +77,6 @@ class GreenHeftPlannerTest {
         assertEquals(7.0, schedule.getTotalEnergyJoules(), 1.0e-9);
     }
 
-    /**
-     * FGCS-R3 (2026-11-24) m7: exact insertion boundary, as in the SHARED planners. Same derivation as
-     * the MOHEFT case: the child occupies VM0 [10,22]; the independent task of 10 + 5e-10 s overruns the
-     * [0,10] gap and must start at 22 (the superseded 1e-9 tolerance inserted it at 0).
-     */
     @Test
     void insertionUsesTheExactGapBoundary() {
         double overrun = 10.0 + 5.0e-10;

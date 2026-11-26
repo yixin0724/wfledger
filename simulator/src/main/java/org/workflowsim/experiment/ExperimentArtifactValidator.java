@@ -612,16 +612,6 @@ public final class ExperimentArtifactValidator {
         verifyMetricClose(metrics, "meanJobVmQueueWaitingTimeSeconds", expectedQueueWait);
     }
 
-    /**
-     * Recomputes the FGCS-R6 metric additions that the manifest and event stream determine.
-     *
-     * <p>FGCS-R6 (2026-11-25): a metrics document that declares {@code boundedSlowdownThresholdSeconds} must
-     * agree with the declared {@code configuration.boundedSlowdownThresholdSeconds} (finite, positive), and a
-     * declared {@code totalInputReadSecondsInEnvelope} must equal the sum of {@code effectiveDataStageSeconds}
-     * over the {@code JOB_EXECUTION_STARTED} events of result Jobs, with the compute-only remainder and the
-     * share following from the busy total. Pre-R6 documents declare neither field and keep their authority, and
-     * so does a stream that carries no start marker.
-     */
     private static void verifyR6MetricsRecompute(JsonObject root, JsonObject metrics, EventContractAudit audit)
             throws IOException {
         if (metrics.has("boundedSlowdownThresholdSeconds")) {
@@ -634,8 +624,7 @@ public final class ExperimentArtifactValidator {
             verifyMetricClose(metrics, "boundedSlowdownThresholdSeconds", tau);
         }
         if (!metrics.has("totalInputReadSecondsInEnvelope") || audit.startedDerivations.isEmpty()) {
-            // A stream without JOB_EXECUTION_STARTED markers keeps the manifest-authority boundary, exactly
-            // as the F-006/F-007 cross-checks do for undeclared marker-less streams.
+
             return;
         }
         JsonArray jobs = requireArray(

@@ -71,11 +71,6 @@ public class WorkflowDatacenter extends Datacenter {
     private org.workflowsim.data.v2.CoherentDataflowRuntime coherentDataflow;
     private int coherentEngineId = -1;
 
-    /**
-     * FGCS-R6 (2026-11-25): no-failure guarded completion instant of the attempt each VM is running,
-     * keyed by VM ID and holding {@code {jobId, completionSeconds}}; the online ready-time policies read
-     * it through {@link #noFailureCompletionSeconds(int, int)}.
-     */
     private final Map<Integer, double[]> runningAttemptCompletions = new LinkedHashMap<Integer, double[]>();
 
     private org.workflowsim.data.v2.DataflowStorageSpec sourceStorage;
@@ -550,19 +545,6 @@ public class WorkflowDatacenter extends Datacenter {
         job.setCloudletLength(computeLengthMi);
     }
 
-    /**
-     * Returns the executed MI of one CRCH-managed compute attempt and records its checkpoint plan.
-     *
-     * <p>FGCS-R5 (2026-11-24): root cause - a successful CRCH attempt ran the bare work, so the
-     * checkpoint overhead {@code γ} the paper charges to every execution ({@code CO = TET × γ/λ},
-     * arXiv:1810.06361v2 Eq. 10) never reached makespan, energy or cost, and only a failed attempt's
-     * retry paid an ad-hoc {@code ceil(γ·mips)} MI. The attempt now computes {@code W} MI and executes
-     * {@code W + ceil(n·γ·mips)} MI with {@code n} from {@link org.workflowsim.utils.CrchCheckpointModel}.
-     * {@code W} is the Task's full work on this VM, except for a retry resuming on the VM that holds its
-     * checkpoints, which computes only the work after the latest checkpoint (checkpoints are VM-local,
-     * Sec. 3.1.3; Eq. 20 versus Eq. 21). Restoring a checkpoint costs nothing beyond the lost work, as in
-     * Eq. 20, so no restore term is charged.
-     */
     private long projectCrchAttemptLength(Job job, CondorVM vm) {
         if (job.getTaskList().size() != 1) {
             throw new IllegalStateException("CRCH attempts must contain exactly one Task; Job " + job.getCloudletId()
@@ -636,16 +618,6 @@ public class WorkflowDatacenter extends Datacenter {
         return fileTransferTime;
     }
 
-    /**
-     * Returns the SHARED input-read seconds this runtime charges inside a compute Job's envelope.
-     *
-     * <p>FGCS-R3 (2026-11-24, B1): online completion estimates delegate here so that they use the
-     * charged cost function. Non-SHARED, pre-execution and coherent models return 0 because their
-     * input preparation is either VM-dependent or precedes the envelope.
-     *
-     * @param job ready Job
-     * @return non-negative seconds
-     */
     public double sharedEnvelopeInputReadSeconds(Job job) {
         if (job.getClassType() != ClassType.COMPUTE.value
                 || ReplicaCatalog.getFileSystem() != ReplicaCatalog.FileSystem.SHARED
@@ -714,21 +686,6 @@ public class WorkflowDatacenter extends Datacenter {
         }
     }
 
-    /**
-     * Returns the no-failure completion instant of the attempt a VM is running.
-     *
-     * <p>FGCS-R6 (2026-11-25): the value is fixed at submission as
-     * {@code max(submit + envelope, submit + tick + tick/10)}, the instant at which this datacenter
-     * schedules the completion event of an attempt that does not fail
-     * ({@link SimulationTiming#earliestCloudletCompletionTime}); {@code envelope} is the space-shared
-     * {@code (L + floor(mips * read)) / mips}. A failing attempt may end earlier (mid-execution failure,
-     * FGCS-R5); the estimate deliberately ignores that unknown future outcome.
-     *
-     * @param vmId running VM
-     * @param jobId Job the scheduler dispatched to that VM
-     * @return completion instant in simulation seconds, or NaN while that Job's submission has not yet
-     *     reached this datacenter
-     */
     public double noFailureCompletionSeconds(int vmId, int jobId) {
         double[] record = runningAttemptCompletions.get(vmId);
         if (record == null || (int) record[0] != jobId) {
@@ -737,19 +694,6 @@ public class WorkflowDatacenter extends Datacenter {
         return record[1];
     }
 
-    /**
-     * Shortens a failing attempt so that it ends at its failure instant.
-     *
-     * <p>FGCS-R5 (2026-11-24): root cause - the failure model only flagged an attempt after it had run
-     * its whole length, so the VM stayed busy and was charged energy and cost until the modeled finish.
-     * The executable length becomes the stage-in MI plus {@code ceil((f - computeStart) · mips)} compute
-     * MI. The space-shared scheduler then completes and frees the VM at the first whole-MI boundary at or
-     * after {@code f} (at most {@code 1/mips} later, the granularity every cloudlet already has, and never
-     * earlier than the kernel completion guard), and no completion event of the discarded remainder is
-     * left in the future queue.
-     *
-     * @return the new estimated execution seconds of the envelope
-     */
     private double truncateAtFailure(Job job, CondorVM vm, long stageInMi) {
         if (job.getTaskList().size() != 1) {
             throw new IllegalStateException("A failing attempt must contain exactly one Task under clustering NONE; "
@@ -1060,8 +1004,7 @@ public class WorkflowDatacenter extends Datacenter {
                             FailureGenerator.applySubmittedOutcome((Job) cl);
                         }
                         register(cl);
-                        // FGCS-R6 (2026-11-25): a returned attempt (successful or failed at its failure
-                        // instant) no longer occupies its VM, so its no-failure completion must not be read.
+
                         double[] running = runningAttemptCompletions.get(vm.getId());
                         if (running != null && (int) running[0] == cl.getCloudletId()) {
                             runningAttemptCompletions.remove(vm.getId());

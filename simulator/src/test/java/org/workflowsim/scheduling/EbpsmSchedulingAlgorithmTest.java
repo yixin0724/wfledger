@@ -24,21 +24,8 @@ import org.workflowsim.WorkflowSimTags;
 import org.workflowsim.utils.EbpsmConfig;
 import org.workflowsim.utils.Parameters.FileType;
 
-/**
- * Scheduler-level checks of EBPSM (Hilman, Rodriguez and Buyya, arXiv:1903.01113, Algorithms 1–3).
- *
- * <p>FGCS-R5 (2026-11-24): budgets are per workflow and every sub-budget below is derived by hand from Algorithm 1
- * with Eq. 5 costs {@code ceil(prov_c + PT) * price}. Common fixture terms: 100-byte files, global storage rates
- * 100 B/s and VM bandwidth 100 decimal MB/s, so one read or write costs {@code 1 + 1e-6} s; 100 MI at 100 MIPS is
- * 1 s. VMs with equal (MIPS, price, PEs, bandwidth) form one VM type.
- */
 class EbpsmSchedulingAlgorithmTest {
 
-    /**
-     * Single type (both VMs 100 MIPS, price 1), {@code prov_c = 5}. Task: input + output + 1 s compute, so
-     * {@code PT = 3.000002}, Eq. 5 cost {@code ceil(8.000002) = 9}; budget 10 gives sub-budget 9. VM 1 caches the
-     * input but lacks the container: {@code 1 + 1.000001 + 5 = 7.000001} s, cost 8 <= 9, and the input tier wins.
-     */
     @Test
     void prefersTheVmWithInputAndContainerCaches() {
         Task task = cachedTask();
@@ -53,10 +40,6 @@ class EbpsmSchedulingAlgorithmTest {
         assertEquals(9.0, scheduler.getBudgetLedger().budgetOf(1), 1.0e-9);
     }
 
-    /**
-     * The cheapest-type Eq. 5 cost of the workflow is 9 (derived above); budget 8 cannot be met by any allocation,
-     * and the paper rejects such jobs (Sec. 5), so the run fails before any dispatch.
-     */
     @Test
     void rejectsAWorkflowBudgetBelowItsCheapestTypeCost() {
         Task task = cachedTask();
@@ -68,12 +51,6 @@ class EbpsmSchedulingAlgorithmTest {
         assertTrue(failure.getMessage().contains("budget"), failure.getMessage());
     }
 
-    /**
-     * VM 0 (price 1) and VM 1 (price 3) are two types with equal speed. Eq. 5: type 0 costs 9, type 1 costs 27, so
-     * budget 10 gives sub-budget 9 (no faster type to upgrade to). VM 0 is busy; idle VM 1 costs
-     * {@code ceil(7.000001) * 3 = 24 > 9}. Algorithm 2 schedules only on a suitable VM, and a busy VM will return,
-     * so the task is deferred rather than failed.
-     */
     @Test
     void defersWhenOnlyABusyVmFitsTheTaskBudget() {
         Task task = cachedTask();
@@ -89,12 +66,6 @@ class EbpsmSchedulingAlgorithmTest {
         assertTrue(scheduler.getScheduledList().isEmpty());
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, A2): the prediction uses the effective execution length. The cost matrix gives 1 s on
-     * VM 0 (price 1) and 10 s on VM 1 (price 2); the task has no files. Eq. 5 with {@code prov_c = 5}: type 0
-     * {@code ceil(6) = 6}, type 1 {@code ceil(15) * 2 = 30}; budget 7 gives sub-budget 6. VM 0 has the container:
-     * 1 s, cost 1. The raw 1000 MI / 100 MIPS = 10 s would make the workflow unaffordable.
-     */
     @Test
     void predictionUsesTheEffectiveExecutionLength() {
         Task task = new Task(1, 1000L);
@@ -113,10 +84,6 @@ class EbpsmSchedulingAlgorithmTest {
         assertEquals(6.0, scheduler.getBudgetLedger().budgetOf(1), 1.0e-9);
     }
 
-    /**
-     * A 2-PE task fits only the 2-PE type (VM 1): {@code PT = 2.000001} (read + compute), Eq. 5
-     * {@code ceil(7.000001) = 8}. VM 0 has the container but is PE-incompatible.
-     */
     @Test
     void skipsPeIncompatibleVmEvenWhenItHasTheContainer() {
         Task task = new Task(1, 100L);
@@ -133,11 +100,6 @@ class EbpsmSchedulingAlgorithmTest {
         assertEquals(1, job.getVmId());
     }
 
-    /**
-     * No VM caches anything; {@code PT = 3.000002} with 100 decimal MB/s bandwidth, plus {@code prov_c = 5}, costs
-     * {@code ceil(8.000002) = 9}, so budget 9 is exactly feasible. Reading the bandwidth as bits per second would
-     * add 8 s per transfer and make it infeasible.
-     */
     @Test
     void decimalMegabyteBandwidthDoesNotInflateTheBudget() {
         Task task = cachedTask();
@@ -166,23 +128,11 @@ class EbpsmSchedulingAlgorithmTest {
         assertTrue(scheduler.getScheduledList().contains(job));
     }
 
-    /**
-     * Test (b) of FGCS-R5. VM 0: 100 MIPS, price 1; VM 1: 200 MIPS, price 3; {@code prov_c = 0}, no files. Chain
-     * t1 -> t2, each 400 MI: 4 s slow (cost 4) or 2 s fast (cost 6). Budget 9: cheapest 4 + 4, residual 1; no
-     * upgrade fits (+2), so t1 and t2 hold 4 each and {@code sb = 1}. Under that static budget t2 can only afford
-     * VM 0. t1 runs on VM 0 and finishes after 1 s (cost 1). Algorithm 3: pool {@code 4 + 1 = 5} covers 1, so
-     * {@code beta_u = 4 + 4 = 8}; Algorithm 1 over {t2}: 4, then the fast upgrade +2 fits (residual 2), so t2's
-     * sub-budget becomes 6 and t2 dispatches to VM 1 (2 s, cost 6).
-     */
     @Test
     void spareBudgetFromACheapCompletionUpgradesTheSuccessorToTheFasterVm() throws Exception {
         assertEquals(1, runChainAndReturnSecondVm(1.0));
     }
 
-    /**
-     * Counterpart of the previous test: t1 costs exactly its sub-budget 4, so pool 5 leaves {@code sb = 1},
-     * {@code beta_u = 5}, the +2 upgrade does not fit, and t2 stays on VM 0.
-     */
     @Test
     void completionAtTheSubBudgetKeepsTheSuccessorOnTheCheapVm() throws Exception {
         assertEquals(0, runChainAndReturnSecondVm(4.0));
@@ -232,20 +182,11 @@ class EbpsmSchedulingAlgorithmTest {
         return secondJob.getVmId();
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, A1): outputs are published on successful completion. Producer t1 (output new.bin) and
-     * consumer t2 (input new.bin) each predict 2.000001 s, cost 3; budget 20 covers both. The producer runs on
-     * VM 1 (VM 0 busy). Afterwards both VMs are idle and only VM 1 holds new.bin, so the input tier selects VM 1.
-     */
     @Test
     void successfulOutputIsPublishedAndLaterReadAsCached() throws Exception {
         assertEquals(1, consumerVmAfterProducer(Cloudlet.SUCCESS));
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, A1): a failed attempt publishes nothing. With no VM holding new.bin, both VMs fall into
-     * the container tier, both predict 2.000001 s, and the lowest ID wins: VM 0.
-     */
     @Test
     void unsuccessfulOutputIsNotPublishedAsAReadableInput() throws Exception {
         assertEquals(0, consumerVmAfterProducer(Cloudlet.FAILED));
@@ -275,10 +216,6 @@ class EbpsmSchedulingAlgorithmTest {
         return second.getVmId();
     }
 
-    /**
-     * FGCS-R3 (2026-11-24, A1): a successful reader of shared.bin on VM 1 leaves shared.bin in VM 1's local storage
-     * (paper Sec. 3.2 keeps {@code d_in}), so a later reader selects VM 1 through the input tier.
-     */
     @Test
     void successfulTaskInputsAreRetainedInTheVmCache() throws Exception {
         Task reader = new Task(1, 100L);
@@ -306,16 +243,6 @@ class EbpsmSchedulingAlgorithmTest {
         assertEquals(1, second.getVmId());
     }
 
-    /**
-     * Test (c) of FGCS-R5 plus the FGCS-R3 whole-round stall rule. Single type, {@code prov_c = 0}. Tasks: t1 100 MI
-     * without files ({@code PT = 1}, cost 1), consumer t2 200 MI reading new.bin ({@code PT = 3.000001}, cost 4),
-     * producer t3 100 MI writing new.bin ({@code PT = 2.000001}, cost 3). All are level 0; EFTs 1, 3.000001,
-     * 2.000001 give S = t1, t3, t2. Budget 8 = 1 + 3 + 4 gives exactly those sub-budgets and {@code sb = 0}. t1
-     * returns after 5 s: cost 5 exceeds pool {@code 1 + 0}, debt 4, {@code beta_u = 7 - 4 = 3}. Algorithm 1 over
-     * {t3, t2}: t3 takes 3, beta reaches 0, the while loop stops, and t2 keeps budget 0 — it fits no VM. In the next
-     * round the producer is dispatched (cost 3 <= 3) after the consumer was found unaffordable, so the consumer is
-     * deferred instead of failing.
-     */
     @Test
     void aLaterDispatchInTheSameRoundPreventsAPrematureFailure() throws Exception {
         DebtFixture fixture = debtFixture();
@@ -330,11 +257,6 @@ class EbpsmSchedulingAlgorithmTest {
         assertEquals(3.0, fixture.scheduler.getBudgetLedger().budgetOf(3), 1.0e-9);
     }
 
-    /**
-     * Test (c): with the debt derived above and only the consumer ready, the whole pool is idle after the round, no
-     * running attempt can change a cache or budget, and the fixed pool cannot provision the paper's fallback VM, so
-     * the run fails explicitly.
-     */
     @Test
     void debtThatLeavesATaskUnaffordableOnAnIdlePoolFailsExplicitly() throws Exception {
         DebtFixture fixture = debtFixture();
@@ -373,7 +295,6 @@ class EbpsmSchedulingAlgorithmTest {
         private Task producer;
     }
 
-    /** FGCS-R3 (2026-11-24, A2): a Job no declared VM can host fails instead of waiting forever. */
     @Test
     void failsFastWhenNoDeclaredVmIsCompatible() {
         Task producer = producerTask(1);
@@ -386,7 +307,6 @@ class EbpsmSchedulingAlgorithmTest {
         assertThrows(IllegalArgumentException.class, scheduler::run);
     }
 
-    /** FGCS-R5 (2026-11-24): without the injected workflow context no budget can be distributed. */
     @Test
     void failsFastWithoutTheWorkflowContext() {
         Task task = cachedTask();

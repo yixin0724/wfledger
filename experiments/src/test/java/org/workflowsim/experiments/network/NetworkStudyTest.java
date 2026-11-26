@@ -120,8 +120,7 @@ class NetworkStudyTest {
 
     @Test
     void registeredNewAndHistoricalMatricesHaveIndependentModeIdentitiesWithoutFileIo() {
-        // FGCS-R3 (2026-11-24): three identities per variant — oldest (no executionSemantics), V2-era
-        // (executionSemantics = WORK_CONSERVING_TASK_EXECUTION_V2, historical) and current (V3).
+
         String[][] protocols = {
             {NetworkStudyPlan.HISTORICAL_PROTOCOL, NetworkStudyPlan.V2_EXECUTION_PROTOCOL, NetworkStudyPlan.PROTOCOL},
             {

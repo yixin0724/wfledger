@@ -69,34 +69,14 @@ public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInte
         return this.scheduledList;
     }
 
-    /**
-     * Binds the runtime's input-read cost function; unbound direct use charges no read.
-     *
-     * @param value runtime estimator
-     */
     public final void setInputReadEstimator(InputReadEstimator value) {
         this.inputReadEstimator = value;
     }
 
-    /**
-     * Binds the runtime's machine-ready-time function (FGCS-R6, 2026-11-25); unbound direct use treats
-     * idle VMs as ready now and rejects busy VMs.
-     *
-     * @param value runtime estimator
-     */
     public final void setMachineReadyTimeEstimator(MachineReadyTimeEstimator value) {
         this.machineReadyTimeEstimator = value;
     }
 
-    /**
-     * Returns the machine ready time {@code r_v}: 0 for an idle VM, otherwise the bound runtime estimate.
-     *
-     * <p>FGCS-R6 (2026-11-25): a busy VM without a bound estimator fails fast instead of being treated
-     * as ready now, which would silently re-create the idle-only rule.
-     *
-     * @param vm created VM
-     * @return finite non-negative seconds
-     */
     protected final double readySeconds(CondorVM vm) {
         if (vm.getState() == org.workflowsim.WorkflowSimTags.VM_STATUS_IDLE) {
             return 0.0;
@@ -114,12 +94,6 @@ public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInte
         return seconds;
     }
 
-    /**
-     * Returns the input-read seconds the runtime will charge inside the Job envelope.
-     *
-     * @param cloudlet ready cloudlet
-     * @return finite non-negative seconds
-     */
     protected final double inputReadSeconds(Cloudlet cloudlet) {
         if (inputReadEstimator == null || !(cloudlet instanceof Job)) {
             return 0.0;
@@ -132,15 +106,6 @@ public abstract class BaseSchedulingAlgorithm implements SchedulingAlgorithmInte
         return seconds;
     }
 
-    /**
-     * Returns the runtime envelope seconds on an idle VM, including the single integer-MI read
-     * conversion shared with the runtime and the SHARED planners.
-     *
-     * @param cloudlet ready cloudlet
-     * @param vm candidate VM
-     * @param inputReadSeconds charged read seconds
-     * @return envelope seconds
-     */
     protected static double envelopeSeconds(Cloudlet cloudlet, CondorVM vm, double inputReadSeconds) {
         long readMi = (long) (vm.getMips() * inputReadSeconds);
         return (cloudlet.getCloudletLength() + readMi) / vm.getMips();

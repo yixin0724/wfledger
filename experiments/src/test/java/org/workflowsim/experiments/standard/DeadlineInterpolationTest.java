@@ -16,7 +16,6 @@ import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 import org.workflowsim.utils.SimulationConfig;
 
-/** STD-V1 (2026-11-25): deadline interpolation checks. */
 class DeadlineInterpolationTest {
 
     @TempDir
@@ -24,7 +23,7 @@ class DeadlineInterpolationTest {
 
     @Test
     void interpolationIsLinearAndUnrounded() {
-        // MS_fast = 100, MS_slow = 260: D(0.1) = 116, D(0.5) = 180, D(0.9) = 244; 100.3 + 0.3 * 0.5 = 100.45.
+
         assertEquals(116.0, DeadlineInterpolation.deadline(100.0, 260.0, 0.1), 1.0e-12);
         assertEquals(180.0, DeadlineInterpolation.deadline(100.0, 260.0, 0.5), 1.0e-12);
         assertEquals(244.0, DeadlineInterpolation.deadline(100.0, 260.0, 0.9), 1.0e-12);
@@ -33,13 +32,6 @@ class DeadlineInterpolationTest {
         assertThrows(IllegalArgumentException.class, () -> DeadlineInterpolation.deadline(100.0, 200.0, 1.5));
     }
 
-    /**
-     * One 10 s task (10,000 MI at the 1000-MIPS runtime reference) without inputs on the standard 2-VM fleet
-     * (500 and 2000 MIPS). HEFT places it on the 2000-MIPS VM: 10000 / 2000 = 5 s at the default tier. Under
-     * MIN_POWER the Opteron level 5 runs at 2000 * 1.0 / 2.6 MIPS, so the Job length becomes
-     * round(10000 * 2.6) = 26000 MI on the 2000-MIPS VM: 13 s. The model-generated stage-in carries no tier, so
-     * both runs share the same release offset and MS_slow - MS_fast = 13 - 5 = 8 s.
-     */
     @Test
     void slowReferenceReusesTheMappingAtTheLowestTier() throws Exception {
         Log.disable();

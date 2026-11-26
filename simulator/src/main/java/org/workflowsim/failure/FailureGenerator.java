@@ -93,25 +93,6 @@ public class FailureGenerator {
         return !Double.isNaN(failureInstant(task, vmId, task.getExecStartTime(), task.getTaskFinishTime()));
     }
 
-    /**
-     * Returns the failure arrival that ends a compute window, consuming the scope's arrival samples.
-     *
-     * <p>FGCS-R5 (2026-11-24): root cause - the outcome was decided at the attempt's completion
-     * boundary, so a failed attempt always ran its full length. The datacenter now calls this when it
-     * submits the attempt, with the modeled compute window {@code [start, finish)}, and ends the attempt
-     * at the returned instant. The consumption rule is unchanged: every arrival before {@code start} is
-     * consumed, the first arrival in the window is consumed and is the failure, and later arrivals stay
-     * unconsumed. The window is half-open: an arrival exactly at {@code finish} does not fail the attempt.
-     * Samples are now consumed in submission (compute-start) order instead of completion order; the two
-     * orders coincide on VM-keyed scopes because one VM runs one attempt at a time.
-     *
-     * @param task logical Task whose depth selects the generator
-     * @param vmId VM whose ID selects the generator
-     * @param start compute-window start
-     * @param finish compute-window finish, at least {@code start}
-     * @return the failure instant in {@code [start, finish)}, or NaN when the window survives
-     * @throws Exception when the arrival cache cannot be extended to cover {@code start}
-     */
     public static double failureInstant(Task task, int vmId, double start, double finish) throws Exception {
         if (FailureParameters.getFailureGeneratorMode() == FailureParameters.FTCFailure.FAILURE_NONE) {
             return Double.NaN;
@@ -157,16 +138,6 @@ public class FailureGenerator {
         return value == null ? 0 : value.intValue();
     }
 
-    /**
-     * Fixes the outcome of a returned compute attempt.
-     *
-     * <p>FGCS-R5 (2026-11-24): the failure decision is taken at submission
-     * ({@link #failureInstant(Task, int, double, double)}); a returned attempt fails exactly when the
-     * datacenter recorded a failure instant for it, and every Task of a failed attempt is failed.
-     *
-     * @param job returned compute attempt
-     * @return whether the attempt failed
-     */
     public static boolean applySubmittedOutcome(Job job) {
         boolean failed = job.hasFailureInstant();
         if (failed && FailureParameters.getFailureGeneratorMode() == FailureParameters.FTCFailure.FAILURE_NONE) {

@@ -32,8 +32,7 @@ public final class FgcPlatforms {
             PlatformProfile.HostSpec host = raw.getHosts().get(index);
             PlatformProfile.VmSpec vm = raw.getVms().get(index);
             double mips = vm.getMips() * target / total;
-            // R2-CAPACITY: legacy Pe.getMips() truncates to int; ceiling only the host PE
-            // preserves the normalized VM rate while avoiding a sub-one-MIPS allocation failure.
+
             builder.addHost(new PlatformProfile.HostSpec(
                     host.getId(),
                     host.getPes(),

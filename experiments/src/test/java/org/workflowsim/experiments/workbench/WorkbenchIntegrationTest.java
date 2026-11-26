@@ -162,9 +162,7 @@ class WorkbenchIntegrationTest {
             assertTrue(run.has("energyJoules"));
             assertTrue(run.has("energyDelayProduct"));
             assertTrue(run.has("modeledProcessingCost"));
-            // FGCS-R6 (2026-11-25): under the idle-only dispatch invariant the VM-queue wait is identically
-            // zero, so submit->finish response equals the run time; the duplicate column is not emitted and
-            // the floor and its clamped fraction travel with the slowdown column.
+
             assertFalse(run.has("meanResponseSeconds"));
             assertEquals(10.0, run.get("boundedSlowdownThresholdSeconds").getAsDouble(), 0.0);
             assertTrue(run.has("boundedSlowdownFloorClampedFraction"));

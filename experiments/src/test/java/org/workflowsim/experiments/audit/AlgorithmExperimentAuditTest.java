@@ -168,7 +168,7 @@ class AlgorithmExperimentAuditTest {
         Map<Integer, Set<String>> containers = new HashMap<Integer, Set<String>>();
         Map<Integer, String> images = new HashMap<Integer, String>();
         Map<Integer, Double> costs = new HashMap<Integer, Double>();
-        // FGCS-R5 (2026-11-24): EBPSM budgets are per workflow (index 0 and 1 for the two inputs).
+
         budgets.put(0, 100.0);
         budgets.put(1, 100.0);
         for (int id = 0; id <= 10; id++) {
@@ -333,9 +333,7 @@ class AlgorithmExperimentAuditTest {
 
     private static FailureModelConfig failureModel() {
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
-        // FGCS-R5 (2026-11-24): a failure now ends its attempt mid-execution, so the former ~1 ms VM 3
-        // stream would kill every VM 3 attempt before its first checkpoint. Weibull shape 1e300 samples
-        // exactly the scale: VM 3 fails at 1.5, 3.0, ... s and VM 8 never fails in the run.
+
         specs.put(3, new DistributionSpec[] {
             DistributionSpec.of(DistributionGenerator.DistributionFamily.WEIBULL, 1.5, 1.0e300)
         });

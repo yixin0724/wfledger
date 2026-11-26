@@ -81,7 +81,6 @@ class CarbonRetryStraddleIntegrationTest {
                     retried = candidate;
                 }
             } catch (RuntimeException budgetOrFailure) {
-
             }
         }
         assertTrue(retried != null, "must find a run that really retried and succeeded (empty hunt = hard failure)");

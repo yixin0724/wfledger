@@ -344,8 +344,7 @@ public final class NetworkStudyValidator {
         }
         expectedConfig.remove("algorithmContract");
         actualConfig.remove("algorithmContract");
-        // FGCS-R3 (2026-11-24): historical protocols bind their own recorded execution identity (absent for the
-        // oldest, WORK_CONSERVING_TASK_EXECUTION_V2 for the V2-era protocols); current code never relabels them.
+
         String declaredSemantics = registered.declaredExecutionSemantics();
         if (declaredSemantics == null) {
             expectedConfig.remove("executionSemantics");

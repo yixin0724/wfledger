@@ -14,33 +14,6 @@ import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * FGCS-R3 (2026-11-24) golden (a): SHARED_STORAGE_HEFT and SHARED_STORAGE_CPOP on the ten-task DAG of
- * Topcuoglu, Hariri and Wu (IEEE TPDS 13(3), 2002, Fig. 3) with zero communication, hand-derived.
- *
- * <p>Adaptation. The SHARED family scales one task length by VM speed, so the paper's heterogeneous
- * cost matrix cannot be used verbatim; task lengths are the paper's P1 column times 1000 MI
- * (14, 13, 11, 13, 12, 13, 7, 5, 18, 21) and the edges are the paper's DAG
- * (1→2..6, 2→8,9, 3→7, 4→8,9, 5→9, 6→8, 7/8/9→10). There are no files, so every edge and every
- * input-read term is zero, matching the "zero communication" case. VMs: VM0 at 1000 MIPS and VM1–VM3 at
- * 2000 MIPS. Roots are released at 0.21 s (110 MI stage-in on VM0, raised to 0.1 + 0.01 s, plus 0.1 s).
- *
- * <p>Derivation (exact arithmetic). {@code w̄(t) = (L/1000 + 3·L/2000) / 4 = 0.625·P1(t)}, so the
- * upward ranks are r(10)=13.125, r(9)=24.375, r(8)=16.25, r(7)=17.5, r(6)=24.375, r(5)=31.875,
- * r(4)=32.5, r(3)=24.375, r(2)=32.5, r(1)=41.25. HEFT order (rank, then ID): 1, 2, 4, 5, 3, 6, 9, 7, 8, 10.
- * Insertion EFT (ties to the lower VM ID): 1→VM1 [0.21, 7.21]; 2→VM1 [7.21, 13.71]; 4→VM2
- * [7.21, 13.71]; 5→VM3 [7.21, 13.21]; 3→VM0 [7.21, 18.21] (VM0 18.21 beats VM1 19.21);
- * 6→VM3 [13.21, 19.71]; 9→VM1 [13.71, 22.71]; 7 (ready 18.21)→VM2 [18.21, 21.71]; 8 (ready 19.71)→VM3
- * [19.71, 22.21]; 10 (ready 22.71)→VM1 [22.71, 33.21]. Makespan 33.21 s.
- *
- * <p>CPOP: downward ranks give priorities r_u + r_d = 41.25 for 1, 2, 4, 9, 10, 40.625 for 5 and 33.125
- * for 3, 6, 7, 8. The critical path follows the entry task 1 along children of priority 41.25, preferring
- * the higher upward rank then the lower ID: 1→2 (2 and 4 tie at 32.5, lower ID), 2→9, 9→10. Its summed
- * duration is smallest on a 2000-MIPS VM; the lowest such ID is VM1. Ready-list order by priority:
- * 1, 2, 4, 5, 9, 3, 6, 7, 8, 10. Pinning 1, 2, 9, 10 to VM1 and inserting the rest by EFT reproduces the
- * HEFT windows above (makespan 33.21 s): with zero communication both algorithms place the critical
- * path on the same VM here. That agreement is a property of this instance, not of the algorithms.
- */
 class SharedStorageTopcuogluZeroCommunicationGoldenTest {
 
     private static final double EPSILON = 1.0e-9;

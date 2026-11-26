@@ -82,7 +82,6 @@ class EnergyRetryConservationIntegrationTest {
                     retried = candidate;
                 }
             } catch (RuntimeException retryBudgetOrFailure) {
-
             }
         }
         assertTrue(retried != null, "the bounded seed domain must produce a successful true retry");

@@ -84,12 +84,6 @@ class PlatformProfileTest {
         assertEquals(Integer.valueOf(1), profile.getVmHostAssignments().get(1));
     }
 
-    /**
-     * STD-V1 (2026-11-25): the SHARED storage rate is a finite positive double (decimal MB/s). Root cause: an
-     * {@code int} rate made every CCR above the {@code R = 1 MB/s} ceiling unreachable for the standard study.
-     * Expectations come from the contract (finite positive, fail fast otherwise) and from the identity that an
-     * integer is a valid double: 15 must be carried bit-identically as 15.0.
-     */
     @Test
     void storageRateIsAFinitePositiveDoubleAndFailsFastOtherwise() throws Exception {
         assertEquals(2.5, new PlatformProfile.StorageSpec(1000L, 2.5).getMaxTransferRateMbPerSecond(), 0.0);

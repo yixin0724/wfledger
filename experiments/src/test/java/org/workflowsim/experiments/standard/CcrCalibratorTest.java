@@ -12,14 +12,6 @@ import org.workflowsim.FileItem;
 import org.workflowsim.Task;
 import org.workflowsim.utils.Parameters;
 
-/**
- * STD-V1 (2026-11-25): hand-derived CCR checks on a 3-task chain (definition in the {@link CcrCalibrator}
- * javadoc, which mirrors the SHARED read rule of docs/algorithms/CONTRACTS.md).
- *
- * <p>Chain t1 -> t2 -> t3: t1 = 1000 MI reads external x (2e6 B), writes a (1e6 B); t2 = 2000 MI reads a, writes b
- * (3e6 B); t3 = 3000 MI reads b and declares c (5e6 B) as both input and output, so c is not a real input. Hence
- * B = 2 + 1 + 3 = 6 MB, compute at mean 1250 MIPS = 6000 / 1250 = 4.8 s.
- */
 class CcrCalibratorTest {
 
     private static List<Task> chain() {
@@ -41,14 +33,14 @@ class CcrCalibratorTest {
         List<Task> tasks = chain();
         assertEquals(6.0, CcrCalibrator.realInputMegabytes(tasks), 1.0e-12);
         assertEquals(4.8, CcrCalibrator.computeSeconds(tasks, 1250.0), 1.0e-12);
-        // R = 10 MB/s: read 0.6 s, CCR = 0.6 / 4.8 = 0.125.
+
         assertEquals(0.125, CcrCalibrator.ccr(tasks, 10.0, 1250.0), 1.0e-12);
     }
 
     @Test
     void closedFormRateReachesEveryStandardTargetExactly() {
         List<Task> tasks = chain();
-        // R = B / (target * compute) = 6 / (target * 4.8): target 1 -> 1.25 MB/s; target 10 -> 0.125 MB/s.
+
         assertEquals(1.25, CcrCalibrator.calibrate(tasks, 1.0, 1250.0).getStorageRateMbPerSecond(), 1.0e-12);
         assertEquals(0.125, CcrCalibrator.calibrate(tasks, 10.0, 1250.0).getStorageRateMbPerSecond(), 1.0e-12);
         for (double target : CcrCalibrator.STANDARD_CCR_TARGETS) {

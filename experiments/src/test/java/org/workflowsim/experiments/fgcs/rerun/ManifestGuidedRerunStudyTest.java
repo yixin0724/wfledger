@@ -20,7 +20,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** R2-RQ1 behavior anchors: real bundles enter the production executor; no mock or scalar-only path is used. */
 class ManifestGuidedRerunStudyTest {
     @TempDir
     static Path directory;

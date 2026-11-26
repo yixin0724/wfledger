@@ -90,7 +90,6 @@ public class OverheadParameters {
             } else {
                 delay = 0.0;
             }
-
         } else {
             Log.printLine("Not yet supported");
         }
@@ -113,7 +112,6 @@ public class OverheadParameters {
             } else {
                 delay = 0.0;
             }
-
         } else {
             Log.printLine("Not yet supported");
         }
@@ -136,7 +134,6 @@ public class OverheadParameters {
             } else {
                 delay = 0.0;
             }
-
         } else {
             Log.printLine("Not yet supported");
         }
@@ -158,9 +155,7 @@ public class OverheadParameters {
             } else {
                 delay = 0.0;
             }
-
         } else {
-
         }
         return delay;
     }

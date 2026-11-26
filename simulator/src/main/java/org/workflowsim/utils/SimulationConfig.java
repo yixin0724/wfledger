@@ -23,13 +23,6 @@ public final class SimulationConfig {
 
     public static final int DEFAULT_EVENT_RECORDER_CAP = 20000;
 
-    /**
-     * Default bounded-slowdown floor in simulated seconds.
-     *
-     * <p>FGCS-R6 (2026-11-25): the 10-second value is the parallel-job convention of Feitelson et al.
-     * ("Theory and practice in parallel job scheduling", JSSPP 1997). It was a hard-coded constant in
-     * {@code SimulationMetrics}; it is now a declared run parameter whose default keeps earlier results.
-     */
     public static final double DEFAULT_BOUNDED_SLOWDOWN_THRESHOLD_SECONDS = 10.0;
 
     private final List<String> workflowPaths;
@@ -161,14 +154,6 @@ public final class SimulationConfig {
         return cloudSimMinEventIntervalSeconds;
     }
 
-    /**
-     * Returns the bounded-slowdown floor {@code tau} used by {@code max((wait + exec) / max(exec, tau), 1)}.
-     *
-     * <p>FGCS-R6 (2026-11-25): declared and recorded in the manifest configuration so that the Java metric
-     * and the Python auditor use the same floor; rankings of short-task workflows can change with it.
-     *
-     * @return finite positive seconds
-     */
     public double getBoundedSlowdownThresholdSeconds() {
         return boundedSlowdownThresholdSeconds;
     }

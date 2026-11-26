@@ -24,12 +24,6 @@ import org.junit.jupiter.api.io.TempDir;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * STD-V1 (2026-11-25): end-to-end smoke of the standard study (2 instances x 2 algorithms x 1 factor cell) and
- * its pairing and declaration invariants. Expectations come from the protocol (PROTOCOL.md) and from conservation
- * identities (CCR achieved equals the target; speedup = serial / makespan; one row per cell; every non-baseline
- * candidate paired over exactly the baseline's instances), never from copied output.
- */
 class StandardStudySmokeTest {
 
     @TempDir
@@ -54,7 +48,6 @@ class StandardStudySmokeTest {
         assertNotNull(header.get("gitCommit"));
         assertEquals(64, ((String) header.get("corpusIndexSha256")).length());
 
-        // 2 instances x 2 candidates x 1 cell = 4 rows, all in one factor cell.
         assertEquals(4, result.getRows().size());
         Set<String> cells = new HashSet<String>();
         for (Map<String, Object> row : result.getRows()) {
@@ -73,7 +66,6 @@ class StandardStudySmokeTest {
             assertTrue((Double) row.get("costUnits") > 0.0);
         }
 
-        // One comparison per tested metric: PEFT vs HEFT over the same two instances.
         assertEquals(
                 StandardStudy.TESTED_METRICS.size(), result.getComparisons().size());
         for (Map<String, Object> comparison : result.getComparisons()) {
@@ -81,11 +73,10 @@ class StandardStudySmokeTest {
             assertEquals(2, comparison.get("pairedInstances"));
             assertEquals(1, comparison.get("holmFamilySize"));
             String status = (String) comparison.get("wilcoxonStatus");
-            // Two pairs can never reach the 0.05 level; the exact test reports p = 0.5 or an UNAVAILABLE status.
+
             assertFalse((Boolean) comparison.get("significantAfterHolm"), status);
         }
 
-        // Outputs: JSON, two CSVs with the protocol header, and the per-run campaign evidence.
         JsonObject document = JsonParser.parseString(
                         new String(Files.readAllBytes(result.getJson()), StandardCharsets.UTF_8))
                 .getAsJsonObject();
@@ -127,10 +118,6 @@ class StandardStudySmokeTest {
         assertTrue(failure.getMessage().contains("must not be mixed"), failure.getMessage());
     }
 
-    /**
-     * Serial-on-fastest hand derivation: tasks of 1000 and 3000 MI, inputs 2 MB and 0 MB, R = 4 MB/s,
-     * fastest 2000 MIPS: (1000 + floor(2000 * 0.5)) / 2000 + 3000 / 2000 = 1.0 + 1.5 = 2.5 s.
-     */
     @Test
     void serialOnFastestMatchesTheEnvelopeRule() {
         org.workflowsim.Task a = new org.workflowsim.Task(1, 1000L);
@@ -151,7 +138,6 @@ class StandardStudySmokeTest {
         return file;
     }
 
-    /** A 3-task WfFormat 1.5 chain (synthetic test fixture, same evidence class as WfGen). */
     private Path tinyChain() throws Exception {
         Path dir = Files.createDirectories(directory.resolve("wfformat-fixture"));
         List<String> tasks = new ArrayList<String>();

@@ -381,15 +381,6 @@ public final class WorkflowEngine extends SimEntity {
         submitJobs();
     }
 
-    /**
-     * Forwards the parsed workflow structure to every scheduler.
-     *
-     * <p>FGCS-R5 (2026-11-24): workflow-aware online policies (EBPSM per-workflow budgets) receive it by
-     * injection rather than through a global static; see {@link org.workflowsim.scheduling.WorkflowContextAware}.
-     *
-     * @param tasks parsed Tasks
-     * @param taskWorkflowIndices workflow index of every Task ID
-     */
     public void setWorkflowContext(List<Task> tasks, Map<Integer, Integer> taskWorkflowIndices) {
         for (WorkflowScheduler item : getSchedulers()) {
             item.setWorkflowContext(tasks, taskWorkflowIndices);

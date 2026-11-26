@@ -126,16 +126,6 @@ class JobWaitingTimeMetricsTest {
         assertEquals(1, metrics.getTrueSlowdownObservationCount());
     }
 
-    /**
-     * FGCS-R6 (2026-11-25): the bounded-slowdown floor is a declared configuration parameter.
-     *
-     * <p>Hand derivation (Feitelson 1997 bounded slowdown {@code max((w + e) / max(e, tau), 1)}):
-     * Job 10 is ready at 0, starts at 2 and finishes at 3 (w = 2, e = 1); Job 11 is ready at 0, starts
-     * at 1 and finishes at 21 (w = 1, e = 20). At tau = 10: Job 10 gives max(3 / 10, 1) = 1.0 (clamped,
-     * e = 1 &lt; 10) and Job 11 gives 21 / 20 = 1.05, so the mean is 1.025 and the clamped fraction 1/2.
-     * At tau = 0.1: Job 10 gives 3 / 1 = 3.0 and Job 11 still 1.05, so the mean is 2.025 and no sample is
-     * clamped. The ranking-relevant value of the short Job changes threefold with the floor.
-     */
     @Test
     void boundedSlowdownThresholdIsDeclaredAndClampedSamplesAreCounted() {
         java.util.List<SimulationReport.JobOutcome> jobs =
@@ -181,14 +171,6 @@ class JobWaitingTimeMetricsTest {
         assertEquals(1.0, declared.withRandomSeed(5L).getBoundedSlowdownThresholdSeconds(), 0.0);
     }
 
-    /**
-     * FGCS-R6 (2026-11-25): busy time is decomposed into envelope input reading and compute.
-     *
-     * <p>Hand derivation: VM 0 runs Job 10 over [0, 10) whose JOB_EXECUTION_STARTED declares 6 s of
-     * effective data staging, and Job 11 over [10, 14) with 1 s of staging. Busy = 14 s (union), read =
-     * 6 + 1 = 7 s, compute-only = 14 - 7 = 7 s and the I/O share is 7 / 14 = 0.5. Both Jobs are covered by a
-     * start event, so the observation count is 2. The energy law is unchanged: it still charges all 14 s.
-     */
     @Test
     void busyTimeExposesTheEnvelopeInputReadDecomposition() {
         java.util.Map<Integer, SimulationReport.VmSummary> summaries =

@@ -320,7 +320,6 @@ public class CloudSim {
             }
 
             future.removeAll(toRemove);
-
         } else {
             queue_empty = true;
             running = false;
@@ -414,15 +413,6 @@ public class CloudSim {
         return ev;
     }
 
-    /**
-     * Returns whether an event other than the excluded tag still awaits processing at the current
-     * clock. FGCS-R3 (2026-11-24, B2): schedulers use this to settle same-instant releases before
-     * a round; the excluded round tag prevents several schedulers from waiting on each other.
-     * Events addressed to entities that no longer run are ignored because they are never consumed.
-     *
-     * @param excludedTag event tag to ignore
-     * @return true when a same-instant event is pending
-     */
     public static boolean hasPendingEventAtCurrentTime(int excludedTag) {
         for (Iterator<SimEvent> it = future.iterator(); it.hasNext(); ) {
             SimEvent event = it.next();

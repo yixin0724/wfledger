@@ -9,40 +9,13 @@ import org.workflowsim.experiment.SimulationRunner;
 import org.workflowsim.platform.PlatformProfile;
 import org.workflowsim.utils.SimulationConfig;
 
-/**
- * Deadline levels interpolated between a fast and a slow reference schedule.
- *
- * <p>STD-V1 (2026-11-25). Root cause: the historical deadline factors {@code {1.0 .. 2.0} x HEFT} were degenerate
- * (every deadline at or above the fastest reference was met by the reference itself). The standard deadline spans
- * the interval a DVFS-capable fleet can actually trade:
- *
- * <pre>
- *   D(k) = MS_fast + k * (MS_slow - MS_fast),   k in {0.1, 0.3, 0.5, 0.7, 0.9}
- * </pre>
- *
- * <p>{@code MS_fast} is the makespan of the reference planner ({@code SHARED_STORAGE_HEFT}) with every compute Job
- * at the default (fastest) tier; {@code MS_slow} is the makespan of the <em>same mapping</em> with every compute
- * Job at the lowest tier ({@code FrequencyPolicy.MIN_POWER}). The planner ranks VMs by nominal MIPS and the
- * frequency policy is applied after the decision, so both runs plan the same mapping; {@link #measure} verifies
- * the task-to-VM mapping is identical and fails fast otherwise. {@code D(k)} is a binary64 value and is not
- * rounded up to whole seconds: it is a study-level threshold compared with the observed makespan, not the
- * integer {@code SimulationConfig.deadline} observation field.
- */
+/** Deadline levels interpolated between a fast and a slow reference schedule. */
 public final class DeadlineInterpolation {
 
-    /** Declared interpolation levels. */
     public static final double[] STANDARD_LEVELS = {0.1, 0.3, 0.5, 0.7, 0.9};
 
     private DeadlineInterpolation() {}
 
-    /**
-     * Returns {@code D(k)}.
-     *
-     * @param fastMakespan {@code MS_fast}
-     * @param slowMakespan {@code MS_slow}, not below {@code MS_fast}
-     * @param level {@code k} in {@code [0, 1]}
-     * @return deadline seconds
-     */
     public static double deadline(double fastMakespan, double slowMakespan, double level) {
         if (!(fastMakespan > 0.0) || Double.isInfinite(slowMakespan) || !(slowMakespan >= fastMakespan)) {
             throw new IllegalArgumentException("Deadline references require 0 < MS_fast <= MS_slow < inf: fast="
@@ -54,14 +27,6 @@ public final class DeadlineInterpolation {
         return fastMakespan + level * (slowMakespan - fastMakespan);
     }
 
-    /**
-     * Runs the fast and slow reference schedules.
-     *
-     * @param referenceConfig planner configuration (SHARED_STORAGE_HEFT, STATIC)
-     * @param tieredPlatform platform with frequency tiers on every VM
-     * @return the two reference makespans
-     * @throws SimulationExecutionException when a run fails
-     */
     public static References measure(SimulationConfig referenceConfig, PlatformProfile tieredPlatform)
             throws SimulationExecutionException {
         SimulationRunner runner = new SimulationRunner();
@@ -116,12 +81,6 @@ public final class DeadlineInterpolation {
             return slowMakespan;
         }
 
-        /**
-         * Returns {@code D(k)} for these references.
-         *
-         * @param level {@code k}
-         * @return deadline seconds
-         */
         public double deadline(double level) {
             return DeadlineInterpolation.deadline(fastMakespan, slowMakespan, level);
         }

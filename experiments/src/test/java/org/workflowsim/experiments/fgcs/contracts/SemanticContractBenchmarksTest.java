@@ -69,7 +69,6 @@ class SemanticContractBenchmarksTest {
         assertEquals(9, selectedVm(filler));
         assertEquals(3, selectedVm(child));
 
-        // All six scores come from max(now+input,cpuAvailable)+compute, not a rerun golden.
         assertCandidate(parent, 3, 0.0, 100.0, 20.0, 120.0);
         assertCandidate(parent, 9, 0.0, 100.0, 10.0, 110.0);
         assertCandidate(filler, 3, 0.0, 100.0, 40.0, 140.0);
@@ -120,8 +119,6 @@ class SemanticContractBenchmarksTest {
         assertClose(
                 0.11, report.getMetrics().getPerTierBusySecondsByVm().get(used).get(1000.0));
 
-        // Default idle is 10*106 on each VM. The used VM adds low-tier dynamic
-        // (30-10)*4 plus 110 MI / 1000 MI/s of default-tier stage-in dynamic work.
         assertClose(1149.9, report.getEnergyAccounting().getVmEnergyJoules().get(used));
         assertClose(1060.0, report.getEnergyAccounting().getVmEnergyJoules().get(unused));
         assertClose(2209.9, report.getEnergyAccounting().getTotalEnergyJoules());
@@ -141,10 +138,7 @@ class SemanticContractBenchmarksTest {
         SimulationReport.TaskOutcome recovered = task(report, 1, retry.getJobId());
         assertEquals(Cloudlet.FAILED, failed.getTaskStatus());
         assertEquals(Cloudlet.SUCCESS, recovered.getTaskStatus());
-        // FGCS-R5 (2026-11-24), hand-derived: 3000 MI at 1000 MI/s with lambda=1, gamma=0.1 takes
-        // checkpoints after 1 s and 2 s of progress, so the attempt executes 3200 MI over [100, 103.2).
-        // The arrival at 102.5 ends it after 2.5 s; checkpoints completed at 1.1 and 2.2 s save 2000 MI on
-        // VM 3. Resuming there costs 1000 MI (1.0 s, no checkpoint) versus 3.2 s on VM 8.
+
         assertClose(100.0, failed.getStartTime());
         assertClose(102.5, failed.getFinishTime());
         assertEquals(3200L, failed.getEffectiveExecutionLengthMi());

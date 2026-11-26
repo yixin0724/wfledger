@@ -31,10 +31,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/**
- * Regression coverage for the Workbench recording switch. The former JSON allow-list had no outlet for the core
- * builder option; accepting it without the lifecycle compatibility check could silently discard requested evidence.
- */
 class WorkbenchEventRecordingTest {
     @TempDir
     Path directory;

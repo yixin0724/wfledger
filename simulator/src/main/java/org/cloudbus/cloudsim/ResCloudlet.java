@@ -166,7 +166,6 @@ public class ResCloudlet {
                 startExecTime = clock;
                 cloudlet.setExecStartTime(startExecTime);
             }
-
         } catch (Exception e) {
             success = false;
         }

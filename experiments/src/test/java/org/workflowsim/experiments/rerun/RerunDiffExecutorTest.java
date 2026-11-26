@@ -279,13 +279,6 @@ class RerunDiffExecutorTest {
         assertFalse(Files.exists(tempDir.resolve("sim-failure-out/rerun")));
     }
 
-    /**
-     * STD-V1 (2026-11-25): the SHARED storage rate widened from int to double. Historical manifests carry the rate
-     * as a JSON integer literal ({@code 15}); current writers emit {@code 15.0}. Contract (rerun difference
-     * contract, exact JSON value equality): both literals denote the same binary64 value, so rebuilding a
-     * historical integer-rate manifest must be bit-identical and the rerun must stay IDENTICAL_CORE without any new
-     * whitelist exemption.
-     */
     @Test
     void historicalIntegerStorageRateLiteralRebuildsBitIdenticallyAndStaysIdenticalCore() throws Exception {
         Path run = copyFixtureTo("integer-rate-literal");
@@ -307,7 +300,6 @@ class RerunDiffExecutorTest {
         assertEquals(RerunVerdict.IDENTICAL_CORE, report.getVerdict(), report.toString());
     }
 
-    /** STD-V1 (2026-11-25): a fractional rate round-trips through the manifest and reruns to IDENTICAL_CORE. */
     @Test
     void fractionalStorageRateEvidenceRerunsToIdenticalCore() throws Exception {
         Path run = Files.createDirectories(tempDir.resolve("fractional-rate"));

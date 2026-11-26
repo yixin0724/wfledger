@@ -8,42 +8,17 @@ import org.workflowsim.CondorVM;
 import org.workflowsim.WorkflowSimTags;
 
 /**
- * Late-binding batch mapping with machine ready times, shared by {@code READY_BATCH_MINMIN},
- * {@code READY_BATCH_MAXMIN} and {@code READY_BATCH_MCT}.
- *
- * <p>FGCS-R6 (2026-11-25): root cause — the former rounds mapped Jobs only to idle VMs and ignored
- * machine ready time, so the labels did not denote the literature heuristics. Each round now
- * <ol>
- *   <li>reads {@code r_v} for every created VM sorted by ID (0 when idle, else the no-failure remaining
- *       envelope time of its running Job, see {@link MachineReadyTimeEstimator});</li>
- *   <li>plans every Job of the batch with completion time {@code CT(j,v) = r_v + ETC(j,v)} over its
- *       PE-compatible VMs, where {@code ETC} is the charged runtime envelope
- *       {@link #envelopeSeconds(Cloudlet, CondorVM, double)}; Min-Min (Max-Min) repeatedly assigns the
- *       Job whose minimum completion time is the smallest (largest), MCT assigns Jobs in queue order
- *       (Maheswaran et al. 1999 immediate mode); after each assignment {@code r_v := CT} (Braun et al.
- *       2001 update step);</li>
- *   <li>dispatches exactly the Jobs that are the first planned Job of an idle VM. Every other Job stays
- *       queued and is re-planned at the next round (late binding); every Job return requests a round.</li>
- * </ol>
- * Ties: the lower VM ID among equal completion times, then the lower Job ID among equal selection
- * keys (MCT keeps queue order). A Job may wait for a busy faster VM while a slower VM idles: the
- * heuristic is not work-conserving, as in the literature. When every VM is idle the first assignment
- * targets an idle VM, so a non-empty batch always dispatches (checked fail-fast).
+ * Late-binding batch mapping with machine ready times, shared by {@code READY_BATCH_MINMIN}, {@code
+ * READY_BATCH_MAXMIN} and {@code READY_BATCH_MCT}.
  */
 public abstract class MachineReadyTimeSchedulingAlgorithm extends BaseSchedulingAlgorithm {
 
-    /** Job-selection rule of one planning step. */
     protected enum Selection {
         MIN_MIN,
         MAX_MIN,
         QUEUE_ORDER
     }
 
-    /**
-     * Plans the batch and dispatches the first planned Job of every idle VM.
-     *
-     * @param selection job-selection rule
-     */
     protected final void planAndBind(Selection selection) {
         validateCloudletCompatibility();
         List<CondorVM> vms = sortedVmsById();

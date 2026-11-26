@@ -63,7 +63,6 @@ public final class AdversarialEvidenceStudy {
         }
     }
 
-    /** Runs simulations serially, writes every mutated bundle, and returns the persisted result document. */
     public static JsonObject run(Path outputDirectory) throws Exception {
         Path output = outputDirectory.toAbsolutePath().normalize();
         Path evidence = output.resolve("evidence");

@@ -284,10 +284,6 @@ class NetworkStudyValidatorTest {
         assertEquals(18, NetworkStudyValidator.validate(root.resolve(NetworkStudyExecutor.INDEX)));
     }
 
-    /**
-     * FGCS-R3 (2026-11-24): the V2-era protocols are read-only historical identities whose plan and manifests
-     * declare exactly WORK_CONSERVING_TASK_EXECUTION_V2; such retained evidence stays readable.
-     */
     @Test
     void v2EraWireShapeRemainsReadableAsHistoricalProtocol() throws Exception {
         Path root = copySmoke("v2-era-wire-shape");

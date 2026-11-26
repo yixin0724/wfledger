@@ -5,22 +5,8 @@ import org.workflowsim.Task;
 
 public final class TaskExecutionModel {
 
-    /**
-     * Current execution identity recorded in every new manifest as {@code configuration.executionSemantics}.
-     *
-     * <p>FGCS-R3 (2026-11-24): advanced from V2 to V3 because the FGCS-R3 corrections change observable results
-     * under unchanged configurations (online READY_BATCH envelope cost with the charged SHARED read, scheduling
-     * rounds coalesced per simulation instant, tick-derived completion safety and processing threshold, EBPSM
-     * cache publishing and fail-fast budgets, mixed powered fleets rejected, and the corrected IC-PCP, MOHEFT,
-     * GreenHEFT, DLS, LOCAL average-communication and DVFS planners). The complete V2-to-V3 list is in
-     * {@code docs/experiments/REPRODUCIBILITY.md}; evidence declaring V2 is historical and read-only.
-     */
     public static final String EXECUTION_SEMANTICS = "WORK_CONSERVING_TASK_EXECUTION_V3";
 
-    /**
-     * Historical identity of the pre-FGCS-R3 work-conserving execution. It is recognized only by read-only
-     * historical-compatibility checks and must never be written by current code.
-     */
     public static final String HISTORICAL_EXECUTION_SEMANTICS_V2 = "WORK_CONSERVING_TASK_EXECUTION_V2";
 
     public static final long MAX_TOTAL_LENGTH_MI = Long.MAX_VALUE / Consts.MILLION;

@@ -8,27 +8,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/**
- * Per-workflow budget state of EBPSM: Algorithm 1 at start and Algorithm 3 (Budget Update) on every returned
- * attempt (Hilman, Rodriguez and Buyya, arXiv:1903.01113).
- *
- * <p>FGCS-R5 (2026-11-24): root cause — the scheduler read static per-task budgets from {@code EbpsmConfig}, and
- * Algorithm 3 existed only as an unused helper, so a task that finished cheaper than its sub-budget could never
- * upgrade its successors and a costlier one never charged them. The ledger keeps, per workflow, the sub-budget of
- * every unscheduled task ({@code T_u}), the sub-budget of every dispatched task, and the spare budget {@code sb}.
- *
- * <p>Algorithm 3 is read as follows: {@code sb} is the budget the last {@code distributeBudget} call left
- * undistributed (negative when its last allocation overshot {@code beta}). On a completion with actual cost
- * {@code C}, the pool {@code tf.budget + sb} either covers {@code C} (the remainder joins {@code beta_u}) or the
- * shortfall is a debt subtracted from {@code beta_u}; in both cases {@code beta_u = sum(T_u budgets) + tf.budget +
- * sb - C}, Algorithm 1 redistributes it over {@code T_u}, and its residual becomes the new {@code sb}. Hence the
- * conservation law {@code beta_w = spent + sum(T_u budgets) + sum(dispatched budgets) + sb} holds after every
- * step, which the tests check.
- *
- * <p>Failed attempts: the paper's platform bills VM usage per period regardless of the outcome and Eq. 6 constrains
- * the actual cost. A failed attempt is therefore charged its actual cost through the same update with a zero
- * sub-budget (its sub-budget returns with the Task to {@code T_u}, where the retry will need it).
- */
 public final class EbpsmBudgetLedger {
 
     private final EbpsmBudgetDistributor distributor;
@@ -36,14 +15,6 @@ public final class EbpsmBudgetLedger {
     private final Map<Integer, WorkflowState> workflows = new TreeMap<Integer, WorkflowState>();
     private final Map<Integer, Integer> workflowOfTask = new TreeMap<Integer, Integer>();
 
-    /**
-     * Creates the ledger and runs Algorithm 1 once per workflow.
-     *
-     * @param distributor Algorithm 1 implementation
-     * @param vmTypes VM types derived from the declared pool
-     * @param tasksByWorkflow every task of every workflow, keyed by workflow index
-     * @param budgetsByWorkflow user-defined budget {@code beta_w} per workflow index
-     */
     public EbpsmBudgetLedger(
             EbpsmBudgetDistributor distributor,
             List<EbpsmVmType> vmTypes,
@@ -78,12 +49,6 @@ public final class EbpsmBudgetLedger {
         }
     }
 
-    /**
-     * Returns the current sub-budget of a task (unscheduled or dispatched).
-     *
-     * @param taskId task ID
-     * @return sub-budget
-     */
     public double budgetOf(int taskId) {
         Double value = state(taskId).budgets.get(taskId);
         if (value == null) {
@@ -92,11 +57,6 @@ public final class EbpsmBudgetLedger {
         return value;
     }
 
-    /**
-     * Moves a task from {@code T_u} to the dispatched set.
-     *
-     * @param taskId dispatched task
-     */
     public void markScheduled(int taskId) {
         WorkflowState state = state(taskId);
         if (!state.unscheduled.remove(taskId)) {
@@ -105,12 +65,6 @@ public final class EbpsmBudgetLedger {
         state.dispatched.add(taskId);
     }
 
-    /**
-     * Applies Algorithm 3 for a successful attempt.
-     *
-     * @param taskId completed task {@code t_f}
-     * @param actualCost actual Eq. 5 cost of the attempt
-     */
     public void completed(int taskId, double actualCost) {
         WorkflowState state = dispatchedState(taskId, actualCost);
         double budget = state.budgets.remove(taskId);
@@ -119,12 +73,6 @@ public final class EbpsmBudgetLedger {
         update(state, budget, actualCost);
     }
 
-    /**
-     * Charges a failed attempt and returns its task to {@code T_u} with its sub-budget.
-     *
-     * @param taskId task of the failed attempt
-     * @param actualCost actual Eq. 5 cost of the failed attempt
-     */
     public void failed(int taskId, double actualCost) {
         WorkflowState state = dispatchedState(taskId, actualCost);
         state.dispatched.remove(taskId);
@@ -133,26 +81,14 @@ public final class EbpsmBudgetLedger {
         update(state, 0.0, actualCost);
     }
 
-    /**
-     * @param workflow workflow index
-     * @return spare budget {@code sb}
-     */
     public double spareBudget(int workflow) {
         return workflowState(workflow).spare;
     }
 
-    /**
-     * @param workflow workflow index
-     * @return actual cost charged so far, failed attempts included
-     */
     public double spentBudget(int workflow) {
         return workflowState(workflow).spent;
     }
 
-    /**
-     * @param workflow workflow index
-     * @return sum of the sub-budgets of unscheduled and dispatched tasks, in ascending task-ID order
-     */
     public double committedBudget(int workflow) {
         double sum = 0.0;
         for (double value : workflowState(workflow).budgets.values()) {
@@ -161,18 +97,10 @@ public final class EbpsmBudgetLedger {
         return sum;
     }
 
-    /**
-     * @param workflow workflow index
-     * @return user-defined budget {@code beta_w}
-     */
     public double workflowBudget(int workflow) {
         return workflowState(workflow).budget;
     }
 
-    /**
-     * @param taskId task ID
-     * @return workflow index of the task
-     */
     public int workflowOf(int taskId) {
         Integer workflow = workflowOfTask.get(taskId);
         if (workflow == null) {

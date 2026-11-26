@@ -73,19 +73,6 @@ class MoHeftPlannerTest {
         assertTrue(found, "The unique 7 J candidate must use the legal earlier gap");
     }
 
-    /**
-     * FGCS-R3 (2026-11-24) golden (c), M5. Durillo, Nae and Prodan (FGCS 36, 2014, MOHEFT) keep the K best
-     * partial schedules by non-dominated sorting plus crowding distance, filling from later fronts when
-     * the first front has fewer than K members. Hand derivation with K=2 and two independent tasks of
-     * equal mean duration 1.25 (HEFT order 1 then 2 by Task ID):
-     *
-     * <p>Task 1: VM0 (1 s, 1 J), VM1 (1.5 s, 1.5 J). Step 1 front F1={1@VM0}, F2={1@VM1}; both kept.
-     * Task 2: VM0 (1 s, 1 J), VM1 (1.5 s, 5 J). Step 2 candidates (makespan, energy):
-     * A=1@VM0,2@VM0 (2, 2); B=1@VM0,2@VM1 (1.5, 6); C=1@VM1,2@VM0 (1.5, 2.5); D=1@VM1,2@VM1 (3, 6.5).
-     * C dominates B and D, so the final front is {A, C}. Truncating to the first front at step 1 (the
-     * superseded behavior) loses C and returns {A, B}. Balanced choice: normalized distances are A=1 and
-     * C=1; the tie goes to the smaller makespan, C.
-     */
     @Test
     void beamIsRefilledFromLaterFrontsWhenTheFirstFrontIsSmallerThanTheBeam() {
         GreenHeftTask first = new GreenHeftTask(
@@ -107,13 +94,6 @@ class MoHeftPlannerTest {
         assertEquals(0, result.getBalancedSchedule().getTaskPlan(2).getVmId());
     }
 
-    /**
-     * FGCS-R3 (2026-11-24) m7: insertion uses the exact {@code start + duration <= gapEnd} test of the
-     * SHARED planners, not a 1e-9 tolerance. Hand derivation: parent (5 s; 50 J on VM0, 5 J on VM1) goes
-     * to VM1 [0,5]; the child (12 s; 1 J on VM0) waits for the 5 s edge and takes VM0 [10,22]; the
-     * independent task (10 + 5e-10 s; 1 J on VM0) does not fit the [0,10] gap, so its minimum-energy
-     * schedule runs it at [22, 32 + 5e-10]. The energy extreme (7 J) survives every truncation.
-     */
     @Test
     void insertionDoesNotAdmitATaskThatOverrunsTheGapByLessThanTheOldTolerance() {
         double overrun = 10.0 + 5.0e-10;

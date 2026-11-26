@@ -67,13 +67,6 @@ class ControlledSharedStorageIndependentReferenceTest {
                 10.0, ((Number) modeled.getAttributes().get("requestedDataStageInSecondsForJob")).doubleValue(), EPS);
     }
 
-    /**
-     * STD-V1 (2026-11-25): a fractional SHARED rate reaches the runtime, the planner-free reference, and the event
-     * stream unchanged. Hand derivation (contract: inputSeconds = bytes / 1e6 / R; duration = (L + floor(mips *
-     * inputSeconds)) / mips): 25,000,000 B at R = 2.5 MB/s is 10 s; L = 2 s * 1000 MI/s = 2000 MI; on the 1000-MIPS
-     * VM the envelope is (2000 + 10000) / 1000 = 12 s; the stage-in Job finishes at max(110/1000, 0.1 + 0.01) =
-     * 0.11 s and the root releases one tick later, so the reference is 0.21 + 12 = 12.21 s.
-     */
     @Test
     void fractionalSharedRateIsChargedExactlyByRuntimeAndReference() throws Exception {
         Path input = dax(

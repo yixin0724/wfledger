@@ -38,15 +38,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Hand-derived semantic oracles for FGCS round-two coverage gaps.
- *
- * <p>Every case executes the ordinary serial {@link SimulationRunner}. Absolute times originate in
- * the declared 100-second workflow arrival, not in a previous simulator observation. Expected
- * candidate scores, joules, checkpoint work, and retry work are derived from the public contracts
- * before execution. A fixture that changes mapping, loses an injection, truncates evidence, or
- * misses an absolute expectation aborts without a passing result.
- */
+/** Hand-derived semantic oracles for FGCS round-two coverage gaps. */
 public final class SemanticContractBenchmarks {
 
     private static final double EPSILON = 1.0e-9;
@@ -57,7 +49,6 @@ public final class SemanticContractBenchmarks {
 
     private SemanticContractBenchmarks() {}
 
-    /** Runs all semantic contracts serially and writes results only after every oracle passes. */
     public static Suite run(Path outputDirectory) throws Exception {
         if (outputDirectory == null) {
             throw new IllegalArgumentException("Contract output directory is required");
@@ -436,9 +427,7 @@ public final class SemanticContractBenchmarks {
                         + "<job id=\"child\" name=\"child\" runtime=\"1\"/>"
                         + "<child ref=\"child\"><parent ref=\"parent\"/></child>");
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
-        // FGCS-R5 (2026-11-24): a failure now ends the attempt at the arrival, so the root stream is
-        // deterministic (Weibull shape 1e300 samples exactly the scale): VM 3 root-depth arrivals at
-        // 102.5, 205, ... s, the first inside the root's compute window [100, 103.2).
+
         specs.put(3, new DistributionSpec[] {weibull(1.0e9), weibull(102.5), weibull(1.0e9)});
         specs.put(8, new DistributionSpec[] {weibull(1.0e9), weibull(1.0e9), weibull(1.0e9)});
         FailureModelConfig failure = FailureModelConfig.builder()
@@ -490,8 +479,7 @@ public final class SemanticContractBenchmarks {
                         + " failedStart=" + failedParent.getStartTime() + " failedFinish="
                         + failedParent.getFinishTime() + " failedWork=" + failedParent.getEffectiveExecutionLengthMi()
                         + " retryWork=" + retryParent.getEffectiveExecutionLengthMi());
-        // Independent of the production model: a 3 s task takes a checkpoint after 1 s and 2 s of
-        // progress (none at completion); checkpoint k completes k * (1.0 + 0.1) s into compute.
+
         long plannedCheckpoints = 2L;
         long observedCheckpoints = Math.min(plannedCheckpoints, (long) Math.floor(elapsed / 1.1 + EPSILON));
         long observedSavedMi = observedCheckpoints * 1000L;

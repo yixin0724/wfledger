@@ -7,16 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-/**
- * Declared inputs of the EBPSM policy.
- *
- * <p>FGCS-R5 (2026-11-24): root cause — budgets were declared per task and stayed static, while Hilman, Rodriguez
- * and Buyya (arXiv:1903.01113) define one user budget {@code beta_w} per workflow, distribute it with Algorithm 1 and
- * redistribute it with Algorithm 3 on every completion. The configuration now carries per-workflow budgets keyed by
- * the parser's workflow index (input order of the configured workflow paths, 0 for a single workflow); the per-task
- * sub-budgets are derived at run time. The former per-task constructor was removed instead of reinterpreted, so a
- * stale call site cannot silently pass task budgets as workflow budgets.
- */
+/** Declared inputs of the EBPSM policy. */
 public final class EbpsmConfig {
     private final Map<Integer, Double> workflowBudgets;
     private final Map<Integer, Set<String>> cachedInputsByVm;
@@ -27,19 +18,6 @@ public final class EbpsmConfig {
     private final double globalWriteRateBytesPerSecond;
     private final double containerProvisioningDelaySeconds;
 
-    /**
-     * Creates a configuration with one budget per workflow.
-     *
-     * @param workflowBudgets user budget {@code beta_w} per workflow index; every value positive and finite
-     * @param cachedInputsByVm files initially held in each VM's local storage
-     * @param containerImagesByVm container images initially deployed on each VM
-     * @param containerImageByTask container image of each task ({@code "default"} when absent)
-     * @param vmCostPerSecondByVm price per one-second billing period of every declared VM
-     * @param globalReadRateBytesPerSecond global storage read rate {@code GS_r}
-     * @param globalWriteRateBytesPerSecond global storage write rate {@code GS_w}
-     * @param containerProvisioningDelaySeconds container deployment delay {@code prov_c}
-     * @return validated configuration
-     */
     public static EbpsmConfig forWorkflowBudgets(
             Map<Integer, Double> workflowBudgets,
             Map<Integer, Set<String>> cachedInputsByVm,
@@ -114,9 +92,6 @@ public final class EbpsmConfig {
         return copy;
     }
 
-    /**
-     * @return user budget per workflow index, in ascending index order
-     */
     public Map<Integer, Double> getWorkflowBudgets() {
         return workflowBudgets;
     }

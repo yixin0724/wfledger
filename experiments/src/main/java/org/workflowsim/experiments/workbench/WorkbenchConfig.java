@@ -313,7 +313,6 @@ public final class WorkbenchConfig {
                         .runtimeScale(decimal(models.sim, "runtimeScale", 1, true))
                         .runtimeReferenceMips(decimal(models.sim, "runtimeReferenceMips", 1000, true))
                         .cloudSimMinEventIntervalSeconds(decimal(models.sim, "minEventIntervalSeconds", 0.1, true))
-                        // FGCS-R6 (2026-11-25): declared bounded-slowdown floor, default 10 s.
                         .boundedSlowdownThresholdSeconds(decimal(
                                 models.sim,
                                 "boundedSlowdownThresholdSeconds",
@@ -598,7 +597,6 @@ public final class WorkbenchConfig {
         PlatformProfile.CostSpec costs = new PlatformProfile.CostSpec(cpuCostPerSecond, 0, 0, 0);
         PlatformProfile.Builder result = PlatformProfile.builder("workbench-platform")
                 .costs(costs)
-                // STD-V1 (2026-11-25): a finite positive decimal MB/s rate, default 15 (was a positive integer).
                 .storage(new PlatformProfile.StorageSpec(
                         1000000000L,
                         value.has("storageTransferMbPerSecond")

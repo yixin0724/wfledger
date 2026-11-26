@@ -62,13 +62,6 @@ class GreenHeftAdapterTest {
         assertEquals(20.0, converted.getEnergyJoulesByVm().get(1), 1.0e-9);
     }
 
-    /**
-     * FGCS-R3 (2026-11-24) M6: SHARED envelope and root release (contract: CONTRACTS.md SHARED compute
-     * envelope; same arithmetic as SharedStorageDagPlanner). Hand derivation: a 1000 MI task reads 3 MB at
-     * 20 MB/s = 0.15 s; on a 1000 MIPS VM floor(150) MI gives (1000 + 150) / 1000 = 1.15 s and energy
-     * 1.15 s x 50 W = 57.5 J. The 110 MI stage-in Job on the lowest-ID VM (1000 MIPS) takes 0.11 s, which
-     * is raised to the 0.1 + 0.01 safety minimum 0.11, plus the 0.1 s root-release interval: 0.21 s.
-     */
     @Test
     void sharedEnvelopeIncludesInputReadSecondsAndRootsWaitForStageIn() {
         Task task = new Task(1, 1000L);

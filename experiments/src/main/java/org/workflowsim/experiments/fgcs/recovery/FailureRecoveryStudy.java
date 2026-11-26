@@ -36,21 +36,8 @@ public final class FailureRecoveryStudy {
     private static final int FASTEST_VM_ID = 4;
     private static final double NO_FAILURE_SCALE = 1000000000.0;
 
-    /**
-     * Deterministic injection period of the fastest VM's root-depth stream.
-     *
-     * <p>FGCS-R5 (2026-11-24): a failure now ends its attempt at the arrival instead of flagging it at
-     * completion. The former 0.01 s (and 1.0 s) exponential streams then failed every root attempt on
-     * VM 4 before its first checkpoint, so recovery could never finish within the retry budget. Arrivals
-     * are now periodic (Weibull shape 1e300 samples exactly the scale). The period must exceed the
-     * 1.1 s checkpoint period so that injected failures can commit checkpoints, and the protocol's fixed
-     * retry budget of 20 must hold: a 2 s period exhausted it on the real-DAX rows, whose many roots all
-     * start on VM 4, so the period is 5 s. This is a fixture parameter, not an expected value; every row
-     * is still classified from its actual failed-Job and retry counts.
-     */
     private static final double INJECTION_PERIOD_SECONDS = 5.0;
 
-    /** Weibull shape whose samples equal the scale exactly in binary64. */
     private static final double DETERMINISTIC_SHAPE = 1.0e300;
 
     private FailureRecoveryStudy() {}
@@ -66,9 +53,7 @@ public final class FailureRecoveryStudy {
             }
         }
         for (String workflow : new String[] {FgcDatasets.MONTAGE_50, FgcDatasets.CYBERSHAKE_50, FgcDatasets.SIPHT_60}) {
-            // Montage/CyberShake have only 8/4 roots, so root-only injection stays
-            // below the retry budget. SIPHT has 42 roots and retains its conservative
-            // scale; a zero-injection draw is reported only as an explicit control.
+
             double scale = FgcDatasets.SIPHT_60.equals(workflow) ? 1000.0 : INJECTION_PERIOD_SECONDS;
             addPair(results, workflow.substring(workflow.lastIndexOf('/') + 1), FgcDatasets.real(workflow), scale);
         }
@@ -97,9 +82,7 @@ public final class FailureRecoveryStudy {
             int failedJobs = enabled.getReport().getFailedJobs();
             int retries = enabled.getReport().getMetrics().getRetryJobCreatedCount();
             if (failedJobs == 0 && retries == 0) {
-                // R2-FGCS-RECOVERY (2026-11-20): preserve the enabled configuration but do
-                // not mislabel an identical event stream as exercised recovery. The fixed
-                // seed makes this repeated classification run identical to the discarded probe.
+
                 enabled = FgcStudySupport.run(label + "-crch-no-injection-control", config, platform, null);
                 requireNoInjection(enabled, true);
             } else {
@@ -112,15 +95,6 @@ public final class FailureRecoveryStudy {
         }
     }
 
-    /**
-     * Targets the fastest initial CRCH destination at root depth only.
-     *
-     * <p>R2-FGCS-RECOVERY (2026-11-20): CRCH selects the fastest idle VM, so the former VM-3-only
-     * generator could remain unused for an entire chain or dependency-heavy workflow. Task depths
-     * are one-based generator indices; slot zero is padding. CRCH may reselect the failed VM when
-     * no alternative is idle, so repeated injections are possible and are counted from actual reports.
-     * The fixed protocol's maximum DAG depth (9) fits the declared 16 slots.
-     */
     private static FailureModelConfig singleVmFailure(double failureScale) {
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
         for (int vmId : new int[] {1, 2, 3, 4}) {

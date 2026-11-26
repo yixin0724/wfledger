@@ -36,16 +36,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Small, analytically solvable end-to-end model checks for the FGCS revision.
- *
- * <p>The expected values below are derived from the public dataflow and CRCH contracts. Absolute
- * event-observation times are deliberately not treated as analytic service times: network oracles
- * use the effective settlement time relative to admission, while lifecycle and recovery oracles
- * use event causality and model-derived Task windows. A changed mapping, missing failure, incomplete
- * capture, or numeric mismatch invalidates a fixture and aborts the suite rather than producing a
- * successful report with weakened semantics.
- */
+/** Small, analytically solvable end-to-end model checks for the FGCS revision. */
 public final class ModelMicrobenchmarks {
 
     private static final double EPSILON = 1.0e-9;
@@ -55,7 +46,6 @@ public final class ModelMicrobenchmarks {
 
     private ModelMicrobenchmarks() {}
 
-    /** Runs all scenarios serially and writes results only after every oracle has passed. */
     public static Suite run(Path outputDirectory) throws Exception {
         if (outputDirectory == null) {
             throw new IllegalArgumentException("Microbenchmark output directory is required");
@@ -392,8 +382,7 @@ public final class ModelMicrobenchmarks {
                         + "<job id=\"parent\" name=\"parent\" runtime=\"2\"/>"
                         + "<child ref=\"child\"><parent ref=\"parent\"/></child>");
         Map<Integer, DistributionSpec[]> specs = new LinkedHashMap<Integer, DistributionSpec[]>();
-        // FGCS-R5 (2026-11-24): failures end attempts at the arrival, so the parent stream is deterministic
-        // (Weibull shape 1e300 samples exactly the scale): VM 3 parent-depth arrivals at 1.5, 3.0, ... s.
+
         specs.put(3, new DistributionSpec[] {weibull(1.0e9), weibull(1.5), weibull(1.0e9)});
         specs.put(8, new DistributionSpec[] {weibull(1.0e9), weibull(1.0e9), weibull(1.0e9)});
         FailureModelConfig failure = FailureModelConfig.builder()
@@ -450,8 +439,6 @@ public final class ModelMicrobenchmarks {
         SimulationReport.TaskOutcome child = successfulTask(report, 1);
         require(child.getStartTime() + EPSILON >= retryParent.getFinishTime(), "Child compute preceded parent success");
 
-        // Independent of the production model: a 2 s task takes one checkpoint after 1 s of progress,
-        // completed 1.0 + 0.1 s into compute; each committed checkpoint saves 1000 MI.
         long observedCheckpoints = Math.min(1L, (long) Math.floor(elapsed / 1.1 + EPSILON));
         long observedSavedMi = observedCheckpoints * 1000L;
 

@@ -16,11 +16,6 @@ public final class GreenHeftProblem {
         this(tasks, 0.0);
     }
 
-    /**
-     * @param rootReleaseSeconds earliest start of every root task. FGCS-R3 (2026-11-24) M6: under SHARED
-     *     this is the finish of the model-generated stage-in Job plus the root-release interval, exactly
-     *     as in {@code SharedStorageDagPlanner}; roots no longer start at 0.
-     */
     public GreenHeftProblem(List<GreenHeftTask> tasks, double rootReleaseSeconds) {
         if (tasks == null || tasks.isEmpty()) {
             throw new IllegalArgumentException("GreenHEFT requires at least one task");
