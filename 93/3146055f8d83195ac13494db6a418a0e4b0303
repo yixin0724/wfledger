@@ -1,0 +1,14 @@
+THIRD_PARTY.md
+  h_adc77830afcf4d 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "933146055f8d83195ac13494db6a418a0e4b0303",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
