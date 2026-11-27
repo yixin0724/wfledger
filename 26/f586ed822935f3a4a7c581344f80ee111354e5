@@ -1,0 +1,16 @@
+.github/workflows/ci.yml
+  h_adc77830afcf4d 20,216
+Makefile
+  h_adc77830afcf4d 1,85-123,143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "26f586ed822935f3a4a7c581344f80ee111354e5",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
