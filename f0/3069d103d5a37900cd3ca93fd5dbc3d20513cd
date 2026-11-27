@@ -1,0 +1,39 @@
+AGENTS.md
+  s_f0e690d36fd18f::t_6c9ce704a18912 121
+CITATION.cff
+  s_f0e690d36fd18f::t_2fecc6af8f0bae 3,7-8,10-11,13-17,23-24
+CONTRIBUTING.md
+  s_f0e690d36fd18f::t_87d8daa7deecba 3
+Makefile
+  s_524c56e137e3f3::t_9cc829d41b10dc 1,5-11,33,96,98
+README.md
+  s_f0e690d36fd18f::t_d9c2d6b79ce630 3,6-28,32,35-37,40-42,44,46-49,52-54,56,58-74,78,80-84,86-87,91-93,95-96
+docs/README.md
+  s_f0e690d36fd18f::t_dfcaac97c8e282 3-9
+docs/getting-started/QUICK_START.md
+  s_f0e690d36fd18f::t_0832dd40a30421 25-26,40-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f03069d103d5a37900cd3ca93fd5dbc3d20513cd",
+  "prompts": {},
+  "sessions": {
+    "s_524c56e137e3f3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cda8-da74-71b0-b519-a137a3ce4b85",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    },
+    "s_f0e690d36fd18f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21b67-635b-7780-b615-4323ff65aafd",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
