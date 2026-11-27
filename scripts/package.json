@@ -1,8 +1,8 @@
 {
-  "name": "workflowsim-report-checks",
+  "name": "wfledger-report-checks",
   "version": "1.0.0",
   "private": true,
-  "description": "Browser checks for generated offline WorkflowSim reports",
+  "description": "Browser checks for generated offline WfLedger reports",
   "engines": {
     "node": ">=20"
   },

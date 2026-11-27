@@ -1,9 +1,14 @@
 # Baseline Studies
 
-The repository ships Workbench configurations and Java drivers for two baseline studies on
-classic Pegasus DAX workflows: makespan and energy. This page describes what each study
-runs and how to run it. Results are not published here; generate them with the current code into
-a new directory.
+The repository ships Workbench configurations and Java drivers for two small baseline studies on
+classic Pegasus DAX workflows: makespan and energy. They are quick examples on one instance per
+workflow and a four-VM platform, so they cannot support statistical conclusions. For an
+algorithm comparison meant to be reported, use the
+[standard study protocol](<../../experiments/studies/standard/PROTOCOL.md>), which uses larger
+fleets, many workflow instances per application and paired tests.
+
+This page describes what each baseline runs and how to run it. Results are not published here;
+generate them with the current code into a new directory.
 
 ## Common platform
 

@@ -216,4 +216,4 @@ mvn -pl :workflowsim -Pjavadoc verify
 open simulator/target/reports/apidocs/index.html
 ```
 
-Javadoc checks the maintained WorkflowSim API and does not include upstream CloudSim comments. For IDE classpath or import problems, see the [IDEA setup](<IDEA_SETUP.md>). When an input does not exist, first distinguish the Java entry point's working directory from the relative-path base of the Workbench configuration file; do not silence the error by switching to an undeclared model or skipping validation.
+Javadoc checks the maintained WfLedger API and does not include upstream CloudSim comments. For IDE classpath or import problems, see the [IDEA setup](<IDEA_SETUP.md>). When an input does not exist, first distinguish the Java entry point's working directory from the relative-path base of the Workbench configuration file; do not silence the error by switching to an undeclared model or skipping validation.
