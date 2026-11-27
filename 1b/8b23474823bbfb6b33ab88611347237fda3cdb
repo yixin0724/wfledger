@@ -1,0 +1,19 @@
+simulator/src/test/java/org/workflowsim/experiment/AlgorithmCatalogTest.java
+  s_524c56e137e3f3::t_a4e242c28b4ed1 157,183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1b8b23474823bbfb6b33ab88611347237fda3cdb",
+  "prompts": {},
+  "sessions": {
+    "s_524c56e137e3f3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cda8-da74-71b0-b519-a137a3ce4b85",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
