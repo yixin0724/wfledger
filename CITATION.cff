@@ -1,26 +1,24 @@
 cff-version: 1.2.0
 message: "If you use WfLedger in research, please cite it using this metadata."
-title: "WfLedger: an auditable discrete-event simulator for scientific workflow scheduling research"
+title: "WfLedger: a discrete-event simulator for scientific workflow scheduling research"
 type: software
 authors:
   - name: "WfLedger contributors"
-version: "1.0"
-date-released: "2026-11-02"
+version: "1.0.0"
+date-released: "2026-11-27"
 license: "GPL-3.0-or-later"
-repository-code: "https://github.com/yixin0724/workflowsim-research"
-url: "https://github.com/yixin0724/workflowsim-research"
+repository-code: "https://github.com/yixin0724/wfledger"
+url: "https://github.com/yixin0724/wfledger"
 abstract: >-
-  A discrete-event simulator for research on scientific workflow scheduling that
-  treats evidence as a first-class product. Every run emits a manifest, metrics,
-  and an event stream whose numbers are independently recomputable by a Python
-  auditor; energy, carbon, and DVFS accounting follow declared conservation laws
-  and are locked by frozen benchmarks, mutation gates, and an offline report.
+  A discrete-event simulator for research on scientific workflow scheduling. It runs
+  static planners and online schedulers from the literature under one declared model
+  of workflows, platforms, storage, networks, energy and failures, and compares them
+  with paired statistics across workflow instances. Runs can optionally keep a full
+  evidence record that is re-runnable and independently checkable.
 keywords:
   - scientific workflows
   - workflow scheduling
   - discrete-event simulation
   - reproducibility
-  - energy accounting
-  - carbon accounting
-  - DVFS
+  - energy-aware scheduling
   - cloud computing

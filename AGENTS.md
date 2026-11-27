@@ -118,6 +118,7 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 | `NOTICE.md` | Copyright, source lineage, and modification notices | Preserve upstream notices and record WfLedger modifications |
 | `THIRD_PARTY.md` | Third-party provenance and licensing ledger | Update whenever upstream code or dependency scope changes |
 | `licenses/` | License texts and source hashes | Keep upstream notices, texts, and `provenance.json` synchronized |
+| `CHANGELOG.md` | User-facing changes per release | One section per release; describe behaviour, not process |
 | `CITATION.cff` | Software citation metadata (read by GitHub "Cite this repository") | Version, date, and author changes must match an actual release; the license field is fixed to `GPL-3.0-or-later` |
 | `.editorconfig` | Editor encoding, line-ending, indentation, and trailing-whitespace defaults | Keep in step with Spotless and CONTRIBUTING.md; no formatter is driven by this file alone |
 | `Makefile` | Convenience commands | Maintained in step with the pom.xml targets |

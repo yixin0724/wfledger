@@ -1,7 +1,12 @@
 # WfLedger Documentation
 
-Start with the quick start and the Workbench guide. Consult the Java guide only for custom
-experiments in code.
+New here? Read these three in order:
+
+1. [Quick start](<getting-started/QUICK_START.md>): run the example and open its report.
+2. [Workbench guide](<getting-started/WORKBENCH.md>): write your own experiment configuration.
+3. [Algorithm catalog](<algorithms/CATALOG.md>): see which algorithms and models can be combined.
+
+The rest of this page is a reference index.
 
 ## Getting started
 

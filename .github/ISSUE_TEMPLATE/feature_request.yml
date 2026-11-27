@@ -1,0 +1,21 @@
+name: Feature or algorithm request
+description: Propose a new model, algorithm, metric or tool.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Research need
+      description: What question you want to answer and why the current platform cannot answer it.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Primary source
+      description: For an algorithm or model, the paper and the section that defines it.
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope
+      description: Which decision layer, data movement model and metrics are affected.

@@ -1,8 +1,13 @@
-
-
-.PHONY: all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all python-gate quality-gate extended-corpus language help
+.PHONY: demo all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all python-gate quality-gate extended-corpus language help
 
 all: build
+
+demo:
+	@echo "Running the online scheduling comparison; the report opens from output/demo/index.html"
+	mvn -q -pl :workflowsim-workbench -am compile exec:java \
+		-Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
+		-Dexec.args="run experiments/configs/online-comparison.json output/demo"
+	@echo "Done: output/demo/index.html"
 
 build:
 	@echo "Compiling the core and experiment modules..."
@@ -25,7 +30,7 @@ clean:
 
 clean-output:
 	@echo "Removing uncompressed study/workbench outputs (all output/*.tar.gz originals are kept)..."
-	rm -rf output/workbench*/ output/sensitivity-r13/ output/sensitivity-r13-v2/ \
+	rm -rf output/demo/ output/workbench*/ output/sensitivity-r13/ output/sensitivity-r13-v2/ \
 		output/network-study-r10*/ output/peft-comparison-r12/ \
 		output/benchmark-standard-v1/ output/benchmark-standard-power-v1/ \
 		output/benchmark-standard-carbon-v1/ output/benchmark-standard-dvfs-v1/
@@ -88,8 +93,9 @@ language:
 	python3 -B scripts/check-language.py
 
 help:
-	@echo "WorkflowSim build commands:"
+	@echo "WfLedger commands:"
 	@echo ""
+	@echo "  make demo     - run the example experiment and write output/demo/index.html"
 	@echo "  make build    - compile the core and experiment modules"
 	@echo "  make test     - unit/semantic tests of both modules"
 	@echo "  make verify   - full tests and the coverage gate of both modules"

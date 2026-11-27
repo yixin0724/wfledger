@@ -1,0 +1,38 @@
+name: Bug report
+description: A simulation result, metric or tool behaves differently from its documented contract.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran and what you observed.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: Cite the contract, paper or hand derivation that defines the expected result, if any.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The Workbench configuration or Java snippet, the workflow input, and the exact command.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or release
+      placeholder: "git rev-parse HEAD"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: JDK, Maven and OS
+      placeholder: "JDK 17.0.x, Maven 3.9.x, macOS 15"

@@ -22,6 +22,8 @@ build output.
 
 ## 2. Run the experiment
 
+`make demo` runs this step and writes to `output/demo`. The equivalent Maven command is:
+
 ```bash
 mvn -pl :workflowsim-workbench -am compile exec:java \
   -Dexec.mainClass=org.workflowsim.experiments.workbench.Workbench \
@@ -35,8 +37,9 @@ run failed, the command exits non-zero while the report retains the diagnostics.
 ## 3. Open the report
 
 Open the `report.html` path printed by the console in a file manager. The report is
-self-contained and offline-viewable — algorithms, seeds, task timelines, VM utilization, and
-the dependency graph — with no CDN loading.
+self-contained and works offline. By default it shows the run table and the makespan
+comparison. Task timelines, VM utilization, the dependency graph and the energy and network
+panels need per-run evidence: add `"evidence": "full"` to the configuration to enable them.
 
 The `index.html` in the output root browses the experiment history. On macOS:
 
