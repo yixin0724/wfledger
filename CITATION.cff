@@ -3,7 +3,8 @@ message: "If you use WfLedger in research, please cite it using this metadata."
 title: "WfLedger: a discrete-event simulator for scientific workflow scheduling research"
 type: software
 authors:
-  - name: "WfLedger contributors"
+  - family-names: "He"
+    given-names: "Yixin"
 version: "1.0.0"
 date-released: "2026-11-27"
 license: "GPL-3.0-or-later"

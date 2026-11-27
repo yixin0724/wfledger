@@ -2,7 +2,7 @@
 
 WfLedger is a discrete-event simulator for scientific workflow scheduling research. It treats execution evidence as a first-class result and is independently developed around explicit execution contracts, independent validation, and exact replay.
 
-Copyright 2026 WfLedger contributors.
+Copyright 2026 Yixin He and WfLedger contributors.
 
 WfLedger is distributed under the GNU General Public License, version 3 or (at your option) any later version. The license text is provided in `LICENSE` and `licenses/GPL-3.0.txt`.
 
