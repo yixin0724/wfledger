@@ -1,4 +1,4 @@
-.PHONY: demo all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all python-gate quality-gate extended-corpus language help
+.PHONY: demo ci all build test verify audit clean clean-output coverage install package rebuild mutation-gate mutation-gate-experiments mutation-gate-all python-gate quality-gate extended-corpus language help
 
 all: build
 
@@ -82,6 +82,45 @@ python-gate:
 
 quality-gate: audit python-gate
 
+ci:
+	@echo "Running the steps of the GitHub Actions workflow in this checkout..."
+	mvn -B -Pjavadoc verify
+	python3 -B scripts/test-check-docs.py
+	python3 -B scripts/check-docs.py
+	python3 -B scripts/test-check-upload-safety.py
+	python3 -B scripts/check-upload-safety.py
+	python3 -B scripts/test-check-language.py
+	python3 -B scripts/check-language.py
+	python3 -B scripts/test-check-dataset-indexes.py
+	python3 -B scripts/check-dataset-indexes.py
+	@set -e; for test_file in scripts/test-*.py; do \
+		PYTHONDONTWRITEBYTECODE=1 python3 -B "$$test_file"; \
+	done
+	@set -e; for fixtures in network-ci file-lifecycle-ci storage-lifecycle-ci dataflow-assignment-ci; do \
+		rm -rf "output/$$fixtures"; \
+	done
+	mvn -B -Pcore-exec -pl :workflowsim -am test-compile exec:java \
+		-Dexec.mainClass=org.workflowsim.data.NetworkLedgerPythonFixtures \
+		-Dexec.classpathScope=test -Dexec.args="\"$$PWD/output/network-ci\""
+	mvn -B -Pcore-exec -pl :workflowsim -am test-compile exec:java \
+		-Dexec.mainClass=org.workflowsim.data.v2.FileLifecyclePythonFixtures \
+		-Dexec.classpathScope=test -Dexec.args="\"$$PWD/output/file-lifecycle-ci\""
+	mvn -B -Pcore-exec -pl :workflowsim -am test-compile exec:java \
+		-Dexec.mainClass=org.workflowsim.data.v2.StorageLifecyclePythonFixtures \
+		-Dexec.classpathScope=test -Dexec.args="\"$$PWD/output/storage-lifecycle-ci\""
+	mvn -B -Pcore-exec -pl :workflowsim -am test-compile exec:java \
+		-Dexec.mainClass=org.workflowsim.data.v2.DataflowAssignmentPythonFixtures \
+		-Dexec.classpathScope=test -Dexec.args="\"$$PWD/output/dataflow-assignment-ci\""
+	npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
+	scripts/node_modules/.bin/playwright-core install chromium
+	rm -rf output/workbench-ci
+	mvn -B -pl :workflowsim-workbench -am test-compile exec:java \
+		-Dexec.mainClass=org.workflowsim.experiments.workbench.WorkbenchBrowserFixtures \
+		-Dexec.classpathScope=test -Dexec.args="\"$$PWD\" \"$$PWD/output/workbench-ci\""
+	node scripts/verify-report.cjs output/workbench-ci/browser-fixtures.json output/workbench-ci/screenshots
+	node scripts/test-report-checker.cjs output/workbench-ci/browser-fixtures.json
+	@echo "CI steps passed."
+
 extended-corpus:
 	python3 -B scripts/check-dataset-indexes.py
 	mvn -Pextended-corpus -pl :workflowsim-workbench -am -Dtest=MontageExtendedCorpusTest -Dsurefire.failIfNoSpecifiedTests=false test
@@ -101,6 +140,7 @@ help:
 	@echo "  make audit    - clean build plus joint acceptance, including the core API documentation"
 	@echo "  make python-gate - independent Python, docs, language, and dataset checks"
 	@echo "  make quality-gate - complete local acceptance surface (audit + python-gate)"
+	@echo "  make ci       - the steps of the GitHub Actions workflow (needs Node and Chromium)"
 	@echo "  make extended-corpus - opt-in full-corpus acceptance (all 17 Montage inputs required)"
 	@echo "  make clean    - remove the build output"
 	@echo "  make clean-output - remove regenerable uncompressed output/ study dirs (keeps all .tar.gz originals)"
