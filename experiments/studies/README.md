@@ -9,7 +9,6 @@ module's standard source directories; general run operations are described in th
 |---|---|
 | [standard/PROTOCOL.md](<standard/PROTOCOL.md>) | `standard-study-v1`: the standard design for new same-layer comparisons |
 | [standard-workloads/](<standard-workloads/README.md>) | Specification and generator of the WfGen synthetic corpus in `datasets/wfgen-standard/` |
-| `fattree-scheduling-campaign/campaign-results.json` | Retained result summary of the fat-tree scheduling campaign (schema `workflowsim-fattree-campaign-v1`, 360 cells, seed 91), produced by `FatTreeSchedulingCampaignExecutor` under an earlier execution model |
 
 Network-study protocol identities (`network-limited-r10-*`, `peft-comparison-r12-*`,
 `sensitivity-response-r13-*`) are registered in code by `NetworkStudyPlan` and described in the
