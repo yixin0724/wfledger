@@ -3,6 +3,14 @@
 The commands below run from the repository root. For day-to-day experiment runs, start from [Quick start](<QUICK_START.md>); this document concentrates on the development and verification tooling and does not require new users to run every quality check first.
 
 
+## Reproducing CI locally
+
+`make ci` runs the steps of the GitHub Actions workflow in this checkout: the Maven gate, every
+Python checker with its self-tests, the four evidence-fixture generators with their independent
+checks, and the Chromium report checks. It needs Node 20+ and a Chromium download, which the target
+installs through `playwright-core`. Use it before pushing when you have changed a model, a checker
+or the report; a failure there is the failure CI would report.
+
 ## Environment and modules
 
 | Tool | Requirement | Purpose |
