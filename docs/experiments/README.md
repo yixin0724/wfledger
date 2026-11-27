@@ -15,7 +15,7 @@ compared across reruns. Read the [algorithm catalog](<../algorithms/CATALOG.md>)
 | [Paper reproductions](<PAPER_REPRODUCTIONS.md>) | Implemented literature algorithms, artifacts, and adaptation scope |
 | [P7 reference protocol](<reference-baselines/P7_PROTOCOL.md>) | Frozen online-scheduler reference matrix |
 | [Standard benchmark](<../benchmark/STANDARD_BENCHMARK.md>) | Fixed benchmark matrix with power, carbon, and DVFS variants |
-| [Study protocols](<../../experiments/studies/README.md>) | Standard study, FGCS study, workload corpus, and network studies |
+| [Study protocols](<../../experiments/studies/README.md>) | Standard study, workload corpus, and network studies |
 
 ## Evidence levels
 

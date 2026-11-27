@@ -30,8 +30,6 @@ class StandardResearchConfigurationsIntegrationTest {
         Map<String, Integer> expected = new LinkedHashMap<String, Integer>();
         expected.put("makespan-static-baseline.json", 7);
         expected.put("makespan-online-baseline.json", 35);
-        expected.put("makespan-static-scale.json", 6);
-        expected.put("makespan-online-scale.json", 30);
         expected.put("energy-flat.json", 15);
         expected.put("energy-tiered.json", 20);
         for (Map.Entry<String, Integer> entry : expected.entrySet()) {
@@ -64,16 +62,6 @@ class StandardResearchConfigurationsIntegrationTest {
                 Paths.get("configs", "makespan-online-baseline.json"), directory.resolve("online-output"));
         assertSummary(staticExperiment, 7);
         assertSummary(onlineExperiment, 35);
-    }
-
-    @Test
-    void scaleStudyRunsThroughWorkbenchSummary() throws Exception {
-        Path staticExperiment = Workbench.run(
-                Paths.get("configs", "makespan-static-scale.json"), directory.resolve("static-scale-output"));
-        Path onlineExperiment = Workbench.run(
-                Paths.get("configs", "makespan-online-scale.json"), directory.resolve("online-scale-output"));
-        assertSummary(staticExperiment, 6);
-        assertSummary(onlineExperiment, 30);
     }
 
     @Test

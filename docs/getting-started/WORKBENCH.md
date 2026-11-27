@@ -37,8 +37,6 @@ Relative paths in CLI arguments are resolved against the working directory; insi
 | Plain CPU online scheduling | [online comparison](<../../experiments/configs/online-comparison.json>) |
 | Compare static HEFT across seven scientific workflows | [static makespan baseline](<../../experiments/configs/makespan-static-baseline.json>) |
 | Compare five online makespan algorithms across seven workflows | [online makespan baseline](<../../experiments/configs/makespan-online-baseline.json>) |
-| Compare static HEFT at 1000 and 5000 tasks | [static scale study](<../../experiments/configs/makespan-static-scale.json>) |
-| Compare online makespan algorithms at 1000 and 5000 tasks | [online scale study](<../../experiments/configs/makespan-online-scale.json>) |
 | Compare energy-aware planners with flat power | [flat-power energy study](<../../experiments/configs/energy-flat.json>) |
 | Compare frequency policies and DVFS slack | [tiered-power energy study](<../../experiments/configs/energy-tiered.json>) |
 | Fat-tree and static mapping | [network comparison](<../../experiments/configs/network-comparison.json>), [enabling the group-level ledger](<../../experiments/configs/network-ledger-comparison.json>) |

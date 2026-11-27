@@ -105,7 +105,6 @@ output/mutation-gate/
 # report-panel screenshots (regenerated from the browser fixtures, not committed)
 output/report-panels/
 output/makespan-baseline/
-output/makespan-scale/
 output/energy-baseline/
 
 output/dvfs-tier-audit-smoke/
