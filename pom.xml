@@ -9,20 +9,13 @@
     <version>1.0</version>
     <packaging>pom</packaging>
 
-    <name>WorkflowSim Parent</name>
-    <description>
-        The Maven reactor parent of WorkflowSim. The stable simulator lives in simulator/;
-        teaching material, reference baselines, and research experiments live in the experiments module.
-    </description>
+    <name>WfLedger</name>
+    <description>WfLedger: a discrete-event simulator for scientific workflow scheduling research.</description>
 
-    <!-- The license keeps a single source of truth with the repository-root LICENSE and
-         CITATION.cff: upstream CloudSim 3 is GPL (65 of 66 files under
-         simulator/src/main/java/org/cloudbus/ carry the GPL header), so the project can only be
-         GPL-compatible and must never be relicensed under a permissive license. -->
     <licenses>
         <license>
-            <name>GNU General Public License v2.0 or later</name>
-            <url>https://www.gnu.org/licenses/old-licenses/gpl-2.0.html</url>
+            <name>GNU General Public License v3.0 or later</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
             <distribution>repo</distribution>
         </license>
     </licenses>

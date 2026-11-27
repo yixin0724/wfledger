@@ -13,7 +13,7 @@
 
     <artifactId>workflowsim</artifactId>
     <packaging>jar</packaging>
-    <name>WorkflowSim Simulator</name>
+    <name>WfLedger Simulator</name>
     <description>Reusable WorkflowSim simulator core and the general research-run API.</description>
 
     <properties>

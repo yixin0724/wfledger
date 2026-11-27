@@ -9,13 +9,11 @@
 > This file is mandatory reading for every agent before acting. Changing it requires human
 > review — it is the "first day on the job" briefing for a new agent.
 
-## Project facts (the five things agents most often get wrong)
+## Project facts
 
 1. **Maven multi-module reactor**: `simulator` (core, no upstream dependency) →
    `experiments` (Workbench + research drivers). The core module must never depend on the
-   experiment module. (The third module `grouped-workflows` was removed on 2026-11-02 by user
-   adjudication: verified zero references in the platform; its snapshot is preserved at git
-   `6db21f1` and its research contract is managed in an external repository.)
+   experiment module.
 2. **CloudSim 3 global-state kernel**: concurrent or parallel simulation inside one JVM is
    strictly forbidden. Every run must establish its session boundary through
    `SimulationSession` (try-with-resources).
@@ -24,9 +22,8 @@
 4. The three workflow-input sources (Pegasus DAX, WfGen synthetic, WfInstances
    real-derived) have different evidence boundaries; **mixing them into one workload
    population is forbidden** (see `datasets/README.md`).
-5. Git main-branch workflow; the review-engineering temporary workspace was removed
-   entirely on 2026-11-02 (snapshot at git `6db21f1`) and its conclusions were folded into
-   `docs/` — a deleted temporary directory never represents product state.
+5. Git main-branch workflow. History, past defects and superseded designs live in git, not in
+   the working tree.
 
 ## Common commands (run these before touching anything)
 
@@ -76,15 +73,11 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
    an evidence-contract revision and must state its rationale in
    `docs/experiments/RERUN_DIFF_CONTRACT.md`.
 4. **The events v1 event schema must not be changed unilaterally**: new event types or key
-   fields require user adjudication.
-5. Task clustering is **NONE only**: the legacy clustering family (Horizontal/Vertical/
-   Block/Balanced) and the DC/SR/DR/BLOCK/VERTICAL reclustering modes were removed on
-   2026-11-24 by user adjudication (recoverable from git history). `ReclusteringEngine`
-   keeps only the NOOP and CRCH retry paths; do not reintroduce clustering without a new
-   contract and user adjudication.
-6. The deprecated scheduling labels (`MINMIN`/`MAXMIN`/`MCT`/`ROUNDROBIN`) and the RL demo
-   track (`RL_POLICY`, `org.workflowsim.rl`) were removed on 2026-11-24; use the maintained
-   `READY_BATCH_*` labels or the `SchedulingAlgorithmProvider` SPI instead.
+   fields require maintainer review.
+5. Task clustering is **NONE only**. `ReclusteringEngine` keeps only the NOOP and CRCH
+   retry paths; do not reintroduce clustering without a new contract and maintainer review.
+6. Online heuristics use the `READY_BATCH_*` labels; custom policies plug in through the
+   `SchedulingAlgorithmProvider` SPI.
 7. Every mutable global static (`Parameters`/`FailureMonitor`/`ReplicaCatalog`/
    `NetworkTopology` and the rest, with the ledger frozen in
    `SessionResetMatrixTest.AUDIT_CLASSES`) must be accessed within a `SimulationSession`
@@ -104,13 +97,12 @@ domain differs, and the rerun tests fail spuriously. This is not a bug; do not "
 - Code carries **no explanatory comments**. Public types and members keep a short javadoc
   only where the API contract is not obvious from the name and signature. Root causes,
   fix rationale, and history belong in commit messages and the contract documents, not
-  in source (revised 2026-11-26 by user decision; the former F-xxx / R-round marker style
-  is retired). The whole repository is English.
+  in source. The whole repository is English.
 - Alias and mixed-language names already present inside dataset files keep their current
   form; new file names use ASCII. Dataset fixtures are frozen bytes: never edit text
   inside a `.dax` file, because recorded input identities would no longer match.
 
-## Repository structure conventions (added by the 2026-10-20 review engineering)
+## Repository structure conventions
 
 | Directory / file | Role | Rules for additions |
 |---|---|---|
@@ -142,8 +134,8 @@ documentation is involved), and the `check-docs.py` result in the same change.
   `check-docs.py` reports 0 issues.
 - Close-out: `mvn -Pjavadoc clean verify` is green; when the Python audit domain is
   involved, its self-tests are green too.
-- Anything the user has not adjudicated (event schema, executing a cleanup, changing a
-  contract's direction): **stay in proposal state** — never act first and report later.
+- Anything a maintainer has not approved (event schema, a cleanup, changing a contract's
+  direction): **stay in proposal state** — never act first and report later.
 
 ## When you meet a "counter-intuitive" implementation
 
@@ -159,5 +151,4 @@ comparators using `Long.compare`, the parser's two-phase commit).
 - Algorithm semantics and the combination matrix: `docs/algorithms/CATALOG.md` +
   `CONTRACTS.md`
 - Dataset rules: `datasets/README.md`
-- Historical sediment (defect ledger, methodology): git history (the former `docs/history/`
-  directory and the temporary review area were removed; do not recreate them)
+- History (past defects, methodology): `git log`

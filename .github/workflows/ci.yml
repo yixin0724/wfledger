@@ -57,16 +57,16 @@ jobs:
           python3 -B scripts/test-check-dataset-indexes.py
           python3 -B scripts/check-dataset-indexes.py
 
-      - name: Verify study evidence and statistics checker self-tests (shared core, independent of Java)
+      - name: Verify study evidence and statistics checker self-tests
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-study-verifiers.py
 
-      - name: Verify mutation gate self-tests (BAT-R4, previously missing from CI)
+      - name: Verify mutation gate self-tests
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-mutation-gate.py
 
-      - name: Verify energy portrait analysis (BAT-R4, skips the retained-copy test when evidence is absent)
+      - name: Verify energy portrait analysis
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-energy-portrait.py
 
-      - name: Verify network audit self-tests (shared Python core, independent of Java)
+      - name: Verify network audit self-tests
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-network-ledger.py
 
       - name: Generate network ledger producer fixtures
@@ -90,7 +90,7 @@ jobs:
               print(json.dumps(dict(input=name, **result), allow_nan=False))
           PY
 
-      - name: Verify V2 lifecycle and context audit self-tests (shared Python core, independent of Java)
+      - name: Verify V2 lifecycle and context audit self-tests
         run: |
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-file-lifecycle.py
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-file-lifecycle-context.py
@@ -116,7 +116,7 @@ jobs:
               print(json.dumps(dict(input=name, **result), allow_nan=False))
           PY
 
-      - name: Verify V3 storage and context audit self-tests (shared Python core, independent of Java)
+      - name: Verify V3 storage and context audit self-tests
         run: |
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-storage-lifecycle.py
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-storage-lifecycle-context.py
@@ -142,7 +142,7 @@ jobs:
               print(json.dumps(dict(input=name, **result), allow_nan=False))
           PY
 
-      - name: Verify online assignment audit self-tests (shared Python core, independent of Java)
+      - name: Verify online assignment audit self-tests
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-dataflow-assignment.py
 
       - name: Verify strict performance comparison tooling

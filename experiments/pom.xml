@@ -13,7 +13,7 @@
 
     <artifactId>workflowsim-workbench</artifactId>
     <packaging>jar</packaging>
-    <name>WorkflowSim Workbench</name>
+    <name>WfLedger Workbench</name>
     <description>Workbench unified experiment entry point, research drivers, reproduction tooling, frozen reference baselines, and teaching examples.</description>
 
     <properties>
