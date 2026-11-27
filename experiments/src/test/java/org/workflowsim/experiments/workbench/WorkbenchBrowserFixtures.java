@@ -34,11 +34,16 @@ public final class WorkbenchBrowserFixtures {
         Files.createDirectories(output);
         List<Map<String, Object>> reports = new ArrayList<>();
 
-        Path online =
-                Workbench.run(checkout.resolve("experiments/configs/online-comparison.json"), output.resolve("online"));
+        Path online = Workbench.run(
+                fullEvidenceConfig(
+                        checkout.resolve("experiments/configs/online-comparison.json"), output.resolve("online.json")),
+                output.resolve("online"));
         reports.add(describe("online", online));
         Path network = Workbench.run(
-                checkout.resolve("experiments/configs/network-comparison.json"), output.resolve("network"));
+                fullEvidenceConfig(
+                        checkout.resolve("experiments/configs/network-comparison.json"),
+                        output.resolve("network.json")),
+                output.resolve("network"));
         reports.add(describe("network", network));
 
         Path standalone = output.resolve("standalone-fcfs.html");
@@ -233,10 +238,25 @@ public final class WorkbenchBrowserFixtures {
         return tier;
     }
 
+    private static Path fullEvidenceConfig(Path shipped, Path target) throws IOException {
+        JsonObject config = JsonParser.parseString(new String(Files.readAllBytes(shipped), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        config.addProperty("evidence", "full");
+        JsonArray paths = config.getAsJsonArray("workflowPaths");
+        Path base = shipped.toAbsolutePath().normalize().getParent();
+        for (int index = 0; index < paths.size(); index++) {
+            Path resolved = base.resolve(paths.get(index).getAsString()).normalize();
+            paths.set(index, new com.google.gson.JsonPrimitive(resolved.toString()));
+        }
+        ExperimentArtifactWriter.writeJson(target, config);
+        return target;
+    }
+
     private static JsonObject configuration(Path input, int count, String algorithm, boolean planner) {
         JsonObject config = new JsonObject();
         config.addProperty("schema", "workflowsim-workbench-v1");
         config.addProperty("name", "Browser regression fixture");
+        config.addProperty("evidence", "full");
         JsonArray inputs = new JsonArray();
         inputs.add(input.toString());
         config.add("workflowPaths", inputs);
