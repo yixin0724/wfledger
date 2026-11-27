@@ -1,0 +1,14 @@
+.gitignore
+  h_adc77830afcf4d 21-22,76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9e1b223e3eedf32d80053f4a4b74fff3d3722452",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
