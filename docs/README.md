@@ -52,7 +52,7 @@ experiments in code.
 | Frozen online-scheduler reference matrix | [P7 reference protocol](<experiments/reference-baselines/P7_PROTOCOL.md>) |
 | Fixed benchmark with power, carbon, and DVFS variants | [Standard benchmark](<benchmark/STANDARD_BENCHMARK.md>) |
 | Independent study audit tooling | [Study audit](<../scripts/STUDY_AUDIT.md>) |
-| Study protocols (standard, FGCS, workload corpus) | [Studies](<../experiments/studies/README.md>) |
+| Study protocols (standard, workload corpus) | [Studies](<../experiments/studies/README.md>) |
 
 ## Positioning and maintenance
 

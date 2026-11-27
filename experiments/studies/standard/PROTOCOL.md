@@ -4,8 +4,7 @@ This protocol declares the standard experiment design of the platform: a heterog
 fleet with bounded spread, a controlled communication-to-computation ratio (CCR), workflow instances as matched
 pairing units, paired non-parametric tests with multiplicity control and effect sizes, and a fully declared
 output header. It is a **design and a driver**; no full matrix has been executed under it. The driver is
-[StandardStudy](<../../src/main/java/org/workflowsim/experiments/standard/StandardStudy.java>); the FGCS
-drivers under `org.workflowsim.experiments.fgcs` are separate.
+[StandardStudy](<../../src/main/java/org/workflowsim/experiments/standard/StandardStudy.java>).
 
 ## Design goals
 

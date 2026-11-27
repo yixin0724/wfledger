@@ -154,7 +154,7 @@ class AlgorithmCatalogTest {
     }
 
     @Test
-    void fgcsR3CorrectedSchedulersDeclareRevisedImplementationTags() {
+    void correctedSchedulersDeclareRevisedImplementationTags() {
         Object[][] expected = {
             {Parameters.SchedulingAlgorithm.READY_BATCH_MINMIN, "READY_BATCH_MINMIN_MACHINE_READY_TIME_LATE_BINDING_V3"
             },
@@ -180,7 +180,7 @@ class AlgorithmCatalogTest {
     }
 
     @Test
-    void fgcsR3CorrectedPlannersDeclareRevisedImplementationTags() {
+    void correctedPlannersDeclareRevisedImplementationTags() {
         Object[][] expected = {
             {Parameters.PlanningAlgorithm.IC_PCP, "ICPCP_LATEST_ARRIVAL_CRITICAL_PARENT_LFT_PATH_SHARED_EDGES_V2"},
             {Parameters.PlanningAlgorithm.MO_HEFT, "MOHEFT_NSGA2_BEAM_REFILL_SHARED_ENVELOPE_V2"},
