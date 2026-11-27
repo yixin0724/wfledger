@@ -1,0 +1,16 @@
+CITATION.cff
+  h_adc77830afcf4d 6-7
+NOTICE.md
+  h_adc77830afcf4d 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "51dd0e28f19331d497876f3d15f1b1ff5e577be6",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
