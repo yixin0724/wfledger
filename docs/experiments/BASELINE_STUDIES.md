@@ -1,7 +1,7 @@
 # Baseline Studies
 
-The repository ships Workbench configurations and Java drivers for three baseline studies on
-classic Pegasus DAX workflows: makespan, scale, and energy. This page describes what each study
+The repository ships Workbench configurations and Java drivers for two baseline studies on
+classic Pegasus DAX workflows: makespan and energy. This page describes what each study
 runs and how to run it. Results are not published here; generate them with the current code into
 a new directory.
 
@@ -19,8 +19,6 @@ idle 5/10/15/20 W and max 50/100/150/200 W unless a tier table replaces it.
 |---|---|---|---|
 | [makespan-static-baseline.json](<../../experiments/configs/makespan-static-baseline.json>) | Montage 50/100, CyberShake 50/100, SIPHT 60, Inspiral 50, Epigenomics 46 | `SHARED_STORAGE_HEFT` | Static planning |
 | [makespan-online-baseline.json](<../../experiments/configs/makespan-online-baseline.json>) | Same seven DAX files | `READY_BATCH_MINMIN`, `READY_BATCH_MAXMIN`, `READY_BATCH_MCT`, `FCFS`, `READY_BATCH_ROUNDROBIN` | Online scheduling |
-| [makespan-static-scale.json](<../../experiments/configs/makespan-static-scale.json>) | Montage, CyberShake, Inspiral at 1000 tasks and their 5000-task composites | `SHARED_STORAGE_HEFT` | Static planning |
-| [makespan-online-scale.json](<../../experiments/configs/makespan-online-scale.json>) | Same six inputs | The five online labels above | Online scheduling |
 | [energy-flat.json](<../../experiments/configs/energy-flat.json>) | Montage 50/100, CyberShake 50, SIPHT 60, Inspiral 50 | `SHARED_STORAGE_HEFT`, `GREEN_HEFT`, `MO_HEFT` | Static planning, flat power |
 | [energy-tiered.json](<../../experiments/configs/energy-tiered.json>) | Same five DAX files | `SHARED_STORAGE_HEFT` with `DEFAULT`, `MIN_POWER`, `EDP_HEURISTIC` frequency policies, and `DVFS_SLACK` | Static planning, two-tier power per VM, per-workflow deadlines |
 
@@ -48,7 +46,6 @@ Equivalent Java drivers write a single result JSON (default path in parentheses)
 | Driver | Test | Default output |
 |---|---|---|
 | `org.workflowsim.experiments.makespan.MakespanBaselineComparison` | `MakespanBaselineComparisonTest` | `output/makespan-baseline/results.json` |
-| `org.workflowsim.experiments.makespan.MakespanScaleComparison` | `MakespanScaleComparisonTest` | `output/makespan-scale/results.json` |
 | `org.workflowsim.experiments.energy.EnergyBaselineComparison` | `EnergyBaselineComparisonTest` | `output/energy-baseline/results.json` |
 
 The tests run every cell of their study and check completion and metric invariants.
@@ -64,26 +61,6 @@ The tests run every cell of their study and check completion and metric invarian
   energy × makespan.
 
 Definitions and literature conventions are in the [metrics card](<../algorithms/METRICS_CARD.md>).
-
-## 5000-task composite inputs
-
-`experiments/studies/makespan-scale/inputs/` holds three 5000-task DAX files, each built from the
-corresponding 1000-task Pegasus DAX as **five independent copies**:
-
-| Source | Composite | Total jobs | Dependency edges |
-|---|---|---:|---:|
-| `datasets/dax/montage/n1000/Montage_1000.dax` | `Montage_5000.dax` | 5000 | 4170 |
-| `datasets/dax/cybershake/n1000/CyberShake_1000.dax` | `CyberShake_5000.dax` | 5000 | 4980 |
-| `datasets/dax/inspiral/n1000/Inspiral_1000.dax` | `Inspiral_5000.dax` | 5000 | 3855 |
-
-For replica indices `r0` to `r4`, every source job and dependency element is deep-copied and the
-suffix `_r<i>` is appended to every `id`, `ref`, `file`, and `name` attribute; the five groups are
-appended to one root with no cross-copy edges. Root `count` and `jobCount` are 5000 and
-`childCount` is five times the source edge count. Runtimes, file sizes, and intra-copy structure
-are preserved.
-
-These are controlled scaling inputs: they are not real 5000-task workflows and not five
-independent samples of a workflow population.
 
 ## Reading results
 
