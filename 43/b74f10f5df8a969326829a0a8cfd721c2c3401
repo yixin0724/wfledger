@@ -1,0 +1,23 @@
+docs/getting-started/BUILD.md
+  s_3a0920642253f6::t_d028441c73f5a5 219
+scripts/package-lock.json
+  s_3a0920642253f6::t_0dffacf34a6e34 2,8
+scripts/package.json
+  s_3a0920642253f6::t_ddf94493a131d1 2,5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "43b74f10f5df8a969326829a0a8cfd721c2c3401",
+  "prompts": {},
+  "sessions": {
+    "s_3a0920642253f6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ed6f-8fb9-7a63-b9de-4ca4b3645837",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
