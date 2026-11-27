@@ -1,0 +1,14 @@
+docs/experiments/BASELINE_STUDIES.md
+  h_adc77830afcf4d 3-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "55249b90fe122e379a3068b64659ddb1ac637dd7",
+  "prompts": {},
+  "humans": {
+    "h_adc77830afcf4d": {
+      "author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
