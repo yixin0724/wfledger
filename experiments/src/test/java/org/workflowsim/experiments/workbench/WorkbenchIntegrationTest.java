@@ -63,9 +63,33 @@ class WorkbenchIntegrationTest {
     }
 
     @Test
+    void defaultEvidenceKeepsOnlyTheSummaryAndTheOfflineHtml() throws Exception {
+        JsonObject source = base();
+        source.remove("evidence");
+        algorithms(source, algorithm("fcfs", "FCFS", null), algorithm("minmin", "READY_BATCH_MINMIN", null));
+        Path config = json(directory.resolve("summary-config.json"), source);
+        Path experiment = Workbench.run(config, directory.resolve("output"));
+
+        JsonObject record = object(experiment.resolve("experiment.json"));
+        assertEquals("COMPLETED_SUCCESSFULLY", record.get("status").getAsString());
+        JsonArray runs = record.getAsJsonArray("runs");
+        assertEquals(2, runs.size());
+        for (int index = 0; index < runs.size(); index++) {
+            JsonObject run = runs.get(index).getAsJsonObject();
+            assertEquals("COMPLETED_SUCCESSFULLY", run.get("status").getAsString());
+            assertFalse(run.has("manifest"), "summary evidence records no manifest");
+            assertTrue(run.has("makespanSeconds"));
+        }
+        assertFalse(Files.exists(experiment.resolve("runs")), "no per-run bundle is written");
+        assertTrue(Files.isRegularFile(experiment.resolve("report.html")));
+        assertTrue(Files.isRegularFile(experiment.resolve("summary.json")));
+    }
+
+    @Test
     void runProducesValidatedV4EvidenceOfflineHtmlAndHistoryForEveryCandidateAndSeed() throws Exception {
         JsonObject source = base();
         source.addProperty("name", "two schedulers, two seeds");
+        source.addProperty("evidence", "full");
         algorithms(source, algorithm("fcfs", "FCFS", null), algorithm("minmin", "READY_BATCH_MINMIN", null));
         JsonArray seeds = new JsonArray();
         seeds.add(17L);
@@ -491,7 +515,9 @@ class WorkbenchIntegrationTest {
 
     private JsonObject base() throws Exception {
         workflow(directory, "workflow.dax", true);
-        return configuration("workflow.dax", 2);
+        JsonObject source = configuration("workflow.dax", 2);
+        source.addProperty("evidence", "full");
+        return source;
     }
 
     private JsonObject failingConfiguration() throws Exception {

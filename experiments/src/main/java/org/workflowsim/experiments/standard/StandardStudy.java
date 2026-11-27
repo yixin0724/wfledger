@@ -17,6 +17,7 @@ import org.cloudbus.cloudsim.Log;
 import org.workflowsim.FileItem;
 import org.workflowsim.Task;
 import org.workflowsim.data.DataMovementModel;
+import org.workflowsim.experiment.EvidenceOutput;
 import org.workflowsim.experiment.ExperimentCampaignArtifactWriter;
 import org.workflowsim.experiment.ExperimentCampaignExecutor;
 import org.workflowsim.experiment.ExperimentCampaignResult;
@@ -168,8 +169,8 @@ public final class StandardStudy {
         }
         ExperimentPlan built = plan.build();
         ExperimentCampaignResult campaign = new ExperimentCampaignExecutor().execute(built);
-        if (design.writeEvidence) {
-            ExperimentCampaignArtifactWriter.write(campaign, output.resolve("campaign"));
+        if (design.evidenceOutput.requiresPerRunArtifacts()) {
+            ExperimentCampaignArtifactWriter.write(campaign, output.resolve("campaign"), design.evidenceOutput);
         }
         List<Map<String, Object>> rows = rows(campaign, contexts, design);
         List<Map<String, Object>> comparisons = comparisons(rows, design);
@@ -638,7 +639,7 @@ public final class StandardStudy {
         private final List<Double> mtbfRatios;
         private final int replications;
         private final double idleToMaxPowerRatio;
-        private final boolean writeEvidence;
+        private final EvidenceOutput evidenceOutput;
 
         private Design(Builder builder) {
             this.layer = builder.layer;
@@ -650,7 +651,7 @@ public final class StandardStudy {
             this.mtbfRatios = Collections.unmodifiableList(new ArrayList<Double>(builder.mtbfRatios));
             this.replications = builder.replications;
             this.idleToMaxPowerRatio = builder.idleToMaxPowerRatio;
-            this.writeEvidence = builder.writeEvidence;
+            this.evidenceOutput = builder.evidenceOutput;
         }
 
         public static Builder builder(Layer layer, EvidenceClass evidenceClass) {
@@ -668,7 +669,7 @@ public final class StandardStudy {
             private List<Double> mtbfRatios = Collections.<Double>singletonList(null);
             private int replications = 1;
             private double idleToMaxPowerRatio = StandardPlatforms.DEFAULT_IDLE_TO_MAX_POWER_RATIO;
-            private boolean writeEvidence = true;
+            private EvidenceOutput evidenceOutput = EvidenceOutput.SUMMARY;
 
             private Builder(Layer layer, EvidenceClass evidenceClass) {
                 if (layer == null || evidenceClass == null) {
@@ -716,9 +717,13 @@ public final class StandardStudy {
                 return this;
             }
 
-            public Builder writeEvidence(boolean value) {
-                writeEvidence = value;
+            public Builder evidenceOutput(EvidenceOutput value) {
+                evidenceOutput = value;
                 return this;
+            }
+
+            public Builder writeEvidence(boolean value) {
+                return evidenceOutput(EvidenceOutput.of(value));
             }
 
             public Design build() {

@@ -19,6 +19,7 @@ import org.workflowsim.WorkflowParser;
 import org.workflowsim.data.DataMovementModel;
 import org.workflowsim.data.NetworkEvidenceConfig;
 import org.workflowsim.experiment.AlgorithmCatalog;
+import org.workflowsim.experiment.EvidenceOutput;
 import org.workflowsim.network.FatTreeTopology;
 import org.workflowsim.network.NetworkTopologySpec;
 import org.workflowsim.platform.PlatformProfile;
@@ -39,10 +40,17 @@ public final class WorkbenchConfig {
     private final PlatformProfile platform;
     private final List<Candidate> candidates;
     private final List<Long> seeds;
+    private final EvidenceOutput evidenceOutput;
 
     private WorkbenchConfig(
-            String name, JsonObject source, PlatformProfile platform, List<Candidate> candidates, List<Long> seeds) {
+            String name,
+            JsonObject source,
+            PlatformProfile platform,
+            List<Candidate> candidates,
+            List<Long> seeds,
+            EvidenceOutput evidenceOutput) {
         this.name = name;
+        this.evidenceOutput = evidenceOutput;
         this.source = source;
         this.platform = platform;
         this.candidates = Collections.unmodifiableList(candidates);
@@ -67,7 +75,7 @@ public final class WorkbenchConfig {
         List<Long> seeds = readSeeds(root);
         List<Candidate> candidates =
                 readCandidates(root, paths, arrivals, platform, models, seeds, frequencyPolicy, executionMode);
-        return new WorkbenchConfig(name, root.deepCopy(), platform, candidates, seeds);
+        return new WorkbenchConfig(name, root.deepCopy(), platform, candidates, seeds, evidenceOutput(root));
     }
 
     private static JsonObject readJsonDocument(Path path) throws IOException {
@@ -85,6 +93,20 @@ public final class WorkbenchConfig {
         return root;
     }
 
+    private static EvidenceOutput evidenceOutput(JsonObject root) {
+        if (!root.has("evidence")) {
+            return EvidenceOutput.SUMMARY;
+        }
+        String value = text(root, "evidence", "summary");
+        if ("summary".equals(value)) {
+            return EvidenceOutput.SUMMARY;
+        }
+        if ("full".equals(value)) {
+            return EvidenceOutput.FULL;
+        }
+        throw new IllegalArgumentException("evidence must be summary or full: " + value);
+    }
+
     private static void validateConfigurationFields(JsonObject root) {
         fields(
                 root,
@@ -97,7 +119,8 @@ public final class WorkbenchConfig {
                 "platform",
                 "simulation",
                 "algorithms",
-                "seeds");
+                "seeds",
+                "evidence");
         if (!SCHEMA.equals(text(root, "schema", null))) {
             throw new IllegalArgumentException("Unsupported configuration schema");
         }
@@ -936,6 +959,10 @@ public final class WorkbenchConfig {
 
     public List<Long> getSeeds() {
         return seeds;
+    }
+
+    public EvidenceOutput getEvidenceOutput() {
+        return evidenceOutput;
     }
 
     public int getRunCount() {

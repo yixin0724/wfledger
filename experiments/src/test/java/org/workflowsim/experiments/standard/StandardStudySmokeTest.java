@@ -31,6 +31,22 @@ class StandardStudySmokeTest {
     Path directory;
 
     @Test
+    void defaultEvidenceWritesOnlyTheStudySummary() throws Exception {
+        StandardStudy.Design design = StandardStudy.Design.builder(
+                        StandardStudy.Layer.ONLINE, StandardStudy.EvidenceClass.WFGEN_SYNTHETIC)
+                .candidates(Arrays.asList("FCFS"))
+                .instances(Collections.singletonList(tinyChain()))
+                .vmCounts(Collections.singletonList(8))
+                .ccrTargets(Collections.singletonList(1.0))
+                .build();
+        StandardStudy.Result result = StandardStudy.run(design, directory.resolve("summary"));
+
+        assertTrue(Files.isRegularFile(result.getJson()));
+        assertTrue(Files.isRegularFile(result.getRowsCsv()));
+        assertFalse(Files.exists(directory.resolve("summary/campaign")), "no per-run bundle by default");
+    }
+
+    @Test
     void twoInstancesTwoAlgorithmsOneCellEndToEnd() throws Exception {
         List<Path> instances = Arrays.asList(montage(), tinyChain());
         StandardStudy.Design design = StandardStudy.Design.builder(
@@ -39,6 +55,7 @@ class StandardStudySmokeTest {
                 .instances(instances)
                 .vmCounts(Collections.singletonList(8))
                 .ccrTargets(Collections.singletonList(1.0))
+                .evidenceOutput(org.workflowsim.experiment.EvidenceOutput.FULL)
                 .build();
         StandardStudy.Result result = StandardStudy.run(design, directory.resolve("out"));
 

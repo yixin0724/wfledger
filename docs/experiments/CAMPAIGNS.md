@@ -77,7 +77,7 @@ Randomized baselines with internal hyperparameters (such as PSO's generation cou
 
 ## Generic Campaign Evidence
 
-The [campaign writer](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentCampaignArtifactWriter.java>) accepts only a newly created or empty directory, writes evidence for every cell/replication, and then writes and validates the index:
+The [campaign writer](<../../simulator/src/main/java/org/workflowsim/experiment/ExperimentCampaignArtifactWriter.java>) accepts only a newly created or empty directory. With `EvidenceOutput.FULL` it writes one evidence bundle per cell and replication and then the validated index; with `EvidenceOutput.SUMMARY`, the default, it writes only `campaign-summary.json` with the plan, the run count and the campaign summary:
 
 ```text
 campaign-output/

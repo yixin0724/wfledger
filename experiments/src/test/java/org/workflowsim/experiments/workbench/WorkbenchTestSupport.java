@@ -49,6 +49,7 @@ final class WorkbenchTestSupport {
         platform.add("vmMips", mips);
         root.add("platform", platform);
         root.add("simulation", new JsonObject());
+        root.addProperty("evidence", "full");
         algorithms(root, algorithm("fcfs", "FCFS", null));
         JsonArray seeds = new JsonArray();
         seeds.add(17L);

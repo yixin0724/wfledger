@@ -40,8 +40,11 @@ mvn -pl :workflowsim-workbench -am compile exec:java \
 Open **`output/workbench/index.html`** to browse experiment records. Each experiment directory contains:
 
 - `report.html` — detailed schedules and timelines;
-- `summary.html` / `summary.json` / `summary.csv` — algorithm and metric comparisons;
-- per-run manifests, metrics, and event streams.
+- `summary.html` / `summary.json` / `summary.csv` — algorithm and metric comparisons.
+
+By default a run keeps only these summaries. Add `"evidence": "full"` to the configuration to also write a
+per-run manifest, metrics file, event stream and sidecar; that bundle is what rerun verification and the
+standalone report need, and it is what makes experiment output large.
 
 Generated files belong under `output/` and are not source inputs. Use `make clean-output` to remove regenerable working outputs.
 

@@ -42,6 +42,7 @@ baseline on makespan, energy, or cost, for a declared factor cell, across a popu
 | Bounded-slowdown floor `tau` | 1 s, clamped fraction reported per row | 10 s (Feitelson et al. 1997) targets parallel jobs; 48-76% of Pegasus tasks run below 10 s, so at 10 s the metric mostly measures `wait/10` ([metrics card](<../../../docs/algorithms/METRICS_CARD.md>)); 1 s keeps most tasks unclamped while bounding near-zero runtimes |
 | Clustering, overheads | NONE, none | Platform scope |
 | Cost model | `CostModel.VM` | Per-VM linear price below |
+| Evidence output | summary only by default; `EvidenceOutput.FULL` writes one bundle per run | Per-run bundles are only needed for rerun verification, and they dominate output size |
 | Seeds | root 20261125; deterministic without failures | Multiple seeds of a deterministic run are repetitions, not samples |
 
 ## Platform (`StandardPlatforms`)

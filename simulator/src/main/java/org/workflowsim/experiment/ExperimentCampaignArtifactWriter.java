@@ -15,13 +15,42 @@ public final class ExperimentCampaignArtifactWriter {
 
     public static final String INDEX_FILE_NAME = "experiment-campaign-index.json";
 
+    public static final String SUMMARY_FILE_NAME = "campaign-summary.json";
+
     private ExperimentCampaignArtifactWriter() {}
 
     public static CampaignArtifacts write(ExperimentCampaignResult result, Path outputDirectory) throws IOException {
-        if (result == null || outputDirectory == null) {
+        return write(result, outputDirectory, EvidenceOutput.FULL);
+    }
+
+    /**
+     * Writes campaign outputs at the requested evidence depth.
+     *
+     * <p>Under {@link EvidenceOutput#SUMMARY} only {@code campaign-summary.json} is written: the plan, the
+     * run count and the campaign summary, without per-run bundles.
+     *
+     * @param result campaign result
+     * @param outputDirectory empty or absent directory
+     * @param evidenceOutput evidence depth
+     * @return written artifacts; the index is null when only the summary is written
+     * @throws IOException when a file cannot be written
+     */
+    public static CampaignArtifacts write(
+            ExperimentCampaignResult result, Path outputDirectory, EvidenceOutput evidenceOutput) throws IOException {
+        if (result == null || outputDirectory == null || evidenceOutput == null) {
             throw new IllegalArgumentException("Campaign result and output directory are required");
         }
         Path output = prepareEmptyOutputDirectory(outputDirectory);
+        if (!evidenceOutput.requiresPerRunArtifacts()) {
+            Map<String, Object> summary = new LinkedHashMap<String, Object>();
+            summary.put("schema", ExperimentCampaignValidator.SCHEMA);
+            summary.put("plan", plan(result.getPlan()));
+            summary.put("runCount", result.getRuns().size());
+            summary.put("summary", result.getSummary());
+            Path file = output.resolve(SUMMARY_FILE_NAME);
+            ExperimentArtifactWriter.writeJson(file, summary);
+            return new CampaignArtifacts(null, new ArrayList<RunArtifact>());
+        }
         List<RunArtifact> records = new ArrayList<RunArtifact>();
         for (ExperimentCampaignResult.Run run : result.getRuns()) {
             String runId = String.format(Locale.ROOT, "replication-%04d", run.getReplicationIndex());

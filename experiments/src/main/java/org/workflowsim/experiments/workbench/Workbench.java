@@ -156,14 +156,18 @@ public final class Workbench {
         try {
             SimulationReport report =
                     new SimulationRunner().run(candidate.config.withRandomSeed(seed), config.getPlatform());
-            ExperimentArtifactWriter.ExperimentArtifacts artifacts = ExperimentArtifactWriter.write(
-                    report, directory.resolve("runs").resolve(runId), "result", context);
-            HtmlReports.ValidatedReport evidence = HtmlReports.validatedReport(artifacts.getManifest());
+            HtmlReports.ValidatedReport evidence = null;
+            if (config.getEvidenceOutput().requiresPerRunArtifacts()) {
+                ExperimentArtifactWriter.ExperimentArtifacts artifacts = ExperimentArtifactWriter.write(
+                        report, directory.resolve("runs").resolve(runId), "result", context);
+                evidence = HtmlReports.validatedReport(artifacts.getManifest());
+                row.put(
+                        "manifest",
+                        directory.relativize(artifacts.getManifest()).toString().replace('\\', '/'));
+            }
             String status = report.isWorkflowCompletedSuccessfully() ? "COMPLETED_SUCCESSFULLY" : "INCOMPLETE";
             row.put("status", status);
-            row.put(
-                    "manifest",
-                    directory.relativize(artifacts.getManifest()).toString().replace('\\', '/'));
+
             row.put("makespanSeconds", report.getMakespan());
             org.workflowsim.experiment.SimulationMetrics metrics = report.getMetrics();
             row.put("meanWaitingSeconds", metrics.getMeanComputeTotalWaitingTimeSeconds());
@@ -185,7 +189,9 @@ public final class Workbench {
             row.put("logicalTasks", metrics.getLogicalTaskCount());
             row.put("completedTasks", metrics.getSuccessfullyCompletedLogicalTaskCount());
             reportRow.put("status", status);
-            evidence.attachTo(reportRow);
+            if (evidence != null) {
+                evidence.attachTo(reportRow);
+            }
         } catch (Exception failure) {
             String message = message(failure);
             row.put("status", "FAILED");

@@ -30,6 +30,42 @@ class ExperimentCampaignExecutorTest {
     }
 
     @Test
+    void summaryEvidenceWritesOnlyTheCampaignSummary(@TempDir Path output) throws Exception {
+        String workflow = resourcePath("/dax/reproducibility-workflow.dax");
+        PlatformProfile platform = PlatformProfiles.homogeneousLocal("campaign-platform", 2);
+        SeedPlan seeds = SeedPlan.deterministic(20260902L);
+        ExperimentPlan plan = ExperimentPlan.builder("campaign-summary-only")
+                .addCell(cell("fcfs", "baseline", true, workflow, platform, seeds, Parameters.SchedulingAlgorithm.FCFS))
+                .addCell(cell(
+                        "mct",
+                        "ready-batch-mct",
+                        false,
+                        workflow,
+                        platform,
+                        seeds,
+                        Parameters.SchedulingAlgorithm.READY_BATCH_MCT))
+                .build();
+
+        Log.disable();
+        ExperimentCampaignResult result = new ExperimentCampaignExecutor().execute(plan);
+        ExperimentCampaignArtifactWriter.CampaignArtifacts artifacts =
+                ExperimentCampaignArtifactWriter.write(result, output, EvidenceOutput.SUMMARY);
+
+        assertNull(artifacts.getIndex());
+        assertTrue(artifacts.getRuns().isEmpty());
+        Path summary = output.resolve(ExperimentCampaignArtifactWriter.SUMMARY_FILE_NAME);
+        assertTrue(Files.isRegularFile(summary));
+        assertTrue(!Files.exists(output.resolve(ExperimentCampaignArtifactWriter.INDEX_FILE_NAME)));
+        assertTrue(!Files.exists(output.resolve(plan.getCells().get(0).getId())));
+        String text = new String(Files.readAllBytes(summary), StandardCharsets.UTF_8);
+        assertTrue(text.contains("\"runCount\": 2"));
+        assertTrue(text.contains("baselineRelativeMakespanSpeedup"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExperimentCampaignArtifactWriter.write(result, output, EvidenceOutput.SUMMARY));
+    }
+
+    @Test
     void executesADeclaredComparisonAndWritesAValidatedIndex(@TempDir Path output) throws Exception {
         String workflow = resourcePath("/dax/reproducibility-workflow.dax");
         PlatformProfile platform = PlatformProfiles.homogeneousLocal("campaign-platform", 2);

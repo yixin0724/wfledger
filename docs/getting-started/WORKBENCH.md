@@ -57,6 +57,7 @@ Simply replace the configuration argument of `run` with the chosen file. The pai
 | `executionMode` | Optional `COMBINED_WORKFLOWS` (default) or `PER_WORKFLOW`; the latter runs every algorithm separately for every input |
 | `workflowPaths` | 1–32 DAX/XML or WfFormat JSON inputs |
 | `workflowArrivalSeconds` | Optional list of non-negative seconds, equal in length to the inputs, all zeros by default; counted from simulation time zero |
+| `evidence` | `summary` (default) writes the offline HTML report and the summary files; `full` adds one evidence bundle per run (manifest, metrics, event stream, sidecars). Only `full` output can be rerun-verified or turned into a standalone report |
 | `platform.vmMips` | 1–64 positive finite values, each not exceeding `1e12`; every VM is pinned to a dedicated Host, 1 PE, SPACE_SHARED |
 | `platform.bandwidthMbPerSecond` | Positive integer endpoint bandwidth, default 1000; decimal MB/s |
 | `platform.cpuCostPerSecond` | Non-negative abstract CPU unit price, default 3; not a calibrated cloud price |
