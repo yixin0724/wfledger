@@ -38,7 +38,7 @@ public final class ExperimentCampaignArtifactWriter {
     public static CampaignArtifacts write(
             ExperimentCampaignResult result, Path outputDirectory, EvidenceOutput evidenceOutput) throws IOException {
         if (result == null || outputDirectory == null || evidenceOutput == null) {
-            throw new IllegalArgumentException("Campaign result and output directory are required");
+            throw new IllegalArgumentException("Campaign result, output directory and evidence output are required");
         }
         Path output = prepareEmptyOutputDirectory(outputDirectory);
         if (!evidenceOutput.requiresPerRunArtifacts()) {

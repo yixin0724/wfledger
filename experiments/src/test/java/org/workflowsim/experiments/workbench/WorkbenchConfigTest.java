@@ -142,6 +142,40 @@ class WorkbenchConfigTest {
     }
 
     @Test
+    void evidenceOutputDefaultsToSummaryAndAcceptsOnlyTheTwoDeclaredValues() throws Exception {
+        Path workflow = workflow(directory, "evidence-flow.dax", false);
+        JsonObject absent = configuration(workflow.toString(), 2);
+        absent.remove("evidence");
+        assertEquals(
+                org.workflowsim.experiment.EvidenceOutput.SUMMARY,
+                WorkbenchConfig.read(json(directory.resolve("evidence-absent.json"), absent))
+                        .getEvidenceOutput());
+
+        for (String[] declared : new String[][] {{"summary", "SUMMARY"}, {"full", "FULL"}}) {
+            JsonObject config = configuration(workflow.toString(), 2);
+            config.addProperty("evidence", declared[0]);
+            assertEquals(
+                    org.workflowsim.experiment.EvidenceOutput.valueOf(declared[1]),
+                    WorkbenchConfig.read(json(directory.resolve("evidence-" + declared[0] + ".json"), config))
+                            .getEvidenceOutput());
+        }
+
+        for (String invalid : new String[] {"FULL", "none", "true", " full"}) {
+            JsonObject config = configuration(workflow.toString(), 2);
+            config.addProperty("evidence", invalid);
+            Path file = json(directory.resolve("evidence-invalid.json"), config);
+            IllegalArgumentException rejection =
+                    assertThrows(IllegalArgumentException.class, () -> WorkbenchConfig.read(file));
+            assertTrue(rejection.getMessage().contains("evidence"), rejection.getMessage());
+        }
+
+        JsonObject nonString = configuration(workflow.toString(), 2);
+        nonString.addProperty("evidence", true);
+        Path nonStringFile = json(directory.resolve("evidence-boolean.json"), nonString);
+        assertThrows(IllegalArgumentException.class, () -> WorkbenchConfig.read(nonStringFile));
+    }
+
+    @Test
     void workbenchRejectsTheCarbonDeferralLabelWithAPointer() throws Exception {
         Path workflow = workflow(directory, "defer-flow.dax", false);
         JsonObject configuration = configuration(workflow.toString(), 2);

@@ -81,8 +81,27 @@ class WorkbenchIntegrationTest {
             assertTrue(run.has("makespanSeconds"));
         }
         assertFalse(Files.exists(experiment.resolve("runs")), "no per-run bundle is written");
-        assertTrue(Files.isRegularFile(experiment.resolve("report.html")));
         assertTrue(Files.isRegularFile(experiment.resolve("summary.json")));
+
+        JsonArray displayed = payload(experiment.resolve("report.html")).getAsJsonArray("runs");
+        assertEquals(2, displayed.size());
+        for (int index = 0; index < displayed.size(); index++) {
+            JsonObject shown = displayed.get(index).getAsJsonObject();
+            JsonObject recorded = runs.get(index).getAsJsonObject();
+            assertEquals("COMPLETED_SUCCESSFULLY", shown.get("status").getAsString());
+            assertFalse(shown.has("manifest"));
+            JsonObject metrics = shown.getAsJsonObject("metrics");
+            assertTrue(metrics != null, "the report must carry the run metrics without a manifest");
+            assertEquals(
+                    recorded.get("makespanSeconds").getAsDouble(),
+                    metrics.get("makespanSeconds").getAsDouble(),
+                    0.0);
+            assertTrue(metrics.has("logicalTaskCompletionSeconds"));
+            assertTrue(metrics.has("meanComputeTotalWaitingTimeSeconds"));
+            assertTrue(metrics.has("p95ComputeTotalWaitingTimeSeconds"));
+        }
+        String template = text(experiment.resolve("report.html"));
+        assertTrue(template.contains("r.metrics"), "the report reads summary metrics when no manifest exists");
     }
 
     @Test

@@ -191,6 +191,13 @@ public final class Workbench {
             reportRow.put("status", status);
             if (evidence != null) {
                 evidence.attachTo(reportRow);
+            } else {
+                Map<String, Object> shown = new LinkedHashMap<String, Object>();
+                shown.put("makespanSeconds", report.getMakespan());
+                shown.put("logicalTaskCompletionSeconds", metrics.getLogicalTaskCompletionSeconds());
+                shown.put("meanComputeTotalWaitingTimeSeconds", metrics.getMeanComputeTotalWaitingTimeSeconds());
+                shown.put("p95ComputeTotalWaitingTimeSeconds", metrics.getP95ComputeTotalWaitingTimeSeconds());
+                reportRow.put("metrics", shown);
             }
         } catch (Exception failure) {
             String message = message(failure);

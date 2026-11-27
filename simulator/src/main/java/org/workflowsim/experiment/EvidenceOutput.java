@@ -12,8 +12,4 @@ public enum EvidenceOutput {
     public boolean requiresPerRunArtifacts() {
         return this == FULL;
     }
-
-    public static EvidenceOutput of(boolean fullEvidence) {
-        return fullEvidence ? FULL : SUMMARY;
-    }
 }

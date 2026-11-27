@@ -718,12 +718,11 @@ public final class StandardStudy {
             }
 
             public Builder evidenceOutput(EvidenceOutput value) {
+                if (value == null) {
+                    throw new IllegalArgumentException("Evidence output is required");
+                }
                 evidenceOutput = value;
                 return this;
-            }
-
-            public Builder writeEvidence(boolean value) {
-                return evidenceOutput(EvidenceOutput.of(value));
             }
 
             public Design build() {
