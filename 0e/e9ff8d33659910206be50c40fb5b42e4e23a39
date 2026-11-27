@@ -1,0 +1,21 @@
+.github/workflows/ci.yml
+  s_f0e690d36fd18f::t_0b2798cb2290fd 60,63,66,69,93,119,145
+pom.xml
+  s_f0e690d36fd18f::t_0c662d08a755b7 12-13,17-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0ee9ff8d33659910206be50c40fb5b42e4e23a39",
+  "prompts": {},
+  "sessions": {
+    "s_f0e690d36fd18f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21b67-635b-7780-b615-4323ff65aafd",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
