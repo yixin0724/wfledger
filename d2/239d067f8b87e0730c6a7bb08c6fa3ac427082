@@ -1,0 +1,29 @@
+experiments/src/main/java/org/workflowsim/experiments/standard/StandardStudy.java
+  s_768a25909712fc::t_10f25d3e2f26df 721-723
+experiments/src/main/java/org/workflowsim/experiments/workbench/Workbench.java
+  s_768a25909712fc::t_44d2a3ce1627e4 194-200
+experiments/src/main/resources/workbench/report.html
+  s_768a25909712fc::t_24354fb52dc66d 142-143,145-147
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchConfigTest.java
+  s_768a25909712fc::t_ef5fc2bdf43bed 144-177
+experiments/src/test/java/org/workflowsim/experiments/workbench/WorkbenchIntegrationTest.java
+  s_768a25909712fc::t_bb1d49c66d67a8 85-104
+simulator/src/main/java/org/workflowsim/experiment/ExperimentCampaignArtifactWriter.java
+  s_768a25909712fc::t_306353a44f7c87 41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d2239d067f8b87e0730c6a7bb08c6fa3ac427082",
+  "prompts": {},
+  "sessions": {
+    "s_768a25909712fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c2ff-6f87-73e2-9c03-a6edac8ac3a0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "yixin0724 <yixin0724@users.noreply.github.com>"
+    }
+  }
+}
